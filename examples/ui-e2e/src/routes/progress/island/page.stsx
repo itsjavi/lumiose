@@ -1,0 +1,12 @@
+import { Title } from "lumiose";
+import { ProgressSignals } from "../../../islands/ProgressSignals.tsx";
+
+export default function ProgressIslandPage() {
+  return (
+    <>
+      <Title>Progress and Meter in an island, bound to a signal</Title>
+      <h1>Progress and Meter in an island, bound to a signal</h1>
+      <ProgressSignals client:load />
+    </>
+  );
+}

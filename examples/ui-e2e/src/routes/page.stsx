@@ -39,6 +39,18 @@ export default function Home() {
         <li>
           <a href="/toast">Toast</a> (<a href="/toast/island">from an island</a>)
         </li>
+        <li>
+          <a href="/button">Button</a> (<a href="/button/island">in an island</a>)
+        </li>
+        <li>
+          <a href="/toggle">Toggle and Toggle Group</a> (<a href="/toggle/island">in an island</a>)
+        </li>
+        <li>
+          <a href="/progress">Progress and Meter</a> (<a href="/progress/island">in an island</a>)
+        </li>
+        <li>
+          <a href="/slider">Slider</a> (<a href="/slider/island">in an island</a>)
+        </li>
       </ul>
     </article>
   );

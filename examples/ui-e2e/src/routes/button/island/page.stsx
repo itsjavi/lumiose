@@ -1,0 +1,12 @@
+import { Title } from "lumiose";
+import { ButtonSignals } from "../../../islands/ButtonSignals.tsx";
+
+export default function ButtonIslandPage() {
+  return (
+    <>
+      <Title>Button in an island</Title>
+      <h1>Button in an island</h1>
+      <ButtonSignals client:load />
+    </>
+  );
+}

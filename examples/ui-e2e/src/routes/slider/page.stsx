@@ -1,0 +1,122 @@
+import { Slider } from "@lumiose/ui";
+import { Title } from "lumiose";
+
+// Server-rendered, no island: each thumb is a native `<input type="range">`, so the sliders work
+// and submit without JavaScript; `<lu-slider>`'s script adds Page Up and Page Down, keeps a range's
+// thumbs in order and moves the nearest thumb on a press on the track. The form submits to this
+// page (GET), so the submitted values show in the URL. Styled with the default theme.
+export default function SliderPage() {
+  return (
+    <>
+      <Title>Slider</Title>
+      <h1>Slider</h1>
+      <form method="get" action="/slider" class="grid">
+        <section aria-labelledby="single-heading">
+          <h2 id="single-heading">One value</h2>
+          <Slider.Root name="volume" defaultValue={40} class="lu-slider">
+            <Slider.Label>Volume</Slider.Label>
+            <Slider.Value />
+            <Slider.Control>
+              <Slider.Track>
+                <Slider.Indicator />
+              </Slider.Track>
+              <Slider.Thumb />
+            </Slider.Control>
+          </Slider.Root>
+          <Slider.Root name="opacity" defaultValue={60} step={10} disabled class="lu-slider">
+            <Slider.Label>Opacity</Slider.Label>
+            <Slider.Value />
+            <Slider.Control>
+              <Slider.Track>
+                <Slider.Indicator />
+              </Slider.Track>
+              <Slider.Thumb />
+            </Slider.Control>
+          </Slider.Root>
+        </section>
+
+        <section aria-labelledby="range-heading">
+          <h2 id="range-heading">A range</h2>
+          <Slider.Root
+            name="price"
+            defaultValue={[20, 80]}
+            minStepsBetweenValues={5}
+            format={{ style: "currency", currency: "EUR", maximumFractionDigits: 0 }}
+            locale="en-US"
+            class="lu-slider"
+          >
+            <Slider.Label>Price</Slider.Label>
+            <Slider.Value />
+            <Slider.Control>
+              <Slider.Track>
+                <Slider.Indicator />
+              </Slider.Track>
+              <Slider.Thumb aria-label="Minimum price" />
+              <Slider.Thumb aria-label="Maximum price" />
+            </Slider.Control>
+          </Slider.Root>
+          <Slider.Root
+            name="hours"
+            defaultValue={[9, 17]}
+            max={24}
+            thumbCollisionBehavior="none"
+            class="lu-slider"
+          >
+            <Slider.Label>Opening hours</Slider.Label>
+            <Slider.Value />
+            <Slider.Control>
+              <Slider.Track>
+                <Slider.Indicator />
+              </Slider.Track>
+              <Slider.Thumb aria-label="Opens at" />
+              <Slider.Thumb aria-label="Closes at" />
+            </Slider.Control>
+          </Slider.Root>
+        </section>
+
+        <section aria-labelledby="vertical-heading">
+          <h2 id="vertical-heading">Vertical</h2>
+          <Slider.Root
+            name="level"
+            defaultValue={3}
+            max={10}
+            orientation="vertical"
+            class="lu-slider"
+          >
+            <Slider.Label>Level</Slider.Label>
+            <Slider.Value />
+            <Slider.Control>
+              <Slider.Track>
+                <Slider.Indicator />
+              </Slider.Track>
+              <Slider.Thumb />
+            </Slider.Control>
+          </Slider.Root>
+        </section>
+
+        <section aria-labelledby="rtl-heading" dir="rtl">
+          <h2 id="rtl-heading">Right to left</h2>
+          <Slider.Root name="balance" defaultValue={30} class="lu-slider">
+            <Slider.Label>Balance</Slider.Label>
+            <Slider.Value />
+            <Slider.Control>
+              <Slider.Track>
+                <Slider.Indicator />
+              </Slider.Track>
+              <Slider.Thumb />
+            </Slider.Control>
+          </Slider.Root>
+        </section>
+
+        <footer>
+          <button type="submit" class="lu-button" data-variant="primary">
+            Apply
+          </button>
+          <button type="reset" class="lu-button">
+            Reset
+          </button>
+        </footer>
+      </form>
+    </>
+  );
+}

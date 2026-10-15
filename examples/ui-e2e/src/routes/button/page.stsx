@@ -1,0 +1,39 @@
+import { Button } from "@lumiose/ui";
+import { Title } from "lumiose";
+
+// Server-rendered, no island: Button is a native `<button>`, and its script cancels the clicks of
+// a button disabled with `focusableWhenDisabled`. The form submits to this page (GET), so a
+// submission shows in the URL. Styled with the default theme.
+export default function ButtonPage() {
+  return (
+    <>
+      <Title>Button</Title>
+      <h1>Button</h1>
+      <form method="get" action="/button" class="grid">
+        <section aria-labelledby="buttons-heading">
+          <h2 id="buttons-heading">In a form</h2>
+          <Button class="lu-button">Preview</Button>
+          <Button type="submit" name="intent" value="save" class="lu-button" data-variant="primary">
+            Save
+          </Button>
+        </section>
+        <section aria-labelledby="disabled-heading">
+          <h2 id="disabled-heading">Disabled</h2>
+          <Button type="submit" name="intent" value="publish" disabled class="lu-button">
+            Publish
+          </Button>
+          <Button
+            type="submit"
+            name="intent"
+            value="send"
+            disabled
+            focusableWhenDisabled
+            class="lu-button"
+          >
+            Sending…
+          </Button>
+        </section>
+      </form>
+    </>
+  );
+}

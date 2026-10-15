@@ -1,0 +1,85 @@
+import { Toggle, ToggleGroup } from "@lumiose/ui";
+import { Title } from "lumiose";
+
+// Server-rendered, no island: each ToggleGroup's `<lu-toggle-group>` presses its toggles and moves
+// focus between them, with its script only. A Toggle on its own is pressed by the component, in
+// an island (/toggle/island). Styled with the default theme.
+export default function TogglePage() {
+  return (
+    <>
+      <Title>Toggle and Toggle Group</Title>
+      <h1>Toggle and Toggle Group</h1>
+      <div class="grid">
+        <section aria-labelledby="align-heading">
+          <h2 id="align-heading">One at a time</h2>
+          <ToggleGroup aria-label="Text alignment" defaultValue={["left"]} class="lu-toggle-group">
+            <Toggle value="left" class="lu-toggle">
+              Left
+            </Toggle>
+            <Toggle value="center" class="lu-toggle">
+              Center
+            </Toggle>
+            <Toggle value="right" class="lu-toggle">
+              Right
+            </Toggle>
+          </ToggleGroup>
+        </section>
+
+        <section aria-labelledby="style-heading">
+          <h2 id="style-heading">Several at a time</h2>
+          <ToggleGroup
+            aria-label="Text style"
+            multiple
+            defaultValue={["bold"]}
+            class="lu-toggle-group"
+          >
+            <Toggle value="bold" class="lu-toggle">
+              Bold
+            </Toggle>
+            <Toggle value="italic" class="lu-toggle">
+              Italic
+            </Toggle>
+            <Toggle value="underline" class="lu-toggle">
+              Underline
+            </Toggle>
+          </ToggleGroup>
+        </section>
+
+        <section aria-labelledby="view-heading">
+          <h2 id="view-heading">Vertical, no loop, one disabled</h2>
+          <ToggleGroup
+            aria-label="View"
+            orientation="vertical"
+            loopFocus={false}
+            class="lu-toggle-group"
+          >
+            <Toggle value="list" class="lu-toggle">
+              List
+            </Toggle>
+            <Toggle value="board" class="lu-toggle" disabled>
+              Board
+            </Toggle>
+            <Toggle value="grid" class="lu-toggle">
+              Grid
+            </Toggle>
+          </ToggleGroup>
+        </section>
+
+        <section aria-labelledby="rtl-heading" dir="rtl">
+          <h2 id="rtl-heading">Right to left</h2>
+          <ToggleGroup aria-label="Size" defaultValue={["s"]} class="lu-toggle-group">
+            <Toggle value="s" class="lu-toggle">
+              Small
+            </Toggle>
+            <Toggle value="m" class="lu-toggle">
+              Medium
+            </Toggle>
+            <Toggle value="l" class="lu-toggle">
+              Large
+            </Toggle>
+          </ToggleGroup>
+        </section>
+      </div>
+    </>
+  );
+}

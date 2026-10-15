@@ -1,0 +1,12 @@
+import { Title } from "lumiose";
+import { SliderSignals } from "../../../islands/SliderSignals.tsx";
+
+export default function SliderIslandPage() {
+  return (
+    <>
+      <Title>Slider in an island, bound to signals</Title>
+      <h1>Slider in an island, bound to signals</h1>
+      <SliderSignals client:load />
+    </>
+  );
+}

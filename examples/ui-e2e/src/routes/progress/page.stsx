@@ -1,0 +1,61 @@
+import { Meter, Progress } from "@lumiose/ui";
+import { Title } from "lumiose";
+
+// Server-rendered, no island and no script: Progress and Meter are native `<progress>` and
+// `<meter>`, with a label and the value as text. Styled with the default theme.
+export default function ProgressPage() {
+  return (
+    <>
+      <Title>Progress and Meter</Title>
+      <h1>Progress and Meter</h1>
+      <div class="grid">
+        <section aria-labelledby="progress-heading">
+          <h2 id="progress-heading">Progress</h2>
+          <Progress.Root value={30} class="lu-progress">
+            <Progress.Label>Uploading</Progress.Label>
+            <Progress.Value />
+            <Progress.Track />
+          </Progress.Root>
+          <Progress.Root
+            value={150}
+            min={100}
+            max={300}
+            format={{ style: "unit", unit: "megabyte" }}
+            locale="en-US"
+            getAriaValueText={(formatted) => `${formatted} of 300 MB`}
+            class="lu-progress"
+          >
+            <Progress.Label>Downloading</Progress.Label>
+            <Progress.Value />
+            <Progress.Track />
+          </Progress.Root>
+          <Progress.Root value={null} class="lu-progress">
+            <Progress.Label>Loading</Progress.Label>
+            <Progress.Track />
+          </Progress.Root>
+        </section>
+
+        <section aria-labelledby="meter-heading">
+          <h2 id="meter-heading">Meter</h2>
+          <Meter.Root value={72} class="lu-meter">
+            <Meter.Label>Storage used</Meter.Label>
+            <Meter.Value />
+            <Meter.Track low={50} high={90} optimum={0} />
+          </Meter.Root>
+          <Meter.Root
+            value={4}
+            max={5}
+            format={{ maximumFractionDigits: 0 }}
+            locale="en-US"
+            getAriaValueText={(_, value) => `${value} of 5 stars`}
+            class="lu-meter"
+          >
+            <Meter.Label>Rating</Meter.Label>
+            <Meter.Value>{(formatted) => `${formatted} / 5`}</Meter.Value>
+            <Meter.Track />
+          </Meter.Root>
+        </section>
+      </div>
+    </>
+  );
+}

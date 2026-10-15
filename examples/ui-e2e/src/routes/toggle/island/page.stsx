@@ -1,0 +1,12 @@
+import { Title } from "lumiose";
+import { ToggleSignals } from "../../../islands/ToggleSignals.tsx";
+
+export default function ToggleIslandPage() {
+  return (
+    <>
+      <Title>Toggle and Toggle Group in an island, bound to signals</Title>
+      <h1>Toggle and Toggle Group in an island, bound to signals</h1>
+      <ToggleSignals client:load />
+    </>
+  );
+}
