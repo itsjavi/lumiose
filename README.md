@@ -151,7 +151,8 @@ The docs live in [`packages/lumiose/docs/`](packages/lumiose/docs/) and ship wit
 the installed version. Read them on the [website](https://itsjavi.com/lumiose/docs/getting-started/), from the terminal
 with `lumiose docs`, or through [`llms.txt`](https://itsjavi.com/lumiose/llms.txt). Good places to start:
 [Getting started](https://itsjavi.com/lumiose/docs/getting-started/),
-[Coming from React](https://itsjavi.com/lumiose/docs/coming-from-react/) and
+[Coming from React](https://itsjavi.com/lumiose/docs/coming-from/react/) (or Next.js, React Router
+and Solid) and
 [Rendering modes](https://itsjavi.com/lumiose/docs/concepts/rendering-modes/).
 
 ## Working on Lumiose

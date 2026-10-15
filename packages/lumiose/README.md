@@ -90,8 +90,8 @@ turns components into direct DOM updates, with no virtual DOM.
 
 The docs ship inside this package, so they always match the installed version: read them in
 `node_modules/lumiose/docs`, from the terminal with `lumiose docs`, or on the
-[website](https://itsjavi.com/lumiose/docs/). Coming from React? Start with
-[Coming from React](https://itsjavi.com/lumiose/docs/coming-from-react/).
+[website](https://itsjavi.com/lumiose/docs/). Coming from React, Next.js, React Router or Solid? Start
+with the [Coming from](https://itsjavi.com/lumiose/docs/coming-from/react/) guides.
 
 ## License
 

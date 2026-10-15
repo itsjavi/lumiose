@@ -307,7 +307,7 @@ export default function Home() {
             Get started
           </LinkButton>
           <LinkButton
-            href={href("/docs/[[...path]]", { path: "coming-from-react" })}
+            href={href("/docs/[[...path]]", { path: "coming-from/react" })}
             variant="secondary"
             size="lg"
           >

@@ -17,12 +17,22 @@ lumiose docs signals --format json
 ```
 
 Every concept page has the same sections, in order: **Concept**, **API**, **Example**, **Common
-mistakes** and **Related diagnostics**. Reference pages list every export with its signature.
+mistakes** and **Related diagnostics**. Reference pages list every export with its signature. The
+Coming from guides map another framework's concepts to the current API (they are not migration
+guides) and share one outline: **Mental model**, **From _framework_ to Lumiose** (a table from its
+APIs to Lumiose's), **What has no equivalent** (and what to do instead), **Example**, **Common
+mistakes** and **Related**.
 
 ## Start here
 
 - [Getting started](getting-started.md): Create a project, configure TypeScript and Vite, and render a first component.
-- [Coming from React](coming-from-react.md): Hooks mapped to signals, what goes away (the rules of hooks, dependency arrays, stale closures, memoization) and the mistakes React habits cause.
+
+## Coming from
+
+- [React](coming-from/react.md): Hooks mapped to signals, React 19's forms and server components mapped to form actions and islands, what goes away (the rules of hooks, dependency arrays, stale closures, memoization) and the mistakes React habits cause.
+- [Next.js](coming-from/nextjs.md): The App Router mapped to Lumiose: the same route file names, server components by default, `client:*` islands instead of `"use client"`, form actions instead of server actions, metadata, caching and rendering modes.
+- [React Router](coming-from/react-router.md): Framework mode mapped to Lumiose: file routes instead of `routes.ts`, async components instead of loaders, form actions and `submit()` instead of actions and fetchers, middleware, the document and custom servers.
+- [Solid](coming-from/solid.md): The closest model, so mostly differences: signal and store APIs, props destructuring, control flow as plain JSX, async components instead of resources, `.stsx` styles, islands, and SolidStart and Solid Router mapped to file routes, endpoints and form actions.
 
 ## Concepts
 

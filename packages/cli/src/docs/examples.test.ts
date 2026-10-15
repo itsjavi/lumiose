@@ -20,6 +20,7 @@ const require = createRequire(import.meta.url);
 /** Packages the examples import, linked into the temp project. */
 const linked = {
   lumiose: join(here, "../../../lumiose"),
+  "@lumiose/adapter-node": join(here, "../../../adapter-node"),
   typescript: dirname(require.resolve("typescript/package.json")),
   vitest: dirname(require.resolve("vitest/package.json")),
 };
@@ -78,6 +79,7 @@ describe("docs examples", () => {
     roots.push(root);
     await mkdir(join(root, "node_modules"));
     for (const [name, dir] of Object.entries(linked)) {
+      await mkdir(dirname(join(root, "node_modules", name)), { recursive: true });
       await symlink(dir, join(root, "node_modules", name), "junction");
     }
     await writeFile(join(root, "tsconfig.json"), JSON.stringify(tsconfigTemplate(), null, 2));

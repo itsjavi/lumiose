@@ -26,12 +26,22 @@ lumiose docs signals --format json
 ```
 
 Every concept page has the same sections, in order: **Concept**, **API**, **Example**, **Common
-mistakes** and **Related diagnostics**. Reference pages list every export with its signature.
+mistakes** and **Related diagnostics**. Reference pages list every export with its signature. The
+Coming from guides map another framework's concepts to the current API (they are not migration
+guides) and share one outline: **Mental model**, **From _framework_ to Lumiose** (a table from its
+APIs to Lumiose's), **What has no equivalent** (and what to do instead), **Example**, **Common
+mistakes** and **Related**.
 
 ## Start here
 
 - [Getting started](getting-started.md): Create a project, configure TypeScript and Vite, and render a first component.
-- [Coming from React](coming-from-react.md): Hooks mapped to signals, what goes away (the rules of hooks, dependency arrays, stale closures, memoization) and the mistakes React habits cause.
+
+## Coming from
+
+- [React](coming-from/react.md): Hooks mapped to signals, React 19's forms and server components mapped to form actions and islands, what goes away (the rules of hooks, dependency arrays, stale closures, memoization) and the mistakes React habits cause.
+- [Next.js](coming-from/nextjs.md): The App Router mapped to Lumiose: the same route file names, server components by default, `client:*` islands instead of `"use client"`, form actions instead of server actions, metadata, caching and rendering modes.
+- [React Router](coming-from/react-router.md): Framework mode mapped to Lumiose: file routes instead of `routes.ts`, async components instead of loaders, form actions and `submit()` instead of actions and fetchers, middleware, the document and custom servers.
+- [Solid](coming-from/solid.md): The closest model, so mostly differences: signal and store APIs, props destructuring, control flow as plain JSX, async components instead of resources, `.stsx` styles, islands, and SolidStart and Solid Router mapped to file routes, endpoints and form actions.
 
 ## Concepts
 
@@ -295,13 +305,15 @@ The extension bundles the server (it runs on VS Code's own Node.js) and uses the
 - [Styles](concepts/styles.md): scoping by placement, JS values in styles and build-time math.
 - [Rendering modes](concepts/rendering-modes.md): server-first pages with islands.
 
-<!-- source: coming-from-react.md -->
+<!-- source: coming-from/react.md -->
 
 # Coming from React
 
-> Lumiose JSX reads like React, but components run once and never re-render: what changes, what goes away, and the new mistakes to avoid.
+> Lumiose JSX reads like React, but components run once and never re-render, render on the server by default, and ship JavaScript only where a page asks for it.
 
-This page maps React habits to Lumiose. The linked pages have the full rules.
+This page maps React 19 habits to Lumiose's current API. The linked pages have the full rules.
+Using a React framework too? [Coming from Next.js](nextjs.md) and
+[Coming from React Router](react-router.md) cover its side.
 
 ## Mental model
 
@@ -312,45 +324,23 @@ In Lumiose, the component body runs **once per instance**: it creates signals, e
 handlers, then returns JSX. JSX expressions that read signals compile to bindings that update
 their part of the DOM in place. When a signal changes, only the bindings, computeds and effects
 that read it run again. Local variables are ordinary variables, and a closure reads the current
-value because it calls `count()` when it runs ([Components](concepts/components.md),
-[Signals](concepts/signals.md)).
+value because it calls `count()` when it runs ([Components](../concepts/components.md),
+[Signals](../concepts/signals.md)).
 
 The exception is an **async component**: when a prop or signal read in its body changes, the body
-runs again, and signals created in the body start fresh ([Async components](concepts/async.md)).
+runs again, and signals created in the body start fresh ([Async components](../concepts/async.md)).
 
-## From React to Lumiose
+**Server first.** Every component renders on the server unless a page says otherwise, as React
+Server Components do. A page ships no JavaScript until a usage site adds a `client:*` directive
+(`<Clock client:load />` makes that one instance an [island](../concepts/islands.md)) or the route
+is an `spa` route, whose whole subtree hydrates and navigates on the client
+([Rendering modes](../concepts/rendering-modes.md)). There is no `"use client"` file boundary: the
+same component is static on one page and interactive on another.
 
-| React                                                 | Lumiose                                                                                                                                              |
-| ----------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `const [count, setCount] = useState(0)`               | `const count = signal(0)`: read `count()`, write `count.set(1)` or `count.update((n) => n + 1)`.                                                     |
-| `useReducer(reducer, init)`                           | A `store()` plus the functions that change it ([a store with actions](concepts/state.md#a-store-with-actions-zustand-style)).                        |
-| `useMemo(() => a * b, [a, b])`                        | `computed(() => a() * b())`, or a plain function `() => a() * b()` for cheap derivations.                                                            |
-| `useCallback(fn, deps)`, `React.memo(Component)`      | Not needed: functions are created once and components don't re-render.                                                                               |
-| `useEffect(fn, [deps])`                               | `effect(fn)`: it tracks what it reads. Return a cleanup, as in React.                                                                                |
-| `useEffect(fn, [])`                                   | `onMount(fn)`: runs once, untracked, after mount. It may return a cleanup.                                                                           |
-| `useLayoutEffect(fn, deps)`                           | `effect(fn)` or `onMount(fn)`: there is one kind of effect, and it runs after the DOM writes of the same flush.                                      |
-| Cleanup returned from `useEffect`, `AbortController`  | `onCleanup(fn)`, and `getAbortSignal()`, aborted when the owner is disposed or the effect re-runs.                                                   |
-| `useRef<HTMLInputElement>(null)`                      | `const input = ref<HTMLInputElement>()`, then `<input ref={input} />` and `input()?.focus()`.                                                        |
-| `useRef(value)` for a mutable value                   | A `let` variable in the component body: the body runs once.                                                                                          |
-| `<Ctx.Provider value={v}>`, `useContext(Ctx)`         | `<Ctx value={v}>`, `useContext(Ctx)`. The provider reads `value` once: provide a signal or a store for state that changes.                           |
-| `<ViewTransition>`, `startTransition` around it       | `<ViewTransition name? enter? exit?>`, and the update in `viewTransition(() => …)` ([reference](reference/components.md#viewtransition)).            |
-| `useId()`, `identifierPrefix`                         | `useId()`, and `idPrefix` on `render()` and `renderToStream()` ([useId](reference/reactivity.md#useid)).                                             |
-| `useSyncExternalStore(subscribe, get)`                | A signal set from the store's `subscribe` ([an external store](concepts/state.md#an-external-store-zustandvanilla-a-jotai-store-redux)).             |
-| Fetching in `useEffect`, TanStack Query               | An `async` component that awaits `fetchJSON()` or `query()` ([Async components](concepts/async.md)), or [`@lumiose/query`](reference/query.md).      |
-| `useTransition`, `isPending`                          | `isPending()` inside an async component, and `isBusy()` for anything in flight.                                                                      |
-| `useOptimistic(state, update)`                        | `optimistic(source)` ([Data and actions](concepts/data-and-actions.md)).                                                                             |
-| `<Suspense>`, error boundary classes                  | `<Suspense fallback={…}>` and `<ErrorBoundary fallback={(error, reset) => …}>`.                                                                      |
-| `createPortal(children, node)`                        | `<Portal mount={node}>`.                                                                                                                             |
-| `{items.map((item) => <Row key={item.id} />)}`        | The same, with `items()`. It compiles to a keyed list; `key` is optional ([JSX](concepts/jsx.md)).                                                   |
-| `className`, `htmlFor`, `style={{ fontWeight: 600 }}` | `class`, `for`, `style={{ "font-weight": 600 }}` (kebab-case keys).                                                                                  |
-| `dangerouslySetInnerHTML={{ __html: html }}`          | `innerHTML={html}`.                                                                                                                                  |
-| `onChange` on a text input (fires on every keystroke) | `onInput`, or `bind:value={signal}`. Handlers get native events, so `onChange` fires when the value is committed.                                    |
-| React Router `useBlocker`, `useLocation` effects      | `beforeNavigate((navigation) => navigation.cancel())` and `afterNavigate(fn)` from `lumiose/router` ([hooks](reference/router.md#navigation-hooks)). |
+### What goes away
 
-## What goes away
-
-- **The rules of hooks.** `signal`, `computed`, `effect` and `onCleanup` are ordinary functions:
-  call them in conditions, loops and helper functions. Nothing depends on call order.
+- **The rules of hooks.** `signal`, `computed`, `effect`, `onCleanup` and `useContext` are ordinary
+  functions: call them in conditions, loops and helper functions. Nothing depends on call order.
 - **Dependency arrays.** Effects and computeds subscribe to the signals they read, and collect them
   again on every run, so a dependency cannot be missing, and a branch that stops reading a signal
   stops depending on it.
@@ -361,27 +351,59 @@ runs again, and signals created in the body start fresh ([Async components](conc
 - **Context re-renders.** A context change does not re-render its consumers: provide a signal or a
   store, and only the code that reads it updates.
 
-## Mistakes that replace them
+## From React to Lumiose
 
-| React habit                                                 | What happens in Lumiose                                 | Instead                                                                                    |
-| ----------------------------------------------------------- | ------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
-| `const doubled = count() * 2` in the body                   | Computed once, never updates.                           | `const doubled = () => count() * 2`, or `computed` ([LUM2001](errors/LUM2001.md)).         |
-| `if (!user()) return <Login />`                             | Checked once, at setup.                                 | `{user() ? <Profile /> : <Login />}` in the JSX ([LUM2003](errors/LUM2003.md)).            |
-| `count.set(…)` in the body                                  | A write during render.                                  | Write in handlers and effects ([LUM2002](errors/LUM2002.md)).                              |
-| `effect(() => b.set(a() * 2))` to sync state                | A frame of staleness and an extra flush.                | `const b = computed(() => a() * 2)`.                                                       |
-| Reading a signal in an effect only to use its current value | The effect re-runs whenever that signal changes.        | `untrack(() => s())` or `s.peek()` reads without subscribing.                              |
-| Asserting right after a write in a test                     | Effects run after the DOM updates, not synchronously.   | Call `flush()` before asserting.                                                           |
-| `{Card({ title })}`                                         | Skips the component's owner and props handling.         | `<Card title={title} />` ([LUM2004](errors/LUM2004.md)).                                   |
-| `{children}` inserted twice                                 | The second insert moves or re-creates the nodes.        | Take a render prop such as `renderItem: () => JSX.Element` ([LUM2005](errors/LUM2005.md)). |
-| A signal created and read in an async component's body      | The read re-runs the body, which re-creates the signal. | Read it in JSX, handlers or effects ([LUM2007](errors/LUM2007.md)).                        |
-| A module-scope signal written on the server                 | Shared by every request.                                | Component state, context or `defineState` ([LUM4008](errors/LUM4008.md)).                  |
+| React                                                   | Lumiose                                                                                                                                                                                                |
+| ------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `const [count, setCount] = useState(0)`                 | `const count = signal(0)`: read `count()`, write `count.set(1)` or `count.update((n) => n + 1)`.                                                                                                       |
+| `useReducer(reducer, init)`                             | A `store()` plus the functions that change it ([a store with actions](../concepts/state.md#a-store-with-actions-zustand-style)).                                                                       |
+| `useMemo(() => a * b, [a, b])`                          | `computed(() => a() * b())`, or a plain function `() => a() * b()` for cheap derivations.                                                                                                              |
+| `useCallback(fn, deps)`, `React.memo(Component)`        | Not needed: functions are created once and components don't re-render.                                                                                                                                 |
+| `useEffect(fn, [deps])`                                 | `effect(fn)`: it tracks what it reads. Return a cleanup, as in React.                                                                                                                                  |
+| `useEffect(fn, [])`                                     | `onMount(fn)`: runs once, untracked, after mount. It may return a cleanup.                                                                                                                             |
+| `useLayoutEffect(fn, deps)`                             | `effect(fn)` or `onMount(fn)`: there is one kind of effect, and it runs after the DOM writes of the same flush.                                                                                        |
+| Cleanup returned from `useEffect`, `AbortController`    | `onCleanup(fn)`, and `getAbortSignal()`, aborted when the owner is disposed or the effect re-runs.                                                                                                     |
+| `useRef<HTMLInputElement>(null)`                        | `const input = ref<HTMLInputElement>()`, then `<input ref={input} />` and `input()?.focus()`.                                                                                                          |
+| `useRef(value)` for a mutable value                     | A `let` variable in the component body: the body runs once.                                                                                                                                            |
+| `<Ctx value={v}>` (`<Ctx.Provider>`), `useContext(Ctx)` | `<Ctx value={v}>`, `useContext(Ctx)`. The provider reads `value` once: provide a signal or a store for state that changes.                                                                             |
+| `use(Context)`                                          | `useContext(Ctx)`, which may be called in conditions too.                                                                                                                                              |
+| `use(promise)`, fetching in `useEffect`, TanStack Query | An `async` component that awaits `fetchJSON()` or `query()` ([Async components](../concepts/async.md)), or [`@lumiose/query`](../reference/query.md) for client-side polling and retries.              |
+| `<Suspense>`, error boundary classes                    | `<Suspense fallback={…}>` and `<ErrorBoundary fallback={(error, reset) => …}>`.                                                                                                                        |
+| `useTransition`, `isPending`                            | A re-run of an async component keeps the old UI until it resolves: `isPending()` inside it, and `isBusy()` for anything in flight.                                                                     |
+| Server Components                                       | Every component, on `static` and `server` routes: it may be `async` and read server-only modules (`*.server.ts`).                                                                                      |
+| `"use client"`                                          | A `client:*` directive where the component is used (`client:load`, `client:idle`, `client:visible`, …), or an `spa` route. Props must be serializable, as in React.                                    |
+| `"use server"` functions, `<form action={fn}>`          | Form actions: `export const actions = { save(ctx) {…} }` in the page and `<form method="post" action="?/save">`, which works without JavaScript ([Data and actions](../concepts/data-and-actions.md)). |
+| `useActionState(fn, initial)`                           | `actionData<typeof actions>()`, the last result of the page's actions, or the result that `await submit(event)` resolves to.                                                                           |
+| `useFormStatus()`                                       | `isSubmitting()`, or `isSubmitting("save")` for one named action.                                                                                                                                      |
+| `useOptimistic(state, update)`                          | `optimistic(source)`, with `.update(fn, submit(event))` ([optimistic updates](../concepts/data-and-actions.md)).                                                                                       |
+| `<title>`, `<meta>`, `<link>` rendered in a component   | `<Title>`, `<Meta>` and `<Head>`: the deepest wins, and they work in server components too ([Head and document](../concepts/head.md)).                                                                 |
+| `<ViewTransition>`, `startTransition` around it         | `<ViewTransition name? enter? exit?>`, and the update in `viewTransition(() => …)` ([reference](../reference/components.md#viewtransition)).                                                           |
+| `useId()`, `identifierPrefix`                           | `useId()`, and `idPrefix` on `render()` and `renderToStream()` ([useId](../reference/reactivity.md#useid)).                                                                                            |
+| `useSyncExternalStore(subscribe, get)`                  | A signal set from the store's `subscribe` ([an external store](../concepts/state.md#an-external-store-zustandvanilla-a-jotai-store-redux)).                                                            |
+| `createPortal(children, node)`                          | `<Portal mount={node}>`.                                                                                                                                                                               |
+| `createRoot(el).render(<App />)`, `hydrateRoot`         | `render(() => <App />, el)` from `lumiose/dom`; islands and `spa` routes hydrate on their own ([`lumiose/dom`](../reference/dom.md)).                                                                  |
+| `{items.map((item) => <Row key={item.id} />)}`          | The same, with `items()`. It compiles to a keyed list; `key` is optional ([JSX](../concepts/jsx.md)).                                                                                                  |
+| `className`, `htmlFor`, `style={{ fontWeight: 600 }}`   | `class`, `for`, `style={{ "font-weight": 600 }}` (kebab-case keys).                                                                                                                                    |
+| `dangerouslySetInnerHTML={{ __html: html }}`            | `innerHTML={html}`.                                                                                                                                                                                    |
+| `onChange` on a text input (fires on every keystroke)   | `onInput`, or `bind:value={signal}`. Handlers get native events, so `onChange` fires when the value is committed.                                                                                      |
+| CSS Modules, CSS-in-JS                                  | A `<style>` block in the `.stsx` file, scoped by where it is placed ([Styles](../concepts/styles.md)).                                                                                                 |
 
-Destructuring props is fine: `({ title })` compiles to reads of `props.title`, which stay reactive.
-Copying a signal's value into a variable is what freezes it.
+## What has no equivalent
+
+| React                                               | Instead                                                                                                                                                                                         |
+| --------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| React component libraries (Radix, shadcn/ui, MUI)   | No React interop. Use native elements (`<dialog>`, `popover`, `<details>`), web components (with `on:event` listeners for their custom events) or framework-agnostic libraries.                 |
+| `React.lazy()`                                      | None. Islands load their module when they hydrate, and `spa` routes load a chunk per page and layout; `<Dynamic component={…}>` renders a component chosen at runtime.                          |
+| `useDeferredValue`, transition priorities           | None: updates are fine-grained, not scheduled by priority. Debounce expensive input in the handler.                                                                                             |
+| `useActionState` per form instance                  | `actionData()` holds the page's last result. For several independent forms, keep each `await submit(event)` result in the form's own signal; this version has no per-form submission handle.    |
+| `React.Children`, `cloneElement`                    | None: `children` is lazy and inserted once. Take a render prop (`renderItem: (item) => JSX.Element`) when a component needs to render content several times.                                    |
+| Class components and lifecycle methods              | Function components; `onMount`, `onCleanup` and `effect`.                                                                                                                                       |
+| `<StrictMode>` double invocation                    | None: setup runs once by design. `lumiose check` reports the reactive mistakes that strict mode helps find in React (`LUM2xxx`).                                                                |
+| Context provided by the page, read inside an island | Islands start a new root, so page context does not reach them ([LUM4010](../errors/LUM4010.md)): pass a prop, or share scoped state with `defineState` ([Sharing state](../concepts/state.md)). |
 
 ## Example
 
-A clock that pauses, in React:
+A clock that pauses, in React 19:
 
 ```tsx
 function Clock({ label }: { label: string }) {
@@ -394,20 +416,22 @@ function Clock({ label }: { label: string }) {
     return () => clearInterval(id);
   }, [paused]);
 
-  useEffect(() => {
-    document.title = `${label}: ${new Date(now).toLocaleTimeString()}`;
-  }, [label, now]);
-
   const toggle = useCallback(() => setPaused((p) => !p), []);
-  return <button onClick={toggle}>{paused ? "Resume" : "Pause"}</button>;
+  return (
+    <>
+      <title>{`${label}: ${new Date(now).toLocaleTimeString()}`}</title>
+      <button onClick={toggle}>{paused ? "Resume" : "Pause"}</button>
+    </>
+  );
 }
 ```
 
-The same clock in Lumiose. The effects list no dependencies, and the handler needs no
-`useCallback`:
+The same clock in Lumiose. The effect lists no dependencies, the handler needs no `useCallback`,
+and the title updates in place:
 
-```tsx check
-import { effect, signal } from "lumiose";
+```tsx check file=components/Clock.tsx
+// src/components/Clock.tsx
+import { Title, effect, signal } from "lumiose";
 
 export function Clock({ label }: { label: string }) {
   const now = signal(Date.now());
@@ -420,22 +444,1100 @@ export function Clock({ label }: { label: string }) {
     return () => clearInterval(id);
   });
 
-  // Reads label (props.label) and now(): re-runs when either changes.
-  effect(() => {
-    document.title = `${label}: ${new Date(now()).toLocaleTimeString()}`;
-  });
-
-  return <button onClick={() => paused.update((p) => !p)}>{paused() ? "Resume" : "Pause"}</button>;
+  return (
+    <>
+      <Title>{`${label}: ${new Date(now()).toLocaleTimeString()}`}</Title>
+      <button onClick={() => paused.update((p) => !p)}>{paused() ? "Resume" : "Pause"}</button>
+    </>
+  );
 }
 ```
 
+On a page, the directive makes this one usage interactive; the rest of the page stays server
+HTML without JavaScript:
+
+```tsx check file=routes/clock/page.tsx
+// src/routes/clock/page.tsx
+import { Clock } from "../../components/Clock.tsx";
+
+export default function ClockPage() {
+  return (
+    <main>
+      <h1>Lunch break</h1>
+      <Clock client:load label="Lunch" />
+    </main>
+  );
+}
+```
+
+## Common mistakes
+
+| React habit                                                 | What happens in Lumiose                                 | Instead                                                                                       |
+| ----------------------------------------------------------- | ------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| `const doubled = count() * 2` in the body                   | Computed once, never updates.                           | `const doubled = () => count() * 2`, or `computed` ([LUM2001](../errors/LUM2001.md)).         |
+| `if (!user()) return <Login />`                             | Checked once, at setup.                                 | `{user() ? <Profile /> : <Login />}` in the JSX ([LUM2003](../errors/LUM2003.md)).            |
+| `count.set(…)` in the body                                  | A write during render.                                  | Write in handlers and effects ([LUM2002](../errors/LUM2002.md)).                              |
+| `effect(() => b.set(a() * 2))` to sync state                | A frame of staleness and an extra flush.                | `const b = computed(() => a() * 2)`.                                                          |
+| Reading a signal in an effect only to use its current value | The effect re-runs whenever that signal changes.        | `untrack(() => s())` or `s.peek()` reads without subscribing.                                 |
+| Asserting right after a write in a test                     | Effects run after the DOM updates, not synchronously.   | Call `flush()` before asserting.                                                              |
+| `{Card({ title })}`                                         | Skips the component's owner and props handling.         | `<Card title={title} />` ([LUM2004](../errors/LUM2004.md)).                                   |
+| `{children}` inserted twice                                 | The second insert moves or re-creates the nodes.        | Take a render prop such as `renderItem: () => JSX.Element` ([LUM2005](../errors/LUM2005.md)). |
+| A signal created and read in an async component's body      | The read re-runs the body, which re-creates the signal. | Read it in JSX, handlers or effects ([LUM2007](../errors/LUM2007.md)).                        |
+| A module-scope signal written on the server                 | Shared by every request.                                | Component state, context or `defineState` ([LUM4008](../errors/LUM4008.md)).                  |
+| An interactive component on a page without `client:*`       | It renders on the server, and its handlers never run.   | Add a directive at the usage site, or make the route `spa`.                                   |
+| Passing a function or a class instance to an island         | Island props are serialized into the page.              | Pass plain data, and keep handlers inside the island ([LUM4002](../errors/LUM4002.md)).       |
+| Setting `document.title` in an effect                       | It fights with `<Title>`.                               | Render `<Title>`.                                                                             |
+
+Destructuring props is fine: `({ title })` compiles to reads of `props.title`, which stay reactive.
+Copying a signal's value into a variable is what freezes it.
+
 ## Related
 
-- [Components](concepts/components.md): setup once, props, children and refs.
-- [Signals and reactivity](concepts/signals.md): `signal`, `computed`, `effect`, owners and scheduling.
-- [JSX](concepts/jsx.md): bindings, compiled `.map()` and ternaries, and the React prop names that differ.
-- [Sharing state](concepts/state.md): context, `defineState`, and what replaces Jotai, Zustand and Valtio.
-- [Async components](concepts/async.md): data loading, re-runs, `<Suspense>` and `isPending()`.
+- [Components](../concepts/components.md): setup once, props, children and refs.
+- [Signals and reactivity](../concepts/signals.md): `signal`, `computed`, `effect`, owners and scheduling.
+- [JSX](../concepts/jsx.md): bindings, compiled `.map()` and ternaries, and the React prop names that differ.
+- [Islands](../concepts/islands.md): `client:*` directives, serializable props and slots.
+- [Sharing state](../concepts/state.md): context, `defineState`, and what replaces Jotai, Zustand and Valtio.
+- [Async components](../concepts/async.md): data loading, re-runs, `<Suspense>` and `isPending()`.
+- [Data and actions](../concepts/data-and-actions.md): form actions, `submit()`, `actionData()` and `optimistic()`.
+
+<!-- source: coming-from/nextjs.md -->
+
+# Coming from Next.js
+
+> The Next.js App Router mapped to Lumiose: the same route file names, server components by default, `client:*` islands instead of `"use client"`, form actions instead of server actions, head components instead of metadata, and rendering modes instead of caching rules.
+
+This page maps the Next.js App Router (Next.js 16) to Lumiose's current API. For components and
+hooks, read [Coming from React](react.md) first; this page covers the framework.
+
+## Mental model
+
+**The files look the same.** Lumiose's routes follow the App Router names: a folder under
+`src/routes` is a URL segment, and `page`, `layout`, `route`, `error` and `not-found` files give it
+behavior, with `[slug]`, `[...slug]`, `[[...slug]]`, `(group)` and `_private` folders
+([Routing](../concepts/routing.md)). The Next.js files Lumiose does not have (`loading`,
+`template`, `default`, `global-error`, `@slot` and `(.)` folders) are errors
+([LUM5002](../errors/LUM5002.md)), so they never silently do nothing.
+
+**Components are server components by default.** On `static` and `server` routes every component
+renders on the server, may be `async`, and ships no JavaScript. Instead of a `"use client"` file
+boundary, the page that uses a component decides: `<LikeButton client:visible />` makes that one
+instance an [island](../concepts/islands.md) that hydrates in the browser, and the same component
+stays static elsewhere. Children passed to an island render on the server and stay there, as
+server components passed to a client component do. An `spa` route hydrates its whole subtree and
+navigates on the client.
+
+**The rendering mode is explicit, per route.** Next.js decides between static and dynamic rendering
+from what a page reads, and caching rules decide how long results live. In Lumiose a route says
+`export const mode = "static" | "server" | "spa"` (or inherits it from a layout or the project).
+`static` is the default: built once, served as files. A `static` page that reads the request fails
+the build ([LUM5001](../errors/LUM5001.md)) instead of turning dynamic
+([Rendering modes](../concepts/rendering-modes.md)).
+
+**No RPC.** Server actions are functions the client calls. Lumiose has form actions: a page exports
+`actions`, a `<form method="post" action="?/name">` posts to one and works without JavaScript, and
+`submit()` posts it from an island. Other calls from the browser go to endpoints (`route.ts`)
+([Data and actions](../concepts/data-and-actions.md)).
+
+**Caching is per request and per page.** `fetchJSON()` and `query()` dedupe the same URL or key
+within a request on the server, and cache it for the page in the browser (stale-while-revalidate).
+There is no data cache shared across requests and no incremental regeneration: for fresh-but-cheap
+pages, render on the `server` and send `cache-control` headers to a CDN.
+
+## From Next.js to Lumiose
+
+### Routes and files
+
+| Next.js                                                            | Lumiose                                                                                                                                                     |
+| ------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `app/`                                                             | `src/routes/`.                                                                                                                                              |
+| `page.tsx`, `layout.tsx`, `route.ts`, `not-found.tsx`, `error.tsx` | The same names, as `.stsx` (with styles) or `.tsx`; `route.ts` for endpoints.                                                                               |
+| `[slug]`, `[...slug]`, `[[...slug]]`, `(group)`, `_folder`         | The same, plus `[[slug]]` for one optional segment.                                                                                                         |
+| `PageProps<"/blog/[slug]">`, `await params`                        | `PageProps<"/blog/[slug]">` and `LayoutProps<"/blog">` from `lumiose`; `params` is a plain object.                                                          |
+| `searchParams` page prop                                           | `url().searchParams` on `server` routes; `searchParams()` from `lumiose/router` in islands and `spa` routes.                                                |
+| Root `layout.tsx` with `<html>` and `<body>`                       | `src/document.stsx` owns `<html>`, `<head>` and `<body>` (optional); `src/routes/layout.stsx` wraps the pages.                                              |
+| `loading.tsx`                                                      | `<Suspense fallback>` in the page or layout: on `server` routes, the content inside streams after the shell.                                                |
+| `error.tsx`                                                        | `error.stsx`, a page rendered with `{ status, error }` inside its folder's layouts. For a retry in place, `<ErrorBoundary fallback={(error, reset) => …}>`. |
+| `not-found.tsx`, `notFound()`                                      | `not-found.stsx` (the nearest wins), `notFound()`.                                                                                                          |
+| `global-error.tsx`                                                 | The root `error.stsx`: when a layout itself fails, it renders without layouts.                                                                              |
+| `generateStaticParams()`                                           | `staticPaths()`, returning `[{ params: { slug } }]`.                                                                                                        |
+| Typed routes, `` `/blog/${slug}` `` in `<Link href>`               | `href("/blog/[slug]", { slug })`, type-checked against the routes.                                                                                          |
+
+### Components and data
+
+| Next.js                                                  | Lumiose                                                                                                                                            |
+| -------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Server components, `async` components                    | Every component on `static` and `server` routes. Async components also work in islands and `spa` routes, in the browser.                           |
+| `"use client"`                                           | A `client:*` directive at the usage site: `client:load`, `client:idle`, `client:visible`, `client:media`; or an `spa` route.                       |
+| `dynamic(() => import(…), { ssr: false })`               | `client:only`: rendered in the browser only.                                                                                                       |
+| Serializable props of client components                  | The same rule for island props, which also accept `Date`, `Map`, `Set`, `URL` and `BigInt` ([LUM4002](../errors/LUM4002.md)).                      |
+| `import "server-only"`                                   | `*.server.ts` modules or `src/server/`: importing them from browser code is [LUM4003](../errors/LUM4003.md).                                       |
+| `fetch()` in a server component, `React.cache()`         | `await fetchJSON(url)` or `await query(key, fn)` in the component: one request per URL or key per request; same-origin URLs are served in-process. |
+| `"use cache"`, `cacheLife`, `cacheTag`, `unstable_cache` | No cross-request data cache: the request cache above, `cache-control` headers for a CDN, or a cache of your own in a server module.                |
+| `revalidateTag(tag)`, `updateTag(tag)`                   | In the browser, `invalidate(["tag"])` refetches the `query()` entries whose key starts with it.                                                    |
+| `revalidatePath(path)`, `router.refresh()`               | `invalidate()`: re-runs the page's async components on `spa` routes, reloads `static` and `server` pages.                                          |
+| `cookies()`, `headers()` (async)                         | `cookies()` and `request().headers` (synchronous), on `server` routes and in middleware, endpoints and actions.                                    |
+| `after(fn)`                                              | `ctx.platform.waitUntil(promise)`.                                                                                                                 |
+| `process.env.SECRET`, `NEXT_PUBLIC_*`                    | `env("SECRET")` in server code; `import.meta.env.PUBLIC_*` in browser code.                                                                        |
+
+### Mutations
+
+| Next.js                                         | Lumiose                                                                                                                                                   |
+| ----------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `"use server"` and `<form action={createPost}>` | `export const actions = { create(ctx) {…} }` and `<form method="post" action="?/create">`, which works without JavaScript.                                |
+| A server action called from a client component  | `submit(target, { action: "/posts?/create" })` from an island (a form, a submit event, `FormData` or a record), or an endpoint called with `fetchJSON()`. |
+| `useActionState(action, initial)`               | `actionData<typeof actions>()`, or the result that `await submit(event)` resolves to.                                                                     |
+| `useFormStatus()`                               | `isSubmitting()`, or `isSubmitting("create")` for one action.                                                                                             |
+| `useOptimistic()`                               | `optimistic(source)` with `.update(fn, submit(event))`.                                                                                                   |
+| `redirect()` in a server action                 | `redirect(to)` in the action: 303 after a POST.                                                                                                           |
+| Returning validation errors from an action      | `return fail(400, { errors })`: the page re-renders with that status, and `actionData()` holds the errors.                                                |
+
+### Server and head
+
+| Next.js                                                           | Lumiose                                                                                                                                                                                                                         |
+| ----------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Route handlers: `GET(request, { params })`, `NextResponse.json()` | `export const GET: Endpoint<"/api/posts/[id]"> = (ctx) => Response`, with `ctx.request`, `ctx.params`, `ctx.url`, `ctx.cookies`; `Response.json()`.                                                                             |
+| `middleware.ts` (`proxy.ts` in Next.js 16)                        | `src/middleware.ts`: `(ctx, next) => Response`. `NextResponse.next()` is `next()`; request data goes on `ctx.locals`.                                                                                                           |
+| `config.matcher`                                                  | A check of `ctx.url.pathname` in the middleware.                                                                                                                                                                                |
+| `metadata`, `generateMetadata()`                                  | `<Title>`, `<Meta>` and `<Head>` rendered by the page or layout; an async page awaits its data first. The deepest wins ([Head and document](../concepts/head.md)).                                                              |
+| `generateViewport()`                                              | `<Meta name="viewport" … />`, or the tag in `document.stsx`.                                                                                                                                                                    |
+| `sitemap.ts`, `robots.ts`                                         | Endpoints: `sitemap.xml/route.ts`, `robots.txt/route.ts`, written at build time on `static` routes.                                                                                                                             |
+| `next/script`                                                     | `<Head><script src="…" async /></Head>`; under a strict CSP, see [Security](../concepts/security.md).                                                                                                                           |
+| `next/font`                                                       | `@font-face` in a `<style global>` block, with the font files in `public/`.                                                                                                                                                     |
+| `next/image`                                                      | No image component: `import photo from "./photo.jpg"` gives the fingerprinted URL; write `<img>` with `width`, `height`, `loading="lazy"` and `srcset`. Vite plugins that resize images at build time work in `vite.config.ts`. |
+| `next.config`: `headers()`, `basePath`, `trailingSlash`, `i18n`   | `lumiose({ headers, trailingSlash, i18n })` and Vite's `base`, in `vite.config.ts`. Redirects go in middleware.                                                                                                                 |
+
+### Navigation
+
+| Next.js                                                              | Lumiose                                                                                                                                                              |
+| -------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `next/link`                                                          | `<a href={href(…)}>`, or `<Link href prefetch>` from `lumiose/router`. MPA pages prefetch on hover by default; `prefetch="viewport"` matches Next.js.                |
+| Client-side navigation between pages                                 | On `spa` routes, with persistent layouts. `static` and `server` pages load the next document, with optional View Transitions (`lumiose({ viewTransitions: true })`). |
+| `useRouter().push(href)`, `.replace(href)`                           | `navigate(href)`, `navigate(href, { replace: true })` from `lumiose/router`.                                                                                         |
+| `usePathname()`, `useSearchParams()`, `useParams()`                  | `url().pathname`, `searchParams()` (and `searchParams.set()`), `params()` from `lumiose/router`.                                                                     |
+| `useSelectedLayoutSegment()`                                         | `route()`, the matched pattern: `route() === "/blog/[slug]"`.                                                                                                        |
+| `redirect()`, `permanentRedirect()`, `forbidden()`, `unauthorized()` | `redirect(to)`, `redirect(to, 308)`, `error(403)`, `error(401)`.                                                                                                     |
+
+### Rendering and deployment
+
+| Next.js                                        | Lumiose                                                                                                                                                               |
+| ---------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Static rendering, `dynamic = "force-static"`   | `mode = "static"`, the default.                                                                                                                                       |
+| Dynamic rendering, `dynamic = "force-dynamic"` | `export const mode = "server"`.                                                                                                                                       |
+| Partial prerendering, Cache Components         | `server` + `<Suspense>`, or `static` + islands that call an endpoint ([Close to partial prerendering](../concepts/rendering-modes.md#close-to-partial-prerendering)). |
+| `output: "export"`                             | Every route prerendered: the build writes no `dist/server`, and any static host serves `dist/client` ([Static hosts](../deploy/static.md)).                           |
+| `output: "standalone"`, `next start`           | `dist/server/entry.js`, served by `@lumiose/adapter-node` (`createServer()`) or `lumiose preview`.                                                                    |
+| Vercel, Netlify, Cloudflare (OpenNext)         | `lumiose({ adapter: vercel() })`, `netlify()` or `cloudflare()` ([Deploy](../deploy/README.md)).                                                                      |
+
+## What has no equivalent
+
+| Next.js                                                             | Instead                                                                                                                                                                                                                                             |
+| ------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Parallel routes (`@slot`, `default.tsx`)                            | Render the parts as components of one layout or page; branch on `route()` or a search param for conditional areas.                                                                                                                                  |
+| Intercepting routes (`(.)photo`), route modals                      | A `<dialog>` in an island, with the open item in `searchParams()`; or an `spa` route whose layout keeps the list mounted while the detail page renders.                                                                                             |
+| ISR (`revalidate`), on-demand revalidation on the server            | Rebuild `static` pages, or render on the `server` and set `cache-control: s-maxage=…, stale-while-revalidate=…` for a CDN.                                                                                                                          |
+| A prebuilt shell with per-request holes (PPR)                       | The two patterns in [Close to partial prerendering](../concepts/rendering-modes.md#close-to-partial-prerendering).                                                                                                                                  |
+| `template.tsx`                                                      | None: page state resets on every navigation, and `spa` layouts keep theirs by design.                                                                                                                                                               |
+| Middleware rewrites                                                 | None: redirect instead, or render the same component from both routes.                                                                                                                                                                              |
+| Middleware scoped to a folder                                       | This version has no folder-scoped middleware: the one `src/middleware.ts` checks `ctx.url.pathname`.                                                                                                                                                |
+| `instrumentation.ts`, `onRequestError`, `instrumentation-client.ts` | This version has no instrumentation files. Unexpected server errors go to `console.error`; when you serve `dist/server/entry.js` yourself, `createHandler({ onError })` receives them ([server build](../reference/server-entry.md#createhandler)). |
+| Image optimization, `next/font` optimization                        | None built in: see the `next/image` and `next/font` rows above.                                                                                                                                                                                     |
+| Generated images (`opengraph-image.tsx`, `icon.tsx`)                | Static files in `public/`, or an endpoint that returns the image.                                                                                                                                                                                   |
+| `forbidden.tsx`, `unauthorized.tsx`                                 | `error(403)` and `error(401)` render `error.stsx`, which reads `status`.                                                                                                                                                                            |
+| Draft mode                                                          | A `server` route that reads a preview cookie.                                                                                                                                                                                                       |
+| A custom server running `next dev`                                  | This version has no dev handler for custom servers: develop with `lumiose dev`, and run your server against the build.                                                                                                                              |
+| React component libraries                                           | No React interop: native elements, web components or framework-agnostic libraries (see [Coming from React](react.md)).                                                                                                                              |
+
+## Example
+
+A blog post in Next.js: a server component, a streamed part, a client component and a server
+action.
+
+```tsx
+// app/articles/[slug]/page.tsx
+import { notFound, redirect } from "next/navigation";
+import { Suspense } from "react";
+import { addComment, getComments, getPost } from "@/lib/posts";
+import { Reactions } from "@/components/reactions"; // "use client" inside
+
+export async function generateMetadata({ params }: PageProps<"/articles/[slug]">) {
+  const post = await getPost((await params).slug);
+  return { title: post?.title };
+}
+
+export default async function Article({ params }: PageProps<"/articles/[slug]">) {
+  const { slug } = await params;
+  const post = await getPost(slug);
+  if (!post) notFound();
+
+  async function comment(formData: FormData) {
+    "use server";
+    await addComment(slug, String(formData.get("text") ?? ""));
+    redirect(`/articles/${slug}`);
+  }
+
+  return (
+    <article>
+      <h1>{post.title}</h1>
+      <p>{post.body}</p>
+      <Reactions initial={post.likes} />
+      <Suspense fallback={<p>Loading comments…</p>}>
+        <Comments slug={slug} />
+      </Suspense>
+      <form action={comment}>
+        <textarea name="text" />
+        <button>Comment</button>
+      </form>
+    </article>
+  );
+}
+
+async function Comments({ slug }: { slug: string }) {
+  const comments = await getComments(slug);
+  return (
+    <ul>
+      {comments.map((c) => (
+        <li key={c.id}>{c.text}</li>
+      ))}
+    </ul>
+  );
+}
+```
+
+The same page in Lumiose. The data module stays on the server:
+
+```ts check file=lib/articles.server.ts
+// src/lib/articles.server.ts: a database in a real app
+interface Comment {
+  id: number;
+  text: string;
+}
+
+const articles = new Map([
+  ["hello", { title: "Hello", body: "The first post.", likes: 3, comments: [] as Comment[] }],
+]);
+
+export async function getArticle(slug: string) {
+  return articles.get(slug);
+}
+
+export async function getComments(slug: string) {
+  await new Promise((resolve) => setTimeout(resolve, 300)); // a slow query
+  return articles.get(slug)?.comments ?? [];
+}
+
+export async function addComment(slug: string, text: string) {
+  articles.get(slug)?.comments.push({ id: Date.now(), text });
+}
+```
+
+The interactive part has no directive in its file:
+
+```tsx check file=components/Reactions.tsx
+// src/components/Reactions.tsx
+import { signal } from "lumiose";
+
+export function Reactions(props: { initial: number }) {
+  const likes = signal(props.initial);
+  return <button onClick={() => likes.update((n) => n + 1)}>Like ({likes()})</button>;
+}
+```
+
+The page renders on the server per request, sends its shell (title, article, form) at once and
+streams the comments in. `client:visible` hydrates the button when it scrolls into view. The form
+posts to the `comment` action and works without JavaScript:
+
+```stsx check file=routes/articles/[slug]/page.stsx
+// src/routes/articles/[slug]/page.stsx
+import { Suspense, Title, href, notFound, redirect, type ActionContext, type PageProps } from "lumiose";
+import { Reactions } from "../../../components/Reactions.tsx";
+import { addComment, getArticle, getComments } from "../../../lib/articles.server.ts";
+
+export const mode = "server";
+
+export const actions = {
+  async comment(ctx: ActionContext<"/articles/[slug]">) {
+    const text = String((await ctx.formData()).get("text") ?? "").trim();
+    if (text !== "") await addComment(ctx.params.slug, text);
+    redirect(href("/articles/[slug]", { slug: ctx.params.slug }));
+  },
+};
+
+async function Comments(props: { slug: string }) {
+  const comments = await getComments(props.slug);
+  return (
+    <ul>
+      {comments.map((comment) => (
+        <li key={comment.id}>{comment.text}</li>
+      ))}
+    </ul>
+  );
+}
+
+export default async function Article({ params }: PageProps<"/articles/[slug]">) {
+  const article = (await getArticle(params.slug)) ?? notFound();
+  return (
+    <article>
+      <Title>{article.title}</Title>
+      <h1>{article.title}</h1>
+      <p>{article.body}</p>
+      <Reactions client:visible initial={article.likes} />
+      <Suspense fallback={<p>Loading comments…</p>}>
+        <Comments slug={params.slug} />
+      </Suspense>
+      <form method="post" action="?/comment">
+        <textarea name="text" />
+        <button>Comment</button>
+      </form>
+    </article>
+  );
+}
+```
+
+A static page per slug, where Next.js uses `generateStaticParams()` and `generateMetadata()`.
+`static` is the default mode, so the page needs no `mode` export:
+
+```tsx check file=routes/handbook/[slug]/page.tsx
+// src/routes/handbook/[slug]/page.tsx: built once per slug, served as files
+import { Meta, Title, notFound, type PageProps } from "lumiose";
+
+const chapters = new Map([
+  ["intro", { title: "Introduction", summary: "Why the handbook exists." }],
+  ["setup", { title: "Setup", summary: "Install and configure the tools." }],
+]);
+
+async function getChapter(slug: string) {
+  return chapters.get(slug); // a CMS or the file system in a real site
+}
+
+export function staticPaths() {
+  return [...chapters.keys()].map((slug) => ({ params: { slug } }));
+}
+
+export default async function Chapter({ params }: PageProps<"/handbook/[slug]">) {
+  const chapter = (await getChapter(params.slug)) ?? notFound();
+  return (
+    <main>
+      <Title>{chapter.title}</Title>
+      <Meta name="description" content={chapter.summary} />
+      <h1>{chapter.title}</h1>
+    </main>
+  );
+}
+```
+
+`app/sitemap.ts` becomes an endpoint, written to `dist/client/sitemap.xml` at build time:
+
+```ts check file=routes/sitemap.xml/route.ts
+// src/routes/sitemap.xml/route.ts
+import { href, type Endpoint } from "lumiose";
+
+const site = "https://example.com";
+
+export const GET: Endpoint<"/sitemap.xml"> = () => {
+  const urls = ["intro", "setup"].map(
+    (slug) => `<url><loc>${site}${href("/handbook/[slug]", { slug })}</loc></url>`,
+  );
+  return new Response(
+    `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${urls.join("")}</urlset>`,
+    { headers: { "content-type": "application/xml" } },
+  );
+};
+```
+
+`middleware.ts` (`proxy.ts`) becomes `src/middleware.ts`, without a `matcher`:
+
+```ts check
+// src/middleware.ts
+import type { Middleware } from "lumiose";
+
+const middleware: Middleware = async (ctx, next) => {
+  if (ctx.url.pathname.startsWith("/dashboard") && ctx.cookies.get("session") === undefined) {
+    return Response.redirect(new URL("/login", ctx.url), 307);
+  }
+  const response = await next();
+  response.headers.set("x-frame-options", "DENY");
+  return response;
+};
+
+export default middleware;
+```
+
+## Common mistakes
+
+- **`"use client"` at the top of a file.** It does nothing: the component still renders on the
+  server only. Add a `client:*` directive where the page uses it.
+- **Reading cookies or `searchParams` on a `static` page.** Next.js would switch the page to
+  dynamic rendering; Lumiose stops the build with [LUM5001](../errors/LUM5001.md). Set
+  `export const mode = "server"`.
+- **Guarding a `static` page in middleware.** Prerendered pages are files in production, served
+  without running middleware (it runs for them at build time). Pages behind a sign-in are `server`
+  or `spa` routes.
+- **`loading.tsx`, `@modal` or `(.)photo`.** They are [LUM5002](../errors/LUM5002.md) errors. Use
+  `<Suspense>`, components in the layout, and a dialog or an `spa` route.
+- **`export const metadata`.** Nothing reads it. Render `<Title>` and `<Meta>`.
+- **`<html>` and `<body>` in the root layout.** They belong in `src/document.stsx`; a layout
+  renders inside `<body>`.
+- **Importing a server action into an island.** There are no server functions: importing a
+  `*.server.ts` module from browser code is [LUM4003](../errors/LUM4003.md). Post to a form action
+  with `submit()`, or call an endpoint.
+- **Expecting `fetch` results to be cached across requests.** The cache lives for one request on
+  the server. Cache with HTTP headers, or keep the page `static`.
+- **`await params`.** It works, but `params` is a plain object; read `params.slug` directly.
+- **`NEXT_PUBLIC_` variables.** Browser code sees `import.meta.env.PUBLIC_*` only.
+
+## Related
+
+- [Routing](../concepts/routing.md): file routes, layouts, params, error pages and typed `href()`.
+- [Islands](../concepts/islands.md): `client:*` directives, serializable props and slots.
+- [Rendering modes](../concepts/rendering-modes.md): `static`, `server` and `spa` routes, streaming and the build.
+- [Data and actions](../concepts/data-and-actions.md): endpoints, form actions, `submit()` and `invalidate()`.
+- [Async components](../concepts/async.md): server and client async components and the request cache.
+- [Head and document](../concepts/head.md): `<Title>`, `<Meta>`, `<Head>` and `document.stsx`.
+- [Server](../concepts/server.md): middleware, cookies, env and redirects.
+- [Deploy](../deploy/README.md): Node, Docker, Vercel, Netlify, Cloudflare and static hosts.
+- [Coming from React](react.md): hooks, components and JSX.
+
+<!-- source: coming-from/react-router.md -->
+
+# Coming from React Router
+
+> React Router 7's framework mode mapped to Lumiose: file routes instead of `routes.ts`, async components instead of loaders, form actions and `submit()` instead of actions and fetchers, middleware, the document and custom servers.
+
+This page maps React Router 7 in framework mode (the successor of Remix) to Lumiose's current API.
+For components and hooks, read [Coming from React](react.md) first; this page covers the framework.
+
+## Mental model
+
+**Data lives in components, not in route modules.** A React Router route module exports a
+`loader` that runs before the route renders, and the component reads `loaderData`. Lumiose has no
+loaders: the page component is `async` and awaits its data where it uses it, on
+every rendering mode. Components that await the same `fetchJSON()` URL or `query()` key share one
+request, so a layout and a page, or two widgets, can each await what they need
+([Async components](../concepts/async.md)).
+
+**Actions are the familiar part.** A page exports `action` (or named `actions`), which receives the
+request's `FormData` and returns data, `fail(status, data)` or a redirect. A plain
+`<form method="post">` posts to it and works without JavaScript; `onSubmit={submit}` posts it
+without a page load ([Data and actions](../concepts/data-and-actions.md)).
+
+**Navigation is a choice per route.** React Router hydrates the whole app and navigates on the
+client. In Lumiose, `static` and `server` routes are pages that ship no JavaScript except their
+islands, and links load the next document (prefetched on hover, with optional View Transitions).
+An `spa` route is the React Router experience: rendered on the server, hydrated, client-side
+navigation with persistent layouts ([Rendering modes](../concepts/rendering-modes.md)). Most apps
+mix them: `static` marketing pages, `server` account pages, an `spa` dashboard.
+
+**Routes are files only.** There is no `routes.ts` and no route config in code: a
+folder under `src/routes` is a URL segment, and `page`, `layout`, `route`, `error` and
+`not-found` files give it behavior ([Routing](../concepts/routing.md)).
+
+## From React Router to Lumiose
+
+### Routes and types
+
+| React Router                                                      | Lumiose                                                                                                                                                |
+| ----------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `app/routes.ts` with `route()`, `index()`, `layout()`, `prefix()` | Folders under `src/routes`; `lumiose routes` lists what the router sees.                                                                               |
+| `index("routes/home.tsx")`, `_index.tsx`                          | `src/routes/page.stsx`; `about/page.stsx` for `/about`.                                                                                                |
+| `:id`, `:lang?`, `*` (`params["*"]`)                              | `[id]`, `[[lang]]`, `[...rest]` (one or more segments) or `[[...rest]]` (zero or more), read as `params.rest`.                                         |
+| `layout("routes/auth.tsx", [...])`, pathless `_auth.tsx`          | A group folder with a layout: `(auth)/layout.stsx`.                                                                                                    |
+| `<Outlet />`                                                      | `props.children` in a layout.                                                                                                                          |
+| Resource routes (a `loader` or `action` without a component)      | `route.ts` endpoints that export `GET`, `POST`, … as `(ctx) => Response`.                                                                              |
+| `import type { Route } from "./+types/page"`                      | `PageProps<"/projects/[id]">`, `LayoutProps<"/projects">`, `ActionContext<"/projects/[id]">` and `Endpoint<"/api/x">`, generated by `lumiose typegen`. |
+| `href("/projects/:id", { id })`                                   | `href("/projects/[id]", { id })`, type-checked against the routes.                                                                                     |
+
+### Data
+
+| React Router                                          | Lumiose                                                                                                               |
+| ----------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| `loader` and `useLoaderData()`                        | An `async` page component that awaits its data; server-only code lives in `*.server.ts` modules or `src/server/`.     |
+| `clientLoader`                                        | On `spa` routes the page component also runs in the browser: await `fetchJSON()` of an endpoint, or `query(key, fn)`. |
+| Promises returned from a loader, `<Await>`            | An async component inside `<Suspense fallback>`: on `server` routes it streams after the shell.                       |
+| `useRouteLoaderData()`, data from a parent route      | Await the same `fetchJSON()` URL or `query()` key again (one request per page), or provide a context from the layout. |
+| `data(value, { status, headers })` from a loader      | `response().setStatus()` and `response().setHeader()` in the page, or a `headers(ctx)` export.                        |
+| `throw data(…, { status: 404 })`, `throw redirect(…)` | `notFound()`, `error(status)` and `redirect(to)`, which throw ([Server](../concepts/server.md)).                      |
+| `useRevalidator().revalidate()`                       | `invalidate()`; `invalidate("/api/x", ["key"])` refetches only those entries.                                         |
+| `shouldRevalidate`                                    | Choose what refetches: `submit(form, { invalidate: ["/api/x"] })`, or `{ invalidate: false }`.                        |
+
+### Mutations
+
+| React Router                                                         | Lumiose                                                                                                                                |
+| -------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| `action` and `useActionData()`                                       | `export const action`, or `export const actions = { name }`, and `actionData<typeof actions>()`.                                       |
+| `<Form method="post">`                                               | `<form method="post">`, which works without JavaScript; `onSubmit={submit}` in an island or `spa` route posts it without a page load.  |
+| An `intent` field to tell submissions apart                          | Named actions: `action="?/archive"` on the form, or `formaction="?/archive"` on its button.                                            |
+| `clientAction`                                                       | An `onSubmit` handler in an island or `spa` route: run browser code, then `await submit(event)`.                                       |
+| `useSubmit()`                                                        | `submit(target, { action, method })`: a form, a submit event, `FormData`, `URLSearchParams` or a record.                               |
+| `useFetcher()`: `fetcher.submit()`, `<fetcher.Form>`, `fetcher.data` | `submit(target, { action: "?/name" })`, which never navigates unless the action redirects, and resolves with `{ type, status, data }`. |
+| `fetcher.load(href)`                                                 | An async component that awaits `fetchJSON(href)`; `invalidate(href)` loads it again.                                                   |
+| `useNavigation().state`, `fetcher.state`                             | `isNavigating()` (`lumiose/router`), `isSubmitting(name?)`, and `isBusy()` for anything in flight.                                     |
+| Optimistic UI from `fetcher.formData`                                | `optimistic(source)` with `.update(fn, submit(event))`.                                                                                |
+| `createCookieSessionStorage()`, `createCookie()`                     | `cookies` and `signedCookie(name)` ([Server](../concepts/server.md)).                                                                  |
+
+### Server, document and rendering
+
+| React Router                                                                | Lumiose                                                                                                                                                           |
+| --------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `middleware` export and `context.set()` / `context.get()`                   | `src/middleware.ts`, one for the app: `(ctx, next) => Response`, with request data on `ctx.locals` (typed by augmenting `Locals`), read in pages with `locals()`. |
+| `getLoadContext()`, `AppLoadContext`                                        | `ctx.platform` (the host's bindings, `waitUntil()`, the client address) and `env(name)`.                                                                          |
+| `root.tsx`: `<Meta />`, `<Links />`, `<Scripts />`, `<ScrollRestoration />` | `src/document.stsx` renders `{props.head}` and `{props.body}`; stylesheets, scripts and scroll restoration are built in.                                          |
+| `meta` and `links` exports                                                  | `<Title>`, `<Meta>` and `<Head>` in any component ([Head and document](../concepts/head.md)).                                                                     |
+| `headers` export                                                            | `headers(ctx)` export, `response().setHeader()`, middleware, or `lumiose({ headers })` for every page.                                                            |
+| `ErrorBoundary` export, `isRouteErrorResponse()`                            | `error.stsx` and `not-found.stsx` (the nearest wins, with `{ status, error }`), and `<ErrorBoundary>` for an error in place.                                      |
+| `HydrateFallback`                                                           | `<Suspense fallback>`, or the shell of an `ssr = false` route.                                                                                                    |
+| `entry.server.tsx`: `handleRequest`, streaming                              | No file: the handler streams the shell, then `<Suspense>` boundaries; headers go in middleware.                                                                   |
+| `entry.client.tsx`: `hydrateRoot`                                           | No file: the island loader and the SPA entry hydrate.                                                                                                             |
+| `ssr: false` (SPA mode)                                                     | `lumiose({ mode: "spa", ssr: false })`, or `export const ssr = false` on an `spa` route.                                                                          |
+| `prerender: [...]`                                                          | `static` routes (the default) with `staticPaths()` for params, and `export const prerender = true` on `spa` pages.                                                |
+| `react-router-serve`                                                        | `@lumiose/adapter-node`'s `createServer()`, or `lumiose preview`; other hosts in [Deploy](../deploy/README.md).                                                   |
+| Custom server: `createRequestHandler()` from `@react-router/express`        | `createHandler()` from `@lumiose/adapter-node`, a request listener or Express middleware; or `dist/server/entry.js`'s `fetch(request)`.                           |
+
+### Navigation
+
+| React Router               | Lumiose                                                                                                              |
+| -------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| `<Link to>`, `<NavLink>`   | `<a href={href(…)}>` or `<Link href>` from `lumiose/router`; `<Link>` sets `aria-current="page"` on the active link. |
+| `<Link prefetch="intent">` | `<Link prefetch="hover">`, the default; MPA pages prefetch through speculation rules.                                |
+| `useNavigate()`            | `navigate(href, { replace })` from `lumiose/router`.                                                                 |
+| `useParams()`              | `props.params`, or `params()` from `lumiose/router` (reactive, also on the server).                                  |
+| `useSearchParams()`        | `searchParams()` and `searchParams.set()` from `lumiose/router`; `url().searchParams` in server code.                |
+| `useLocation()`            | `url()` from `lumiose/router`; `route()` is the matched pattern.                                                     |
+
+## What has no equivalent
+
+| React Router                                                | Instead                                                                                                                                                                                                                                             |
+| ----------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Routes defined in code (`routes.ts`, `route()`)             | File routes only. Colocate components and helpers next to the route; `_private` folders never route.                                                                                                                                                |
+| `middleware` on a route, for its subtree                    | This version has no route- or folder-scoped middleware: the one `src/middleware.ts` checks `ctx.url.pathname`.                                                                                                                                      |
+| `clientMiddleware`                                          | None. Run the code in the `spa` layout (`effect`, `onMount`) or in the handler that navigates.                                                                                                                                                      |
+| `handleError`, `instrumentations`                           | This version has no instrumentation hooks. Unexpected server errors go to `console.error`; when you serve `dist/server/entry.js` yourself, `createHandler({ onError })` receives them ([server build](../reference/server-entry.md#createhandler)). |
+| `useFetcher()` per instance, `useFetchers()`                | This version has no per-instance submission handle: keep each `await submit(…)` result in a signal of the component that sent it. `isSubmitting(name)` counts every submission to an action.                                                        |
+| `useBlocker()`, `unstable_usePrompt()`                      | This version has no navigation guards. A `beforeunload` listener covers leaving the document.                                                                                                                                                       |
+| `handle` and `useMatches()`                                 | Pass data down as props or context from the layout; compare `route()` with a pattern.                                                                                                                                                               |
+| `useNavigation().location` and `.formData`                  | `isNavigating()` for pending UI, and `optimistic()` for the value being submitted.                                                                                                                                                                  |
+| A Vite dev server in middleware mode inside a custom server | This version has no dev handler for custom servers: develop with `lumiose dev`, and run your server against the build.                                                                                                                              |
+
+## Example
+
+A project page with a loader, an action and a form, in React Router:
+
+```tsx
+// app/routes/projects.$id.tsx
+import { data, Form, redirect, useNavigation } from "react-router";
+import type { Route } from "./+types/projects.$id";
+import { addTask, getProject } from "~/projects.server";
+
+export async function loader({ params }: Route.LoaderArgs) {
+  const project = await getProject(params.id);
+  if (!project) throw data("Not found", { status: 404 });
+  return { project };
+}
+
+export async function action({ request, params }: Route.ActionArgs) {
+  const title = String((await request.formData()).get("title") ?? "").trim();
+  if (title === "") return data({ error: "A title is required." }, { status: 400 });
+  await addTask(params.id, title);
+  return redirect(`/projects/${params.id}`);
+}
+
+export function meta({ data }: Route.MetaArgs) {
+  return [{ title: data.project.name }];
+}
+
+export default function Project({ loaderData, actionData }: Route.ComponentProps) {
+  const navigation = useNavigation();
+  return (
+    <main>
+      <h1>{loaderData.project.name}</h1>
+      <ul>
+        {loaderData.project.tasks.map((task) => (
+          <li key={task.id}>{task.title}</li>
+        ))}
+      </ul>
+      <Form method="post">
+        <input name="title" />
+        <p>{actionData?.error}</p>
+        <button disabled={navigation.state === "submitting"}>Add task</button>
+      </Form>
+    </main>
+  );
+}
+```
+
+The same page in Lumiose. The data access is unchanged:
+
+```ts check file=lib/projects.server.ts
+// src/lib/projects.server.ts: a database in a real app
+interface Task {
+  id: number;
+  title: string;
+}
+
+const projects = new Map([["1", { name: "Write the docs", tasks: [] as Task[] }]]);
+
+export async function getProject(id: string) {
+  return projects.get(id);
+}
+
+export async function addTask(id: string, title: string) {
+  projects.get(id)?.tasks.push({ id: Date.now(), title });
+}
+```
+
+The page awaits the project in its component, and its action returns `fail()` for validation
+errors. It is a `server` page: no JavaScript ships except the form's island.
+
+```stsx check file=routes/projects/[id]/page.stsx
+// src/routes/projects/[id]/page.stsx
+import { Title, fail, href, notFound, redirect, type ActionContext, type PageProps } from "lumiose";
+import { AddTask } from "../../../components/AddTask.stsx";
+import { addTask, getProject } from "../../../lib/projects.server.ts";
+
+export const mode = "server";
+
+export const actions = {
+  async add(ctx: ActionContext<"/projects/[id]">) {
+    const title = String((await ctx.formData()).get("title") ?? "").trim();
+    if (title === "") return fail(400, { error: "A title is required." });
+    await addTask(ctx.params.id, title);
+    redirect(href("/projects/[id]", { id: ctx.params.id }));
+  },
+};
+
+export default async function Project({ params }: PageProps<"/projects/[id]">) {
+  const project = (await getProject(params.id)) ?? notFound();
+  return (
+    <main>
+      <Title>{project.name}</Title>
+      <h1>{project.name}</h1>
+      <ul>
+        {project.tasks.map((task) => (
+          <li key={task.id}>{task.title}</li>
+        ))}
+      </ul>
+      <AddTask client:load />
+    </main>
+  );
+}
+```
+
+The form is an island in its own module, so the server-only import above never reaches the
+browser; it imports the action's type only. Without JavaScript the form posts and the page
+re-renders with the error or follows the redirect; with it, `submit()` does the same without a
+page load:
+
+```stsx check file=components/AddTask.stsx
+// src/components/AddTask.stsx
+import { actionData, isSubmitting, submit } from "lumiose";
+import type { actions } from "../routes/projects/[id]/page.stsx";
+
+export function AddTask() {
+  return (
+    <form method="post" action="?/add" onSubmit={submit}>
+      <input name="title" />
+      <p class="error">{actionData<typeof actions>()?.error}</p>
+      <button disabled={isSubmitting("add")}>Add task</button>
+    </form>
+  );
+}
+
+<style>
+  .error { color: crimson; }
+</style>
+```
+
+Context from middleware, where React Router uses `context.set()` in a `middleware` export:
+
+```ts check
+// src/middleware.ts
+import { signedCookie, type Middleware } from "lumiose";
+
+const session = signedCookie("session");
+
+declare module "lumiose" {
+  interface Locals {
+    userId: string | null;
+  }
+}
+
+const middleware: Middleware = async (ctx, next) => {
+  ctx.locals.userId = (await session.get(ctx.cookies)) ?? null;
+  // One middleware for the app: scope a check by path.
+  if (ctx.url.pathname.startsWith("/projects") && ctx.locals.userId === null) {
+    return Response.redirect(new URL("/login", ctx.url), 303);
+  }
+  return next();
+};
+
+export default middleware;
+```
+
+A custom server, where React Router uses `createRequestHandler()`:
+
+```ts check
+// server.ts: node server.ts after lumiose build
+import { createServer } from "node:http";
+import { createHandler } from "@lumiose/adapter-node";
+
+const app = await createHandler(); // the build in dist/: static files, then the app
+
+createServer((req, res) => {
+  if (req.url === "/healthz") {
+    res.end("ok");
+    return;
+  }
+  app(req, res);
+}).listen(Number(process.env.PORT ?? 3000));
+```
+
+## Common mistakes
+
+- **Exporting a `loader`.** Nothing calls it. Await the data in the page component.
+- **Expecting client-side navigation everywhere.** `static` and `server` routes load the next
+  document. Make app-like areas `spa` (in their layout), and keep the rest as pages.
+- **Expecting an MPA page to revalidate after `submit()`.** React Router reloads loaders after an
+  action; on a `static` or `server` page `submit()` does not refresh the page. Redirect from the
+  action (as above), update the island from the result, or call `invalidate()`. On `spa` routes a
+  successful `submit()` refreshes the page's data.
+- **Server code in an island's module.** An island's module ships to the browser, so importing a
+  `*.server.ts` there is `LUM4003`. Keep islands in their own files and import action types with
+  `import type`.
+- **Throwing for validation errors.** A thrown error renders the `error` page; return
+  `fail(400, data)` as you would return `data(…, { status: 400 })`.
+- **Reading `params["*"]`.** A rest segment has a name: `[...path]` is `params.path`.
+- **Reading the request in `spa` routes.** Their code also runs in the browser, so `cookies()` and
+  `locals()` are not available there; call an endpoint ([LUM4003](../errors/LUM4003.md)).
+- **Hard-coding `/projects/${id}`.** `href("/projects/[id]", { id })` fails type-checking when the
+  route moves.
+
+## Related
+
+- [Routing](../concepts/routing.md): file routes, layouts, params, typed `href()` and the SPA router.
+- [Data and actions](../concepts/data-and-actions.md): endpoints, form actions, `submit()`, `invalidate()` and `optimistic()`.
+- [Async components](../concepts/async.md): awaiting data, the request cache, `<Suspense>` and streaming.
+- [Server](../concepts/server.md): middleware, `locals`, cookies, redirects and env.
+- [Rendering modes](../concepts/rendering-modes.md): `static`, `server` and `spa` routes, prerendering and the build.
+- [`lumiose/router`](../reference/router.md): `Link`, `navigate`, `params`, `searchParams` and `isNavigating`.
+- [`@lumiose/adapter-node`](../reference/adapter-node.md): `createServer` and `createHandler`.
+- [Coming from React](react.md): hooks, components and JSX.
+
+<!-- source: coming-from/solid.md -->
+
+# Coming from Solid
+
+> Solid is the closest model, components set up once with fine-grained signals, so this guide is about the differences: signal and store APIs, props, control flow as plain JSX, async components, `.stsx` styles, islands, and SolidStart and Solid Router mapped to file routes, endpoints and form actions.
+
+This page maps Solid 1.x, Solid Router and SolidStart to Lumiose's current API. The linked pages
+have the full rules.
+
+## Mental model
+
+**The same core idea.** As in Solid, a component body runs once, JSX expressions that read signals
+compile to bindings that update their part of the DOM, and there is no virtual DOM. Owners,
+`onCleanup`, context and `untrack` work the way you expect ([Signals](../concepts/signals.md)).
+Lumiose's names follow Solid and React where the behaviour matches, without Solid's `create`
+prefix: `signal`, `computed`, `effect`, `store`.
+
+**The differences are in the details:**
+
+- **A signal is one function**, not a `[get, set]` tuple: `count()` reads, `count.set(1)` and
+  `count.update((n) => n + 1)` write.
+- **Props destructure safely.** The compiler rewrites destructured component parameters, with
+  defaults and `...rest`, into reads of `props.x`, so `({ title, size = "md" })` stays reactive. No
+  `splitProps` or `mergeProps`.
+- **Control flow is plain JSX.** There is no `<Show>`, `<For>` or `<Switch>`: the compiler turns
+  `.map()` into a keyed list, ternaries and `&&` into memoised branches, and
+  `item.id === selected()` inside `.map()` into a selector ([JSX](../concepts/jsx.md)).
+- **Async components replace resources.** A component may be `async` and `await` its data on the
+  server and in the browser; `<Suspense>` and `<ErrorBoundary>` work as in Solid
+  ([Async components](../concepts/async.md)).
+- **Styles live with the component.** `.stsx` files are TSX plus raw-CSS `<style>` blocks, scoped by
+  where they are placed ([Styles](../concepts/styles.md)).
+
+**Server first, with islands.** SolidStart renders the app on the server and hydrates all of it. In
+Lumiose, `static` and `server` pages ship no JavaScript, and a `client:*` directive at the usage
+site makes one component instance an [island](../concepts/islands.md): `<Todos client:load />`.
+An `spa` route is the SolidStart experience: server-rendered, hydrated, client-side navigation with
+persistent layouts ([Rendering modes](../concepts/rendering-modes.md)).
+
+## From Solid to Lumiose
+
+### Reactivity
+
+| Solid                                                 | Lumiose                                                                                                                                              |
+| ----------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `const [count, setCount] = createSignal(0)`           | `const count = signal(0)`: `count()`, `count.set(1)`, `count.update((n) => n + 1)`, `count.peek()`.                                                  |
+| `createSignal(v, { equals: false })`                  | `signal(v, { equals: false })`.                                                                                                                      |
+| `createMemo(fn)`                                      | `computed(fn)`: lazy, cached, and `fn` receives the previous value.                                                                                  |
+| `createEffect(fn)`                                    | `effect(fn)`; it may return its cleanup, or call `onCleanup()`.                                                                                      |
+| `createRenderEffect`, `createComputed`                | JSX bindings and `computed`: effects run after the DOM writes of the same flush.                                                                     |
+| `on(deps, fn)`                                        | Read the dependencies, then `untrack(() => …)` for the rest.                                                                                         |
+| `onMount`, `onCleanup`, `batch`, `untrack`            | The same names.                                                                                                                                      |
+| `createStore(value)` and `setStore(path…, value)`     | `store(value)`: a deep, mutable proxy, written directly (`state.todos[0].done = true`), like `createMutable`.                                        |
+| `produce(fn)`                                         | Write to the store directly.                                                                                                                         |
+| `reconcile(data)`                                     | `reconcile(target, data, { key })`, with Solid's semantics ([reference](../reference/reactivity.md#reconcile)).                                      |
+| `unwrap(store)`                                       | `snapshot(store)`: a deep plain copy.                                                                                                                |
+| `createSelector(selected)`                            | Compiled for you: `item.id === selected()` inside `.map()`.                                                                                          |
+| `createContext`, `<Ctx.Provider value>`, `useContext` | `createContext`, `<Ctx value>` (the context is its own provider), `useContext`. Provide a signal or a store for state that changes.                  |
+| `createUniqueId()`                                    | `useId()`, the same after hydration.                                                                                                                 |
+| `createResource(source, fetcher)`                     | An `async` component that awaits `fetchJSON()` or `query()`; `resource(fetcher)` is the low-level form, with `loading()`, `error()` and `refetch()`. |
+| `useTransition()`, `startTransition()`                | Async re-runs keep the old UI until the new data is ready: `isPending()` inside the component, `isBusy()` for anything in flight.                    |
+| `isServer`                                            | `isServer` from `lumiose`, folded away in client builds.                                                                                             |
+
+### Components and JSX
+
+| Solid                                                            | Lumiose                                                                                                                 |
+| ---------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| `splitProps(props, ["a"])`, `mergeProps(defaults, props)`        | `({ a, size = "md", ...rest })`: destructuring with defaults and rest stays reactive.                                   |
+| `children(() => props.children)`                                 | Insert `children` once where it goes; take a render prop to render content several times.                               |
+| `<Show when={user()} fallback={<Login />}>`                      | `{user() ? <Profile /> : <Login />}`, or `{user() && <Profile />}`.                                                     |
+| `<Show when={user()} keyed>{(u) => …}</Show>`                    | `{user() ? <Profile user={user()!} /> : null}`: the branch switches when the condition flips, and the prop stays live.  |
+| `<For each={items()}>{(item, i) => …}</For>`                     | `{items().map((item, i) => …)}`, keyed by reference or `key`; `i` is a reactive index, used as a number (`i + 1`).      |
+| `<Index each={items()}>`                                         | No index-keyed list: keep objects in a `store` and change their properties, so rows update in place.                    |
+| `<Switch>` and `<Match>`                                         | A chain of ternaries, or a function that returns JSX: `{view()}` with `const view = () => { switch (status()) { … } }`. |
+| `<Dynamic component={…}>`, `<Portal mount={…}>`                  | The same: `<Dynamic component={…}>` and `<Portal mount={…}>`.                                                           |
+| `<ErrorBoundary fallback={(err, reset) => …}>`, `<Suspense>`     | The same.                                                                                                               |
+| `let el; <div ref={el} />`                                       | `const el = ref<HTMLDivElement>()`, `<div ref={el} />` and `el()`; or a callback `ref={(node) => …}`.                   |
+| `use:tooltip={text}`                                             | `attach={[tooltip(text)]}`, where `tooltip(text)` returns `(el) => cleanup`.                                            |
+| `classList={{ active: on() }}`                                   | `class={{ active: on() }}`; `class` also takes strings and arrays.                                                      |
+| `style={{ "font-weight": 600 }}`, `on:click`, `onClick`          | The same: kebab-case style keys, native `on:` listeners and delegated `onX` handlers.                                   |
+| `lazy(() => import("./Chart"))`                                  | No `lazy()`: islands load their module when they hydrate, and `spa` routes load a chunk per page and layout.            |
+| `render(() => <App />, el)`, `hydrate`                           | `render(() => <App />, el)` from `lumiose/dom`; islands and `spa` routes hydrate on their own.                          |
+| `renderToString`, `renderToStream`                               | The same names from `lumiose/server` ([reference](../reference/server.md)).                                             |
+| CSS files, CSS Modules, `solid-styled`                           | A `<style>` block in the `.stsx` file, scoped by placement; `<style global>` for global rules.                          |
+| `@solidjs/meta`: `<Title>`, `<Meta>`, `<Link>`, `<MetaProvider>` | `<Title>`, `<Meta>` and `<Head>` from `lumiose`, with no provider ([Head and document](../concepts/head.md)).           |
+
+### SolidStart
+
+| SolidStart                                                            | Lumiose                                                                                                                                     |
+| --------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| `app.config.ts` (Vinxi)                                               | `vite.config.ts` with the `lumiose()` plugin.                                                                                               |
+| `src/routes/index.tsx`, `about.tsx`                                   | `src/routes/page.stsx`, `about/page.stsx`: a folder is a URL segment.                                                                       |
+| `blog/[slug].tsx`, `[[id]].tsx`, `[...rest].tsx`, `(group)`           | `blog/[slug]/page.stsx`, `[[id]]/page.stsx`, `[...rest]` (one or more segments) or `[[...rest]]` (zero or more), `(group)`.                 |
+| `blog.tsx` next to `blog/` (a layout)                                 | `blog/layout.stsx`; `props.children` is the outlet.                                                                                         |
+| API routes: `export function GET(event)`                              | `route.ts` endpoints: `export const GET: Endpoint<"/api/x"> = (ctx) => Response`.                                                           |
+| `query(fn, "key")` and `createAsync(() => getUser(id))`               | `await query(["user", id], () => getUser(id))` in an async component (key first, an array as in TanStack Query), or `await fetchJSON(url)`. |
+| `"use server"` functions                                              | No RPC: form actions for mutations, endpoints for anything the browser fetches, and `*.server.ts` modules for server-only code.             |
+| `action(fn)` and `<form action={myAction} method="post">`             | `export const actions = { save(ctx) {…} }` and `<form method="post" action="?/save">`, which works without JavaScript.                      |
+| `useAction(myAction)`                                                 | `submit(target, { action: "?/save" })` from an island or `spa` route.                                                                       |
+| `useSubmission(myAction)`: `pending`, `result`                        | `isSubmitting("save")`, and `actionData()` or the result that `await submit(…)` resolves to.                                                |
+| `revalidate(key)`, `reload()`                                         | `invalidate(["key"])` refetches matching `query()` entries; `invalidate()` refreshes the page.                                              |
+| `redirect()`, `json()` from an action                                 | `redirect(to)` (it throws), and plain data as the return value; `fail(status, data)` for validation errors.                                 |
+| `entry-server.tsx` with `<StartServer document>`                      | `src/document.stsx` renders `{props.head}` and `{props.body}`.                                                                              |
+| `entry-client.tsx`, `app.tsx` with `<Router root>` and `<FileRoutes>` | No files: the router is built in; `src/routes/layout.stsx` is the root layout.                                                              |
+| `createMiddleware({ onRequest, onBeforeResponse })`                   | `src/middleware.ts`: `(ctx, next) => Response`, code before and after `await next()`.                                                       |
+| `event.locals`, `getRequestEvent()`                                   | `ctx.locals` (typed by augmenting `Locals`); `request()`, `locals()`, `cookies()` and `url()` during a server render.                       |
+| `useSession()`                                                        | `cookies` and `signedCookie(name)` ([Server](../concepts/server.md)).                                                                       |
+| `clientOnly(() => import("./Map"))`                                   | `client:only` on the usage: `<Map client:only />`.                                                                                          |
+| `ssr: false`, prerendering (`server.prerender`)                       | `lumiose({ mode: "spa", ssr: false })`; `static` routes (the default) with `staticPaths()`, and `prerender = true` on `spa` pages.          |
+| Deployment presets                                                    | `@lumiose/adapter-node`, or `lumiose({ adapter })` for Vercel, Netlify and Cloudflare ([Deploy](../deploy/README.md)).                      |
+
+### Solid Router
+
+| Solid Router                                 | Lumiose                                                                                                         |
+| -------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| `<Router>` with `<Route path component>`     | File routes; `lumiose routes` lists them.                                                                       |
+| `<A href>`, `activeClass`                    | `<Link href>` from `lumiose/router`, with `aria-current="page"` on the active link; `href()` builds typed URLs. |
+| `useNavigate()`, `<Navigate href>`           | `navigate(href, { replace })`; `redirect(to)` while rendering.                                                  |
+| `useParams()`, `useLocation()`, `useMatch()` | `params()`, `url()` and `route()` (the matched pattern) from `lumiose/router`.                                  |
+| `useSearchParams()`: `[params, setParams]`   | `searchParams()` and `searchParams.set({ q })`.                                                                 |
+| `useIsRouting()`                             | `isNavigating()`.                                                                                               |
+| `preload` functions on routes                | None: data loads where it is awaited, and `<Link prefetch>` loads a page's modules ahead.                       |
+
+## What has no equivalent
+
+| Solid                                                     | Instead                                                                                                                                                                   |
+| --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `createRoot`, `getOwner`, `runWithOwner`                  | Not public: components, effects and `render()` create owners, and async components restore theirs after each `await`.                                                     |
+| `createDeferred`, `createReaction`, `observable`, `from`  | None. Bridge an external source with a signal set from its subscription ([an external store](../concepts/state.md#an-external-store-zustandvanilla-a-jotai-store-redux)). |
+| `<Index>`, `mapArray`, `indexArray`                       | `.map()` in JSX; see the `<Index>` row above.                                                                                                                             |
+| `<SuspenseList>`                                          | None: give each `<Suspense>` its own fallback.                                                                                                                            |
+| `lazy()`                                                  | None: code splits per island and per `spa` page.                                                                                                                          |
+| Server functions (`"use server"`) called like functions   | Form actions and endpoints. Calling an endpoint with `fetchJSON()` from an island keeps the network boundary visible.                                                     |
+| `useSubmission()` per action instance, `useSubmissions()` | This version has no per-instance submission handle: keep each `await submit(…)` result in a signal of the component that sent it.                                         |
+| `useBeforeLeave()`                                        | This version has no navigation guards. A `beforeunload` listener covers leaving the document.                                                                             |
+| `preload` and `query` preloading on hover                 | `<Link prefetch>` loads the page's modules; data loads when the page renders.                                                                                             |
+| Solid component libraries (Kobalte, Corvu)                | They target Solid's runtime and do not run. Use native elements (`<dialog>`, `popover`), web components or framework-agnostic libraries.                                  |
+
+## Example
+
+A filtered todo list, in Solid:
+
+```tsx
+import { createMemo, createSignal, For, Show } from "solid-js";
+import { createStore } from "solid-js/store";
+
+export function Todos(props: { title: string }) {
+  const [todos, setTodos] = createStore([{ id: 1, text: "Write the docs", done: false }]);
+  const [filter, setFilter] = createSignal<"all" | "open">("all");
+  const visible = createMemo(() =>
+    filter() === "open" ? todos.filter((todo) => !todo.done) : todos,
+  );
+
+  return (
+    <section>
+      <h2>{props.title}</h2>
+      <button onClick={() => setFilter((f) => (f === "all" ? "open" : "all"))}>
+        Show {filter() === "all" ? "open" : "all"}
+      </button>
+      <Show when={visible().length > 0} fallback={<p>Nothing to do.</p>}>
+        <ul>
+          <For each={visible()}>
+            {(todo, i) => (
+              <li classList={{ done: todo.done }}>
+                <input
+                  type="checkbox"
+                  checked={todo.done}
+                  onChange={() =>
+                    setTodos(
+                      (t) => t.id === todo.id,
+                      "done",
+                      (done) => !done,
+                    )
+                  }
+                />
+                {i() + 1}. {todo.text}
+              </li>
+            )}
+          </For>
+        </ul>
+      </Show>
+    </section>
+  );
+}
+```
+
+The same list in Lumiose, with its styles in the file. The props are destructured, the store is
+written directly, and the control flow is a ternary and `.map()`:
+
+```stsx check file=components/Todos.stsx
+// src/components/Todos.stsx
+import { computed, signal, store } from "lumiose";
+
+export function Todos({ title }: { title: string }) {
+  const todos = store([{ id: 1, text: "Write the docs", done: false }]);
+  const filter = signal<"all" | "open">("all");
+  const visible = computed(() =>
+    filter() === "open" ? todos.filter((todo) => !todo.done) : todos,
+  );
+
+  return (
+    <section>
+      <h2>{title}</h2>
+      <button onClick={() => filter.update((f) => (f === "all" ? "open" : "all"))}>
+        Show {filter() === "all" ? "open" : "all"}
+      </button>
+      {visible().length > 0 ? (
+        <ul>
+          {visible().map((todo, i) => (
+            <li key={todo.id} class={{ done: todo.done }}>
+              <input
+                type="checkbox"
+                checked={todo.done}
+                onChange={() => {
+                  todo.done = !todo.done;
+                }}
+              />
+              {i + 1}. {todo.text}
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p>Nothing to do.</p>
+      )}
+    </section>
+  );
+}
+
+<style>
+  .done { color: gray; text-decoration: line-through; }
+</style>
+```
+
+A SolidStart route that reads with `query()` and `createAsync()` and writes with an `action()`
+becomes a page with an async component and a form action. Without JavaScript the form posts and
+the page re-renders with the action's data:
+
+```stsx check file=routes/members/[id]/page.stsx
+// src/routes/members/[id]/page.stsx
+import {
+  Title,
+  actionData,
+  fail,
+  href,
+  notFound,
+  query,
+  redirect,
+  type ActionContext,
+  type PageProps,
+} from "lumiose";
+import { Todos } from "../../../components/Todos.stsx";
+
+export const mode = "server";
+
+const members = new Map([["1", { name: "Ada", bio: "" }]]); // a database in a real app
+
+export const actions = {
+  async save(ctx: ActionContext<"/members/[id]">) {
+    const bio = String((await ctx.formData()).get("bio") ?? "");
+    if (bio.length > 200) return fail(400, { error: "Keep it under 200 characters." });
+    const member = members.get(ctx.params.id) ?? notFound();
+    member.bio = bio;
+    redirect(href("/members/[id]", { id: ctx.params.id }));
+  },
+};
+
+export default async function Member({ params }: PageProps<"/members/[id]">) {
+  // One query per request and key, however many components await it.
+  const member = (await query(["member", params.id], async () => members.get(params.id))) ?? notFound();
+  return (
+    <main>
+      <Title>{member.name}</Title>
+      <h1>{member.name}</h1>
+      <form method="post" action="?/save">
+        <textarea name="bio">{member.bio}</textarea>
+        <p>{actionData<typeof actions>()?.error}</p>
+        <button>Save</button>
+      </form>
+      <Todos client:visible title={`${member.name}'s tasks`} />
+    </main>
+  );
+}
+```
+
+## Common mistakes
+
+- **Destructuring a signal tuple.** `const [count, setCount] = signal(0)` is a type error: a signal
+  is one function with `.set()` and `.update()`.
+- **`<Show>`, `<For>` or `<Switch>`.** They do not exist. Write ternaries and `.map()`; the compiler
+  makes them fine-grained.
+- **Calling the index: `i()`.** In `.map((item, i) => …)`, `i` is used as a number; the compiler
+  keeps it reactive. Passing it out of the callback is [LUM2006](../errors/LUM2006.md).
+- **`setStore` paths.** A store is written directly: `todo.done = true`,
+  `state.items.push(item)`.
+- **`splitProps` to keep props reactive.** Destructure instead; the compiler keeps the reads
+  reactive. Copying a signal's value into a variable is what freezes it
+  ([LUM2001](../errors/LUM2001.md)).
+- **An early return on a signal.** `if (!user()) return <Login />` runs once, as in Solid; branch in
+  the JSX ([LUM2003](../errors/LUM2003.md)).
+- **`query(fn, "key")`.** Lumiose's `query` takes the key first, as an array: `query(["user", id], fn)`.
+- **An interactive component on a page without `client:*`.** It renders on the server, and its
+  handlers never run. Add a directive at the usage site, or make the route `spa`.
+- **Expecting page context inside an island.** Islands start a new root, so context provided by the
+  page does not reach them ([LUM4010](../errors/LUM4010.md)): pass a prop, or use `defineState`.
+- **A server function imported into an island.** Importing a `*.server.ts` module from browser code
+  is [LUM4003](../errors/LUM4003.md). Post to a form action or call an endpoint.
+
+## Related
+
+- [Signals and reactivity](../concepts/signals.md): `signal`, `computed`, `effect`, `store`, owners and scheduling.
+- [JSX](../concepts/jsx.md): bindings, the compiled `.map()`, ternaries and selectors, `class`, `style`, `attach` and `ref`.
+- [Components](../concepts/components.md): setup once, props destructuring, children and refs.
+- [Styles](../concepts/styles.md): `<style>` blocks scoped by placement.
+- [Async components](../concepts/async.md): awaiting data, `<Suspense>`, `<ErrorBoundary>` and the request cache.
+- [Islands](../concepts/islands.md) and [Rendering modes](../concepts/rendering-modes.md): what ships to the browser.
+- [Routing](../concepts/routing.md), [Data and actions](../concepts/data-and-actions.md) and [`lumiose/router`](../reference/router.md): the SolidStart and Solid Router side.
 
 <!-- source: concepts/components.md -->
 

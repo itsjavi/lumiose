@@ -43,6 +43,8 @@ describe("lumiose docs", () => {
     expect(resolveTopic("deploy", docs)?.topic).toBe("deploy/README");
     expect(resolveTopic("docker", docs)?.topic).toBe("deploy/docker");
     expect(resolveTopic("auth", docs)?.topic).toBe("guides/auth");
+    expect(resolveTopic("coming-from/react", docs)?.topic).toBe("coming-from/react");
+    expect(resolveTopic("react-router", docs)?.topic).toBe("coming-from/react-router");
     expect(resolveTopic("no-such-topic", docs)).toBeUndefined();
   });
 
@@ -145,11 +147,34 @@ describe("docs contract", () => {
     }
   });
 
+  it("gives every Coming from guide the shared outline, in order (TASK-301)", () => {
+    const guides = docs.filter((doc) => doc.topic.startsWith("coming-from/"));
+    expect(guides.map((doc) => doc.topic).toSorted()).toEqual([
+      "coming-from/nextjs",
+      "coming-from/react",
+      "coming-from/react-router",
+      "coming-from/solid",
+    ]);
+    for (const doc of guides) {
+      const framework = doc.title.replace(/^Coming from /, "");
+      const sections = [...doc.content.matchAll(/^## (.+)$/gm)].map((match) => match[1]);
+      expect(sections, doc.topic).toEqual([
+        "Mental model",
+        `From ${framework} to Lumiose`,
+        "What has no equivalent",
+        "Example",
+        "Common mistakes",
+        "Related",
+      ]);
+      expect(doc.summary, `${doc.topic} summary`).toBeTruthy();
+    }
+  });
+
   it("indexes every concept, guide, deploy and reference page", () => {
     const readme = docs.find((doc) => doc.topic === "README")!.content;
     for (const doc of docs) {
       if (
-        /^(concepts|guides|deploy|reference)\//.test(doc.topic) ||
+        /^(coming-from|concepts|guides|deploy|reference)\//.test(doc.topic) ||
         doc.topic === "getting-started"
       ) {
         expect(readme, doc.topic).toContain(`](${doc.topic}.md)`);

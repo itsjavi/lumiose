@@ -37,6 +37,7 @@ describe("docs", () => {
     expect(pages[1]?.topic).toBe("getting-started");
     expect(docNav().map((section) => section.title)).toEqual([
       "Start here",
+      "Coming from",
       "Concepts",
       "Guides",
       "Deploy",
