@@ -111,7 +111,7 @@ export function createAsync(component: AsyncComponent, props: unknown): RangeSta
   }
   const end = start.$$end;
   const flag = signal(false);
-  if (INSPECTED) labelValue(flag, "isPending()", true);
+  if (import.meta.env?.DEV && INSPECTED) labelValue(flag, "isPending()", true);
   // Under hydration the range adopts the instance's server block, and the first run claims its
   // content with a cursor of its own (carried by its frame), after its awaits replay.
   const claimed = hydrator?.fork(start);

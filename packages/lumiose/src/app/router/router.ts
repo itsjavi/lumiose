@@ -202,7 +202,7 @@ export function createRouter(config: SpaConfig, app: string): void {
     endBusy: undefined,
     loaded: new Map(),
   };
-  if (INSPECTED) {
+  if (import.meta.env?.DEV && INSPECTED) {
     labelValue(current, "route view", true);
     labelValue(router.navigating, "isNavigating()", true);
     labelValue(router.revision, "route revision", true);
@@ -212,7 +212,7 @@ export function createRouter(config: SpaConfig, app: string): void {
 function createScope(view: () => View): Scope {
   const params = computed(() => view().params);
   const search = computed(() => view().url.search);
-  if (INSPECTED) {
+  if (import.meta.env?.DEV && INSPECTED) {
     const scope = {
       view,
       params,
@@ -465,7 +465,7 @@ function createOutlet(depth: number, scope: Scope): Outlet {
       if (router !== undefined) fail(router, error, view);
     });
   }
-  if (INSPECTED) {
+  if (import.meta.env?.DEV && INSPECTED) {
     const shown = signal(content);
     labelValue(shown, "page", true);
     return { owner, shown };
@@ -572,7 +572,7 @@ function localeOf(r: Router, url: URL): string | undefined {
 function prepare(r: Router, outlet: Outlet, depth: number, view: View, nav: Nav): void {
   const owner = createOwner(outlet.owner);
   const committed = signal(false);
-  if (INSPECTED) labelValue(committed, "route committed", true);
+  if (import.meta.env?.DEV && INSPECTED) labelValue(committed, "route committed", true);
   const scope = createScope(() => (committed() ? r.current() : view));
   let waiting = 0;
   let created = false;

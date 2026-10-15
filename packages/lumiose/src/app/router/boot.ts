@@ -27,7 +27,8 @@ export function startSpa(
   for (const [leaf, app] of Object.entries(leavesOf(config))) {
     const start = (csr: boolean) => () => {
       createRouter(config, app);
-      if (INSPECTED) return prepareRoot(leaf, csr).then((root) => nameComponent(root, "SpaRoot"));
+      if (import.meta.env?.DEV && INSPECTED)
+        return prepareRoot(leaf, csr).then((root) => nameComponent(root, "SpaRoot"));
       return prepareRoot(leaf, csr);
     };
     manifest[`/${leaf}${SPA_REF}`] = start(false);

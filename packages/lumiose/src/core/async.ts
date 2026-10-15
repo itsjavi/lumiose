@@ -48,7 +48,7 @@ export function isPending(): boolean {
 // Pure: bundles that never read `isBusy()` or register work drop them.
 const inFlight = /* @__PURE__ */ signal(0);
 const anyInFlight = /* @__PURE__ */ computed(() => inFlight() > 0);
-if (INSPECTED) {
+if (import.meta.env?.DEV && INSPECTED) {
   labelValue(inFlight, "isBusy count", true);
   labelValue(anyInFlight, "isBusy()", true);
 }
@@ -121,7 +121,7 @@ export function resource<T>(fetcher: (signal: AbortSignal) => T | PromiseLike<T>
   const value = signal<T | undefined>(undefined);
   const loading = signal(true);
   const error = signal<unknown>(undefined);
-  if (INSPECTED) {
+  if (import.meta.env?.DEV && INSPECTED) {
     labelValue(value, "resource value", true);
     labelValue(loading, "resource loading", true);
     labelValue(error, "resource error", true);

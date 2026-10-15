@@ -1,7 +1,7 @@
 // The dev hook registry of the in-page inspector (decision-59, TASK-341; owner: Spark).
 //
 // In `lumiose dev` with the inspector on, the reactive core, the DOM runtime and the island loader
-// report here, behind `INSPECTED`: components as they render (name, props, source location,
+// report here, behind `import.meta.env?.DEV && INSPECTED` (./dev.ts): components as they render (name, props, source location,
 // parent), the signals, computeds, effects and bindings created meanwhile, signal writes, effect
 // and binding runs with the writes that caused them, and island transitions. Builds define neither
 // `DEV` nor the inspector flag, so the bundler drops every call site and, with them, this module:

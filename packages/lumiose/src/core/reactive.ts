@@ -179,7 +179,7 @@ export function peekSignal<T>(s: SignalNode<T>): T {
 
 export function writeSignal<T>(s: SignalNode<T>, value: T): void {
   if (!s.equals(s.pendingValue, value)) {
-    if (INSPECTED) nodeWritten(s, s.pendingValue, value);
+    if (import.meta.env?.DEV && INSPECTED) nodeWritten(s, s.pendingValue, value);
     s.pendingValue = value;
     s.flags = MUTABLE | DIRTY;
     const subs = s.subs;
@@ -294,7 +294,7 @@ export function track(node: TriggerNode): void {
 
 /** Marks everything that tracked `node` as changed. */
 export function trigger(node: TriggerNode): void {
-  if (INSPECTED) nodeWritten(node, undefined, undefined);
+  if (import.meta.env?.DEV && INSPECTED) nodeWritten(node, undefined, undefined);
   node.flags = MUTABLE | DIRTY;
   if (node.subs !== undefined) {
     propagate(node.subs, innerWrite());

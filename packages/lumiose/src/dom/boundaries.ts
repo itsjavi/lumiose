@@ -34,7 +34,7 @@ export interface SuspenseProps {
  */
 export function Suspense(props: SuspenseProps): Renderable {
   const count = signal(0);
-  if (INSPECTED) labelValue(count, "Suspense pending", true);
+  if (import.meta.env?.DEV && INSPECTED) labelValue(count, "Suspense pending", true);
   provideContext(SUSPENSE, count);
   // Under hydration the range claims the server block and the content adopts what is inside;
   // the server content then stays while the first runs replay, instead of the fallback.
@@ -76,7 +76,7 @@ export interface ErrorBoundaryProps {
 export function ErrorBoundary(props: ErrorBoundaryProps): Renderable {
   // `equals: false`: a reset after a synchronous failure (which never set it) still re-renders.
   const failure = signal<{ error: unknown } | undefined>(undefined, { equals: false });
-  if (INSPECTED) labelValue(failure, "ErrorBoundary error", true);
+  if (import.meta.env?.DEV && INSPECTED) labelValue(failure, "ErrorBoundary error", true);
   const reset = (): void => failure.set(undefined);
   const capture = (error: unknown): void => failure.set({ error });
 

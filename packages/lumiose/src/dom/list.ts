@@ -68,7 +68,8 @@ function renderRow(): void {
 
 function createRow<T>(state: ListState<T>, item: T, key: unknown, i: number): Row<T> {
   const index = state.x ? signal(i) : undefined;
-  if (INSPECTED && index !== undefined) labelValue(index, "list index", true);
+  if (import.meta.env?.DEV && INSPECTED && index !== undefined)
+    labelValue(index, "list index", true);
   rowState = state;
   rowItem = item;
   rowIndex = index;

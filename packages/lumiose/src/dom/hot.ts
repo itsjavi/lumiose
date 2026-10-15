@@ -52,7 +52,7 @@ export function $hot<C extends Component>(
 ): C {
   // Outside `lumiose dev` (a build, or a test runner's partial `import.meta.hot`).
   if (hot?.data === undefined) return component;
-  if (INSPECTED && source !== undefined) locateComponent(component, source);
+  if (import.meta.env?.DEV && INSPECTED && source !== undefined) locateComponent(component, source);
   const registry = (hot.data["lumioseComponents"] ??= new Map()) as Map<string, HotComponent>;
   const known = registry.get(name);
   if (known !== undefined) {
@@ -61,17 +61,18 @@ export function $hot<C extends Component>(
       known.version = version;
       known.current.set({ fn: component });
     }
-    if (INSPECTED && source !== undefined) locateComponent(known.wrapper, source);
+    if (import.meta.env?.DEV && INSPECTED && source !== undefined)
+      locateComponent(known.wrapper, source);
     return known.wrapper as C;
   }
   const current = signal({ fn: component });
-  if (INSPECTED) labelValue(current, "hot update", true);
+  if (import.meta.env?.DEV && INSPECTED) labelValue(current, "hot update", true);
   const entry: HotComponent = { version, current, wrapper: () => null };
   const wrapper: Component = (props) => {
     // The instance's hydration frame, for its first render only (later ones render afresh).
     let hydrating = frame;
     // The inspector's record of the instance, which `createComponent` just opened.
-    const record = INSPECTED ? currentComponent() : undefined;
+    const record = import.meta.env?.DEV && INSPECTED ? currentComponent() : undefined;
     return () => {
       const { fn } = current();
       const instanceFrame = hydrating;
@@ -85,12 +86,14 @@ export function $hot<C extends Component>(
           setFrame!(prev);
         }
       };
-      return untrack(INSPECTED ? () => renderComponent(record, render) : render);
+      return untrack(
+        import.meta.env?.DEV && INSPECTED ? () => renderComponent(record, render) : render,
+      );
     };
   };
   entry.wrapper = wrapper;
   Object.defineProperty(wrapper, "name", { value: name });
-  if (INSPECTED && source !== undefined) locateComponent(wrapper, source);
+  if (import.meta.env?.DEV && INSPECTED && source !== undefined) locateComponent(wrapper, source);
   (wrapper as Component & { [WRAPPER]?: true })[WRAPPER] = true;
   registry.set(name, entry);
   return wrapper as C;
@@ -129,6 +132,6 @@ export function $hotAccept(
  * compiler's dev output wraps `const count = signal(0)` as `$label(signal(0), "count")`.
  */
 export function $label<T>(value: T, name: string): T {
-  if (INSPECTED) labelValue(value, name);
+  if (import.meta.env?.DEV && INSPECTED) labelValue(value, name);
   return value;
 }

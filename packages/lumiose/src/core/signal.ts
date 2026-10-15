@@ -62,7 +62,7 @@ export function signal<T>(value: T, options?: SignalOptions<T>): Signal<T> {
   s.set = set;
   s.update = update;
   s.peek = peek;
-  if (INSPECTED) nodeCreated(node, "signal", s);
+  if (import.meta.env?.DEV && INSPECTED) nodeCreated(node, "signal", s);
   return s;
 }
 
@@ -72,7 +72,7 @@ export function computed<T>(
   options?: SignalOptions<T>,
 ): Computed<T> {
   const node = createComputedNode(fn, equalsOf(options));
-  if (INSPECTED) {
+  if (import.meta.env?.DEV && INSPECTED) {
     const read = (): T => readComputed(node);
     nodeCreated(node, "computed", read);
     return read;

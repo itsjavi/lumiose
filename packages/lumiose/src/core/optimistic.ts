@@ -27,7 +27,7 @@ export function optimistic<T>(source: () => T): Optimistic<T> {
   const read = computed(() =>
     overlays().reduce((value, overlay) => overlay(value), source()),
   ) as Optimistic<T>;
-  if (INSPECTED) {
+  if (import.meta.env?.DEV && INSPECTED) {
     labelValue(overlays, "optimistic updates", true);
     labelValue(read, "optimistic value", true);
   }

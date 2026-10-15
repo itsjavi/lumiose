@@ -49,7 +49,7 @@ export function createOwner(parent: Owner | undefined): Owner {
 
 /** Links a new owner under `parent`. Under a disposed parent, the owner starts disposed. */
 export function attachOwner(owner: Owner, parent: Owner | undefined): void {
-  if (INSPECTED) ownerCreated(owner, parent);
+  if (import.meta.env?.DEV && INSPECTED) ownerCreated(owner, parent);
   if (parent === undefined) {
     return;
   }
@@ -394,7 +394,7 @@ export function handleError(owner: Owner | undefined, error: unknown): void {
 }
 
 // The in-page inspector's registry (./devtools.ts) reaches owners through these.
-if (INSPECTED) {
+if (import.meta.env?.DEV && INSPECTED) {
   inspectOwners({
     lookup: lookupOwner,
     create: createOwner,

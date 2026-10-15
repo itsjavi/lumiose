@@ -280,7 +280,7 @@ export function effect(fn: EffectFn): () => void {
     fn,
   };
   attachOwner(node, getOwner());
-  if (INSPECTED) nodeCreated(node, "effect");
+  if (import.meta.env?.DEV && INSPECTED) nodeCreated(node, "effect");
   if (!(node.state & DISPOSED)) {
     enqueue(node);
   }
@@ -291,7 +291,7 @@ function runUser(node: UserEffect): void {
   if (node.state & DISPOSED || !isDirty(node)) {
     return;
   }
-  if (INSPECTED) nodeRan(node);
+  if (import.meta.env?.DEV && INSPECTED) nodeRan(node);
   if (node.firstChild !== undefined || node.cleanups !== undefined || node.lifetime !== undefined) {
     try {
       resetOwner(node);
@@ -347,7 +347,7 @@ export function renderEffect<E, T>(
     value: undefined,
   };
   attachOwner(node, getOwner());
-  if (INSPECTED) nodeCreated(node, "binding", undefined, target);
+  if (import.meta.env?.DEV && INSPECTED) nodeCreated(node, "binding", undefined, target);
   if (!(node.state & DISPOSED)) {
     runBinding(node, true);
   }
@@ -356,7 +356,7 @@ export function renderEffect<E, T>(
 
 function runRender(node: RenderEffect): void {
   if (!(node.state & DISPOSED) && isDirty(node)) {
-    if (INSPECTED) nodeRan(node);
+    if (import.meta.env?.DEV && INSPECTED) nodeRan(node);
     runBinding(node, false);
   }
 }

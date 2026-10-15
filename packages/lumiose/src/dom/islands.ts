@@ -83,7 +83,7 @@ export function loadIslands(manifest: IslandManifest): () => void {
         if (typeof component !== "function") return false;
         island.x?.();
         while (island.s!.nextSibling !== island.e) (island.s!.nextSibling as ChildNode).remove();
-        if (INSPECTED) islandState(island, "hydrating");
+        if (import.meta.env?.DEV && INSPECTED) islandState(island, "hydrating");
         island.x = hydrate(
           component as Component<object>,
           decodeData(island.props) as object,
@@ -94,7 +94,7 @@ export function loadIslands(manifest: IslandManifest): () => void {
           true,
           island.idPrefix,
         );
-        if (INSPECTED) islandState(island, "hydrated");
+        if (import.meta.env?.DEV && INSPECTED) islandState(island, "hydrated");
         swapped = true;
       }
       return swapped;
@@ -157,7 +157,7 @@ export function loadIslands(manifest: IslandManifest): () => void {
 
   const arm = (island: Island): void => {
     island.g = 0;
-    if (INSPECTED) islandState(island, "waiting");
+    if (import.meta.env?.DEV && INSPECTED) islandState(island, "waiting");
     const value = island.value;
     const start = (): void => go(island);
     switch (island.strategy) {
@@ -230,7 +230,7 @@ export function loadIslands(manifest: IslandManifest): () => void {
       return;
     }
     island.g = 1;
-    if (INSPECTED) islandState(island, "loading");
+    if (import.meta.env?.DEV && INSPECTED) islandState(island, "loading");
     const load = manifest[island.ref];
     if (DEV && load === undefined) {
       throw new Error(`Lumiose: the island ${island.ref} is missing from virtual:lumiose/islands.`);
@@ -242,7 +242,7 @@ export function loadIslands(manifest: IslandManifest): () => void {
     const start = (): Promise<void> =>
       load!().then((component) => {
         failed = 2;
-        if (INSPECTED) islandState(island, "hydrating");
+        if (import.meta.env?.DEV && INSPECTED) islandState(island, "hydrating");
         // A component marked `$$fresh` renders on the client instead of claiming the server's nodes
         // (an SPA root that renders another view than the server did, app/router/router.ts).
         const fresh = (component as { $$fresh?: true }).$$fresh === true;
@@ -261,7 +261,7 @@ export function loadIslands(manifest: IslandManifest): () => void {
         );
         if (DEV) island.x = dispose;
         island.g = 2;
-        if (INSPECTED) islandState(island, "hydrated");
+        if (import.meta.env?.DEV && INSPECTED) islandState(island, "hydrated");
         // Replayed awaits resolve in microtasks: dispatch caught events once they rendered.
         setTimeout(() => replay(island));
         // Islands inside slots this island inserted are in the document now.
@@ -275,7 +275,7 @@ export function loadIslands(manifest: IslandManifest): () => void {
     (INSTRUMENTED ? instrument("hydrate", { island: island.ref }, start) : start()).catch(
       (error: unknown) => {
         reportError(error, { phase: "hydrate", island: island.ref });
-        if (INSPECTED) islandState(island, "failed", error);
+        if (import.meta.env?.DEV && INSPECTED) islandState(island, "failed", error);
         // The caught events are dispatched again, unintercepted, so their default actions run (a
         // link navigates, a form submits).
         island.g = 2;

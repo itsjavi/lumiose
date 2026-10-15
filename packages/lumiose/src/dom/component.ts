@@ -32,7 +32,7 @@ function runComponent(): void {
  */
 export function createComponent<P>(component: Component<P>, props: P): Renderable {
   const tagged = (component as AsyncTagged).$$async;
-  if (INSPECTED && tagged !== undefined) {
+  if (import.meta.env?.DEV && INSPECTED && tagged !== undefined) {
     const record = enterComponent(component, props);
     let result: Renderable;
     try {
@@ -55,7 +55,7 @@ export function createComponent<P>(component: Component<P>, props: P): Renderabl
   }
   componentFn = component;
   componentProps = props;
-  const record = INSPECTED ? enterComponent(component, props) : undefined;
+  const record = import.meta.env?.DEV && INSPECTED ? enterComponent(component, props) : undefined;
   const prevSub = setActiveSub(undefined);
   // Instance paths exist only while an island hydrates (./frame.ts).
   const prevFrame = frame;
@@ -65,7 +65,7 @@ export function createComponent<P>(component: Component<P>, props: P): Renderabl
   try {
     runWithLazyOwner(currentOwner, runComponent);
   } finally {
-    if (INSPECTED) exitComponent(record, componentResult);
+    if (import.meta.env?.DEV && INSPECTED) exitComponent(record, componentResult);
     setActiveSub(prevSub);
     if (prevFrame !== undefined) {
       setFrame!(prevFrame);

@@ -54,7 +54,7 @@ function trackKey(target: object, key: Key): void {
     nodeMaps.set(target, (nodes = Object.create(null) as Record<Key, TriggerNode>));
   }
   track((nodes[key] ??= createTrigger()));
-  if (INSPECTED) storeKey(nodes[key]!, key);
+  if (import.meta.env?.DEV && INSPECTED) storeKey(nodes[key]!, key);
 }
 
 function fire(target: object, key: Key): void {
