@@ -61,6 +61,22 @@ describe("tarballProblems", () => {
     assert.deepEqual(tarballProblems(manifest(), [...FILES, "templates/app/src/index.stsx"]), []);
   });
 
+  it("accepts TypeScript exports of a package that ships its sources (@lumiose/ui)", () => {
+    const ui = manifest({
+      name: "@lumiose/ui",
+      exports: { ".": "./dist/index.ts", "./dialog": "./dist/dialog/dialog.tsx" },
+      bin: {},
+    });
+    const files = [
+      "LICENSE",
+      "README.md",
+      "package.json",
+      "dist/index.ts",
+      "dist/dialog/dialog.tsx",
+    ];
+    assert.deepEqual(tarballProblems(ui, files), []);
+  });
+
   it("reports missing or TypeScript exports and bins", () => {
     const problems = tarballProblems(
       manifest({ bin: { example: "./src/bin.ts" } }),

@@ -325,6 +325,116 @@ describe("release", () => {
   });
 });
 
+/** The fixture plus @lumiose/ui, a package outside lockstep at its own version, and commits to each. */
+function fixtureWithUi(options: { private?: boolean } = {}): string {
+  const repo = fixture();
+  mkdirSync(join(repo, "packages/ui"), { recursive: true });
+  writeFileSync(
+    join(repo, "packages/ui/package.json"),
+    `${JSON.stringify(
+      {
+        name: "@lumiose/ui",
+        version: "0.3.0",
+        ...(options.private ? { private: true } : {}),
+        peerDependencies: { lumiose: "workspace:^" },
+      },
+      null,
+      2,
+    )}\n`,
+  );
+  mkdirSync(join(repo, "backlog/tasks"), { recursive: true });
+  writeFileSync(join(repo, "backlog/tasks/task-1.md"), "Done\n");
+  git(repo, "add", "-A");
+  git(repo, "commit", "-q", "-m", "feat(ui): dialog");
+  writeFileSync(join(repo, "packages/lumiose/fix.ts"), "export {};\n");
+  git(repo, "add", "-A");
+  git(repo, "commit", "-q", "-m", "fix(dom): a crash");
+  return repo;
+}
+
+describe("packages outside lockstep (@lumiose/ui)", () => {
+  it("a lockstep release leaves them and their commits alone", () => {
+    const repo = fixtureWithUi();
+    release(repo, "0.1.0", { date: "2026-10-10", log: () => {} });
+    assert.equal(version(repo, "packages/lumiose/package.json"), "0.1.0");
+    assert.equal(version(repo, "packages/ui/package.json"), "0.3.0");
+    const changelog = readFileSync(join(repo, "CHANGELOG.md"), "utf8");
+    assert.match(changelog, /except those released outside lockstep \(@lumiose\/ui\)/);
+    assert.match(changelog, /signals/);
+    assert.match(changelog, /a crash/);
+    assert.doesNotMatch(changelog, /dialog/);
+  });
+
+  it("--package releases one at its own version, changelog and tag, without the scale gate", () => {
+    const repo = fixtureWithUi();
+    release(repo, "0.1.0", { date: "2026-10-10", log: () => {} });
+    const lines: string[] = [];
+    release(repo, "0.4.0", {
+      package: "@lumiose/ui",
+      dryRun: true,
+      runScale: never,
+      log: (line) => lines.push(line),
+    });
+    assert.match(lines.join("\n"), /dry run: @lumiose\/ui 0\.3\.0 -> 0\.4\.0/);
+    assert.doesNotMatch(lines.join("\n"), /scale gate/);
+    assert.equal(version(repo, "packages/ui/package.json"), "0.3.0");
+
+    release(repo, "0.4.0", {
+      package: "@lumiose/ui",
+      date: "2026-10-12",
+      runScale: never,
+      log: () => {},
+    });
+    assert.equal(version(repo, "packages/ui/package.json"), "0.4.0");
+    assert.equal(version(repo, "packages/lumiose/package.json"), "0.1.0");
+    assert.equal(version(repo, "packages/compiler/npm/linux-x64-gnu/package.json"), "0.1.0");
+    assert.match(readFileSync(join(repo, "Cargo.toml"), "utf8"), /version = "0\.1\.0"/);
+    const own = readFileSync(join(repo, "packages/ui/CHANGELOG.md"), "utf8");
+    assert.match(own, /^# Changelog\n\n@lumiose\/ui has its own versions/);
+    assert.match(own, /## 0\.4\.0 \(2026-10-12\)\n\n### Features\n\n- \*\*ui:\*\* dialog/);
+    assert.doesNotMatch(own, /signals|a crash/);
+    assert.doesNotMatch(readFileSync(join(repo, "CHANGELOG.md"), "utf8"), /0\.4\.0/);
+    assert.equal(git(repo, "log", "-1", "--format=%s"), "chore(release): @lumiose/ui@0.4.0");
+    assert.deepEqual(git(repo, "tag", "--list").split("\n"), ["@lumiose/ui@0.4.0", "v0.1.0"]);
+    assert.equal(git(repo, "status", "--porcelain"), "");
+
+    // The next release of the package lists only its commits after its own tag, wherever they
+    // changed files (its docs, its examples).
+    writeFileSync(join(repo, "packages/lumiose/ui.md"), "Menu\n");
+    git(repo, "add", "-A");
+    git(repo, "commit", "-q", "-m", "feat(ui): menu");
+    release(repo, "0.5.0", { package: "@lumiose/ui", date: "2026-10-13", log: () => {} });
+    const next = readFileSync(join(repo, "packages/ui/CHANGELOG.md"), "utf8");
+    const latest = next.slice(next.indexOf("## 0.5.0"), next.indexOf("## 0.4.0"));
+    assert.match(latest, /menu/);
+    assert.doesNotMatch(latest, /dialog/);
+    assert.match(next, /## 0\.4\.0[\s\S]*dialog/);
+    // ... and the next lockstep release leaves it out.
+    release(repo, "0.2.0", { date: "2026-10-14", skipScaleGate: true, log: () => {} });
+    const lockstep = readFileSync(join(repo, "CHANGELOG.md"), "utf8");
+    assert.doesNotMatch(lockstep.slice(0, lockstep.indexOf("## 0.1.0")), /menu/);
+    assert.equal(version(repo, "packages/ui/package.json"), "0.5.0");
+  });
+
+  it("refuses a lockstep package, a private or missing one and a version that is not higher", () => {
+    const repo = fixtureWithUi();
+    const ui = (v: string) => () => release(repo, v, { package: "@lumiose/ui", log: () => {} });
+    assert.throws(
+      () => release(repo, "0.1.0", { package: "lumiose", log: () => {} }),
+      /lumiose is released in lockstep/,
+    );
+    assert.throws(ui("0.3.0"), /not above the current version 0\.3\.0 of @lumiose\/ui/);
+    rmSync(join(repo, "packages/ui"), { recursive: true });
+    git(repo, "commit", "-q", "-am", "chore: drop ui");
+    assert.throws(ui("0.4.0"), /no package named @lumiose\/ui/);
+    const hidden = fixtureWithUi({ private: true });
+    assert.throws(
+      () => release(hidden, "0.4.0", { package: "@lumiose/ui", log: () => {} }),
+      /@lumiose\/ui is private/,
+    );
+  });
+});
+
 describe("scale gate", () => {
   it("flags ratios above 1.2 and missing metrics", () => {
     assert.deepEqual(scaleRegressions(scaleResult([1.2, 1, 1, 1])), []);

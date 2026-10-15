@@ -1,6 +1,7 @@
 // `pnpm pack:check`: packs every publishable package (each `prepack` builds its dist/) and checks
 // the tarballs as npm would publish them: built files only (no sources, tests or fixtures), every
-// export and bin present, no `workspace:` specifiers left, one shared version, and `npm publish
+// export and bin present, no `workspace:` specifiers left, one shared version (except the
+// packages outside lockstep, `INDEPENDENT_PACKAGES`), and `npm publish
 // --dry-run` accepts them in publish order (the path scripts/publish.ts takes for real; versions
 // already on npm are skipped there, the tarballs are still checked and smoke-tested). With
 // `--smoke`, it also creates an app with the packed create-lumiose, installs the packed packages
@@ -42,6 +43,20 @@ export interface Manifest {
   peerDependencies?: Record<string, string>;
   optionalDependencies?: Record<string, string>;
 }
+
+/**
+ * Packages with versions of their own, outside the lockstep version of the others (decision-54):
+ * `pnpm release:version <x.y.z> --package <name>` releases one alone, with its own changelog and a
+ * `<name>@<x.y.z>` tag (scripts/release.ts).
+ */
+export const INDEPENDENT_PACKAGES: ReadonlySet<string> = new Set(["@lumiose/ui"]);
+
+/**
+ * Packages that ship their component sources (`.ts`, `.tsx`, `.css`) for the app's Lumiose compiler
+ * to compile with the app's options, instead of compiled JavaScript (@lumiose/ui, TASK-353): their
+ * exports may name TypeScript files.
+ */
+export const SOURCE_PACKAGES: ReadonlySet<string> = new Set(["@lumiose/ui"]);
 
 /** Paths that must never be published. */
 const FORBIDDEN = [
@@ -96,7 +111,7 @@ export function tarballProblems(manifest: Manifest, files: string[]): string[] {
       if (!files.some((file) => file.startsWith(prefix)))
         problems.push(`export ${target}: no files`);
     } else if (!has.has(path)) problems.push(`export or bin ${target}: missing`);
-    if (path.endsWith(".ts") && !path.endsWith(".d.ts"))
+    if (path.endsWith(".ts") && !path.endsWith(".d.ts") && !SOURCE_PACKAGES.has(manifest.name))
       problems.push(`export or bin ${target}: TypeScript source`);
   }
   for (const field of ["dependencies", "peerDependencies", "optionalDependencies"] as const) {
@@ -241,12 +256,14 @@ function smoke(packed: Packed[], out: string): void {
 }
 
 /**
- * Packs every publishable package into `out`. Platform packages whose binary is not built here are
- * skipped, or reported when `allBinaries` (a release needs every one).
+ * Packs every publishable package into `out`, or those whose name `include` accepts. Platform
+ * packages whose binary is not built here are skipped, or reported when `allBinaries` (a release
+ * needs every one).
  */
 export function packAll(
   out: string,
   allBinaries = false,
+  include: (name: string) => boolean = () => true,
 ): { packed: Packed[]; failures: string[] } {
   rmSync(out, { recursive: true, force: true });
   mkdirSync(out, { recursive: true });
@@ -255,6 +272,7 @@ export function packAll(
   const ready = stageBinaries();
   const platforms = platformPackages();
   for (const dir of publishable()) {
+    if (!include(readManifest(dir).name)) continue;
     if (platforms.includes(dir) && !ready.has(dir)) {
       const message = `${readManifest(dir).name}: its binary is not built here`;
       if (allBinaries) failures.push(message);
@@ -267,7 +285,8 @@ export function packAll(
       failures.push((error as Error).message);
     }
   }
-  const versions = new Set(packed.map((p) => p.manifest.version));
+  const lockstep = packed.filter((p) => !INDEPENDENT_PACKAGES.has(p.name));
+  const versions = new Set(lockstep.map((p) => p.manifest.version));
   if (versions.size > 1)
     failures.push(`the packages do not share one version: ${[...versions].join(", ")}`);
   return { packed, failures };

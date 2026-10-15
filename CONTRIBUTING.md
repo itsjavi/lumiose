@@ -178,7 +178,8 @@ then `wasm-bindgen --target web` (what the playground loads) or `--target nodejs
 ## Releases
 
 All published packages, the `@lumiose/compiler-<platform>` packages and the Cargo workspace share
-one version (lockstep); nothing is bumped by hand.
+one version (lockstep); nothing is bumped by hand. The exception is `@lumiose/ui`, which keeps its
+own 0.x versions until its own 1.0 ([below](#packages-outside-lockstep)).
 
 1. `pnpm release:version <x.y.z> --dry-run` prints the files it would change and the changelog
    section. Without `--dry-run`, on a clean working tree, `scripts/release.ts` sets the version of
@@ -214,3 +215,24 @@ one version (lockstep); nothing is bumped by hand.
 CI exercises the same path without publishing: the `pack` job's `pnpm pack:check` runs
 `npm publish --dry-run` in publish order, and `node --test scripts/*.test.ts` covers
 `release:version` (dry run and a real run in a scratch repository).
+
+### Packages outside lockstep
+
+`@lumiose/ui` has its own versions (0.x until its own 1.0, decision-54): its components change faster
+than the framework, and Lumiose's API freeze covers it only from its 1.0. The packages outside
+lockstep are listed in `INDEPENDENT_PACKAGES` (`scripts/pack.ts`).
+
+- `pnpm release:version <x.y.z> --package @lumiose/ui [--dry-run]` releases it alone: it sets the
+  version in `packages/ui/package.json`, prepends the release to `packages/ui/CHANGELOG.md` from the
+  Conventional Commits scoped `ui` (`feat(ui): …`, wherever they change files: the package, its docs,
+  its examples) since its last `@lumiose/ui@*` tag, commits
+  `chore(release): @lumiose/ui@X.Y.Z` and creates the annotated tag `@lumiose/ui@X.Y.Z`. No scale
+  gate: it measures the framework.
+- `git push origin HEAD @lumiose/ui@X.Y.Z` runs the same release workflow, which publishes only
+  `@lumiose/ui` (no compiler binaries are built) and creates its GitHub release from its own
+  changelog (`node scripts/release-notes.ts @lumiose/ui@X.Y.Z`).
+- A lockstep release (`pnpm release:version <x.y.z>`, tag `vX.Y.Z`) leaves `@lumiose/ui` alone: its
+  version is not bumped, it is not published, and the commits scoped `ui` stay out of
+  `CHANGELOG.md`. Its `lumiose` peer dependency is `workspace:^`, which packing turns into
+  `^` of the workspace's `lumiose` version (in 0.x, that minor): release `@lumiose/ui` again after
+  a `lumiose` minor release for it to accept that version.

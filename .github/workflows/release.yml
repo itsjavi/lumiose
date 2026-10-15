@@ -3,13 +3,16 @@
 # binary, then scripts/publish.ts packs every package (the binaries go into their
 # @lumiose/compiler-<platform> packages) and publishes them to npm with provenance, platform packages
 # first, and the github-release job creates the tag's GitHub release with its changelog section.
+# A package outside lockstep has its own tags (`pnpm release:version <x.y.z> --package @lumiose/ui`
+# tags @lumiose/ui@X.Y.Z, decision-54): pushing one publishes that package alone, without the
+# Binaries workflow, and creates its GitHub release from its own CHANGELOG.md.
 # Until the repository variable LUMIOSE_PUBLISH is "true", it is a dry run that publishes nothing;
 # a manual run (workflow_dispatch) is always a dry run.
 name: Release
 
 on:
   push:
-    tags: ["v*"]
+    tags: ["v*", "@lumiose/*@*"]
   workflow_dispatch:
 
 permissions:
@@ -21,12 +24,15 @@ concurrency:
 
 jobs:
   binaries:
+    # A package outside lockstep ships no compiler binary.
+    if: ${{ !startsWith(github.ref_name, '@') }}
     uses: ./.github/workflows/binaries.yml
     with:
       release: true
 
   publish:
     needs: binaries
+    if: ${{ !cancelled() && (needs.binaries.result == 'success' || needs.binaries.result == 'skipped') }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -48,6 +54,7 @@ jobs:
       # Every compiler-<target> artifact, flattened into packages/compiler, where scripts/publish.ts
       # picks up each binary for its platform package.
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        if: ${{ !startsWith(github.ref_name, '@') }}
         with:
           pattern: compiler-*
           path: packages/compiler
@@ -59,11 +66,12 @@ jobs:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
   # The GitHub release of the tag, after a real publish only (a dry run creates none): titled by the
-  # tag, with the version's CHANGELOG.md section as notes, a pre-release for x.y.z-* versions. A
-  # re-run updates the notes of the release it created.
+  # tag, with the version's CHANGELOG.md section as notes (the package's own for a package outside
+  # lockstep), a pre-release for x.y.z-* versions. A re-run updates the notes of the release it
+  # created.
   github-release:
     needs: publish
-    if: github.event_name == 'push' && vars.LUMIOSE_PUBLISH == 'true'
+    if: ${{ !cancelled() && needs.publish.result == 'success' && github.event_name == 'push' && vars.LUMIOSE_PUBLISH == 'true' }}
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -79,9 +87,10 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ github.ref_name }}
         run: |
-          version="${TAG#v}"
+          version="${TAG##*@}"
+          version="${version#v}"
           notes="$RUNNER_TEMP/notes.md"
-          node scripts/release-notes.ts "$version" > "$notes"
+          node scripts/release-notes.ts "$TAG" > "$notes"
           if gh release view "$TAG" >/dev/null 2>&1; then
             gh release edit "$TAG" --notes-file "$notes"
           else
