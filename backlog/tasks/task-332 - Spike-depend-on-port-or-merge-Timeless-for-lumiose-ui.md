@@ -1,11 +1,11 @@
 ---
 id: TASK-332
 title: 'Spike: depend on, port or merge Timeless for @lumiose/ui'
-status: In Progress
+status: Done
 assignee:
   - '@Halo'
 created_date: '2026-10-15 04:03'
-updated_date: '2026-10-15 12:36'
+updated_date: '2026-10-15 16:46'
 labels:
   - proposal
   - needs-decision
@@ -25,8 +25,8 @@ Agreed with the user on 2026-10-15 (grilling session on adoption by developers u
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
 - [x] #1 Dialog, menu and combobox are prototyped for each viable option
-- [ ] #2 A comparison on the criteria above and a recommended option with its API shape are reviewed by the user
-- [ ] #3 The approved option is recorded as a decision and M12's implementation tasks are created
+- [x] #2 A comparison on the criteria above and a recommended option with its API shape are reviewed by the user
+- [x] #3 The approved option is recorded as a decision and M12's implementation tasks are created
 <!-- AC:END -->
 
 ## Implementation Notes
@@ -170,4 +170,12 @@ import { Combobox, Dialog, Menu } from "@lumiose/ui";
 - Option (c): `TIMELESS_SRC=<Timeless checkout> pnpm exec lumiose build` in the example, then `lumiose preview` (the server fails with the decorator `SyntaxError`).
 
 2026-10-15 (Lux): the spike's Lumiose findings are tasks: F1 TASK-346, F3 TASK-347, F4 TASK-348, F5 TASK-349; F2 went to TASK-283. Waiting for the user's review of the proposal (AC #2 and #3).
+
+User decision, 2026-10-15: option (b), port Timeless's approach; tag prefix lu-; events openchange, checkedchange and change; role="alertdialog" on Dialog.Root; no part attribute; bind: on components and custom elements by convention. Recorded as decision-62. Timeless's own gaps U1 to U5 went to https://github.com/itsjavi/timeless/issues/16 at the user's request. Implementation tasks: I2 TASK-353, I3 TASK-354, I4 TASK-355, I5 TASK-356, I6 TASK-357, I7 TASK-358, I8 TASK-359, I9 TASK-360, I10 TASK-361, I12 TASK-362, I13 TASK-363; I11 is TASK-347 to TASK-349, F1 is TASK-346.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Spike done: @lumiose/ui ports Timeless's approach (decision-62); M12 implementation tasks created.
+<!-- SECTION:FINAL_SUMMARY:END -->
