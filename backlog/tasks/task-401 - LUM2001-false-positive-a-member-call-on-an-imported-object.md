@@ -2,11 +2,14 @@
 id: TASK-401
 title: 'LUM2001 false positive: a member call on an imported object'
 status: To Do
-assignee: []
+assignee:
+  - '@Photon'
 created_date: '2026-10-15 21:48'
+updated_date: '2026-10-15 22:29'
 labels:
   - compiler
   - lum2001
+milestone: m-12
 dependencies: []
 priority: medium
 ordinal: 400000
@@ -23,3 +26,9 @@ Found in TASK-371 (Beacon, 2026-10-15). Inside a component, `const toasts = Toas
 - [ ] #1 A member call on an imported module object inside a component does not warn LUM2001
 - [ ] #2 Reading a reactive prop through a member call still warns
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+2026-10-16 (Lux, orchestrator): assigned to Photon (compiler), in M12, where it was found.
+<!-- SECTION:NOTES:END -->

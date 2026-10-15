@@ -4,11 +4,14 @@ title: >-
   Selector hoisting evaluates a comparison of a list row in a branch that never
   runs
 status: To Do
-assignee: []
+assignee:
+  - '@Photon'
 created_date: '2026-10-15 22:02'
+updated_date: '2026-10-15 22:29'
 labels:
   - compiler
   - ssr
+milestone: m-12
 dependencies: []
 priority: high
 ordinal: 401000
@@ -34,3 +37,9 @@ With `props.on` false, `renderToString` throws the error from `boom()`. The same
 - [ ] #1 A selector's source is not evaluated before a row reaches the comparison, or an error there does not escape untaken branches
 - [ ] #2 A compiler or SSR test covers the repro
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+2026-10-16 (Lux, orchestrator): assigned to Photon (compiler), in M12, where it was found.
+<!-- SECTION:NOTES:END -->

@@ -5,7 +5,7 @@ status: To Do
 assignee:
   - '@Lux'
 created_date: '2026-10-15 19:52'
-updated_date: '2026-10-15 20:48'
+updated_date: '2026-10-15 22:29'
 labels:
   - ui
   - review
@@ -51,4 +51,46 @@ User request, 2026-10-15: start M12 worker batches autonomously, and review the 
 - the site's /ui section (live demos, Installation and Theming pages);
 - Combobox and Select in the showcase (/combobox, /select and their island pages);
 - the shared dismissal model across Menu, Popover and Combobox (TASK-396).
+
+## Batch 4 (2026-10-15): TASK-365 to 368 (Halo), TASK-370 and 371 (Beacon)
+
+**Proposed public names (for the user's review):**
+
+- **Field:**
+  - parts `Root`, `Label`, `Control`, `Description`, `Error`;
+  - props `name`, `disabled`, `invalid`, `validationMode` (`onSubmit`/`onBlur`/`onChange`) and `validate`, plus Error `match`;
+  - types `FieldValidate`, `FieldErrorMatch`, `ValidationMode`;
+  - the `lu-field` element and its `validation-mode` attribute;
+  - derived ids `-control`, `-label`, `-description`, `-error`, `-error-invalid`, `-error-always`, `-error-<key>`.
+- **Fieldset:** `Root`, `Legend`.
+- **Form:** `errors`, `validationMode`; type `FormErrors`.
+- **Input:** `value`, `defaultValue`, `onValueChange`.
+- **Checkbox:** `checked`, `defaultChecked`, `onCheckedChange`, `indeterminate`, `value`, `parent`, `readOnly`; attributes `data-indeterminate` and `data-parent`.
+- **CheckboxGroup:** `value`, `defaultValue`, `onValueChange`, `allValues`, `name`.
+- **RadioGroup:** `value`, `defaultValue`, `onValueChange`, `name`, `required`, `readOnly`. **Radio.Root:** `value`. The docs page is titled "Radio".
+- **Switch:** `checked`, `defaultChecked`, `onCheckedChange`, `value`, `readOnly`.
+- **Theme classes (form controls):** `lu-field`, `lu-input`, `lu-fieldset`, `lu-checkbox`, `lu-radio`, `lu-switch`.
+- **Exports (form controls):** `/field`, `/field.css`, `/fieldset`, `/form`, `/input`, `/checkbox`, `/checkbox-group`, `/radio-group`, `/switch`.
+- **Fixture:** the `UI_E2E_PORT` environment variable for the ui-e2e servers.
+- **Collapsible, Accordion and Toast:**
+  - exports `Collapsible`, `Accordion`, `Toast` and a named `createToastManager` (named because of TASK-401);
+  - entries `/collapsible`, `/accordion`, `/toast` and their `.css` files;
+  - elements `lu-accordion` and `lu-toast-viewport`;
+  - CSS variables `--collapsible-panel-height`, `--accordion-panel-height`, `--toast-index` and `--toast-swipe-movement-x/-y`;
+  - the `data-*` attributes listed in TASK-370 and TASK-371;
+  - the toast's `close` event, the `--close-toast` command and the "Notifications (F6)" label;
+  - theme classes `lu-collapsible`, `lu-accordion`, `lu-toast-viewport`, `lu-toast`.
+
+**Worth the user's look:**
+
+- How Field shows the browser's validation messages inside the field.
+- Toast in a modal dialog: the region moves into the topmost dialog.
+- `Accordion.Header` puts its `<h3>` inside `<summary>`. Screen readers are not yet verified.
+- Without JavaScript, a server-rendered toast stays until the next page.
+
+**Bugs found and filed:**
+
+- TASK-403: a hydration bug.
+- TASK-401: a false LUM2001.
+- TASK-402: selector hoisting.
 <!-- SECTION:NOTES:END -->
