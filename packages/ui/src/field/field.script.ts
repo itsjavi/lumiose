@@ -44,6 +44,8 @@ function controls(field: HTMLElement): Control[] {
   return [...field.querySelectorAll<Control>(CONTROL)].filter(
     (control) =>
       fieldOf(control) === field &&
+      // An Autocomplete's element (`free`) submits nothing: its input is the control.
+      !(control.localName === "lu-combobox" && control.hasAttribute("free")) &&
       control.willValidate !== undefined &&
       !/^(submit|reset|button|image|hidden)$/.test((control as HTMLInputElement).type ?? ""),
   );

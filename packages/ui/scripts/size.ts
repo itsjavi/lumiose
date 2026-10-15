@@ -150,6 +150,12 @@ const COMPONENTS: Component[] = [
     scripts: ["number-field/number-field.script.ts"],
     css: "number-field/number-field.css",
   },
+  {
+    name: "autocomplete",
+    module: "autocomplete/autocomplete.tsx",
+    scripts: ["combobox/combobox.script.ts"],
+    css: "combobox/combobox.css",
+  },
 ];
 
 const CLIENT_SCRIPT = /\?client$/;

@@ -57,6 +57,12 @@ export default function Home() {
         <li>
           <a href="/drawer">Drawer</a> (<a href="/drawer/island">in an island</a>)
         </li>
+        <li>
+          <a href="/number-field">Number Field</a> (<a href="/number-field/island">in an island</a>)
+        </li>
+        <li>
+          <a href="/autocomplete">Autocomplete</a> (<a href="/autocomplete/island">in an island</a>)
+        </li>
       </ul>
     </article>
   );

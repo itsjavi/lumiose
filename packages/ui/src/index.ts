@@ -181,3 +181,19 @@ export type {
   NumberFieldRootProps,
   NumberFieldScrubAreaProps,
 } from "./number-field/number-field.tsx";
+export { Autocomplete } from "./autocomplete/autocomplete.tsx";
+export type {
+  AutocompleteClearProps,
+  AutocompleteEmptyProps,
+  AutocompleteGroupLabelProps,
+  AutocompleteGroupProps,
+  AutocompleteInputProps,
+  AutocompleteItemProps,
+  AutocompleteLabelProps,
+  AutocompleteListProps,
+  AutocompleteMode,
+  AutocompletePopupProps,
+  AutocompleteRootProps,
+  AutocompleteStatusProps,
+  AutocompleteTriggerProps,
+} from "./autocomplete/autocomplete.tsx";

@@ -1,0 +1,12 @@
+import { Title } from "lumiose";
+import { AutocompleteSignals } from "../../../islands/AutocompleteSignals.tsx";
+
+export default function AutocompleteIslandPage() {
+  return (
+    <>
+      <Title>Autocomplete in an island, bound to a signal</Title>
+      <h1>Autocomplete in an island, bound to a signal</h1>
+      <AutocompleteSignals client:load />
+    </>
+  );
+}

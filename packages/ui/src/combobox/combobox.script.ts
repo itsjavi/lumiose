@@ -24,6 +24,13 @@
 //   parent dialog stays open), or focus moving elsewhere. It is placed by anchor positioning, or by
 //   ../placement/place.ts where that is missing.
 //
+// With `free` (Autocomplete, TASK-377), the input's text is the value, after the APG combobox with
+// list autocomplete and Base UI's Autocomplete: the input itself has the name and submits the text,
+// typing never has to match an option, and choosing one puts its value in the input (firing
+// `input` and `change` on it). The popup opens as one types (on a click only with
+// `open-on-input-click`) and closes when the text is emptied. With `inline`, the arrow keys show
+// the highlighted option's text in the input until Escape puts the typed text back.
+//
 // Listeners are delegated and options are queried when an event needs them, so Lumiose may add,
 // remove or rerender options at any time; a mutation observer gives new options the selection and
 // the current search, and opens the popup when results arrive while the user types (async
@@ -88,6 +95,15 @@ export class ComboboxElement extends HTMLElement {
   /** Whether a disabled fieldset around the element disables it. */
   #fieldsetDisabled = false;
   #observer: MutationObserver | undefined;
+  /** With `free`: the text as typed, which inline completion and Escape go back to. */
+  #typed = "";
+  /** With `free`: an `input` event the element fires itself, which is no typing. */
+  #echo = false;
+
+  /** Whether the input's text is the value (Autocomplete). */
+  get #free(): boolean {
+    return this.hasAttribute("free");
+  }
 
   /** The text field, `input[role=combobox]`. */
   get input(): HTMLInputElement | null {
@@ -200,6 +216,7 @@ export class ComboboxElement extends HTMLElement {
     // The server's selection, once the element's content is parsed: the options rendered selected.
     const settle = () => {
       if (this.#defaults) return;
+      if (this.#free) this.#typed = this.input?.value ?? "";
       const selected = this.#options().filter((o) => o.getAttribute("aria-selected") === "true");
       for (const option of selected)
         this.#labels.set(option.dataset.value ?? "", optionLabel(option));
@@ -227,6 +244,11 @@ export class ComboboxElement extends HTMLElement {
   }
 
   formResetCallback(): void {
+    if (this.#free) {
+      // The input resets itself, after the element.
+      queueMicrotask(() => this.#showClear());
+      return;
+    }
     if (!this.#defaults) return;
     this.#set(this.#defaults, false);
     // The input resets after the element, to its own default: put the label back after it.
@@ -239,6 +261,7 @@ export class ComboboxElement extends HTMLElement {
   }
 
   formStateRestoreCallback(state: string | FormData | null): void {
+    if (this.#free) return;
     const values =
       state instanceof FormData
         ? state.getAll(this.name).map(String)
@@ -262,6 +285,11 @@ export class ComboboxElement extends HTMLElement {
       case "pointermove":
         return this.#onPointerMove(event as PointerEvent);
       case "focusout": {
+        // With `free`, leaving the input accepts an inline completion.
+        const input = this.input;
+        if (this.#free && input && event.target === input && input.value !== this.#typed) {
+          this.#complete(input.value, false);
+        }
         // Focus moving to something else on the page (Tab, a click on a field) closes the popup.
         // Focus going nowhere (a click on the page, another window) leaves it to the outside-press
         // rules: a right-click outside keeps it open.
@@ -270,8 +298,9 @@ export class ComboboxElement extends HTMLElement {
         return;
       }
       case "change":
-        // The inner input's `change` reports typed text, not a choice: it stays inside.
-        if (event.target !== this) event.stopPropagation();
+        // The inner input's `change` reports typed text, not a choice: it stays inside (with
+        // `free`, the text is the value: it goes on).
+        if (event.target !== this && !this.#free) event.stopPropagation();
         return;
       case "command": {
         const { command } = event as Event & { command: string };
@@ -337,6 +366,13 @@ export class ComboboxElement extends HTMLElement {
 
   /** Writes the selection to the options, the chips, the clear buttons and the form. */
   #sync(): void {
+    if (this.#free) {
+      // The input is the form control: the element submits nothing and is always valid.
+      this.#internals.setFormValue(null);
+      this.#internals.setValidity({});
+      this.#showClear();
+      return;
+    }
     for (const option of this.#options()) {
       option.setAttribute(
         "aria-selected",
@@ -362,7 +398,10 @@ export class ComboboxElement extends HTMLElement {
   /** The input shows the selected option's label (single), or nothing (multiple). */
   #showLabel(): void {
     const input = this.input;
-    if (!input) return;
+    if (!input || this.#free) {
+      this.#showClear();
+      return;
+    }
     const text = this.multiple ? "" : (this.#labels.get(this.#values[0] ?? "") ?? "");
     if (input.value !== text) input.value = text;
     this.#showClear();
@@ -437,8 +476,13 @@ export class ComboboxElement extends HTMLElement {
   #show(highlight: boolean, edge: "first" | "last" = "first"): void {
     if (this.#disabled()) return;
     const input = this.input;
-    // The label of the selection is not a search: show every option.
-    if (!input || input.value === "" || input.value === this.#labels.get(this.#values[0] ?? "")) {
+    // The label of the selection is not a search: show every option. A free text is one.
+    if (this.#free) this.#filter(this.#typed);
+    else if (
+      !input ||
+      input.value === "" ||
+      input.value === this.#labels.get(this.#values[0] ?? "")
+    ) {
       this.#filter("");
     }
     this.#open();
@@ -516,9 +560,28 @@ export class ComboboxElement extends HTMLElement {
     option.scrollIntoView?.({ block: "nearest" });
   }
 
+  /**
+   * With `inline`: the input shows the highlighted option's text, the part past what was typed
+   * selected; back on the input (no option), the typed text.
+   */
+  #inline(option: HTMLElement | undefined): void {
+    const input = this.input;
+    if (!input) return;
+    const text = option ? (option.dataset.value ?? optionLabel(option)) : this.#typed;
+    input.value = text;
+    const typed = this.#typed;
+    if (option && fold(text).startsWith(fold(typed)))
+      input.setSelectionRange(typed.length, text.length);
+  }
+
   /** Chooses `option`: selects it (toggles it with `multiple`). */
   #choose(option: HTMLElement): void {
     if (disabled(option)) return;
+    if (this.#free) {
+      this.#close(false);
+      this.#complete(option.dataset.value ?? optionLabel(option), true);
+      return;
+    }
     const value = option.dataset.value ?? "";
     this.#labels.set(value, optionLabel(option));
     if (!this.multiple) {
@@ -545,8 +608,32 @@ export class ComboboxElement extends HTMLElement {
 
   // Events ------------------------------------------------------------------------------------
 
+  /** With `free`: puts `text` in the input, as typing would; `commit` also fires `change`. */
+  #complete(text: string, commit: boolean): void {
+    const input = this.input;
+    if (!input) return;
+    input.value = text;
+    this.#typed = text;
+    this.#echo = true;
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+    this.#echo = false;
+    if (commit) input.dispatchEvent(new Event("change", { bubbles: true }));
+    this.#showClear();
+  }
+
   #onInput(): void {
     const input = this.input!;
+    if (this.#free) {
+      if (this.#echo) return;
+      this.#typed = input.value;
+      this.#filter(input.value);
+      this.#highlight(undefined);
+      this.#showClear();
+      // An empty input closes the popup (the arrow keys open it with every option).
+      if (input.value !== "" && this.#showable()) this.#open();
+      else this.#close(false);
+      return;
+    }
     // Clearing the text clears a single selection.
     if (!this.multiple && input.value === "" && this.#values.length > 0) this.#set([], true);
     this.#filter(input.value);
@@ -564,7 +651,7 @@ export class ComboboxElement extends HTMLElement {
     this.#sync();
     const input = this.input;
     const label = this.#labels.get(this.#values[0] ?? "");
-    const search = input && input.value !== label ? input.value : "";
+    const search = this.#free ? this.#typed : input && input.value !== label ? input.value : "";
     this.#filter(search);
     const highlighted = this.#highlighted();
     if (highlighted && (!highlighted.isConnected || highlighted.hidden)) this.#highlight(undefined);
@@ -598,6 +685,7 @@ export class ComboboxElement extends HTMLElement {
         const index = reachable.indexOf(this.#highlighted()!);
         const next = index === -1 ? (down ? 0 : reachable.length - 1) : index + (down ? 1 : -1);
         this.#highlight(reachable[next]);
+        if (this.#free && this.hasAttribute("inline")) this.#inline(reachable[next]);
         return;
       }
       case "Enter": {
@@ -612,6 +700,8 @@ export class ComboboxElement extends HTMLElement {
         // Closed: the key goes on, so a parent dialog closes.
         if (open) {
           event.preventDefault();
+          // An inline completion goes back to the typed text.
+          if (this.#free) input.value = this.#typed;
           this.#close();
         }
         return;
@@ -641,9 +731,11 @@ export class ComboboxElement extends HTMLElement {
       this.input?.focus();
       return;
     }
-    // A click on the input opens the popup, as in Base UI.
+    // A click on the input opens the popup, as in Base UI (an Autocomplete's with
+    // `open-on-input-click`).
     if (target === this.input) {
-      if (!this.open && event.button === 0) this.#show(true);
+      const opens = !this.#free || this.hasAttribute("open-on-input-click");
+      if (!this.open && event.button === 0 && opens) this.#show(!this.#free);
       return;
     }
     // Invoker commands where the browser lacks them.
@@ -660,9 +752,11 @@ export class ComboboxElement extends HTMLElement {
       else this.#show(true);
       this.input?.focus();
     } else if (command === "--clear") {
-      if (this.input) this.input.value = "";
+      if (this.#free) this.#complete("", true);
+      else if (this.input) this.input.value = "";
       this.#filter("");
       this.#set([], true);
+      this.#close(false);
       this.input?.focus();
     }
   }

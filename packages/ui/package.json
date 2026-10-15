@@ -63,6 +63,8 @@
     "./drawer.css": "./src/drawer/drawer.css",
     "./number-field": "./src/number-field/number-field.tsx",
     "./number-field.css": "./src/number-field/number-field.css",
+    "./autocomplete": "./src/autocomplete/autocomplete.tsx",
+    "./autocomplete.css": "./src/combobox/combobox.css",
     "./themes/default.css": "./src/themes/default.css",
     "./package.json": "./package.json"
   },
@@ -112,6 +114,8 @@
       "./drawer.css": "./dist/drawer/drawer.css",
       "./number-field": "./dist/number-field/number-field.tsx",
       "./number-field.css": "./dist/number-field/number-field.css",
+      "./autocomplete": "./dist/autocomplete/autocomplete.tsx",
+      "./autocomplete.css": "./dist/combobox/combobox.css",
       "./themes/default.css": "./dist/themes/default.css",
       "./package.json": "./package.json"
     }
