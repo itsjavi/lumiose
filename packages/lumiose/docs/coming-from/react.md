@@ -3,7 +3,8 @@
 > Lumiose JSX reads like React, but components run once and never re-render, render on the server by default, and ship JavaScript only where a page asks for it.
 
 This page maps React 19 habits to Lumiose's current API. The linked pages have the full rules.
-Using a React framework too? [Coming from React Router](react-router.md) covers its side.
+Using a React framework too? [Coming from Next.js](nextjs.md) and
+[Coming from React Router](react-router.md) cover its side.
 
 ## Mental model
 

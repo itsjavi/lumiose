@@ -12,6 +12,7 @@ These docs match lumiose 0.4.0. Installed projects have them in `node_modules/lu
 ## Coming from
 
 - [React](coming-from/react.md): Hooks mapped to signals, React 19's forms and server components mapped to form actions and islands, what goes away (the rules of hooks, dependency arrays, stale closures, memoization) and the mistakes React habits cause.
+- [Next.js](coming-from/nextjs.md): The App Router mapped to Lumiose: the same route file names, server components by default, `client:*` islands instead of `"use client"`, form actions instead of server actions, metadata, caching and rendering modes.
 - [React Router](coming-from/react-router.md): Framework mode mapped to Lumiose: file routes instead of `routes.ts`, async components instead of loaders, form actions and `submit()` instead of actions and fetchers, middleware, the document and custom servers.
 
 ## Concepts
