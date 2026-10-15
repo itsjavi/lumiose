@@ -25,7 +25,7 @@ through their `class` prop:
 
 | Class               | On                                             | Variants                                                                |
 | ------------------- | ---------------------------------------------- | ----------------------------------------------------------------------- |
-| `lu-button`         | any `<button>` part                            | `data-variant="primary"`, `data-variant="destructive"`                  |
+| `lu-button`         | `Button`, any `<button>` part                  | `data-variant="primary"`, `data-variant="destructive"`                  |
 | `lu-dialog`         | `Dialog.Popup`                                 | Styles the backdrop, the title, the description and a `<footer>` inside |
 | `lu-popover`        | `Popover.Popup`                                | Styles the title, the description and a `<footer>` inside               |
 | `lu-tooltip`        | `Tooltip.Popup`                                |                                                                         |
@@ -43,6 +43,11 @@ through their `class` prop:
 | `lu-accordion`      | `Accordion.Root`                               | Items between borders; styles the triggers and animates the panels      |
 | `lu-toast-viewport` | `Toast.Viewport`                               | A column at the window's bottom end                                     |
 | `lu-toast`          | every `Toast.Root`                             | Styles the title, description and close button; `data-type="error"`     |
+| `lu-toggle`         | `Toggle`                                       | Pressed: a filled surface and a bar along the bottom                    |
+| `lu-toggle-group`   | `ToggleGroup`                                  | The toggles in a row, or a column when vertical                         |
+| `lu-progress`       | `Progress.Root`                                | The label and value above a bar; a sliding segment when indeterminate   |
+| `lu-meter`          | `Meter.Root`                                   | The label and value above a bar                                         |
+| `lu-slider`         | `Slider.Root`                                  | The label and value above the track, the indicator and 24px thumbs      |
 
 Its colours and radius are custom properties with shadcn/ui's names and a `--lu-` prefix, so a
 shadcn palette carries over:

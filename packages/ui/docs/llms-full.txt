@@ -94,6 +94,12 @@ custom properties, named as in shadcn/ui, are listed in [Theming](theming.md#the
 | [Collapsible](collapsible.md)       | Available: native `<details>`, works without JavaScript                                   |
 | [Accordion](accordion.md)           | Available: native `<details>` items, `<lu-accordion>` adds the keys                       |
 | [Toast](toast.md)                   | Available: server-rendered or from a manager, `<lu-toast-viewport>` times and closes them |
+| [Button](button.md)                 | Available: native `<button>`, focusable when disabled                                     |
+| [Toggle](toggle.md)                 | Available: `<button aria-pressed>`, pressed by the component in an island                 |
+| [Toggle Group](toggle-group.md)     | Available: `<lu-toggle-group>` presses its toggles and moves focus                        |
+| [Progress](progress.md)             | Available: native `<progress>`, indeterminate when unknown, no script                     |
+| [Meter](meter.md)                   | Available: native `<meter>`, no script                                                    |
+| [Slider](slider.md)                 | Available: native range inputs, `<lu-slider>` adds ranges and Page Up and Page Down       |
 
 ## Size
 
@@ -205,7 +211,7 @@ through their `class` prop:
 
 | Class               | On                                             | Variants                                                                |
 | ------------------- | ---------------------------------------------- | ----------------------------------------------------------------------- |
-| `lu-button`         | any `<button>` part                            | `data-variant="primary"`, `data-variant="destructive"`                  |
+| `lu-button`         | `Button`, any `<button>` part                  | `data-variant="primary"`, `data-variant="destructive"`                  |
 | `lu-dialog`         | `Dialog.Popup`                                 | Styles the backdrop, the title, the description and a `<footer>` inside |
 | `lu-popover`        | `Popover.Popup`                                | Styles the title, the description and a `<footer>` inside               |
 | `lu-tooltip`        | `Tooltip.Popup`                                |                                                                         |
@@ -223,6 +229,11 @@ through their `class` prop:
 | `lu-accordion`      | `Accordion.Root`                               | Items between borders; styles the triggers and animates the panels      |
 | `lu-toast-viewport` | `Toast.Viewport`                               | A column at the window's bottom end                                     |
 | `lu-toast`          | every `Toast.Root`                             | Styles the title, description and close button; `data-type="error"`     |
+| `lu-toggle`         | `Toggle`                                       | Pressed: a filled surface and a bar along the bottom                    |
+| `lu-toggle-group`   | `ToggleGroup`                                  | The toggles in a row, or a column when vertical                         |
+| `lu-progress`       | `Progress.Root`                                | The label and value above a bar; a sliding segment when indeterminate   |
+| `lu-meter`          | `Meter.Root`                                   | The label and value above a bar                                         |
+| `lu-slider`         | `Slider.Root`                                  | The label and value above the track, the indicator and 24px thumbs      |
 
 Its colours and radius are custom properties with shadcn/ui's names and a `--lu-` prefix, so a
 shadcn palette carries over:
@@ -483,6 +494,105 @@ not toggle, also from the keyboard.
 - [Collapsible](collapsible.md): one panel and its trigger.
 - [Tabs](tabs.md): one panel at a time, from a tab list.
 - [UI components](README.md): the approach, styling and the other components.
+
+<!-- source: button.md -->
+
+# Button
+
+> A native `<button>`, after Base UI's Button. It is `type="button"` unless you say otherwise, so it submits a form only when asked to. Disabled it leaves the tab order; with `focusableWhenDisabled` it stays focusable as `aria-disabled="true"` (a loading state keeps focus where it was) and a tiny script cancels its clicks.
+
+```ts
+import { Button } from "@lumiose/ui"; // or "@lumiose/ui/button"
+import "@lumiose/ui/themes/default.css"; // optional: the default theme
+```
+
+## Anatomy
+
+```tsx
+<Button>Save</Button>
+```
+
+| Part     | Renders                                                                       |
+| -------- | ----------------------------------------------------------------------------- |
+| `Button` | `<button type="button">`; `aria-disabled="true"` with `focusableWhenDisabled` |
+
+## API
+
+### Button
+
+| Prop                    | Type      | Default    |                                                                                                            |
+| ----------------------- | --------- | ---------- | ---------------------------------------------------------------------------------------------------------- |
+| `type`                  | `string`  | `"button"` | `"submit"` or `"reset"` to act on its form.                                                                |
+| `disabled`              | `boolean` | `false`    | Natively disabled: out of the tab order, its clicks ignored.                                               |
+| `focusableWhenDisabled` | `boolean` | `false`    | With `disabled`: it stays focusable as `aria-disabled="true"`, and its clicks, Enter and Space do nothing. |
+
+Every other native prop passes through: `name`, `value`, `form`, `command`, `commandfor`,
+`popovertarget`, `id`, `class`, `aria-*`, `onClick`.
+
+**Differences from Base UI's Button.** It is always a `<button>`: no `nativeButton` or `render`. For
+a link that looks like a button, style an `<a>` with the same class.
+
+## Example
+
+A save button that keeps focus while it saves, in an island:
+
+```tsx check
+import { Button } from "@lumiose/ui";
+import { signal } from "lumiose";
+
+export function SavingButton() {
+  const saving = signal(false);
+  return (
+    <Button
+      class="lu-button"
+      data-variant="primary"
+      disabled={saving()}
+      focusableWhenDisabled
+      onClick={() => {
+        saving.set(true);
+        setTimeout(() => saving.set(false), 1500);
+      }}
+    >
+      {saving() ? "Saving…" : "Save"}
+    </Button>
+  );
+}
+```
+
+## Styling
+
+**With the default theme**, put `lu-button` on it (`data-variant="primary"` or
+`data-variant="destructive"` for the others): a 36px tall button with a focus ring, faded when
+`:disabled` or `[aria-disabled="true"]`.
+
+**With your own CSS**, style the button and its states: `:hover`, `:focus-visible`, `:disabled`,
+`[aria-disabled="true"]`.
+
+Button ships no stylesheet: it needs none to work.
+
+## Keyboard and focus
+
+| Key           | Does                                                                          |
+| ------------- | ----------------------------------------------------------------------------- |
+| Enter / Space | Presses it, unless it is disabled.                                            |
+| Tab           | Moves on. A disabled button is skipped, unless it is focusable when disabled. |
+
+## Without JavaScript, and the client script
+
+A native button: it works, submits and resets with no script. The client script (0.1 kB brotli)
+only cancels the clicks, Enter and Space of an `aria-disabled` button (one without a `role` of its
+own); without it such a button still acts, so a server page that disables a button until
+something happens should use `disabled` alone.
+
+## Browser support
+
+Native `<button>`: every browser.
+
+## Related
+
+- [Toggle](toggle.md): a button that stays pressed.
+- [Form](form.md): a form whose submit button is a Button.
+- [Dialog](dialog.md): a Button with `command="show-modal"` opens a dialog without JavaScript.
 
 <!-- source: checkbox.md -->
 
@@ -2328,6 +2438,111 @@ The element is also an API of its own, for scripts and other frameworks:
 - [JSX](https://itsjavi.com/lumiose/docs/concepts/jsx/): `bind:`, native events with `on:` and
   `ref`.
 
+<!-- source: meter.md -->
+
+# Meter
+
+> A measurement within a known range (storage used, a password's strength, a rating), after Base UI's Meter: a native `<meter>` (with its value, range and `aria-valuetext`), labelled, with the value as text (a percentage of the range by default, or your `Intl.NumberFormat` options). No script.
+
+```ts
+import { Meter } from "@lumiose/ui"; // or "@lumiose/ui/meter"
+import "@lumiose/ui/themes/default.css"; // optional: the default theme
+```
+
+## Anatomy
+
+```tsx
+<Meter.Root value={72}>
+  <Meter.Label />
+  <Meter.Value />
+  <Meter.Track />
+</Meter.Root>
+```
+
+| Part    | Renders                                         |
+| ------- | ----------------------------------------------- |
+| `Root`  | `<div>` with `--lu-value` (`0%` to `100%`)      |
+| `Label` | `<label for>` the track                         |
+| `Value` | `<span>` with the formatted value               |
+| `Track` | `<meter value min max aria-valuetext>`: the bar |
+
+## API
+
+### Meter.Root
+
+| Prop               | Type                                                | Default             |                                                                                     |
+| ------------------ | --------------------------------------------------- | ------------------- | ----------------------------------------------------------------------------------- |
+| `value`            | `number`                                            |                     | The measurement, from `min` to `max`. Required.                                     |
+| `min`              | `number`                                            | `0`                 | The bottom of the range.                                                            |
+| `max`              | `number`                                            | `100`               | The top of the range.                                                               |
+| `format`           | `Intl.NumberFormatOptions`                          | a percentage        | How the value is written. With it, the value itself is formatted, not a percentage. |
+| `locale`           | `Intl.LocalesArgument`                              | the browser's       | The locale of the formatted value (the server's in server HTML).                    |
+| `getAriaValueText` | `(formattedValue: string, value: number) => string` | the formatted value | The text assistive technology reads.                                                |
+
+Every other prop passes through to the `<div>`: `id`, `class`, `style`.
+
+### Meter.Label, Meter.Track and Meter.Value
+
+`Label` takes `<label>` props. `Track` takes `<meter>` props, among them the native `low`, `high`
+and `optimum`, which tell browsers which band a value is in (`aria-label` when there is no
+`Label`). `Value` takes `<span>` props, and its `children` may be a function
+`(formattedValue, value) => JSX.Element`.
+
+**Differences from Base UI's Meter.** The `<meter>` element is the track and the indicator: there is
+no `Meter.Indicator`. Root has no `role`; the `<meter>` has it (`meter`).
+
+## Example
+
+```tsx check
+import { Meter } from "@lumiose/ui";
+
+export function StorageMeter() {
+  return (
+    <Meter.Root
+      value={7.2}
+      max={10}
+      getAriaValueText={(_, gb) => `${gb} of 10 GB`}
+      class="lu-meter"
+    >
+      <Meter.Label>Storage used</Meter.Label>
+      <Meter.Value>{(_, gb) => `${gb} GB of 10`}</Meter.Value>
+      <Meter.Track low={6} high={9} optimum={0} />
+    </Meter.Root>
+  );
+}
+```
+
+## Styling
+
+**With the default theme**, put `lu-meter` on `Root`: the label and the value on a row above a 10px
+bar, its edge in `--lu-input` (3:1, so the whole range shows) and its value in the primary colour
+(a lighter blue in dark mode), whatever band it is in.
+
+**With your own CSS**, style the bar with `appearance: none` and its pseudo-elements:
+`::-webkit-meter-bar`, `::-webkit-meter-optimum-value`, `::-webkit-meter-suboptimum-value`,
+`::-webkit-meter-even-less-good-value`, `::-moz-meter-bar` (and `:-moz-meter-optimum` and the
+others). Or draw your own bar from `--lu-value` on `Root`.
+
+Meter ships no stylesheet: it needs none to work.
+
+## Keyboard and focus
+
+A meter is not interactive: it takes no focus and no keys.
+
+## Without JavaScript
+
+Fully: the server renders the `<meter>` with its value, range, label and text.
+
+## Browser support
+
+Native `<meter>`: every browser. Its pseudo-elements differ between engines, hence the two sets
+above. `role="meter"` reaches screen readers in recent versions; older ones read a progress bar.
+
+## Related
+
+- [Progress](progress.md): a task's progress, which can be indeterminate.
+- [Slider](slider.md): a value the user picks within a range.
+
 <!-- source: popover.md -->
 
 # Popover
@@ -2520,6 +2735,120 @@ islands bundle it. It covers every Popover on the page:
 - [UI components](README.md): the approach, styling, the default theme and the other components.
 - [Tooltip](tooltip.md): a short tip on hover or focus, with the same placement props.
 - [Dialog](dialog.md): a modal popup.
+
+<!-- source: progress.md -->
+
+# Progress
+
+> A task's progress, after Base UI's Progress: a native `<progress>` (the progress bar for assistive technology, with its value and `aria-valuetext`), labelled, with the value as text (a percentage by default, or your `Intl.NumberFormat` options). With no value it is indeterminate. No script.
+
+```ts
+import { Progress } from "@lumiose/ui"; // or "@lumiose/ui/progress"
+import "@lumiose/ui/themes/default.css"; // optional: the default theme
+```
+
+## Anatomy
+
+```tsx
+<Progress.Root value={30}>
+  <Progress.Label />
+  <Progress.Value />
+  <Progress.Track />
+</Progress.Root>
+```
+
+| Part    | Renders                                                                        |
+| ------- | ------------------------------------------------------------------------------ |
+| `Root`  | `<div>` with `--lu-value` (`0%` to `100%`; unset while indeterminate)          |
+| `Label` | `<label for>` the track                                                        |
+| `Value` | `<span>` with the formatted value (empty while indeterminate)                  |
+| `Track` | `<progress value max aria-valuetext>`: the bar; no `value` while indeterminate |
+
+## API
+
+### Progress.Root
+
+| Prop               | Type                                                | Default             |                                                                                     |
+| ------------------ | --------------------------------------------------- | ------------------- | ----------------------------------------------------------------------------------- |
+| `value`            | `number \| null`                                    |                     | The progress, from `min` to `max`; `null` while unknown (indeterminate). Required.  |
+| `min`              | `number`                                            | `0`                 | The start.                                                                          |
+| `max`              | `number`                                            | `100`               | The end: done.                                                                      |
+| `format`           | `Intl.NumberFormatOptions`                          | a percentage        | How the value is written. With it, the value itself is formatted, not a percentage. |
+| `locale`           | `Intl.LocalesArgument`                              | the browser's       | The locale of the formatted value (the server's in server HTML).                    |
+| `getAriaValueText` | `(formattedValue: string, value: number) => string` | the formatted value | The text assistive technology reads.                                                |
+
+Every other prop passes through to the `<div>`: `id`, `class`, `style`.
+
+### Progress.Label, Progress.Track and Progress.Value
+
+`Label` takes `<label>` props. `Track` takes `<progress>` props (`aria-label` when there is no
+`Label`). `Value` takes `<span>` props, and its `children` may be a function
+`(formattedValue, value) => JSX.Element` that writes the value your way.
+
+**Differences from Base UI's Progress.** The `<progress>` element is the track and the indicator:
+there is no `Progress.Indicator` (style the element's value pseudo-elements, or use `--lu-value`).
+Root has no `role`; the `<progress>` has it.
+
+## Example
+
+An upload, in an island:
+
+```tsx check
+import { Progress } from "@lumiose/ui";
+import { signal } from "lumiose";
+
+export function UploadProgress() {
+  const done = signal<number | null>(null);
+  return (
+    <p>
+      <button
+        type="button"
+        class="lu-button"
+        onClick={() => done.set(Math.min(100, (done() ?? 0) + 20))}
+      >
+        Upload a part
+      </button>
+      <Progress.Root value={done()} class="lu-progress">
+        <Progress.Label>Uploading</Progress.Label>
+        <Progress.Value />
+        <Progress.Track />
+      </Progress.Root>
+    </p>
+  );
+}
+```
+
+## Styling
+
+**With the default theme**, put `lu-progress` on `Root`: the label and the value on a row above a
+10px bar, its edge in `--lu-input` (3:1 against the page, so the whole range shows) and its value in
+the primary colour (a lighter blue in dark mode). Indeterminate, a segment slides along it; it
+stands still where motion is reduced.
+
+**With your own CSS**, style the bar with `appearance: none` and its pseudo-elements:
+`::-webkit-progress-bar`, `::-webkit-progress-value`, `::-moz-progress-bar`, and
+`progress:indeterminate`. Or draw your own bar from `--lu-value` on `Root`.
+
+Progress ships no stylesheet: it needs none to work.
+
+## Keyboard and focus
+
+A progress bar is not interactive: it takes no focus and no keys.
+
+## Without JavaScript
+
+Fully: the server renders the `<progress>` with its value, the label and the text. It changes when
+the component renders again (in an island, from a signal).
+
+## Browser support
+
+Native `<progress>`: every browser. Its pseudo-elements differ between engines, hence the two sets
+above.
+
+## Related
+
+- [Meter](meter.md): a measurement within a range, not a task's progress.
+- [Toast](toast.md): tell the user when the task is done.
 
 <!-- source: radio-group.md -->
 
@@ -2881,6 +3210,166 @@ control's value when it changes, and its `change` event calls `onValueChange`.
 - [UI components](README.md): the approach, styling, the default theme and the other components.
 - [Islands](https://itsjavi.com/lumiose/docs/concepts/islands/): running a component in the
   browser, for `bind:value`.
+
+<!-- source: slider.md -->
+
+# Slider
+
+> A value picked within a range by dragging or with the keys, or a range with two thumbs, after Base UI's Slider. Each thumb is a native `<input type="range">`, so it drags, takes the arrow keys, Home and End, follows the text direction and submits with its form, in server HTML and without JavaScript. `<lu-slider>` adds Page Up and Page Down, keeps a range's thumbs in order, moves the nearest thumb on a press on the track and keeps the value text current. `bind:value` keeps a signal in sync.
+
+```ts
+import { Slider } from "@lumiose/ui"; // or "@lumiose/ui/slider"
+import "@lumiose/ui/slider.css"; // or "@lumiose/ui/styles.css" for every component
+import "@lumiose/ui/themes/default.css"; // optional: the default theme
+```
+
+## Anatomy
+
+```tsx
+<Slider.Root>
+  <Slider.Label />
+  <Slider.Value />
+  <Slider.Control>
+    <Slider.Track>
+      <Slider.Indicator />
+    </Slider.Track>
+    <Slider.Thumb />
+  </Slider.Control>
+</Slider.Root>
+```
+
+| Part        | Renders                                                                            |
+| ----------- | ---------------------------------------------------------------------------------- |
+| `Root`      | `<lu-slider data-orientation>` with `--lu-slider-start` and `--lu-slider-end`      |
+| `Label`     | `<label for>` the first thumb; thumbs without an `aria-label` are labelled by it   |
+| `Value`     | `<output for>` the thumbs, with the formatted values (`20 – 80`)                   |
+| `Control`   | `<div>`: the track and the thumbs stacked in one place; presses on it move a thumb |
+| `Track`     | `<div>`: the rail                                                                  |
+| `Indicator` | `<div>`: the selected part, from `--lu-slider-start` to `--lu-slider-end`          |
+| `Thumb`     | `<input type="range" min max step value name>`, one per value, in order            |
+
+## API
+
+### Slider.Root
+
+| Prop                     | Type                           | Default        |                                                                                                 |
+| ------------------------ | ------------------------------ | -------------- | ----------------------------------------------------------------------------------------------- |
+| `value`                  | `number \| number[]`           |                | Moves the thumbs when it changes (an array: one value per thumb). Pair it with `onValueChange`. |
+| `defaultValue`           | `number \| number[]`           | `min`          | The value at first; a form reset goes back to it.                                               |
+| `onValueChange`          | `(value) => void`              |                | Called with the new value as a thumb moves.                                                     |
+| `onValueCommitted`       | `(value) => void`              |                | Called when a move ends: a release, a key press.                                                |
+| `bind:value`             | `Signal<number \| number[]>`   |                | Stands in for `value` and `onValueChange`.                                                      |
+| `min`                    | `number`                       | `0`            | The smallest value.                                                                             |
+| `max`                    | `number`                       | `100`          | The largest value.                                                                              |
+| `step`                   | `number`                       | `1`            | The step of the arrow keys; values snap to it.                                                  |
+| `largeStep`              | `number`                       | `10`           | The step of Page Up, Page Down and Shift with an arrow key.                                     |
+| `minStepsBetweenValues`  | `number`                       | `0`            | With several thumbs: how many steps apart they stay.                                            |
+| `thumbCollisionBehavior` | `"push"` \| `"none"`           | `"push"`       | With several thumbs: a thumb moved into another pushes it along, or stops at it.                |
+| `orientation`            | `"horizontal"` \| `"vertical"` | `"horizontal"` | Vertical sliders run bottom to top.                                                             |
+| `disabled`               | `boolean`                      | `false`        | Disables every thumb.                                                                           |
+| `name`                   | `string`                       |                | The thumbs submit their values under it, one entry each.                                        |
+| `form`                   | `string`                       |                | The id of a form the thumbs belong to, when they are outside it.                                |
+| `format`                 | `Intl.NumberFormatOptions`     | plain numbers  | How the values are written; with it, each thumb's `aria-valuetext` is its formatted value.      |
+| `locale`                 | `string`                       | the browser's  | The locale of the formatted values (the server's in server HTML).                               |
+
+The value's type follows `value`, `defaultValue` or `bind:value`: a number for one thumb, a
+`number[]` for a range. Every other prop passes through to `<lu-slider>`: `id`, `class`, `style`.
+
+### The other parts
+
+`Label` takes `<label>` props. `Value` takes `<output>` props, and its `children` may be a function
+`(formattedValues, values) => JSX.Element` (then it has no `for`, and you render its text). `Control`,
+`Track` and `Indicator` take `<div>` props. `Thumb` takes `<input>` props except the range's own
+(`aria-label`, `aria-valuetext`, `disabled`, `id`, `class`); give each thumb of a range an
+`aria-label` ("Minimum price"). Inside a Field, the first thumb takes the field's id, name,
+description and error.
+
+**Differences from Base UI's Slider.** Thumbs are the range inputs themselves, so there is no hidden
+input, no `inputRef`, no `getAriaLabel` (use `aria-label` on each Thumb) and no
+`thumbAlignment` (native thumbs stay inside the track, as Base UI's `"edge"`).
+`thumbCollisionBehavior="swap"` is not supported. `format` is `Intl.NumberFormatOptions` and
+`locale` a string, both written to the element for its script.
+
+## Example
+
+A price range, in an island:
+
+```tsx check
+import { Slider } from "@lumiose/ui";
+import { signal } from "lumiose";
+
+export function PriceRange() {
+  const price = signal([20, 80]);
+  return (
+    <Slider.Root
+      name="price"
+      bind:value={price}
+      minStepsBetweenValues={5}
+      format={{ style: "currency", currency: "EUR", maximumFractionDigits: 0 }}
+      class="lu-slider"
+    >
+      <Slider.Label>Price</Slider.Label>
+      <Slider.Value />
+      <Slider.Control>
+        <Slider.Track>
+          <Slider.Indicator />
+        </Slider.Track>
+        <Slider.Thumb aria-label="Minimum price" />
+        <Slider.Thumb aria-label="Maximum price" />
+      </Slider.Control>
+    </Slider.Root>
+  );
+}
+```
+
+## Styling
+
+**With the default theme**, put `lu-slider` on `Root`: the label and the value on a row above a 24px
+tall control, an 8px track edged in `--lu-input` (3:1), the selected part in the primary colour,
+and 24px round thumbs with a focus ring around the thumb. Vertical sliders are 10rem tall.
+
+**With your own CSS**, style the parts through `class`, the thumbs' pseudo-elements
+(`::-webkit-slider-thumb`, `::-moz-range-thumb`), `[data-orientation="vertical"]`, `:disabled`,
+`:focus-visible`, and the Indicator through `--lu-slider-start` and `--lu-slider-end`. Over a Track,
+the thumbs' own tracks are transparent (`appearance: none`).
+
+`@lumiose/ui/slider.css` (0.3 kB brotli) stacks the track and thumbs, spans the Indicator, writes
+vertical thumbs bottom to top and lets only the thumbs of a range take the pointer.
+
+## Keyboard and focus
+
+| Key                     | Does                                                                         |
+| ----------------------- | ---------------------------------------------------------------------------- |
+| Tab                     | Moves between the thumbs, then on: one tab stop per thumb.                   |
+| Arrow Right / Arrow Up  | One step up (Arrow Left goes up right to left).                              |
+| Arrow Left / Arrow Down | One step down (Arrow Right goes down right to left).                         |
+| Page Up / Page Down     | `largeStep` up or down.                                                      |
+| Shift + an arrow        | `largeStep` in that direction.                                               |
+| Home / End              | The minimum or the maximum (a range's thumb stops at, or pushes, the other). |
+
+Every drag has these keys as its alternative (WCAG 2.5.7). A press on a range's track moves the
+nearest thumb there and focuses it; a press on a single slider's track moves its thumb.
+
+## Without JavaScript, and the element's script
+
+The thumbs are native range inputs: dragging, the arrows, Home, End, right to left, vertical,
+submission, `disabled` and reset work with no script, and the server HTML has the Indicator's
+custom properties and the value text. `<lu-slider>`'s script (1.5 kB brotli) adds Page Up and Page
+Down, keeps a range's thumbs in order and apart, moves the nearest thumb on a press on its track,
+and keeps the Indicator, `aria-valuetext` and the Value text current (also after a form reset).
+Without it, a range's thumbs can cross, and the Value text and the Indicator stay where the server
+put them.
+
+## Browser support
+
+Native range inputs: every browser. Vertical sliders use `writing-mode: vertical-lr` on the thumbs
+(Chrome 124, Safari 17.4, Firefox 120 and later).
+
+## Related
+
+- [Field](field.md): a label, description and error for a slider.
+- [Meter](meter.md): show a value in a range, without picking it.
+- [Input](input.md): `type="number"` for an exact value.
 
 <!-- source: switch.md -->
 
@@ -3474,6 +3963,220 @@ does. A toast in the page's HTML is announced the same way once the script runs.
 - [UI components](README.md): the approach, styling and the other components.
 - [Dialog](dialog.md): a modal popup, which the toasts' region follows.
 - [Data and actions](https://itsjavi.com/lumiose/docs/concepts/data-and-actions/): a form action's result, for a server-rendered toast.
+
+<!-- source: toggle.md -->
+
+# Toggle
+
+> A two-state button (bold, mute, pin), after Base UI's Toggle: a native `<button type="button" aria-pressed>`. Its label stays the same; `aria-pressed` tells pressed from not. On its own the component presses it, in an island, and `bind:pressed` keeps a signal in sync; inside a [Toggle Group](toggle-group.md) the group presses it, on server pages too.
+
+```ts
+import { Toggle } from "@lumiose/ui"; // or "@lumiose/ui/toggle"
+import "@lumiose/ui/themes/default.css"; // optional: the default theme
+```
+
+## Anatomy
+
+```tsx
+<Toggle aria-label="Bold">B</Toggle>
+```
+
+| Part     | Renders                                                     |
+| -------- | ----------------------------------------------------------- |
+| `Toggle` | `<button type="button" aria-pressed="true">` (or `"false"`) |
+
+## API
+
+### Toggle
+
+| Prop              | Type                         | Default |                                                                         |
+| ----------------- | ---------------------------- | ------- | ----------------------------------------------------------------------- |
+| `pressed`         | `boolean`                    |         | Presses or releases it when it changes. Pair it with `onPressedChange`. |
+| `defaultPressed`  | `boolean`                    | `false` | Whether it starts pressed.                                              |
+| `onPressedChange` | `(pressed: boolean) => void` |         | Called after the user presses or releases it.                           |
+| `bind:pressed`    | `Signal<boolean>`            |         | Stands in for `pressed` and `onPressedChange`.                          |
+| `value`           | `string`                     |         | Its identity in a Toggle Group's `value`.                               |
+
+Every other native button prop passes through: `disabled`, `id`, `class`, `aria-label`, `aria-*`,
+`onClick` (`type` is always `"button"`).
+
+**Differences from Base UI's Toggle.** No `nativeButton` or `render`. `onPressedChange` gets the new
+state only; in a group, a `pressedchange` listener can cancel the press with
+`event.preventDefault()`.
+
+## Example
+
+```tsx check
+import { Toggle } from "@lumiose/ui";
+import { signal } from "lumiose";
+
+export function PinToggle() {
+  const pinned = signal(false);
+  return (
+    <p>
+      <Toggle bind:pressed={pinned} class="lu-toggle">
+        Pin
+      </Toggle>{" "}
+      {pinned() ? "Pinned to the top." : "Not pinned."}
+    </p>
+  );
+}
+```
+
+Give an icon-only toggle an `aria-label` that names the action ("Bold"), not its state.
+
+## Styling
+
+**With the default theme**, put `lu-toggle` on it: a bordered 36px button that, pressed, takes a
+filled surface and a bar along its bottom edge, so the state shows by shape and not by colour alone.
+
+**With your own CSS**, style the button and its state: `[aria-pressed="true"]`, `:hover`,
+`:focus-visible`, `:disabled`.
+
+Toggle ships no stylesheet: it needs none to work.
+
+## Keyboard and focus
+
+| Key           | Does                         |
+| ------------- | ---------------------------- |
+| Enter / Space | Presses or releases it.      |
+| Tab           | Moves on: one tab stop each. |
+
+In a Toggle Group, the group's arrow keys move between the toggles instead.
+
+## Without JavaScript
+
+A native button with its state in `aria-pressed` from the server. On its own, a Toggle is pressed
+by the component, so it needs an island (its state is for your code anyway); in a Toggle Group the
+group's script presses it on server pages too. For a value a form submits, use a
+[Checkbox](checkbox.md) or a [Switch](switch.md).
+
+## Browser support
+
+`aria-pressed` on a native button: every browser and screen reader.
+
+## Related
+
+- [Toggle Group](toggle-group.md): toggles that share one value, one or several pressed.
+- [Switch](switch.md): an on/off setting submitted with a form.
+- [Button](button.md): a plain button.
+
+<!-- source: toggle-group.md -->
+
+# Toggle Group
+
+> A set of [Toggles](toggle.md) with one value, after Base UI's ToggleGroup: text alignment (one pressed at a time) or text style (several). `<lu-toggle-group role="group">` presses its toggles and gives the group one tab stop that the arrow keys, Home and End move, following the orientation and the direction, on server pages and in islands. `bind:value` keeps a signal in sync.
+
+```ts
+import { Toggle, ToggleGroup } from "@lumiose/ui"; // or "@lumiose/ui/toggle-group"
+import "@lumiose/ui/themes/default.css"; // optional: the default theme
+```
+
+## Anatomy
+
+```tsx
+<ToggleGroup aria-label="Alignment">
+  <Toggle value="left">Left</Toggle>
+  <Toggle value="center">Center</Toggle>
+</ToggleGroup>
+```
+
+| Part          | Renders                                                                |
+| ------------- | ---------------------------------------------------------------------- |
+| `ToggleGroup` | `<lu-toggle-group role="group" data-orientation>`; `multiple` if set   |
+| `Toggle`      | `<button aria-pressed value>`; the group's tab stop has `tabindex="0"` |
+
+## API
+
+### ToggleGroup
+
+| Prop            | Type                           | Default        |                                                                            |
+| --------------- | ------------------------------ | -------------- | -------------------------------------------------------------------------- |
+| `value`         | `string[]`                     |                | Presses these toggles when it changes. Pair it with `onValueChange`.       |
+| `defaultValue`  | `string[]`                     | `[]`           | The toggles pressed at first.                                              |
+| `onValueChange` | `(value: string[]) => void`    |                | Called after the user presses or releases a toggle.                        |
+| `bind:value`    | `Signal<string[]>`             |                | Stands in for `value` and `onValueChange`.                                 |
+| `multiple`      | `boolean`                      | `false`        | Several toggles can be pressed; otherwise pressing one releases the other. |
+| `orientation`   | `"horizontal"` \| `"vertical"` | `"horizontal"` | Which arrow keys move focus.                                               |
+| `loopFocus`     | `boolean`                      | `true`         | The arrow keys go from the last toggle to the first, and back.             |
+| `disabled`      | `boolean`                      | `false`        | Disables every toggle.                                                     |
+
+Every other prop passes through to `<lu-toggle-group>`: `aria-label`, `aria-labelledby`, `id`,
+`class`. Name the group with one of the first two.
+
+Each toggle's `value` is its identity in the group; its `onPressedChange` still fires. A
+`pressedchange` event (`detail.pressed`) bubbles from a toggle before it changes, and
+`event.preventDefault()` cancels the change.
+
+**Differences from Base UI's ToggleGroup.** No `render`. Focus follows `tabindex` on the toggles
+(roving), as Base UI does; disabled toggles are natively `disabled`, so focus skips them.
+
+## Example
+
+```tsx check
+import { Toggle, ToggleGroup } from "@lumiose/ui";
+import { signal } from "lumiose";
+
+export function TextAlignment() {
+  const align = signal<string[]>(["left"]);
+  return (
+    <p>
+      <ToggleGroup aria-label="Text alignment" bind:value={align} class="lu-toggle-group">
+        <Toggle value="left" class="lu-toggle">
+          Left
+        </Toggle>
+        <Toggle value="center" class="lu-toggle">
+          Center
+        </Toggle>
+        <Toggle value="right" class="lu-toggle">
+          Right
+        </Toggle>
+      </ToggleGroup>{" "}
+      Aligned: {align()[0] ?? "none"}.
+    </p>
+  );
+}
+```
+
+## Styling
+
+**With the default theme**, put `lu-toggle-group` on the group and `lu-toggle` on each toggle: the
+toggles in a row with a small gap, in a column when `data-orientation="vertical"`.
+
+**With your own CSS**, style the group by `[data-orientation]` and `[multiple]`, and the toggles by
+`[aria-pressed="true"]`, `:focus-visible` and `:disabled`.
+
+Toggle Group ships no stylesheet: it needs none to work.
+
+## Keyboard and focus
+
+| Key                      | Does                                                                                                           |
+| ------------------------ | -------------------------------------------------------------------------------------------------------------- |
+| Tab                      | Enters the group on the last focused toggle (at first, the first pressed or the first enabled), and leaves it. |
+| Arrow Right / Arrow Left | Horizontal: the next or previous toggle (swapped right to left), looping.                                      |
+| Arrow Down / Arrow Up    | Vertical: the next or previous toggle, looping.                                                                |
+| Home / End               | The first or last enabled toggle.                                                                              |
+| Enter / Space            | Presses or releases the focused toggle.                                                                        |
+
+Arrows move focus without pressing, and skip disabled toggles. With `loopFocus={false}` they stop at
+the ends.
+
+## Without JavaScript, and the element's script
+
+The server HTML has each toggle's `aria-pressed` and the tab stop. `<lu-toggle-group>`'s script
+(0.8 kB brotli) presses the toggles and moves focus, on server pages and in islands; with no script
+at all the toggles show their state but do not change. For values a form submits, use a
+[Checkbox Group](checkbox-group.md) or a [Radio](radio-group.md) group.
+
+## Browser support
+
+Custom elements and `aria-pressed`: every supported browser.
+
+## Related
+
+- [Toggle](toggle.md): one toggle, on its own or in a group.
+- [Radio](radio-group.md): one choice submitted with a form.
+- [Tabs](tabs.md): toggles that switch panels.
 
 <!-- source: tooltip.md -->
 

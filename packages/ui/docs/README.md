@@ -83,6 +83,12 @@ custom properties, named as in shadcn/ui, are listed in [Theming](theming.md#the
 | [Collapsible](collapsible.md)       | Available: native `<details>`, works without JavaScript                                   |
 | [Accordion](accordion.md)           | Available: native `<details>` items, `<lu-accordion>` adds the keys                       |
 | [Toast](toast.md)                   | Available: server-rendered or from a manager, `<lu-toast-viewport>` times and closes them |
+| [Button](button.md)                 | Available: native `<button>`, focusable when disabled                                     |
+| [Toggle](toggle.md)                 | Available: `<button aria-pressed>`, pressed by the component in an island                 |
+| [Toggle Group](toggle-group.md)     | Available: `<lu-toggle-group>` presses its toggles and moves focus                        |
+| [Progress](progress.md)             | Available: native `<progress>`, indeterminate when unknown, no script                     |
+| [Meter](meter.md)                   | Available: native `<meter>`, no script                                                    |
+| [Slider](slider.md)                 | Available: native range inputs, `<lu-slider>` adds ranges and Page Up and Page Down       |
 
 ## Size
 
