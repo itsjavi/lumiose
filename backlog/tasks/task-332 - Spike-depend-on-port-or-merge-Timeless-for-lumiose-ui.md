@@ -3,8 +3,9 @@ id: TASK-332
 title: 'Spike: depend on, port or merge Timeless for @lumiose/ui'
 status: To Do
 assignee:
-  - '@Lux'
+  - '@Halo'
 created_date: '2026-10-15 04:03'
+updated_date: '2026-10-15 12:00'
 labels:
   - proposal
   - needs-decision
@@ -27,3 +28,9 @@ Agreed with the user on 2026-10-15 (grilling session on adoption by developers u
 - [ ] #2 A comparison on the criteria above and a recommended option with its API shape are reviewed by the user
 - [ ] #3 The approved option is recorded as a decision and M12's implementation tasks are created
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+2026-10-15 (Lux, orchestrator): the user started the spike with workers; Halo (owner of the design system, @lumiose/site-kit) runs it and returns the proposal for the user's review.
+<!-- SECTION:NOTES:END -->
