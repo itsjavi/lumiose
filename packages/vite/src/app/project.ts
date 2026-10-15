@@ -37,6 +37,14 @@ export const INSTRUMENTATION_CLIENT_FILES = [
   "src/instrumentation.client.js",
   "src/instrumentation.client.mjs",
 ];
+/**
+ * The client `define` of apps with `src/instrumentation.client.ts` (TASK-299): the runtime's
+ * calls to its `onError` and `instrumentations` are guarded by this flag (lumiose
+ * src/dom/instrument.ts), so other apps ship none of them.
+ */
+export const CLIENT_HOOKS_DEFINE: Record<string, string> = {
+  "import.meta.env.LUMIOSE_CLIENT_HOOKS": "true",
+};
 /** `src/instrumentation.server.ts` (decision-49): server-only by its `.server.` segment. */
 export const INSTRUMENTATION_SERVER_FILES = [
   "src/instrumentation.server.ts",

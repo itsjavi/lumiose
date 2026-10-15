@@ -334,6 +334,40 @@ test("beforeNavigate guards unsaved changes; afterNavigate follows navigations",
   await guardsUnsavedChanges(page);
 });
 
+/** What src/instrumentation.client.ts recorded (TASK-299). */
+function instrumentation(page: Page): Promise<{ phases: string[]; errors: string[] }> {
+  return page.evaluate(
+    () =>
+      (window as unknown as { instrumentation: { phases: string[]; errors: string[] } })
+        .instrumentation,
+  );
+}
+
+/**
+ * TASK-299: the client instrumentation wraps the SPA root's hydration, each navigation (with its
+ * route and timing) and each fetchJSON request, and onError receives a page that throws.
+ */
+async function instrumentsTheClient(page: Page): Promise<void> {
+  await page.goto("/");
+  await ready(page);
+  await page.getByRole("link", { name: "User 1", exact: true }).click();
+  await expect(page.locator("#user")).toHaveText("User 1");
+  await page.getByRole("link", { name: "Boom" }).click();
+  await expect(page.getByText("boom page")).toBeVisible();
+  const { phases, errors } = await instrumentation(page);
+  expect(phases[0]).toMatch(/^hydrate lumiose:spa success$/);
+  expect(phases).toContain("fetch /api/users/1 success");
+  expect(phases).toContain("navigate link /users/[id] success true");
+  expect(phases).toContain("navigate link /boom success true");
+  expect(errors).toEqual(["navigate /boom boom page"]);
+}
+
+test("the client instrumentation observes hydration, navigations, requests and errors", async ({
+  page,
+}) => {
+  await instrumentsTheClient(page);
+});
+
 test.describe("without the Navigation API", () => {
   test.beforeEach(async ({ page }) => {
     await page.addInitScript(() => {
@@ -362,5 +396,9 @@ test.describe("without the Navigation API", () => {
 
   test("the History API fallback runs beforeNavigate and afterNavigate", async ({ page }) => {
     await guardsUnsavedChanges(page);
+  });
+
+  test("the History API fallback is instrumented too", async ({ page }) => {
+    await instrumentsTheClient(page);
   });
 });

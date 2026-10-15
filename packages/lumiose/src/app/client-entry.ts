@@ -7,6 +7,7 @@
 // plain loader and SPA entries, which ship none of this.
 
 import type { IslandManifest } from "../dom/islands.ts";
+import { awaitClientInstrumentation, INSTRUMENTED } from "../dom/instrument.ts";
 
 /**
  * The page's client entry, once its module ran: resolves with its exports, or with `undefined`
@@ -15,9 +16,12 @@ import type { IslandManifest } from "../dom/islands.ts";
 export function clientEntry(): Promise<unknown> | undefined {
   const script = document.querySelector<HTMLScriptElement>("script[data-l-client]");
   if (script === null) return undefined;
-  return import(/* @vite-ignore */ script.src).catch((error: unknown) => {
+  const entry = import(/* @vite-ignore */ script.src).catch((error: unknown) => {
     console.error("Lumiose: src/instrumentation.client.ts threw; the page hydrates anyway.", error);
   });
+  // Its `onError` and `instrumentations` (decision-49, TASK-299), before anything hydrates.
+  if (INSTRUMENTED) awaitClientInstrumentation(entry);
+  return entry;
 }
 
 /** The island manifest with each import waiting for `ready` (the client entry), if any. */

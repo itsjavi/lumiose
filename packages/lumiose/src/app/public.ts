@@ -76,3 +76,4 @@ export type {
   ServerEnv,
 } from "./server/context.ts";
 export type { RequestErrorInfo, ServerInstrumentation } from "./server/instrumentation.ts";
+export type { ClientErrorInfo, ClientInstrumentation } from "../dom/instrument.ts";

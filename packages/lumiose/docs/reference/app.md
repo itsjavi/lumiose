@@ -465,6 +465,35 @@ interface ServerInstrumentation {
 }
 ```
 
+The exports of `src/instrumentation.client.ts` ([Islands](../concepts/islands.md#concept)):
+`onError(error: unknown, info: ClientErrorInfo): unknown` and
+`instrumentations: ClientInstrumentation[]`.
+
+```ts
+interface ClientErrorInfo {
+  phase: "hydrate" | "render" | "effect" | "navigate" | "submit";
+  route: Routes | undefined; // the SPA route; undefined on MPA pages
+  island: string | undefined; // the island's module#export, for errors in an island
+}
+type ClientInfo = { route: Routes | undefined };
+interface ClientInstrumentation {
+  navigate?(
+    call: () => Promise<Result>,
+    info: ClientInfo & {
+      type: "link" | "navigate" | "popstate";
+      from: NavigationTarget | null; // lumiose/router
+      to: NavigationTarget | null;
+    },
+  ): unknown; // until the page is on screen
+  submit?(call: () => Promise<Result>, info: ClientInfo & { action: string; url: string }): unknown;
+  fetch?(
+    call: () => Promise<Result>,
+    info: ClientInfo & ({ url: string } | { key: readonly unknown[] }),
+  ): unknown; // each fetchJSON() request or query() function; cache hits are not requests
+  hydrate?(call: () => Promise<Result>, info: ClientInfo & { island: string }): unknown;
+}
+```
+
 ## Example
 
 ```ts check file=routes/api/session/route.ts

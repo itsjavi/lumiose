@@ -26,6 +26,7 @@ import type { Component } from "../contract/client.ts";
 import { decodeData } from "../server/serialize.ts";
 import { DEV } from "./dev.ts";
 import { hydrate } from "./hydrate.ts";
+import { INSTRUMENTED, instrument, islandRefs } from "./instrument.ts";
 import { reportError } from "./report.ts";
 import { receivePayload, type Payload } from "./state.ts";
 
@@ -232,8 +233,8 @@ export function loadIslands(manifest: IslandManifest): () => void {
     // interaction loads it again (a deploy replaced the chunk, a network error); 2 once it loaded,
     // since a component that throws would throw again (the island stays server HTML).
     let failed = 0;
-    load!()
-      .then((component) => {
+    const start = (): Promise<void> =>
+      load!().then((component) => {
         failed = 2;
         // A component marked `$$fresh` renders on the client instead of claiming the server's nodes
         // (an SPA root that renders another view than the server did, app/router/router.ts).
@@ -261,15 +262,18 @@ export function loadIslands(manifest: IslandManifest): () => void {
             return find();
           }
         }
-      })
-      .catch((error: unknown) => {
+      });
+    if (INSTRUMENTED) islandRefs.set(island.s!, island.ref);
+    (INSTRUMENTED ? instrument("hydrate", { island: island.ref }, start) : start()).catch(
+      (error: unknown) => {
         reportError(error, { phase: "hydrate", island: island.ref });
         // The caught events are dispatched again, unintercepted, so their default actions run (a
         // link navigates, a form submits).
         island.g = 2;
         replay(island);
         island.g = failed;
-      });
+      },
+    );
   };
 
   const replay = (island: Island): void => {

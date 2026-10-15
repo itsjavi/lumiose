@@ -39,6 +39,7 @@ import { routeModuleNames, routeOutput } from "./chunk-names.ts";
 import { CLIENT_LOADER, clientRuntime } from "./client-runtime.ts";
 import {
   configProjectOptions,
+  CLIENT_HOOKS_DEFINE,
   findAppFile,
   hrefDefine,
   INSTRUMENTATION_CLIENT_FILES,
@@ -158,6 +159,8 @@ function lumioseBuildEnvironments(state: BuildState): Plugin {
         define: hrefDefine(state.trailingSlash),
         environments: {
           client: {
+            // decision-49: the runtime's calls to the file's hooks ship only with the file.
+            ...(clientEntry === undefined ? {} : { define: CLIENT_HOOKS_DEFINE }),
             build: {
               outDir: join(state.outDir, "client"),
               rolldownOptions: {

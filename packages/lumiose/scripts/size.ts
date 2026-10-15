@@ -49,10 +49,18 @@ const entries: Record<string, string> = {
   "dom only (core imports excluded)": `export * from "${src}dom/index.ts";`,
 };
 
-async function bundle(code: string, externalCore: boolean): Promise<string> {
+/** The `define` of apps with `src/instrumentation.client.ts` (TASK-299, src/dom/instrument.ts). */
+const CLIENT_HOOKS = { "import.meta.env.LUMIOSE_CLIENT_HOOKS": "true" };
+
+async function bundle(
+  code: string,
+  externalCore: boolean,
+  define?: Record<string, string>,
+): Promise<string> {
   const result = await build({
     configFile: false,
     logLevel: "silent",
+    define,
     plugins: [
       {
         name: "size-entry",
@@ -123,6 +131,16 @@ const every = measured["core + dom (every export)"]!;
 const optIn = measured["every export + view transitions, report-only (opt-in)"]!;
 console.log(
   `view transitions on top of every export (opt-in): min ${kb(optIn.min - every.min)}, gzip ${kb(optIn.gzip - every.gzip)}, brotli ${kb(optIn.brotli - every.brotli)}`,
+);
+// Every entry above is measured without client instrumentation, which apps without
+// src/instrumentation.client.ts ship none of. With it (report-only): the islands entry, plus the
+// router, actions and fetchJSON/query, whose calls it wraps.
+const APP_LAYER = `export { startSpa } from "${src}app/router/boot.ts"; export { submit } from "${src}app/actions/client.ts"; export { query } from "${src}app/cache/client.ts"; export { clientEntry } from "${src}app/client-entry.ts";`;
+const appCode = `${entries["core + dom + islands (typical app imports, loader, hydrate)"]} ${FETCH} ${APP_LAYER}`;
+const plain = sizes(await bundle(appCode, false));
+const instrumented = sizes(await bundle(appCode, false, CLIENT_HOOKS));
+console.log(
+  `client instrumentation on top of islands, router, actions and fetchJSON, report-only: min ${kb(instrumented.min - plain.min)}, gzip ${kb(instrumented.gzip - plain.gzip)}, brotli ${kb(instrumented.brotli - plain.brotli)}`,
 );
 if (overHardCap.length > 0) {
   console.error(`\nOver the ${kb(HARD_CAP)} hard cap (spec §6): ${overHardCap.join("; ")}`);

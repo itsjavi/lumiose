@@ -51,6 +51,7 @@ import {
   type QueryFunctionContext,
   type QueryKey,
 } from "./shared.ts";
+import { INSTRUMENTED, instrument } from "../../dom/instrument.ts";
 
 /** How long an entry no run holds stays cached (TanStack Query's default `gcTime`). */
 export const GC_TIME = 5 * 60 * 1000;
@@ -288,6 +289,11 @@ export function query<T, const TKey extends QueryKey = QueryKey>(
   key: TKey,
   fn: (context: QueryFunctionContext<TKey>) => T | PromiseLike<T>,
 ): Promise<T> {
+  if (INSTRUMENTED) {
+    // src/instrumentation.client.ts (decision-49): each call of `fn` inside the `fetch` wrappers.
+    const inner = fn;
+    fn = (context) => instrument("fetch", { key }, async () => inner(context));
+  }
   if (!inRun()) {
     // Not cached: the current owner's signal, if any (one that never aborts otherwise).
     const owner = getOwner();

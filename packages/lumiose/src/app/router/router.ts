@@ -52,6 +52,7 @@ import { computed, signal, type Signal } from "../../core/signal.ts";
 import { createComponent } from "../../dom/component.ts";
 import { DEV } from "../../dom/dev.ts";
 import { MISMATCH } from "../../dom/hydration.ts";
+import { INSTRUMENTED, instrument, notify } from "../../dom/instrument.ts";
 import { createRange, renderRange, type RangeStart } from "../../dom/insert.ts";
 import { navigationUrl, setClientNavigation } from "../actions/navigation.ts";
 import { splitLocale } from "../i18n/config.ts";
@@ -636,6 +637,7 @@ async function go(r: Router, url: URL, target: Target): Promise<void> {
       // A module that does not load (a stale chunk after a deploy): load the page from the server.
       // The URL is already the page's; its hooks ran.
       if (r.active === nav) {
+        if (INSTRUMENTED) notify(error, "navigate");
         leaveTo();
         location.reload();
       }
@@ -662,6 +664,9 @@ function fail(r: Router, error: unknown, view: View): void {
   }
   const status = isHttpError(error) ? error.status : 500;
   if (!isHttpError(error)) console.error(error);
+  if (INSTRUMENTED && !isHttpError(error)) {
+    notify(error, "navigate", undefined, view.route as Routes | undefined);
+  }
   const exposed = error instanceof Error ? error : new Error(String(error));
   const route = view.error === undefined ? targetOf(r, view.url)?.route : undefined;
   const candidates = status === 404 ? [route?.notFound, route?.error] : [route?.error];
@@ -837,11 +842,26 @@ function historyNavigation(
   navigation: RouterNavigation | undefined,
 ): HistoryNavigation {
   return {
-    run: () => go(r, url, target),
+    run: () => (INSTRUMENTED ? visit(r, url, target, navigation) : go(r, url, target)),
     done: (shown) => {
       if (navigation !== undefined) endNavigation(navigation, shown);
     },
   };
+}
+
+/**
+ * Instrumented builds: the navigation to `url` inside the `navigate` wrappers of
+ * `src/instrumentation.client.ts` (../../dom/instrument.ts).
+ */
+function visit(
+  r: Router,
+  url: URL,
+  target: Target,
+  navigation: RouterNavigation | undefined,
+): Promise<void> {
+  if (navigation === undefined) return go(r, url, target);
+  const { type, from, to } = navigation;
+  return instrument("navigate", { type: type as "link", from, to }, () => go(r, url, target));
 }
 
 // --- Navigation API and History fallback ---------------------------------------------------------
@@ -924,7 +944,7 @@ function listen(r: Router): () => void {
         scroll: keep ? "manual" : "after-transition",
         focusReset: keep ? "manual" : "after-transition",
         handler: () => {
-          const shown = go(r, url, target);
+          const shown = INSTRUMENTED ? visit(r, url, target, navigation) : go(r, url, target);
           // Settles after the scroll restoration and focus reset that follow the handler.
           (api.transition?.finished ?? shown).then(
             () => endNavigation(navigation, true),

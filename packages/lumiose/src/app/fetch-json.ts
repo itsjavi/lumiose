@@ -4,6 +4,7 @@
 
 import { runFetch } from "./cache/run-fetch.ts";
 import { HttpError, statusText } from "./server/control.ts";
+import { INSTRUMENTED, instrument } from "../dom/instrument.ts";
 
 /**
  * Thrown by `fetchJSON()` for non-2xx responses, and by `submit()` when an action throws. An
@@ -90,8 +91,13 @@ export function fetchJSON<T = unknown>(input: string | URL, init?: RequestInit):
   try {
     const base = typeof document === "undefined" ? globalThis.location?.href : document.baseURI;
     const url = new URL(input, base);
-    const request = (options: RequestInit | undefined) =>
+    const send = (options: RequestInit | undefined) =>
       requestJSON<T>((sent) => globalThis.fetch(sent), jsonRequest(url, options));
+    // src/instrumentation.client.ts (decision-49): each request inside the `fetch` wrappers.
+    const request = INSTRUMENTED
+      ? (options: RequestInit | undefined) =>
+          instrument("fetch", { url: url.href }, () => send(options))
+      : send;
     // Inside an async component run, the cache (./cache/run-fetch.ts); elsewhere a plain request.
     return runFetch(url, init, request) ?? request(init);
   } catch (error) {

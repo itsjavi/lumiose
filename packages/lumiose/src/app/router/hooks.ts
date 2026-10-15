@@ -70,6 +70,11 @@ export function setRouterLocation(location: (() => NavigationTarget) | undefined
   routerLocation = location;
 }
 
+/** The committed SPA route pattern; undefined outside an SPA (client instrumentation). */
+export function currentRoute(): Routes | undefined {
+  return routerLocation?.().route;
+}
+
 function here(): NavigationTarget {
   return routerLocation?.() ?? { url: new URL(location.href), route: undefined, params: {} };
 }
