@@ -386,6 +386,30 @@ test("no ambient motion runs longer than 5 seconds (2.2.2 needs a pause control 
   }
 });
 
+test("docs and UI pages reflow at 320 px, also with WCAG's text spacing (1.4.10, 1.4.12)", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 320, height: 700 });
+  const paths = [
+    "/docs/concepts/styles",
+    ...PAGES.map((p) => p.path).filter((p) => p.startsWith("/ui")),
+  ];
+  for (const path of paths) {
+    await page.goto(path);
+    await settle(page);
+    const overflow = () =>
+      page.evaluate(
+        () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+      );
+    expect(await overflow(), path).toBeLessThanOrEqual(0);
+    await page.addStyleTag({
+      content:
+        "* { line-height: 1.5 !important; letter-spacing: 0.12em !important; word-spacing: 0.16em !important; } p { margin-bottom: 2em !important; }",
+    });
+    expect(await overflow(), `${path} with text spacing`).toBeLessThanOrEqual(0);
+  }
+});
+
 test("keyboard focus is visible and not hidden by the sticky header", async ({ page }) => {
   for (const path of ["/", "/docs/concepts/styles", "/showcase", "/benchmarks", "/ui/tabs"]) {
     await page.goto(path);

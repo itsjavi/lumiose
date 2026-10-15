@@ -169,7 +169,10 @@ test("ui screenshots", async ({ page }) => {
     await page.waitForTimeout(400);
     await page.screenshot({ path: shot(`menu-${scheme}`) });
     await page.goto("/ui/theming");
-    await page.locator(".palette").scrollIntoViewIfNeeded();
+    // The two previews and the start of the table, below the sticky header.
+    await page
+      .locator(".palette")
+      .evaluate((element) => scrollTo(0, element.getBoundingClientRect().top + scrollY - 88));
     await page.waitForTimeout(300);
     await page.screenshot({ path: shot(`theming-${scheme}`) });
   }

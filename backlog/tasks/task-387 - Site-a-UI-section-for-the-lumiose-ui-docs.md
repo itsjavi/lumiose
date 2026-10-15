@@ -1,11 +1,11 @@
 ---
 id: TASK-387
 title: 'Site: a UI section for the @lumiose/ui docs'
-status: In Progress
+status: Done
 assignee:
   - '@Beacon'
 created_date: '2026-10-15 17:13'
-updated_date: '2026-10-15 20:18'
+updated_date: '2026-10-15 20:35'
 labels:
   - ui
   - docs
@@ -30,11 +30,11 @@ It is the default UI docs and getting-started reference, and grows with each com
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 The site has a UI section with an overview, installation and theming page
-- [ ] #2 Every shipped component has a page with a live demo on the default theme, parts, props, events, CSS variables and its keyboard contract
-- [ ] #3 The packaged docs and the site pages come from one source
-- [ ] #4 The section passes the site's axe checks in light and dark
-- [ ] #5 Meets WCAG 2.2 AA (doc-9 section 17): axe with the WCAG A and AA tags passes closed and open, with the default theme, in light and dark, and the manual criteria that apply are checked and recorded
+- [x] #1 The site has a UI section with an overview, installation and theming page
+- [x] #2 Every shipped component has a page with a live demo on the default theme, parts, props, events, CSS variables and its keyboard contract
+- [x] #3 The packaged docs and the site pages come from one source
+- [x] #4 The section passes the site's axe checks in light and dark
+- [x] #5 Meets WCAG 2.2 AA (doc-9 section 17): axe with the WCAG A and AA tags passes closed and open, with the default theme, in light and dark, and the manual criteria that apply are checked and recorded
 <!-- AC:END -->
 
 ## Implementation Notes
@@ -56,4 +56,34 @@ Design (orchestrator-delegated technical decisions, recorded here):
 Adding a component's page and demo (apps/web/CONTRIBUTING.md, "The UI section"): its page in packages/ui/docs following dialog.md's sections, listed in the UI llms.txt (`pnpm --filter @lumiose/ui docs:gen`), appears in /ui and its navigation on its own; then `pnpm --filter @lumiose/web ui:demos` and commit apps/web/src/ui-demos; add it to PAGES and OPEN_DEMOS in apps/web/e2e/a11y.e2e.ts.
 
 Proposed public names (user review): the URL paths /ui (Introduction) and /ui/<page> (/ui/dialog, …), with /docs/ui/* redirecting to them; the header link "UI" and the footer link "UI components". No convention inside packages/ui/docs: demos are the existing `tsx check` examples.
+
+2026-10-15 (Beacon): Installation and Theming pages. packages/ui/docs gains installation.md (the package, the stylesheet imports, a first component, whose example is the page's live demo) and theming.md (cascade layers, the default theme's classes and --lu- properties, your own CSS), moved out of README.md. Beacon owns the docs structure (AGENTS.md). I asked Lux before the split and got no answer. It is a separate commit, f58ed22a, so Lux can drop it: the site works either way, because the palette follows the --lu- table wherever it is. The README keeps the overview and a short "The default theme" section, so the component pages' README.md#the-default-theme anchors still resolve. The MCP ui_components catalog now reads the layers and properties from the index and the guides. Integration: if TASK-358 adds lu-combobox / lu-select rows to the README's class table, they belong in theming.md's table.
+
+Proposal, not made: menu.md's island example EditorMenu(props: { onFormat }) stays code-only, because function props cannot hydrate (LUM4002). Without the prop (the item sets a signal shown in a status line) it would be live. It is Halo's file.
+
+Accessibility, WCAG 2.2 AA (doc-9 section 17 and the site's checklist in apps/web/CONTRIBUTING.md):
+- Automated (apps/web/e2e/a11y.e2e.ts): axe with the WCAG A and AA tags on /ui, /ui/theming and every component page, in light and dark. Each component's first demo is also checked open (Dialog, Menu with an item highlighted, Popover, Tooltip on keyboard focus, Tabs on another panel). Also checked: motion under 5 s, reduced motion, 24 px targets on every /ui page, focus visible and not hidden by the header (tabbing through /ui/tabs, demos included), and new: reflow at 320 px with and without WCAG text spacing on the /ui pages and a docs page.
+- Needs review: only the footer's gradient (already in FLATTENED); no demo node.
+- Fixed on the way: long inline code (`event.currentTarget.returnValue`, paths) overflowed phones under text spacing, on /docs too (71 px on /docs/concepts/styles). Inline code in prose now breaks (overflow-wrap: anywhere).
+- Checked by hand in the browser:
+  - 2.1.1, 2.1.2, 2.4.3: Enter opens the Dialog demo, Tab stays inside it, and Escape closes it and returns focus to its trigger. The Menu demo moves with the arrow keys. Focus leaves the non-modal demos with Tab.
+  - 1.4.13: the Tooltip demo opens on keyboard focus, and Escape dismisses it without moving focus.
+  - 1.4.1: the palette's swatches are decorative (aria-hidden), and each value is also written as text.
+  - 2.4.7: the demos keep the theme's focus rings (`lu-button`) or the browser's.
+  - Not applicable to this section: pointer gestures, status messages, forms. The components' own contracts are covered by examples/ui-e2e.
+
+Validation, 2026-10-15:
+- pnpm check green on fb3a4ff4: Vitest 2140 passed / 2 skipped, typecheck, lint, fmt:examples, script tests, size caps, cargo test.
+- After f58ed22a: the cli docs/MCP, ui and apps/web tests passed (233); both docs:check runs green.
+- apps/web Playwright, full suite (static + dev): 98 passed, 4 skipped (screenshots).
+- After the overflow fix: a11y + ui suites 67 passed, screenshots included.
+- No Rust changes.
+
+Screenshots (backlog/assets): task-387-dialog-{light,dark}.png, task-387-dialog-open-{light,dark}.png, task-387-menu-{light,dark}.png, task-387-theming-{light,dark}.png, task-387-phone.png.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+The Lumiose site has a /ui section that is @lumiose/ui's documentation, rendered from packages/ui/docs (one source with the package's llms.txt). It has Introduction, Installation and Theming pages, then one page per component (Dialog, Menu, Popover, Tabs, Tooltip). Each type-checked example that exports one component without props is a live demo above its code, on the default theme, and the page's first demo also sits at the top. A demo is server HTML (it works without JavaScript where the component does) or an island (client:visible) for bind:/signal examples. The site's theme toggle drives the demos, and the site's styles stay out of them. Theming shows every --lu- property in light and dark. /docs/ui/* redirect to /ui; the header, footer, docs sidebar and search link it. axe (WCAG 2.2 AA) passes on every /ui page in light and dark, with each component's demo closed and open; the manual criteria are recorded in the notes. Adding a component: apps/web/CONTRIBUTING.md, "The UI section".
+<!-- SECTION:FINAL_SUMMARY:END -->

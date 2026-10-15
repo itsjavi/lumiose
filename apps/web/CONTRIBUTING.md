@@ -84,6 +84,8 @@ component's first demo also open).
 - **Focus.** Tabbing through the landing, a docs page, the showcase and the benchmarks, every
   focused element changes how it, or a near ancestor such as a card, looks. No focused element
   below the header is covered by it.
+- **Reflow and text spacing.** At 320 px a docs page and the `/ui` pages scroll only vertically,
+  also with WCAG's text-spacing overrides (code blocks and wide tables scroll in their own boxes).
 - **Targets.** Every pointer target is at least 24 × 24 px. Smaller targets pass only through
   WCAG's exceptions:
   - links inside a sentence
