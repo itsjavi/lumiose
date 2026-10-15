@@ -1,11 +1,11 @@
 ---
 id: TASK-378
 title: Context Menu
-status: To Do
+status: In Progress
 assignee:
   - '@Beacon'
 created_date: '2026-10-15 16:55'
-updated_date: '2026-10-15 22:39'
+updated_date: '2026-10-15 22:46'
 labels:
   - ui
 milestone: m-12

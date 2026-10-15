@@ -48,28 +48,11 @@ export function FormSignals() {
             typeof value === "string" && value.includes(" ") ? "No spaces, please." : null
           }
         >
-          {/*
-            The control comes last, in GOV.UK's order: a Field.Control followed by another part
-            does not hydrate yet (LUM4006, reported from TASK-365).
-          */}
           <Field.Label>Handle</Field.Label>
+          <Field.Control class="lu-input" required bind:value={handle} />
           <Field.Description>Try "admin", or a space.</Field.Description>
           <Field.Error />
-          <Field.Control class="lu-input" required bind:value={handle} />
         </Field.Root>
-        <label>
-          <Checkbox.Root name="agree" class="lu-checkbox" bind:checked={agree} /> I agree
-        </label>
-        <label>
-          <Switch.Root name="dark" class="lu-switch" bind:checked={dark} /> Dark mode
-        </label>
-        <button type="submit" class="lu-button" data-variant="primary">
-          Save
-        </button>
-        {/*
-          The groups come last: a standalone component followed by an element in a component's
-          children does not hydrate yet (LUM4006, reported from TASK-365).
-        */}
         <CheckboxGroup name="colours" allValues={COLOURS} bind:value={colours} class="lu-fieldset">
           <Fieldset.Legend>Colours</Fieldset.Legend>
           <label>
@@ -90,6 +73,15 @@ export function FormSignals() {
             <Radio.Root value="m" class="lu-radio" /> Medium
           </label>
         </RadioGroup>
+        <label>
+          <Checkbox.Root name="agree" class="lu-checkbox" bind:checked={agree} /> I agree
+        </label>
+        <label>
+          <Switch.Root name="dark" class="lu-switch" bind:checked={dark} /> Dark mode
+        </label>
+        <button type="submit" class="lu-button" data-variant="primary">
+          Save
+        </button>
       </Form>
       <div>
         <button

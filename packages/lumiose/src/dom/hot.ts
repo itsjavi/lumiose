@@ -12,15 +12,15 @@
 // re-renders in its own region (the region an `insert` gives any component, also under
 // hydration), and the rest of the page keeps its DOM and state.
 //
-// Under hydration (islands, the SPA's first page) the wrapper adds no instance: its first render
-// runs with the frame `createComponent` gave the instance (its path, await records and claim
-// cursor), inside the region `insert` opens for it, so paths, await replay and claiming match the
-// server's as without the wrapper.
+// The wrapper's first render runs when it is called, as the component would without it: under
+// hydration (islands, the SPA's first page) it runs with the frame `createComponent` gave the
+// instance (its path, await records and claim cursor), so paths, await replay and claiming match
+// the server's, in document order with its siblings (TASK-403). The function it returns hands
+// that first result to the region that inserts it, and renders again on later module versions.
 
 import { signal, untrack, type Signal } from "../core/index.ts";
 import { INSPECTED } from "./dev.ts";
 import { currentComponent, labelValue, locateComponent, renderComponent } from "./devtools.ts";
-import { frame, setFrame } from "./frame.ts";
 
 // oxlint-disable-next-line typescript/no-explicit-any -- any props, as `createComponent` takes.
 type Component = (props: any) => unknown;
@@ -69,26 +69,28 @@ export function $hot<C extends Component>(
   if (import.meta.env?.DEV && INSPECTED) labelValue(current, "hot update", true);
   const entry: HotComponent = { version, current, wrapper: () => null };
   const wrapper: Component = (props) => {
-    // The instance's hydration frame, for its first render only (later ones render afresh).
-    let hydrating = frame;
     // The inspector's record of the instance, which `createComponent` just opened.
     const record = import.meta.env?.DEV && INSPECTED ? currentComponent() : undefined;
-    return () => {
-      const { fn } = current();
-      const instanceFrame = hydrating;
-      hydrating = undefined;
-      const render = (): unknown => {
-        if (instanceFrame === undefined) return fn(props);
-        const prev = setFrame!(instanceFrame);
-        try {
-          return fn(props);
-        } finally {
-          setFrame!(prev);
-        }
-      };
-      return untrack(
-        import.meta.env?.DEV && INSPECTED ? () => renderComponent(record, render) : render,
+    const render = (fn: Component) => () =>
+      untrack(
+        import.meta.env?.DEV && INSPECTED
+          ? () => renderComponent(record, () => fn(props))
+          : () => fn(props),
       );
+    // The first render runs now, as without the wrapper: under hydration it claims its server
+    // nodes in document order, with the frame `createComponent` gave the instance, before the
+    // siblings created after it (TASK-403). Deferred to the region that inserts the wrapper's
+    // function, a sibling that renders at once would claim them first.
+    let first: { value: unknown } | undefined = { value: render(untrack(current).fn)() };
+    return () => {
+      // Tracked, so a later module version re-renders the instance in its region.
+      const { fn } = current();
+      if (first !== undefined) {
+        const { value } = first;
+        first = undefined;
+        return value;
+      }
+      return render(fn)();
     };
   };
   entry.wrapper = wrapper;
