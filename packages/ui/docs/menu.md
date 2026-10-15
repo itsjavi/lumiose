@@ -183,32 +183,39 @@ export function ProjectMenu() {
 }
 ```
 
-In an island, with commands, a checkbox item and a radio group bound to signals.
-`bind:checked={wrap}` is short for `checked={wrap()}` plus
+In an island, with a command, a checkbox item and a radio group bound to signals, and a status
+line that follows them. `bind:checked={wrap}` is short for `checked={wrap()}` plus
 `onCheckedChange={(next) => wrap.set(next)}`, and `bind:value` likewise.
 
 ```tsx check
 import { Menu } from "@lumiose/ui";
 import { signal } from "lumiose";
 
-export function EditorMenu(props: { onFormat: () => void }) {
+export function EditorMenu() {
+  const formatted = signal(0);
   const wrap = signal(true);
   const indent = signal("spaces");
   return (
-    <Menu.Root>
-      <Menu.Trigger class="lu-button">View</Menu.Trigger>
-      <Menu.Popup class="lu-menu" align="end">
-        <Menu.Item onClick={props.onFormat}>Format document</Menu.Item>
-        <Menu.Item disabled>Fold all</Menu.Item>
-        <Menu.Separator />
-        <Menu.CheckboxItem bind:checked={wrap}>Wrap lines</Menu.CheckboxItem>
-        <Menu.RadioGroup bind:value={indent}>
-          <Menu.GroupLabel>Indent with</Menu.GroupLabel>
-          <Menu.RadioItem value="spaces">Spaces</Menu.RadioItem>
-          <Menu.RadioItem value="tabs">Tabs</Menu.RadioItem>
-        </Menu.RadioGroup>
-      </Menu.Popup>
-    </Menu.Root>
+    <>
+      <Menu.Root>
+        <Menu.Trigger class="lu-button">View</Menu.Trigger>
+        <Menu.Popup class="lu-menu" align="end">
+          <Menu.Item onClick={() => formatted.set(formatted() + 1)}>Format document</Menu.Item>
+          <Menu.Item disabled>Fold all</Menu.Item>
+          <Menu.Separator />
+          <Menu.CheckboxItem bind:checked={wrap}>Wrap lines</Menu.CheckboxItem>
+          <Menu.RadioGroup bind:value={indent}>
+            <Menu.GroupLabel>Indent with</Menu.GroupLabel>
+            <Menu.RadioItem value="spaces">Spaces</Menu.RadioItem>
+            <Menu.RadioItem value="tabs">Tabs</Menu.RadioItem>
+          </Menu.RadioGroup>
+        </Menu.Popup>
+      </Menu.Root>
+      <p>
+        Formatted {formatted()} times, lines {wrap() ? "wrap" : "do not wrap"}, indent with{" "}
+        {indent()}.
+      </p>
+    </>
   );
 }
 ```

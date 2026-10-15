@@ -5,7 +5,7 @@ status: Done
 assignee:
   - '@Beacon'
 created_date: '2026-10-15 17:13'
-updated_date: '2026-10-15 20:35'
+updated_date: '2026-10-15 20:41'
 labels:
   - ui
   - docs
@@ -80,6 +80,8 @@ Validation, 2026-10-15:
 - No Rust changes.
 
 Screenshots (backlog/assets): task-387-dialog-{light,dark}.png, task-387-dialog-open-{light,dark}.png, task-387-menu-{light,dark}.png, task-387-theming-{light,dark}.png, task-387-phone.png.
+
+2026-10-15 (Beacon): Lux approved both packages/ui/docs edits after they were made. (1) The installation.md / theming.md split stays as committed: the component status table stays in the README and the theme class list moves to theming.md, one table each, so TASK-358's rows land in one place each. Lux resolves the README conflict at merge. (2) menu.md's island example EditorMenu no longer takes onFormat: its command counts in a signal, and a status line shows that count, the wrap setting and the indent choice. It is still a `tsx check` example, and it is now Menu's live island demo (menu-2); ui.e2e.ts checks that it hydrates. Validation: cli/ui/web Vitest 233 passed, fmt:examples, @lumiose/ui docs:check, apps/web typecheck, Playwright ui + a11y + web 78 passed (3 screenshot tests skipped).
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary

@@ -73,6 +73,11 @@ test("island demos hydrate, and their signals follow the components", async ({ p
   await expect(filters.getByText("Choosing filters…")).toBeVisible();
   await page.keyboard.press("Escape");
   await expect(filters.getByText("All items")).toBeVisible();
+  await page.goto("/ui/menu");
+  const editor = preview(page, "menu-2");
+  await editor.getByRole("button", { name: "View" }).click();
+  await page.getByRole("menuitemcheckbox", { name: "Wrap lines" }).click();
+  await expect(editor.getByText(/lines do not wrap/)).toBeVisible();
 });
 
 test("the site's theme toggle drives the demos", async ({ page }) => {

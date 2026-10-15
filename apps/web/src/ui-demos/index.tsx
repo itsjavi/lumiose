@@ -5,6 +5,7 @@ import { DeleteProject } from "./dialog-1.tsx";
 import { EditProfile } from "./dialog-2.tsx";
 import { Help } from "./installation-1.tsx";
 import { ProjectMenu } from "./menu-1.tsx";
+import { EditorMenu } from "./menu-2.tsx";
 import { Notifications } from "./popover-1.tsx";
 import { Filters } from "./popover-2.tsx";
 import { AccountSettings } from "./tabs-1.tsx";
@@ -22,6 +23,8 @@ export function UiDemo(props: { id: string }) {
       return <Help />;
     case "menu-1":
       return <ProjectMenu />;
+    case "menu-2":
+      return <EditorMenu client:visible />;
     case "popover-1":
       return <Notifications />;
     case "popover-2":
