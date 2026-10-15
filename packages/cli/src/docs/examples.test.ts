@@ -27,6 +27,13 @@ const linked = {
   // Libraries the testing docs and the guides use (pinned devDependencies of @lumiose/cli).
   ...Object.fromEntries(
     [
+      "@opentelemetry/api",
+      "@opentelemetry/exporter-trace-otlp-http",
+      "@opentelemetry/resources",
+      "@opentelemetry/sdk-node",
+      "@opentelemetry/sdk-trace-base",
+      "@opentelemetry/sdk-trace-web",
+      "@opentelemetry/semantic-conventions",
       "@playwright/test",
       "@sanity/client",
       "@sanity/webhook",

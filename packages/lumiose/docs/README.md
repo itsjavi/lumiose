@@ -65,6 +65,7 @@ mistakes** and **Related**.
 - [Realtime](guides/realtime.md): Server-sent events from an endpoint to an island's `EventSource`, WebSockets with `ws` on the Node adapter's server, proxy configs and per-platform notes.
 - [Payments with Stripe Checkout](guides/stripe.md): Checkout started from a form action, a return page, and webhooks received by a `route.ts` endpoint that verifies Stripe's signature.
 - [Content from Sanity](guides/sanity.md): Sanity content read in async components and prerendered, draft previews on a server-rendered route behind a secret, and static rebuilds from Sanity's webhook.
+- [Tracing with OpenTelemetry](guides/opentelemetry.md): Spans for requests, their phases and client navigations from the instrumentation files, a relay for the browser's spans, and setups for OpenObserve, SigNoz and Datadog.
 - [Editors](guides/editors.md): The language server in Neovim and Helix (file type, root markers, the server command), what works in Zed today, and GitHub highlighting through `.gitattributes`.
 - [Web components](guides/web-components.md): Custom elements and web-component libraries: defining them in the browser, typing them in JSX, properties versus attributes (React 19's rule), events with `on:`, server rendering, and the Custom Elements Everywhere score (100).
 
