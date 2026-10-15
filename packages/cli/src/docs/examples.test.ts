@@ -6,6 +6,7 @@
 // Info string: `stsx check` puts the block in `src/docs/<topic>/<n>.stsx`; `stsx check file=x.stsx`
 // puts it at `src/x.stsx`, so examples can import each other and route files get route types
 // (`file=routes/blog/[slug].stsx`).
+import { realpathSync } from "node:fs";
 import { mkdir, mkdtemp, realpath, rm, symlink, writeFile } from "node:fs/promises";
 import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
@@ -23,6 +24,17 @@ const linked = {
   "@lumiose/adapter-node": join(here, "../../../adapter-node"),
   typescript: dirname(require.resolve("typescript/package.json")),
   vitest: dirname(require.resolve("vitest/package.json")),
+  // Libraries the testing docs and the guides use (pinned devDependencies of @lumiose/cli).
+  ...Object.fromEntries(
+    [
+      "@playwright/test",
+      "@sanity/client",
+      "@sanity/webhook",
+      "@testing-library/dom",
+      "@testing-library/user-event",
+      "stripe",
+    ].map((name) => [name, realpathSync(join(here, "../../node_modules", name))]),
+  ),
 };
 const binding = await import("@lumiose/compiler").catch(() => undefined);
 
