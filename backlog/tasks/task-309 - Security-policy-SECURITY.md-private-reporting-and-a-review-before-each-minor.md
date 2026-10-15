@@ -1,10 +1,11 @@
 ---
 id: TASK-309
 title: 'Security policy: SECURITY.md, private reporting and a review before each minor'
-status: To Do
+status: In Progress
 assignee:
   - '@Lux'
 created_date: '2026-10-15 04:02'
+updated_date: '2026-10-15 04:22'
 labels:
   - security
 milestone: m-11
@@ -21,7 +22,13 @@ Agreed with the user on 2026-10-15 (grilling session on adoption by developers u
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 SECURITY.md is committed with the reporting channel, supported versions and expectations
+- [x] #1 SECURITY.md is committed with the reporting channel, supported versions and expectations
 - [ ] #2 The user has enabled GitHub private vulnerability reporting
-- [ ] #3 The release process requires the agent security review before each minor release
+- [x] #3 The release process requires the agent security review before each minor release
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+2026-10-15 (Lux, orchestrator run): SECURITY.md added (private reporting through the Security tab, acknowledgement in 7 days and assessment in 14 as targets, latest 0.x minor supported, scope, provenance and the review process); AGENTS.md Releases now requires the app-security-review pass before each minor. The response targets (7 and 14 days) are a default for the user to confirm. Waiting for the user: enable GitHub private vulnerability reporting in the repository settings (AC #2). Fuzzing (TASK-311/312/313) and the dependency bot (TASK-314) can add a line to SECURITY.md's 'How Lumiose is checked' once they run.
+<!-- SECTION:NOTES:END -->
