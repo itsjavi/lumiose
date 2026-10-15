@@ -23,8 +23,11 @@ workflow's). A failure prints its seed: rerun with `LUMIOSE_PROPERTY_SEED=<seed>
 
 `fuzz/` holds the [cargo-fuzz](https://rust-fuzz.github.io/book/cargo-fuzz.html) targets of the
 Rust crates (decision-56), a workspace of its own: `scan` (the `.stsx` scanner and its masking
-invariant), `compile_client` (the JSX transform and client codegen) and `compile_server` (SSR
-codegen). `cargo fuzz list --fuzz-dir fuzz` lists them. To run one:
+invariant), `compile_client` (the JSX transform and client codegen), `compile_server` (SSR
+codegen), `css_process` (style blocks, `$` constants and scoping in `lumiose_css`),
+`svg_component` (the SVG allowlist sanitizer), `content_markdown` and `content_html` (Markdown,
+frontmatter and HTML imports, with their depth limits). `cargo fuzz list --fuzz-dir fuzz` lists
+them. To run one:
 
 ```sh
 cargo install cargo-fuzz                  # once

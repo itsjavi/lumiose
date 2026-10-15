@@ -34,6 +34,15 @@ pub(crate) fn guard(content: &str, declarations: &[Declaration], refs: &[Edit]) 
             continue;
         };
         for function in math_functions(content, declaration.value.clone()) {
+            // `$calc(…)`, `$a.min(…)`: the name belongs to a `$ref`, which replaces it; an edit
+            // inside the ref's range would overlap it (found by fuzzing, TASK-312).
+            let in_ref = |at: usize| {
+                refs.iter()
+                    .any(|edit| edit.range.start < at && at < edit.range.end)
+            };
+            if in_ref(function.start) || in_ref(function.end) {
+                continue;
+            }
             let text = substituted(content, function.clone(), refs);
             let Some(value) = fold::evaluate(&text) else {
                 continue;
@@ -273,6 +282,19 @@ mod tests {
         assert_eq!(non_negative("margin-left"), None);
         assert_eq!(non_negative("border-image"), None);
         assert_eq!(non_negative("--gap"), None);
+    }
+
+    #[test]
+    fn leaves_math_names_inside_refs_alone() {
+        // `$calc` is a constant: replacing it and wrapping `calc(…)` would overlap.
+        let css = ".a { r: $calc(1rem - 2rem); gap: $a.min(1px - 2px) }";
+        let scan = crate::prepass::scan(css);
+        let refs: Vec<Edit> = crate::prepass::find_refs(css)
+            .into_iter()
+            .map(|site| Edit::replace(site.range, "8".to_owned()))
+            .collect();
+        assert_eq!(refs.len(), 2);
+        assert!(guard(css, &scan.declarations, &refs).is_empty());
     }
 
     /// `css` with the guard's edits applied (no `$ref`s).
