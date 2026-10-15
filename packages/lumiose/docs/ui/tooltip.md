@@ -75,9 +75,24 @@ export function BoldButton() {
 }
 ```
 
-## When it opens and closes
+## Styling
 
-The client script follows Base UI's and Zag's tooltips:
+**With the default theme**, put `lu-tooltip` on `Popup`: inverted colours, a 6px gap and a fade.
+
+**With your own CSS**, style the tip through `class`, `:popover-open`, `[data-side]` and
+`[data-align]`, and the offsets through `--lu-side-offset` and `--lu-align-offset`, as for
+[Popover](popover.md#styling). `@lumiose/ui/tooltip.css` holds the placement both share.
+
+## Keyboard and focus
+
+The [WAI-ARIA tooltip pattern](https://www.w3.org/WAI/ARIA/apg/patterns/tooltip/), with Base UI's
+and Zag's opening rules:
+
+| Key          | Does                                                                             |
+| ------------ | -------------------------------------------------------------------------------- |
+| Tab          | Focusing the trigger from the keyboard opens the tip at once; leaving closes it. |
+| Escape       | Closes the tip, and only the tip: a dialog or popover around it stays open.      |
+| Enter, Space | Activate the trigger and close the tip, unless `closeOnClick={false}`.           |
 
 - **Opens** after `delay` of hover with a mouse or a pen, or at once on keyboard focus
   (`:focus-visible`). A touch never opens it, and neither does the focus a mouse click gives.
@@ -92,14 +107,6 @@ The client script follows Base UI's and Zag's tooltips:
 
 A tooltip inside a popover keeps the popover open, and one inside a dialog belongs inside its
 `Popup` (everything outside a modal dialog is inert).
-
-## Styling
-
-**With the default theme**, put `lu-tooltip` on `Popup`: inverted colours, a 6px gap and a fade.
-
-**With your own CSS**, style the tip through `class`, `:popover-open`, `[data-side]` and
-`[data-align]`, and the offsets through `--lu-side-offset` and `--lu-align-offset`, as for
-[Popover](popover.md#styling). `@lumiose/ui/tooltip.css` holds the placement both share.
 
 ## Without JavaScript, and the client script
 

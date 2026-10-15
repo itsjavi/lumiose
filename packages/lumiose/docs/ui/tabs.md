@@ -172,6 +172,12 @@ script loads, and the panels of the other tabs are `hidden`. Selecting another t
 the Lumiose runtime; islands bundle it. `value`, `onValueChange` and `bind:value` need the
 component to run in an island.
 
+## Browser support
+
+- **Custom elements** (`<lu-tabs>`) and everything the element uses: every current browser.
+- The default theme's vertical tabs follow the direction with `:dir()`: Chrome and Edge 120,
+  Firefox 49, Safari 16.4.
+
 ## Related
 
 - [UI components](README.md): the approach, styling, the default theme and the other components.

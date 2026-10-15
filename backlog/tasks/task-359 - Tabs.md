@@ -1,11 +1,11 @@
 ---
 id: TASK-359
 title: Tabs
-status: Done
+status: In Progress
 assignee:
   - '@Halo'
 created_date: '2026-10-15 16:46'
-updated_date: '2026-10-15 18:47'
+updated_date: '2026-10-15 18:49'
 labels:
   - ui
 milestone: m-12
@@ -72,6 +72,8 @@ User decision 2026-10-15: @lumiose/ui reaches parity with Base UI's components b
 **Proposed follow-up (not created: task ids would clash between branches):** `Tabs.Indicator` (Base UI's `--active-tab-*` variables; with CSS anchor positioning on the selected tab it is placed before hydration).
 
 Screenshots: backlog/assets/task-359-tabs-light.png, task-359-tabs-dark.png (keyboard focus on the disabled Billing tab, Password selected).
+
+2026-10-15 Halo: AC #7 (decision-64, merged from main after this task was finished): the page now follows the template's sections (Anatomy, API, Example, Styling, Keyboard and focus, Without JavaScript, Browser support, Related). It still lives in packages/lumiose/docs/ui/ next to dialog.md and README.md: packages/ui/docs and the UI llms.txt are TASK-393's structure and generator (Beacon), not on main yet, and moving only these pages would split the UI docs. Parked In Progress until TASK-393 moves the UI pages and lists them; AC #1-#6 are done and verified.
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary
