@@ -1,0 +1,8 @@
+/*
+ * Tooltip needs no CSS to open, close or stack: the native popover does it, and its client script
+ * opens it on hover and focus. What it needs is its placement next to the trigger, shared with
+ * Popover (placement.css).
+ */
+@layer lu.core, lu.theme;
+
+@import "../placement/placement.css";

@@ -9,3 +9,19 @@ export type {
   DialogTitleProps,
   DialogTriggerProps,
 } from "./dialog/dialog.tsx";
+export { Popover } from "./popover/popover.tsx";
+export type {
+  PopoverCloseProps,
+  PopoverDescriptionProps,
+  PopoverPopupProps,
+  PopoverRootProps,
+  PopoverTitleProps,
+  PopoverTriggerProps,
+} from "./popover/popover.tsx";
+export { Tooltip } from "./tooltip/tooltip.tsx";
+export type {
+  TooltipPopupProps,
+  TooltipRootProps,
+  TooltipTriggerProps,
+} from "./tooltip/tooltip.tsx";
+export type { Align, PlacementProps, Side } from "./placement/placement.ts";

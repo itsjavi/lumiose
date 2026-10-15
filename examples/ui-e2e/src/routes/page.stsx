@@ -14,6 +14,10 @@ export default function Home() {
         <li>
           <a href="/dialog">Dialog and alert dialog</a> (<a href="/dialog/island">in an island</a>)
         </li>
+        <li>
+          <a href="/popover">Popover</a> and <a href="/tooltip">Tooltip</a> (
+          <a href="/popover/island">in an island</a>)
+        </li>
       </ul>
     </article>
   );

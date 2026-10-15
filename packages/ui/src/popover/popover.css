@@ -1,0 +1,7 @@
+/*
+ * Popover needs no CSS to open, close or stack: the native popover does it. What it needs is its
+ * placement next to the trigger, shared with Tooltip (placement.css).
+ */
+@layer lu.core, lu.theme;
+
+@import "../placement/placement.css";

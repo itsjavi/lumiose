@@ -1,0 +1,127 @@
+import { Dialog, Popover } from "@lumiose/ui";
+import { Title } from "lumiose";
+
+// Server-rendered, no island: the popovers work from the HTML alone. Styled with the default theme.
+export default function PopoverPage() {
+  return (
+    <>
+      <Title>Popover</Title>
+      <h1>Popover</h1>
+      <div class="grid">
+        <section aria-labelledby="basic-heading">
+          <h2 id="basic-heading">Popover with a title and actions</h2>
+          <Popover.Root>
+            <Popover.Trigger class="lu-button">Notifications</Popover.Trigger>
+            <Popover.Popup class="lu-popover" align="start">
+              <Popover.Title>Notifications</Popover.Title>
+              <Popover.Description>You are all caught up.</Popover.Description>
+              <footer>
+                <a href="#settings">Settings</a>
+                <Popover.Close class="lu-button">Close</Popover.Close>
+              </footer>
+            </Popover.Popup>
+          </Popover.Root>
+          <button type="button" class="lu-button">
+            Next step
+          </button>
+        </section>
+
+        <section aria-labelledby="text-heading">
+          <h2 id="text-heading">Text only, on the right</h2>
+          <Popover.Root>
+            <Popover.Trigger class="lu-button">Shipping</Popover.Trigger>
+            <Popover.Popup class="lu-popover" side="right" sideOffset={12}>
+              <Popover.Description>Free shipping on orders over 50 euros.</Popover.Description>
+            </Popover.Popup>
+          </Popover.Root>
+        </section>
+
+        <section aria-labelledby="nested-heading">
+          <h2 id="nested-heading">Nested popovers</h2>
+          <Popover.Root>
+            <Popover.Trigger class="lu-button">Filters</Popover.Trigger>
+            <Popover.Popup class="lu-popover">
+              <Popover.Title>Filters</Popover.Title>
+              <Popover.Root>
+                <Popover.Trigger class="lu-button">Date range…</Popover.Trigger>
+                <Popover.Popup class="lu-popover" side="right" align="start">
+                  <Popover.Title>Date range</Popover.Title>
+                  <Popover.Description>Pick the days to show.</Popover.Description>
+                  <footer>
+                    <Popover.Close class="lu-button">Apply</Popover.Close>
+                  </footer>
+                </Popover.Popup>
+              </Popover.Root>
+            </Popover.Popup>
+          </Popover.Root>
+        </section>
+
+        <section aria-labelledby="dialog-heading">
+          <h2 id="dialog-heading">In a dialog</h2>
+          <Dialog.Root>
+            <Dialog.Trigger class="lu-button">Share…</Dialog.Trigger>
+            <Dialog.Popup class="lu-dialog">
+              <Dialog.Title>Share</Dialog.Title>
+              <Popover.Root>
+                <Popover.Trigger class="lu-button">Link options</Popover.Trigger>
+                <Popover.Popup class="lu-popover">
+                  <Popover.Description>Anyone with the link can view.</Popover.Description>
+                  <footer>
+                    <Popover.Close class="lu-button">Got it</Popover.Close>
+                  </footer>
+                </Popover.Popup>
+              </Popover.Root>
+              <footer>
+                <Dialog.Close class="lu-button">Done</Dialog.Close>
+              </footer>
+            </Dialog.Popup>
+          </Dialog.Root>
+        </section>
+      </div>
+
+      <section aria-labelledby="placement-heading" class="placements">
+        <h2 id="placement-heading">Placement</h2>
+        <div class="sides">
+          {(["top", "right", "bottom", "left", "inline-start", "inline-end"] as const).map(
+            (side) => (
+              <Popover.Root>
+                <Popover.Trigger class="lu-button">{side}</Popover.Trigger>
+                <Popover.Popup class="lu-popover" side={side} align="end" alignOffset={4}>
+                  <Popover.Description>{`On the ${side} side`}</Popover.Description>
+                </Popover.Popup>
+              </Popover.Root>
+            ),
+          )}
+        </div>
+      </section>
+
+      {/* Last on the page: Tab from its popup must not loop back into it. */}
+      <footer class="last">
+        <Popover.Root>
+          <Popover.Trigger class="lu-button">Help</Popover.Trigger>
+          <Popover.Popup class="lu-popover" side="top">
+            <Popover.Description>
+              Press Tab to leave. <a href="#help">Read more</a>
+            </Popover.Description>
+          </Popover.Popup>
+        </Popover.Root>
+      </footer>
+    </>
+  );
+}
+
+<style>
+  .placements {
+    margin-block: 6rem;
+  }
+  .sides {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 7rem;
+    padding-inline: 8rem;
+  }
+  .last {
+    margin-block-start: 4rem;
+  }
+</style>

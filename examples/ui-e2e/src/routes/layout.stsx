@@ -10,6 +10,9 @@ export default function Root(props: LayoutProps<"/">) {
         <a href="/">@lumiose/ui</a>
         <a href="/dialog">Dialog</a>
         <a href="/dialog/island">Dialog in an island</a>
+        <a href="/popover">Popover</a>
+        <a href="/tooltip">Tooltip</a>
+        <a href="/popover/island">Popover and Tooltip in an island</a>
       </nav>
       <main>{props.children}</main>
     </div>

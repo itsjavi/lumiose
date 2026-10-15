@@ -85,6 +85,8 @@ mistakes** and **Related**.
 
 - [UI components](ui/README.md): `@lumiose/ui`, accessible and unstyled primitives on native elements, server-rendered without hydration: the approach, styling with your own CSS or the optional default theme (`--lu-` custom properties, light and dark), and the components available and planned.
 - [Dialog](ui/dialog.md): `Dialog.Root`, `Trigger`, `Popup`, `Title`, `Description` and `Close`, and the alert dialog (`role="alertdialog"`): a native `<dialog>` with invoker commands, working without JavaScript, plus a 0.8 kB script for the native gaps; `bind:open` with signals; styling, keyboard and focus.
+- [Popover](ui/popover.md): `Popover.Root`, `Trigger`, `Popup`, `Title`, `Description` and `Close`: a native `popover` opened by `popovertarget` and placed with CSS anchor positioning (`side`, `align`, `sideOffset`, `alignOffset`), working without JavaScript, plus a 1.3 kB script for focus, right-clicks and older browsers; `bind:open`; styling, keyboard and focus.
+- [Tooltip](ui/tooltip.md): `Tooltip.Root`, `Trigger` and `Popup`: a native `popover="hint"` with `role="tooltip"` that describes its trigger in server HTML, opened on hover and keyboard focus by a 1.5 kB script (delays, one at a time, hoverable, Escape); `bind:open`; the placement props of Popover.
 
 ## Deploy
 
@@ -9564,10 +9566,12 @@ If your app orders its own layers, put `lu` first: `@layer lu, reset, components
 surfaces, a blue primary, light and dark. It styles a few classes, which you put on the parts
 through their `class` prop:
 
-| Class       | On                  | Variants                                                                |
-| ----------- | ------------------- | ----------------------------------------------------------------------- |
-| `lu-button` | any `<button>` part | `data-variant="primary"`, `data-variant="destructive"`                  |
-| `lu-dialog` | `Dialog.Popup`      | Styles the backdrop, the title, the description and a `<footer>` inside |
+| Class        | On                  | Variants                                                                |
+| ------------ | ------------------- | ----------------------------------------------------------------------- |
+| `lu-button`  | any `<button>` part | `data-variant="primary"`, `data-variant="destructive"`                  |
+| `lu-dialog`  | `Dialog.Popup`      | Styles the backdrop, the title, the description and a `<footer>` inside |
+| `lu-popover` | `Popover.Popup`     | Styles the title, the description and a `<footer>` inside               |
+| `lu-tooltip` | `Tooltip.Popup`     |                                                                         |
 
 Its colours and radius are custom properties with shadcn/ui's names and a `--lu-` prefix, so a
 shadcn palette carries over:
@@ -9618,7 +9622,8 @@ Each component's page has an example stylesheet to start from.
 | Component                         | Status                                                 |
 | --------------------------------- | ------------------------------------------------------ |
 | [Dialog, alert dialog](dialog.md) | Available: native `<dialog>`, works without JavaScript |
-| Popover, tooltip                  | Planned                                                |
+| [Popover](popover.md)             | Available: native popover, works without JavaScript    |
+| [Tooltip](tooltip.md)             | Available: native hint popover, opened by its script   |
 | Menu                              | Planned                                                |
 | Combobox, select                  | Planned                                                |
 | Tabs                              | Planned                                                |
@@ -9880,6 +9885,320 @@ Until the script loads (or without JavaScript) the dialog behaves as the browser
 - [Islands](../concepts/islands.md): running a component in the browser, for `open` and
   `onOpenChange`.
 - [JSX](../concepts/jsx.md): native events with `on:` and `ref`.
+
+<!-- source: ui/popover.md -->
+
+# Popover
+
+> A popup anchored to its trigger: a native `popover` opened and closed by the trigger's `popovertarget`, placed with CSS anchor positioning, so it works in server HTML with no JavaScript. A 1.3 kB script moves focus into it and back, ignores right-clicks outside, keeps `aria-expanded` current and places it in browsers without anchor positioning. `bind:open` (or `open` and `onOpenChange`) keeps a signal in sync in islands.
+
+```ts
+import { Popover } from "@lumiose/ui"; // or "@lumiose/ui/popover"
+import "@lumiose/ui/popover.css"; // places the popup next to its trigger
+import "@lumiose/ui/themes/default.css"; // optional: the default theme
+```
+
+## Anatomy
+
+```tsx
+<Popover.Root>
+  <Popover.Trigger />
+  <Popover.Popup>
+    <Popover.Title />
+    <Popover.Description />
+    <Popover.Close />
+  </Popover.Popup>
+</Popover.Root>
+```
+
+| Part          | Renders                                                                                                                        |
+| ------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| `Root`        | No element. Holds the state and the ids the other parts share.                                                                 |
+| `Trigger`     | `<button type="button" popovertarget="…" aria-haspopup="dialog">`, with an `anchor-name` in its `style`.                       |
+| `Popup`       | `<div popover="auto" role="dialog" data-side="…" data-align="…">`, labelled by its `Title` and described by its `Description`. |
+| `Title`       | `<h2>`, which names the popup.                                                                                                 |
+| `Description` | `<p>`, which describes it.                                                                                                     |
+| `Close`       | `<button type="button" popovertarget="…" popovertargetaction="hide">`.                                                         |
+
+The popup is a non-modal dialog, as in Base UI: the page around it stays usable. A popover may
+contain another `Popover.Root`: the inner popup opens on top, and closing the outer one closes
+both.
+
+## API
+
+### Popover.Root
+
+| Prop           | Type                      | Default |                                                                                                                                                 |
+| -------------- | ------------------------- | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| `open`         | `boolean`                 |         | Opens or closes the popover when it changes, in the browser. Server HTML always starts closed: a popover opens only from its trigger or script. |
+| `onOpenChange` | `(open: boolean) => void` |         | Called after the popover opens or closes, whatever did it: the trigger, a close button, Escape, a click outside, another popover or `open`.     |
+| `bind:open`    | `Signal<boolean>`         |         | Stands in for `open` and `onOpenChange`.                                                                                                        |
+
+### Popover.Popup
+
+| Prop          | Type                                                                       | Default    |                                                                                                |
+| ------------- | -------------------------------------------------------------------------- | ---------- | ---------------------------------------------------------------------------------------------- |
+| `side`        | `"top" \| "bottom" \| "left" \| "right" \| "inline-start" \| "inline-end"` | `"bottom"` | The trigger's side the popup goes on. `inline-start` and `inline-end` follow `dir`.            |
+| `align`       | `"start" \| "center" \| "end"`                                             | `"center"` | How the popup lines up with the trigger along that side.                                       |
+| `sideOffset`  | `number`                                                                   | `0`        | The gap between the trigger and the popup, in CSS pixels.                                      |
+| `alignOffset` | `number`                                                                   | `0`        | A shift along the side, in CSS pixels: away from the aligned edge, or right/down when centred. |
+
+The popup flips to the opposite side when it does not fit, and goes below (or above) the trigger
+when a `left` or `right` popup fits on neither side. It hides while its trigger is scrolled out
+of view.
+
+### The other parts
+
+Each part takes the props of the element it renders (`class`, `style`, `aria-*`, `data-*`, event
+handlers, `ref`) and passes them through. Your props override the defaults (`type`,
+`aria-haspopup`, `role`, `aria-labelledby`, `aria-describedby`); `id`, `popover` and
+`popovertarget` stay the parts' own. A `style` you pass keeps the anchor name.
+
+- **`Trigger`**: `aria-expanded` comes from the browser for `popovertarget`, and from the client
+  script once it runs.
+- **`Popup`**: native events work as on any popover: `on:toggle` and `on:beforetoggle`. A popup
+  without a `Title` needs an `aria-label`.
+
+## Example
+
+```tsx check
+import { Popover } from "@lumiose/ui";
+
+export function Notifications() {
+  return (
+    <Popover.Root>
+      <Popover.Trigger class="lu-button">Notifications</Popover.Trigger>
+      <Popover.Popup class="lu-popover" align="start">
+        <Popover.Title>Notifications</Popover.Title>
+        <Popover.Description>You are all caught up.</Popover.Description>
+        <footer>
+          <Popover.Close class="lu-button">Close</Popover.Close>
+        </footer>
+      </Popover.Popup>
+    </Popover.Root>
+  );
+}
+```
+
+In an island, bound to a signal: `bind:open={open}` is short for `open={open()}` plus
+`onOpenChange={(next) => open.set(next)}`. A popover opened by the signal still anchors to its
+trigger and treats it as its invoker.
+
+```tsx check
+import { Popover } from "@lumiose/ui";
+import { signal } from "lumiose";
+
+export function Filters() {
+  const open = signal(false);
+  return (
+    <>
+      <Popover.Root bind:open={open}>
+        <Popover.Trigger class="lu-button">Filters</Popover.Trigger>
+        <Popover.Popup class="lu-popover" side="right" sideOffset={8}>
+          <Popover.Title>Filters</Popover.Title>
+        </Popover.Popup>
+      </Popover.Root>
+      <p>{open() ? "Choosing filters…" : "All items"}</p>
+    </>
+  );
+}
+```
+
+## Styling
+
+**With the default theme**, put `lu-popover` on `Popup`: a surface with the title, the
+description and a `<footer>` styled, a 4px gap to the trigger, and a fade. Its colours come from the
+theme's `--lu-` properties ([UI components](README.md#the-default-theme)).
+
+**With your own CSS**, style the popup through `class` and its state: `:popover-open`,
+`[data-side]` and `[data-align]` (the requested placement; a flip does not change them), and the
+trigger through `[aria-expanded]`. Two custom properties set the offsets, and the props override
+them: `--lu-side-offset` and `--lu-align-offset`.
+
+```css
+.popover {
+  --lu-side-offset: 6px;
+  padding: 0.75rem;
+  border: 1px solid #d4d4d8;
+  border-radius: 0.5rem;
+  box-shadow: 0 10px 30px -10px rgb(0 0 0 / 0.35);
+}
+```
+
+`@lumiose/ui/popover.css` holds the placement, in the `lu.core` layer: for each `data-side` and
+`data-align`, the CSS anchor positioning that puts the popup next to its trigger, with flips and
+`position-visibility: anchors-visible`. Tooltip shares it.
+
+## Keyboard and focus
+
+| Key          | Does                                                                                                                             |
+| ------------ | -------------------------------------------------------------------------------------------------------------------------------- |
+| Enter, Space | On the trigger: opens or closes the popover.                                                                                     |
+| Tab          | Moves through the popup, then on to the element after the trigger. When the trigger is the last element, focus leaves the popup. |
+| Shift+Tab    | From the start of the popup, back to the trigger. The popover stays open.                                                        |
+| Escape       | Closes the popover on top. With nested popovers, or a popover in a dialog, one Escape closes one layer.                          |
+
+- **On open**, focus moves to the first focusable element in the popup, or to the popup itself
+  when it has none. Opened by touch, the popup focuses itself, so no virtual keyboard opens.
+- **On close**, focus returns to the trigger without scrolling, unless a click outside landed on
+  another control, which keeps it. Escape and the close buttons return it too.
+- **A click outside** closes the popover; a right-click or a second finger does not. A press inside a nested popover does not close its
+  parent, and opening another popover closes the first.
+- Popovers opened from a dialog belong inside its `Popup`: everything outside a modal dialog is
+  inert.
+
+## Without JavaScript, and the client script
+
+The trigger, the close buttons, Escape, the click outside and the placement are HTML and CSS
+features: a popover in a server-rendered page works before any script loads, and with none.
+`open`, `onOpenChange` and `bind:open` need the component to run in an island.
+
+A page that renders a `Popover` loads a 1.3 kB (brotli) module once, without the Lumiose runtime;
+islands bundle it. It covers every Popover on the page:
+
+- focus on open (the first focusable element, or the popup) and its return on close;
+- a right-click or a second finger outside does not close the popover (the browser's light
+  dismiss does, and cannot be cancelled: the script shows it again before it paints);
+- `aria-expanded` on the triggers;
+- the placement in browsers without CSS anchor positioning, which it keeps current on scroll and
+  resize.
+
+## Browser support
+
+- **Popover and `popovertarget`**: every current browser (Baseline 2024).
+- **CSS anchor positioning**: Chrome and Edge 125, Firefox 147, Safari 26. Elsewhere the client
+  script places the popup; without JavaScript there it opens in the middle of the viewport.
+- Safari and Firefox do not follow a trigger moved by a CSS `transform`.
+
+## Related
+
+- [UI components](README.md): the approach, styling, the default theme and the other components.
+- [Tooltip](tooltip.md): a short tip on hover or focus, with the same placement props.
+- [Dialog](dialog.md): a modal popup.
+
+<!-- source: ui/tooltip.md -->
+
+# Tooltip
+
+> A short tip next to its trigger, on hover or keyboard focus: a native `popover="hint"` with `role="tooltip"`, placed with CSS anchor positioning. The trigger is described by the tip in server HTML, so screen readers announce it without hovering; a 1.5 kB script opens and closes it as Base UI's tooltip does. `bind:open` (or `open` and `onOpenChange`) keeps a signal in sync in islands.
+
+```ts
+import { Tooltip } from "@lumiose/ui"; // or "@lumiose/ui/tooltip"
+import "@lumiose/ui/tooltip.css"; // places the tip next to its trigger
+import "@lumiose/ui/themes/default.css"; // optional: the default theme
+```
+
+## Anatomy
+
+```tsx
+<Tooltip.Root>
+  <Tooltip.Trigger />
+  <Tooltip.Popup />
+</Tooltip.Root>
+```
+
+| Part      | Renders                                                                                                     |
+| --------- | ----------------------------------------------------------------------------------------------------------- |
+| `Root`    | No element. Holds the ids the parts share.                                                                  |
+| `Trigger` | `<button type="button" aria-describedby="…">`, with an `anchor-name` in its `style`.                        |
+| `Popup`   | `<span popover="hint" role="tooltip" data-side="…" data-align="…">`: a `<span>`, so it fits in a paragraph. |
+
+**Accessibility model.** The tooltip follows the
+[WAI-ARIA tooltip pattern](https://www.w3.org/WAI/ARIA/apg/patterns/tooltip/): the tip is the
+trigger's description, always, not only while it shows. It is not its name: give an icon-only
+trigger an `aria-label` (Base UI asks the same).
+
+## API
+
+### Tooltip.Root
+
+| Prop                    | Type                      | Default |                                                                                                                                                                                                      |
+| ----------------------- | ------------------------- | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `open`                  | `boolean`                 |         | Opens or closes the tip when it changes, in the browser.                                                                                                                                             |
+| `onOpenChange`          | `(open: boolean) => void` |         | Called after the tip opens or closes, whatever did it: hover, focus, Escape, `open`.                                                                                                                 |
+| `bind:open`             | `Signal<boolean>`         |         | Stands in for `open` and `onOpenChange`.                                                                                                                                                             |
+| `disabled`              | `boolean`                 | `false` | Hover and focus do not open the tip; `open` still does.                                                                                                                                              |
+| `disableHoverablePopup` | `boolean`                 | `false` | Closes the tip as soon as the pointer leaves the trigger, instead of letting it move onto the tip. WCAG 1.4.13 asks for hoverable content: use it only for tips that cover something the user needs. |
+
+### Tooltip.Trigger
+
+| Prop           | Type      | Default |                                                                        |
+| -------------- | --------- | ------- | ---------------------------------------------------------------------- |
+| `delay`        | `number`  | `600`   | How long the pointer rests on the trigger before the tip opens, in ms. |
+| `closeDelay`   | `number`  | `0`     | How long the tip stays after the pointer leaves, in ms.                |
+| `closeOnClick` | `boolean` | `true`  | A click (or Enter, or Space) on the trigger closes the tip.            |
+
+The trigger takes a `<button>`'s props too; an `aria-describedby` you pass is kept, after the tip.
+These props reach the client script as attributes of the trigger: `data-delay`,
+`data-close-delay`, `data-close-on-click="false"`, and `data-trigger-disabled` from `Root`'s
+`disabled`.
+
+### Tooltip.Popup
+
+The placement props of [Popover.Popup](popover.md#popoverpopup): `side` (default `"top"`),
+`align`, `sideOffset` and `alignOffset`.
+
+## Example
+
+```tsx check
+import { Tooltip } from "@lumiose/ui";
+
+export function BoldButton() {
+  return (
+    <Tooltip.Root>
+      <Tooltip.Trigger class="lu-button" aria-label="Bold">
+        B
+      </Tooltip.Trigger>
+      <Tooltip.Popup class="lu-tooltip">Bold (Ctrl+B)</Tooltip.Popup>
+    </Tooltip.Root>
+  );
+}
+```
+
+## When it opens and closes
+
+The client script follows Base UI's and Zag's tooltips:
+
+- **Opens** after `delay` of hover with a mouse or a pen, or at once on keyboard focus
+  (`:focus-visible`). A touch never opens it, and neither does the focus a mouse click gives.
+- **One at a time.** Within 400 ms of another tooltip closing, or while one is open, the next one
+  opens without delay, so moving along a toolbar reads each tip.
+- **A press before the delay** cancels the opening.
+- **Closes** on Escape (only the tip: a dialog or popover around it stays open), on a press, on a
+  click of the trigger (unless `closeOnClick={false}`), on blur, and when something around the
+  trigger scrolls.
+- **Hoverable** (WCAG 1.4.13): the pointer can move from the trigger onto the tip, across the gap,
+  and the tip stays; it closes `closeDelay` after the pointer leaves both.
+
+A tooltip inside a popover keeps the popover open, and one inside a dialog belongs inside its
+`Popup` (everything outside a modal dialog is inert).
+
+## Styling
+
+**With the default theme**, put `lu-tooltip` on `Popup`: inverted colours, a 6px gap and a fade.
+
+**With your own CSS**, style the tip through `class`, `:popover-open`, `[data-side]` and
+`[data-align]`, and the offsets through `--lu-side-offset` and `--lu-align-offset`, as for
+[Popover](popover.md#styling). `@lumiose/ui/tooltip.css` holds the placement both share.
+
+## Without JavaScript, and the client script
+
+Without JavaScript the tip never shows, but the trigger keeps its description: screen readers
+announce it. A page that renders a `Tooltip` loads a 1.5 kB (brotli) module once, without the
+Lumiose runtime; islands bundle it. It opens and closes every tooltip on the page, and places them
+in browsers without CSS anchor positioning.
+
+## Browser support
+
+- **`popover="hint"`**: Chrome and Edge from 133 (complete in 151), Firefox from 149 (complete in
+  153). Safari reads it as `popover="manual"`: the client script does the same work there.
+- **CSS anchor positioning**: Chrome and Edge 125, Firefox 147, Safari 26. Elsewhere the client
+  script places the tip.
+
+## Related
+
+- [UI components](README.md): the approach, styling, the default theme and the other components.
+- [Popover](popover.md): a popup with interactive content, opened by a click.
 
 <!-- source: deploy/README.md -->
 

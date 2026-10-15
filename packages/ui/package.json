@@ -22,6 +22,10 @@
     "./dialog": "./src/dialog/dialog.tsx",
     "./styles.css": "./src/styles.css",
     "./dialog.css": "./src/dialog/dialog.css",
+    "./popover": "./src/popover/popover.tsx",
+    "./popover.css": "./src/popover/popover.css",
+    "./tooltip": "./src/tooltip/tooltip.tsx",
+    "./tooltip.css": "./src/tooltip/tooltip.css",
     "./themes/default.css": "./src/themes/default.css",
     "./package.json": "./package.json"
   },
@@ -31,6 +35,10 @@
       "./dialog": "./dist/dialog/dialog.tsx",
       "./styles.css": "./dist/styles.css",
       "./dialog.css": "./dist/dialog/dialog.css",
+      "./popover": "./dist/popover/popover.tsx",
+      "./popover.css": "./dist/popover/popover.css",
+      "./tooltip": "./dist/tooltip/tooltip.tsx",
+      "./tooltip.css": "./dist/tooltip/tooltip.css",
       "./themes/default.css": "./dist/themes/default.css",
       "./package.json": "./package.json"
     }

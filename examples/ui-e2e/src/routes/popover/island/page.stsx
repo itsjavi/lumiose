@@ -1,0 +1,12 @@
+import { Title } from "lumiose";
+import { PopoverSignals } from "../../../islands/PopoverSignals.tsx";
+
+export default function PopoverIslandPage() {
+  return (
+    <>
+      <Title>Popover and Tooltip in an island, bound to signals</Title>
+      <h1>Popover and Tooltip in an island, bound to signals</h1>
+      <PopoverSignals client:load />
+    </>
+  );
+}

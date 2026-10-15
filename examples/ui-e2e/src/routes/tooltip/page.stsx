@@ -1,0 +1,115 @@
+import { Dialog, Popover, Tooltip } from "@lumiose/ui";
+import { Title } from "lumiose";
+
+// Server-rendered, no island: Tooltip's client script opens the tips. Styled with the default theme.
+export default function TooltipPage() {
+  return (
+    <>
+      <Title>Tooltip</Title>
+      <h1>Tooltip</h1>
+      <div class="toolbar" role="toolbar" aria-label="Formatting">
+        <Tooltip.Root>
+          <Tooltip.Trigger class="lu-button" aria-label="Bold">
+            B
+          </Tooltip.Trigger>
+          <Tooltip.Popup class="lu-tooltip">Bold (Ctrl+B)</Tooltip.Popup>
+        </Tooltip.Root>
+        <Tooltip.Root>
+          <Tooltip.Trigger class="lu-button" aria-label="Italic">
+            I
+          </Tooltip.Trigger>
+          <Tooltip.Popup class="lu-tooltip">Italic (Ctrl+I)</Tooltip.Popup>
+        </Tooltip.Root>
+        <Tooltip.Root>
+          <Tooltip.Trigger class="lu-button" closeOnClick={false} delay={200}>
+            Pin
+          </Tooltip.Trigger>
+          <Tooltip.Popup class="lu-tooltip" side="bottom">
+            Stays open when clicked
+          </Tooltip.Popup>
+        </Tooltip.Root>
+        <Tooltip.Root disableHoverablePopup>
+          <Tooltip.Trigger class="lu-button">Not hoverable</Tooltip.Trigger>
+          <Tooltip.Popup class="lu-tooltip" side="right">
+            Closes when the pointer leaves the trigger
+          </Tooltip.Popup>
+        </Tooltip.Root>
+        <Tooltip.Root disabled>
+          <Tooltip.Trigger class="lu-button">Disabled tip</Tooltip.Trigger>
+          <Tooltip.Popup class="lu-tooltip">Never opens on hover</Tooltip.Popup>
+        </Tooltip.Root>
+      </div>
+
+      <p>
+        Inline in a sentence:{" "}
+        <Tooltip.Root>
+          <Tooltip.Trigger class="lu-button">Save</Tooltip.Trigger>
+          <Tooltip.Popup class="lu-tooltip">Saves a draft</Tooltip.Popup>
+        </Tooltip.Root>{" "}
+        and more text.
+      </p>
+
+      <div class="grid">
+        <section aria-labelledby="dialog-heading">
+          <h2 id="dialog-heading">In a dialog</h2>
+          <Dialog.Root>
+            <Dialog.Trigger class="lu-button">Edit link</Dialog.Trigger>
+            <Dialog.Popup class="lu-dialog">
+              <Dialog.Title>Edit link</Dialog.Title>
+              <footer>
+                <Tooltip.Root>
+                  <Tooltip.Trigger class="lu-button">Copy</Tooltip.Trigger>
+                  <Tooltip.Popup class="lu-tooltip">Copies the link</Tooltip.Popup>
+                </Tooltip.Root>
+                <Dialog.Close class="lu-button">Done</Dialog.Close>
+              </footer>
+            </Dialog.Popup>
+          </Dialog.Root>
+        </section>
+
+        <section aria-labelledby="popover-heading">
+          <h2 id="popover-heading">In a popover</h2>
+          <Popover.Root>
+            <Popover.Trigger class="lu-button">Account</Popover.Trigger>
+            <Popover.Popup class="lu-popover">
+              <Popover.Title>Account</Popover.Title>
+              <Tooltip.Root>
+                <Tooltip.Trigger class="lu-button">Sign out</Tooltip.Trigger>
+                <Tooltip.Popup class="lu-tooltip">Signs out on every device</Tooltip.Popup>
+              </Tooltip.Root>
+            </Popover.Popup>
+          </Popover.Root>
+        </section>
+
+        <section aria-labelledby="scroll-heading">
+          <h2 id="scroll-heading">In a scroll container</h2>
+          <div class="scroller" data-testid="scroller">
+            <Tooltip.Root>
+              <Tooltip.Trigger class="lu-button">Scrolled</Tooltip.Trigger>
+              <Tooltip.Popup class="lu-tooltip">Closes when the list scrolls</Tooltip.Popup>
+            </Tooltip.Root>
+            <div class="spacer" />
+          </div>
+        </section>
+      </div>
+    </>
+  );
+}
+
+<style>
+  .toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-block: 3rem 1rem;
+  }
+  .scroller {
+    block-size: 6rem;
+    overflow: auto;
+    padding: 0.5rem;
+    border: 1px solid var(--lu-input);
+  }
+  .spacer {
+    block-size: 20rem;
+  }
+</style>

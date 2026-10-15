@@ -37,6 +37,18 @@ const COMPONENTS: Component[] = [
     scripts: ["dialog/dialog.script.ts"],
     css: "dialog/dialog.css",
   },
+  {
+    name: "popover",
+    module: "popover/popover.tsx",
+    scripts: ["popover/popover.script.ts"],
+    css: "popover/popover.css",
+  },
+  {
+    name: "tooltip",
+    module: "tooltip/tooltip.tsx",
+    scripts: ["tooltip/tooltip.script.ts"],
+    css: "tooltip/tooltip.css",
+  },
 ];
 
 const CLIENT_SCRIPT = /\?client$/;
