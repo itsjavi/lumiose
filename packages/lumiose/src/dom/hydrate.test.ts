@@ -1304,3 +1304,27 @@ describe("hydrate: a progress value that switches to undefined (TASK-407)", () =
     expect(progress.value).toBe(0.5);
   });
 });
+
+// A list row's comparison with a selected value is hoisted into a selector at the component's top;
+// in a branch that never runs, its source must not be evaluated (TASK-402).
+describe("hydrate: a selector in a branch that never runs (TASK-402)", () => {
+  it("renders and hydrates without evaluating the comparison", async () => {
+    const { client, server } = await load(`
+      function boom(): { id: string } {
+        throw new Error("boom");
+      }
+      export function Mapped(props: { on: boolean }) {
+        return (
+          <div>
+            {["a"].map((id) => (props.on ? <p>{id === boom().id ? <b /> : <i />}</p> : <span>{id}</span>))}
+          </div>
+        );
+      }`);
+    await serve(server, [["Mapped", { on: false }]]);
+    const html = visible();
+    expect(html).toContain("<span>a</span>");
+    await hydrateAll(client);
+    expect(warn).not.toHaveBeenCalled();
+    expect(visible()).toBe(html);
+  });
+});
