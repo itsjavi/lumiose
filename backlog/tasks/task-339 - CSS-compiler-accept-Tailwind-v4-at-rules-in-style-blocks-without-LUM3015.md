@@ -2,12 +2,15 @@
 id: TASK-339
 title: 'CSS compiler: accept Tailwind v4 at-rules in style blocks without LUM3015'
 status: To Do
-assignee: []
+assignee:
+  - '@Halo'
 created_date: '2026-10-15 06:40'
+updated_date: '2026-10-15 07:41'
 labels:
   - css
   - compiler
   - tailwind
+milestone: m-11
 dependencies:
   - TASK-336
 references:
@@ -29,3 +32,9 @@ Found by TASK-336's smoke test (examples/ssr-styles-e2e). With @tailwindcss/vite
 - [ ] #2 Other unknown at-rules still report LUM3015
 - [ ] #3 examples/ssr-styles-e2e builds and lumiose check reports no warnings; concepts/styles.md drops the LUM3015 caveat
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+2026-10-15 (Lux): found by TASK-336's smoke test; placed in M11 and assigned to Halo (lumiose_css diagnostics).
+<!-- SECTION:NOTES:END -->

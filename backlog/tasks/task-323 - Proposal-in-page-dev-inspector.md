@@ -1,11 +1,11 @@
 ---
 id: TASK-323
 title: 'Proposal: in-page dev inspector'
-status: In Progress
+status: Done
 assignee:
   - '@Lux'
 created_date: '2026-10-15 04:03'
-updated_date: '2026-10-15 04:26'
+updated_date: '2026-10-15 07:41'
 labels:
   - proposal
   - needs-decision
@@ -24,8 +24,8 @@ Agreed with the user on 2026-10-15 (grilling session on adoption by developers u
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 A proposal with the features, shape, alternatives and prior art is reviewed by the user
-- [ ] #2 Approved names are recorded and an implementation task is created
+- [x] #1 A proposal with the features, shape, alternatives and prior art is reviewed by the user
+- [x] #2 Approved names are recorded and an implementation task is created
 <!-- AC:END -->
 
 ## Implementation Notes
@@ -49,4 +49,12 @@ Proposal (Lux, 2026-10-15, drafted during the unattended M10/M11 run; waiting fo
 - Logging helpers (`debug(signal)`): no UI, more noise.
 
 **Names for the user to approve:** the shortcut (Alt+Shift+L), an `inspector` option in `lumiose()` (default on in dev, `false` to disable), and the panel names above.
+
+User decision, 2026-10-15 (parked decisions review): approved as proposed, with the names Alt+Shift+L and lumiose({ inspector: false }). Recorded as decision-59; implementation in TASK-341.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Proposal approved and recorded as decision-59; implementation task TASK-341.
+<!-- SECTION:FINAL_SUMMARY:END -->

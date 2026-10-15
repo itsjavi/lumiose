@@ -24,4 +24,4 @@ User decision, 2026-10-15.
 
 - A file named `middleware.ts` under `src/routes` is no longer a colocated module (no migration, decision-47).
 - The route manifest gives each page and endpoint a `middleware` list, built like `layouts`; typegen covers folders that have middleware but no layout.
-- Implemented in TASK-294.
+- Implemented in TASK-294. LUM5008 (the warning for a folder middleware that covers prerendered routes) was confirmed by the user on 2026-10-15.

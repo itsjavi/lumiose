@@ -5,7 +5,7 @@ status: Done
 assignee:
   - '@Spark'
 created_date: '2026-10-15 04:02'
-updated_date: '2026-10-15 06:12'
+updated_date: '2026-10-15 07:41'
 labels:
   - security
   - fuzzing
@@ -43,6 +43,8 @@ Implementation (Spark, batch 4):
 - Not verified here: the workflow itself on GitHub (nothing is pushed in this run) and the nightly/ASan build; trigger it once with workflow_dispatch after the next push.
 - Noticed: src/core/property.test.ts (reactive graph tests) is outside the .property.test naming, so test:properties does not raise its case count.
 - Docs: CONTRIBUTING.md (Fuzzing: run, macOS flag, replay, tmin; the nightly workflow under Continuous integration), SECURITY.md (How Lumiose is checked).
+
+2026-10-15: first run triggered by hand on the user's request: https://github.com/itsjavi/lumiose/actions/runs/38700307868
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary

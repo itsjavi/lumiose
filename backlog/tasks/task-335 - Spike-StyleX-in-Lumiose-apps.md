@@ -5,7 +5,7 @@ status: Done
 assignee:
   - '@Spark'
 created_date: '2026-10-15 04:11'
-updated_date: '2026-10-15 06:19'
+updated_date: '2026-10-15 07:41'
 labels:
   - css
   - spike
@@ -67,6 +67,8 @@ Recommendation (AC#3): document StyleX as not supported yet for server-rendered 
 1. Lumiose (build, Nova/Photon area): resolve route CSS from the final bundle, after other plugins' generateBundle, so renamed assets are followed; and an opt-in way to link a plugin's consolidated stylesheet on every page (a public option: needs the user's approval).
 2. Upstream StyleX (outward-facing, needs the user): an include option or .stsx in the unplugin's file filter; and appending CSS without deleting an asset Vite still references (the css-post crash).
 Until then a workable path for client-only apps (lumiose/dom on plain Vite) was not exercised in this spike.
+
+User decision, 2026-10-15 (parked decisions review): follow-up limited to the build-output fix (TASK-342); no public option and no upstream StyleX issues for now.
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary

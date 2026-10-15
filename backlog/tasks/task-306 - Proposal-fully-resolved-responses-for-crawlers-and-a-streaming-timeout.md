@@ -1,11 +1,11 @@
 ---
 id: TASK-306
 title: 'Proposal: fully resolved responses for crawlers and a streaming timeout'
-status: In Progress
+status: Done
 assignee:
   - '@Lux'
 created_date: '2026-10-15 03:16'
-updated_date: '2026-10-15 04:26'
+updated_date: '2026-10-15 07:41'
 labels:
   - proposal
   - needs-decision
@@ -28,8 +28,8 @@ Each new name needs the user's approval before it is recorded (AGENTS.md).
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 A proposal with recommended shapes, alternatives and prior art is reviewed by the user
-- [ ] #2 Approved shapes are recorded as a decision, and an implementation task is created
+- [x] #1 A proposal with recommended shapes, alternatives and prior art is reviewed by the user
+- [x] #2 Approved shapes are recorded as a decision, and an implementation task is created
 <!-- AC:END -->
 
 ## Implementation Notes
@@ -50,4 +50,12 @@ Proposal (Lux, 2026-10-15, drafted during the unattended M10/M11 run; waiting fo
 - Prior art: React Router's `streamTimeout` export in `entry.server` (default 5 s, renders the client-side fallback); Next.js has no per-boundary timeout.
 
 **Questions for the user:** (1) `response().setStreaming(false)` as the switch; (2) `streamTimeout` with a 30 s default, rejecting into the nearest ErrorBoundary; (3) the crawler recipe stays a docs example (no built-in bot list).
+
+User decision, 2026-10-15 (parked decisions review): approved response().setStreaming(false), streamTimeout with a 30 s default rejecting into the nearest ErrorBoundary, and the crawler recipe as docs only. Recorded as decision-58; implementation in TASK-340.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Proposal approved and recorded as decision-58; implementation task TASK-340.
+<!-- SECTION:FINAL_SUMMARY:END -->

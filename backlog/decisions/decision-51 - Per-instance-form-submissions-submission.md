@@ -21,4 +21,4 @@ User decision, 2026-10-15.
 ## Consequences
 
 - `submit()` gains an internal option to leave `actionData()` alone; `submit()`, `isSubmitting()` and `actionData()` are otherwise unchanged.
-- Implemented in TASK-297.
+- Implemented in TASK-297. The handle's type is `Submission` (Solid Router's name), confirmed by the user on 2026-10-15.

@@ -1,11 +1,11 @@
 ---
 id: TASK-310
 title: External security review before 1.0
-status: In Progress
+status: To Do
 assignee:
   - '@Lux'
 created_date: '2026-10-15 04:02'
-updated_date: '2026-10-15 04:26'
+updated_date: '2026-10-15 07:41'
 labels:
   - security
   - needs-decision
@@ -32,4 +32,6 @@ Agreed with the user on 2026-10-15 (grilling session on adoption by developers u
 
 <!-- SECTION:NOTES:BEGIN -->
 2026-10-15 (Lux, orchestrator run): parked for the user. Needs the user to choose an independent reviewer (a paid audit firm or an experienced community security reviewer) and approve the scope above and any budget; schedule it after M10 lands, since M10 changes the request handler (folder middleware, instrumentation) that the review covers.
+
+User decision, 2026-10-15 (parked decisions review): choose the reviewer closer to 1.0, so the review covers the code that ships as 1.0; the agent review before each minor release continues meanwhile.
 <!-- SECTION:NOTES:END -->

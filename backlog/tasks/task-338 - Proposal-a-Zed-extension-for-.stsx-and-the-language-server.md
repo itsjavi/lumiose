@@ -1,10 +1,11 @@
 ---
 id: TASK-338
 title: 'Proposal: a Zed extension for .stsx and the language server'
-status: To Do
+status: Done
 assignee:
   - '@Beacon'
 created_date: '2026-10-15 05:50'
+updated_date: '2026-10-15 07:41'
 labels:
   - editors
   - proposal
@@ -22,5 +23,17 @@ Found in TASK-322 (2026-10-15). Zed runs language servers only through extension
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 A decision is recorded: build and publish a Zed extension, or keep Zed documented as unsupported
+- [x] #1 A decision is recorded: build and publish a Zed extension, or keep Zed documented as unsupported
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+User decision, 2026-10-15 (parked decisions review): keep Zed documented as unsupported (it needs an extension); revisit on demand, like JetBrains. decision-57 amended.
+<!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Decided: no Zed extension for now; the editors guide documents Zed as unsupported.
+<!-- SECTION:FINAL_SUMMARY:END -->

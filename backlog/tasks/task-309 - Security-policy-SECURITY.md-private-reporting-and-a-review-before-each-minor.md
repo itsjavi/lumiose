@@ -5,7 +5,7 @@ status: Done
 assignee:
   - '@Lux'
 created_date: '2026-10-15 04:02'
-updated_date: '2026-10-15 04:41'
+updated_date: '2026-10-15 07:41'
 labels:
   - security
 milestone: m-11
@@ -33,6 +33,8 @@ Agreed with the user on 2026-10-15 (grilling session on adoption by developers u
 2026-10-15 (Lux, orchestrator run): SECURITY.md added (private reporting through the Security tab, acknowledgement in 7 days and assessment in 14 as targets, latest 0.x minor supported, scope, provenance and the review process); AGENTS.md Releases now requires the app-security-review pass before each minor. The response targets (7 and 14 days) are a default for the user to confirm. Waiting for the user: enable GitHub private vulnerability reporting in the repository settings (AC #2). Fuzzing (TASK-311/312/313) and the dependency bot (TASK-314) can add a line to SECURITY.md's 'How Lumiose is checked' once they run.
 
 2026-10-15: the user enabled GitHub private vulnerability reporting.
+
+User decision, 2026-10-15 (parked decisions review): the response targets (acknowledge within 7 days, assess within 14) are confirmed.
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary

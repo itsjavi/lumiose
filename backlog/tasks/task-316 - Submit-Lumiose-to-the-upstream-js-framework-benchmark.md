@@ -5,7 +5,7 @@ status: In Progress
 assignee:
   - '@Spark'
 created_date: '2026-10-15 04:02'
-updated_date: '2026-10-15 05:34'
+updated_date: '2026-10-15 07:41'
 labels:
   - performance
   - benchmark
@@ -38,4 +38,6 @@ AC#1 done (Spark, 2026-10-15):
 - scripts/jsfb-upstream.ts (pnpm bench:jsfb:upstream): sparse-checks out krausest bf894b6 into .krausest-upstream/ (gitignored), installs its CLI (npm ci --legacy-peer-deps: upstream's root lint deps conflict and its CLI imports semver from devDependencies), server and runner, assembles the entry, starts the server on 8080 and runs krausest's own npm run rebuild-ci keyed/lumiose. Result: npm ci and build-prod OK with the npm packages, smoke run of every benchmark OK, isKeyed: keyed for run, remove and swap, checkCSP OK, 'All checks are fine!'. Options: --lock refreshes the lockfile, --export DIR copies the entry into a krausest fork.
 - Rules: vanillajs HTML with aria-hidden and the preloaded glyphicon; selection as one id (#800); no explicit delegation (#801), manual DOM (#772) or rAF (#796) in app code.
 - Parked for the user: AC#2 (approve and open the upstream PR: release the version to submit, bump the two packages, run with --lock --export, open the PR with only that folder) and AC#3 (link official results once krausest publishes them). upstream/README.md has the steps.
+
+User decision, 2026-10-15 (parked decisions review): the user opens the upstream pull request themselves, following upstream/README.md; record its link here afterwards.
 <!-- SECTION:NOTES:END -->

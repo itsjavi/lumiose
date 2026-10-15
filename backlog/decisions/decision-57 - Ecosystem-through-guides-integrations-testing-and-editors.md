@@ -14,7 +14,7 @@ User decision, 2026-10-15.
 
 - **No integrations API before 1.0.** Integrations are guides: one OpenTelemetry guide with sections for OpenObserve, SigNoz and Datadog, and guides for Sentry, PostHog, Stripe and Sanity, built on the instrumentation files (decision-49) where they apply.
 - **Testing:** the docs use @testing-library/dom and user-event with `render()` from lumiose/dom, and Playwright for end-to-end tests. No adapter package and no component workshop integration before 1.0.
-- **Editors:** documented setups for the language server in Neovim, Zed and Helix next to the VS Code extension. GitHub highlighting comes from the scaffolded `.gitattributes`; the GitHub Linguist submission waits until about 200 repositories use `.stsx`; a JetBrains plugin waits for demand.
+- **Editors:** documented setups for the language server in Neovim and Helix next to the VS Code extension. Zed runs language servers only through extensions, so it is documented as unsupported (amended by the user on 2026-10-15, TASK-338); a Zed extension, like a JetBrains plugin, waits for demand. GitHub highlighting comes from the scaffolded `.gitattributes`; the GitHub Linguist submission waits until about 200 repositories use `.stsx`.
 - **Debugging:** a proposal for a dev-only in-page inspector comes before any browser extension.
 - **Agent claim:** one budgeted, published eval run compares agents on Lumiose and Next.js 16; the budget is approved by the user before anything runs.
 - Rejected: an Astro-style `integrations` option, a `@lumiose/testing-library` package, a Storybook renderer, an immediate Linguist submission.

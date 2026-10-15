@@ -5,7 +5,7 @@ status: In Progress
 assignee:
   - '@Lux'
 created_date: '2026-10-15 04:03'
-updated_date: '2026-10-15 06:30'
+updated_date: '2026-10-15 07:41'
 labels:
   - performance
   - benchmark
@@ -46,4 +46,6 @@ The React Router and Next.js versions were written by the Lumiose maintainers, s
 - anything that makes the comparison unfair in either direction.
 
 Please open an issue with the label `benchmark`, or a pull request against `benchmarks/fullstack/apps/react-router` or `benchmarks/fullstack/apps/next`. Every accepted change gets a new published run, with the change noted next to the results.
+
+User decision, 2026-10-15 (parked decisions review): the user posts the review request themselves (the draft above); record the links here afterwards.
 <!-- SECTION:NOTES:END -->

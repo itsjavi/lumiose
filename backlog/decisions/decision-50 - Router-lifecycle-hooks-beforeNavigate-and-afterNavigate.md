@@ -23,4 +23,4 @@ User decision, 2026-10-15. SvelteKit's names and semantics (decision-32):
 
 - The History fallback starts storing an entry index in `history.state` (it stores only a scroll key today), so a cancelled back/forward can return.
 - A `retry()` on cancelled navigations, for async custom dialogs, can be added later if needed.
-- Implemented in TASK-296.
+- Implemented in TASK-296. The types `BeforeNavigate`, `AfterNavigate`, `NavigationTarget` and `NavigationType` (SvelteKit's names) were confirmed by the user on 2026-10-15.

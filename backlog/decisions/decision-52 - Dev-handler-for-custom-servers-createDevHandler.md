@@ -21,4 +21,4 @@ User decision, 2026-10-15.
 ## Consequences
 
 - The realtime guide's upgrade handling works in dev through the project's own server.
-- Implemented in TASK-300.
+- Implemented in TASK-300. The types `DevHandler` and `DevHandlerOptions` (after `DevServer` and `DevServerOptions`) were confirmed by the user on 2026-10-15.
