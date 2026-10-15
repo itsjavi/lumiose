@@ -8,11 +8,17 @@
 // - Focus return: when closing leaves focus nowhere (a click outside on the page, WebKit not
 //   focusing a clicked trigger, a trigger that is gone), focus goes to the opener, else a trigger,
 //   without scrolling. A click outside on another control keeps focus there.
-// - Light dismiss: a right-click or a second finger outside does not close a popover.
+// - Dismissal: the dismissal model Popover shares with Menu and Combobox (layer/layer.ts). A
+//   trigger's click makes the popup a manual popover before `popovertarget` opens it, so a
+//   right-click or a second finger outside does not close it (native light dismiss would, and
+//   cannot be cancelled); the layer model closes it on a main-button press outside, a close
+//   request, or another layer opening outside it. Server HTML keeps `popover="auto"`, so the
+//   browser light-dismisses it until the script runs.
 // - `aria-expanded` on the triggers, following the popover.
 // - Placement where CSS anchor positioning is missing (placement/place.ts).
 //
 // It must not import `lumiose`: server-rendered pages load it without the runtime.
+import { openLayer } from "../layer/layer.ts";
 import { anchoring, place } from "../placement/place.ts";
 
 /** The last press, until a key is pressed: what an opening came from. */
@@ -55,37 +61,39 @@ function follow() {
 on("pointerdown", (event) => (press = event));
 on("keydown", () => (press = undefined));
 
-/** Popovers a secondary press closed, to show again, outermost first. */
-let reopen: { popup: HTMLElement; source?: HTMLElement }[] = [];
+/** Stops dismissing each open popover (layer/layer.ts). */
+const layers = new Map<HTMLElement, () => void>();
+
+// Before `popovertarget` acts: a closed popup becomes a manual popover, which the layer model
+// dismisses. A key press on the trigger clicks it too.
+on("click", (event) => {
+  const trigger = (event.target as Element).closest?.<HTMLElement>("[popovertarget]");
+  const popup = trigger && document.getElementById(trigger.getAttribute("popovertarget")!);
+  if (isPopover(popup) && !popup.matches(":popover-open")) popup.popover = "manual";
+});
+
+/** Stops dismissing `popup`: as it closes, so the next close request goes to the layer below. */
+function release(popup: HTMLElement) {
+  layers.get(popup)?.();
+  layers.delete(popup);
+}
 
 on("beforetoggle", (event) => {
   const popup = event.target;
   if (!isPopover(popup)) return;
-  if (event.newState === "closed") {
-    // A right-click or a second finger outside: Base UI and Zag ignore it, the browser's light
-    // dismiss does not, and a popover's closing cannot be cancelled. Show it again before the
-    // next frame, so it never disappears.
-    const secondary = press && (press.button !== 0 || !press.isPrimary);
-    if (
-      secondary &&
-      event.timeStamp - press!.timeStamp < 1000 &&
-      !popup.contains(press!.target as Node)
-    ) {
-      if (reopen.length === 0) {
-        requestAnimationFrame(() => {
-          for (const closed of reopen.toReversed()) {
-            if (closed.popup.isConnected && !closed.popup.matches(":popover-open")) {
-              (closed.popup.showPopover as (options?: { source?: HTMLElement }) => void)({
-                source: closed.source,
-              });
-            }
-          }
-          reopen = [];
-        });
-      }
-      reopen.push({ popup, source: anchor(popup) });
-    }
-    return;
+  release(popup);
+  if (event.newState === "closed") return;
+  // Now, not on `toggle` a task later: a press right after the opening already counts.
+  if (popup.popover === "manual") {
+    layers.set(
+      popup,
+      openLayer({
+        popup,
+        contains: (node) =>
+          popup.contains(node) || [...triggers(popup)].some((trigger) => trigger.contains(node)),
+        dismiss: () => popup.hidePopover(),
+      }),
+    );
   }
   const active = document.activeElement;
   const pressed = press && (press.target as Element).closest?.<HTMLElement>("[popovertarget]");

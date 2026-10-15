@@ -1,6 +1,6 @@
 # Menu
 
-> A menu of commands, links, checkbox and radio items and submenus, opened by a button: the trigger's `popovertarget` opens it and CSS anchor positioning places it, so it works in server HTML with no JavaScript, and a 2.9 kB script adds the APG Menu Button keyboard contract where JavaScript runs. `bind:open`, `bind:checked` and `bind:value` keep signals in sync in islands.
+> A menu of commands, links, checkbox and radio items and submenus, opened by a button: the trigger's `popovertarget` opens it and CSS anchor positioning places it, so it works in server HTML with no JavaScript, and a 3.3 kB script adds the APG Menu Button keyboard contract where JavaScript runs. `bind:open`, `bind:checked` and `bind:value` keep signals in sync in islands.
 
 ```ts
 import { Menu } from "@lumiose/ui"; // or "@lumiose/ui/menu"
@@ -311,13 +311,14 @@ items in order, and links work; commands, which run JavaScript, need it anyway. 
 `onOpenChange` and the `bind:` props need the component to run in the browser, in an island.
 
 The keyboard contract comes from a small script: a page that renders a `Menu` loads it once, as a
-2.9 kB (brotli) module without the Lumiose runtime, and islands bundle it. It defines `lu-menu`,
+3.3 kB (brotli) module without the Lumiose runtime, and islands bundle it. It defines `lu-menu`,
 which upgrades every menu on the page in place, and adds what the native popover lacks: focus on
 open and its return on close, the arrows, Home, End and typeahead, Escape one level at a time, Tab,
 submenus, checkbox and radio items, disabled items, `data-highlighted`, and the pointer behaviour
-above. It also takes over dismissal: the popup becomes a manual popover when the script opens it,
-and the script closes it on a click outside (main button only), on Escape, and on a close request
-such as the Android back gesture. Until it loads (or without JavaScript) the menu behaves as a
+above. It also takes over dismissal, with the model Menu shares with [Popover](popover.md) and
+[Combobox](combobox.md): the popup becomes a manual popover when the script opens it, and the
+script closes it on a click outside (main button only), on Escape, on a close request such as the
+Android back gesture, and when another popup opens outside it. Until it loads (or without JavaScript) the menu behaves as a
 native `popover="auto"` of buttons, which any click outside closes.
 
 The element is also an API of its own, for scripts and other frameworks:

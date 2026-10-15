@@ -44,7 +44,8 @@ let press: { target: Element; main: boolean; x: number; y: number } | undefined;
 function outside({ layer }: Entry, node: Element, x: number, y: number): boolean {
   if (!node.isConnected || layer.contains(node)) return false;
   const box = layer.popup.getBoundingClientRect();
-  return !(x >= box.left && x <= box.right && y >= box.top && y <= box.bottom);
+  const empty = box.width === 0 && box.height === 0;
+  return empty || !(x >= box.left && x <= box.right && y >= box.top && y <= box.bottom);
 }
 
 /** Whether a press is on a scrollbar of `target`: past its client box. */
@@ -53,7 +54,21 @@ function onScrollbar(target: Element, event: PointerEvent): boolean {
   return width > 0 && height > 0 && (event.offsetX > width || event.offsetY > height);
 }
 
+/**
+ * Forgets the layers whose popup left the page while open: removing a popover hides it without
+ * events, so its script never released it.
+ */
+function prune() {
+  for (const entry of stack.toReversed()) {
+    if (!entry.layer.popup.isConnected) {
+      stack.splice(stack.indexOf(entry), 1);
+      entry.watcher?.destroy();
+    }
+  }
+}
+
 function onPointerDown(event: PointerEvent) {
+  prune();
   if (stack.length === 0) return;
   const target = event.target as Element;
   press = {
@@ -93,14 +108,17 @@ function onKeyDown(event: KeyboardEvent) {
 if (typeof document !== "undefined") {
   document.addEventListener("pointerdown", onPointerDown, true);
   document.addEventListener("pointerup", onPointerUp, true);
+  // Before the close request an Escape makes, so a removed layer's watcher does not take it.
+  document.addEventListener("keydown", prune, true);
   if (typeof CloseWatcher !== "function") document.addEventListener("keydown", onKeyDown);
 }
 
 /**
- * Starts dismissing `layer`, whose popup has just opened, and closes the open layers it is not
- * inside of. Call the returned function when it closes, whatever closed it.
+ * Starts dismissing `layer`, whose popup opens, and closes the open layers it is not inside of.
+ * Call the returned function when it closes, whatever closed it.
  */
 export function openLayer(layer: Layer): () => void {
+  prune();
   for (const entry of stack.toReversed()) {
     if (stack.includes(entry) && !entry.layer.contains(layer.popup)) entry.layer.dismiss();
   }

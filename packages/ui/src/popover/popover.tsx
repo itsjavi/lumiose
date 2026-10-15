@@ -94,9 +94,11 @@ function Root(props: PopoverRootProps) {
     const wanted = props.open;
     if (!element?.isConnected || wanted === undefined) return;
     const shown = element.matches(":popover-open");
-    // `source` makes the trigger the popover's invoker, as a click on it does: focus order and
-    // nesting follow it.
+    // A manual popover, as the client script makes it on a trigger's click: the script's shared
+    // dismissal closes it. `source` makes the trigger the popover's invoker, as a click on it
+    // does: focus order and nesting follow it.
     if (wanted && !shown) {
+      element.popover = "manual";
       (element.showPopover as (options?: { source?: HTMLElement }) => void)({
         source: trigger(),
       });

@@ -4,10 +4,11 @@
 // it, in server HTML and with no JavaScript. The element adds the APG Menu Button contract and Base
 // UI's behaviour (doc-9, sections 1 and 5):
 //
-// - Dismissal: the popup becomes a manual popover when the element opens it, and the element
-//   light-dismisses it on a main-button press and release outside (native light dismiss also
-//   closes on a right-click and cannot be canceled), closes submenus with their parent and with
-//   their siblings, and closes on a close request (`CloseWatcher`, where the browser has it).
+// - Dismissal: the popup becomes a manual popover when the element opens it, dismissed by the
+//   layer model Menu shares with Popover and Combobox (../layer/layer.ts): a main-button press and
+//   release outside (native light dismiss also closes on a right-click and cannot be canceled), a
+//   close request, and another layer opening outside it, such as a sibling submenu. Submenus close
+//   with their parent.
 // - Placement: where CSS anchor positioning is missing, the shared ../placement/place.ts places
 //   an open popup next to its trigger, and again on scroll and resize.
 // - Focus: a keyboard opening focuses the first item that can run (Arrow Up: the last one), a
@@ -27,6 +28,7 @@
 // rerender items at any time. It must not import `lumiose`: server-rendered pages load it without
 // the runtime.
 
+import { openLayer } from "../layer/layer.ts";
 import { anchoring, place } from "../placement/place.ts";
 
 const ITEM = "[role^='menuitem']";
@@ -57,9 +59,6 @@ const label = (item: HTMLElement) =>
 const EVENTS = ["keydown", "pointerdown", "pointermove", "pointerout", "focusin", "focusout"];
 const FOCUSABLE = "button, a[href], input, select, textarea, [tabindex], [contenteditable]";
 
-/** Chrome 126 and Firefox 149; not in TypeScript's DOM types yet. */
-declare const CloseWatcher: (new () => EventTarget & { destroy(): void }) | undefined;
-
 /** Whether `p` is inside the triangle `a`, `b`, `c`. */
 function inside(p: Point, a: Point, b: Point, c: Point): boolean {
   const side = (u: Point, v: Point) => (p.x - v.x) * (u.y - v.y) - (u.x - v.x) * (p.y - v.y);
@@ -85,12 +84,10 @@ export class MenuElement extends HTMLElement {
   #exit: Point | undefined;
   /** When a mouse press on the trigger opened the menu, until the press ends. */
   #pressedAt: number | undefined;
-  /** The last press on the page while the menu is open. */
+  /** Where the outside press that dismissed the menu landed. */
   #outside: Element | undefined;
-  /** Whether that press was a main-button press outside the menu, which light-dismisses it. */
-  #dismiss = false;
-  /** Closes the menu on a close request (Escape elsewhere, the Android back gesture). */
-  #watcher: { destroy(): void } | undefined;
+  /** Stops dismissing the menu (../layer/layer.ts). */
+  #release: (() => void) | undefined;
 
   /** The menu's popup: its first `[role=menu][popover]`. */
   get popup(): HTMLElement | null {
@@ -132,7 +129,8 @@ export class MenuElement extends HTMLElement {
     this.removeEventListener("click", this, true);
     this.removeEventListener("toggle", this, true);
     this.#listen(false);
-    this.#watcher?.destroy();
+    this.#release?.();
+    this.#release = undefined;
     clearTimeout(this.#hoverTimer);
     clearTimeout(this.#intentTimer);
   }
@@ -144,9 +142,7 @@ export class MenuElement extends HTMLElement {
       case "click":
         return this.#onClick(event as MouseEvent);
       case "pointerdown":
-        if (event.currentTarget === document) this.#onOutsidePress(event as PointerEvent);
-        else this.#onPress(event as PointerEvent);
-        return;
+        return this.#onPress(event as PointerEvent);
       case "pointerup":
         return this.#onRelease(event as PointerEvent);
       case "pointermove":
@@ -208,11 +204,8 @@ export class MenuElement extends HTMLElement {
   #show(edge: Edge): void {
     const popup = this.popup!;
     // The server HTML's `popover="auto"` light-dismisses on any button and has no filters: where
-    // the element runs, the popup is a manual popover and the element dismisses it (#onRelease),
-    // closes the submenus it opened and their siblings, and listens for close requests.
-    const parent = this.#parent();
-    const sibling = parent ? parent.#openChild() : undefined;
-    if (sibling) sibling.#hide(false);
+    // the element runs, the popup is a manual popover dismissed by the shared layer model, which
+    // also closes an open sibling submenu (a layer this one is not inside of).
     popup.setAttribute("popover", "manual");
     this.#edge = edge;
     // `source` makes the trigger the invoker, as a click on it would.
@@ -221,11 +214,16 @@ export class MenuElement extends HTMLElement {
     });
     this.#place();
     this.#listen(true);
-    if (typeof CloseWatcher === "function") {
-      const watcher = new CloseWatcher();
-      watcher.addEventListener("close", () => this.#hide(popup.contains(document.activeElement)));
-      this.#watcher = watcher;
-    }
+    this.#release?.();
+    this.#release = openLayer({
+      popup,
+      contains: (node) => this.contains(node),
+      dismiss: (press) => {
+        // An outside press keeps focus where it landed; a close request returns it from inside.
+        this.#outside = press;
+        this.#hide(!press && popup.contains(document.activeElement));
+      },
+    });
     this.#focus(edge);
     this.#edge = "none";
   }
@@ -238,18 +236,18 @@ export class MenuElement extends HTMLElement {
     // Moving focus out first keeps the popover from restoring it to whatever had it on opening.
     if (returnFocus) this.trigger?.focus({ preventScroll: true });
     // Now, not on `toggle` a task later: the next close request belongs to the layer below.
-    this.#watcher?.destroy();
-    this.#watcher = undefined;
+    this.#release?.();
+    this.#release = undefined;
     this.popup!.hidePopover();
   }
 
   /**
-   * The presses on the page that light-dismiss the menu, while it is open, and the scrolling and
-   * resizing that move its trigger where the script places the popup.
+   * While the menu is open: the release of a press that opened it, wherever it lands, and the
+   * scrolling and resizing that move its trigger where the script places the popup.
    */
   #listen(on: boolean): void {
     const method = on ? "addEventListener" : "removeEventListener";
-    for (const type of ["pointerdown", "pointerup"]) document[method](type, this, true);
+    document[method]("pointerup", this, true);
     if (!anchoring) for (const type of ["scroll", "resize"]) window[method](type, this, true);
   }
 
@@ -285,10 +283,9 @@ export class MenuElement extends HTMLElement {
       this.#focus(edge);
     } else {
       this.#listen(false);
-      this.#watcher?.destroy();
+      this.#release?.();
       clearTimeout(this.#intentTimer);
-      this.#edge = this.#pressedAt = this.#watcher = undefined;
-      this.#dismiss = false;
+      this.#edge = this.#pressedAt = this.#release = undefined;
       for (const item of popup.querySelectorAll("[data-highlighted]")) {
         item.removeAttribute("data-highlighted");
       }
@@ -298,6 +295,7 @@ export class MenuElement extends HTMLElement {
       if ((!active || active === document.body) && !this.#outside?.closest(FOCUSABLE)) {
         this.trigger?.focus({ preventScroll: true });
       }
+      this.#outside = undefined;
     }
     this.dispatchEvent(new CustomEvent<MenuOpenChangeDetail>("openchange", { detail: { open } }));
   }
@@ -459,16 +457,6 @@ export class MenuElement extends HTMLElement {
     );
   }
 
-  /**
-   * Any press on the page while the menu is open: only a main-button press outside the menu, and
-   * its release outside too, light-dismisses it (#onRelease), as in Base UI and Zag.
-   */
-  #onOutsidePress(event: PointerEvent): void {
-    const target = event.target as Element;
-    this.#outside = target;
-    this.#dismiss = event.button === 0 && event.isPrimary && !this.contains(target);
-  }
-
   /** A mouse press on the trigger opens the menu at once, so a drag can release on an item. */
   #onPress(event: PointerEvent): void {
     this.#pressedAt = undefined;
@@ -489,14 +477,11 @@ export class MenuElement extends HTMLElement {
     this.#show("popup");
   }
 
+  /** The release of a press that opened the menu: on an item it runs it, outside it closes. */
   #onRelease(event: PointerEvent): void {
     const pressedAt = this.#pressedAt;
     const target = event.target as Element;
-    if (pressedAt === undefined) {
-      if (this.#dismiss && !this.contains(target)) this.#hide(false);
-      this.#dismiss = false;
-      return;
-    }
+    if (pressedAt === undefined) return;
     // A release on the trigger is a click: the menu stays open.
     if (this.trigger?.contains(target)) return;
     this.#pressedAt = undefined;

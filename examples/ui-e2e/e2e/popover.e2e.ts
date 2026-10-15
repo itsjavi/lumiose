@@ -133,7 +133,8 @@ test.describe("keyboard and focus", () => {
 
   test("a right-click outside does not close it", async ({ page }) => {
     // Base UI and Zag ignore secondary buttons (doc-9, section 1); Chromium's light dismiss does
-    // not, and cannot be cancelled, so Popover's client script shows it again before it paints.
+    // not, and cannot be cancelled, so the script makes the popup manual and dismisses it with the
+    // shared layer model.
     await page.goto("/popover");
     await page.getByRole("button", { name: "Filters" }).click();
     await page.getByRole("button", { name: "Date range…" }).click();
@@ -345,10 +346,11 @@ test("a server-rendered page with popovers loads only Popover's client script", 
   await page.goto("/popover");
   await page.getByRole("button", { name: "Notifications" }).click();
   await expect(popup(page, "Notifications")).toBeVisible();
-  // Popover's script, the placement fallback it shares with Tooltip's, and Dialog's (the page has
-  // a dialog); no island runtime.
+  // Popover's script, the placement fallback it shares with Tooltip's, the dismissal model it
+  // shares with Menu and Combobox, and Dialog's (the page has a dialog); no island runtime.
   expect(scripts.toSorted()).toEqual([
     expect.stringMatching(/\/dialog\.script-[\w-]+\.js$/),
+    expect.stringMatching(/\/layer-[\w-]+\.js$/),
     expect.stringMatching(/\/place-[\w-]+\.js$/),
     expect.stringMatching(/\/popover\.script-[\w-]+\.js$/),
   ]);

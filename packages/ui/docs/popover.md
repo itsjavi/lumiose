@@ -1,6 +1,6 @@
 # Popover
 
-> A popup anchored to its trigger: a native `popover` opened and closed by the trigger's `popovertarget`, placed with CSS anchor positioning, so it works in server HTML with no JavaScript. A 1.3 kB script moves focus into it and back, ignores right-clicks outside, keeps `aria-expanded` current and places it in browsers without anchor positioning. `bind:open` (or `open` and `onOpenChange`) keeps a signal in sync in islands.
+> A popup anchored to its trigger: a native `popover` opened and closed by the trigger's `popovertarget`, placed with CSS anchor positioning, so it works in server HTML with no JavaScript. A 1.7 kB script moves focus into it and back, dismisses it as Base UI does (not on a right-click), keeps `aria-expanded` current and places it in browsers without anchor positioning. `bind:open` (or `open` and `onOpenChange`) keeps a signal in sync in islands.
 
 ```ts
 import { Popover } from "@lumiose/ui"; // or "@lumiose/ui/popover"
@@ -21,14 +21,14 @@ import "@lumiose/ui/themes/default.css"; // optional: the default theme
 </Popover.Root>
 ```
 
-| Part          | Renders                                                                                                                        |
-| ------------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| `Root`        | No element. Holds the state and the ids the other parts share.                                                                 |
-| `Trigger`     | `<button type="button" popovertarget="…" aria-haspopup="dialog">`, with an `anchor-name` in its `style`.                       |
-| `Popup`       | `<div popover="auto" role="dialog" data-side="…" data-align="…">`, labelled by its `Title` and described by its `Description`. |
-| `Title`       | `<h2>`, which names the popup.                                                                                                 |
-| `Description` | `<p>`, which describes it.                                                                                                     |
-| `Close`       | `<button type="button" popovertarget="…" popovertargetaction="hide">`.                                                         |
+| Part          | Renders                                                                                                                                                                     |
+| ------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Root`        | No element. Holds the state and the ids the other parts share.                                                                                                              |
+| `Trigger`     | `<button type="button" popovertarget="…" aria-haspopup="dialog">`, with an `anchor-name` in its `style`.                                                                    |
+| `Popup`       | `<div popover="auto" role="dialog" data-side="…" data-align="…">`, labelled by its `Title` and described by its `Description`; `popover="manual"` once the script opens it. |
+| `Title`       | `<h2>`, which names the popup.                                                                                                                                              |
+| `Description` | `<p>`, which describes it.                                                                                                                                                  |
+| `Close`       | `<button type="button" popovertarget="…" popovertargetaction="hide">`.                                                                                                      |
 
 The popup is a non-modal dialog, as in Base UI: the page around it stays usable. A popover may
 contain another `Popover.Root`: the inner popup opens on top, and closing the outer one closes
@@ -163,12 +163,15 @@ The trigger, the close buttons, Escape, the click outside and the placement are 
 features: a popover in a server-rendered page works before any script loads, and with none.
 `open`, `onOpenChange` and `bind:open` need the component to run in an island.
 
-A page that renders a `Popover` loads a 1.3 kB (brotli) module once, without the Lumiose runtime;
+A page that renders a `Popover` loads a 1.7 kB (brotli) module once, without the Lumiose runtime;
 islands bundle it. It covers every Popover on the page:
 
 - focus on open (the first focusable element, or the popup) and its return on close;
-- a right-click or a second finger outside does not close the popover (the browser's light
-  dismiss does, and cannot be cancelled: the script shows it again before it paints);
+- dismissal, shared with [Menu](menu.md) and [Combobox](combobox.md): a trigger's click makes the
+  popup a manual popover, which the script closes on a click outside (main button only, so a
+  right-click or a second finger does not close it, as in Base UI), on Escape and other close
+  requests (the Android back gesture), and when another popover opens outside it. Until the
+  script loads, the browser's light dismiss closes it on any press outside;
 - `aria-expanded` on the triggers;
 - the placement in browsers without CSS anchor positioning, which it keeps current on scroll and
   resize.
