@@ -82,15 +82,16 @@ same component is static on one page and interactive on another.
 
 ## What has no equivalent
 
-| React                                               | Instead                                                                                                                                                                                         |
-| --------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| React component libraries (Radix, shadcn/ui, MUI)   | No React interop. Use native elements (`<dialog>`, `popover`, `<details>`), web components (with `on:event` listeners for their custom events) or framework-agnostic libraries.                 |
-| `React.lazy()`                                      | None. Islands load their module when they hydrate, and `spa` routes load a chunk per page and layout; `<Dynamic component={…}>` renders a component chosen at runtime.                          |
-| `useDeferredValue`, transition priorities           | None: updates are fine-grained, not scheduled by priority. Debounce expensive input in the handler.                                                                                             |
-| `React.Children`, `cloneElement`                    | None: `children` is lazy and inserted once. Take a render prop (`renderItem: (item) => JSX.Element`) when a component needs to render content several times.                                    |
-| Class components and lifecycle methods              | Function components; `onMount`, `onCleanup` and `effect`.                                                                                                                                       |
-| `<StrictMode>` double invocation                    | None: setup runs once by design. `lumiose check` reports the reactive mistakes that strict mode helps find in React (`LUM2xxx`).                                                                |
-| Context provided by the page, read inside an island | Islands start a new root, so page context does not reach them ([LUM4010](../errors/LUM4010.md)): pass a prop, or share scoped state with `defineState` ([Sharing state](../concepts/state.md)). |
+| React                                               | Instead                                                                                                                                                                                               |
+| --------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| React component libraries (Radix, shadcn/ui, MUI)   | No React interop. Use native elements (`<dialog>`, `popover`, `<details>`), web components (with `on:event` listeners for their custom events) or framework-agnostic libraries.                       |
+| `React.lazy()`                                      | None. Islands load their module when they hydrate, and `spa` routes load a chunk per page and layout; `<Dynamic component={…}>` renders a component chosen at runtime.                                |
+| `useDeferredValue`, transition priorities           | None: updates are fine-grained, not scheduled by priority. Debounce expensive input in the handler.                                                                                                   |
+| `React.Children`, `cloneElement`                    | None: `children` is lazy and inserted once. Take a render prop (`renderItem: (item) => JSX.Element`) when a component needs to render content several times.                                          |
+| Class components and lifecycle methods              | Function components; `onMount`, `onCleanup` and `effect`.                                                                                                                                             |
+| React DevTools (components, props, why it rendered) | The in-page inspector of `lumiose dev` (Alt+Shift+L): the component tree with props, signals and why a binding updated, islands, and Alt+click to the source ([Dev tools](../concepts/dev-tools.md)). |
+| `<StrictMode>` double invocation                    | None: setup runs once by design. `lumiose check` reports the reactive mistakes that strict mode helps find in React (`LUM2xxx`).                                                                      |
+| Context provided by the page, read inside an island | Islands start a new root, so page context does not reach them ([LUM4010](../errors/LUM4010.md)): pass a prop, or share scoped state with `defineState` ([Sharing state](../concepts/state.md)).       |
 
 ## Example
 

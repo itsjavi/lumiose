@@ -55,11 +55,13 @@ interface LumioseOptions {
   };
   /** The site's URL, for the absolute URLs of prerendered pages (hreflang, canonical); a path is the base. */
   site?: string; // such as "https://example.com" or "https://example.com/docs"
+  /** The in-page inspector of `lumiose dev` (Alt+Shift+L, Alt+click to the source); dev only. */
+  inspector?: boolean; // default true
 }
 ```
 
 The project options (`mode`, `ssr`, `prerender`, `trailingSlash`, `csrf`, `viewTransitions`,
-`prefetch`, `headers`, `limits`, `adapter`, `i18n`, `site`) are
+`prefetch`, `headers`, `limits`, `adapter`, `i18n`, `site`, `inspector`) are
 read by `lumiose dev`, `lumiose build` and `lumiose routes`/`check` from the plugin's `api.options`.
 Invalid values and unknown option names throw when the config loads, as does `prerender: true`
 with `ssr: false` ([prerendered SPA routes](../concepts/rendering-modes.md#prerendered-spa-routes)). `csp: "strict"` is
@@ -89,6 +91,15 @@ without `site` they are root-relative, and `lumiose build` warns. Pages rendered
 the request's origin. A path in `site` (`"https://example.com/docs"`, trailing slash optional) is
 the app's base: it becomes Vite's `base` when the config sets none, and a config `base` that
 differs from it is an error naming both, so the path is never counted twice.
+
+**In-page inspector** (`inspector`, decision-59). `lumiose dev` mounts the inspector on every page
+from its dev client: Alt+Shift+L or the corner button opens the component tree, signals, islands
+and why something updated, and Alt+click opens an element's source through Vite's open-in-editor
+endpoint ([Dev tools](../concepts/dev-tools.md)). In dev, the plugin also compiles every element with
+`data-lumiose-source="<file>:<line>:<column>"`, signal and computed variables with their names, and
+component registrations with their locations, and the runtime records for the inspector behind the
+`import.meta.env.LUMIOSE_INSPECTOR` define. Builds and Vitest get none of it. `inspector: false`
+removes all of it from `lumiose dev` too.
 
 **Body limits** (`limits`). `body` caps URL-encoded forms, JSON and any other non-multipart
 request body (default `"1mb"`), `upload` caps `multipart/form-data` bodies (default `"10mb"`). A
