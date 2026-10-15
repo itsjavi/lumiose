@@ -1,11 +1,11 @@
 ---
 id: TASK-350
 title: 'History fallback: leave fragment navigations to the browser'
-status: Done
+status: In Progress
 assignee:
   - Spark
 created_date: '2026-10-15 13:19'
-updated_date: '2026-10-15 13:24'
+updated_date: '2026-10-15 13:25'
 labels: []
 dependencies: []
 priority: medium
@@ -47,6 +47,8 @@ Verified in Chromium (built-in browser, a scratch page on example.com): a link c
 Index choice: no guessing. An entry the browser added after going back (history.length does not grow) or replaced outside navigate() gets an unknown index; a cancelled back/forward involving it then uses the existing pushState path.
 
 Remaining divergence (unchanged, pre-existing): with the Navigation API the router ignores hashChange navigate events entirely, so url() keeps the old hash there, while the fallback commits it.
+
+Integration pending (2026-10-15): implemented, validated and committed on branch claude/reverent-engelbart-0b1530 (commit 5c0a82ab), not yet in main. The main checkout has another session's uncommitted edits to the same files (packages/lumiose/src/app/router/router.ts, router/index.ts, docs/reference/router.md, docs/llms-full.txt; Lux, shallow URL state for islands, decision-61), so merging now would collide with that work. Next action: once those edits are committed, merge the branch into main, resolve any conflicts in router.ts/router.md, regenerate llms-full.txt (pnpm --filter lumiose docs:gen), rerun the router tests, then mark Done.
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary
