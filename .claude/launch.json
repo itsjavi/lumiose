@@ -22,6 +22,13 @@
       ],
       "port": 5197,
       "url": "http://localhost:5197"
+    },
+    {
+      "name": "bookshelf",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--dir", "examples/ssr-bookshelf", "run", "dev", "--port", "5198"],
+      "port": 5198,
+      "url": "http://localhost:5198"
     }
   ]
 }
