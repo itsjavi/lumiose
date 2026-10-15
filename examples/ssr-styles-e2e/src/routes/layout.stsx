@@ -1,0 +1,23 @@
+import type { LayoutProps } from "lumiose";
+// Global CSS first: the file's style block comes after it in the cascade.
+import "../styles/app.css";
+
+export default function Root(props: LayoutProps<"/">) {
+  return (
+    <div class="shell mx-auto max-w-2xl p-4">
+      <nav class="flex gap-4">
+        <a href="/">Home</a>
+        <a href="/about">About</a>
+      </nav>
+      {props.children}
+      <p class="order" data-order>
+        Cascade order
+      </p>
+    </div>
+  );
+}
+
+<style>
+  .shell { font-family: system-ui, sans-serif; }
+  .order { color: rgb(0, 0, 255); }
+</style>

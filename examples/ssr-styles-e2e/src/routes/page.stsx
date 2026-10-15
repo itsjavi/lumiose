@@ -1,0 +1,27 @@
+import { Badge } from "../components/Badge.stsx";
+import { Toggle } from "../islands/Toggle.stsx";
+
+export default function Home() {
+  return (
+    <main class="grid gap-4">
+      <h1 class="text-2xl font-bold">Styles</h1>
+      <p class="from-app-css">From app.css</p>
+      <p class="tw-string p-4 text-sm">Tailwind utilities in a string</p>
+      <p class="block-wins p-8" data-probe="block-wins">
+        A style block beats a utility
+      </p>
+      <p class="block-wins p-8!" data-probe="important">
+        An important utility beats a style block
+      </p>
+      <p class="unlayered p-8" data-probe="unlayered">
+        Unlayered global CSS beats a utility
+      </p>
+      <Badge>CSS module</Badge>
+      <Toggle client:load label="Toggle" />
+    </main>
+  );
+}
+
+<style>
+  .block-wins { padding: 2px; }
+</style>

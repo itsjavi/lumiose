@@ -1,0 +1,28 @@
+import { signal } from "lumiose";
+import styles from "../components/Badge.module.css";
+
+// An island whose classes mix a string, an array, a record, a CSS module and a Tailwind
+// arbitrary value that only appears after a click: the scanner finds them all in this file.
+export function Toggle(props: { label: string }) {
+  const on = signal(false);
+
+  return (
+    <button
+      type="button"
+      class={[
+        "toggle rounded-lg px-3 py-1",
+        styles.pill,
+        { [styles.active!]: on(), "font-bold": on(), underline: on() },
+        on() ? "bg-[rgb(16,185,129)]" : "bg-[rgb(229,231,235)]",
+      ]}
+      aria-pressed={on() ? "true" : "false"}
+      onClick={() => on.update((value) => !value)}
+    >
+      {props.label}
+    </button>
+  );
+}
+
+<style>
+  .toggle { cursor: pointer; }
+</style>

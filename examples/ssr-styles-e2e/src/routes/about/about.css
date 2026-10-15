@@ -1,0 +1,8 @@
+/* Imported by the about page only: no other page links it. */
+:root {
+  --about-css: loaded;
+}
+
+.from-about-css {
+  color: rgb(0, 0, 128);
+}

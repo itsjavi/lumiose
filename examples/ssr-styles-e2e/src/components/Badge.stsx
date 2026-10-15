@@ -1,0 +1,6 @@
+import styles from "./Badge.module.css";
+
+// A CSS module next to Tailwind utilities, on the server only.
+export function Badge(props: { children?: JSX.Element }) {
+  return <span class={["badge rounded-full px-2 text-sm", styles.pill]}>{props.children}</span>;
+}

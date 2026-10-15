@@ -1,0 +1,8 @@
+.pill {
+  border: 2px solid rgb(255, 215, 0);
+  letter-spacing: 1px;
+}
+
+.active {
+  outline: 3px solid rgb(0, 0, 0);
+}

@@ -1,0 +1,32 @@
+{
+  "name": "@lumiose-examples/ssr-styles-e2e",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Lumiose fixture: a server-rendered app styled with an imported global .css file, a CSS module and Tailwind v4 next to style blocks, tested in Chromium under lumiose dev and a production build (TASK-336 smoke test).",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "dev": "lumiose dev",
+    "build": "lumiose build",
+    "preview": "lumiose preview",
+    "typecheck": "lumiose check",
+    "test:e2e": "playwright test"
+  },
+  "dependencies": {
+    "@lumiose/adapter-node": "workspace:*",
+    "lumiose": "workspace:*"
+  },
+  "devDependencies": {
+    "@lumiose/cli": "workspace:*",
+    "@lumiose/vite": "workspace:*",
+    "@playwright/test": "1.63.0",
+    "@tailwindcss/vite": "4.3.3",
+    "@types/node": "^24.0.0",
+    "tailwindcss": "4.3.3",
+    "vite": "^8.3.4"
+  },
+  "demo": {
+    "title": "Styles e2e fixture (CSS files, CSS Modules, Tailwind v4)",
+    "kind": "e2e"
+  }
+}

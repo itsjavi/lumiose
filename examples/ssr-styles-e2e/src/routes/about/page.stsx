@@ -1,0 +1,23 @@
+// A route-only stylesheet: global CSS, linked only on the pages whose imports reach it.
+import "./about.css";
+
+export default function About() {
+  return (
+    <main>
+      <h1 class="text-2xl">About</h1>
+      <p class="from-about-css">From about.css</p>
+      <p class="applied">Tailwind's @apply in a style block</p>
+    </main>
+  );
+}
+
+// Tailwind's functions and directives need `@reference` to the stylesheet that imports Tailwind.
+// The compiler does not know Tailwind's at-rules yet: it keeps them, with a LUM3015 warning each.
+<style>
+  @reference "../../styles/app.css";
+  .applied {
+    @apply p-6 font-bold;
+    margin: --spacing(4);
+    border: 2px solid theme(--color-red-500);
+  }
+</style>

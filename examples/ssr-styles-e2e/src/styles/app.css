@@ -1,0 +1,17 @@
+/* The app's global stylesheet. The root layout imports it, so every page links it. */
+@import "tailwindcss";
+
+.from-app-css {
+  color: rgb(0, 128, 0);
+}
+
+/* Unlayered, so it wins over Tailwind's utilities (in `@layer utilities`) at any specificity. */
+.unlayered {
+  padding: 3px;
+}
+
+/* The same specificity as the layout's scoped `.order` rule (`.order[data-l-…]`): the rule that
+   comes later in the cascade wins. */
+.order[data-order] {
+  color: rgb(255, 0, 0);
+}
