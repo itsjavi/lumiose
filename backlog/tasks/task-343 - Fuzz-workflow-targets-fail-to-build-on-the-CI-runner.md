@@ -1,11 +1,11 @@
 ---
 id: TASK-343
 title: 'Fuzz workflow: targets fail to build on the CI runner'
-status: In Progress
+status: Done
 assignee:
   - '@Halo'
 created_date: '2026-10-15 08:02'
-updated_date: '2026-10-15 08:21'
+updated_date: '2026-10-15 11:56'
 labels:
   - security
   - fuzzing
@@ -24,8 +24,8 @@ Found by the first manual run of the nightly fuzz workflow (TASK-311, https://gi
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Every fuzz target builds and runs for its time budget in the workflow
-- [ ] #2 One manual run after the fix passes, or its findings are tracked as tasks
+- [x] #1 Every fuzz target builds and runs for its time budget in the workflow
+- [x] #2 One manual run after the fix passes, or its findings are tracked as tasks
 - [x] #3 CONTRIBUTING.md's Fuzzing section stays accurate
 <!-- AC:END -->
 
@@ -41,4 +41,12 @@ CONTRIBUTING.md (Fuzzing): notes the --target for prebuilt Linux binaries.
 Remaining: AC #1 in the workflow itself and AC #2 need the manual run after the end-of-run push, which only Lux can trigger (`gh workflow run fuzz.yml`, optionally with a short `seconds` input first). Left In Progress for that.
 
 2026-10-15 (Halo): pnpm check, cargo fmt and clippy clean on the branch. Commit df504d66. Handed to Lux for the post-push manual run; claim released.
+
+2026-10-15 (Lux): verified by the manual run https://github.com/itsjavi/lumiose/actions/runs/38711418807 after the push: all 7 fuzz targets built with AddressSanitizer and ran without crashes. The run's property-tests job failed separately; that is TASK-344's follow-up.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+The fuzz workflow builds every target for the runner's own target with AddressSanitizer; verified on GitHub (7 targets, no crashes).
+<!-- SECTION:FINAL_SUMMARY:END -->

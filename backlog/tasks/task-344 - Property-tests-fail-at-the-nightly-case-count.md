@@ -5,7 +5,7 @@ status: Done
 assignee:
   - '@Nova'
 created_date: '2026-10-15 08:03'
-updated_date: '2026-10-15 08:10'
+updated_date: '2026-10-15 11:56'
 labels:
   - security
   - fuzzing
@@ -39,6 +39,8 @@ Nova (2026-10-15), diagnosis of the CI run (job "property tests", 200000 cases):
 - 1 real counterexample, in the test oracle, not in Lumiose: "keeps text intact through the HTML parser" with "javascript:,-->". happy-dom 20.14.5's regex parser emits the text before a stray `-->` (or `--!>`) twice ("a-->" parses as "aa-->"; HTMLParser.js parses the plain text, then falls into the "not a valid tag" branch with the same range). Per the HTML standard `-->` in the data state is plain text, and escapeText() output is correct. Fix: the two escaping properties parse with parse5 8.0.1 (pinned devDependency of packages/lumiose, deps.lock taken; spec tokenizer and tree construction, as browsers), and a regression case keeps the counterexample. Text and attribute checks now also compare the parse tree (only text nodes; exactly the one attribute).
 - Validation: `pnpm --filter lumiose test:properties 200000` passes locally, 25 tests in 5 files, 76 s. The fast `pnpm test` run is unchanged (100 cases, about 1.3 s for the property files).
 - Not done, needs the user (outward-facing): a happy-dom upstream report. Draft: title "HTMLParser duplicates text before a stray --> outside a comment"; body: `const t = document.createElement("template"); t.innerHTML = "<p>a--></p>"; t.content.firstChild.textContent` returns "aa-->" (expected "a-->", as in browsers and parse5); the `any` read state parses the plain text before the match when match[4] is set, then the else branch parses lastIndex..markupRegExp.lastIndex again.
+
+2026-10-15 (Lux): the next nightly run (https://github.com/itsjavi/lumiose/actions/runs/38711418807) found two more failures. (1) A real counterexample in csrf.property.test.ts, ['https','http','a.aa',80]: isSameOriginRequest compared host strings, so http://a.aa:80 (default port, host 'a.aa') did not match https://a.aa:80 (host 'a.aa:80'). Fixed in csrf.ts: same host string, or same hostname and the same port after scheme defaults; the TLS-terminating proxy case (https origin, http request URL, default ports) still passes on the host string. (2) core/reactive.property.test.ts kept Vitest's 5 s default at the nightly count; it now scales its timeout like the app fixture. test:properties 200000 passes locally (25 tests, 67 s).
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary
