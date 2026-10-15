@@ -3,6 +3,7 @@
 // `pnpm --filter @lumiose/web ui:demos`.
 import { ShippingFaq } from "./accordion-1.tsx";
 import { SettingsSections } from "./accordion-2.tsx";
+import { SavingButton } from "./button-1.tsx";
 import { NewsletterOptIn } from "./checkbox-1.tsx";
 import { ToppingsGroup } from "./checkbox-group-1.tsx";
 import { RecoveryKeys } from "./collapsible-1.tsx";
@@ -18,16 +19,21 @@ import { BookSearch } from "./input-1.tsx";
 import { Help } from "./installation-1.tsx";
 import { ProjectMenu } from "./menu-1.tsx";
 import { EditorMenu } from "./menu-2.tsx";
+import { StorageMeter } from "./meter-1.tsx";
 import { Notifications } from "./popover-1.tsx";
 import { Filters } from "./popover-2.tsx";
+import { UploadProgress } from "./progress-1.tsx";
 import { ShippingChoice } from "./radio-group-1.tsx";
 import { PlanField } from "./select-1.tsx";
 import { ThemePicker } from "./select-2.tsx";
+import { PriceRange } from "./slider-1.tsx";
 import { AirplaneMode } from "./switch-1.tsx";
 import { AccountSettings } from "./tabs-1.tsx";
 import { Project } from "./tabs-2.tsx";
 import { SaveButton } from "./toast-1.tsx";
 import { UploadButton } from "./toast-2.tsx";
+import { PinToggle } from "./toggle-1.tsx";
+import { TextAlignment } from "./toggle-group-1.tsx";
 import { BoldButton } from "./tooltip-1.tsx";
 
 /** A demo by id: server HTML, or an island that hydrates when it scrolls into view. */
@@ -37,6 +43,8 @@ export function UiDemo(props: { id: string }) {
       return <ShippingFaq />;
     case "accordion-2":
       return <SettingsSections client:visible />;
+    case "button-1":
+      return <SavingButton client:visible />;
     case "checkbox-1":
       return <NewsletterOptIn client:visible />;
     case "checkbox-group-1":
@@ -67,16 +75,22 @@ export function UiDemo(props: { id: string }) {
       return <ProjectMenu />;
     case "menu-2":
       return <EditorMenu client:visible />;
+    case "meter-1":
+      return <StorageMeter />;
     case "popover-1":
       return <Notifications />;
     case "popover-2":
       return <Filters client:visible />;
+    case "progress-1":
+      return <UploadProgress client:visible />;
     case "radio-group-1":
       return <ShippingChoice client:visible />;
     case "select-1":
       return <PlanField />;
     case "select-2":
       return <ThemePicker client:visible />;
+    case "slider-1":
+      return <PriceRange client:visible />;
     case "switch-1":
       return <AirplaneMode client:visible />;
     case "tabs-1":
@@ -87,6 +101,10 @@ export function UiDemo(props: { id: string }) {
       return <SaveButton client:visible />;
     case "toast-2":
       return <UploadButton client:visible />;
+    case "toggle-1":
+      return <PinToggle client:visible />;
+    case "toggle-group-1":
+      return <TextAlignment client:visible />;
     case "tooltip-1":
       return <BoldButton />;
     default:
