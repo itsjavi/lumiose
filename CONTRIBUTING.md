@@ -19,6 +19,27 @@ parsing under the limits, the Origin check, redirect targets and unsafe URLs in 
 (decision-56). `pnpm test` runs 100 cases of each; `test:properties` runs many more (the nightly
 workflow's). A failure prints its seed: rerun with `LUMIOSE_PROPERTY_SEED=<seed>` to reproduce it.
 
+### Fuzzing
+
+`fuzz/` holds the [cargo-fuzz](https://rust-fuzz.github.io/book/cargo-fuzz.html) targets of the
+Rust crates (decision-56), a workspace of its own: `scan` (the `.stsx` scanner and its masking
+invariant), `compile_client` (the JSX transform and client codegen) and `compile_server` (SSR
+codegen). `cargo fuzz list --fuzz-dir fuzz` lists them. To run one:
+
+```sh
+cargo install cargo-fuzz                  # once
+rustup toolchain install nightly          # once: the sanitizers need nightly
+fuzz/seed.sh                              # seed fuzz/corpus/<target> with the test fixtures
+cargo +nightly fuzz run scan --fuzz-dir fuzz -- -max_total_time=300
+```
+
+On macOS add `RUSTFLAGS="-Clink-arg=-undefined -Clink-arg=dynamic_lookup"` (a dependency also
+builds a dylib, which macOS would not link against the fuzzer's coverage symbols). A crash stops
+the run and writes its input to `fuzz/artifacts/<target>/crash-<hash>`; replay it with
+`cargo +nightly fuzz run <target> --fuzz-dir fuzz fuzz/artifacts/<target>/crash-<hash>`, and shrink
+it with `cargo +nightly fuzz tmin <target> --fuzz-dir fuzz <file>`. Add the minimized input to the
+crate's tests with the fix. The corpus, artifacts and build output are ignored by Git.
+
 Changes to the website (`apps/web`) follow [its contributing notes](apps/web/CONTRIBUTING.md): the
 WCAG 2.2 AA axe suite and the manual accessibility checklist (decision-39).
 
@@ -68,6 +89,11 @@ Windows:
 - **pack** (Linux): `pnpm pack:check --smoke`, below.
 
 pnpm's store, Cargo's registry and `target/`, and the Playwright browsers are cached.
+
+`.github/workflows/fuzz.yml` runs nightly (and by hand from the Actions tab), never on push: each
+target of `fuzz/` for 10 minutes on nightly Rust with AddressSanitizer, its corpus kept between
+runs, and `pnpm --filter lumiose test:properties 200000`. A crash fails the run and uploads its
+input as an artifact; a property failure prints its seed (see Fuzzing above).
 
 ## Packages
 
