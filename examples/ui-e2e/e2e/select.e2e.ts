@@ -70,6 +70,32 @@ test.describe("customizable select (Chromium)", () => {
     await page.keyboard.press("ArrowUp");
     await page.keyboard.press("Enter");
     await expect(select).toHaveValue("banana");
+
+    // Home, End and typeahead in the picker; Tab closes it and moves on.
+    await page.keyboard.press(" ");
+    await page.keyboard.press("End");
+    await expect(option("Lemon")).toBeFocused();
+    await page.keyboard.press("Home");
+    await expect(option("Apple")).toBeFocused();
+    // Tab closes the picker; Chromium leaves focus on the control.
+    await page.keyboard.press("Tab");
+    expect(await isOpen(select)).toBe(false);
+    await expect(select).toBeFocused();
+
+    // Typeahead matches the options' text (the fruits' starts with an emoji).
+    const size = page.getByLabel("Size");
+    await size.focus();
+    await page.keyboard.press(" ");
+    await page.keyboard.press("l");
+    await expect(option("Large")).toBeFocused();
+  });
+
+  test("a click on the label focuses the select without opening it", async ({ page }) => {
+    await page.goto("/select");
+    const { select } = fruit(page);
+    await page.getByText("Fruit", { exact: true }).click();
+    await expect(select).toBeFocused();
+    expect(await isOpen(select)).toBe(false);
   });
 
   test("required: the empty choice blocks the submit; reset restores", async ({ page }) => {
