@@ -10,7 +10,8 @@
     "directory": "packages/ui"
   },
   "files": [
-    "dist"
+    "dist",
+    "docs"
   ],
   "type": "module",
   "sideEffects": [
@@ -43,6 +44,8 @@
     "typecheck": "tsc -p tsconfig.json",
     "test": "vitest run",
     "size": "node scripts/size.ts",
+    "docs:gen": "node scripts/gen-llms.ts",
+    "docs:check": "node scripts/gen-llms.ts --check",
     "build": "node scripts/build.ts",
     "prepack": "pnpm run build"
   },

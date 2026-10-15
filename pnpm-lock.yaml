@@ -1131,6 +1131,9 @@ importers:
       '@lumiose/adapter-node':
         specifier: workspace:*
         version: link:../adapter-node
+      '@lumiose/ui':
+        specifier: workspace:*
+        version: link:../ui
       typescript:
         specifier: ^7.0.2
         version: 7.0.2

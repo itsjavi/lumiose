@@ -1,13 +1,15 @@
 // create-lumiose (TASK-33): the CLI contract, then every template scaffolded by the bin into a temp
 // dir (node_modules linked to the workspace's lumiose, adapter, TypeScript and Vite), checked with
 // `lumiose check`, built with `lumiose build`, served by `lumiose dev`, and its build served by
-// `lumiose preview` under the strict CSP the templates enable (TASK-315).
+// `lumiose preview` under the strict CSP the templates enable (TASK-315). With @lumiose/ui (TASK-393),
+// a static app is checked and built against the workspace package.
 import { spawn, type ChildProcess } from "node:child_process";
 import { createHash } from "node:crypto";
 import {
   existsSync,
   mkdirSync,
   mkdtempSync,
+  readdirSync,
   readFileSync,
   realpathSync,
   rmSync,
@@ -20,7 +22,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterAll, describe, expect, it } from "vitest";
 import { main, type CreateIO } from "./main.ts";
-import { isValidPackageName, packageName, TEMPLATES } from "./scaffold.ts";
+import { isValidPackageName, packageName, TEMPLATES, UI_PACKAGE } from "./scaffold.ts";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const createBin = join(here, "bin.ts");
@@ -132,6 +134,42 @@ describe("create-lumiose CLI", () => {
     expect(readFileSync(join(pnpm, ".codex/config.toml"), "utf8")).toContain(
       'command = "pnpm"\nargs = ["exec", "lumiose", "mcp"]',
     );
+  });
+
+  it("offers @lumiose/ui once it is on npm, with --ui or a question (TASK-393)", async () => {
+    if (!UI_PACKAGE?.published) {
+      // Private until TASK-389: no --ui in the help, and the flag is refused.
+      const help = io();
+      await main(["--help"], help.io);
+      expect(help.out.stdout).not.toContain("--ui");
+      const refused = io();
+      expect(await main([join(tmp, "ui-refused"), "-y", "--ui"], refused.io)).toBe(2);
+      expect(refused.out.stderr).toContain("not on npm yet");
+    }
+    const help = io();
+    await main(["--help"], help.io, { offerUi: true });
+    expect(help.out.stdout).toContain("--ui ");
+
+    const answers = ["asked-ui", "1", "y"];
+    const asked = io();
+    asked.io.ask = async () => answers.shift()!;
+    expect(await main([], asked.io, { offerUi: true })).toBe(0);
+    expect(asked.out.stdout).toContain("lumiose-ui skill");
+    const dir = join(tmp, "asked-ui");
+    const manifest = JSON.parse(readFileSync(join(dir, "package.json"), "utf8"));
+    expect(manifest.dependencies["@lumiose/ui"]).toBe(`^${UI_PACKAGE!.version}`);
+    // The minimal template has no layout: its page imports the styles.
+    expect(readFileSync(join(dir, "src/routes/page.stsx"), "utf8")).toMatch(
+      /^import "@lumiose\/ui\/styles.css";\nimport "@lumiose\/ui\/themes\/default.css";\n/,
+    );
+    expect(existsSync(join(dir, ".claude/skills/lumiose-ui/SKILL.md"))).toBe(true);
+
+    // Answering no (or nothing) leaves it out.
+    const declined = ["no-ui", "1", ""];
+    const plain = io();
+    plain.io.ask = async () => declined.shift()!;
+    expect(await main([], plain.io, { offerUi: true })).toBe(0);
+    expect(readFileSync(join(tmp, "no-ui/package.json"), "utf8")).not.toContain("@lumiose/ui");
   });
 
   it("derives valid package names", () => {
@@ -257,6 +295,40 @@ describe.skipIf(!binding).each(TEMPLATES)("template $name", (template) => {
     } finally {
       child.kill("SIGTERM");
     }
+  });
+});
+
+describe.skipIf(!binding)("template static with @lumiose/ui (TASK-393)", () => {
+  const root = join(tmp, "app-ui");
+
+  it("adds the dependency, the styles and the UI agent files, and passes check and build", async () => {
+    const created = io();
+    const args = [root, "-t", "static", "--ui", "--format", "json"];
+    expect(await main(args, created.io, { offerUi: true })).toBe(0);
+    const result = JSON.parse(created.out.stdout);
+    expect(result).toMatchObject({ ok: true, template: "static", ui: true });
+    expect(result.files).toContain(".claude/skills/lumiose-ui/SKILL.md");
+    const read = (file: string) => readFileSync(join(root, file), "utf8");
+    expect(read("src/routes/layout.stsx")).toMatch(
+      /^import "@lumiose\/ui\/styles.css";\nimport "@lumiose\/ui\/themes\/default.css";\n/,
+    );
+    expect(read("AGENTS.md")).toContain("### UI components (`@lumiose/ui`)");
+    expect(read("README.md")).toContain("node_modules/@lumiose/ui/docs");
+
+    link(root);
+    symlinkSync(join(packagesDir, "ui"), join(root, "node_modules/@lumiose/ui"), "dir");
+    const check = await run(lumioseBin, ["check", "--format", "json"], root);
+    expect(JSON.parse(check.stdout), check.stderr).toMatchObject({ command: "check", ok: true });
+    const fmt = await run(lumioseBin, ["fmt", "--check"], root);
+    expect(fmt.code, fmt.stdout).toBe(0);
+    const build = await run(lumioseBin, ["build", "--format", "json"], root);
+    expect(build.code, build.stderr).toBe(0);
+    // The pages link the default theme.
+    const css = readdirSync(join(root, "dist/client/assets"))
+      .filter((file) => file.endsWith(".css"))
+      .map((file) => readFileSync(join(root, "dist/client/assets", file), "utf8"))
+      .join("\n");
+    expect(css).toContain("--lu-primary");
   });
 });
 

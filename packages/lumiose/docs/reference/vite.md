@@ -16,7 +16,7 @@ function lumiose(options?: LumioseOptions): Plugin[];
 interface LumioseOptions {
   /** Modules compiled by Lumiose. Default: .stsx and .tsx files. */
   include?: RegExp;
-  /** Modules left to Vite. Default: anything in node_modules. */
+  /** Modules left to Vite. Default: node_modules, except the Lumiose packages installed there. */
   exclude?: RegExp;
   /** The project's default route mode; a layout's or route's `export const mode` overrides it. */
   mode?: "static" | "server" | "spa"; // default "static"
@@ -223,6 +223,40 @@ What it does:
 
 > **Status:** compilation, environments, diagnostics, HMR, style-block CSS, `.svg`, `.md` and `.html` imports and the
 > project options above are available. The designed option `css` is not.
+
+## Lumiose packages
+
+A **Lumiose package** is a dependency that lists `lumiose` in its `dependencies` or
+`peerDependencies` (any dependency field), found from the app's `package.json` and, transitively,
+from the Lumiose packages themselves. `@lumiose/ui` and any component library built for Lumiose
+are; Lumiose's own tooling (`@lumiose/cli`, `@lumiose/vite`, the adapters, the editor plugins) is
+not. The plugin treats their modules like the app's own, whether the package is linked
+(`"@acme/ui": "workspace:*"`) or installed in `node_modules` from npm or a tarball:
+
+- **Compiled with the app's options.** Their `.tsx` and `.stsx` modules go through the Lumiose
+  compiler for the server or the browser, with the app's targets, CSP mode and dev tools, in
+  `lumiose dev` and builds alike. The default `exclude` leaves every other package in
+  `node_modules` to Vite; an explicit `exclude` replaces that rule, so `exclude: /node_modules/`
+  compiles no installed package.
+- **Scanned with the project.** Builds find their island call sites, stylesheets and
+  [client scripts](../concepts/islands.md#concept) (`?client`) before the server graph
+  exists, so their islands get chunks and their pages load their scripts. An installed package is
+  scanned whole, `dist/` included, but not the packages in its own `node_modules`; a linked one
+  without its build output (`dist/`, `build/`) and nested projects (a folder with a
+  `package.json`, `tsconfig.json` or `vite.config.*`).
+- **One `lumiose`.** They are bundled with the server code (`resolve.noExternal`) and kept out of
+  Vite's dependency pre-bundling (`optimizeDeps.exclude`), so their modules and the app's share one
+  runtime instance, and Vite never compiles their JSX for React. A CommonJS dependency of a Lumiose
+  package then needs `optimizeDeps: { include: ["@acme/ui > some-cjs-dep"] }`.
+- **Stable names.** Island refs and scope tokens name their modules package-relatively
+  (`@acme/ui/dist/Nav.tsx#Nav`), wherever the package manager put them (`node_modules/.pnpm/…`
+  included).
+
+**Publishing a component library.** Ship the sources (`.tsx`, `.stsx`, `.ts`, `.css`) and point
+`exports` at them, with `lumiose` as a peer dependency: no build step, and the app's compiler
+compiles them for its own server and browser targets. List client scripts and stylesheets in
+`sideEffects` (`["**/*.css", "**/*.script.ts"]`), so bundlers keep their side-effect imports.
+`@lumiose/ui` is published this way (`dist/` holds a copy of `src/` without tests).
 
 ## createDevHandler()
 

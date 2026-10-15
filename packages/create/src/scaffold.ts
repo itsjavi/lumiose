@@ -1,9 +1,12 @@
 // Writes a new Lumiose project: a template's `src/` (and extras), the generated package.json,
 // tsconfig.json (extending the generated one, decision-25), vite.config.ts with the template's
 // `lumiose({ mode })` (decision-21) and `csp: "strict"` (decision-56), .gitignore and README, then the agent files (AGENTS.md, CLAUDE.md, the lumiose skill,
-// .gitattributes) from `@lumiose/cli/agents`, shared with `lumiose agents init`.
+// .gitattributes) from `@lumiose/cli/agents`, shared with `lumiose agents init`. With `ui`, the app
+// also depends on @lumiose/ui, imports its stylesheet and default theme in the root layout, and
+// gets its agent files (decision-64).
 
 import { existsSync } from "node:fs";
+import { createRequire } from "node:module";
 import { mkdir, readdir, readFile, writeFile } from "node:fs/promises";
 import { basename, dirname, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -54,6 +57,27 @@ const VERSIONS = {
   oxfmt: "^0.72.0",
 };
 
+/**
+ * The @lumiose/ui this create-lumiose was released with: it keeps its own versions (decision-54).
+ * `published` is false while the package is private (TASK-389): the option stays hidden until then.
+ */
+export const UI_PACKAGE = readUiPackage();
+
+function readUiPackage(): { version: string; published: boolean } | undefined {
+  try {
+    const manifest = createRequire(import.meta.url)("@lumiose/ui/package.json") as {
+      version: string;
+      private?: boolean;
+    };
+    return { version: manifest.version, published: manifest.private !== true };
+  } catch {
+    return undefined;
+  }
+}
+
+/** The stylesheets a project with @lumiose/ui imports in its root layout. */
+export const UI_STYLESHEETS = ["@lumiose/ui/styles.css", "@lumiose/ui/themes/default.css"];
+
 /** A problem with the target (not empty, invalid name): the CLI exits with 1. */
 export class ScaffoldError extends Error {
   override name = "ScaffoldError";
@@ -72,6 +96,8 @@ export interface ScaffoldOptions {
    * this package manager.
    */
   mcp?: PackageManager;
+  /** Add @lumiose/ui: the dependency, its stylesheet and default theme, and its agent files. */
+  ui?: boolean;
 }
 
 export interface ScaffoldResult {
@@ -88,6 +114,9 @@ export async function scaffold(options: ScaffoldOptions): Promise<ScaffoldResult
   const dir = resolve(options.dir);
   const template = TEMPLATES.find((candidate) => candidate.name === options.template);
   if (!template) throw new ScaffoldError(`Unknown template "${options.template}".`);
+  if (options.ui && UI_PACKAGE === undefined) {
+    throw new ScaffoldError("@lumiose/ui is not available in this create-lumiose.");
+  }
   const name = options.name ?? packageName(basename(dir));
   if (!isValidPackageName(name)) {
     throw new ScaffoldError(
@@ -104,11 +133,21 @@ export async function scaffold(options: ScaffoldOptions): Promise<ScaffoldResult
     const text = await readFile(join(templateDir, file), "utf8");
     files.set(file, text.replaceAll("{{name}}", name));
   }
-  files.set("package.json", packageJson(name, template));
+  // The root layout imports @lumiose/ui's styles for every page; the minimal template has no
+  // layout, so its only page does.
+  let uiEntry: string | undefined;
+  if (options.ui) {
+    uiEntry = files.has("src/routes/layout.stsx")
+      ? "src/routes/layout.stsx"
+      : "src/routes/page.stsx";
+    const imports = UI_STYLESHEETS.map((sheet) => `import "${sheet}";\n`).join("");
+    files.set(uiEntry, imports + files.get(uiEntry)!);
+  }
+  files.set("package.json", packageJson(name, template, options.ui ?? false));
   files.set("tsconfig.json", formatTsconfig());
   files.set("vite.config.ts", viteConfig(template));
   files.set(".gitignore", "node_modules\ndist\n.lumiose\n");
-  files.set("README.md", readme(name, template));
+  files.set("README.md", readme(name, template, uiEntry));
 
   for (const [file, text] of files) {
     await mkdir(dirname(join(dir, file)), { recursive: true });
@@ -142,7 +181,7 @@ export function isValidPackageName(name: string): boolean {
   return /^(?:@[a-z0-9][a-z0-9._~-]*\/)?[a-z0-9][a-z0-9._~-]*$/.test(name) && name.length <= 214;
 }
 
-function packageJson(name: string, template: Template): string {
+function packageJson(name: string, template: Template, ui: boolean): string {
   const server = template.mode === "server";
   // The adapter serves `lumiose preview` everywhere and is the production server of `ssr`.
   const adapter = { "@lumiose/adapter-node": VERSIONS.lumiose };
@@ -160,7 +199,11 @@ function packageJson(name: string, template: Template): string {
       lint: "lumiose lint",
       fmt: "lumiose fmt",
     },
-    dependencies: { ...(server ? adapter : {}), lumiose: VERSIONS.lumiose },
+    dependencies: {
+      ...(server ? adapter : {}),
+      ...(ui ? { "@lumiose/ui": `^${UI_PACKAGE!.version}` } : {}),
+      lumiose: VERSIONS.lumiose,
+    },
     devDependencies: {
       ...(server ? {} : adapter),
       "@lumiose/cli": VERSIONS.lumiose,
@@ -194,7 +237,8 @@ export default defineConfig({
 `;
 }
 
-function readme(name: string, template: Template): string {
+/** The project README; `uiEntry` is the file that imports @lumiose/ui's styles, if any. */
+function readme(name: string, template: Template, uiEntry: string | undefined): string {
   const server = template.mode === "server";
   return `# ${name}
 
@@ -218,7 +262,14 @@ ${template.description}. Made with Lumiose (\`create-lumiose --template ${templa
 
 \`.stsx\` files are TSX with raw-CSS \`<style>\` blocks. The docs for your Lumiose version are in
 \`node_modules/lumiose/docs\` (\`npx lumiose docs <topic>\`). Coding agents: see \`AGENTS.md\`.
-`;
+${
+  uiEntry === undefined
+    ? ""
+    : `
+UI components come from \`@lumiose/ui\`: accessible and unstyled, with its default theme imported in
+\`${uiEntry}\`. Their docs are in \`node_modules/@lumiose/ui/docs\` (\`npx lumiose docs ui\`).
+`
+}`;
 }
 
 async function listFiles(dir: string, base = dir): Promise<string[]> {

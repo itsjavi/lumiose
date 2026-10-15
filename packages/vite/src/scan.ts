@@ -1,6 +1,6 @@
-// A one-time scan of the project's source modules (under the root and in the linked Lumiose
-// packages of ./packages.ts), for what the client build must know before the server graph exists
-// (the server environment is built after the client):
+// A one-time scan of the project's source modules (under the root and in the Lumiose packages of
+// ./packages.ts, linked or installed), for what the client build must know before the server
+// graph exists (the server environment is built after the client):
 //
 // - island call sites (`meta.islands`), mostly in route modules (./islands.ts);
 // - stylesheets the server graph may import (./css-manifest.ts): every Lumiose module with style
@@ -22,6 +22,8 @@ import type { Packages } from "./packages.ts";
 const PROJECT_FILE = /^(?:package\.json|tsconfig\.json|vite\.config\.[cm]?[jt]s)$/;
 /** Directories never scanned. */
 const SKIPPED_DIRECTORIES = new Set(["node_modules", "dist", "build", "coverage"]);
+/** Directories of an installed package never scanned: its own dependencies are packages of theirs. */
+const INSTALLED_SKIPPED_DIRECTORIES = new Set(["node_modules"]);
 /** Other source modules searched for stylesheet imports. */
 const SCRIPT_MODULE = /\.(?:[cm]?[jt]sx?)$/;
 const DECLARATION = /\.d\.[cm]?ts$/;
@@ -43,25 +45,29 @@ export interface ScannedModule {
   clientScripts?: string[];
 }
 
-/** Scans every source module under `root` and in the linked Lumiose packages. */
+/** Scans every source module under `root` and in the Lumiose packages. */
 export function scanProject(
   root: string,
   include: RegExp,
-  exclude: RegExp,
+  exclude: (file: string) => boolean,
   packages: Packages,
   content: Content | null = null,
 ): ScannedModule[] {
   const modules: ScannedModule[] = [];
+  const installed = new Set(packages.installed());
   const files = [
-    ...sourceFiles(root, false),
-    // A linked package's nested projects (a showcase app, examples) are not part of it.
-    ...packages.linked().flatMap((p) => sourceFiles(p.dir, true)),
+    ...sourceFiles(root, "project"),
+    // A linked package's nested projects (a showcase app, examples) and build output are not part
+    // of its sources; an installed package is all published files, `dist/` included.
+    ...packages
+      .lumiose()
+      .flatMap((p) => sourceFiles(p.dir, installed.has(p) ? "installed" : "linked")),
   ];
   for (const file of files) {
     // `.md`/`.html` files are compiled as their Lumiose module (`<file>.md.stsx`, ./content.ts).
     const contentModule = content?.scans(file) ? content.moduleId(file) : null;
-    const lumiose = contentModule !== null || (include.test(file) && !exclude.test(file));
-    if (!lumiose && (!SCRIPT_MODULE.test(file) || DECLARATION.test(file) || exclude.test(file))) {
+    const lumiose = contentModule !== null || (include.test(file) && !exclude(file));
+    if (!lumiose && (!SCRIPT_MODULE.test(file) || DECLARATION.test(file) || exclude(file))) {
       continue;
     }
     let source: string;
@@ -124,8 +130,13 @@ export function clientScriptImports(code: string): string[] {
   return [...found];
 }
 
-/** Files under `root`; with `skipProjects`, not in subdirectories that are projects themselves. */
-function sourceFiles(root: string, skipProjects: boolean): string[] {
+/**
+ * Files under `root`: the project's (`project`), a linked package's, not in subdirectories that
+ * are projects themselves (`linked`), or an installed package's, build output included
+ * (`installed`).
+ */
+function sourceFiles(root: string, kind: "project" | "linked" | "installed"): string[] {
+  const skipped = kind === "installed" ? INSTALLED_SKIPPED_DIRECTORIES : SKIPPED_DIRECTORIES;
   const files: string[] = [];
   const visit = (directory: string): void => {
     let entries;
@@ -134,11 +145,11 @@ function sourceFiles(root: string, skipProjects: boolean): string[] {
     } catch {
       return;
     }
-    if (skipProjects && directory !== root && entries.some(isProjectFile)) return;
+    if (kind === "linked" && directory !== root && entries.some(isProjectFile)) return;
     for (const entry of entries) {
       const path = join(directory, entry.name);
       if (entry.isDirectory()) {
-        if (!entry.name.startsWith(".") && !SKIPPED_DIRECTORIES.has(entry.name)) visit(path);
+        if (!entry.name.startsWith(".") && !skipped.has(entry.name)) visit(path);
       } else if (entry.isFile()) {
         files.push(normalizePath(path));
       }

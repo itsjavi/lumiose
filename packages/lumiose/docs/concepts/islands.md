@@ -210,10 +210,12 @@ export function CopyButton(props: { text: string }) {
 - **Keep it free of the runtime.** A script that imports `lumiose` makes its pages load the
   runtime. It is client code: only `PUBLIC_*` env reaches it, and importing server-only code is
   `LUM4003`.
-- **Builds** find `?client` imports in the project and its linked workspace packages, and build
-  each script as a chunk of its own. An import they do not find, such as one in a package installed
-  from npm, is a build warning, and its pages do not load it. In `lumiose dev` the script loads from
-  its own URL. Its type comes from `lumiose/env`: a default export `() => void`.
+- **Builds** find `?client` imports in the project and its
+  [Lumiose packages](../reference/vite.md#lumiose-packages), linked or installed from npm, and build
+  each script as a chunk of its own. An import they do not find, such as one in a package that
+  does not depend on `lumiose`, is a build warning, and its pages do not load it. In `lumiose dev`
+  the script loads from its own URL. Its type comes from `lumiose/env`: a default export
+  `() => void`.
 
 **Build output.** `lumiose build` puts the Lumiose runtime in one chunk: the island loader's, the SPA
 entry's when the app has no islands, or a shared `lumiose-[hash].js` when it has both. The router's
@@ -236,16 +238,18 @@ stylesheets (and waits for them, skipping those the page already holds in its me
 styles), module preloads and the CSP nonce of `<meta property="csp-nonce">`, but dispatches no `vite:preloadError` event (the router loads the
 URL with a document navigation when a page's module does not load).
 
-**Islands from other packages.** Components of a linked workspace package (`"@acme/ui": "workspace:*"`)
-can be or render islands too. Island records name modules without build-machine paths:
-root-relative inside the project (`/src/components/LikeButton.stsx#LikeButton`), package-relative
-outside it (`@acme/ui/src/Nav.stsx#Nav`), or by the import's bare name
-(`import { Nav } from "@acme/ui"` gives `@acme/ui#Nav`). Either way, the `modulepreload` hint of a
-`client:load` island points at its chunk in a build and at Vite's URL of the module in dev. Builds
-also look for island call sites in the linked packages that depend on `lumiose`, so each of their
-islands gets its chunk even when only server code renders it. Folders inside such a package that
-are projects of their own (with a `package.json`, `tsconfig.json` or `vite.config.*`, such as a
-showcase app) are left out.
+**Islands from other packages.** Components of a
+[Lumiose package](../reference/vite.md#lumiose-packages), linked (`"@acme/ui": "workspace:*"`) or
+installed from npm, can be or render islands too. Island records name modules without
+build-machine paths: root-relative inside the project
+(`/src/components/LikeButton.stsx#LikeButton`), package-relative in a package
+(`@acme/ui/src/Nav.stsx#Nav`, also for one installed under the project's `node_modules`), or by
+the import's bare name (`import { Nav } from "@acme/ui"` gives `@acme/ui#Nav`). Either way, the
+`modulepreload` hint of a `client:load` island points at its chunk in a build and at Vite's URL of
+the module in dev. Builds also look for island call sites in the Lumiose packages, so each of
+their islands gets its chunk even when only server code renders it. Folders inside a linked
+package that are projects of their own (with a `package.json`, `tsconfig.json` or
+`vite.config.*`, such as a showcase app) are left out.
 
 > **Status:** available: island calls and records (`LUM4001`, `LUM4002`), the loader with its
 > triggers and event replay, and hydration (`LUM4006` on a mismatch), in `lumiose dev` and builds.

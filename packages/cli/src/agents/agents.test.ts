@@ -14,6 +14,7 @@ import {
   GITATTRIBUTES_LINE,
   planAgentFiles,
   SKILL_FILE,
+  UI_SKILL_FILE,
 } from "./index.ts";
 
 const roots: string[] = [];
@@ -147,6 +148,47 @@ describe("agent files", () => {
     expect(planAgentFiles(() => undefined, { name: "x" }).map((file) => file.file)).not.toContain(
       MCP_JSON,
     );
+  });
+
+  it("adds the UI part and the lumiose-ui skill when the project depends on @lumiose/ui", async () => {
+    const manifest = JSON.stringify({
+      dependencies: { lumiose: "^0.4.0", "@lumiose/ui": "^0.1.0" },
+    });
+    const files = planAgentFiles((file) => (file === "package.json" ? manifest : undefined), {
+      name: "shop",
+    });
+    const content = Object.fromEntries(files.map((file) => [file.file, file.content]));
+    expect(content["AGENTS.md"]).toContain("### UI components (`@lumiose/ui`)");
+    expect(content["AGENTS.md"]).toContain("node_modules/@lumiose/ui/docs/llms.txt");
+    expect(content["AGENTS.md"]!.indexOf("### UI components")).toBeLessThan(
+      content["AGENTS.md"]!.indexOf(AGENTS_END),
+    );
+    expect(content[UI_SKILL_FILE]).toMatch(/^---\nname: lumiose-ui\ndescription: /);
+    for (const topic of [
+      "bind:open",
+      "lu.core",
+      "lu.theme",
+      "data-highlighted",
+      "--lu-",
+      "Dialog.Title",
+    ]) {
+      expect(content[UI_SKILL_FILE], topic).toContain(topic);
+    }
+    // Without the dependency: no UI part, no skill.
+    const plain = planAgentFiles(() => undefined, { name: "shop" });
+    expect(plain[0]!.content).not.toContain("@lumiose/ui");
+    expect(plain.map((file) => file.file)).not.toContain(UI_SKILL_FILE);
+
+    // lumiose agents init reads package.json; once the dependency goes, the UI part goes too.
+    const root = realpathSync(mkdtempSync(join(tmpdir(), "lumiose-agents-ui-")));
+    roots.push(root);
+    writeFileSync(join(root, "package.json"), manifest);
+    const first = await agentsInit(root);
+    expect(first.json.files).toContainEqual({ file: UI_SKILL_FILE, action: "created" });
+    expect(readFileSync(join(root, "AGENTS.md"), "utf8")).toContain("lumiose-ui");
+    writeFileSync(join(root, "package.json"), "{}");
+    await agentsInit(root);
+    expect(readFileSync(join(root, "AGENTS.md"), "utf8")).not.toContain("lumiose-ui");
   });
 
   it("detects the package manager from the lockfile, then package.json", () => {

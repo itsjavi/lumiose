@@ -54,16 +54,17 @@ exist. stdout carries the protocol; console output of app code goes to stderr an
 
 ## Tools
 
-| Tool          | Input                                                 | Returns                                                                                                                                                                                                                                                                      |
-| ------------- | ----------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `docs_search` | `query`, `limit?` (10)                                | `{ query, results: [{ topic, title, summary, score, snippet }] }`, best first; every term must occur in a page.                                                                                                                                                              |
-| `docs_get`    | `topic`                                               | The page as Markdown. A topic is a path (`concepts/signals`), a bare name (`signals`), a code (`LUM2001`) or `""` for the index. An exported name (`fetchJSON`) returns its reference section.                                                                               |
-| `check`       | `files?`, `project?`                                  | `lumiose check` as `{ ok, summary, diagnostics, notes? }`. With `files`, only their diagnostics, and `projectSummary` for the whole project.                                                                                                                                 |
-| `routes`      | none                                                  | `lumiose routes --format json`: `{ routesDir, defaultMode, i18n?, routes: [{ pattern, file, kind, mode, ssr?, prerender?, layouts, middleware, params, locales?, localesFrom? }], diagnostics, summary }`.                                                                   |
-| `components`  | `file?`                                               | `{ files: [{ file, components, islands, fileScope, hasStyles, errors }] }` for one file, or for every `.stsx`/`.tsx` file under `src/`.                                                                                                                                      |
-| `compile`     | `file?` or `source`, `target?` (`both`)               | `{ file, client: { code, css, cssDeps }, server: { code }, diagnostics }`: what the Vite plugin compiles, without source maps.                                                                                                                                               |
-| `render`      | `path`, `method?`, `headers?`, `maxLength?`, `strip?` | `{ url, status, headers, body, truncated }` from an in-process dev server. Redirects are returned, not followed. `strip: true` returns only the visible markup of an HTML page (no scripts, styles, link/meta tags, templates, hydration comments or `data-l-*` attributes). |
-| `dev_logs`    | `since?`, `level?`, `limit?` (100)                    | `{ available, entries: [{ id, time, level, source, message }] }`: the logs of the dev server that `render` started.                                                                                                                                                          |
+| Tool            | Input                                                 | Returns                                                                                                                                                                                                                                                                      |
+| --------------- | ----------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `docs_search`   | `query`, `limit?` (10)                                | `{ query, results: [{ topic, title, summary, score, snippet }] }`, best first; every term must occur in a page.                                                                                                                                                              |
+| `docs_get`      | `topic`                                               | The page as Markdown. A topic is a path (`concepts/signals`), a bare name (`signals`), a code (`LUM2001`) or `""` for the index. An exported name (`fetchJSON`) returns its reference section.                                                                               |
+| `ui_components` | `name?`                                               | With `@lumiose/ui` installed, `{ available: true, docs, components: [{ name, topic, summary, imports, parts, props, events, styling }], theme: { layers, properties } }`, or `{ component, theme }` for one `name`; `{ available: false, help }` without it.                 |
+| `check`         | `files?`, `project?`                                  | `lumiose check` as `{ ok, summary, diagnostics, notes? }`. With `files`, only their diagnostics, and `projectSummary` for the whole project.                                                                                                                                 |
+| `routes`        | none                                                  | `lumiose routes --format json`: `{ routesDir, defaultMode, i18n?, routes: [{ pattern, file, kind, mode, ssr?, prerender?, layouts, middleware, params, locales?, localesFrom? }], diagnostics, summary }`.                                                                   |
+| `components`    | `file?`                                               | `{ files: [{ file, components, islands, fileScope, hasStyles, errors }] }` for one file, or for every `.stsx`/`.tsx` file under `src/`.                                                                                                                                      |
+| `compile`       | `file?` or `source`, `target?` (`both`)               | `{ file, client: { code, css, cssDeps }, server: { code }, diagnostics }`: what the Vite plugin compiles, without source maps.                                                                                                                                               |
+| `render`        | `path`, `method?`, `headers?`, `maxLength?`, `strip?` | `{ url, status, headers, body, truncated }` from an in-process dev server. Redirects are returned, not followed. `strip: true` returns only the visible markup of an HTML page (no scripts, styles, link/meta tags, templates, hydration comments or `data-l-*` attributes). |
+| `dev_logs`      | `since?`, `level?`, `limit?` (100)                    | `{ available, entries: [{ id, time, level, source, message }] }`: the logs of the dev server that `render` started.                                                                                                                                                          |
 
 - **Diagnostics** (`check`, `compile`, `components`) have the shape of `lumiose check --format json`:
   `source`, `code`, `severity`, `file`, 1-based `line`/`column`/`endLine`/`endColumn`, `message`,
@@ -81,6 +82,15 @@ exist. stdout carries the protocol; console output of app code goes to stderr an
   running: later calls see file changes like `lumiose dev` does. Pages return their HTML; endpoints
   their response body. Render errors return the dev error page, and their details are in
   `dev_logs`.
+- **`@lumiose/ui`**: when the project has it installed, its docs (which ship in its package and
+  match its own version) join the docs tools as `ui/` topics: `docs_get("ui")` is its index and
+  `docs_get("ui/dialog")`, or `docs_get("dialog")`, a component's page. `ui_components` reads every
+  component page, which share one template: `parts` (`{ name, renders }` from the Anatomy table),
+  `props` (`{ part, name, type, default, description }` from the API tables), `events` (the callback
+  props, such as `onOpenChange`, and the native `on:` events the API names, such as `on:close`) and
+  `styling` (the classes, data attributes, state selectors and custom properties the Styling section
+  names, such as `lu-dialog`, `dialog[open]` and `--nested-dialogs`). `theme` lists the cascade
+  layers (`lu.core`, `lu.theme`) and the default theme's `--lu-` custom properties.
 - **`dev_logs`** returns `available: false` with an explanation until `render` started the dev
   server: the logs of a `lumiose dev` started in a terminal are not visible to the MCP server. Pass
   the last `id` you saw as `since` to read only newer entries; `level` is the minimum (`info`,
@@ -89,10 +99,10 @@ exist. stdout carries the protocol; console output of app code goes to stderr an
 
 ## Resources
 
-| URI                      | Content                                                             |
-| ------------------------ | ------------------------------------------------------------------- |
-| `lumiose://docs/<topic>` | Each docs page as Markdown, e.g. `lumiose://docs/concepts/signals`. |
-| `lumiose://routes`       | The route manifest, as the `routes` tool returns it (JSON).         |
+| URI                      | Content                                                                                                                |
+| ------------------------ | ---------------------------------------------------------------------------------------------------------------------- |
+| `lumiose://docs/<topic>` | Each docs page as Markdown, e.g. `lumiose://docs/concepts/signals`, and `lumiose://docs/ui/dialog` with `@lumiose/ui`. |
+| `lumiose://routes`       | The route manifest, as the `routes` tool returns it (JSON).                                                            |
 
 ## Boundaries
 
@@ -106,7 +116,8 @@ exist. stdout carries the protocol; console output of app code goes to stderr an
 
 ## Workflow for agents
 
-1. Look the feature up: `docs_search`, then `docs_get` (the docs match the installed version).
+1. Look the feature up: `docs_search`, then `docs_get` (the docs match the installed version). For
+   UI, `ui_components` lists the `@lumiose/ui` components to use instead of hand-written widgets.
 2. Make the change.
 3. `check` and fix every error; `docs_get` with a diagnostic's `docs` topic explains it.
 4. `render` the affected routes to see the HTML; `dev_logs` with `level: "warn"` shows problems.
