@@ -3,7 +3,7 @@
 use std::collections::{BTreeSet, HashMap};
 use std::sync::{Arc, RwLock};
 
-use lightningcss::error::ErrorLocation;
+use lightningcss::error::{ErrorLocation, ParserError};
 use lightningcss::rules::CssRuleList;
 use lightningcss::stylesheet::{MinifyOptions, ParserOptions, PrinterOptions, StyleSheet};
 use parcel_sourcemap::SourceMap;
@@ -59,7 +59,7 @@ pub fn process(input: &CssInput, options: &CssOptions) -> CssOutput {
             },
         );
         if let Ok(warnings) = warnings.read() {
-            for warning in warnings.iter() {
+            for warning in warnings.iter().filter(|w| !is_tailwind_at_rule(&w.kind)) {
                 diagnostics.push(block.lightning_diagnostic(
                     CssCode::InvalidCssIgnored,
                     warning.kind.to_string(),
@@ -120,6 +120,27 @@ pub fn process(input: &CssInput, options: &CssOptions) -> CssOutput {
         diagnostics,
         custom_properties_read: reads.into_iter().collect(),
     }
+}
+
+/// Tailwind CSS v4's at-rules (`@slot` is the placeholder in a `@custom-variant` body).
+/// Lightning CSS keeps unknown at-rules and prints them as written, so Tailwind's Vite plugin
+/// gets them after Lumiose; only the "Unknown at rule" warning is left out. Tailwind matches
+/// the names case-sensitively, so `@APPLY` still warns.
+const TAILWIND_AT_RULES: &[&str] = &[
+    "apply",
+    "config",
+    "custom-variant",
+    "plugin",
+    "reference",
+    "slot",
+    "source",
+    "theme",
+    "utility",
+    "variant",
+];
+
+fn is_tailwind_at_rule(error: &ParserError) -> bool {
+    matches!(error, ParserError::AtRuleInvalid(name) if TAILWIND_AT_RULES.contains(&name.as_ref()))
 }
 
 /// A block after the pre-pass: the text Lightning CSS parses and its way back to the source.

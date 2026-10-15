@@ -1,0 +1,2 @@
+=== css
+.card[data-l-dk8weaoz]{padding:0;@apply p-6 font-bold;}.card[data-l-dk8weaoz]{margin:--spacing(4)}.card[data-l-dk8weaoz] .title[data-l-dk8weaoz]{@apply text-xl;}

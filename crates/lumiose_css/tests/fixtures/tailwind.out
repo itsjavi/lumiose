@@ -1,0 +1,56 @@
+=== css
+@reference "../styles/app.css";
+
+@source "../node_modules/@my-company/ui-lib";
+
+@plugin "@tailwindcss/typography";
+
+@config "../../tailwind.config.js";
+
+@custom-variant theme-midnight (&:where([data-theme="midnight"] *));
+
+@custom-variant pointer-coarse {
+  @media (pointer: coarse) {
+      @slot;
+    }
+}
+
+@theme {
+  --color-mint-500: oklch(72% .11 178);
+}
+
+@utility content-auto {
+  content-visibility: auto;
+    &:hover { tab-size: 2; }
+}
+
+.card[data-l-3nufjgmn] {
+  padding: 0;
+
+  @apply p-6 font-bold hover:bg-red-500;
+
+  margin: --spacing(4);
+  border: 2px solid theme(--color-red-500);
+
+  @variant dark {
+    color: white;
+  }
+
+  & .title[data-l-3nufjgmn] {
+    @apply text-xl;
+  }
+}
+
+@made-up-rule foo;
+
+.b[data-l-3nufjgmn] {
+  @frobnicate x;
+}
+
+.c[data-l-3nufjgmn] {
+  @APPLY p-2;
+}
+=== diagnostics
+LUM3015 warning 865..869 ` foo`: Unknown at rule: @made-up-rule
+LUM3015 warning 889..891 ` x`: Unknown at rule: @frobnicate
+LUM3015 warning 908..912 ` p-2`: Unknown at rule: @APPLY

@@ -38,8 +38,11 @@ cargo +nightly fuzz run scan --fuzz-dir fuzz -- -max_total_time=300
 ```
 
 On macOS add `RUSTFLAGS="-Clink-arg=-undefined -Clink-arg=dynamic_lookup"` (a dependency also
-builds a dylib, which macOS would not link against the fuzzer's coverage symbols). A crash stops
-the run and writes its input to `fuzz/artifacts/<target>/crash-<hash>`; replay it with
+builds a dylib, which macOS would not link against the fuzzer's coverage symbols). cargo-fuzz
+builds for the target it was itself built for: with its prebuilt Linux binary, a static musl one,
+pass `--target x86_64-unknown-linux-gnu`, as the nightly workflow does, since AddressSanitizer
+needs a dynamically linked libc. A crash stops the run and writes its input to
+`fuzz/artifacts/<target>/crash-<hash>`; replay it with
 `cargo +nightly fuzz run <target> --fuzz-dir fuzz fuzz/artifacts/<target>/crash-<hash>`, and shrink
 it with `cargo +nightly fuzz tmin <target> --fuzz-dir fuzz <file>`. Add the minimized input to the
 crate's tests with the fix. The corpus, artifacts and build output are ignored by Git.

@@ -483,9 +483,26 @@ export function Toggle(props: { label: string }) {
 - **`@apply`, `theme()` and `--spacing()`** work in a block that starts with
   `@reference "../styles/app.css";` (the stylesheet that imports Tailwind), as in any CSS that
   Tailwind processes on its own. Without it, the build fails with "Cannot apply unknown utility
-  class". The compiler does not know Tailwind's at-rules yet: it keeps them and reports each
-  `@reference` and `@apply` as [LUM3015](../errors/LUM3015.md), a warning. Prefer utilities in the
-  markup and `var()` in blocks.
+  class". The block's selectors stay scoped: `.card { @apply p-6; }` styles only this file's
+  `.card`.
+
+  ```stsx
+  <style>
+    @reference "../styles/app.css";
+    .card {
+      @apply rounded-lg p-6 font-bold;
+      margin: --spacing(4);
+      border: 2px solid theme(--color-red-500);
+    }
+  </style>
+  ```
+
+  The compiler keeps Tailwind's at-rules as written for Tailwind's Vite plugin and does not report
+  them: `@apply`, `@reference`, `@theme`, `@utility`, `@variant`, `@custom-variant` (with
+  `@slot`), `@source`, `@plugin` and `@config`. Other unknown at-rules are still
+  [LUM3015](../errors/LUM3015.md) warnings, and so is `@APPLY`: Tailwind matches the names
+  case-sensitively.
+
 - **In the editor,** Lumiose's class completion lists the classes of style blocks and global
   stylesheets, not Tailwind's utilities. Tailwind CSS IntelliSense for VS Code gives those once it
   treats `.stsx` like JSX, in the workspace settings:
