@@ -1,7 +1,8 @@
 // A docs page: the header (section, title, lead), the Markdown blocks (the kit's CodeBlock for
 // code), prev/next links and the table of contents. Shared by /docs and /ui (TASK-387). A UI page
 // passes `demo`, which renders the live demo of an example (src/ui-demos), and `palette`, the default
-// theme's colours; the demos then appear above their code, and the page's first one at the top.
+// theme's colours; the demos then appear above their code. The page's first demo runs at the top
+// instead, once: its example points there, so no component renders twice (or its ids would).
 //
 // The Markdown's styles target only its own HTML (`.chunk`), so they never reach a demo: a demo's
 // preview resets what the site's unlayered base styles set (`all: revert-layer`), so the components
@@ -44,6 +45,8 @@ export function DocArticle(props: DocArticleProps) {
       : props.page.blocks.flatMap((block) =>
           block.kind === "code" && block.demo !== undefined ? [block.demo] : [],
         );
+  /** The page's first demo, which runs at the top. */
+  const first = () => demos()[0];
   const preview = (demo: Demo) => (
     <div class="preview" data-demo={demo.id}>
       {props.demo!(demo.id)}
@@ -63,11 +66,11 @@ export function DocArticle(props: DocArticleProps) {
           <h1>{props.page.title}</h1>
           {props.page.summary !== "" && <p class="lead" innerHTML={props.page.summaryHtml} />}
         </header>
-        {demos().length > 0 && (
-          <figure class="demo hero">
-            {preview(demos()[0]!)}
+        {first() !== undefined && (
+          <figure class="demo hero" id="live">
+            {preview(first()!)}
             <figcaption class="note">
-              A live demo, with the default theme. <a href={`#demo-${demos()[0]!.id}`}>Its code</a>
+              A live demo, with the default theme. <a href={`#demo-${first()?.id}`}>Its code</a>
             </figcaption>
           </figure>
         )}
@@ -79,12 +82,21 @@ export function DocArticle(props: DocArticleProps) {
               <div class="chunk" innerHTML={block.html} />
             ) : block.demo !== undefined && props.demo !== undefined ? (
               <figure class="demo" id={`demo-${block.demo.id}`}>
-                {preview(block.demo)}
-                <figcaption class="note">
-                  {block.demo.island
-                    ? "Live: an island, hydrated when it scrolls into view"
-                    : "Live: server-rendered, no island"}
-                </figcaption>
+                {block.demo.id === first()?.id ? (
+                  <figcaption class="note">
+                    <a href="#live">Live at the top of the page</a>:{" "}
+                    {block.demo.island ? "an island" : "server-rendered, no island"}
+                  </figcaption>
+                ) : (
+                  <>
+                    {preview(block.demo)}
+                    <figcaption class="note">
+                      {block.demo.island
+                        ? "Live: an island, hydrated when it scrolls into view"
+                        : "Live: server-rendered, no island"}
+                    </figcaption>
+                  </>
+                )}
                 <CodeBlock code={block.code} lang={block.lang} title={block.title} highlight={highlight} />
               </figure>
             ) : (
@@ -334,6 +346,10 @@ export function DocArticle(props: DocArticleProps) {
     background: $color.sunken;
     color: $color.muted;
     font-size: $text.sm;
+  }
+  .demo > .note:first-child {
+    border-block-start: 1px solid $color.border;
+    border-radius: $radius.lg $radius.lg 0 0;
   }
   .hero .note {
     padding-inline: 0;

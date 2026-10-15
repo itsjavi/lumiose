@@ -8,6 +8,9 @@ import { expect, test, type Page } from "@playwright/test";
 const WCAG_AA = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"];
 
 /** One URL per page type. */
+/** The time a test that visits every page gets: it grows with the list. */
+const PER_PAGE = 5_000;
+
 const PAGES = [
   { name: "landing", path: "/" },
   { name: "docs page", path: "/docs/concepts/styles" },
@@ -29,6 +32,11 @@ const PAGES = [
   { name: "UI Popover", path: "/ui/popover" },
   { name: "UI Tabs", path: "/ui/tabs" },
   { name: "UI Tooltip", path: "/ui/tooltip" },
+  { name: "UI Combobox", path: "/ui/combobox" },
+  { name: "UI Select", path: "/ui/select" },
+  { name: "UI Collapsible", path: "/ui/collapsible" },
+  { name: "UI Accordion", path: "/ui/accordion" },
+  { name: "UI Toast", path: "/ui/toast" },
 ];
 
 /** Opens the first demo of a UI page: its popup, or (Tabs) another panel. */
@@ -64,6 +72,40 @@ const OPEN_DEMOS: { name: string; path: string; open: (page: Page) => Promise<vo
     open: async (page) => {
       await page.locator(".hero .preview").getByRole("tab", { name: "Password" }).click();
       await expect(page.locator(".hero .preview").getByRole("tabpanel")).toHaveText(/password/);
+    },
+  },
+  {
+    name: "Combobox",
+    path: "/ui/combobox",
+    open: async (page) => {
+      await page.locator(".hero .preview").getByRole("button", { name: "Show cities" }).click();
+      await expect(page.getByRole("listbox").first()).toBeVisible();
+    },
+  },
+  {
+    name: "Collapsible",
+    path: "/ui/collapsible",
+    open: async (page) => {
+      await page.locator(".hero .preview summary").click();
+      await expect(page.locator(".hero .preview details")).toHaveAttribute("open");
+    },
+  },
+  {
+    name: "Accordion",
+    path: "/ui/accordion",
+    open: async (page) => {
+      await page.locator(".hero .preview summary", { hasText: "Can I return it?" }).click();
+      await expect(
+        page.locator(".hero .preview").getByRole("region", { name: "Can I return it?" }),
+      ).toBeVisible();
+    },
+  },
+  {
+    name: "Toast",
+    path: "/ui/toast",
+    open: async (page) => {
+      await page.locator(".hero .preview").getByRole("button", { name: "Save" }).click();
+      await expect(page.getByRole("status").filter({ hasText: "Saved" }).first()).toBeVisible();
     },
   },
   {
@@ -226,6 +268,7 @@ for (const scheme of ["light", "dark"] as const) {
   test(`axe: text keeps AA contrast over decorative layers at their strongest (${scheme})`, async ({
     page,
   }) => {
+    test.setTimeout(PAGES.length * PER_PAGE);
     await page.emulateMedia({ colorScheme: scheme });
     const failures: string[] = [];
     for (const { name, path } of PAGES) {
@@ -348,6 +391,7 @@ for (const [width, height] of [
 }
 
 test("reduced motion stops non-essential motion", async ({ page }) => {
+  test.setTimeout(PAGES.length * PER_PAGE);
   await page.emulateMedia({ reducedMotion: "reduce" });
   for (const { path } of PAGES) {
     await page.goto(path);
@@ -368,6 +412,7 @@ test("reduced motion stops non-essential motion", async ({ page }) => {
 test("no ambient motion runs longer than 5 seconds (2.2.2 needs a pause control for it)", async ({
   page,
 }) => {
+  test.setTimeout(PAGES.length * PER_PAGE);
   for (const { path } of PAGES) {
     await page.goto(path);
     await settle(page);
@@ -475,6 +520,7 @@ test("keyboard focus is visible and not hidden by the sticky header", async ({ p
 });
 
 test("pointer targets are at least 24 by 24 px, or spaced as 2.5.8 allows", async ({ page }) => {
+  test.setTimeout(PAGES.length * PER_PAGE);
   for (const { path } of PAGES) {
     await page.goto(path);
     await settle(page);

@@ -3,7 +3,18 @@
 // drives them, the site's styles stay out of them, and the old /docs/ui URLs redirect.
 import { expect, test, type Page } from "@playwright/test";
 
-const COMPONENTS = ["Dialog", "Menu", "Popover", "Tabs", "Tooltip"];
+const COMPONENTS = [
+  "Accordion",
+  "Collapsible",
+  "Combobox",
+  "Dialog",
+  "Menu",
+  "Popover",
+  "Select",
+  "Tabs",
+  "Toast",
+  "Tooltip",
+];
 
 /** A demo's preview: the page's first one at the top, or an example's by id (`tabs-2`). */
 function preview(page: Page, id?: string) {
@@ -32,12 +43,19 @@ test("the UI section is in the site navigation, with a page per component", asyn
     await expect(page).toHaveTitle(`${name} · Lumiose UI`);
     // A live demo at the top, and every live example above its code.
     await expect(preview(page)).not.toBeEmpty();
-    const demos = page.locator("figure.demo[id]");
+    const demos = page.locator('figure.demo[id^="demo-"]');
     expect(await demos.count()).toBeGreaterThan(0);
-    for (const demo of await demos.all()) {
-      await expect(demo.locator(".preview")).not.toBeEmpty();
+    // The first example runs at the top, once (its ids would repeat); the others run in place.
+    const [first, ...others] = await demos.all();
+    await expect(first!.getByRole("link", { name: "Live at the top of the page" })).toHaveAttribute(
+      "href",
+      "#live",
+    );
+    await expect(first!.locator(".preview")).toHaveCount(0);
+    for (const demo of [first!, ...others]) {
       await expect(demo.locator("pre code")).toContainText(`export function`);
     }
+    for (const demo of others) await expect(demo.locator(".preview")).not.toBeEmpty();
   }
 });
 
@@ -48,7 +66,11 @@ test("server-rendered demos work without JavaScript", async ({ browser }) => {
   await preview(page).getByRole("button", { name: "Delete project…" }).click();
   const dialog = page.getByRole("alertdialog", { name: "Delete project?" });
   await expect(dialog).toBeVisible();
-  await dialog.getByRole("button", { name: "Cancel" }).click();
+  // In a page without JavaScript, Playwright's stability check never settles on a button in a
+  // modal dialog, though a click lands: click it once it shows.
+  const cancel = dialog.getByRole("button", { name: "Cancel" });
+  await expect(cancel).toBeVisible();
+  await cancel.click({ force: true });
   await expect(dialog).toBeHidden();
   await page.goto("/ui/popover");
   await preview(page).getByRole("button", { name: "Notifications" }).click();

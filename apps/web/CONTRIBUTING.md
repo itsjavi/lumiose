@@ -32,8 +32,9 @@ ships, `packages/ui/docs`, in the order of `packages/ui/docs/llms.txt`. Nothing 
   them at `/ui/<page>` (the README at `/ui`). The docs navigation lists them in its UI section,
   and the old `/docs/ui/*` URLs are static redirects.
 - **Live demos.** Every ` ```tsx check ` example (the ones the docs tests type-check) that
-  exports one component without props is also a live demo. It is shown above its code, and the
-  page's first demo also appears at the top. `scripts/ui-demos.ts` writes the examples to
+  exports one component without props is also a live demo. It is shown above its code, except
+  the page's first one, which runs at the top instead: a component rendered twice would repeat its
+  ids. `scripts/ui-demos.ts` writes the examples to
   `src/ui-demos/` (generated, committed), with `UiDemo`, which renders them by id. An example
   is server-rendered, so it works without JavaScript as far as its component does. It is an
   island (`client:visible`) when it uses signals, `bind:`, `on:` or an event prop.
