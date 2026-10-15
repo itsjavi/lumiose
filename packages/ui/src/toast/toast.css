@@ -1,0 +1,44 @@
+/*
+ * Toast's viewport is a manual popover once its client script runs: in the top layer, as a box
+ * fixed to the end of the window's bottom edge, without the popover's default border, padding,
+ * colours or centring; before the script (and without it) the same box, out of the top layer.
+ * `<lu-toast-viewport>`, a custom element, is inline until styled. Toasts past the limit are
+ * `hidden`, whatever display a stylesheet gives toasts (an important declaration in this first
+ * layer wins over every later one). A toast that swipes leaves the pointer's moves to its script
+ * rather than scrolling the page along its axes.
+ */
+@layer lu.core, lu.theme;
+
+@layer lu.core {
+  lu-toast-viewport {
+    display: block;
+    position: fixed;
+    inset: auto;
+    inset-block-end: 0;
+    inset-inline-end: 0;
+    inline-size: auto;
+    block-size: auto;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    overflow: visible;
+  }
+  lu-toast-viewport > [hidden] {
+    display: none !important;
+  }
+  lu-toast-viewport > :is([data-swipe-directions~="up"], [data-swipe-directions~="down"]) {
+    touch-action: pan-x;
+  }
+  lu-toast-viewport > :is([data-swipe-directions~="left"], [data-swipe-directions~="right"]) {
+    touch-action: pan-y;
+  }
+  lu-toast-viewport
+    > :is([data-swipe-directions~="up"], [data-swipe-directions~="down"]):is(
+      [data-swipe-directions~="left"],
+      [data-swipe-directions~="right"]
+    ) {
+    touch-action: none;
+  }
+}

@@ -30,6 +30,15 @@ export default function Home() {
         <li>
           <a href="/select">Select</a> (<a href="/select/island">in an island</a>)
         </li>
+        <li>
+          <a href="/collapsible">Collapsible</a> (<a href="/collapsible/island">in an island</a>)
+        </li>
+        <li>
+          <a href="/accordion">Accordion</a> (<a href="/accordion/island">in an island</a>)
+        </li>
+        <li>
+          <a href="/toast">Toast</a> (<a href="/toast/island">from an island</a>)
+        </li>
       </ul>
     </article>
   );

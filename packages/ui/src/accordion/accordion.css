@@ -1,0 +1,20 @@
+/*
+ * Accordion's items are native <details>: the browser shows and hides their panels. What they need
+ * on top: `<lu-accordion>`, a custom element, is inline until styled: it is a block, like the
+ * `<div>` it stands for; the heading inside a trigger stays on the same line as the <summary>'s
+ * marker; and a disabled trigger (aria-disabled) ignores the pointer, also before the client
+ * script loads.
+ */
+@layer lu.core, lu.theme;
+
+@layer lu.core {
+  lu-accordion {
+    display: block;
+  }
+  lu-accordion > details > summary > :is(h1, h2, h3, h4, h5, h6) {
+    display: inline;
+  }
+  summary[aria-disabled="true"] {
+    pointer-events: none;
+  }
+}

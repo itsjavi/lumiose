@@ -1,0 +1,12 @@
+import { Title } from "lumiose";
+import { CollapsibleSignals } from "../../../islands/CollapsibleSignals.tsx";
+
+export default function CollapsibleIslandPage() {
+  return (
+    <>
+      <Title>Collapsible in an island, bound to a signal</Title>
+      <h1>Collapsible in an island, bound to a signal</h1>
+      <CollapsibleSignals client:load />
+    </>
+  );
+}

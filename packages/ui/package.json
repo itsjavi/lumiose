@@ -44,6 +44,12 @@
     "./checkbox-group": "./src/checkbox-group/checkbox-group.tsx",
     "./radio-group": "./src/radio-group/radio-group.tsx",
     "./switch": "./src/switch/switch.tsx",
+    "./collapsible": "./src/collapsible/collapsible.tsx",
+    "./collapsible.css": "./src/collapsible/collapsible.css",
+    "./accordion": "./src/accordion/accordion.tsx",
+    "./accordion.css": "./src/accordion/accordion.css",
+    "./toast": "./src/toast/toast.tsx",
+    "./toast.css": "./src/toast/toast.css",
     "./themes/default.css": "./src/themes/default.css",
     "./package.json": "./package.json"
   },
@@ -74,6 +80,12 @@
       "./checkbox-group": "./dist/checkbox-group/checkbox-group.tsx",
       "./radio-group": "./dist/radio-group/radio-group.tsx",
       "./switch": "./dist/switch/switch.tsx",
+      "./collapsible": "./dist/collapsible/collapsible.tsx",
+      "./collapsible.css": "./dist/collapsible/collapsible.css",
+      "./accordion": "./dist/accordion/accordion.tsx",
+      "./accordion.css": "./dist/accordion/accordion.css",
+      "./toast": "./dist/toast/toast.tsx",
+      "./toast.css": "./dist/toast/toast.css",
       "./themes/default.css": "./dist/themes/default.css",
       "./package.json": "./package.json"
     }

@@ -1,0 +1,33 @@
+import { Toast } from "@lumiose/ui";
+import { Title } from "lumiose";
+
+// Server-rendered, no island: toasts in the page's HTML, as a form action's result renders them;
+// <lu-toast-viewport>'s script times and closes them.
+export default function ToastPage() {
+  return (
+    <>
+      <Title>Toast</Title>
+      <h1>Toast</h1>
+      <p>The toasts below come with the page.</p>
+      <Toast.Viewport class="lu-toast-viewport">
+        <Toast.Root
+          class="lu-toast"
+          toast={{ title: "Project saved", description: "Your changes are live.", timeout: 0 }}
+          data-testid="saved"
+        >
+          <Toast.Title />
+          <Toast.Description />
+          <Toast.Close aria-label="Close">×</Toast.Close>
+        </Toast.Root>
+        <Toast.Root
+          class="lu-toast"
+          toast={{ title: "Link copied", timeout: 1500 }}
+          data-testid="short"
+        >
+          <Toast.Title />
+          <Toast.Close aria-label="Close">×</Toast.Close>
+        </Toast.Root>
+      </Toast.Viewport>
+    </>
+  );
+}

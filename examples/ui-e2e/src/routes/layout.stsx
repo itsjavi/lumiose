@@ -23,6 +23,12 @@ export default function Root(props: LayoutProps<"/">) {
         <a href="/select/island">Select in an island</a>
         <a href="/form">Form</a>
         <a href="/form/island">Form in an island</a>
+        <a href="/collapsible">Collapsible</a>
+        <a href="/collapsible/island">Collapsible in an island</a>
+        <a href="/accordion">Accordion</a>
+        <a href="/accordion/island">Accordion in an island</a>
+        <a href="/toast">Toast</a>
+        <a href="/toast/island">Toasts from an island</a>
       </nav>
       <main>{props.children}</main>
     </div>

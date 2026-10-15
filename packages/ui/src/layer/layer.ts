@@ -4,9 +4,10 @@
 //
 // - On an outside press: a press of the main button by the primary pointer whose press and release
 //   both land outside the layer, as in Base UI and Zag. A press on a scrollbar, on a node the press
-//   removed, or inside the popup's box (a password manager's overlay) is not outside. Native light
-//   dismiss would also close on a right-click or a second finger, and cannot be cancelled: that is
-//   why the scripts make their popups manual instead of leaving dismissal to `popover="auto"`.
+//   removed, inside the popup's box (a password manager's overlay) or in a toast is not outside.
+//   Native light dismiss would also close on a right-click or a second finger, and cannot be
+//   cancelled: that is why the scripts make their popups manual instead of leaving dismissal to
+//   `popover="auto"`.
 // - On a close request: an Escape that no handler took (`preventDefault`), or the Android back
 //   gesture, through a `CloseWatcher` per layer where the browser has one, else an Escape listener.
 //   One request closes the topmost layer only.
@@ -43,6 +44,8 @@ let press: { target: Element; main: boolean; x: number; y: number } | undefined;
 /** Whether a press at `x`, `y` on `node` is outside `layer`. */
 function outside({ layer }: Entry, node: Element, x: number, y: number): boolean {
   if (!node.isConnected || layer.contains(node)) return false;
+  // Toasts persist: a press in one leaves the open layers alone (TASK-371).
+  if (node.closest("lu-toast-viewport")) return false;
   const box = layer.popup.getBoundingClientRect();
   const empty = box.width === 0 && box.height === 0;
   return empty || !(x >= box.left && x <= box.right && y >= box.top && y <= box.bottom);

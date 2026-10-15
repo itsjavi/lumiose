@@ -1,0 +1,21 @@
+import { Title } from "lumiose";
+import { ToastSignals } from "../../../islands/ToastSignals.tsx";
+
+export default function ToastIslandPage() {
+  return (
+    <>
+      <Title>Toasts from an island's manager</Title>
+      <h1>Toasts from an island's manager</h1>
+      <ToastSignals client:load />
+    </>
+  );
+}
+
+<style>
+  :global(.actions) {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    align-items: center;
+  }
+</style>

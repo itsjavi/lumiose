@@ -1,0 +1,98 @@
+import { Accordion } from "@lumiose/ui";
+import { Title } from "lumiose";
+
+// Server-rendered, no island: native <details> items, <lu-accordion>'s script adds the keys.
+export default function AccordionPage() {
+  return (
+    <>
+      <Title>Accordion</Title>
+      <h1>Accordion</h1>
+      <section aria-labelledby="single-heading">
+        <h2 id="single-heading">One open at a time</h2>
+        <Accordion.Root class="lu-accordion" defaultValue={["returns"]} data-testid="single">
+          <Accordion.Item value="shipping">
+            <Accordion.Header>
+              <Accordion.Trigger>Shipping</Accordion.Trigger>
+            </Accordion.Header>
+            <Accordion.Panel>Orders ship within two days.</Accordion.Panel>
+          </Accordion.Item>
+          <Accordion.Item value="returns">
+            <Accordion.Header>
+              <Accordion.Trigger>Returns</Accordion.Trigger>
+            </Accordion.Header>
+            <Accordion.Panel>
+              Return anything within 30 days. <a href="#policy">Policy</a>
+            </Accordion.Panel>
+          </Accordion.Item>
+          <Accordion.Item value="gifts" disabled>
+            <Accordion.Header>
+              <Accordion.Trigger>Gift cards</Accordion.Trigger>
+            </Accordion.Header>
+            <Accordion.Panel>Coming soon.</Accordion.Panel>
+          </Accordion.Item>
+          <Accordion.Item value="contact">
+            <Accordion.Header>
+              <Accordion.Trigger>Contact</Accordion.Trigger>
+            </Accordion.Header>
+            <Accordion.Panel>
+              <p id="find-me">Write to help@example.com.</p>
+            </Accordion.Panel>
+          </Accordion.Item>
+        </Accordion.Root>
+      </section>
+      <section aria-labelledby="multiple-heading">
+        <h2 id="multiple-heading">Several open, no looping</h2>
+        <Accordion.Root
+          class="lu-accordion"
+          multiple
+          loopFocus={false}
+          defaultValue={["a", "b"]}
+          data-testid="multiple"
+        >
+          <Accordion.Item value="a">
+            <Accordion.Header>
+              <Accordion.Trigger>First</Accordion.Trigger>
+            </Accordion.Header>
+            <Accordion.Panel>One.</Accordion.Panel>
+          </Accordion.Item>
+          <Accordion.Item value="b">
+            <Accordion.Header>
+              <Accordion.Trigger>Second</Accordion.Trigger>
+            </Accordion.Header>
+            <Accordion.Panel>Two.</Accordion.Panel>
+          </Accordion.Item>
+          <Accordion.Item value="c">
+            <Accordion.Header>
+              <Accordion.Trigger>Third</Accordion.Trigger>
+            </Accordion.Header>
+            <Accordion.Panel>Three.</Accordion.Panel>
+          </Accordion.Item>
+        </Accordion.Root>
+      </section>
+      <section aria-labelledby="horizontal-heading">
+        <h2 id="horizontal-heading">Horizontal keys</h2>
+        <Accordion.Root class="lu-accordion" orientation="horizontal" data-testid="horizontal">
+          <Accordion.Item value="x">
+            <Accordion.Header>
+              <Accordion.Trigger>Left</Accordion.Trigger>
+            </Accordion.Header>
+            <Accordion.Panel>Left panel.</Accordion.Panel>
+          </Accordion.Item>
+          <Accordion.Item value="y">
+            <Accordion.Header>
+              <Accordion.Trigger>Right</Accordion.Trigger>
+            </Accordion.Header>
+            <Accordion.Panel>Right panel.</Accordion.Panel>
+          </Accordion.Item>
+        </Accordion.Root>
+      </section>
+      <p id="policy">The full returns policy.</p>
+    </>
+  );
+}
+
+<style>
+  section {
+    margin-block-end: 2rem;
+  }
+</style>

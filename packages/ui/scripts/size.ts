@@ -99,6 +99,24 @@ const COMPONENTS: Component[] = [
     scripts: ["checkbox/checkbox.script.ts"],
   },
   { name: "switch", module: "switch/switch.tsx", scripts: ["checkbox/checkbox.script.ts"] },
+  {
+    name: "collapsible",
+    module: "collapsible/collapsible.tsx",
+    scripts: ["collapsible/collapsible.script.ts"],
+    css: "collapsible/collapsible.css",
+  },
+  {
+    name: "accordion",
+    module: "accordion/accordion.tsx",
+    scripts: ["accordion/accordion.script.ts"],
+    css: "accordion/accordion.css",
+  },
+  {
+    name: "toast",
+    module: "toast/toast.tsx",
+    scripts: ["toast/toast.script.ts"],
+    css: "toast/toast.css",
+  },
 ];
 
 const CLIENT_SCRIPT = /\?client$/;
