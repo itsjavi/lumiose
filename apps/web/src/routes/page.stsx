@@ -209,6 +209,15 @@ export default function Home() {
           <a href={href("/benchmarks")}>benchmarks</a>.
         </p>
         <p class="note">Astro's interactive islands need a second UI framework.</p>
+        <p class="note">
+          Before you pick Lumiose: what 0.x allows and who maintains it, in{" "}
+          <a href={href("/docs/[[...path]]", { path: "stability" })}>Stability</a>, and the cases
+          where another stack fits better, in{" "}
+          <a href={href("/docs/[[...path]]", { path: "when-not-to-use" })}>
+            When not to use Lumiose
+          </a>
+          .
+        </p>
       </section>
 
       <section class="section" aria-labelledby="why-title">

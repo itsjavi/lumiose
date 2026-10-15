@@ -121,6 +121,9 @@ export default function Counter() {
 <p><sub>JS on a server page: what the fullstack comparison's issue tracker loads for its home page, brotli (2026-10-12 · Apple M1 Max (10 cores) · macOS 27.0.1 · Node 26.8.1). Client speed: js-framework-benchmark's weighted factor, where 1.00 is the fastest framework in the run and vanilla JS scores 1.00. Server speed: renders per second of the SSR benchmark's 5,000-component page to an HTML string (2026-10-12, Node v26.8.1, Apple M1 Max (10 cores, 32 GB), darwin 27.0.0 arm64), then requests per second on the fullstack comparison's home page (2026-10-12 · Apple M1 Max (10 cores) · macOS 27.0.1 · Node 26.8.1). Both React rows use React's client and rendering entries. Rows after Lumiose are ordered by npm downloads of each stack's main package (2026-09-10 to 2026-10-09). Astro's interactive islands need a second UI framework. Method and every run: <a href="https://itsjavi.com/lumiose/benchmarks/">benchmarks</a>.</sub></p>
 <!-- /generated:compare -->
 
+Not every project fits: [When not to use Lumiose](https://itsjavi.com/lumiose/docs/when-not-to-use/) names the cases
+where another stack is the better choice today.
+
 ## Showcase
 
 <table>
@@ -154,6 +157,14 @@ with `lumiose docs`, or through [`llms.txt`](https://itsjavi.com/lumiose/llms.tx
 [Coming from React](https://itsjavi.com/lumiose/docs/coming-from/react/) (or Next.js, React Router
 and Solid) and
 [Rendering modes](https://itsjavi.com/lumiose/docs/concepts/rendering-modes/).
+
+## Stability
+
+Lumiose is 0.x: any minor release may break the API, and breaking changes ship without migration paths until the first
+external production app or 1.0. The [Stability](https://itsjavi.com/lumiose/docs/stability/) page has the 1.0
+criteria, what the API freeze covers, the supported Node.js versions and browsers, and who maintains Lumiose. Running
+it in production? Add your app to the [Used by](https://itsjavi.com/lumiose/showcase/#used-by) list. Security reports go
+through the [security policy](SECURITY.md).
 
 ## Working on Lumiose
 

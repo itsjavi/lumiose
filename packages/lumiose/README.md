@@ -93,6 +93,14 @@ The docs ship inside this package, so they always match the installed version: r
 [website](https://itsjavi.com/lumiose/docs/). Coming from React, Next.js, React Router or Solid? Start
 with the [Coming from](https://itsjavi.com/lumiose/docs/coming-from/react/) guides.
 
+## Stability
+
+Lumiose is 0.x: any minor release may break the API. The
+[Stability](https://itsjavi.com/lumiose/docs/stability/) page has the 1.0 criteria, the supported
+Node.js versions and browsers, and who maintains Lumiose; [When not to use
+Lumiose](https://itsjavi.com/lumiose/docs/when-not-to-use/) names the cases where another framework
+fits better.
+
 ## License
 
 [MIT](https://github.com/itsjavi/lumiose/blob/main/LICENSE)

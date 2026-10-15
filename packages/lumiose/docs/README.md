@@ -26,6 +26,8 @@ mistakes** and **Related**.
 ## Start here
 
 - [Getting started](getting-started.md): Create a project, configure TypeScript and Vite, and render a first component.
+- [Stability](stability.md): What 0.x allows, the 1.0 criteria and the API freeze, supported Node.js versions and browsers, and who maintains Lumiose.
+- [When not to use Lumiose](when-not-to-use.md): The cases where another framework is the better choice today, and what to use instead.
 
 ## Coming from
 
@@ -101,7 +103,7 @@ mistakes** and **Related**.
 
 ## Status of this version
 
-Lumiose is pre-1.0, so APIs may still change between minor versions. The docs describe the
+Lumiose is pre-1.0, so APIs may change in any minor version ([Stability](stability.md)). The docs describe the
 designed API; where this version does not implement something yet, the page says so in a
 **Status** note. In short:
 

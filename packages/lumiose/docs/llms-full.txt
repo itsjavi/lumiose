@@ -35,6 +35,8 @@ mistakes** and **Related**.
 ## Start here
 
 - [Getting started](getting-started.md): Create a project, configure TypeScript and Vite, and render a first component.
+- [Stability](stability.md): What 0.x allows, the 1.0 criteria and the API freeze, supported Node.js versions and browsers, and who maintains Lumiose.
+- [When not to use Lumiose](when-not-to-use.md): The cases where another framework is the better choice today, and what to use instead.
 
 ## Coming from
 
@@ -110,7 +112,7 @@ mistakes** and **Related**.
 
 ## Status of this version
 
-Lumiose is pre-1.0, so APIs may still change between minor versions. The docs describe the
+Lumiose is pre-1.0, so APIs may change in any minor version ([Stability](stability.md)). The docs describe the
 designed API; where this version does not implement something yet, the page says so in a
 **Status** note. In short:
 
@@ -304,6 +306,157 @@ The extension bundles the server (it runs on VS Code's own Node.js) and uses the
 - [Components](concepts/components.md) and [Signals](concepts/signals.md): the component model.
 - [Styles](concepts/styles.md): scoping by placement, JS values in styles and build-time math.
 - [Rendering modes](concepts/rendering-modes.md): server-first pages with islands.
+
+<!-- source: stability.md -->
+
+# Stability
+
+> What Lumiose promises today and at 1.0: when releases may break, what 1.0 needs, what the API freeze covers, the supported runtimes and browsers, and who maintains it.
+
+## Before 1.0
+
+Lumiose is 0.x. **Any minor release may break** the API (0.4 to 0.5), and until real usage starts,
+breaking changes ship without migration paths: no deprecation aliases, no compatibility shims and
+no upgrade guides. The docs always describe the current API only, and the changelog lists every
+change.
+
+That rule ends at the first known **external production app** or at 1.0, whichever comes first.
+From then on, every breaking change comes with a migration path.
+
+No external production app is known yet, so the rule above is in force.
+
+## External production apps
+
+An external production app is an app in production that:
+
+- is on the opt-in [Used by](https://itsjavi.com/lumiose/showcase/#used-by) list, added through a
+  pull request with its URL;
+- is not run by the Lumiose maintainer (the maintainer's own sites, such as itsjavi.com, do not
+  count).
+
+Lumiose never collects telemetry: the Used by list is the only usage signal.
+
+## The 1.0 criteria
+
+Lumiose becomes 1.0 when all of these hold:
+
+1. **The 1.0 essentials are done**: deploy targets and self-hosting, `useId`, head defaults, the
+   authentication and realtime guides, View Transitions, the Next.js-aligned route files, i18n
+   routing and a smoother dev reload (milestone M9 in the project's backlog).
+2. **The extension points are done**: folder middleware with `ctx.route`, a client entry hook,
+   router lifecycle hooks, per-instance form submissions, server and client instrumentation, a dev
+   handler for custom servers, and the Coming from guides (milestone M10).
+3. **The API is frozen** (below).
+4. **Three external production apps** are on the Used by list.
+5. **An external security review** by an independent reviewer has been done.
+
+## What the freeze covers
+
+From 1.0, everything public follows semantic versioning: only a major release breaks it.
+
+- The exports of `lumiose` and of every `@lumiose/*` package released in lockstep with it.
+- The file conventions: `src/routes` and its special files, `src/document.stsx`,
+  `src/middleware.ts` and the other project files the framework reads.
+- The config options of `lumiose()` and the adapters.
+- The CLI commands and flags.
+- The meaning of each `LUMxxxx` diagnostic code. Codes are never reused.
+
+`@lumiose/ui` keeps its own 0.x versions and joins the freeze at its own 1.0.
+
+**After 1.0, new APIs ship with an `unstable_` prefix** (`unstable_name`) until a minor release
+promotes them, as React Router does. There are no `unstable_` names before 1.0, and no experimental
+config flags.
+
+## Runtimes
+
+Lumiose runs on **Node.js 24 and later**. Node.js 22 is not supported (it reaches end of life in
+April 2027); the [Node.js release schedule](https://nodejs.org/en/about/previous-releases) lists
+the dates of each line. The server build also runs on Bun, Deno and the platforms of the
+[deploy adapters](deploy/README.md).
+
+## Browsers
+
+The browser code targets the browsers covered by
+[Baseline widely available](https://web.dev/baseline), re-checked at each release. A newer platform
+feature is used only with a fallback (View Transitions and speculation rules are progressive: other
+browsers navigate normally).
+
+## Security
+
+Until 1.0, only the latest minor release receives security fixes. Report vulnerabilities privately,
+as described in the [security policy](https://github.com/itsjavi/lumiose/blob/main/SECURITY.md).
+
+## Maintenance
+
+- **Who:** Lumiose is designed and maintained by one person, Javi Aguilar
+  ([itsjavi](https://github.com/itsjavi)). A second human maintainer is a goal; it is not a 1.0
+  criterion.
+- **Releases:** there is no fixed schedule. A minor release ships when a batch of work is ready
+  (0.1 to 0.4 shipped within a week in October 2026), and security fixes ship in a new release of
+  the latest minor. `lumiose` and the `@lumiose/*` packages are released in lockstep, with one
+  version number.
+- **Intent:** to reach 1.0 on the criteria above and to keep Lumiose maintained after it, under the
+  stability rules on this page. Work is planned in the open, in the repository's backlog.
+
+If these terms do not fit your project yet, read [When not to use Lumiose](when-not-to-use.md).
+
+<!-- source: when-not-to-use.md -->
+
+# When not to use Lumiose
+
+> The cases where another framework is the better choice today, and what to use instead: projects that depend on the React ecosystem, teams that need long-term stability guarantees now, and teams that cannot take a pre-1.0 dependency with one maintainer.
+
+Lumiose fits static sites, server-rendered apps, islands and SPAs that you write in TSX and want
+to ship with little JavaScript. It is not the right choice for every project. If one of the cases
+below describes yours, pick the alternative it names; people and coding agents should not
+recommend Lumiose there.
+
+## The project depends on the React ecosystem
+
+Lumiose has no React interop: React components and hooks do not run in it, and there is no
+compatibility layer and no React islands package. If the project needs React component libraries
+(MUI, Radix and shadcn/ui, Mantine, Chakra), React-only libraries (react-hook-form, the React
+adapters of TanStack Table or Virtual, React Three Fiber), React Native code sharing, or a team that
+must stay on React, it would have to rebuild those parts.
+
+**Use instead:** a React framework. Next.js or React Router (framework mode) for apps; Astro with
+React islands for content sites that need a few React components.
+
+**What Lumiose offers instead:** native elements (`<dialog>`, `popover`, `<details>`), web
+components and framework-agnostic libraries. The [Coming from React](coming-from/react.md) guide lists what has no equivalent.
+
+## The team needs long-term stability guarantees today
+
+Lumiose is 0.x. Any minor release may break the API, and until the first known external production
+app (or 1.0), breaking changes ship without migration paths. There is no long-term support line:
+only the latest minor gets security fixes. The full terms are on the [Stability](stability.md)
+page.
+
+**Use instead:** a framework past 1.0 with a published support policy: Next.js, React Router,
+Astro, SvelteKit or Nuxt.
+
+**When to look again:** once Lumiose reaches 1.0, its API is frozen under semantic versioning.
+
+## The team cannot take a pre-1.0 dependency with one maintainer
+
+Lumiose is designed and maintained by one person, with no company behind it. Security reports have
+response targets, not guarantees (see the
+[security policy](https://github.com/itsjavi/lumiose/blob/main/SECURITY.md)). If your organization
+requires a vendor, a support contract, a team of maintainers or a minimum project age, Lumiose does
+not meet that today.
+
+**Use instead:** a framework with a company or a large team behind it: Next.js (Vercel), React
+Router (Shopify), Astro, SvelteKit or Nuxt.
+
+**When to look again:** when the [Stability](stability.md) page names a second maintainer, or when
+Lumiose reaches 1.0, whichever matters to your organization.
+
+## Related
+
+- [Stability](stability.md): what 0.x allows, the 1.0 criteria and the maintenance statement.
+- [Coming from React](coming-from/react.md), [Next.js](coming-from/nextjs.md),
+  [React Router](coming-from/react-router.md) and [Solid](coming-from/solid.md): what maps and what
+  has no equivalent.
 
 <!-- source: coming-from/react.md -->
 
