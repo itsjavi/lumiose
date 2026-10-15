@@ -77,7 +77,7 @@ export function Counter(props: { start: number }) {
 `,
   "src/ui/lu-menu.element.ts": `customElements.define("lu-menu", class extends HTMLElement {});
 `,
-  "src/ui/Menu.stsx": `import define from "./lu-menu.element.ts?lumiose-client";
+  "src/ui/Menu.stsx": `import define from "./lu-menu.element.ts?client";
 export function Menu(props: { children?: JSX.Element }) {
   define();
   return <lu-menu>{props.children}</lu-menu>;
@@ -338,7 +338,7 @@ describe.skipIf(!binding)("lumiose dev", () => {
     expect(await (await get("/island")).text()).not.toContain("lu-menu.element");
     // Client code (islands, SPA pages) imports the same URL: one module, one definition.
     const component = await (await get("/src/ui/Menu.stsx?import")).text();
-    const marker = /import \w+ from "([^"]*lumiose-client[^"]*)"/.exec(component);
+    const marker = /import \w+ from "([^"]*client-script:[^"]*)"/.exec(component);
     const markerCode = await (await get(marker![1]!)).text();
     expect(markerCode).toContain('import "/src/ui/lu-menu.element.ts"');
   });

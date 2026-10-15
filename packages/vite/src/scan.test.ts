@@ -5,16 +5,16 @@ import { clientScriptImports } from "./scan.ts";
 
 describe("clientScriptImports()", () => {
   it("lists the static imports with the client-script marker", () => {
-    const code = `import defineMenu from "./menu.element.ts?lumiose-client";
-import define, { other } from "@acme/ui/combobox.element.ts?lumiose-client";
-import "./menu.element.ts?lumiose-client";
+    const code = `import defineMenu from "./menu.element.ts?client";
+import define, { other } from "@acme/ui/combobox.element.ts?client";
+import "./menu.element.ts?client";
 import "./theme.css";
 import plain from "./menu.element.ts";
-const lazy = () => import("./lazy.ts?lumiose-client");
+const lazy = () => import("./lazy.ts?client");
 `;
     expect(clientScriptImports(code)).toEqual([
-      "./menu.element.ts?lumiose-client",
-      "@acme/ui/combobox.element.ts?lumiose-client",
+      "./menu.element.ts?client",
+      "@acme/ui/combobox.element.ts?client",
     ]);
   });
 

@@ -203,6 +203,11 @@ What it does:
   `frontmatter` from `<file>.md?lumiose-frontmatter`, `headings`, relative asset URLs as `?url`
   imports, and client scripts loaded by an island from `<file>.html?lumiose-script`. HTML entries (`index.html`, HTML build inputs) and `public/` files
   stay Vite's. See [Markdown and HTML imports](../concepts/content.md).
+- Loads `?client` imports (`./menu.element.ts?client`): client environments get the module itself
+  and a default export that does nothing; server environments get a default export that adds the
+  module's script to the page being rendered, without running the module. Builds build each script
+  that the project scan finds as a chunk of its own. See
+  [Islands](../concepts/islands.md) ("Scripts of server-rendered components").
 - Hot updates: an edited component re-renders in place, in every instance, and the rest of the page
   keeps its DOM and state (`lumiose dev` registers each named component of client code with
   `lumiose/dom/hot`). Only the components whose code changed re-render; an edit outside every

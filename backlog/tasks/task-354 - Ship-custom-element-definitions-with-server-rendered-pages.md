@@ -1,11 +1,11 @@
 ---
 id: TASK-354
 title: Ship custom element definitions with server-rendered pages
-status: In Progress
+status: Done
 assignee:
   - '@Nova'
 created_date: '2026-10-15 16:46'
-updated_date: '2026-10-15 17:32'
+updated_date: '2026-10-15 17:47'
 labels:
   - ui
 milestone: m-12
@@ -60,4 +60,6 @@ Hand-off to Halo (TASK-357 Menu, TASK-358 Combobox, @lumiose/ui):
 - The scan covers the app and linked workspace packages. A package installed from npm (node_modules) is neither scanned nor compiled by default (`exclude`), the same as its islands and `.stsx` styles: to settle with @lumiose/ui's packaging (TASK-353).
 
 2026-10-15 (user): the public spelling is the ?client query (P1), recorded as decision-63. Next: rename ?lumiose-client to ?client, add the module type to lumiose's JSX/env types, write the docs section, and point TASK-283 at it.
+
+2026-10-15 (Nova): renamed ?lumiose-client to ?client (decision-63) in the plugin (packages/vite/src/client-scripts.ts; the virtual module id is now \0lumiose:client-script:<file>), the scan and the tests. lumiose/env declares "*?client" with a default () => void (packages/lumiose/src/jsx/client-modules.d.ts, with a type fixture in jsx/__tests__/.fixtures/client.tsx). Docs: concepts/islands.md ("Scripts of server-rendered components: ?client", with a checked example and an API row), guides/web-components.md (definitions through ?client instead of a guarded import), reference/jsx.md (lumiose/env) and reference/vite.md; docs:gen and docs:check run. Validation: pnpm check (2041 tests; size caps 9.22/10 kB and 13.37/15 kB brotli) and every Playwright suite. Done.
 <!-- SECTION:NOTES:END -->

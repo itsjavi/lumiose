@@ -26,10 +26,11 @@ yet.
 ## Define the elements in the browser
 
 A custom element must be defined before the component that renders it runs, so that it is already
-upgraded when Lumiose passes it properties. `customElements` exists only in the browser, and
-components are also imported on the server, so load the definitions with a guarded import at the
-top of the island's module. The island then hydrates once the elements exist, and the server
-renders the tags with their attributes:
+upgraded when Lumiose passes it properties. Import the definition with `?client` in the component
+that renders the element, and call the import while it renders ([Islands](../concepts/islands.md),
+"Scripts of server-rendered components"). The definition never runs on the server, where
+`customElements` does not exist. An island imports it before it hydrates, and a page that renders
+the component on the server loads it as a module script of its own, without the island runtime:
 
 ```ts check file=elements/star-rating.ts
 // src/elements/star-rating.ts: a custom element of your own, or a library's entry point
@@ -96,10 +97,11 @@ declare module "lumiose/jsx-runtime" {
   }
 }
 
-// Defines <star-rating> in the browser before the island hydrates; the server skips it.
-if (typeof customElements !== "undefined") await import("../elements/star-rating.ts");
+// Defines <star-rating> in the browser: before an island hydrates, or on the pages that render it.
+import defineStarRating from "../elements/star-rating.ts?client";
 
 export function Review(props: { rating: number }) {
+  defineStarRating();
   const rating = signal(props.rating);
   return (
     <figure>
@@ -179,8 +181,8 @@ shadow root and properties exist only once the browser defines the element; when
 hydrates, Lumiose sets the properties on the upgraded element. Arrays and objects are not
 attributes: the server leaves them out of the HTML, as React 19 does (`labels` above), and the
 island sets them as properties when it hydrates; functions are left out too. Elements outside
-islands stay server HTML: they upgrade when their definition loads, and read what they need from
-attributes.
+islands stay server HTML: they upgrade when their definition loads (the `?client` script of the
+component that renders them), and read what they need from attributes.
 
 To show the element before its definition loads, style it with `:not(:defined)`:
 

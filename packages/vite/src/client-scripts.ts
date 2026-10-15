@@ -1,32 +1,31 @@
-// Client scripts of server-rendered components (TASK-354; the renderer's side is
+// Client scripts of server-rendered components (decision-63, TASK-354; the renderer's side is
 // lumiose/src/server/client-script.ts). A component imports a module that must run in the browser
 // on the pages that render the component, without the island runtime, such as the definition of a
-// custom element it renders, through a marker, and calls what the marker exports when it renders:
+// custom element it renders, with the `?client` query, and calls the import when it renders:
 //
-//   import menuElement from "./menu.element.ts?lumiose-client";
-//   export function MenuRoot(props) { menuElement(); return <lu-menu>…</lu-menu>; }
+//   import defineMenu from "./menu.element.ts?client";
+//   export function MenuRoot(props) { defineMenu(); return <lu-menu>…</lu-menu>; }
 //
-// - Client environments: the marker module imports the module, so it runs wherever the component's
+// - Client environments: the `?client` module imports the module, so it runs wherever the component's
 //   client code does (islands, SPA pages), and exports a function that does nothing.
-// - Server environments: the marker module exports a function that records the module's client URL,
+// - Server environments: the `?client` module exports a function that records the module's client URL,
 //   and the chunks it imports, for the page being rendered (`clientScript()`): the page loads it
 //   once, as a module script. The module itself never runs on the server.
 // - Builds: the server graph does not exist yet when the client is built, so the client build
-//   builds every module that a marker of the one-time scan names (./scan.ts) as an entry, and the
-//   server build embeds its URL. A marker the scan did not see is a warning, and records nothing.
+//   builds every module that a `?client` import of the one-time scan names (./scan.ts) as an entry,
+//   and the server build embeds its URL. An import the scan did not see is a warning, and records
+//   nothing.
 // - Dev: the URL is the module's own (root-relative, or `/@fs/` outside the root).
-//
-// `?lumiose-client` is an internal name until the user approves a public one (TASK-354).
 
 import { basename, relative } from "node:path";
 import { normalizePath, type Plugin, type ResolvedConfig, type Rollup } from "vite";
 import { runtimeFile } from "./runtime-files.ts";
 import type { ScannedModule } from "./scan.ts";
 
-export const CLIENT_SCRIPT_QUERY = "?lumiose-client";
-const PREFIX = "\0lumiose-client:";
-const MARKER = /\?lumiose-client$/;
-const MARKER_ID = /^\0lumiose-client:/;
+export const CLIENT_SCRIPT_QUERY = "?client";
+const PREFIX = "\0lumiose:client-script:";
+const MARKER = /\?client$/;
+const MARKER_ID = /^\0lumiose:client-script:/;
 
 export interface ClientScriptsOptions {
   /** `lumiose dev` (or any Vite dev server). */
@@ -48,12 +47,12 @@ export function clientScriptsPlugin(options: ClientScriptsOptions): Plugin {
   const emitted = new Set<string>();
   const built = new Map<string, Built>();
   const warned = new Set<string>();
-  /** Files that marker modules of a client environment import. */
+  /** Files that `?client` modules of a client environment import. */
   const scripts = new Set<string>();
 
   return {
     name: "lumiose:client-scripts",
-    // Before Vite's resolver, which would resolve the marker to the module with a query.
+    // Before Vite's resolver, which would resolve `x.ts?client` to the module with a query.
     enforce: "pre",
     // The client build's URLs, for the server build.
     sharedDuringBuild: true,
