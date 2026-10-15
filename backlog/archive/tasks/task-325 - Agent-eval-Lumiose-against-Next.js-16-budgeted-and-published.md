@@ -5,6 +5,7 @@ status: To Do
 assignee:
   - '@Quasar'
 created_date: '2026-10-15 04:03'
+updated_date: '2026-10-15 04:20'
 labels:
   - evals
   - needs-decision
@@ -26,3 +27,9 @@ Agreed with the user on 2026-10-15 (grilling session on adoption by developers u
 - [ ] #2 The run is done with the user's permission
 - [ ] #3 The results and method are published on the site
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Duplicate of TASK-208 (the Next.js baseline) and TASK-243 (the evals page); folded into them by the user on 2026-10-15.
+<!-- SECTION:NOTES:END -->

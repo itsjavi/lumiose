@@ -21,4 +21,4 @@ User decision, 2026-10-15.
 
 ## Consequences
 
-- Tasks: TASK-327 to TASK-331 (guides), TASK-324 (testing docs), TASK-322 (editors), TASK-323 (inspector proposal), TASK-325 (agent eval).
+- Tasks: TASK-327 to TASK-331 (guides), TASK-324 (testing docs), TASK-322 (editors), TASK-323 (inspector proposal), TASK-208 and TASK-243 (agent eval and its page; TASK-325 was folded into them).
