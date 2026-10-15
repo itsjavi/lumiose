@@ -161,6 +161,11 @@ export interface ClientRuntime {
     signal: WritableSource<unknown>,
   ): void;
   bindChecked(el: HTMLInputElement, signal: WritableSource<boolean>): void;
+  /**
+   * `bind:x` on a custom element: the signal drives the `x` property, and the element's own
+   * `input`, `change` and `xchange` (lowercase) events write it back.
+   */
+  bindProperty(el: Element, name: string, signal: WritableSource<unknown>): void;
   /** `attach={[a, b]}`: runs each `(el) => cleanup?` in a tracked scope; re-runs when its inputs change. */
   attach(
     el: Element,

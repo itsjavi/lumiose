@@ -33,7 +33,7 @@ the efficient form:
 | `onClick`, `onKeyDown`, …    | camelCase handlers. Bubbling events are delegated (one listener per type at `document`); non-bubbling ones (`onFocus`, `onMouseEnter`, `onScroll`) get a direct listener.                                                                                                                                                  |
 | `on:click`, `on:my-event`    | A native `addEventListener` listener with the exact event name. Use it for custom and web-component events.                                                                                                                                                                                                                |
 | Props of a custom element    | The element's property when it defines one (arrays and objects as they are), else the attribute, as in React 19. See [Web components](../guides/web-components.md).                                                                                                                                                        |
-| `bind:value`, `bind:checked` | Two-way binding to a writable signal, on `input`, `select` and `textarea`.                                                                                                                                                                                                                                                 |
+| `bind:value`, `bind:checked` | Two-way binding to a writable signal, on `input`, `select` and `textarea`. `bind:x` also works on components and custom elements (below).                                                                                                                                                                                  |
 | `attach={[fn]}`              | Runs `fn(el)` with the element in a tracked scope; it may return a cleanup.                                                                                                                                                                                                                                                |
 | `ref={fn}`                   | Called with the element. `ref<T>()` makes a callback you can read like a signal.                                                                                                                                                                                                                                           |
 | `innerHTML`                  | Sets unescaped HTML. The lint rule `no-unsafe-html` warns.                                                                                                                                                                                                                                                                 |
@@ -42,6 +42,48 @@ the efficient form:
 
 Handlers receive the **native** event, with `currentTarget` typed as the element. There are no
 synthetic events.
+
+**`bind:` on components and custom elements.** `bind:x={signal}` works on any component with an
+`x` prop and an `onXChange` callback, like `bind:value` on inputs: `bind:open` on `Dialog.Root`,
+`bind:value` on `Combobox.Root`, `bind:checked` on `Menu.CheckboxItem`. The compiler expands it to
+both props, `x={signal()}` and `onXChange={(value) => signal.set(value)}`, in server and client
+output. An `onXChange` written next to it still runs, after the signal is set. The types come from
+the component's props: a component without `x` or without `onXChange` has no `bind:x`, so the
+attribute is a type error.
+
+On a custom element (a tag with a dash), `bind:x` sets the element's `x` property and reads it back
+into the signal when the element dispatches `input`, `change` or `xchange` (lowercase:
+`openchange`, `checkedchange`); events bubbling up from its children are ignored. The server
+renders the signal's value as the attribute (`<lu-menu open>`). Declare `bind:x` on a typed custom
+element (`"bind:open"?: Signal<boolean>`); undeclared ones accept it untyped.
+
+```tsx check
+import { signal } from "lumiose";
+
+function Disclosure(props: {
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  children?: JSX.Element;
+}) {
+  return (
+    <details open={props.open} onToggle={(event) => props.onOpenChange?.(event.currentTarget.open)}>
+      {props.children}
+    </details>
+  );
+}
+
+export function Faq() {
+  const open = signal(false);
+  return (
+    <>
+      <Disclosure bind:open={open}>
+        <summary>Shipping</summary>2 to 4 days.
+      </Disclosure>
+      <button onClick={() => open.set(!open())}>{open() ? "Collapse" : "Expand"}</button>
+    </>
+  );
+}
+```
 
 ## API
 
@@ -118,6 +160,9 @@ export function TodoList() {
   `{ "font-weight": 600 }`, as in CSS. Numbers get no units: write `"12px"`.
 - **Passing a value to `bind:value`.** It needs the signal itself: `bind:value={draft}`, not
   `bind:value={draft()}`.
+- **`bind:x` on a component without `onXChange`.** The component must take both `x` and
+  `onXChange`; otherwise pass `x={signal()}` and handle the change yourself. An island call site
+  (`client:*`) has no `bind:`: a signal cannot be serialized.
 - **Custom events with `onX`.** `onMyEvent` is not an event prop; write `on:my-event`.
 - **Using the index outside the row.** The `i` of `.map((item, i) => …)` is a reactive index that
   belongs to its row; storing it in an outer variable or closure that outlives the row is

@@ -629,6 +629,48 @@ export async function Panel({ title }: { title: string }) {
 }
 
 #[test]
+fn contract_meta_classifies_bind_on_components_and_custom_elements() {
+    let source = r#"import { signal } from "lumiose";
+import { Dialog } from "./ui.ts";
+export function Panel() {
+  const open = signal(false);
+  return (
+    <div>
+      <Dialog.Root bind:open={open} />
+      <lu-menu bind:open={open} />
+      <input bind:value={open} />
+    </div>
+  );
+}
+"#;
+    let options = CompileOptions {
+        contract: true,
+        ..CompileOptions::default()
+    };
+    let result = compile(source, "/src/Panel.tsx", &options);
+    assert!(result.diagnostics.is_empty(), "{:?}", result.diagnostics);
+    let rows: Vec<String> = result
+        .meta
+        .contract
+        .expect("contract with `contract: true`")
+        .iter()
+        .map(|entry| {
+            let text = &source[entry.span.start as usize..entry.span.end as usize];
+            let via = entry.via.as_deref().unwrap_or("-");
+            format!("{text} | {:?} {:?} via {via}", entry.kind, entry.site)
+        })
+        .collect();
+    assert_eq!(
+        rows,
+        [
+            "open | Tracked Prop via getter",
+            "open | Tracked Property via bindProperty",
+            "open | Tracked Property via bindValue",
+        ]
+    );
+}
+
+#[test]
 fn metadata_lists_imports_without_type_only_ones() {
     let source = r#"import { signal } from "lumiose";
 import type { Row } from "./types.ts";

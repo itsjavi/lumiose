@@ -140,6 +140,37 @@ everything, so load its definition first (above). `class`, `style`, `ref`, `atta
 yourself, as above. `onClick` and the other camelCase handlers are for the standard DOM events,
 lowercased and delegated: use `on:` for a component's own events.
 
+## Two-way binding
+
+`bind:x={signal}` sets the element's `x` property from the signal and writes the property back
+when the element itself dispatches `input`, `change` or `xchange` (lowercase: `openchange`,
+`checkedchange`, `valuechange`); events that bubble up from its children are ignored. It suits
+elements whose state lives in a property and that announce its changes with one of those events,
+as native controls and `@lumiose/ui`'s elements do. For other event names (`rating-change`,
+`sl-change`), set the property and listen with `on:` as above. Declare the binding on a typed
+element:
+
+```tsx check
+import { signal, type Signal } from "lumiose";
+
+declare module "lumiose/jsx-runtime" {
+  namespace JSX {
+    interface IntrinsicElements {
+      "toggle-switch": JSX.HTMLProps<HTMLElement> & {
+        pressed?: boolean;
+        /** Sets `pressed`; `pressedchange` and `change` events write it back. */
+        "bind:pressed"?: Signal<boolean>;
+      };
+    }
+  }
+}
+
+export function Bold() {
+  const bold = signal(false);
+  return <toggle-switch bind:pressed={bold}>Bold</toggle-switch>;
+}
+```
+
 ## Server rendering
 
 On the server a custom element renders as its tag with the attributes Lumiose can write:

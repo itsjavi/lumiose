@@ -23,7 +23,7 @@ the app on hot updates. Solid's `render` has the same signature, without `option
 
 `template`, `bind`, `insert`, `insertText`, `branch`, `list`, `selector`, `createComponent`, `mergeProps`,
 `restProps`, `spread`, `delegateEvents`, `listen`, `attach`, `bindValue`, `bindChecked`,
-`useRef`, `$async`, `$await`, `$leave` and friends are what the compiler emits calls to. They are
+`bindProperty`, `useRef`, `$async`, `$await`, `$leave` and friends are what the compiler emits calls to. They are
 not an application API and may change between versions; write JSX instead.
 
 ## `lumiose/dom/hydrate`

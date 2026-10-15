@@ -12,14 +12,21 @@
 // numbers go into the changelog section, which is the release's notes. `--skip-scale-gate` skips
 // it (the notes say so); a dry run reports it without running it.
 //
+// A package outside lockstep (`INDEPENDENT_PACKAGES` in scripts/pack.ts: @lumiose/ui keeps its own
+// 0.x versions, decision-54) is released alone with `--package <name>`: only its package.json is
+// bumped, its own CHANGELOG.md gets the commits scoped to it (`feat(ui): …` for @lumiose/ui) since
+// its last `<name>@*` tag, and the commit is tagged `<name>@<x.y.z>`; no scale gate. Lockstep
+// releases leave it alone, and their changelog leaves out the commits scoped to it.
+//
 //   node scripts/release.ts <x.y.z> [--dry-run] [--since <rev>] [--skip-scale-gate]
+//   node scripts/release.ts <x.y.z> --package <name> [--dry-run] [--since <rev>]
 
 import { execFileSync } from "node:child_process";
 import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join, relative, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
-import { publishable, readManifest } from "./pack.ts";
+import { INDEPENDENT_PACKAGES, publishable, readManifest } from "./pack.ts";
 
 const REPO = fileURLToPath(new URL("..", import.meta.url));
 const VERSION = /^(\d+)\.(\d+)\.(\d+)(?:-([0-9A-Za-z.-]+))?$/;
@@ -91,12 +98,29 @@ export function renderChangelog(version: string, date: string, commits: Commit[]
   return lines.join("\n");
 }
 
-const HEADER = "# Changelog\n\nAll Lumiose packages share one version.\n\n";
+const HEADER =
+  "# Changelog\n\nAll Lumiose packages share one version, except those released outside lockstep " +
+  `(${[...INDEPENDENT_PACKAGES].join(", ")}), which keep their own changelog in their directory.\n\n`;
 
-/** CHANGELOG.md with `section` added above the previous releases. */
-export function prependChangelog(current: string | undefined, section: string): string {
-  const previous = current?.startsWith(HEADER) ? current.slice(HEADER.length) : (current ?? "");
-  return `${HEADER}${section}${previous.length > 0 ? `\n${previous}` : ""}`;
+/** The header of the CHANGELOG.md of a package released outside lockstep. */
+export function packageChangelogHeader(name: string): string {
+  return `# Changelog\n\n${name} has its own versions, outside the lockstep version of the other Lumiose packages.\n\n`;
+}
+
+/** A CHANGELOG.md with `header` and `section` above the previous releases (its `## ` sections). */
+export function prependChangelog(
+  current: string | undefined,
+  section: string,
+  header = HEADER,
+): string {
+  const start = current?.search(/^## /m) ?? -1;
+  const previous =
+    current === undefined || start === -1
+      ? current?.startsWith("# ")
+        ? ""
+        : (current ?? "")
+      : current.slice(start);
+  return `${header}${section}${previous.length > 0 ? `\n${previous}` : ""}`;
 }
 
 /** `text` (a package.json) with its top-level version set, keeping the file's formatting. */
@@ -169,16 +193,9 @@ function git(repo: string, args: string[]): string {
   return execFileSync("git", args, { cwd: repo, encoding: "utf8", stdio: "pipe" }).trim();
 }
 
-/** The Conventional Commits after `since` (default: the last `v*` tag; none: every commit). */
-export function commitsSince(repo: string, since?: string): Commit[] {
-  let from = since;
-  if (from === undefined) {
-    try {
-      from = git(repo, ["describe", "--tags", "--abbrev=0", "--match", "v*"]);
-    } catch {
-      from = undefined;
-    }
-  }
+/** The Conventional Commits after `since` (default: the last tag matching `match`; none: every commit). */
+export function commitsSince(repo: string, since?: string, match = "v*"): Commit[] {
+  const from = since ?? lastTag(repo, match);
   const range = from === undefined ? "HEAD" : `${from}..HEAD`;
   const log = git(repo, ["log", "--no-merges", "--format=%h%x1f%B%x1e", range]);
   return log
@@ -268,13 +285,32 @@ export function renderScale(scale: ScaleResult | string): string {
   return lines.join("\n");
 }
 
-/** The last release tag (`v*`) reachable from HEAD, if any. */
-function lastReleaseTag(repo: string): string | undefined {
+/** The last tag matching `match` (default: a lockstep release, `v*`) reachable from HEAD, if any. */
+function lastTag(repo: string, match = "v*"): string | undefined {
   try {
-    return git(repo, ["describe", "--tags", "--abbrev=0", "--match", "v*"]);
+    return git(repo, ["describe", "--tags", "--abbrev=0", "--match", match]);
   } catch {
     return undefined;
   }
+}
+
+/** The directories of the workspace packages outside lockstep (`INDEPENDENT_PACKAGES`). */
+function independentDirs(repo: string): string[] {
+  const dir = join(repo, "packages");
+  return readdirSync(dir)
+    .map((name) => join(dir, name))
+    .filter((path) => existsSync(join(path, "package.json")))
+    .filter((path) => INDEPENDENT_PACKAGES.has(readManifest(path).name));
+}
+
+/** The Conventional Commit scope of a package outside lockstep: its name without the npm scope (`ui`). */
+export function packageScope(name: string): string {
+  return name.replace(/^@[^/]+\//, "");
+}
+
+/** `path` relative to `repo`, with forward slashes (a git pathspec). */
+function repoPath(repo: string, path: string): string {
+  return relative(repo, path).split(sep).join("/");
 }
 
 /** Runs the large-app A/B of `previous` against the working tree (about 18 minutes). */
@@ -290,6 +326,8 @@ function runScaleAb(repo: string, previous: string): ScaleResult {
 
 export interface ReleaseOptions {
   dryRun?: boolean;
+  /** A package outside lockstep (`INDEPENDENT_PACKAGES`) to release alone, at its own version. */
+  package?: string;
   /** Skip the scale gate; the release notes say it was not measured. */
   skipScaleGate?: boolean;
   /** Runs the A/B of `previous` (a tag) against the working tree; the large-app benchmark by default. */
@@ -303,14 +341,22 @@ export interface ReleaseOptions {
   log?: (line: string) => void;
 }
 
-/** Plans the release of `version` in `repo`: the files to write (path → content) and the changelog section. */
+/** A planned release: the tag, the files to write (path → content) and the changelog section. */
+export interface ReleasePlan {
+  current: string;
+  tag: string;
+  files: Map<string, string>;
+  changelog: string;
+}
+
+/** Plans the lockstep release of `version` in `repo`; packages outside lockstep are left alone. */
 export function planRelease(
   repo: string,
   version: string,
   options: ReleaseOptions = {},
-): { current: string; files: Map<string, string>; changelog: string } {
+): ReleasePlan {
   if (!VERSION.test(version)) throw new Error(`not a version: ${version} (expected x.y.z)`);
-  const dirs = publishable(repo);
+  const dirs = publishable(repo).filter((dir) => !INDEPENDENT_PACKAGES.has(readManifest(dir).name));
   const manifests = dirs.map((dir) => readManifest(dir));
   const versions = new Set(manifests.map((m) => m.version));
   if (versions.size !== 1) {
@@ -340,32 +386,76 @@ export function planRelease(
     files.set(lock, setCargoLockVersions(readFileSync(lock, "utf8"), cargoCrates(repo), version));
   }
   const date = options.date ?? new Date().toISOString().slice(0, 10);
-  let changelog = renderChangelog(version, date, commitsSince(repo, options.since));
+  // Commits scoped to a package outside lockstep (`feat(ui): …`) belong to its own changelog.
+  const scopes = new Set([...INDEPENDENT_PACKAGES].map(packageScope));
+  const commits = commitsSince(repo, options.since).filter((c) => !scopes.has(c.scope ?? ""));
+  let changelog = renderChangelog(version, date, commits);
   if (options.scale !== undefined) changelog += renderScale(options.scale);
   const changelogPath = join(repo, "CHANGELOG.md");
   const previous = existsSync(changelogPath) ? readFileSync(changelogPath, "utf8") : undefined;
   files.set(changelogPath, prependChangelog(previous, changelog));
-  return { current, files, changelog };
+  return { current, tag: `v${version}`, files, changelog };
 }
 
 /**
- * Releases `version`: writes the planned files, commits them and tags the commit, on a clean
- * working tree. With `dryRun`, only reports the plan.
+ * Plans the release of `name`, a package outside lockstep, at its own `version`: its package.json
+ * and its CHANGELOG.md, from the commits scoped to it since its last `<name>@*` tag.
+ */
+export function planPackageRelease(
+  repo: string,
+  name: string,
+  version: string,
+  options: ReleaseOptions = {},
+): ReleasePlan {
+  if (!VERSION.test(version)) throw new Error(`not a version: ${version} (expected x.y.z)`);
+  if (!INDEPENDENT_PACKAGES.has(name)) {
+    throw new Error(`${name} is released in lockstep: pnpm release:version <x.y.z>`);
+  }
+  const dir = independentDirs(repo).find((path) => readManifest(path).name === name);
+  if (dir === undefined) throw new Error(`no package named ${name} in packages/`);
+  const manifest = readManifest(dir);
+  if (manifest.private) throw new Error(`${name} is private: it is not published`);
+  if (compareVersions(version, manifest.version) <= 0) {
+    throw new Error(`${version} is not above the current version ${manifest.version} of ${name}`);
+  }
+  const files = new Map<string, string>();
+  const manifestPath = join(dir, "package.json");
+  files.set(manifestPath, setPackageVersion(readFileSync(manifestPath, "utf8"), version));
+  const date = options.date ?? new Date().toISOString().slice(0, 10);
+  const scope = packageScope(name);
+  const commits = commitsSince(repo, options.since, `${name}@*`).filter((c) => c.scope === scope);
+  const changelog = renderChangelog(version, date, commits);
+  const changelogPath = join(dir, "CHANGELOG.md");
+  const previous = existsSync(changelogPath) ? readFileSync(changelogPath, "utf8") : undefined;
+  files.set(changelogPath, prependChangelog(previous, changelog, packageChangelogHeader(name)));
+  return { current: manifest.version, tag: `${name}@${version}`, files, changelog };
+}
+
+/**
+ * Releases `version` (of the lockstep packages, or of `options.package`): writes the planned
+ * files, commits them and tags the commit, on a clean working tree. With `dryRun`, only reports
+ * the plan.
  */
 export function release(repo: string, version: string, options: ReleaseOptions = {}): void {
   const log = options.log ?? console.log;
-  const tag = `v${version}`;
+  const name = options.package;
+  const tag = name === undefined ? `v${version}` : `${name}@${version}`;
   if (!options.dryRun) {
     const status = git(repo, ["status", "--porcelain"]);
     if (status !== "")
       throw new Error(`the working tree has changes; commit or stash them first:\n${status}`);
   }
   if (git(repo, ["tag", "--list", tag]) !== "") throw new Error(`the tag ${tag} already exists`);
-  const scale = options.dryRun ? undefined : scaleGate(repo, options, log);
-  const plan = planRelease(repo, version, { ...options, scale });
-  const paths = [...plan.files.keys()].map((path) => relative(repo, path).split(sep).join("/"));
-  log(`${options.dryRun ? "dry run: " : ""}${plan.current} -> ${version}`);
-  if (options.dryRun && !options.skipScaleGate) {
+  // The scale gate measures Lumiose itself: a package outside lockstep is released without it.
+  const scale = options.dryRun || name !== undefined ? undefined : scaleGate(repo, options, log);
+  const plan =
+    name === undefined
+      ? planRelease(repo, version, { ...options, scale })
+      : planPackageRelease(repo, name, version, options);
+  const paths = [...plan.files.keys()].map((path) => repoPath(repo, path));
+  const subject = name === undefined ? "" : `${name} `;
+  log(`${options.dryRun ? "dry run: " : ""}${subject}${plan.current} -> ${version}`);
+  if (options.dryRun && !options.skipScaleGate && name === undefined) {
     log("(a release runs the scale gate first: the large-app A/B, about 18 minutes)");
   }
   for (const path of paths) log(`  ${path}`);
@@ -390,7 +480,7 @@ function scaleGate(
 ): ScaleResult | string {
   if (options.skipScaleGate)
     return "Not measured: the scale gate was skipped (`--skip-scale-gate`).";
-  const previous = lastReleaseTag(repo);
+  const previous = lastTag(repo);
   if (previous === undefined) return "Not measured: there is no previous release to compare with.";
   log(`Scale gate: the large-app A/B of ${previous} and the working tree (about 18 minutes)…`);
   const result = (options.runScale ?? runScaleAb)(repo, previous);
@@ -408,19 +498,22 @@ if (import.meta.main) {
     allowPositionals: true,
     options: {
       "dry-run": { type: "boolean", default: false },
+      package: { type: "string" },
       since: { type: "string" },
       "skip-scale-gate": { type: "boolean", default: false },
     },
   });
   if (positionals.length !== 1) {
     console.error(
-      "Usage: pnpm release:version <x.y.z> [--dry-run] [--since <rev>] [--skip-scale-gate]",
+      "Usage: pnpm release:version <x.y.z> [--dry-run] [--since <rev>] [--skip-scale-gate]\n" +
+        "       pnpm release:version <x.y.z> --package <name> [--dry-run] [--since <rev>]",
     );
     process.exit(2);
   }
   try {
     release(REPO, positionals[0]!, {
       dryRun: values["dry-run"],
+      package: values.package,
       since: values.since,
       skipScaleGate: values["skip-scale-gate"],
     });

@@ -15,7 +15,7 @@ use oxc_span::GetSpan;
 use oxc_syntax::scope::ScopeFlags;
 use oxc_syntax::symbol::SymbolId;
 
-use super::element::{attribute_name, is_intrinsic, is_property};
+use super::element::{attribute_name, is_custom_element, is_intrinsic, is_property, tag_name};
 use super::events::{event_name, is_delegated};
 use crate::analyze::reactivity::{PropsSymbols, reactive_reads};
 use crate::analyze::{Analysis, is_jsx_like};
@@ -196,10 +196,17 @@ impl Collector<'_> {
         });
     }
 
-    fn host_attribute(&mut self, name: &str, expr: &Expression<'_>) {
+    fn host_attribute(&mut self, name: &str, expr: &Expression<'_>, custom: bool) {
         match name {
             "key" => {}
             _ if name.starts_with("client:") => {}
+            _ if custom && name.starts_with("bind:") => self.push(
+                expr.span(),
+                ContractKind::Tracked,
+                ContractSite::Property,
+                "bindProperty",
+                Vec::new(),
+            ),
             "class" => self.value(expr, ContractSite::Class, "setClass", "setClass"),
             "style" => self.value(expr, ContractSite::Style, "setStyle", "setStyle"),
             "ref" => self.push(
@@ -299,6 +306,7 @@ impl<'a> Visit<'a> for Collector<'_> {
     fn visit_jsx_element(&mut self, it: &JSXElement<'a>) {
         let opening = &it.opening_element;
         let host = is_intrinsic(&opening.name);
+        let custom = host && is_custom_element(&tag_name(&opening.name));
         for item in &opening.attributes {
             match item {
                 JSXAttributeItem::SpreadAttribute(spread) => {
@@ -315,7 +323,16 @@ impl<'a> Visit<'a> for Collector<'_> {
                     };
                     let name = attribute_name(&attribute.name);
                     if host {
-                        self.host_attribute(&name, expr);
+                        self.host_attribute(&name, expr, custom);
+                    } else if name.starts_with("bind:") {
+                        // `x` reads the signal in a getter; `onXChange` writes it (decision-62).
+                        self.push(
+                            expr.span(),
+                            ContractKind::Tracked,
+                            ContractSite::Prop,
+                            "getter",
+                            Vec::new(),
+                        );
                     } else if !name.starts_with("client:") && name != "key" {
                         self.value(expr, ContractSite::Prop, "getter", "");
                     }

@@ -31,6 +31,7 @@ describe("lumiose/dom contract", () => {
       "listen",
       "bindValue",
       "bindChecked",
+      "bindProperty",
       "attach",
       "useRef",
       "$await",

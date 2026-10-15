@@ -150,6 +150,7 @@ const CLIENT_RUNTIME: &[&str] = &[
     "listen",
     "bindValue",
     "bindChecked",
+    "bindProperty",
     "attach",
     "useRef",
     "$await",

@@ -59,6 +59,27 @@ export function bindChecked(el: HTMLInputElement, signal: WritableSource<boolean
   });
 }
 
+/**
+ * `bind:x` on a custom element (decision-62): the signal drives the element's `x` property, and
+ * the `input`, `change` and `xchange` events it dispatches (lowercase: `openchange`) write the
+ * property back. Events bubbling up from its children are ignored.
+ */
+export function bindProperty(el: Element, name: string, signal: WritableSource<unknown>): void {
+  const slots = el as unknown as Record<string, unknown>;
+  const binding = renderEffect(el, signal, (_, value) => {
+    slots[name] = value;
+  });
+  const update = (event: Event): void => {
+    if (event.target === el) {
+      binding.value = slots[name];
+      signal.set(slots[name]);
+    }
+  };
+  for (const type of ["input", "change", `${name.toLowerCase()}change`]) {
+    listen(el, type, update);
+  }
+}
+
 type Attachment = ((el: Element) => void | (() => void)) | false | null | undefined;
 
 interface AttachState {

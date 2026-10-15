@@ -20,6 +20,6 @@ export { createComponent, mergeProps, restProps } from "./component.ts";
 export { $async, $await, $leave } from "./async.ts";
 export { spread } from "./spread.ts";
 export { delegateEvents, listen } from "./events.ts";
-export { attach, bindChecked, bindValue, useRef } from "./element.ts";
+export { attach, bindChecked, bindProperty, bindValue, useRef } from "./element.ts";
 // Not part of the contract: rendering an app root for SPA entries, tests and benchmarks.
 export { render, type RenderOptions } from "./render.ts";

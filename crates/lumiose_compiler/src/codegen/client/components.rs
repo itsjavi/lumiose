@@ -14,8 +14,67 @@ use oxc_ast::ast::*;
 use oxc_span::Span;
 
 use super::element::{AttrValue, attr_value, attribute_name, literal};
-use super::{Codegen, Compiled};
+use super::{Codegen, Compiled, clone_expression};
 use crate::analyze::is_jsx_like;
+
+/// `onXChange`, the callback of a bindable prop `x`.
+fn change_handler(prop: &str) -> String {
+    let mut chars = prop.chars();
+    let first = chars.next().map(|c| c.to_uppercase().to_string());
+    format!("on{}{}Change", first.unwrap_or_default(), chars.as_str())
+}
+
+/// Takes out the `onXChange` attributes that come with a `bind:x` (the callback of `bind:x`
+/// calls them), with their expressions.
+fn take_bound_handlers<'a>(
+    attributes: &mut ArenaVec<'a, JSXAttributeItem<'a>>,
+) -> Vec<(String, Expression<'a>)> {
+    let handlers: Vec<String> = attributes
+        .iter()
+        .filter_map(|item| match item {
+            JSXAttributeItem::Attribute(attribute) => attribute_name(&attribute.name)
+                .strip_prefix("bind:")
+                .map(change_handler),
+            JSXAttributeItem::SpreadAttribute(_) => None,
+        })
+        .collect();
+    let mut taken = Vec::new();
+    if handlers.is_empty() {
+        return taken;
+    }
+    let mut index = 0;
+    while index < attributes.len() {
+        let name = match &attributes[index] {
+            JSXAttributeItem::Attribute(attribute) => Some(attribute_name(&attribute.name)),
+            JSXAttributeItem::SpreadAttribute(_) => None,
+        };
+        let is_handler = name.as_ref().is_some_and(|name| handlers.contains(name));
+        if !is_handler {
+            index += 1;
+            continue;
+        }
+        let JSXAttributeItem::Attribute(attribute) = attributes.remove(index) else {
+            unreachable!("an attribute")
+        };
+        let attribute = attribute.unbox();
+        if let AttrValue::Expr(expr) = attr_value(attribute.value) {
+            taken.push((name.expect("an attribute"), expr));
+        }
+    }
+    taken
+}
+
+/// A name or a member chain of names (`open`, `state.open`, `this.open`): reading it twice reads
+/// the same signal.
+fn is_reference(expr: &Expression<'_>) -> bool {
+    match expr.without_parentheses() {
+        Expression::Identifier(_) | Expression::ThisExpression(_) => true,
+        Expression::StaticMemberExpression(member) => {
+            !member.optional && is_reference(&member.object)
+        }
+        _ => false,
+    }
+}
 
 impl<'a> Codegen<'a, '_> {
     pub(super) fn compile_component(
@@ -68,7 +127,7 @@ impl<'a> Codegen<'a, '_> {
     /// `children` is `None`): `{ a: 1, get b() { … } }`, or `mergeProps(...)` with spreads.
     pub(super) fn props_expression(
         &mut self,
-        attributes: ArenaVec<'a, JSXAttributeItem<'a>>,
+        mut attributes: ArenaVec<'a, JSXAttributeItem<'a>>,
         children: Option<ArenaVec<'a, JSXChild<'a>>>,
         span: Span,
     ) -> Expression<'a> {
@@ -76,6 +135,14 @@ impl<'a> Codegen<'a, '_> {
         // Cache variables (`_d`, `_v` pairs) of the memoized getters of `current` (server only).
         let memoize = is_component && self.server();
         let mut memo: Vec<String> = Vec::new();
+        // Signals of `bind:` evaluated once for `current`: (parameter, expression) of its arrow.
+        let mut bound: Vec<(String, Expression<'a>)> = Vec::new();
+        // The `onXChange` props written next to a `bind:x`, which its callback calls.
+        let mut handlers = if is_component {
+            take_bound_handlers(&mut attributes)
+        } else {
+            Vec::new()
+        };
         let mut sources: Vec<Expression<'a>> = Vec::new();
         let mut current: Vec<ObjectPropertyKind<'a>> = Vec::new();
         let mut passes_class = false;
@@ -86,7 +153,8 @@ impl<'a> Codegen<'a, '_> {
                 JSXAttributeItem::SpreadAttribute(spread) => {
                     if !current.is_empty() {
                         let object = self.ast.object(span, std::mem::take(&mut current));
-                        sources.push(self.with_memo(span, object, std::mem::take(&mut memo)));
+                        let (memo, bound) = (std::mem::take(&mut memo), std::mem::take(&mut bound));
+                        sources.push(self.with_memo(span, object, memo, bound));
                     }
                     let argument = self.visited(spread.unbox().argument);
                     sources.push(argument);
@@ -95,6 +163,25 @@ impl<'a> Codegen<'a, '_> {
                     let attribute = attribute.unbox();
                     let name = attribute_name(&attribute.name);
                     if name == "key" || name.starts_with("client:") {
+                        continue;
+                    }
+                    if is_component && let Some(prop) = name.strip_prefix("bind:") {
+                        if let AttrValue::Expr(expr) = attr_value(attribute.value) {
+                            let handler = handlers
+                                .iter()
+                                .position(|(name, _)| *name == change_handler(prop))
+                                .map(|index| handlers.swap_remove(index).1);
+                            let memo = memoize.then_some(&mut memo);
+                            let props = self.bind_props(
+                                prop,
+                                expr,
+                                handler,
+                                attribute.span,
+                                memo,
+                                &mut bound,
+                            );
+                            current.extend(props);
+                        }
                         continue;
                     }
                     passes_class |= name == "class";
@@ -123,6 +210,11 @@ impl<'a> Codegen<'a, '_> {
                     }
                 }
             }
+        }
+        // A handler whose `bind:` had no signal is passed on as it is.
+        for (name, expr) in handlers {
+            let memo = memoize.then_some(&mut memo);
+            current.push(self.prop(&name, expr, span, memo));
         }
         if is_component && passes_class {
             let tokens = self.scope_tokens(span);
@@ -172,7 +264,7 @@ impl<'a> Codegen<'a, '_> {
         }
         if !current.is_empty() || sources.is_empty() {
             let object = self.ast.object(span, current);
-            sources.push(self.with_memo(span, object, memo));
+            sources.push(self.with_memo(span, object, memo, bound));
         }
         if sources.len() == 1 {
             return sources.pop().expect("one source");
@@ -258,14 +350,75 @@ impl<'a> Codegen<'a, '_> {
         self.ast.getter(span, name, Vec::new(), body)
     }
 
-    /// `object`, or `((_d, _v, …) => object)()` when it has memoized getters.
-    fn with_memo(&self, span: Span, object: Expression<'a>, memo: Vec<String>) -> Expression<'a> {
-        if memo.is_empty() {
+    /// `object`, or `((_s, …, _d, _v, …) => object)(signal, …)` when it has `bind:` signals
+    /// evaluated once or memoized getters.
+    fn with_memo(
+        &self,
+        span: Span,
+        object: Expression<'a>,
+        memo: Vec<String>,
+        bound: Vec<(String, Expression<'a>)>,
+    ) -> Expression<'a> {
+        if memo.is_empty() && bound.is_empty() {
             return object;
         }
-        let params = memo.iter().map(String::as_str).collect::<Vec<_>>();
+        let (names, args): (Vec<String>, Vec<Expression<'a>>) = bound.into_iter().unzip();
+        let params = names
+            .iter()
+            .chain(&memo)
+            .map(String::as_str)
+            .collect::<Vec<_>>();
         let arrow = self.ast.arrow(span, &params, object);
-        self.ast.call(span, arrow, [])
+        self.ast.call(span, arrow, args)
+    }
+
+    /// `bind:x={signal}` on a component (decision-62): `x` reads the signal like `x={signal()}`,
+    /// and `onXChange` writes the value back, then calls the `onXChange` written next to it, if
+    /// any. A signal expression other than a name or a member chain is evaluated once, as an
+    /// argument of the props object's arrow (`bound`).
+    fn bind_props(
+        &mut self,
+        prop: &str,
+        signal: Expression<'a>,
+        handler: Option<Expression<'a>>,
+        span: Span,
+        memo: Option<&mut Vec<String>>,
+        bound: &mut Vec<(String, Expression<'a>)>,
+    ) -> [ObjectPropertyKind<'a>; 2] {
+        let (read, write) = if is_reference(&signal) {
+            let write = self.visited(clone_expression(self.ast, &signal));
+            (signal, write)
+        } else {
+            let name = self.names.fresh("_s");
+            let signal = self.visited(signal);
+            bound.push((name.clone(), signal));
+            (self.ast.ident(span, &name), self.ast.ident(span, &name))
+        };
+        let value = self.prop(prop, self.ast.call(span, read, []), span, memo);
+        let next = self.names.fresh("_v");
+        let set = self.ast.member(span, write, "set");
+        let set = self.ast.call(span, set, [self.ast.ident(span, &next)]);
+        let callback = match handler {
+            None => self.ast.arrow(span, &[&next], set),
+            Some(handler) => {
+                // `(_v, ..._a) => (signal.set(_v), handler?.(_v, ..._a))`
+                let rest = self.names.fresh("_a");
+                let handler = self.visited(handler);
+                let args = [
+                    Argument::from(self.ast.ident(span, &next)),
+                    self.ast.spread_argument(span, self.ast.ident(span, &rest)),
+                ];
+                let call = self.ast.optional_call(span, handler, args);
+                let body = Expression::new_sequence_expression(
+                    span,
+                    self.ast.vec_from([set, call]),
+                    self.ast,
+                );
+                self.ast.arrow_rest(span, &[&next], &rest, body)
+            }
+        };
+        let callback = self.ast.property(span, &change_handler(prop), callback);
+        [value, callback]
     }
 
     /// An expression that cannot throw or run user code beyond a props getter, so evaluating it

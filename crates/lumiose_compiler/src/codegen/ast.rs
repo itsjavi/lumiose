@@ -248,6 +248,58 @@ impl<'a> Ast<'a> {
         )
     }
 
+    /// `(params, ...rest) => body`
+    pub fn arrow_rest(
+        &self,
+        span: Span,
+        params: &[&str],
+        rest: &str,
+        body: Expression<'a>,
+    ) -> Expression<'a> {
+        let items = self.vec_from(params.iter().map(|name| self.param(span, name)));
+        let pattern = BindingPattern::new_binding_identifier(span, self.str(rest), self);
+        let rest = FormalParameterRest::boxed(
+            span,
+            self.vec(),
+            BindingRestElement::new(span, pattern, self),
+            None,
+            self,
+        );
+        let params = FormalParameters::boxed(
+            span,
+            FormalParameterKind::ArrowFormalParameters,
+            items,
+            Some(rest),
+            self,
+        );
+        Expression::new_arrow_function_expression(
+            span,
+            false,
+            None,
+            params,
+            None,
+            ArrowFunctionBody::from(body),
+            self,
+        )
+    }
+
+    /// `...argument` as a call argument.
+    pub fn spread_argument(&self, span: Span, argument: Expression<'a>) -> Argument<'a> {
+        Argument::new_spread_element(span, argument, self)
+    }
+
+    /// `callee?.(args)`
+    pub fn optional_call(
+        &self,
+        span: Span,
+        callee: Expression<'a>,
+        args: impl IntoIterator<Item = Argument<'a>>,
+    ) -> Expression<'a> {
+        let call =
+            ChainElement::new_call_expression(span, callee, None, self.vec_from(args), true, self);
+        Expression::new_chain_expression(span, call, self)
+    }
+
     /// `(params) => { statements }`
     pub fn arrow_block(
         &self,
