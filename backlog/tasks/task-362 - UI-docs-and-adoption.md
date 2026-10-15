@@ -38,11 +38,5 @@ User decision 2026-10-15: @lumiose/ui reaches parity with Base UI's components b
 
 2026-10-15: the pitfall checklist is doc-9. The component gets its rules in the optional default theme (@lumiose/ui/themes/default.css, decision-62); the component itself stays unstyled.
 
-2026-10-15: the per-component docs are published in the site's UI section (TASK-387
-TASK-353
-TASK-333
-TASK-332
-TASK-355
-TASK-353
-TASK-355), which the user asked for as the @lumiose/ui docs.
+2026-10-15: the per-component docs are published in the site's UI section (TASK-387), which the user asked for as the @lumiose/ui docs.
 <!-- SECTION:NOTES:END -->
