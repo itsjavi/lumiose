@@ -16,6 +16,7 @@
     "check": "pnpm build:compiler && pnpm typecheck && pnpm lint && pnpm fmt:examples && pnpm test && node --test scripts/*.test.ts && pnpm --filter lumiose size && cargo test --workspace",
     "build:compiler": "pnpm --filter @lumiose/compiler build",
     "pack:check": "node scripts/pack.ts",
+    "audit:packages": "node scripts/audit.ts",
     "release:version": "node scripts/release.ts",
     "build:site": "node scripts/site.ts build",
     "preview:site": "node scripts/site.ts preview",

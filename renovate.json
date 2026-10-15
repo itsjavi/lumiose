@@ -1,0 +1,28 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "description": "decision-56: one grouped update a week, security updates at once, exact pins kept.",
+  "extends": ["config:recommended", "helpers:pinGitHubActionDigests"],
+  "schedule": ["before 6am on monday"],
+  "rangeStrategy": "pin",
+  "minimumReleaseAge": "3 days",
+  "packageRules": [
+    {
+      "description": "Every scheduled update goes into one pull request a week.",
+      "matchPackageNames": ["*"],
+      "groupName": "weekly dependencies",
+      "groupSlug": "weekly"
+    },
+    {
+      "description": "Cargo keeps the exact `=x.y.z` pins of [workspace.dependencies].",
+      "matchManagers": ["cargo"],
+      "rangeStrategy": "bump"
+    }
+  ],
+  "osvVulnerabilityAlerts": true,
+  "vulnerabilityAlerts": {
+    "enabled": true,
+    "schedule": ["at any time"],
+    "minimumReleaseAge": null,
+    "labels": ["security"]
+  }
+}

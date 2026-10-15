@@ -1,0 +1,10 @@
+# cargo audit (decision-56, TASK-314). Every ignored advisory says why Lumiose is not affected and
+# when to drop the entry.
+[advisories]
+ignore = [
+  # rkyv 0.7 archive validation (RUSTSEC-2026-0235), reached through parcel_sourcemap 2.1.1 (its
+  # latest release, which Lightning CSS requires). Only `SourceMap::from_buffer` reads rkyv
+  # archives; Lumiose builds source maps and prints them as JSON, and never reads an archive.
+  # Drop this entry once parcel_sourcemap moves to rkyv 0.8.
+  "RUSTSEC-2026-0235",
+]
