@@ -5,7 +5,7 @@ status: To Do
 assignee:
   - '@Lux'
 created_date: '2026-10-15 19:52'
-updated_date: '2026-10-15 22:29'
+updated_date: '2026-10-15 23:25'
 labels:
   - ui
   - review
@@ -93,4 +93,36 @@ User request, 2026-10-15: start M12 worker batches autonomously, and review the 
 - TASK-403: a hydration bug.
 - TASK-401: a false LUM2001.
 - TASK-402: selector hoisting.
+
+## Batch 5 (2026-10-16): TASK-364, 369, 372, 373 (Halo), TASK-403, 378, 382 (Beacon)
+
+**Proposed public names (for the user's review):**
+- **Button, Toggle, Progress, Meter and Slider:**
+  - components: `Button` with `focusableWhenDisabled`, `Toggle`, `ToggleGroup`, `Progress`, `Meter`, `Slider` and `SliderValue`;
+  - elements: `lu-toggle-group` (events `pressedchange` and `valuechange`) and `lu-slider` (attributes `large-step`, `min-steps-between-values` and `thumb-collision-behavior`);
+  - CSS variables: `--lu-value`, `--lu-slider-start` and `--lu-slider-end`;
+  - theme classes: `lu-toggle`, `lu-toggle-group`, `lu-progress`, `lu-meter` and `lu-slider`;
+  - the full lists are in each task's notes.
+- **Context Menu:**
+  - `ContextMenu` with Base UI's parts, including `LinkItem`;
+  - entries `/context-menu` and `/context-menu.css`;
+  - the `lu-context-menu` element, with `data-disabled`;
+  - the variables `--lu-context-x` and `--lu-context-y`;
+  - `<lu-menu>`'s `show(keyboard)` method.
+- **Drawer:**
+  - `Drawer` with the parts Root, Trigger, Popup, Content, Title, Description and Close;
+  - the `swipeDirection` prop and the `DrawerSwipeDirection` type;
+  - entries `/drawer` and `/drawer.css`;
+  - the attributes `data-swipe-direction`, `data-swiping`, `data-swipe-dismiss` and `data-swipe-ignore`;
+  - the variables `--drawer-swipe-movement-x`, `--drawer-swipe-movement-y` and `--drawer-swipe-progress`;
+  - the theme class `lu-drawer`.
+
+**Worth the user's look:**
+- A Toggle on its own needs an island to change state; in a ToggleGroup it works on server pages.
+- Without its script, a `focusableWhenDisabled` button still acts.
+- Drawer leaves out Base UI's snap points, swipe area, indent effects, virtual-keyboard provider, detached triggers and non-modal drawers.
+- Context Menu opens on long press (iOS sends no contextmenu event) and on Shift+F10 or the ContextMenu key.
+- TASK-403, the hydration bug, was dev-only: hot reloading delayed a component's first render. It is fixed in `dom/hot.ts`.
+
+**Filed:** TASK-407 (the runtime's `value` property), plus the Slider gaps against Base UI.
 <!-- SECTION:NOTES:END -->
