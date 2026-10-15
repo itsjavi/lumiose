@@ -411,6 +411,139 @@ describe("optimistic() with submit() (TASK-196)", () => {
   });
 });
 
+/** Answers each fetch when the test calls the returned `answer(index, response)`. */
+function held() {
+  const answers: Array<(response: Response) => void> = [];
+  serve(
+    (request) =>
+      new Promise((resolve, reject) => {
+        answers.push(resolve);
+        request.signal.addEventListener("abort", () => reject(request.signal.reason));
+      }),
+  );
+  return (index: number, response: Response) => answers[index]!(response);
+}
+
+describe("submission() (decision-51)", () => {
+  it("keeps each instance's pending state, result and failure apart, and leaves actionData() alone", async () => {
+    const answer = held();
+    const first = client.submission();
+    const second = client.submission();
+    const one = first.submit({ id: "1" }, { action: "?/toggle" });
+    const two = second.submit({ id: "2" }, { action: "?/toggle" });
+    await vi.waitFor(() => expect(requests).toHaveLength(2));
+    expect([first.isSubmitting(), second.isSubmitting(), client.isSubmitting("toggle")]).toEqual([
+      true,
+      true,
+      true,
+    ]);
+    answer(1, actionResult({ type: "failure", status: 409, data: { message: "taken" } }));
+    await two;
+    expect([first.isSubmitting(), second.isSubmitting(), client.isSubmitting("toggle")]).toEqual([
+      true,
+      false,
+      true,
+    ]);
+    expect(second.result()).toEqual({ type: "failure", status: 409, data: { message: "taken" } });
+    expect(first.result()).toBeUndefined();
+    answer(0, actionResult({ type: "success", status: 200, data: { done: true } }));
+    await one;
+    expect(first.result()).toEqual({ type: "success", status: 200, data: { done: true } });
+    expect(client.isSubmitting("toggle")).toBe(false);
+    expect(client.actionData()).toBeUndefined();
+  });
+
+  it("supersedes the submission in flight on the same instance, and abort() leaves it idle", async () => {
+    const answer = held();
+    const handle = client.submission();
+    const older = handle.submit({ n: "1" });
+    await vi.waitFor(() => expect(requests).toHaveLength(1));
+    const newer = handle.submit({ n: "2" });
+    await expect(older).rejects.toMatchObject({ name: "AbortError" });
+    expect(requests[0]!.signal.aborted).toBe(true);
+    expect(handle.isSubmitting()).toBe(true);
+    await vi.waitFor(() => expect(requests).toHaveLength(2));
+    answer(1, actionResult({ type: "success", status: 200, data: 2 }));
+    expect(await newer).toEqual({ type: "success", status: 200, data: 2 });
+    expect(handle.result()).toEqual({ type: "success", status: 200, data: 2 });
+
+    const third = handle.submit({ n: "3" });
+    await vi.waitFor(() => expect(requests).toHaveLength(3));
+    handle.abort();
+    expect(handle.isSubmitting()).toBe(false);
+    await expect(third).rejects.toMatchObject({ name: "AbortError" });
+    expect(requests[2]!.signal.aborted).toBe(true);
+    // The last settled result and no error: an abort is not a failure.
+    expect(handle.result()).toEqual({ type: "success", status: 200, data: 2 });
+    expect(handle.error()).toBeUndefined();
+  });
+
+  it("aborts its submission when the component is disposed", async () => {
+    held();
+    const { createOwner, disposeOwner, runWithOwner } = await import("../../core/internal.ts");
+    const owner = createOwner(undefined);
+    const handle = runWithOwner(owner, () => client.submission());
+    const pending = handle.submit({});
+    await vi.waitFor(() => expect(requests).toHaveLength(1));
+    disposeOwner(owner);
+    await expect(pending).rejects.toMatchObject({ name: "AbortError" });
+    expect(handle.isSubmitting()).toBe(false);
+  });
+
+  it("puts unexpected errors in error(), without an unhandled rejection; reset() clears", async () => {
+    serve(() => actionResult({ type: "error", status: 500, error: { message: "boom" } }, 500));
+    const unhandled = vi.fn();
+    process.on("unhandledRejection", unhandled);
+    const handle = client.submission();
+    void handle.submit({});
+    await vi.waitFor(() => expect(handle.error()).toBeInstanceOf(fetchModule.FetchError));
+    expect(handle.error()).toMatchObject({ status: 500, message: "boom" });
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    process.off("unhandledRejection", unhandled);
+    expect(unhandled).not.toHaveBeenCalled();
+    handle.reset();
+    expect([handle.error(), handle.result()]).toEqual([undefined, undefined]);
+  });
+
+  it("follows redirects through the navigation hook, leaving result() as it was", async () => {
+    serve(() => actionResult({ type: "redirect", status: 303, location: "/done" }));
+    const handle = client.submission();
+    expect(await handle.submit({})).toEqual({ type: "redirect", status: 303, location: "/done" });
+    expect(navigation.navigate).toHaveBeenCalledWith("/done");
+    expect(handle.result()).toBeUndefined();
+  });
+
+  it("SPA pages refresh after a success; MPA pages do not on their own", async () => {
+    serve(() => actionResult({ type: "success", status: 200 }));
+    await client.submission().submit({});
+    expect(navigation.invalidate).toHaveBeenCalledTimes(1);
+    navigation.clientRouted = false;
+    await client.submission().submit({});
+    expect(navigation.invalidate).toHaveBeenCalledTimes(1);
+  });
+
+  it("works with optimistic(): rolls back on fail()", async () => {
+    const { optimistic } = await import("../../core/optimistic.ts");
+    serve(() => actionResult({ type: "failure", status: 400, data: "nope" }));
+    const shown = optimistic(() => 10);
+    const handle = client.submission();
+    shown.update((n) => n + 1, handle.submit({}));
+    expect(shown()).toBe(11);
+    await vi.waitFor(() => expect(handle.result()?.type).toBe("failure"));
+    await vi.waitFor(() => expect(shown()).toBe(10));
+  });
+
+  it("posts the submit event of an enhanced form, as submit() does", async () => {
+    serve(() => actionResult({ type: "success", status: 200, data: "ok" }));
+    const form = render('<form method="post" action="?/like"><button>Like</button></form>');
+    const handle = client.submission();
+    form.addEventListener("submit", (event) => void handle.submit(event));
+    form.querySelector("button")!.click();
+    await vi.waitFor(() => expect(handle.result()?.data).toBe("ok"));
+    expect(requests[0]!.url).toBe("http://localhost:3000/todos?/like");
+  });
+});
+
 describe("actionData()", () => {
   it("starts from the data the server embedded after a no-JS post", () => {
     document.head.innerHTML =
@@ -520,5 +653,29 @@ describe("submit() against the request handler", () => {
     expect(client.actionData()).toEqual({ title: "required" });
     await client.submit({}, { action: "?/done" });
     expect(navigation.navigate).toHaveBeenCalledWith("/todos/1");
+  });
+
+  it("runs page actions per submission() instance, rows of one list apart (decision-51)", async () => {
+    const { handle } = app({
+      "src/routes/todos/page.stsx": {
+        default: () => "",
+        actions: {
+          toggle: async ({ formData }: ActionContext) => {
+            const id = (await formData()).get("id");
+            return id === "2" ? fail(409, { id, message: "locked" }) : { id, done: true };
+          },
+        },
+      },
+    });
+    serve((request) => handle(request));
+    const rows = ["1", "2"].map(() => client.submission());
+    await Promise.all(
+      rows.map((row, i) => row.submit({ id: String(i + 1) }, { action: "?/toggle" })),
+    );
+    expect(rows.map((row) => row.result())).toEqual([
+      { type: "success", status: 200, data: { id: "1", done: true } },
+      { type: "failure", status: 409, data: { id: "2", message: "locked" } },
+    ]);
+    expect(client.actionData()).toBeUndefined();
   });
 });

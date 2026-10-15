@@ -68,6 +68,7 @@ folder under `src/routes` is a URL segment, and `page`, `layout`, `route`, `erro
 | `clientAction`                                                       | An `onSubmit` handler in an island or `spa` route: run browser code, then `await submit(event)`.                                       |
 | `useSubmit()`                                                        | `submit(target, { action, method })`: a form, a submit event, `FormData`, `URLSearchParams` or a record.                               |
 | `useFetcher()`: `fetcher.submit()`, `<fetcher.Form>`, `fetcher.data` | `submit(target, { action: "?/name" })`, which never navigates unless the action redirects, and resolves with `{ type, status, data }`. |
+| `useFetcher()` per instance: `fetcher.state`, `fetcher.data`         | `submission<typeof actions.name>()`: this component's `submit`, `isSubmitting()`, `result()`, `error()`, `abort()` and `reset()`.      |
 | `fetcher.load(href)`                                                 | An async component that awaits `fetchJSON(href)`; `invalidate(href)` loads it again.                                                   |
 | `useNavigation().state`, `fetcher.state`                             | `isNavigating()` (`lumiose/router`), `isSubmitting(name?)`, and `isBusy()` for anything in flight.                                     |
 | Optimistic UI from `fetcher.formData`                                | `optimistic(source)` with `.update(fn, submit(event))`.                                                                                |
@@ -105,16 +106,16 @@ folder under `src/routes` is a URL segment, and `page`, `layout`, `route`, `erro
 
 ## What has no equivalent
 
-| React Router                                                  | Instead                                                                                                                                                                                      |
-| ------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Routes defined in code (`routes.ts`, `route()`)               | File routes only. Colocate components and helpers next to the route; `_private` folders never route.                                                                                         |
-| `clientMiddleware`                                            | None. Run the code in the `spa` layout (`effect`, `onMount`) or in the handler that navigates.                                                                                               |
-| Client `instrumentations` (`router.navigate`, `router.fetch`) | This version has no client instrumentation hooks: `window` `error` and `unhandledrejection` listeners catch what escapes.                                                                    |
-| `useFetcher()` per instance, `useFetchers()`                  | This version has no per-instance submission handle: keep each `await submit(…)` result in a signal of the component that sent it. `isSubmitting(name)` counts every submission to an action. |
-| `useBlocker()`, `unstable_usePrompt()`                        | This version has no navigation guards. A `beforeunload` listener covers leaving the document.                                                                                                |
-| `handle` and `useMatches()`                                   | Pass data down as props or context from the layout; compare `route()` with a pattern.                                                                                                        |
-| `useNavigation().location` and `.formData`                    | `isNavigating()` for pending UI, and `optimistic()` for the value being submitted.                                                                                                           |
-| A Vite dev server in middleware mode inside a custom server   | This version has no dev handler for custom servers: develop with `lumiose dev`, and run your server against the build.                                                                       |
+| React Router                                                  | Instead                                                                                                                   |
+| ------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| Routes defined in code (`routes.ts`, `route()`)               | File routes only. Colocate components and helpers next to the route; `_private` folders never route.                      |
+| `clientMiddleware`                                            | None. Run the code in the `spa` layout (`effect`, `onMount`) or in the handler that navigates.                            |
+| Client `instrumentations` (`router.navigate`, `router.fetch`) | This version has no client instrumentation hooks: `window` `error` and `unhandledrejection` listeners catch what escapes. |
+| `useFetchers()`                                               | None: `isSubmitting(name)` counts every submission to an action, `isBusy()` anything in flight.                           |
+| `useBlocker()`, `unstable_usePrompt()`                        | This version has no navigation guards. A `beforeunload` listener covers leaving the document.                             |
+| `handle` and `useMatches()`                                   | Pass data down as props or context from the layout; compare `route()` with a pattern.                                     |
+| `useNavigation().location` and `.formData`                    | `isNavigating()` for pending UI, and `optimistic()` for the value being submitted.                                        |
+| A Vite dev server in middleware mode inside a custom server   | This version has no dev handler for custom servers: develop with `lumiose dev`, and run your server against the build.    |
 
 ## Example
 

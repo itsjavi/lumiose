@@ -43,6 +43,20 @@ cross-site requests).
 follows a redirect, and sets `actionData()`. It rejects only for unexpected errors, with a
 `FetchError`. `isSubmitting(name?)` is true while a submission is in flight.
 
+**Per-instance submissions.** `isSubmitting(name)` and `actionData()` are page-wide: rows of a
+list that post the same action would share one pending flag and overwrite each other's result.
+`submission()` gives a component its own handle, created during setup:
+`const toggle = submission<typeof actions.toggle>()`, then `onSubmit={toggle.submit}`.
+`toggle.isSubmitting()`, `toggle.result()` (the last `{ type: "success" | "failure", status, data }`,
+typed from the action) and `toggle.error()` (the last unexpected `FetchError`) are this instance's
+only. `toggle.submit()` takes what `submit()` takes and returns the same promise; a new submission
+on the handle aborts the one in flight, `toggle.abort()` cancels it (the handle is idle at once,
+and an abort is no error), `toggle.reset()` clears the result and the error, and disposing the
+component aborts too. A handle never sets `actionData()`, while `isSubmitting(name)` still counts
+it; SPA refreshing, `invalidate` targets and `optimistic()` work as with `submit()`. Errors land
+in `error()`, so `onSubmit={toggle.submit}` reports no unhandled rejection; redirects navigate
+and leave `result()` as it was.
+
 **Refreshing.** `invalidate()` re-runs the current page's async components (SPA; the stale UI stays
 until the new data arrives), or reloads the page (MPA). On client-routed (SPA) pages a successful
 `submit()` runs it for you, so the page shows the mutation without extra code; pass
@@ -81,23 +95,24 @@ type only: `import type { actions } from "../routes/reading-list/page.stsx"`.
 
 ## API
 
-| API                                                                  | Shape                                                                  |
-| -------------------------------------------------------------------- | ---------------------------------------------------------------------- |
-| `export const GET: Endpoint<"/api/x"> = (ctx) => Response`           | An endpoint method; `ctx.params` typed by the pattern.                 |
-| `export const action = async (ctx: ActionContext<"/x">) => …`        | The default form action of a page.                                     |
-| `export const actions = { name: (ctx: ActionContext<"/x">) => … }`   | Named actions, posted to `?/name`.                                     |
-| `ctx.formData()`                                                     | The request body as `FormData` (400 if it is not a form).              |
-| `fail(status, data?)`                                                | A failed action result.                                                |
-| `actionData<typeof actions>()`                                       | The last action's data or `fail` data, typed by the actions. Reactive. |
-| `submit(target, { action?, method?, signal?, invalidate? })`         | Post a form, submit event, `FormData`, `URLSearchParams` or a record.  |
-| `submit(target, { invalidate: [url, key] })`                         | The same, refetching only those cache entries after a success.         |
-| `submit<typeof actions.name>(…)`                                     | The same, resolving with that action's typed success and failure data. |
-| `isSubmitting(name?)`                                                | Whether a submission (to `?/name`) is in flight.                       |
-| `invalidate()`                                                       | Refresh the current page's server data.                                |
-| `invalidate(...targets)`                                             | Refetch the entries of URLs and `query()` key prefixes.                |
-| `query(key, fn)`                                                     | Awaited in a component, cache what `fn` resolves to under `key`.       |
-| `optimistic(source)`, `.set(value, promise)`, `.update(fn, promise)` | A value with overlays held while their promises are pending.           |
-| `fetchJSON<T>(url, init?)`, `isFetchError(e)`                        | JSON fetch with typed errors; cached by URL in components.             |
+| API                                                                  | Shape                                                                     |
+| -------------------------------------------------------------------- | ------------------------------------------------------------------------- |
+| `export const GET: Endpoint<"/api/x"> = (ctx) => Response`           | An endpoint method; `ctx.params` typed by the pattern.                    |
+| `export const action = async (ctx: ActionContext<"/x">) => …`        | The default form action of a page.                                        |
+| `export const actions = { name: (ctx: ActionContext<"/x">) => … }`   | Named actions, posted to `?/name`.                                        |
+| `ctx.formData()`                                                     | The request body as `FormData` (400 if it is not a form).                 |
+| `fail(status, data?)`                                                | A failed action result.                                                   |
+| `actionData<typeof actions>()`                                       | The last action's data or `fail` data, typed by the actions. Reactive.    |
+| `submit(target, { action?, method?, signal?, invalidate? })`         | Post a form, submit event, `FormData`, `URLSearchParams` or a record.     |
+| `submit(target, { invalidate: [url, key] })`                         | The same, refetching only those cache entries after a success.            |
+| `submit<typeof actions.name>(…)`                                     | The same, resolving with that action's typed success and failure data.    |
+| `isSubmitting(name?)`                                                | Whether a submission (to `?/name`) is in flight.                          |
+| `submission<typeof actions.name>()`                                  | This component's `{ submit, isSubmitting, result, error, abort, reset }`. |
+| `invalidate()`                                                       | Refresh the current page's server data.                                   |
+| `invalidate(...targets)`                                             | Refetch the entries of URLs and `query()` key prefixes.                   |
+| `query(key, fn)`                                                     | Awaited in a component, cache what `fn` resolves to under `key`.          |
+| `optimistic(source)`, `.set(value, promise)`, `.update(fn, promise)` | A value with overlays held while their promises are pending.              |
+| `fetchJSON<T>(url, init?)`, `isFetchError(e)`                        | JSON fetch with typed errors; cached by URL in components.                |
 
 ## Example
 
@@ -212,6 +227,55 @@ export default function Post() {
 }
 ```
 
+Rows that post the same action, each with its own pending state and result:
+
+```stsx check file=routes/checklist/page.stsx
+// src/routes/checklist/page.stsx
+import { submission, type ActionContext } from "lumiose";
+
+export const mode = "server";
+
+const done = new Set<string>(); // a database in a real app
+
+export const actions = {
+  async toggle(ctx: ActionContext<"/checklist">) {
+    const id = String((await ctx.formData()).get("id"));
+    if (done.has(id)) done.delete(id);
+    else done.add(id);
+    return { id, done: done.has(id) };
+  },
+};
+
+export function Row(props: { id: string; label: string; done: boolean }) {
+  const toggle = submission<typeof actions.toggle>();
+  const isDone = () => {
+    const result = toggle.result();
+    return result?.type === "success" ? result.data.done : props.done;
+  };
+  return (
+    <form method="post" action="?/toggle" onSubmit={toggle.submit}>
+      <input type="hidden" name="id" value={props.id} />
+      <button disabled={toggle.isSubmitting()}>
+        {isDone() ? "✓" : "○"} {props.label}
+      </button>
+      {toggle.error() ? <span class="error">Not saved</span> : null}
+    </form>
+  );
+}
+
+export default function Checklist() {
+  return (
+    <ul>
+      {["milk", "eggs", "bread"].map((item) => (
+        <li>
+          <Row client:load id={item} label={item} done={done.has(item)} />
+        </li>
+      ))}
+    </ul>
+  );
+}
+```
+
 Keeping the page's filters through a named action:
 
 ```stsx check file=routes/issues/page.stsx
@@ -248,6 +312,8 @@ export default function Issues() {
   (`LUM4003`); expose an endpoint and call it with `fetchJSON`.
 - **`fetch()` instead of `fetchJSON()` inside islands.** A `Response` is not serializable
   (`LUM4007`).
+- **One `isSubmitting(name)` for several forms.** Rows that post the same action share it, and
+  `actionData()` holds whichever answered last. Give each row a `submission()`.
 - **Expecting `submit()` to reject on validation errors.** `fail()` resolves with
   `{ type: "failure" }`; only unexpected errors reject.
 - **Calling `invalidate()` after a successful `submit()` on an SPA page.** `submit()` already did;

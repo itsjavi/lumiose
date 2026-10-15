@@ -2,7 +2,7 @@
 // `pnpm typecheck` checks the expectTypeOf assertions; the runtime part only keeps vitest happy.
 import { describe, expectTypeOf, it } from "vitest";
 import type { ActionContext } from "../server/context.ts";
-import { actionData, submit } from "./client.ts";
+import { actionData, submission, submit, type Submission } from "./client.ts";
 import { fail, type ActionResult } from "./protocol.ts";
 import type { ActionData } from "./types.ts";
 
@@ -74,5 +74,21 @@ describe("submit<typeof actions.name>()", () => {
   it("is untyped without a type argument", () => {
     const untyped = () => submit(new FormData());
     expectTypeOf(untyped).returns.resolves.toEqualTypeOf<ActionResult>();
+  });
+});
+
+describe("submission<typeof actions.name>()", () => {
+  it("types submit() and result() from the action", () => {
+    const review = submission<typeof actions.review>();
+    expectTypeOf(review).toEqualTypeOf<Submission<Review, { errors: string[] }>>();
+    expectTypeOf(review.submit).returns.resolves.toEqualTypeOf<
+      ActionResult<Review, { errors: string[] }>
+    >();
+    expectTypeOf(review.result).returns.toEqualTypeOf<
+      | { type: "success"; status: number; data: Review }
+      | { type: "failure"; status: number; data: { errors: string[] } }
+      | undefined
+    >();
+    expectTypeOf(submission()).toEqualTypeOf<Submission>();
   });
 });

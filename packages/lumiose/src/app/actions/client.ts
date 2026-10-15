@@ -1,9 +1,11 @@
 // Form action helpers for the browser (spec §8 Actions, decision-18). `submit()` posts to a page
 // action with the JSON protocol (./protocol.ts); `isSubmitting()` and `actionData()` expose its
-// state as signals; `invalidate()` refreshes server data after a mutation. Navigation is MPA (a
-// full page load) unless the SPA router (TASK-25) installs its hooks with setClientNavigation().
+// state as signals; `submission()` keeps that state per component instance (decision-51);
+// `invalidate()` refreshes server data after a mutation. Navigation is MPA (a full page load)
+// unless the SPA router (TASK-25) installs its hooks with setClientNavigation().
 
 import { beginBusy } from "../../core/internal.ts";
+import { onCleanup } from "../../core/owner.ts";
 import { signal, type Signal } from "../../core/signal.ts";
 import { decodeData } from "../../server/serialize.ts";
 import { invalidateEntries, settled } from "../cache/client.ts";
@@ -97,9 +99,15 @@ export function submit<A extends ActionsExport>(
   target: SubmitTarget,
   options?: SubmitOptions,
 ): Promise<ActionResult<ActionSuccessData<A>, ActionFailureData<A>>>;
-export async function submit(
+export function submit(target: SubmitTarget, options: SubmitOptions = {}): Promise<ActionResult> {
+  return post(target, options, true);
+}
+
+/** `submit()`; `pageData`: whether its result becomes `actionData()` (not for `submission()`). */
+async function post(
   target: SubmitTarget,
-  options: SubmitOptions = {},
+  options: SubmitOptions,
+  pageData: boolean,
 ): Promise<ActionResult> {
   const { form, submitter, body } = readTarget(target);
   const method = (
@@ -133,7 +141,7 @@ export async function submit(
     });
     result = await readResult(response, url.href);
     if (result.type === "redirect") await navigation.navigate(result.location);
-    else dataSignal().set(result.data);
+    else if (pageData) dataSignal().set(result.data);
   } finally {
     endBusy();
     inFlight.update((names) => names.toSpliced(names.indexOf(name), 1));
@@ -149,6 +157,105 @@ export async function submit(
     }
   }
   return result;
+}
+
+/** A settled `success` or `failure` result: what `Submission.result()` holds. */
+export type SubmissionResult<Data = unknown, Failure = unknown> = Exclude<
+  ActionResult<Data, Failure>,
+  { type: "redirect" }
+>;
+
+/**
+ * The submissions of one component instance to a page action (`submission()`, decision-51): its
+ * own pending state, result and error, so rows of a list that post the same action do not share
+ * them.
+ */
+export interface Submission<Data = unknown, Failure = unknown> {
+  /**
+   * Posts like `submit()`, and returns its promise, after aborting this handle's submission in
+   * flight. What it rejects with is also in `error()` (or, for an abort, nowhere): an unawaited
+   * call (`onSubmit={handle.submit}`) reports no unhandled rejection.
+   */
+  submit(target: SubmitTarget, options?: SubmitOptions): Promise<ActionResult<Data, Failure>>;
+  /** Whether this handle's submission is in flight. Reactive. */
+  isSubmitting(): boolean;
+  /** The last settled result, `success` or `failure` (`fail()`); `undefined` before. Reactive. */
+  result(): SubmissionResult<Data, Failure> | undefined;
+  /** The last unexpected error (a `FetchError`), until the next result or `reset()`. Reactive. */
+  error(): FetchError | undefined;
+  /** Cancels the submission in flight, if any: the handle is idle at once. */
+  abort(): void;
+  /** Clears `result()` and `error()`. */
+  reset(): void;
+}
+
+/**
+ * A handle for this component's own submissions to a page action (decision-51): `submit()`,
+ * `isSubmitting()`, `result()`, `error()`, `abort()` and `reset()`. Call it during component setup;
+ * disposing the component aborts its submission in flight. It does not set `actionData()`, and
+ * `isSubmitting(name)` still counts it. Typed by the action: `submission<typeof actions.toggle>()`.
+ */
+export function submission(): Submission;
+export function submission<A extends ActionsExport>(): Submission<
+  ActionSuccessData<A>,
+  ActionFailureData<A>
+>;
+export function submission(): Submission {
+  const pending = signal(false);
+  const result = signal<SubmissionResult | undefined>(undefined);
+  const error = signal<FetchError | undefined>(undefined);
+  let current: AbortController | undefined;
+  const abort = (): void => {
+    current?.abort();
+    current = undefined;
+    pending.set(false);
+  };
+  onCleanup(abort);
+  return {
+    submit(target, options = {}) {
+      abort();
+      const controller = (current = new AbortController());
+      pending.set(true);
+      const aborts =
+        options.signal === undefined
+          ? controller.signal
+          : AbortSignal.any([controller.signal, options.signal]);
+      const promise = post(target, { ...options, signal: aborts }, false);
+      // Only the latest submission settles the handle; aborts leave it as abort() did.
+      const latest = (): boolean => {
+        if (current !== controller) return false;
+        current = undefined;
+        pending.set(false);
+        return true;
+      };
+      promise.then(
+        (outcome) => {
+          if (latest() && outcome.type !== "redirect") {
+            result.set(outcome);
+            error.set(undefined);
+          }
+        },
+        (failure: unknown) => {
+          const mine = latest();
+          if (failure instanceof FetchError) {
+            if (mine) error.set(failure);
+          } else if ((failure as { name?: unknown } | null)?.name !== "AbortError") {
+            // A mistake (a form that does not post): reported, not swallowed.
+            throw failure;
+          }
+        },
+      );
+      return promise;
+    },
+    isSubmitting: () => pending(),
+    result: () => result(),
+    error: () => error(),
+    abort,
+    reset() {
+      result.set(undefined);
+      error.set(undefined);
+    },
+  };
 }
 
 /**

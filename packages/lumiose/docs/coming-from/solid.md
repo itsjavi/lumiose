@@ -84,28 +84,28 @@ persistent layouts ([Rendering modes](../concepts/rendering-modes.md)).
 
 ### SolidStart
 
-| SolidStart                                                            | Lumiose                                                                                                                                       |
-| --------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
-| `app.config.ts` (Vinxi)                                               | `vite.config.ts` with the `lumiose()` plugin.                                                                                                 |
-| `src/routes/index.tsx`, `about.tsx`                                   | `src/routes/page.stsx`, `about/page.stsx`: a folder is a URL segment.                                                                         |
-| `blog/[slug].tsx`, `[[id]].tsx`, `[...rest].tsx`, `(group)`           | `blog/[slug]/page.stsx`, `[[id]]/page.stsx`, `[...rest]` (one or more segments) or `[[...rest]]` (zero or more), `(group)`.                   |
-| `blog.tsx` next to `blog/` (a layout)                                 | `blog/layout.stsx`; `props.children` is the outlet.                                                                                           |
-| API routes: `export function GET(event)`                              | `route.ts` endpoints: `export const GET: Endpoint<"/api/x"> = (ctx) => Response`.                                                             |
-| `query(fn, "key")` and `createAsync(() => getUser(id))`               | `await query(["user", id], () => getUser(id))` in an async component (key first, an array as in TanStack Query), or `await fetchJSON(url)`.   |
-| `"use server"` functions                                              | No RPC: form actions for mutations, endpoints for anything the browser fetches, and `*.server.ts` modules for server-only code.               |
-| `action(fn)` and `<form action={myAction} method="post">`             | `export const actions = { save(ctx) {…} }` and `<form method="post" action="?/save">`, which works without JavaScript.                        |
-| `useAction(myAction)`                                                 | `submit(target, { action: "?/save" })` from an island or `spa` route.                                                                         |
-| `useSubmission(myAction)`: `pending`, `result`                        | `isSubmitting("save")`, and `actionData()` or the result that `await submit(…)` resolves to.                                                  |
-| `revalidate(key)`, `reload()`                                         | `invalidate(["key"])` refetches matching `query()` entries; `invalidate()` refreshes the page.                                                |
-| `redirect()`, `json()` from an action                                 | `redirect(to)` (it throws), and plain data as the return value; `fail(status, data)` for validation errors.                                   |
-| `entry-server.tsx` with `<StartServer document>`                      | `src/document.stsx` renders `{props.head}` and `{props.body}`.                                                                                |
-| `entry-client.tsx`, `app.tsx` with `<Router root>` and `<FileRoutes>` | No files: the router is built in; `src/routes/layout.stsx` is the root layout. Code before hydration goes in `src/instrumentation.client.ts`. |
-| `createMiddleware({ onRequest, onBeforeResponse })`                   | `src/middleware.ts`: `(ctx, next) => Response`, code before and after `await next()`; a `middleware.ts` in a route folder for its routes.     |
-| `event.locals`, `getRequestEvent()`                                   | `ctx.locals` (typed by augmenting `Locals`); `request()`, `locals()`, `cookies()` and `url()` during a server render.                         |
-| `useSession()`                                                        | `cookies` and `signedCookie(name)` ([Server](../concepts/server.md)).                                                                         |
-| `clientOnly(() => import("./Map"))`                                   | `client:only` on the usage: `<Map client:only />`.                                                                                            |
-| `ssr: false`, prerendering (`server.prerender`)                       | `lumiose({ mode: "spa", ssr: false })`; `static` routes (the default) with `staticPaths()`, and `prerender = true` on `spa` pages.            |
-| Deployment presets                                                    | `@lumiose/adapter-node`, or `lumiose({ adapter })` for Vercel, Netlify and Cloudflare ([Deploy](../deploy/README.md)).                        |
+| SolidStart                                                            | Lumiose                                                                                                                                                                         |
+| --------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `app.config.ts` (Vinxi)                                               | `vite.config.ts` with the `lumiose()` plugin.                                                                                                                                   |
+| `src/routes/index.tsx`, `about.tsx`                                   | `src/routes/page.stsx`, `about/page.stsx`: a folder is a URL segment.                                                                                                           |
+| `blog/[slug].tsx`, `[[id]].tsx`, `[...rest].tsx`, `(group)`           | `blog/[slug]/page.stsx`, `[[id]]/page.stsx`, `[...rest]` (one or more segments) or `[[...rest]]` (zero or more), `(group)`.                                                     |
+| `blog.tsx` next to `blog/` (a layout)                                 | `blog/layout.stsx`; `props.children` is the outlet.                                                                                                                             |
+| API routes: `export function GET(event)`                              | `route.ts` endpoints: `export const GET: Endpoint<"/api/x"> = (ctx) => Response`.                                                                                               |
+| `query(fn, "key")` and `createAsync(() => getUser(id))`               | `await query(["user", id], () => getUser(id))` in an async component (key first, an array as in TanStack Query), or `await fetchJSON(url)`.                                     |
+| `"use server"` functions                                              | No RPC: form actions for mutations, endpoints for anything the browser fetches, and `*.server.ts` modules for server-only code.                                                 |
+| `action(fn)` and `<form action={myAction} method="post">`             | `export const actions = { save(ctx) {…} }` and `<form method="post" action="?/save">`, which works without JavaScript.                                                          |
+| `useAction(myAction)`                                                 | `submit(target, { action: "?/save" })` from an island or `spa` route.                                                                                                           |
+| `useSubmission(myAction)`: `pending`, `result`                        | `submission<typeof actions.save>()`: `isSubmitting()`, `result()`, `error()`, `abort()` and `reset()` for this component; page-wide, `isSubmitting("save")` and `actionData()`. |
+| `revalidate(key)`, `reload()`                                         | `invalidate(["key"])` refetches matching `query()` entries; `invalidate()` refreshes the page.                                                                                  |
+| `redirect()`, `json()` from an action                                 | `redirect(to)` (it throws), and plain data as the return value; `fail(status, data)` for validation errors.                                                                     |
+| `entry-server.tsx` with `<StartServer document>`                      | `src/document.stsx` renders `{props.head}` and `{props.body}`.                                                                                                                  |
+| `entry-client.tsx`, `app.tsx` with `<Router root>` and `<FileRoutes>` | No files: the router is built in; `src/routes/layout.stsx` is the root layout. Code before hydration goes in `src/instrumentation.client.ts`.                                   |
+| `createMiddleware({ onRequest, onBeforeResponse })`                   | `src/middleware.ts`: `(ctx, next) => Response`, code before and after `await next()`; a `middleware.ts` in a route folder for its routes.                                       |
+| `event.locals`, `getRequestEvent()`                                   | `ctx.locals` (typed by augmenting `Locals`); `request()`, `locals()`, `cookies()` and `url()` during a server render.                                                           |
+| `useSession()`                                                        | `cookies` and `signedCookie(name)` ([Server](../concepts/server.md)).                                                                                                           |
+| `clientOnly(() => import("./Map"))`                                   | `client:only` on the usage: `<Map client:only />`.                                                                                                                              |
+| `ssr: false`, prerendering (`server.prerender`)                       | `lumiose({ mode: "spa", ssr: false })`; `static` routes (the default) with `staticPaths()`, and `prerender = true` on `spa` pages.                                              |
+| Deployment presets                                                    | `@lumiose/adapter-node`, or `lumiose({ adapter })` for Vercel, Netlify and Cloudflare ([Deploy](../deploy/README.md)).                                                          |
 
 ### Solid Router
 
@@ -121,18 +121,18 @@ persistent layouts ([Rendering modes](../concepts/rendering-modes.md)).
 
 ## What has no equivalent
 
-| Solid                                                     | Instead                                                                                                                                                                   |
-| --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `createRoot`, `getOwner`, `runWithOwner`                  | Not public: components, effects and `render()` create owners, and async components restore theirs after each `await`.                                                     |
-| `createDeferred`, `createReaction`, `observable`, `from`  | None. Bridge an external source with a signal set from its subscription ([an external store](../concepts/state.md#an-external-store-zustandvanilla-a-jotai-store-redux)). |
-| `<Index>`, `mapArray`, `indexArray`                       | `.map()` in JSX; see the `<Index>` row above.                                                                                                                             |
-| `<SuspenseList>`                                          | None: give each `<Suspense>` its own fallback.                                                                                                                            |
-| `lazy()`                                                  | None: code splits per island and per `spa` page.                                                                                                                          |
-| Server functions (`"use server"`) called like functions   | Form actions and endpoints. Calling an endpoint with `fetchJSON()` from an island keeps the network boundary visible.                                                     |
-| `useSubmission()` per action instance, `useSubmissions()` | This version has no per-instance submission handle: keep each `await submit(…)` result in a signal of the component that sent it.                                         |
-| `useBeforeLeave()`                                        | This version has no navigation guards. A `beforeunload` listener covers leaving the document.                                                                             |
-| `preload` and `query` preloading on hover                 | `<Link prefetch>` loads the page's modules; data loads when the page renders.                                                                                             |
-| Solid component libraries (Kobalte, Corvu)                | They target Solid's runtime and do not run. Use native elements (`<dialog>`, `popover`), web components or framework-agnostic libraries.                                  |
+| Solid                                                    | Instead                                                                                                                                                                   |
+| -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `createRoot`, `getOwner`, `runWithOwner`                 | Not public: components, effects and `render()` create owners, and async components restore theirs after each `await`.                                                     |
+| `createDeferred`, `createReaction`, `observable`, `from` | None. Bridge an external source with a signal set from its subscription ([an external store](../concepts/state.md#an-external-store-zustandvanilla-a-jotai-store-redux)). |
+| `<Index>`, `mapArray`, `indexArray`                      | `.map()` in JSX; see the `<Index>` row above.                                                                                                                             |
+| `<SuspenseList>`                                         | None: give each `<Suspense>` its own fallback.                                                                                                                            |
+| `lazy()`                                                 | None: code splits per island and per `spa` page.                                                                                                                          |
+| Server functions (`"use server"`) called like functions  | Form actions and endpoints. Calling an endpoint with `fetchJSON()` from an island keeps the network boundary visible.                                                     |
+| `useSubmissions()`                                       | None: `isSubmitting(name)` counts every submission to an action.                                                                                                          |
+| `useBeforeLeave()`                                       | This version has no navigation guards. A `beforeunload` listener covers leaving the document.                                                                             |
+| `preload` and `query` preloading on hover                | `<Link prefetch>` loads the page's modules; data loads when the page renders.                                                                                             |
+| Solid component libraries (Kobalte, Corvu)               | They target Solid's runtime and do not run. Use native elements (`<dialog>`, `popover`), web components or framework-agnostic libraries.                                  |
 
 ## Example
 

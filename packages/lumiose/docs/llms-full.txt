@@ -374,6 +374,7 @@ same component is static on one page and interactive on another.
 | `"use client"`                                          | A `client:*` directive where the component is used (`client:load`, `client:idle`, `client:visible`, …), or an `spa` route. Props must be serializable, as in React.                                    |
 | `"use server"` functions, `<form action={fn}>`          | Form actions: `export const actions = { save(ctx) {…} }` in the page and `<form method="post" action="?/save">`, which works without JavaScript ([Data and actions](../concepts/data-and-actions.md)). |
 | `useActionState(fn, initial)`                           | `actionData<typeof actions>()`, the last result of the page's actions, or the result that `await submit(event)` resolves to.                                                                           |
+| `useActionState` per form instance                      | `submission<typeof actions.save>()` in the form's component: its own `isSubmitting()`, `result()` and `error()`, with `onSubmit={save.submit}` ([Data and actions](../concepts/data-and-actions.md)).  |
 | `useFormStatus()`                                       | `isSubmitting()`, or `isSubmitting("save")` for one named action.                                                                                                                                      |
 | `useOptimistic(state, update)`                          | `optimistic(source)`, with `.update(fn, submit(event))` ([optimistic updates](../concepts/data-and-actions.md)).                                                                                       |
 | `<title>`, `<meta>`, `<link>` rendered in a component   | `<Title>`, `<Meta>` and `<Head>`: the deepest wins, and they work in server components too ([Head and document](../concepts/head.md)).                                                                 |
@@ -395,7 +396,6 @@ same component is static on one page and interactive on another.
 | React component libraries (Radix, shadcn/ui, MUI)   | No React interop. Use native elements (`<dialog>`, `popover`, `<details>`), web components (with `on:event` listeners for their custom events) or framework-agnostic libraries.                 |
 | `React.lazy()`                                      | None. Islands load their module when they hydrate, and `spa` routes load a chunk per page and layout; `<Dynamic component={…}>` renders a component chosen at runtime.                          |
 | `useDeferredValue`, transition priorities           | None: updates are fine-grained, not scheduled by priority. Debounce expensive input in the handler.                                                                                             |
-| `useActionState` per form instance                  | `actionData()` holds the page's last result. For several independent forms, keep each `await submit(event)` result in the form's own signal; this version has no per-form submission handle.    |
 | `React.Children`, `cloneElement`                    | None: `children` is lazy and inserted once. Take a render prop (`renderItem: (item) => JSX.Element`) when a component needs to render content several times.                                    |
 | Class components and lifecycle methods              | Function components; `onMount`, `onCleanup` and `effect`.                                                                                                                                       |
 | `<StrictMode>` double invocation                    | None: setup runs once by design. `lumiose check` reports the reactive mistakes that strict mode helps find in React (`LUM2xxx`).                                                                |
@@ -981,6 +981,7 @@ folder under `src/routes` is a URL segment, and `page`, `layout`, `route`, `erro
 | `clientAction`                                                       | An `onSubmit` handler in an island or `spa` route: run browser code, then `await submit(event)`.                                       |
 | `useSubmit()`                                                        | `submit(target, { action, method })`: a form, a submit event, `FormData`, `URLSearchParams` or a record.                               |
 | `useFetcher()`: `fetcher.submit()`, `<fetcher.Form>`, `fetcher.data` | `submit(target, { action: "?/name" })`, which never navigates unless the action redirects, and resolves with `{ type, status, data }`. |
+| `useFetcher()` per instance: `fetcher.state`, `fetcher.data`         | `submission<typeof actions.name>()`: this component's `submit`, `isSubmitting()`, `result()`, `error()`, `abort()` and `reset()`.      |
 | `fetcher.load(href)`                                                 | An async component that awaits `fetchJSON(href)`; `invalidate(href)` loads it again.                                                   |
 | `useNavigation().state`, `fetcher.state`                             | `isNavigating()` (`lumiose/router`), `isSubmitting(name?)`, and `isBusy()` for anything in flight.                                     |
 | Optimistic UI from `fetcher.formData`                                | `optimistic(source)` with `.update(fn, submit(event))`.                                                                                |
@@ -1018,16 +1019,16 @@ folder under `src/routes` is a URL segment, and `page`, `layout`, `route`, `erro
 
 ## What has no equivalent
 
-| React Router                                                  | Instead                                                                                                                                                                                      |
-| ------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Routes defined in code (`routes.ts`, `route()`)               | File routes only. Colocate components and helpers next to the route; `_private` folders never route.                                                                                         |
-| `clientMiddleware`                                            | None. Run the code in the `spa` layout (`effect`, `onMount`) or in the handler that navigates.                                                                                               |
-| Client `instrumentations` (`router.navigate`, `router.fetch`) | This version has no client instrumentation hooks: `window` `error` and `unhandledrejection` listeners catch what escapes.                                                                    |
-| `useFetcher()` per instance, `useFetchers()`                  | This version has no per-instance submission handle: keep each `await submit(…)` result in a signal of the component that sent it. `isSubmitting(name)` counts every submission to an action. |
-| `useBlocker()`, `unstable_usePrompt()`                        | This version has no navigation guards. A `beforeunload` listener covers leaving the document.                                                                                                |
-| `handle` and `useMatches()`                                   | Pass data down as props or context from the layout; compare `route()` with a pattern.                                                                                                        |
-| `useNavigation().location` and `.formData`                    | `isNavigating()` for pending UI, and `optimistic()` for the value being submitted.                                                                                                           |
-| A Vite dev server in middleware mode inside a custom server   | This version has no dev handler for custom servers: develop with `lumiose dev`, and run your server against the build.                                                                       |
+| React Router                                                  | Instead                                                                                                                   |
+| ------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| Routes defined in code (`routes.ts`, `route()`)               | File routes only. Colocate components and helpers next to the route; `_private` folders never route.                      |
+| `clientMiddleware`                                            | None. Run the code in the `spa` layout (`effect`, `onMount`) or in the handler that navigates.                            |
+| Client `instrumentations` (`router.navigate`, `router.fetch`) | This version has no client instrumentation hooks: `window` `error` and `unhandledrejection` listeners catch what escapes. |
+| `useFetchers()`                                               | None: `isSubmitting(name)` counts every submission to an action, `isBusy()` anything in flight.                           |
+| `useBlocker()`, `unstable_usePrompt()`                        | This version has no navigation guards. A `beforeunload` listener covers leaving the document.                             |
+| `handle` and `useMatches()`                                   | Pass data down as props or context from the layout; compare `route()` with a pattern.                                     |
+| `useNavigation().location` and `.formData`                    | `isNavigating()` for pending UI, and `optimistic()` for the value being submitted.                                        |
+| A Vite dev server in middleware mode inside a custom server   | This version has no dev handler for custom servers: develop with `lumiose dev`, and run your server against the build.    |
 
 ## Example
 
@@ -1330,28 +1331,28 @@ persistent layouts ([Rendering modes](../concepts/rendering-modes.md)).
 
 ### SolidStart
 
-| SolidStart                                                            | Lumiose                                                                                                                                       |
-| --------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
-| `app.config.ts` (Vinxi)                                               | `vite.config.ts` with the `lumiose()` plugin.                                                                                                 |
-| `src/routes/index.tsx`, `about.tsx`                                   | `src/routes/page.stsx`, `about/page.stsx`: a folder is a URL segment.                                                                         |
-| `blog/[slug].tsx`, `[[id]].tsx`, `[...rest].tsx`, `(group)`           | `blog/[slug]/page.stsx`, `[[id]]/page.stsx`, `[...rest]` (one or more segments) or `[[...rest]]` (zero or more), `(group)`.                   |
-| `blog.tsx` next to `blog/` (a layout)                                 | `blog/layout.stsx`; `props.children` is the outlet.                                                                                           |
-| API routes: `export function GET(event)`                              | `route.ts` endpoints: `export const GET: Endpoint<"/api/x"> = (ctx) => Response`.                                                             |
-| `query(fn, "key")` and `createAsync(() => getUser(id))`               | `await query(["user", id], () => getUser(id))` in an async component (key first, an array as in TanStack Query), or `await fetchJSON(url)`.   |
-| `"use server"` functions                                              | No RPC: form actions for mutations, endpoints for anything the browser fetches, and `*.server.ts` modules for server-only code.               |
-| `action(fn)` and `<form action={myAction} method="post">`             | `export const actions = { save(ctx) {…} }` and `<form method="post" action="?/save">`, which works without JavaScript.                        |
-| `useAction(myAction)`                                                 | `submit(target, { action: "?/save" })` from an island or `spa` route.                                                                         |
-| `useSubmission(myAction)`: `pending`, `result`                        | `isSubmitting("save")`, and `actionData()` or the result that `await submit(…)` resolves to.                                                  |
-| `revalidate(key)`, `reload()`                                         | `invalidate(["key"])` refetches matching `query()` entries; `invalidate()` refreshes the page.                                                |
-| `redirect()`, `json()` from an action                                 | `redirect(to)` (it throws), and plain data as the return value; `fail(status, data)` for validation errors.                                   |
-| `entry-server.tsx` with `<StartServer document>`                      | `src/document.stsx` renders `{props.head}` and `{props.body}`.                                                                                |
-| `entry-client.tsx`, `app.tsx` with `<Router root>` and `<FileRoutes>` | No files: the router is built in; `src/routes/layout.stsx` is the root layout. Code before hydration goes in `src/instrumentation.client.ts`. |
-| `createMiddleware({ onRequest, onBeforeResponse })`                   | `src/middleware.ts`: `(ctx, next) => Response`, code before and after `await next()`; a `middleware.ts` in a route folder for its routes.     |
-| `event.locals`, `getRequestEvent()`                                   | `ctx.locals` (typed by augmenting `Locals`); `request()`, `locals()`, `cookies()` and `url()` during a server render.                         |
-| `useSession()`                                                        | `cookies` and `signedCookie(name)` ([Server](../concepts/server.md)).                                                                         |
-| `clientOnly(() => import("./Map"))`                                   | `client:only` on the usage: `<Map client:only />`.                                                                                            |
-| `ssr: false`, prerendering (`server.prerender`)                       | `lumiose({ mode: "spa", ssr: false })`; `static` routes (the default) with `staticPaths()`, and `prerender = true` on `spa` pages.            |
-| Deployment presets                                                    | `@lumiose/adapter-node`, or `lumiose({ adapter })` for Vercel, Netlify and Cloudflare ([Deploy](../deploy/README.md)).                        |
+| SolidStart                                                            | Lumiose                                                                                                                                                                         |
+| --------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `app.config.ts` (Vinxi)                                               | `vite.config.ts` with the `lumiose()` plugin.                                                                                                                                   |
+| `src/routes/index.tsx`, `about.tsx`                                   | `src/routes/page.stsx`, `about/page.stsx`: a folder is a URL segment.                                                                                                           |
+| `blog/[slug].tsx`, `[[id]].tsx`, `[...rest].tsx`, `(group)`           | `blog/[slug]/page.stsx`, `[[id]]/page.stsx`, `[...rest]` (one or more segments) or `[[...rest]]` (zero or more), `(group)`.                                                     |
+| `blog.tsx` next to `blog/` (a layout)                                 | `blog/layout.stsx`; `props.children` is the outlet.                                                                                                                             |
+| API routes: `export function GET(event)`                              | `route.ts` endpoints: `export const GET: Endpoint<"/api/x"> = (ctx) => Response`.                                                                                               |
+| `query(fn, "key")` and `createAsync(() => getUser(id))`               | `await query(["user", id], () => getUser(id))` in an async component (key first, an array as in TanStack Query), or `await fetchJSON(url)`.                                     |
+| `"use server"` functions                                              | No RPC: form actions for mutations, endpoints for anything the browser fetches, and `*.server.ts` modules for server-only code.                                                 |
+| `action(fn)` and `<form action={myAction} method="post">`             | `export const actions = { save(ctx) {…} }` and `<form method="post" action="?/save">`, which works without JavaScript.                                                          |
+| `useAction(myAction)`                                                 | `submit(target, { action: "?/save" })` from an island or `spa` route.                                                                                                           |
+| `useSubmission(myAction)`: `pending`, `result`                        | `submission<typeof actions.save>()`: `isSubmitting()`, `result()`, `error()`, `abort()` and `reset()` for this component; page-wide, `isSubmitting("save")` and `actionData()`. |
+| `revalidate(key)`, `reload()`                                         | `invalidate(["key"])` refetches matching `query()` entries; `invalidate()` refreshes the page.                                                                                  |
+| `redirect()`, `json()` from an action                                 | `redirect(to)` (it throws), and plain data as the return value; `fail(status, data)` for validation errors.                                                                     |
+| `entry-server.tsx` with `<StartServer document>`                      | `src/document.stsx` renders `{props.head}` and `{props.body}`.                                                                                                                  |
+| `entry-client.tsx`, `app.tsx` with `<Router root>` and `<FileRoutes>` | No files: the router is built in; `src/routes/layout.stsx` is the root layout. Code before hydration goes in `src/instrumentation.client.ts`.                                   |
+| `createMiddleware({ onRequest, onBeforeResponse })`                   | `src/middleware.ts`: `(ctx, next) => Response`, code before and after `await next()`; a `middleware.ts` in a route folder for its routes.                                       |
+| `event.locals`, `getRequestEvent()`                                   | `ctx.locals` (typed by augmenting `Locals`); `request()`, `locals()`, `cookies()` and `url()` during a server render.                                                           |
+| `useSession()`                                                        | `cookies` and `signedCookie(name)` ([Server](../concepts/server.md)).                                                                                                           |
+| `clientOnly(() => import("./Map"))`                                   | `client:only` on the usage: `<Map client:only />`.                                                                                                                              |
+| `ssr: false`, prerendering (`server.prerender`)                       | `lumiose({ mode: "spa", ssr: false })`; `static` routes (the default) with `staticPaths()`, and `prerender = true` on `spa` pages.                                              |
+| Deployment presets                                                    | `@lumiose/adapter-node`, or `lumiose({ adapter })` for Vercel, Netlify and Cloudflare ([Deploy](../deploy/README.md)).                                                          |
 
 ### Solid Router
 
@@ -1367,18 +1368,18 @@ persistent layouts ([Rendering modes](../concepts/rendering-modes.md)).
 
 ## What has no equivalent
 
-| Solid                                                     | Instead                                                                                                                                                                   |
-| --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `createRoot`, `getOwner`, `runWithOwner`                  | Not public: components, effects and `render()` create owners, and async components restore theirs after each `await`.                                                     |
-| `createDeferred`, `createReaction`, `observable`, `from`  | None. Bridge an external source with a signal set from its subscription ([an external store](../concepts/state.md#an-external-store-zustandvanilla-a-jotai-store-redux)). |
-| `<Index>`, `mapArray`, `indexArray`                       | `.map()` in JSX; see the `<Index>` row above.                                                                                                                             |
-| `<SuspenseList>`                                          | None: give each `<Suspense>` its own fallback.                                                                                                                            |
-| `lazy()`                                                  | None: code splits per island and per `spa` page.                                                                                                                          |
-| Server functions (`"use server"`) called like functions   | Form actions and endpoints. Calling an endpoint with `fetchJSON()` from an island keeps the network boundary visible.                                                     |
-| `useSubmission()` per action instance, `useSubmissions()` | This version has no per-instance submission handle: keep each `await submit(…)` result in a signal of the component that sent it.                                         |
-| `useBeforeLeave()`                                        | This version has no navigation guards. A `beforeunload` listener covers leaving the document.                                                                             |
-| `preload` and `query` preloading on hover                 | `<Link prefetch>` loads the page's modules; data loads when the page renders.                                                                                             |
-| Solid component libraries (Kobalte, Corvu)                | They target Solid's runtime and do not run. Use native elements (`<dialog>`, `popover`), web components or framework-agnostic libraries.                                  |
+| Solid                                                    | Instead                                                                                                                                                                   |
+| -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `createRoot`, `getOwner`, `runWithOwner`                 | Not public: components, effects and `render()` create owners, and async components restore theirs after each `await`.                                                     |
+| `createDeferred`, `createReaction`, `observable`, `from` | None. Bridge an external source with a signal set from its subscription ([an external store](../concepts/state.md#an-external-store-zustandvanilla-a-jotai-store-redux)). |
+| `<Index>`, `mapArray`, `indexArray`                      | `.map()` in JSX; see the `<Index>` row above.                                                                                                                             |
+| `<SuspenseList>`                                         | None: give each `<Suspense>` its own fallback.                                                                                                                            |
+| `lazy()`                                                 | None: code splits per island and per `spa` page.                                                                                                                          |
+| Server functions (`"use server"`) called like functions  | Form actions and endpoints. Calling an endpoint with `fetchJSON()` from an island keeps the network boundary visible.                                                     |
+| `useSubmissions()`                                       | None: `isSubmitting(name)` counts every submission to an action.                                                                                                          |
+| `useBeforeLeave()`                                       | This version has no navigation guards. A `beforeunload` listener covers leaving the document.                                                                             |
+| `preload` and `query` preloading on hover                | `<Link prefetch>` loads the page's modules; data loads when the page renders.                                                                                             |
+| Solid component libraries (Kobalte, Corvu)               | They target Solid's runtime and do not run. Use native elements (`<dialog>`, `popover`), web components or framework-agnostic libraries.                                  |
 
 ## Example
 
@@ -3745,6 +3746,20 @@ cross-site requests).
 follows a redirect, and sets `actionData()`. It rejects only for unexpected errors, with a
 `FetchError`. `isSubmitting(name?)` is true while a submission is in flight.
 
+**Per-instance submissions.** `isSubmitting(name)` and `actionData()` are page-wide: rows of a
+list that post the same action would share one pending flag and overwrite each other's result.
+`submission()` gives a component its own handle, created during setup:
+`const toggle = submission<typeof actions.toggle>()`, then `onSubmit={toggle.submit}`.
+`toggle.isSubmitting()`, `toggle.result()` (the last `{ type: "success" | "failure", status, data }`,
+typed from the action) and `toggle.error()` (the last unexpected `FetchError`) are this instance's
+only. `toggle.submit()` takes what `submit()` takes and returns the same promise; a new submission
+on the handle aborts the one in flight, `toggle.abort()` cancels it (the handle is idle at once,
+and an abort is no error), `toggle.reset()` clears the result and the error, and disposing the
+component aborts too. A handle never sets `actionData()`, while `isSubmitting(name)` still counts
+it; SPA refreshing, `invalidate` targets and `optimistic()` work as with `submit()`. Errors land
+in `error()`, so `onSubmit={toggle.submit}` reports no unhandled rejection; redirects navigate
+and leave `result()` as it was.
+
 **Refreshing.** `invalidate()` re-runs the current page's async components (SPA; the stale UI stays
 until the new data arrives), or reloads the page (MPA). On client-routed (SPA) pages a successful
 `submit()` runs it for you, so the page shows the mutation without extra code; pass
@@ -3783,23 +3798,24 @@ type only: `import type { actions } from "../routes/reading-list/page.stsx"`.
 
 ## API
 
-| API                                                                  | Shape                                                                  |
-| -------------------------------------------------------------------- | ---------------------------------------------------------------------- |
-| `export const GET: Endpoint<"/api/x"> = (ctx) => Response`           | An endpoint method; `ctx.params` typed by the pattern.                 |
-| `export const action = async (ctx: ActionContext<"/x">) => …`        | The default form action of a page.                                     |
-| `export const actions = { name: (ctx: ActionContext<"/x">) => … }`   | Named actions, posted to `?/name`.                                     |
-| `ctx.formData()`                                                     | The request body as `FormData` (400 if it is not a form).              |
-| `fail(status, data?)`                                                | A failed action result.                                                |
-| `actionData<typeof actions>()`                                       | The last action's data or `fail` data, typed by the actions. Reactive. |
-| `submit(target, { action?, method?, signal?, invalidate? })`         | Post a form, submit event, `FormData`, `URLSearchParams` or a record.  |
-| `submit(target, { invalidate: [url, key] })`                         | The same, refetching only those cache entries after a success.         |
-| `submit<typeof actions.name>(…)`                                     | The same, resolving with that action's typed success and failure data. |
-| `isSubmitting(name?)`                                                | Whether a submission (to `?/name`) is in flight.                       |
-| `invalidate()`                                                       | Refresh the current page's server data.                                |
-| `invalidate(...targets)`                                             | Refetch the entries of URLs and `query()` key prefixes.                |
-| `query(key, fn)`                                                     | Awaited in a component, cache what `fn` resolves to under `key`.       |
-| `optimistic(source)`, `.set(value, promise)`, `.update(fn, promise)` | A value with overlays held while their promises are pending.           |
-| `fetchJSON<T>(url, init?)`, `isFetchError(e)`                        | JSON fetch with typed errors; cached by URL in components.             |
+| API                                                                  | Shape                                                                     |
+| -------------------------------------------------------------------- | ------------------------------------------------------------------------- |
+| `export const GET: Endpoint<"/api/x"> = (ctx) => Response`           | An endpoint method; `ctx.params` typed by the pattern.                    |
+| `export const action = async (ctx: ActionContext<"/x">) => …`        | The default form action of a page.                                        |
+| `export const actions = { name: (ctx: ActionContext<"/x">) => … }`   | Named actions, posted to `?/name`.                                        |
+| `ctx.formData()`                                                     | The request body as `FormData` (400 if it is not a form).                 |
+| `fail(status, data?)`                                                | A failed action result.                                                   |
+| `actionData<typeof actions>()`                                       | The last action's data or `fail` data, typed by the actions. Reactive.    |
+| `submit(target, { action?, method?, signal?, invalidate? })`         | Post a form, submit event, `FormData`, `URLSearchParams` or a record.     |
+| `submit(target, { invalidate: [url, key] })`                         | The same, refetching only those cache entries after a success.            |
+| `submit<typeof actions.name>(…)`                                     | The same, resolving with that action's typed success and failure data.    |
+| `isSubmitting(name?)`                                                | Whether a submission (to `?/name`) is in flight.                          |
+| `submission<typeof actions.name>()`                                  | This component's `{ submit, isSubmitting, result, error, abort, reset }`. |
+| `invalidate()`                                                       | Refresh the current page's server data.                                   |
+| `invalidate(...targets)`                                             | Refetch the entries of URLs and `query()` key prefixes.                   |
+| `query(key, fn)`                                                     | Awaited in a component, cache what `fn` resolves to under `key`.          |
+| `optimistic(source)`, `.set(value, promise)`, `.update(fn, promise)` | A value with overlays held while their promises are pending.              |
+| `fetchJSON<T>(url, init?)`, `isFetchError(e)`                        | JSON fetch with typed errors; cached by URL in components.                |
 
 ## Example
 
@@ -3914,6 +3930,55 @@ export default function Post() {
 }
 ```
 
+Rows that post the same action, each with its own pending state and result:
+
+```stsx check file=routes/checklist/page.stsx
+// src/routes/checklist/page.stsx
+import { submission, type ActionContext } from "lumiose";
+
+export const mode = "server";
+
+const done = new Set<string>(); // a database in a real app
+
+export const actions = {
+  async toggle(ctx: ActionContext<"/checklist">) {
+    const id = String((await ctx.formData()).get("id"));
+    if (done.has(id)) done.delete(id);
+    else done.add(id);
+    return { id, done: done.has(id) };
+  },
+};
+
+export function Row(props: { id: string; label: string; done: boolean }) {
+  const toggle = submission<typeof actions.toggle>();
+  const isDone = () => {
+    const result = toggle.result();
+    return result?.type === "success" ? result.data.done : props.done;
+  };
+  return (
+    <form method="post" action="?/toggle" onSubmit={toggle.submit}>
+      <input type="hidden" name="id" value={props.id} />
+      <button disabled={toggle.isSubmitting()}>
+        {isDone() ? "✓" : "○"} {props.label}
+      </button>
+      {toggle.error() ? <span class="error">Not saved</span> : null}
+    </form>
+  );
+}
+
+export default function Checklist() {
+  return (
+    <ul>
+      {["milk", "eggs", "bread"].map((item) => (
+        <li>
+          <Row client:load id={item} label={item} done={done.has(item)} />
+        </li>
+      ))}
+    </ul>
+  );
+}
+```
+
 Keeping the page's filters through a named action:
 
 ```stsx check file=routes/issues/page.stsx
@@ -3950,6 +4015,8 @@ export default function Issues() {
   (`LUM4003`); expose an endpoint and call it with `fetchJSON`.
 - **`fetch()` instead of `fetchJSON()` inside islands.** A `Response` is not serializable
   (`LUM4007`).
+- **One `isSubmitting(name)` for several forms.** Rows that post the same action share it, and
+  `actionData()` holds whichever answered last. Give each row a `submission()`.
 - **Expecting `submit()` to reject on validation errors.** `fail()` resolves with
   `{ type: "failure" }`; only unexpected errors reject.
 - **Calling `invalidate()` after a successful `submit()` on an SPA page.** `submit()` already did;
@@ -9085,7 +9152,39 @@ function isSubmitting(name?: string): boolean;
 ```
 
 Whether a `submit()` is in flight; with a name, one to that named action (`?/name`). Reactive.
-`false` on the server.
+`false` on the server. Submissions of `submission()` handles count too.
+
+### submission
+
+```ts
+function submission(): Submission;
+// Typed by the action it posts to: submission<typeof actions.toggle>()
+function submission<A extends ActionsExport>(): Submission<
+  ActionSuccessData<A>,
+  ActionFailureData<A>
+>;
+
+interface Submission<Data = unknown, Failure = unknown> {
+  /** submit() for this handle: aborts its submission in flight, returns submit()'s promise. */
+  submit(target: SubmitTarget, options?: SubmitOptions): Promise<ActionResult<Data, Failure>>;
+  isSubmitting(): boolean; // this handle's submission is in flight
+  result():
+    | { type: "success"; status: number; data: Data }
+    | { type: "failure"; status: number; data: Failure }
+    | undefined; // the last settled result
+  error(): FetchError | undefined; // the last unexpected error
+  abort(): void; // cancels the submission in flight; the handle is idle at once
+  reset(): void; // clears result() and error()
+}
+```
+
+The submissions of one component instance (decision-51, after Solid Router's `useSubmission` and
+React Router's `useFetcher`). Call it during component setup: disposing the component aborts its
+submission in flight. Its results never set `actionData()`, and [`isSubmitting(name)`](#issubmitting)
+still counts them; invalidation and redirects behave as with `submit()`. The promise `submit()`
+returns rejects for errors (also in `error()`) and aborts (`AbortError`, not an error of the
+handle), but an unawaited one (`onSubmit={handle.submit}`) reports no unhandled rejection. On the
+server the handle is idle and its `submit()` rejects.
 
 ### actionData
 

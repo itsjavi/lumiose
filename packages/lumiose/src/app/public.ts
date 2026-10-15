@@ -5,7 +5,9 @@ export {
   actionData,
   invalidate,
   submit,
+  submission,
   isSubmitting,
+  type Submission,
   type SubmitOptions,
   type SubmitTarget,
 } from "./actions/client.ts";

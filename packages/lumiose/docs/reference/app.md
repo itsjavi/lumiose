@@ -144,7 +144,39 @@ function isSubmitting(name?: string): boolean;
 ```
 
 Whether a `submit()` is in flight; with a name, one to that named action (`?/name`). Reactive.
-`false` on the server.
+`false` on the server. Submissions of `submission()` handles count too.
+
+### submission
+
+```ts
+function submission(): Submission;
+// Typed by the action it posts to: submission<typeof actions.toggle>()
+function submission<A extends ActionsExport>(): Submission<
+  ActionSuccessData<A>,
+  ActionFailureData<A>
+>;
+
+interface Submission<Data = unknown, Failure = unknown> {
+  /** submit() for this handle: aborts its submission in flight, returns submit()'s promise. */
+  submit(target: SubmitTarget, options?: SubmitOptions): Promise<ActionResult<Data, Failure>>;
+  isSubmitting(): boolean; // this handle's submission is in flight
+  result():
+    | { type: "success"; status: number; data: Data }
+    | { type: "failure"; status: number; data: Failure }
+    | undefined; // the last settled result
+  error(): FetchError | undefined; // the last unexpected error
+  abort(): void; // cancels the submission in flight; the handle is idle at once
+  reset(): void; // clears result() and error()
+}
+```
+
+The submissions of one component instance (decision-51, after Solid Router's `useSubmission` and
+React Router's `useFetcher`). Call it during component setup: disposing the component aborts its
+submission in flight. Its results never set `actionData()`, and [`isSubmitting(name)`](#issubmitting)
+still counts them; invalidation and redirects behave as with `submit()`. The promise `submit()`
+returns rejects for errors (also in `error()`) and aborts (`AbortError`, not an error of the
+handle), but an unawaited one (`onSubmit={handle.submit}`) reports no unhandled rejection. On the
+server the handle is idle and its `submit()` rejects.
 
 ### actionData
 

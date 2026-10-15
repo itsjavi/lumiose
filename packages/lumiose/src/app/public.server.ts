@@ -1,7 +1,7 @@
 // Public app-layer API under the `node` condition (owner: Nova): redirect, notFound, error, cookies, request, …
 // Keep the names in sync with ./public.ts.
-export { actionData, invalidate, isSubmitting, submit } from "./actions/server.ts";
-export type { SubmitOptions, SubmitTarget } from "./actions/client.ts";
+export { actionData, invalidate, isSubmitting, submission, submit } from "./actions/server.ts";
+export type { Submission, SubmitOptions, SubmitTarget } from "./actions/client.ts";
 export { fail, type ActionFailure, type ActionResult } from "./actions/protocol.ts";
 export type { ActionData } from "./actions/types.ts";
 export { query } from "./cache/server.ts";
