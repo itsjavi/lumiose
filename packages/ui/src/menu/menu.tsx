@@ -364,8 +364,9 @@ function GroupElement({
   ...rest
 }: JSX.IntrinsicElements["div"] & { group: GroupContextValue }) {
   // The server writes the attributes before it renders the children: render them first to know
-  // whether a GroupLabel exists. The browser updates the reference when the label registers.
-  const content = isServer ? children : undefined;
+  // whether a GroupLabel exists. The browser updates the reference when the label registers. The
+  // server renders once, so reading them once is the intent: `untrack` says so (no LUM2001).
+  const content = isServer ? untrack(() => children) : undefined;
   return (
     <div aria-labelledby={group.labels() > 0 ? group.labelId : undefined} {...rest} role="group">
       {isServer ? content : children}
