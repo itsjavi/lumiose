@@ -43,6 +43,8 @@ import { childFrame, frame, setFrame, type Frame } from "./frame.ts";
 import { hydrator } from "./hydration.ts";
 import { createRange, renderInto, type RangeStart, type Region } from "./insert.ts";
 import { INSTRUMENTED, markRender } from "./instrument.ts";
+import { INSPECTED } from "./dev.ts";
+import { labelValue } from "./devtools.ts";
 
 type AsyncComponent = (props: any) => Promise<Renderable>;
 
@@ -109,6 +111,7 @@ export function createAsync(component: AsyncComponent, props: unknown): RangeSta
   }
   const end = start.$$end;
   const flag = signal(false);
+  if (INSPECTED) labelValue(flag, "isPending()", true);
   // Under hydration the range adopts the instance's server block, and the first run claims its
   // content with a cursor of its own (carried by its frame), after its awaits replay.
   const claimed = hydrator?.fork(start);

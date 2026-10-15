@@ -72,6 +72,8 @@ export interface ReactiveRecord {
   kind: ReactiveKind;
   /** The variable name (the compiler passes it in dev) or the store property. */
   label: string | undefined;
+  /** Created by Lumiose itself (a resource's state, the router's URL), not by the app. */
+  internal: boolean;
   node: ReactiveNode;
   component: ComponentRecord | undefined;
   /** A binding's DOM node: the element or text it updates, or the parent of the region. */
@@ -164,6 +166,7 @@ interface State extends Registry {
   owners: WeakMap<Owner, ComponentRecord>;
   hosts: WeakMap<Node, ReactiveRecord[]>;
   sources: WeakMap<object, string>;
+  names: WeakMap<object, string>;
   islandsById: Map<number, IslandRecord>;
   hydrating: IslandRecord | undefined;
   /** Above 0 while `snapshot()` evaluates getters: nothing is recorded. */
@@ -220,6 +223,7 @@ function createState(): State {
     owners: new WeakMap(),
     hosts: new WeakMap(),
     sources: new WeakMap(),
+    names: new WeakMap(),
     islandsById: new Map(),
     hydrating: undefined,
     paused: 0,
@@ -279,7 +283,7 @@ export function enterComponent(component: object, props: unknown): ComponentReco
   const parent = current(s);
   const record: ComponentRecord = {
     id: ++s.ids,
-    name: (component as { name?: string }).name || "(anonymous)",
+    name: s.names.get(component) ?? ((component as { name?: string }).name || "(anonymous)"),
     source: s.sources.get(component),
     props,
     parent,
@@ -333,6 +337,12 @@ export function renderComponent<T>(record: ComponentRecord | undefined, render: 
   } finally {
     exitComponent(record, result);
   }
+}
+
+/** Names a component the runtime creates without a name (the SPA router's root); returns it. */
+export function nameComponent<C extends object>(component: C, name: string): C {
+  registry()?.names.set(component, name);
+  return component;
 }
 
 /** The compiler passes a component's source location in dev (lumiose/dom/hot's `$hot`). */
@@ -402,6 +412,7 @@ function recordNode(
     id: ++s.ids,
     kind,
     label: undefined,
+    internal: false,
     node,
     component,
     host: undefined,
@@ -420,10 +431,26 @@ function recordNode(
   return record;
 }
 
-/** Names a signal or computed after its variable (the compiler's dev output, lumiose/dom/hot). */
-export function labelValue(value: unknown, label: string): void {
+/**
+ * Names a signal or computed: after its variable (the compiler's dev output through
+ * lumiose/dom/hot's `$label`), or, `internal`, after what the runtime made it for.
+ */
+export function labelValue(value: unknown, label: string, internal = false): void {
   const record = registry()?.functions.get(value as object);
-  if (record !== undefined) record.label = label;
+  if (record !== undefined) {
+    record.label = label;
+    record.internal = internal;
+  }
+}
+
+/** `value` (a function the app holds, such as a ref) reads `signal`, which takes its labels. */
+export function aliasValue(value: object, signal: object, label: string): void {
+  const s = registry();
+  const record = s?.functions.get(signal);
+  if (s === undefined || record === undefined) return;
+  s.functions.set(value, record);
+  record.label = label;
+  record.internal = true;
 }
 
 /** A store property's node, on its first tracked read (../core/store.ts). */

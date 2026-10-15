@@ -5,7 +5,7 @@
 //!   templates and in server HTML alike, so Alt+click opens any element's source, server-only
 //!   markup included (the file is root-relative, or the module id outside the root);
 //! - `$hot` receives each component's location (`hot.rs`);
-//! - `const count = signal(…)` and `computed(…)` imported from `lumiose` become
+//! - `const count = signal(…)`, `computed(…)` and `ref()` imported from `lumiose` become
 //!   `$label(signal(…), "count")` (`lumiose/dom/hot`), which names them in the inspector.
 //!
 //! Lines and columns are 1-based; columns count characters.
@@ -23,7 +23,7 @@ pub const SOURCE_ATTRIBUTE: &str = "data-lumiose-source";
 /// The local name `$label` is imported under (footer of the module).
 const LABEL: &str = "$$lumioseLabel";
 /// `lumiose`'s reactive constructors whose results get labels.
-const LABELLED: [&str; 2] = ["signal", "computed"];
+const LABELLED: [&str; 3] = ["signal", "computed", "ref"];
 
 /// A module's file label and line starts.
 pub struct DevSource {
@@ -60,8 +60,8 @@ impl DevSource {
     }
 }
 
-/// Wraps the initializers of `const x = signal(…)` / `computed(…)` in `$label`; returns the import
-/// to append when it wrapped any.
+/// Wraps the initializers of `const x = signal(…)` / `computed(…)` / `ref()` in `$label`; returns
+/// the import to append when it wrapped any.
 pub fn label_signals<'a>(ast: &Ast<'a>, program: &mut Program<'a>) -> Option<String> {
     let mut locals = HashSet::new();
     for statement in &program.body {

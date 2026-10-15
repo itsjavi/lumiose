@@ -20,6 +20,8 @@ import {
 import { signal, type Signal } from "../core/signal.ts";
 import { hydrator } from "./hydration.ts";
 import { createRange, detach, lastOf, place, renderRange, type RangeStart } from "./insert.ts";
+import { INSPECTED } from "./dev.ts";
+import { labelValue } from "./devtools.ts";
 
 interface Row<T> {
   item: T;
@@ -66,6 +68,7 @@ function renderRow(): void {
 
 function createRow<T>(state: ListState<T>, item: T, key: unknown, i: number): Row<T> {
   const index = state.x ? signal(i) : undefined;
+  if (INSPECTED && index !== undefined) labelValue(index, "list index", true);
   rowState = state;
   rowItem = item;
   rowIndex = index;

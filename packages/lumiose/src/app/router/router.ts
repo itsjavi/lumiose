@@ -50,7 +50,7 @@ import { readContext } from "../../core/owner.ts";
 import { untrack } from "../../core/reactive.ts";
 import { computed, signal, type Signal } from "../../core/signal.ts";
 import { createComponent } from "../../dom/component.ts";
-import { DEV } from "../../dom/dev.ts";
+import { DEV, INSPECTED } from "../../dom/dev.ts";
 import { MISMATCH } from "../../dom/hydration.ts";
 import { INSTRUMENTED, instrument, notify } from "../../dom/instrument.ts";
 import { createRange, renderRange, type RangeStart } from "../../dom/insert.ts";
@@ -73,6 +73,7 @@ import {
 } from "./hooks.ts";
 import type { followLocaleLinks } from "./locale-links.ts";
 import { REROUTE_ATTR, type ClientRoute, type ClientTable } from "./table.ts";
+import { labelValue } from "../../dom/devtools.ts";
 
 export type Params = Record<string, string>;
 type Module = Record<string, unknown>;
@@ -201,11 +202,28 @@ export function createRouter(config: SpaConfig, app: string): void {
     endBusy: undefined,
     loaded: new Map(),
   };
+  if (INSPECTED) {
+    labelValue(current, "route view", true);
+    labelValue(router.navigating, "isNavigating()", true);
+    labelValue(router.revision, "route revision", true);
+  }
 }
 
 function createScope(view: () => View): Scope {
   const params = computed(() => view().params);
   const search = computed(() => view().url.search);
+  if (INSPECTED) {
+    const scope = {
+      view,
+      params,
+      url: computed(() => view().url),
+      route: computed(() => view().route),
+      searchParams: computed(() => new URLSearchParams(search())),
+    };
+    for (const [key, value] of Object.entries(scope)) labelValue(value, `${key}()`, true);
+    labelValue(search, "search", true);
+    return scope;
+  }
   return {
     view,
     params,
@@ -447,6 +465,11 @@ function createOutlet(depth: number, scope: Scope): Outlet {
       if (router !== undefined) fail(router, error, view);
     });
   }
+  if (INSPECTED) {
+    const shown = signal(content);
+    labelValue(shown, "page", true);
+    return { owner, shown };
+  }
   return { owner, shown: signal(content) };
 }
 
@@ -549,6 +572,7 @@ function localeOf(r: Router, url: URL): string | undefined {
 function prepare(r: Router, outlet: Outlet, depth: number, view: View, nav: Nav): void {
   const owner = createOwner(outlet.owner);
   const committed = signal(false);
+  if (INSPECTED) labelValue(committed, "route committed", true);
   const scope = createScope(() => (committed() ? r.current() : view));
   let waiting = 0;
   let created = false;

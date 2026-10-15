@@ -257,6 +257,22 @@ describe.skipIf(!binding)("lumiose dev", () => {
     expect(code).toMatch(/import .* from "[^"]*\/app\/dev\/morph\.ts"/);
   });
 
+  it("mounts the in-page inspector from the dev client, and has the runtime report to it (decision-59)", async () => {
+    const entry = await (await get("/@id/__x00__lumiose:dev")).text();
+    const mount =
+      /import \{ mountInspector \} from "(\/@fs\/[^"]+\/app\/dev\/inspector\.ts)";\nmountInspector\((.*)\);/.exec(
+        entry,
+      );
+    expect(mount).not.toBeNull();
+    expect(JSON.parse(mount![2]!)).toEqual({ root: normalizePath(root), base: "/" });
+    const inspector = await get(mount![1]!);
+    expect(inspector.status).toBe(200);
+    expect(await inspector.text()).toContain("lumiose-inspector");
+    const fsPath = normalizePath(lumioseRoot).replace(/^\//, "");
+    const flag = await (await get(`/@fs/${fsPath}/src/dom/dev.ts`)).text();
+    expect(flag).toContain('"LUMIOSE_INSPECTOR": true');
+  });
+
   it("serves Lumiose modules to the browser from the client environment (islands, SPA)", async () => {
     const response = await get("/src/routes/form/page.stsx?import");
     const code = await response.text();
@@ -472,7 +488,7 @@ describe.skipIf(!binding)("lumiose dev below a base (TASK-101)", () => {
     site = realpathSync.native(mkdtempSync(join(tmpdir(), "lumiose-dev-base-")));
     const files: Record<string, string> = {
       "vite.config.ts": `import lumiose from "@lumiose/vite";
-export default { base: "/sub/", plugins: [lumiose({ trailingSlash: "always" })] };
+export default { base: "/sub/", plugins: [lumiose({ trailingSlash: "always", inspector: false })] };
 `,
       "src/routes/page.stsx": `import { href } from "lumiose";
 export default function Home() {
@@ -509,5 +525,17 @@ export default function Home() {
     expect(code).toContain('"BASE_URL": "/sub/"');
     const env = await (await fetch(new URL("/sub/@vite/env", server.url))).text();
     expect(env).toContain('"__LUMIOSE_TRAILING_SLASH__": "always"');
+  });
+
+  it("leaves the inspector out with lumiose({ inspector: false })", async () => {
+    const entry = await (await fetch(new URL("/sub/@id/__x00__lumiose:dev", server.url))).text();
+    expect(entry).toContain("/app/dev/client.ts");
+    expect(entry).not.toContain("mountInspector");
+    const fsPath = normalizePath(lumioseRoot).replace(/^\//, "");
+    const flag = await (
+      await fetch(new URL(`/sub/@fs/${fsPath}/src/dom/dev.ts`, server.url))
+    ).text();
+    expect(flag).toContain("import.meta.env = {");
+    expect(flag).not.toContain('"LUMIOSE_INSPECTOR": true');
   });
 });

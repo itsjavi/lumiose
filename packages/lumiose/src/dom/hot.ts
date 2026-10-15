@@ -65,6 +65,7 @@ export function $hot<C extends Component>(
     return known.wrapper as C;
   }
   const current = signal({ fn: component });
+  if (INSPECTED) labelValue(current, "hot update", true);
   const entry: HotComponent = { version, current, wrapper: () => null };
   const wrapper: Component = (props) => {
     // The instance's hydration frame, for its first render only (later ones render afresh).

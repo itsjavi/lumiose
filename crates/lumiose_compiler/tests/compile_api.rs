@@ -867,9 +867,10 @@ export default async function Page() {
 
 #[test]
 fn dev_source_locates_elements_components_and_signals_for_the_inspector() {
-    let source = r#"import { computed, signal as cell } from "lumiose";
+    let source = r#"import { computed, ref, signal as cell } from "lumiose";
 const signal = (n: number) => n;
 export function Counter() {
+  const box = ref<HTMLElement>();
   const count = cell(0);
   const doubled = computed(() => count() * 2);
   const plain = signal(1);
@@ -895,7 +896,7 @@ export function Counter() {
     let client = dev(Target::Client);
     assert!(
         client.contains(
-            "template(`<p class=n data-lumiose-source=src/Counter.stsx:8:5><b data-lumiose-source=src/Counter.stsx:9:7>"
+            "template(`<p class=n data-lumiose-source=src/Counter.stsx:9:5><b data-lumiose-source=src/Counter.stsx:10:7>"
         ),
         "{client}"
     );
@@ -903,13 +904,14 @@ export function Counter() {
     assert!(client.contains(r#", "src/Counter.stsx:3:8");"#));
     // Only `lumiose`'s constructors, under their local names.
     assert!(client.contains(r#"const count = $$lumioseLabel(cell(0), "count");"#));
+    assert!(client.contains(r#"const box = $$lumioseLabel(ref(), "box");"#));
     assert!(client.contains(r#"$$lumioseLabel(computed(() => count() * 2), "doubled")"#));
     assert!(client.contains("const plain = signal(1);"));
     assert!(client.contains(r#"import { $label as $$lumioseLabel } from "lumiose/dom/hot";"#));
     // Server HTML carries the same attributes, so server-only markup can be located too.
     let server = dev(Target::Server);
     assert!(
-        server.contains("<p class=n data-lumiose-source=src/Counter.stsx:8:5>"),
+        server.contains("<p class=n data-lumiose-source=src/Counter.stsx:9:5>"),
         "{server}"
     );
     assert!(!server.contains("lumioseLabel") && !server.contains("lumioseHot"));
