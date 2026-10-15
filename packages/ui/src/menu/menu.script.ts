@@ -45,6 +45,8 @@ export interface MenuCheckedChangeDetail {
 const enabled = (item: Element) => item.getAttribute("aria-disabled") !== "true";
 const label = (item: HTMLElement) =>
   (item.dataset.label ?? item.textContent ?? "").trim().toLowerCase();
+/** The events the element listens to on itself, besides `click` and `toggle` (capturing). */
+const EVENTS = ["keydown", "pointerdown", "pointermove", "pointerout", "focusin", "focusout"];
 const FOCUSABLE = "button, a[href], input, select, textarea, [tabindex], [contenteditable]";
 
 /** Whether `p` is inside the triangle `a`, `b`, `c`. */
@@ -99,14 +101,7 @@ export class MenuElement extends HTMLElement {
   }
 
   connectedCallback(): void {
-    for (const type of [
-      "keydown",
-      "pointerdown",
-      "pointermove",
-      "pointerout",
-      "focusin",
-      "focusout",
-    ]) {
+    for (const type of EVENTS) {
       this.addEventListener(type, this);
     }
     // Before the items' own handlers, which Lumiose delegates to the document.
@@ -116,14 +111,7 @@ export class MenuElement extends HTMLElement {
   }
 
   disconnectedCallback(): void {
-    for (const type of [
-      "keydown",
-      "pointerdown",
-      "pointermove",
-      "pointerout",
-      "focusin",
-      "focusout",
-    ]) {
+    for (const type of EVENTS) {
       this.removeEventListener(type, this);
     }
     this.removeEventListener("click", this, true);

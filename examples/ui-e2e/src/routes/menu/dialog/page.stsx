@@ -41,7 +41,12 @@ export default function MenuDialogPage() {
               </Menu.Item>
             </Menu.Popup>
           </Menu.Root>
-          <dialog id="rename-dialog" class="lu-dialog" aria-labelledby="rename-title" closedby="any">
+          <dialog
+            id="rename-dialog"
+            class="lu-dialog"
+            aria-labelledby="rename-title"
+            closedby="any"
+          >
             <h2 id="rename-title">Rename file</h2>
             <footer>
               <button type="button" class="lu-button" command="close" commandfor="rename-dialog">
