@@ -201,7 +201,10 @@ function undocumented(name: string, files: readonly string[]): string[] {
 }
 
 describe("@lumiose/ui docs contract", () => {
-  const { values: components, types } = exportsOf(readFileSync(join(SRC, "index.ts"), "utf8"));
+  const { values, types } = exportsOf(readFileSync(join(SRC, "index.ts"), "utf8"));
+  // Components are PascalCase (`Dialog`); a helper (`createToastManager`) is documented on its
+  // component's page.
+  const components = values.filter((name) => /^[A-Z]/.test(name));
 
   it("gives every exported component a page with the template's sections", () => {
     expect(components.length).toBeGreaterThan(0);
