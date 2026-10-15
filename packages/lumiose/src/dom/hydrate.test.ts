@@ -1099,6 +1099,91 @@ describe("island loader", () => {
     expect(document.querySelector("output")!.textContent).toBe("typed");
     expect(defaultPrevented).toBe(false);
   });
+
+  it("reports an island whose chunk fails to load and loads it on the next interaction (TASK-305)", async () => {
+    const { client, server } = await load(`
+      import { signal } from "lumiose";
+      export function Counter() {
+        const count = signal(0);
+        return <button onClick={() => count.set(count() + 1)}>{count()}</button>;
+      }`);
+    await serve(server, [["Counter", {}]]);
+    const error = vi.spyOn(console, "error").mockImplementation(() => {});
+    const failed = new TypeError("Failed to fetch dynamically imported module");
+    let reject!: (error: unknown) => void;
+    const chunk = new Promise((_, no) => (reject = no));
+    let loads = 0;
+    loadIslands({
+      "/src/case#Counter": () => (++loads === 1 ? chunk : Promise.resolve(client.Counter)),
+    });
+    await settle();
+    const button = document.querySelector("button")!;
+    const seen: boolean[] = [];
+    button.addEventListener("click", (e) => seen.push(e.defaultPrevented));
+    button.click();
+    expect(seen).toEqual([]);
+    reject(failed);
+    await settle();
+    expect(error).toHaveBeenCalledWith(
+      "Lumiose: hydrate error in island /src/case#Counter",
+      failed,
+    );
+    // The caught click is dispatched again, unintercepted, so its default action runs.
+    expect(seen).toEqual([false]);
+    expect(button.textContent).toBe("0");
+    button.click();
+    await settle();
+    expect(loads).toBe(2);
+    expect(document.querySelector("button")).toBe(button);
+    expect(button.textContent).toBe("1");
+    expect(seen).toEqual([false, false]);
+    error.mockRestore();
+  });
+
+  it("reports a hydration that throws and leaves the island's server HTML (TASK-305)", async () => {
+    const { client, server } = await load(`
+      function check(): boolean {
+        const boom = (globalThis as any).boom;
+        if (boom) throw boom;
+        return true;
+      }
+      export function Card(props: { open: boolean }) {
+        return (
+          <section>
+            <p class={check() ? "checked" : ""}>card</p>
+            {props.open && <i>open</i>}
+            <button>ok</button>
+          </section>
+        );
+      }`);
+    await serve(server, [["Card", { open: true }]]);
+    const html = visible();
+    const error = vi.spyOn(console, "error").mockImplementation(() => {});
+    const boom = new Error("boom");
+    const module = deferred<unknown>();
+    loadIslands({ "/src/case#Card": () => module.promise });
+    await settle();
+    const button = document.querySelector("button")!;
+    const seen: boolean[] = [];
+    button.addEventListener("click", (e) => seen.push(e.defaultPrevented));
+    button.click();
+    (globalThis as Record<string, unknown>).boom = boom;
+    try {
+      module.resolve(client.Card);
+      await settle();
+    } finally {
+      delete (globalThis as Record<string, unknown>).boom;
+    }
+    expect(error).toHaveBeenCalledWith("Lumiose: hydrate error in island /src/case#Card", boom);
+    expect(seen).toEqual([false]);
+    // Not held back anymore: the island is server HTML, with the DOM's own links.
+    button.click();
+    expect(seen).toEqual([false, false]);
+    expect(visible()).toBe(html);
+    const section = document.querySelector("section")!;
+    expect(Object.hasOwn(section.querySelector("p")!, "nextSibling")).toBe(false);
+    error.mockRestore();
+  });
 });
 
 describe("fresh islands", () => {

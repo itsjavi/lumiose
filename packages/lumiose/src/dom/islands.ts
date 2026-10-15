@@ -16,6 +16,9 @@
 //   it holds the server values of scoped states (./state.ts), read in document order, so they are
 //   in place before the chunk's islands hydrate.
 // - Hydration: the component comes from the manifest (`ref` → lazy import), then `hydrate()`.
+//   A chunk that fails to load or a hydration that throws is reported (./report.ts), and the
+//   events the island caught are dispatched again so their default actions run; a failed load is
+//   retried on the next interaction, a failed hydration leaves the server HTML (TASK-305).
 // - Events: `click`, `input`, `submit` and `keydown` targeting an island that is not hydrated yet
 //   are stopped (clicks and submits also held back), hydrate it at once, and are dispatched again
 //   on their target afterwards; an `input` first restores the value typed meanwhile.
@@ -23,6 +26,7 @@ import type { Component } from "../contract/client.ts";
 import { decodeData } from "../server/serialize.ts";
 import { DEV } from "./dev.ts";
 import { hydrate } from "./hydrate.ts";
+import { reportError } from "./report.ts";
 import { receivePayload, type Payload } from "./state.ts";
 
 /** `client:idle`: the latest moment an idle island hydrates, in ms, when the browser never idles. */
@@ -224,34 +228,48 @@ export function loadIslands(manifest: IslandManifest): () => void {
     if (DEV && load === undefined) {
       throw new Error(`Lumiose: the island ${island.ref} is missing from virtual:lumiose/islands.`);
     }
-    void load!().then((component) => {
-      // A component marked `$$fresh` renders on the client instead of claiming the server's nodes
-      // (an SPA root that renders another view than the server did, app/router/router.ts).
-      const fresh = (component as { $$fresh?: true }).$$fresh === true;
-      if (fresh) {
-        while (island.s!.nextSibling !== island.e) (island.s!.nextSibling as ChildNode).remove();
-      }
-      const dispose = hydrate(
-        component as Component<object>,
-        decodeData(island.props) as object,
-        island.s!,
-        island.e!,
-        fresh ? {} : (island.awaits ??= {}),
-        island.slots,
-        fresh || island.strategy === "only",
-        island.idPrefix,
-      );
-      if (DEV) island.x = dispose;
-      island.g = 2;
-      // Replayed awaits resolve in microtasks: dispatch caught events once they rendered.
-      setTimeout(() => replay(island));
-      // Islands inside slots this island inserted are in the document now.
-      for (const id in islands) {
-        if (islands[id]!.e === undefined) {
-          return find();
+    // What the island becomes if this fails: 0 (armed) while the module loads, so the next
+    // interaction loads it again (a deploy replaced the chunk, a network error); 2 once it loaded,
+    // since a component that throws would throw again (the island stays server HTML).
+    let failed = 0;
+    load!()
+      .then((component) => {
+        failed = 2;
+        // A component marked `$$fresh` renders on the client instead of claiming the server's nodes
+        // (an SPA root that renders another view than the server did, app/router/router.ts).
+        const fresh = (component as { $$fresh?: true }).$$fresh === true;
+        if (fresh) {
+          while (island.s!.nextSibling !== island.e) (island.s!.nextSibling as ChildNode).remove();
         }
-      }
-    });
+        const dispose = hydrate(
+          component as Component<object>,
+          decodeData(island.props) as object,
+          island.s!,
+          island.e!,
+          fresh ? {} : (island.awaits ??= {}),
+          island.slots,
+          fresh || island.strategy === "only",
+          island.idPrefix,
+        );
+        if (DEV) island.x = dispose;
+        island.g = 2;
+        // Replayed awaits resolve in microtasks: dispatch caught events once they rendered.
+        setTimeout(() => replay(island));
+        // Islands inside slots this island inserted are in the document now.
+        for (const id in islands) {
+          if (islands[id]!.e === undefined) {
+            return find();
+          }
+        }
+      })
+      .catch((error: unknown) => {
+        reportError(error, { phase: "hydrate", island: island.ref });
+        // The caught events are dispatched again, unintercepted, so their default actions run (a
+        // link navigates, a form submits).
+        island.g = 2;
+        replay(island);
+        island.g = failed;
+      });
   };
 
   const replay = (island: Island): void => {
