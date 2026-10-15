@@ -3,9 +3,9 @@ id: TASK-401
 title: 'LUM2001 false positive: a member call on an imported object'
 status: To Do
 assignee:
-  - '@Photon'
+  - '@Beacon'
 created_date: '2026-10-15 21:48'
-updated_date: '2026-10-15 22:29'
+updated_date: '2026-10-15 23:38'
 labels:
   - compiler
   - lum2001
@@ -31,4 +31,6 @@ Found in TASK-371 (Beacon, 2026-10-15). Inside a component, `const toasts = Toas
 
 <!-- SECTION:NOTES:BEGIN -->
 2026-10-16 (Lux, orchestrator): assigned to Photon (compiler), in M12, where it was found.
+
+2026-10-16 (Lux, orchestrator): reassigned to Beacon for batch 6. New sessions cannot start from an automated turn, so the idle Beacon session takes it; it may edit the files the fix needs.
 <!-- SECTION:NOTES:END -->

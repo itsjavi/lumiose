@@ -3,8 +3,9 @@ id: TASK-407
 title: Setting value to undefined on <progress> or <meter> throws
 status: To Do
 assignee:
-  - '@Spark'
+  - '@Beacon'
 created_date: '2026-10-15 23:25'
+updated_date: '2026-10-15 23:38'
 labels:
   - runtime
   - dom
@@ -26,3 +27,9 @@ Found by Halo in TASK-373 (2026-10-16). The DOM runtime writes `value` as a prop
 - [ ] #1 `<progress value={x}>` with x switching between a number and undefined works in islands, with a test
 - [ ] #2 Progress.Track drops its workaround
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+2026-10-16 (Lux, orchestrator): reassigned to Beacon for batch 6. New sessions cannot start from an automated turn, so the idle Beacon session takes it; it may edit the files the fix needs.
+<!-- SECTION:NOTES:END -->

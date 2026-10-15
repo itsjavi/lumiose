@@ -5,9 +5,9 @@ title: >-
   runs
 status: To Do
 assignee:
-  - '@Photon'
+  - '@Beacon'
 created_date: '2026-10-15 22:02'
-updated_date: '2026-10-15 22:29'
+updated_date: '2026-10-15 23:38'
 labels:
   - compiler
   - ssr
@@ -42,4 +42,6 @@ With `props.on` false, `renderToString` throws the error from `boom()`. The same
 
 <!-- SECTION:NOTES:BEGIN -->
 2026-10-16 (Lux, orchestrator): assigned to Photon (compiler), in M12, where it was found.
+
+2026-10-16 (Lux, orchestrator): reassigned to Beacon for batch 6. New sessions cannot start from an automated turn, so the idle Beacon session takes it; it may edit the files the fix needs.
 <!-- SECTION:NOTES:END -->
