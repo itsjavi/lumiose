@@ -1,11 +1,11 @@
 ---
 id: TASK-339
 title: 'CSS compiler: accept Tailwind v4 at-rules in style blocks without LUM3015'
-status: In Progress
+status: Done
 assignee:
   - '@Halo'
 created_date: '2026-10-15 06:40'
-updated_date: '2026-10-15 08:09'
+updated_date: '2026-10-15 08:21'
 labels:
   - css
   - compiler
@@ -47,4 +47,6 @@ Limitation (no user path today): with cssTargets that lower nesting, Lightning C
 Tests: fixtures tests/fixtures/tailwind.stsx (all ten at-rules at top level and nested, scoped selectors, @made-up-rule, @frobnicate and @APPLY still LUM3015) and tailwind_lowered.stsx (chrome 100 targets, minified).
 Docs: concepts/styles.md (Tailwind section: example block, the list, no LUM3015 caveat), errors/LUM3015.md, llms-full.txt regenerated. Example comment in examples/ssr-styles-e2e/src/routes/about/page.stsx updated (Nova area, comment only).
 Validation: cargo test -p lumiose_css --all-features ok; examples/ssr-styles-e2e: lumiose check "No problems found", lumiose build without warnings (.applied[data-l-…] gets padding, font-weight, margin and border from Tailwind), Playwright 10/10 (dev and build); docs:gen + docs:check ok.
+
+2026-10-15 (Halo): pnpm check exit 0 (no LUM3015 left in the example's typecheck), cargo fmt --all --check and cargo clippy --workspace --all-targets -D warnings clean. Commit 67203834.
 <!-- SECTION:NOTES:END -->

@@ -5,7 +5,7 @@ status: In Progress
 assignee:
   - '@Halo'
 created_date: '2026-10-15 08:02'
-updated_date: '2026-10-15 08:19'
+updated_date: '2026-10-15 08:21'
 labels:
   - security
   - fuzzing
@@ -39,4 +39,6 @@ Fix (.github/workflows/fuzz.yml): the nightly step exports FUZZ_TRIPLE, the runn
 Local reproduction (ubuntu:22.04 arm64 container, nightly, cargo-fuzz 0.13.2 from source, the workflow's commands): with --target aarch64-unknown-linux-musl the build fails with the CI errors (E0463 for core, sanitizer incompatible with static libc); with --target "$FUZZ_TRIPLE" --sanitizer address after fuzz/seed.sh, all 7 targets build and run 30 s each with exit 0 and the ASan runtime linked (__asan_init in each binary): scan 72599 runs, compile_client 29034, compile_server 30710, css_process 19270, svg_component 683134, content_markdown 5541, content_html 96591. No crashes. x86_64 itself was not run locally (Apple Silicon host).
 CONTRIBUTING.md (Fuzzing): notes the --target for prebuilt Linux binaries.
 Remaining: AC #1 in the workflow itself and AC #2 need the manual run after the end-of-run push, which only Lux can trigger (`gh workflow run fuzz.yml`, optionally with a short `seconds` input first). Left In Progress for that.
+
+2026-10-15 (Halo): pnpm check, cargo fmt and clippy clean on the branch. Commit df504d66. Handed to Lux for the post-push manual run; claim released.
 <!-- SECTION:NOTES:END -->
