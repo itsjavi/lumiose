@@ -3,9 +3,9 @@ id: TASK-357
 title: Menu
 status: To Do
 assignee:
-  - '@Halo'
+  - '@Spark'
 created_date: '2026-10-15 16:46'
-updated_date: '2026-10-15 18:00'
+updated_date: '2026-10-15 18:02'
 labels:
   - ui
 milestone: m-12
@@ -40,4 +40,6 @@ User decision 2026-10-15: @lumiose/ui reaches parity with Base UI's components b
 2026-10-15: the pitfall checklist is doc-9. The component gets its rules in the optional default theme (@lumiose/ui/themes/default.css, decision-62); the component itself stays unstyled.
 
 2026-10-15 (user): @lumiose/ui meets WCAG 2.2 AA (decision-62, doc-9 section 17).
+
+2026-10-15 (Lux, orchestrator): reassigned to Spark so Menu runs in parallel with Halo's TASK-392, TASK-356 and TASK-359. Spark may edit packages/ui/src/menu/** and add Menu's lines to the shared package files (index.ts, package.json exports, styles.css, themes/default.css).
 <!-- SECTION:NOTES:END -->
