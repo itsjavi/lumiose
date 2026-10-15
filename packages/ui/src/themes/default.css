@@ -22,6 +22,10 @@
  *                                       underlined) and the panels
  *   .lu-menu                            a Menu.Popup (submenus too): surface, items, checkbox
  *                                       and radio marks, separators, group labels
+ *   .lu-combobox                        a Combobox.Root: the field (label, chips, input, trigger
+ *                                       and clear buttons), the popup, options, groups, states
+ *   .lu-select                          a Select.Root: a customizable select (control, picker,
+ *                                       options, groups, separators)
  */
 @layer lu.core, lu.theme;
 
@@ -412,5 +416,311 @@
         scale: 0.96;
       }
     }
+  }
+
+  /* Combobox (TASK-358) ----------------------------------------------------------------------- */
+
+  /*
+   * The root becomes the field's grid: the label, the chips, then the input with the trigger and
+   * clear buttons laid over its inline end.
+   */
+  .lu-combobox {
+    display: inline-grid;
+    grid-template-areas: "label label label" "chips chips chips" "field field field";
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    align-items: center;
+    inline-size: min(18rem, 100%);
+    font-size: 0.875rem;
+    line-height: 1.25;
+  }
+  .lu-combobox > :where(label) {
+    grid-area: label;
+    margin-block-end: 0.375rem;
+    font-weight: 500;
+  }
+  .lu-combobox > :where(input[role="combobox"]) {
+    grid-area: field;
+    box-sizing: border-box;
+    min-inline-size: 0;
+    min-block-size: 2.25rem;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--lu-input);
+    border-radius: calc(var(--lu-radius) - 2px);
+    background: var(--lu-background);
+    color: var(--lu-foreground);
+    font: inherit;
+  }
+  .lu-combobox:has(> [command="--toggle"]) > :where(input[role="combobox"]) {
+    padding-inline-end: 2.25rem;
+  }
+  .lu-combobox:has(> [command="--toggle"]):has(> [command="--clear"]:not([hidden]))
+    > :where(input[role="combobox"]) {
+    padding-inline-end: 4rem;
+  }
+  .lu-combobox > :where(input[role="combobox"])::placeholder {
+    color: var(--lu-muted-foreground);
+  }
+  .lu-combobox > :where(input[role="combobox"]:focus-visible) {
+    outline: 2px solid var(--lu-ring);
+    outline-offset: 2px;
+  }
+  .lu-combobox > :where(input[role="combobox"]:disabled) {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+  /* The trigger and clear buttons: 28px targets inside the field; a glyph when they are empty. */
+  .lu-combobox > :where(button[command]) {
+    grid-row: field;
+    z-index: 1;
+    display: inline-grid;
+    place-items: center;
+    inline-size: 1.75rem;
+    block-size: 1.75rem;
+    margin-inline-end: 0.25rem;
+    padding: 0;
+    border: 0;
+    border-radius: calc(var(--lu-radius) - 4px);
+    background: none;
+    color: var(--lu-muted-foreground);
+    font: inherit;
+    cursor: default;
+  }
+  .lu-combobox > :where(button[command="--toggle"]) {
+    grid-column: 3;
+  }
+  .lu-combobox > :where(button[command="--clear"]) {
+    grid-column: 2;
+  }
+  .lu-combobox > :where(button[command]:hover) {
+    background: var(--lu-accent);
+    color: var(--lu-accent-foreground);
+  }
+  .lu-combobox > :where(button[command="--toggle"]:empty)::before {
+    content: "⌄" / "";
+    translate: 0 -0.2em;
+  }
+  .lu-combobox > :where(button[command="--clear"]:empty)::before {
+    content: "×" / "";
+    font-size: 1.125rem;
+  }
+  .lu-combobox > :where([role="list"]) {
+    grid-area: chips;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+    margin-block-end: 0.375rem;
+  }
+  .lu-combobox > :where([role="list"]:empty) {
+    display: none;
+  }
+  .lu-combobox :where([role="listitem"]) {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.125rem;
+    padding-inline-start: 0.5rem;
+    border-radius: calc(var(--lu-radius) - 4px);
+    background: var(--lu-secondary);
+    color: var(--lu-secondary-foreground);
+    font-size: 0.8125rem;
+  }
+  .lu-combobox :where([role="listitem"] > button) {
+    inline-size: 1.5rem;
+    block-size: 1.5rem;
+    padding: 0;
+    border: 0;
+    border-radius: inherit;
+    background: none;
+    color: inherit;
+    font: inherit;
+  }
+  .lu-combobox :where([role="listitem"] > button:hover) {
+    background: var(--lu-accent);
+  }
+  /* The popup: the List, or the Popup around it; the list scrolls. */
+  .lu-combobox :where([popover]) {
+    --lu-side-offset: 0.25rem;
+    box-sizing: border-box;
+    min-inline-size: 12rem;
+    padding: 0.25rem;
+    border: 1px solid var(--lu-border);
+    border-radius: calc(var(--lu-radius) - 2px);
+    background: var(--lu-popover);
+    color: var(--lu-popover-foreground);
+    font-size: 0.875rem;
+    line-height: 1.25;
+    box-shadow:
+      0 10px 15px -3px rgb(0 0 0 / 0.1),
+      0 4px 6px -4px rgb(0 0 0 / 0.1);
+  }
+  @supports (anchor-name: --a) {
+    .lu-combobox :where([popover]) {
+      min-inline-size: anchor-size(inline);
+    }
+  }
+  .lu-combobox :where([role="listbox"]) {
+    max-block-size: min(20rem, 100dvh - 1rem);
+    overflow-y: auto;
+  }
+  .lu-combobox :where([role="option"]) {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-block-size: 2rem;
+    padding: 0.375rem 0.5rem;
+    border-radius: calc(var(--lu-radius) - 4px);
+    cursor: default;
+  }
+  /* The highlighted option has no focus of its own: it gets the focus ring the input passes on. */
+  .lu-combobox :where([role="option"][data-highlighted]) {
+    background: var(--lu-accent);
+    color: var(--lu-accent-foreground);
+    outline: 2px solid var(--lu-ring);
+    outline-offset: -2px;
+  }
+  .lu-combobox :where([role="option"][aria-disabled="true"]) {
+    opacity: 0.5;
+  }
+  /* A mark, not only a colour, for the selected options; empty alt text keeps it out of the name. */
+  .lu-combobox :where([role="option"])::before {
+    content: "";
+    flex: none;
+    inline-size: 1rem;
+    text-align: center;
+  }
+  .lu-combobox :where([role="option"][aria-selected="true"])::before {
+    content: "✓" / "";
+  }
+  .lu-combobox :where([role="group"] > [role="presentation"]) {
+    padding: 0.375rem 0.5rem;
+    color: var(--lu-muted-foreground);
+    font-size: 0.75rem;
+    font-weight: 500;
+  }
+  .lu-combobox :where([popover] [role="status"]) {
+    padding: 0.5rem;
+    color: var(--lu-muted-foreground);
+    text-align: center;
+  }
+  .lu-combobox :where([popover] [role="status"]:empty) {
+    display: none;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .lu-combobox :where([popover]) {
+      transition:
+        opacity 100ms ease-out,
+        overlay 100ms allow-discrete,
+        display 100ms allow-discrete;
+    }
+    .lu-combobox :where([popover]:not(:popover-open)) {
+      opacity: 0;
+    }
+    @starting-style {
+      .lu-combobox :where([popover]:popover-open) {
+        opacity: 0;
+      }
+    }
+  }
+
+  /* Select (TASK-358) ------------------------------------------------------------------------- */
+
+  /* A customizable select where the browser has it; elsewhere the closed control is styled. */
+  .lu-select,
+  .lu-select::picker(select) {
+    appearance: base-select;
+  }
+  .lu-select {
+    box-sizing: border-box;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-inline-size: 10rem;
+    min-block-size: 2.25rem;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--lu-input);
+    border-radius: calc(var(--lu-radius) - 2px);
+    background: var(--lu-background);
+    color: var(--lu-foreground);
+    font: inherit;
+    font-size: 0.875rem;
+    line-height: 1.25;
+  }
+  .lu-select:focus-visible {
+    outline: 2px solid var(--lu-ring);
+    outline-offset: 2px;
+  }
+  .lu-select:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+  /* With a Select.Trigger, the button is the whole control: it takes the padding and the target. */
+  .lu-select:has(> button) {
+    padding: 0;
+  }
+  .lu-select > :where(button) {
+    display: inline-flex;
+    flex: 1;
+    align-items: center;
+    gap: 0.5rem;
+    box-sizing: border-box;
+    min-block-size: calc(2.25rem - 2px);
+    padding: 0.5rem 0.75rem;
+    border: 0;
+    background: none;
+    color: inherit;
+    font: inherit;
+  }
+  .lu-select::picker-icon {
+    margin-inline-start: auto;
+    color: var(--lu-muted-foreground);
+  }
+  .lu-select:has(> button)::picker-icon {
+    margin-inline-end: 0.75rem;
+  }
+  .lu-select::picker(select) {
+    box-sizing: border-box;
+    min-inline-size: anchor-size(inline);
+    max-block-size: min(20rem, 100dvh - 1rem);
+    margin-block: 0.25rem;
+    padding: 0.25rem;
+    border: 1px solid var(--lu-border);
+    border-radius: calc(var(--lu-radius) - 2px);
+    background: var(--lu-popover);
+    color: var(--lu-popover-foreground);
+    box-shadow:
+      0 10px 15px -3px rgb(0 0 0 / 0.1),
+      0 4px 6px -4px rgb(0 0 0 / 0.1);
+  }
+  .lu-select :where(option) {
+    gap: 0.5rem;
+    min-block-size: 2rem;
+    padding: 0.375rem 0.5rem;
+    border-radius: calc(var(--lu-radius) - 4px);
+  }
+  .lu-select :where(option:hover, option:focus-visible) {
+    background: var(--lu-accent);
+    color: var(--lu-accent-foreground);
+  }
+  .lu-select :where(option:focus-visible) {
+    outline: 2px solid var(--lu-ring);
+    outline-offset: -2px;
+  }
+  .lu-select :where(option:disabled) {
+    opacity: 0.5;
+  }
+  .lu-select :where(optgroup) {
+    color: var(--lu-muted-foreground);
+    font-size: 0.75rem;
+    font-weight: 500;
+  }
+  .lu-select :where(optgroup option) {
+    color: var(--lu-popover-foreground);
+    font-size: 0.875rem;
+    font-weight: 400;
+  }
+  .lu-select :where(hr) {
+    margin: 0.25rem -0.25rem;
+    border: 0;
+    border-block-start: 1px solid var(--lu-border);
   }
 }

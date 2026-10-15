@@ -1,0 +1,96 @@
+import { Dialog, Select } from "@lumiose/ui";
+import { Title } from "lumiose";
+
+// Server-rendered, no island and no script: Select is a native `<select>`, a customizable select in
+// Chromium. The selects sit in a form that submits to this page (GET), so the submitted values show
+// in the URL. Styled with the default theme.
+export default function SelectPage() {
+  return (
+    <>
+      <Title>Select</Title>
+      <h1>Select</h1>
+      <form method="get" action="/select" class="grid">
+        <section aria-labelledby="fruit-heading">
+          <h2 id="fruit-heading">Customizable</h2>
+          <label for="fruit">Fruit</label>
+          <Select.Root id="fruit" name="fruit" defaultValue="pear" class="lu-select">
+            <Select.Trigger>
+              <Select.Value />
+            </Select.Trigger>
+            <Select.Item value="apple">
+              <span aria-hidden="true">🍎</span> Apple
+            </Select.Item>
+            <Select.Item value="banana">
+              <span aria-hidden="true">🍌</span> Banana
+            </Select.Item>
+            <Select.Item value="pear">
+              <span aria-hidden="true">🍐</span> Pear
+            </Select.Item>
+            <Select.Separator />
+            <Select.Group label="Citrus">
+              <Select.Item value="lemon">
+                <span aria-hidden="true">🍋</span> Lemon
+              </Select.Item>
+              <Select.Item value="lime" disabled>
+                Lime
+              </Select.Item>
+            </Select.Group>
+          </Select.Root>
+        </section>
+
+        <section aria-labelledby="size-heading">
+          <h2 id="size-heading">Required, text only</h2>
+          <label for="size">Size</label>
+          <Select.Root id="size" name="size" required class="lu-select">
+            <Select.Item value="">Choose a size</Select.Item>
+            <Select.Item value="s">Small</Select.Item>
+            <Select.Item value="m">Medium</Select.Item>
+            <Select.Item value="l">Large</Select.Item>
+          </Select.Root>
+        </section>
+
+        <footer>
+          <button type="submit" class="lu-button" data-variant="primary">
+            Save
+          </button>
+          <button type="reset" class="lu-button">
+            Reset
+          </button>
+        </footer>
+      </form>
+
+      <section aria-labelledby="dialog-heading">
+        <h2 id="dialog-heading">In a dialog</h2>
+        <Dialog.Root>
+          <Dialog.Trigger class="lu-button">Choose a theme</Dialog.Trigger>
+          <Dialog.Popup class="lu-dialog">
+            <Dialog.Title>Theme</Dialog.Title>
+            <Select.Root aria-label="Theme" name="theme" class="lu-select">
+              <Select.Trigger>
+                <Select.Value />
+              </Select.Trigger>
+              <Select.Item value="light">Light</Select.Item>
+              <Select.Item value="dark">Dark</Select.Item>
+              <Select.Item value="system">System</Select.Item>
+            </Select.Root>
+            <footer>
+              <Dialog.Close class="lu-button">Done</Dialog.Close>
+            </footer>
+          </Dialog.Popup>
+        </Dialog.Root>
+      </section>
+    </>
+  );
+}
+
+<style>
+  form footer {
+    display: flex;
+    gap: 0.5rem;
+    align-self: end;
+  }
+  label {
+    font-size: 0.875rem;
+    font-weight: 500;
+  }
+</style>

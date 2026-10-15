@@ -1,0 +1,127 @@
+import { Combobox, Dialog } from "@lumiose/ui";
+import { Title } from "lumiose";
+
+const CITIES: Record<string, [value: string, label: string, disabled?: boolean][]> = {
+  Germany: [
+    ["ber", "Berlin"],
+    ["ham", "Hamburg"],
+    ["muc", "München"],
+    ["cgn", "Köln"],
+  ],
+  Portugal: [
+    ["lis", "Lisbon"],
+    ["opo", "Porto"],
+    ["fao", "Faro", true],
+  ],
+  Spain: [
+    ["mad", "Madrid"],
+    ["agp", "Málaga"],
+    ["svq", "Sevilla"],
+  ],
+};
+
+const TAGS = ["bug", "docs", "ui", "performance", "accessibility"];
+
+// Server-rendered, no island: `lu-combobox`'s script runs the comboboxes on the server HTML. Both
+// sit in a form that submits to this page (GET), so the submitted values show in the URL. Styled
+// with the default theme.
+export default function ComboboxPage() {
+  return (
+    <>
+      <Title>Combobox</Title>
+      <h1>Combobox</h1>
+      <form method="get" action="/combobox" class="grid">
+        <section aria-labelledby="city-heading">
+          <h2 id="city-heading">One value</h2>
+          <Combobox.Root name="city" defaultValue="lis" required class="lu-combobox">
+            <Combobox.Label>City</Combobox.Label>
+            <Combobox.Input placeholder="Search cities" />
+            <Combobox.Clear aria-label="Clear city" />
+            <Combobox.Trigger aria-label="Show cities" />
+            <Combobox.Popup>
+              <Combobox.List>
+                {Object.entries(CITIES).map(([country, cities]) => (
+                  <Combobox.Group>
+                    <Combobox.GroupLabel>{country}</Combobox.GroupLabel>
+                    {cities.map(([value, label, disabled]) => (
+                      <Combobox.Item value={value} disabled={disabled}>
+                        {label}
+                      </Combobox.Item>
+                    ))}
+                  </Combobox.Group>
+                ))}
+              </Combobox.List>
+              <Combobox.Empty>No city matches.</Combobox.Empty>
+            </Combobox.Popup>
+          </Combobox.Root>
+        </section>
+
+        <section aria-labelledby="tags-heading">
+          <h2 id="tags-heading">Several values</h2>
+          <Combobox.Root name="tags" multiple defaultValue={["ui"]} class="lu-combobox">
+            <Combobox.Label>Tags</Combobox.Label>
+            <Combobox.Chips />
+            <Combobox.Input placeholder="Add tags" />
+            <Combobox.List>
+              {TAGS.map((tag) => (
+                <Combobox.Item value={tag}>{tag}</Combobox.Item>
+              ))}
+            </Combobox.List>
+          </Combobox.Root>
+        </section>
+
+        <section aria-labelledby="prefix-heading">
+          <h2 id="prefix-heading">Starts with</h2>
+          <Combobox.Root name="country" filter="startsWith" class="lu-combobox">
+            <Combobox.Label>Country</Combobox.Label>
+            <Combobox.Input />
+            <Combobox.List>
+              <Combobox.Item value="de">Germany</Combobox.Item>
+              <Combobox.Item value="pt">Portugal</Combobox.Item>
+              <Combobox.Item value="es">Spain</Combobox.Item>
+            </Combobox.List>
+          </Combobox.Root>
+        </section>
+
+        <footer>
+          <button type="submit" class="lu-button" data-variant="primary">
+            Save
+          </button>
+          <button type="reset" class="lu-button">
+            Reset
+          </button>
+        </footer>
+      </form>
+
+      <section aria-labelledby="dialog-heading">
+        <h2 id="dialog-heading">In a dialog</h2>
+        <Dialog.Root>
+          <Dialog.Trigger class="lu-button">Choose a language</Dialog.Trigger>
+          <Dialog.Popup class="lu-dialog">
+            <Dialog.Title>Language</Dialog.Title>
+            <Combobox.Root name="language" class="lu-combobox">
+              <Combobox.Label>Language</Combobox.Label>
+              <Combobox.Input />
+              <Combobox.List>
+                <Combobox.Item value="en">English</Combobox.Item>
+                <Combobox.Item value="pt">Português</Combobox.Item>
+                <Combobox.Item value="es">Español</Combobox.Item>
+              </Combobox.List>
+            </Combobox.Root>
+            <footer>
+              <Dialog.Close class="lu-button">Done</Dialog.Close>
+            </footer>
+          </Dialog.Popup>
+        </Dialog.Root>
+      </section>
+    </>
+  );
+}
+
+<style>
+  form footer {
+    display: flex;
+    gap: 0.5rem;
+    align-self: end;
+  }
+</style>

@@ -1,0 +1,19 @@
+/*
+ * The CSS Combobox needs to work, and nothing else (decision-62): `lu-combobox` adds no box, the
+ * popup is placed next to the input by the shared placement rules (its `data-side` and
+ * `data-align`, `--lu-side-offset` and `--lu-align-offset`, with flips), and the options, groups
+ * and empty state the script hides stay hidden whatever `display` a theme gives them. Where CSS
+ * anchor positioning is missing, the client script places the popup. It sits in the `lu.core`
+ * layer, so any app CSS wins.
+ */
+@layer lu.core, lu.theme;
+@import "../placement/placement.css";
+
+@layer lu.core {
+  lu-combobox {
+    display: contents;
+  }
+  lu-combobox [hidden] {
+    display: none !important;
+  }
+}

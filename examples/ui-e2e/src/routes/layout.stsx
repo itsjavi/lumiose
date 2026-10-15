@@ -17,6 +17,10 @@ export default function Root(props: LayoutProps<"/">) {
         <a href="/tabs/island">Tabs in an island</a>
         <a href="/menu">Menu</a>
         <a href="/menu/island">Menu in an island</a>
+        <a href="/combobox">Combobox</a>
+        <a href="/combobox/island">Combobox in an island</a>
+        <a href="/select">Select</a>
+        <a href="/select/island">Select in an island</a>
       </nav>
       <main>{props.children}</main>
     </div>

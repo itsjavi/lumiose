@@ -45,3 +45,29 @@ export type {
   MenuSubmenuTriggerProps,
   MenuTriggerProps,
 } from "./menu/menu.tsx";
+export { Combobox } from "./combobox/combobox.tsx";
+export type {
+  ComboboxChipsProps,
+  ComboboxClearProps,
+  ComboboxEmptyProps,
+  ComboboxGroupLabelProps,
+  ComboboxGroupProps,
+  ComboboxInputProps,
+  ComboboxItemProps,
+  ComboboxLabelProps,
+  ComboboxListProps,
+  ComboboxPopupProps,
+  ComboboxRootProps,
+  ComboboxStatusProps,
+  ComboboxTriggerProps,
+  ComboboxValue,
+} from "./combobox/combobox.tsx";
+export { Select } from "./select/select.tsx";
+export type {
+  SelectGroupProps,
+  SelectItemProps,
+  SelectRootProps,
+  SelectSeparatorProps,
+  SelectTriggerProps,
+  SelectValueProps,
+} from "./select/select.tsx";

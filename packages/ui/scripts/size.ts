@@ -61,6 +61,18 @@ const COMPONENTS: Component[] = [
     scripts: ["menu/menu.script.ts"],
     css: "menu/menu.css",
   },
+  {
+    name: "combobox",
+    module: "combobox/combobox.tsx",
+    scripts: ["combobox/combobox.script.ts"],
+    css: "combobox/combobox.css",
+  },
+  {
+    name: "select",
+    module: "select/select.tsx",
+    scripts: [],
+    css: "select/select.css",
+  },
 ];
 
 const CLIENT_SCRIPT = /\?client$/;
