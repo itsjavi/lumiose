@@ -1,10 +1,12 @@
 // `lumiose/env`: ambient types for Lumiose projects (owner: Beacon). Spec §4.7, §8 (Context, Env).
 // Enabled with `"types": ["lumiose/env"]` in tsconfig.
 import type { JSX as LumioseJSX } from "./jsx-runtime.ts";
-// `.css`, `.svg`, `.md` and `.html` module patterns: script files, since this module cannot declare them.
+// `.css`, `.svg`, `.md`, `.html` and `?client` module patterns: script files, since this module cannot
+// declare them.
 import "./css-modules.d.ts";
 import "./svg-modules.d.ts";
 import "./content-modules.d.ts";
+import "./client-modules.d.ts";
 
 declare global {
   /** Global alias of `lumiose/jsx-runtime`'s `JSX`, for annotations such as `JSX.Element`. */
