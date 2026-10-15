@@ -281,6 +281,59 @@ test("@lumiose/query: shared query, reactive key and a mutation that invalidates
   await expect(page.locator("#query-b")).toHaveText(after!);
 });
 
+/** What the layout's afterNavigate saw (`type pathname`). */
+function navigations(page: Page): Promise<string[]> {
+  return page.evaluate(() => (window as unknown as { navigations?: string[] }).navigations ?? []);
+}
+
+/**
+ * TASK-296: the editor's beforeNavigate asks with confirm() inside the SPA (links, back/forward)
+ * and lets the browser ask (beforeunload) for a link out of it; the layout's afterNavigate sees
+ * each completed navigation once, and enter on the first load.
+ */
+async function guardsUnsavedChanges(page: Page): Promise<void> {
+  await page.goto("/");
+  await ready(page);
+  await page.getByRole("link", { name: "Editor" }).click();
+  await expect(page.locator("#editor")).toBeVisible();
+  expect(await navigations(page)).toEqual(["enter /", "link /editor"]);
+  await page.locator("#draft").fill("unsaved");
+  const dialogs: string[] = [];
+  page.on("dialog", (dialog) => {
+    dialogs.push(dialog.type());
+    void dialog.dismiss();
+  });
+
+  await page.getByRole("link", { name: "User 1", exact: true }).click();
+  await page.evaluate(() => history.back());
+  await page.getByRole("link", { name: "Static page" }).click();
+  await expect.poll(() => dialogs).toEqual(["confirm", "confirm", "beforeunload"]);
+  await expect(page).toHaveURL(/\/editor$/);
+  await expect(page.locator("#editor")).toBeVisible();
+  expect(await sameDocument(page)).toBe(true);
+  expect(await navigations(page)).toEqual(["enter /", "link /editor"]);
+
+  page.removeAllListeners("dialog");
+  page.once("dialog", (dialog) => void dialog.accept());
+  await page.getByRole("link", { name: "User 1", exact: true }).click();
+  await expect(page.locator("#user")).toHaveText("User 1");
+  await page.goBack();
+  await expect(page.locator("#editor")).toBeVisible();
+  expect(await navigations(page)).toEqual([
+    "enter /",
+    "link /editor",
+    "link /users/1",
+    "popstate /editor",
+  ]);
+  expect(await sameDocument(page)).toBe(true);
+}
+
+test("beforeNavigate guards unsaved changes; afterNavigate follows navigations", async ({
+  page,
+}) => {
+  await guardsUnsavedChanges(page);
+});
+
 test.describe("without the Navigation API", () => {
   test.beforeEach(async ({ page }) => {
     await page.addInitScript(() => {
@@ -305,5 +358,9 @@ test.describe("without the Navigation API", () => {
     await expect(page.locator("#long")).toBeVisible();
     await expect.poll(() => page.evaluate(() => scrollY)).toBe(scrolled);
     expect(await sameDocument(page)).toBe(true);
+  });
+
+  test("the History API fallback runs beforeNavigate and afterNavigate", async ({ page }) => {
+    await guardsUnsavedChanges(page);
   });
 });

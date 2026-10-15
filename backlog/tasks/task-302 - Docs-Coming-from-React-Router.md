@@ -5,6 +5,7 @@ status: To Do
 assignee:
   - '@Beacon'
 created_date: '2026-10-15 02:22'
+updated_date: '2026-10-15 04:46'
 labels:
   - docs
 milestone: m-10
@@ -28,3 +29,9 @@ Source: the comparison made with the user on 2026-10-15.
 - [ ] #2 Features without an equivalent are listed with the recommended alternative
 - [ ] #3 docs:gen, docs:check and the docs tests pass
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+From TASK-296 (Spark, 2026-10-15): lumiose/router now has beforeNavigate(fn) and afterNavigate(fn) (decision-50, docs: reference/router.md#navigation-hooks). Map them in this guide: React Router useBlocker/useBeforeUnload -> beforeNavigate (cancel(); willUnload gives the browser prompt); Next.js onRouterTransitionStart and usePathname effects for page views -> afterNavigate (enter on mount); Solid Router useBeforeLeave -> beforeNavigate.
+<!-- SECTION:NOTES:END -->

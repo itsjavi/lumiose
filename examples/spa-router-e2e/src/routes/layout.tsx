@@ -1,9 +1,14 @@
 import { signal, type LayoutProps } from "lumiose";
-import { Link, isNavigating, url } from "lumiose/router";
+import { Link, afterNavigate, isNavigating, url } from "lumiose/router";
 
 // The persistent root layout: its counter keeps its value across client navigations.
 export default function Layout(props: LayoutProps<"/">) {
   const count = signal(0);
+  // TASK-296: what afterNavigate saw, for the tests (`window.navigations`).
+  afterNavigate((navigation) => {
+    const seen = ((window as unknown as { navigations?: string[] }).navigations ??= []);
+    seen.push(`${navigation.type} ${navigation.to?.url.pathname}`);
+  });
   return (
     <div>
       <nav>
@@ -18,6 +23,7 @@ export default function Layout(props: LayoutProps<"/">) {
         <Link href="/long">Long</Link>
         <Link href="/missing">Missing</Link>
         <Link href="/csr">Client-rendered</Link>
+        <Link href="/editor">Editor</Link>
         <a href="/static">Static page</a>
       </nav>
       <button id="root-count" onClick={() => count.update((n) => n + 1)}>
