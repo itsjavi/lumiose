@@ -112,11 +112,11 @@ test.describe("Slider", () => {
 
   test('thumbCollisionBehavior="none": a thumb stops at the other', async ({ page }) => {
     await page.goto("/slider");
-    const opens = thumb(page, "Opens at");
+    const opens = thumb(page, "Opening hours, start");
     await opens.focus();
     await page.keyboard.press("End");
     await expect(opens).toHaveValue("17");
-    await expect(thumb(page, "Closes at")).toHaveValue("17");
+    await expect(thumb(page, "Opening hours, end")).toHaveValue("17");
     await page.keyboard.press("PageDown");
     await expect(opens).toHaveValue("7");
   });
@@ -125,8 +125,8 @@ test.describe("Slider", () => {
     page,
   }) => {
     await page.goto("/slider");
-    const opens = thumb(page, "Opens at");
-    const closes = thumb(page, "Closes at");
+    const opens = thumb(page, "Opening hours, start");
+    const closes = thumb(page, "Opening hours, end");
     const at20 = await pointAt(closes, 20, 0, 24);
     await page.mouse.click(at20.x, at20.y);
     await expect(closes).toHaveValue("20");
@@ -213,14 +213,14 @@ test.describe("in an island", () => {
     const state = page.getByTestId("slider-state");
     await expect(state).toHaveText("volume: 75, range: 10–30, commits: 0");
     await expect(thumb(page, "Volume")).toHaveValue("75");
-    await expect(thumb(page, "Start")).toHaveValue("10");
+    await expect(thumb(page, "Range start")).toHaveValue("10");
     await thumb(page, "Volume").focus();
     await page.keyboard.press("ArrowRight");
     await expect(state).toContainText("volume: 76");
-    await thumb(page, "Start").focus();
+    await thumb(page, "Range start").focus();
     await page.keyboard.press("PageUp");
     await expect(state).toHaveText("volume: 76, range: 20–30, commits: 1");
-    const end = await pointAt(thumb(page, "End"), 90);
+    const end = await pointAt(thumb(page, "Range end"), 90);
     await page.mouse.click(end.x, end.y);
     await expect(state).toHaveText("volume: 76, range: 20–90, commits: 2");
     expect(warnings).toEqual([]);

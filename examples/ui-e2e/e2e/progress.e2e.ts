@@ -2,7 +2,7 @@
 // and as `aria-valuetext`, an indeterminate progress, the sync with a signal in an island, and
 // WCAG 2.2 AA with the default theme (doc-9 sections 1 and 17).
 import { expect, test, type Page } from "@playwright/test";
-import { axe, SCHEMES } from "./a11y.ts";
+import { axe, clipped, SCHEMES, TEXT_SPACING } from "./a11y.ts";
 
 /** Lumiose's console warnings (LUM codes), such as a hydration that fell back to rendering. */
 const lumioseWarnings = (page: Page) => {
@@ -87,6 +87,18 @@ test.describe("WCAG 2.2 AA with the default theme (doc-9 section 17)", () => {
     expect(await animation()).toBe("lu-progress-slide");
     await page.emulateMedia({ reducedMotion: "reduce" });
     expect(await animation()).toBe("none");
+  });
+
+  test("the page reflows at 320 CSS pixels with text spacing (1.4.10, 1.4.12)", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 320, height: 640 });
+    await page.goto("/progress");
+    await page.addStyleTag({ content: TEXT_SPACING });
+    const main = page.locator("main");
+    const box = (await main.boundingBox())!;
+    expect(box.x + box.width).toBeLessThanOrEqual(320);
+    expect(await clipped(main)).toEqual([]);
   });
 
   test("a server-rendered page loads no script", async ({ page }, testInfo) => {

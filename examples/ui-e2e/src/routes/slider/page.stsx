@@ -68,8 +68,8 @@ export default function SliderPage() {
               <Slider.Track>
                 <Slider.Indicator />
               </Slider.Track>
-              <Slider.Thumb aria-label="Opens at" />
-              <Slider.Thumb aria-label="Closes at" />
+              <Slider.Thumb aria-label="Opening hours, start" />
+              <Slider.Thumb aria-label="Opening hours, end" />
             </Slider.Control>
           </Slider.Root>
         </section>

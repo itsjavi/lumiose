@@ -46,8 +46,8 @@ export function SliderSignals() {
           <Slider.Track>
             <Slider.Indicator />
           </Slider.Track>
-          <Slider.Thumb aria-label="Start" />
-          <Slider.Thumb aria-label="End" />
+          <Slider.Thumb aria-label="Range start" />
+          <Slider.Thumb aria-label="Range end" />
         </Slider.Control>
       </Slider.Root>
     </section>

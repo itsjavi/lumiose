@@ -3280,8 +3280,9 @@ The value's type follows `value`, `defaultValue` or `bind:value`: a number for o
 `Label` takes `<label>` props. `Value` takes `<output>` props, and its `children` may be a function
 `(formattedValues, values) => JSX.Element` (then it has no `for`, and you render its text). `Control`,
 `Track` and `Indicator` take `<div>` props. `Thumb` takes `<input>` props except the range's own
-(`aria-label`, `aria-valuetext`, `disabled`, `id`, `class`); give each thumb of a range an
-`aria-label` ("Minimum price"). Inside a Field, the first thumb takes the field's id, name,
+(`aria-label`, `aria-valuetext`, `disabled`, `id`, `class`). Give each thumb of a range an
+`aria-label` with the label's text in it ("Minimum price" under "Price"), so speech users can say
+what they see (WCAG 2.5.3). Inside a Field, the first thumb takes the field's id, name,
 description and error.
 
 **Differences from Base UI's Slider.** Thumbs are the range inputs themselves, so there is no hidden
