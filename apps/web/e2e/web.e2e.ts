@@ -73,9 +73,11 @@ test("the landing page presents Lumiose with benchmark evidence", async ({ page 
   await expect(table.locator("tbody tr.self td").nth(5)).toHaveText(/^\d[\d,]* req\/s$/);
   const preact = table.locator("tbody tr", { has: page.locator("th", { hasText: /^Preact$/ }) });
   await expect(preact.locator("td").last()).toHaveText("No full-stack layer");
-  await expect(page.locator("#compare .note").last()).toHaveText(
-    "Astro's interactive islands need a second UI framework.",
-  );
+  await expect(
+    page.locator("#compare .note", {
+      hasText: /^Astro's interactive islands need a second UI framework\.$/,
+    }),
+  ).toHaveCount(1);
 
   // The four sections, in order, then the closing call.
   await expect(page.locator(".box h3")).toHaveText([
@@ -163,7 +165,10 @@ test("docs pages render the Markdown with navigation, TOC and prev/next", async 
   await expect(page.locator(".prose .tok-keyword").first()).toBeVisible();
   // Links between docs point at pages, not at Markdown files.
   expect(await page.locator('.prose a[href$=".md"], .prose a[href*=".md#"]').count()).toBe(0);
-  await page.getByRole("link", { name: /Next/ }).click();
+  await page
+    .getByRole("navigation", { name: "Previous and next pages" })
+    .getByRole("link", { name: /Next/ })
+    .click();
   await expect(page).toHaveURL(/\/docs\/concepts\/async\/?$/);
   expect(failures).toEqual([]);
 });
