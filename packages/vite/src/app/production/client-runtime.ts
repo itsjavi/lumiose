@@ -19,6 +19,11 @@
 //   marked free of side effects so that an island's import reaches only the modules that declare
 //   what it imports (./runtime-chunks.ts). One exception stays in the runtime chunk: the gate
 //   between fetchJSON and its cache (`FOLDED` below).
+// - Except the client helpers of `src/instrumentation.client.ts` (TASK-346). Vite's preload helper,
+//   which every `import()` uses, is runtime by the rule above; a client entry with an `import()`
+//   would then load the runtime chunk on pages without islands, which decision-49 rules out. Unless
+//   the entry imports the runtime itself, its helpers go to its own chunk, or to a `helpers` chunk
+//   when the runtime uses them too: one more small file on pages with islands.
 // - An app without islands builds an empty island loader, so nothing lands in a chunk that
 //   `lumiose build` removes afterwards.
 // - A smaller preload helper. Vite wraps every dynamic `import()` in `__vitePreload`, which adds
@@ -31,7 +36,8 @@ import { LUMIOSE_SRC, runtimeFile } from "../../runtime-files.ts";
 import { type Plugin } from "vite";
 import { hasIslands, hasSpa, SPA_ENTRY_ID } from "../router/entry.ts";
 import type { BuildState } from "./plugin.ts";
-import { barrel, singleEntryModules, type Barrel } from "./runtime-chunks.ts";
+import { join } from "node:path";
+import { barrel, clientEntryHelpers, singleEntryModules, type Barrel } from "./runtime-chunks.ts";
 
 /** The island loader's client entries: `lumiose/dom/loader`, or the one that waits for the client entry. */
 const ISLAND_LOADER = runtimeFile("dom/loader.ts");
@@ -57,12 +63,15 @@ export function clientRuntime(state: BuildState): Plugin {
   // imports: known once the client build parsed every module.
   const barrels = new Map<string, Barrel>();
   let single = new Set<string>();
+  // The client helpers `src/instrumentation.client.ts` imports, when it imports no runtime.
+  let helpers = { shared: new Set<string>(), own: new Set<string>() };
   const spa = (): boolean => state.app !== undefined && hasSpa(state.app.manifest);
 
   /** Whether module `id` goes to the runtime chunk. */
   const runtime = (id: string): boolean => {
     if (isLoader(id)) return islands && !spa();
     if (id === SPA_ENTRY_ID) return !islands && spa();
+    if (helpers.shared.has(id) || helpers.own.has(id)) return false;
     return isRuntime(id) && (FOLDED.has(id) || !single.has(id));
   };
 
@@ -77,7 +86,15 @@ export function clientRuntime(state: BuildState): Plugin {
           client: {
             build: {
               rolldownOptions: {
-                output: { codeSplitting: { groups: [{ name: "lumiose", test: runtime }] } },
+                output: {
+                  codeSplitting: {
+                    // A group takes the modules its own imports, unless an earlier group has them.
+                    groups: [
+                      { name: "helpers", test: (id) => helpers.shared.has(id) },
+                      { name: "lumiose", test: runtime },
+                    ],
+                  },
+                },
               },
             },
           },
@@ -111,6 +128,14 @@ export function clientRuntime(state: BuildState): Plugin {
         barrels,
         (id) => isRuntime(id) && !isLoader(id),
       );
+      if (state.clientEntryFile !== undefined) {
+        helpers = clientEntryHelpers(
+          { ids: this.getModuleIds(), info: (id) => this.getModuleInfo(id) },
+          join(state.root, state.clientEntryFile),
+          isHelper,
+          isRuntime,
+        );
+      }
     },
 
     load: {
@@ -126,7 +151,12 @@ export function clientRuntime(state: BuildState): Plugin {
 /** Lumiose's modules and Vite's and Rolldown's client helpers, but the History API fallback. */
 function isRuntime(id: string): boolean {
   if (id === HISTORY_FALLBACK) return false;
-  return id.startsWith(LUMIOSE_SRC) || id.startsWith("\0vite/") || id.startsWith("\0rolldown/");
+  return id.startsWith(LUMIOSE_SRC) || isHelper(id);
+}
+
+/** Vite's and Rolldown's client helpers (`__vitePreload`, …). */
+function isHelper(id: string): boolean {
+  return id.startsWith("\0vite/") || id.startsWith("\0rolldown/");
 }
 
 function exact(id: string): RegExp {

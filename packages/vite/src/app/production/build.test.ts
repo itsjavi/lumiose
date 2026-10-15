@@ -886,6 +886,46 @@ export default function Live() { return <h1>Live SPA</h1>; }
     expect(await live.text()).toContain(tag);
   });
 
+  it("keeps the runtime off pages without islands when src/instrumentation.client.ts uses import() (TASK-346)", async () => {
+    const root = project({
+      "src/instrumentation.client.ts": `if (location.pathname === "/") await import("./lib/extra.ts");
+export {};
+`,
+      "src/lib/extra.ts": `performance.mark("extra");
+`,
+      "src/components/Counter.stsx": `import { signal } from "lumiose";
+export function Counter() {
+  const count = signal(0);
+  return <button onClick={() => count.update((n) => n + 1)}>{count()}</button>;
+}
+`,
+      "src/routes/page.stsx": `export default function Home() { return <h1>No JavaScript</h1>; }
+`,
+      "src/routes/island/page.stsx": `import { Counter } from "../../components/Counter.stsx";
+export default function Island() { return <main><Counter client:load /></main>; }
+`,
+    });
+    await build({ root, ...quiet() });
+    const entry = await entryOf(root);
+    const client = entry.app.clientEntry!;
+    const loader = entry.app.loader!;
+    // The page loads the client entry and what it imports, none of which is the runtime.
+    const home = read(root, "index.html");
+    const files = [client.url, ...client.preloads];
+    for (const url of files) {
+      expect(url).not.toBe(loader);
+      expect(read(root, url.slice(1)).includes("script[data-l-client]"), url).toBe(false);
+    }
+    expect([...home.matchAll(/(?:src|href)="(\/assets\/[^"]+\.js)"/g)].map((m) => m[1])).toEqual([
+      ...client.preloads,
+      client.url,
+    ]);
+    // The lazy import still preloads and runs.
+    expect(read(root, client.url.slice(1))).toMatch(/import\([`"']\.\/extra-[\w-]{8}\.js[`"']\)/);
+    // An islands page still hydrates through the loader.
+    expect(read(root, "island/index.html")).toContain(loader);
+  });
+
   it("stops with LUM4003 when src/instrumentation.client.ts imports server-only code (TASK-295)", async () => {
     const root = project({
       "src/instrumentation.client.ts": `import { secret } from "./lib/keys.server.ts";
