@@ -27,16 +27,23 @@ export const DEFAULT_LIMITS: BodyLimits = { body: 1024 * 1024, upload: 10 * 1024
 
 const UNITS: Record<string, number> = { b: 1, kb: 1024, mb: 1024 ** 2, gb: 1024 ** 3 };
 
-/** Bytes of a size; throws a `TypeError` naming `what` for anything else. */
+/**
+ * Bytes of a size; throws a `TypeError` naming `what` for anything else, and for sizes past
+ * `Number.MAX_SAFE_INTEGER` bytes (a long digit string would otherwise become `Infinity`, no
+ * limit at all; TASK-313).
+ */
 export function parseSize(size: unknown, what: string): number {
-  if (typeof size === "number" && Number.isFinite(size) && size >= 0) return Math.floor(size);
+  let bytes: number | undefined;
+  if (typeof size === "number" && size >= 0) bytes = Math.floor(size);
   if (typeof size === "string") {
     const match = /^\s*(\d+(?:\.\d+)?)\s*(b|kb|mb|gb)?\s*$/i.exec(size);
-    if (match !== null)
-      return Math.floor(Number(match[1]) * UNITS[(match[2] ?? "b").toLowerCase()]!);
+    if (match !== null) {
+      bytes = Math.floor(Number(match[1]) * UNITS[(match[2] ?? "b").toLowerCase()]!);
+    }
   }
+  if (bytes !== undefined && Number.isSafeInteger(bytes)) return bytes;
   throw new TypeError(
-    `${what}: expected a size in bytes or a string like "1mb" or "512kb", got ${JSON.stringify(size)}`,
+    `${what}: expected a size in bytes (at most 2^53 - 1) or a string like "1mb" or "512kb", got ${JSON.stringify(size)}`,
   );
 }
 

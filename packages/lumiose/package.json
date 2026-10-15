@@ -99,6 +99,7 @@
   "scripts": {
     "typecheck": "tsc -p tsconfig.json",
     "test": "vitest run",
+    "test:properties": "node scripts/properties.ts",
     "size": "node scripts/size.ts",
     "size:apps": "node scripts/size-apps.ts",
     "docs:gen": "node scripts/gen-error-docs.ts && node scripts/gen-llms.ts",
@@ -111,6 +112,7 @@
     "@lumiose/cli": "workspace:*",
     "@lumiose/compiler": "workspace:*",
     "@lumiose/vite": "workspace:*",
+    "fast-check": "4.10.2",
     "vite": "^8.3.4"
   }
 }

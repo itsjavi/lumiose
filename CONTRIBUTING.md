@@ -11,7 +11,13 @@ pnpm build:compiler   # the native compiler (crates/lumiose_napi) into packages/
 pnpm check            # what CI runs: build, typecheck, lint, example formatting, tests, size, cargo test
 pnpm pack:check       # pack the publishable packages and check the tarballs (--smoke: build an app with them)
 pnpm release:version <x.y.z> --dry-run   # what a release would change (see Releases)
+pnpm --filter lumiose test:properties [runs]   # the property tests with many cases (default 20000)
 ```
+
+Property tests (`*.property.test.ts`, [fast-check](https://fast-check.dev)) cover request body
+parsing under the limits, the Origin check, redirect targets and unsafe URLs in rendered HTML
+(decision-56). `pnpm test` runs 100 cases of each; `test:properties` runs many more (the nightly
+workflow's). A failure prints its seed: rerun with `LUMIOSE_PROPERTY_SEED=<seed>` to reproduce it.
 
 Changes to the website (`apps/web`) follow [its contributing notes](apps/web/CONTRIBUTING.md): the
 WCAG 2.2 AA axe suite and the manual accessibility checklist (decision-39).

@@ -10517,8 +10517,9 @@ differs from it is an error naming both, so the path is never counted twice.
 
 **Body limits** (`limits`). `body` caps URL-encoded forms, JSON and any other non-multipart
 request body (default `"1mb"`), `upload` caps `multipart/form-data` bodies (default `"10mb"`). A
-route's `export const limits = { upload: "100mb" }` overrides them for its requests. See
-[Security](../concepts/security.md).
+route's `export const limits = { upload: "100mb" }` overrides them for its requests. Sizes are
+bytes or strings with `b`, `kb`, `mb` or `gb` (1024-based); a size past 2^53 - 1 bytes is an
+error. See [Security](../concepts/security.md).
 
 ```ts
 lumiose({

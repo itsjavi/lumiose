@@ -33,9 +33,7 @@ export function template(html: string, flags = 0): TemplateFactory | MultiRootTe
     ? (): Node[] => {
         source ??= parse();
         const claimed = hydrator?.template(source, flags);
-        return claimed !== undefined
-          ? (claimed as Node[])
-          : Array.from(clone(source).childNodes);
+        return claimed !== undefined ? (claimed as Node[]) : Array.from(clone(source).childNodes);
       }
     : (): Element => {
         source ??= parse();
