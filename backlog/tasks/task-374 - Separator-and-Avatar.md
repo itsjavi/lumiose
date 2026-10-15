@@ -5,6 +5,7 @@ status: To Do
 assignee:
   - '@Halo'
 created_date: '2026-10-15 16:55'
+updated_date: '2026-10-15 17:12'
 labels:
   - ui
 milestone: m-12
@@ -27,3 +28,9 @@ User decision 2026-10-15: @lumiose/ui reaches parity with Base UI's components b
 - [ ] #3 Passes every item of the "UI primitives pitfall checklist" backlog doc (from Base UI and Zag/Ark) that applies, plus keyboard-contract and axe tests
 - [ ] #4 A docs page with a type-checked example
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+2026-10-15: the pitfall checklist is doc-9. The component gets its rules in the optional default theme (@lumiose/ui/themes/default.css, decision-62); the component itself stays unstyled.
+<!-- SECTION:NOTES:END -->
