@@ -6,7 +6,8 @@
 // and canonical links, TASK-263), and starts the router (./boot.ts) with the app's island
 // manifest. A build where nothing hydrates (every SPA page is client-rendered and the island
 // manifest is empty) starts it with ./csr.ts instead, which leaves the island loader and hydration
-// out of the bundle.
+// out of the bundle. With `src/instrumentation.client.ts` (decision-49), the islands and the
+// router wait for it (lumiose's app/client-entry.ts).
 
 import { runtimeFile } from "../../runtime-files.ts";
 import { type Plugin, type Rollup } from "vite";
@@ -21,6 +22,7 @@ const BOOT = runtimeFile("app/router/boot.ts");
 const CSR = runtimeFile("app/router/csr.ts");
 const VIEW_TRANSITION = runtimeFile("dom/view-transition.ts");
 const LOCALE_LINKS = runtimeFile("app/router/locale-links.ts");
+const CLIENT_ENTRY = runtimeFile("app/client-entry.ts");
 
 type Manifest = Pick<RouteManifest, "routes" | "layouts" | "notFoundPages" | "errorPages" | "i18n">;
 
@@ -34,13 +36,15 @@ export interface SpaEntryOptions {
   csr?: boolean;
   /** `lumiose({ viewTransitions: true })`: navigations swap pages inside `viewTransition()`, which the entry imports only then. */
   viewTransitions?: boolean;
+  /** The app has `src/instrumentation.client.ts`: the islands and the router start after it ran. */
+  clientEntry?: boolean;
 }
 
 /** The code of `virtual:lumiose/spa` for a route manifest and Vite's `base`. */
 export function spaEntryCode(
   manifest: Manifest,
   base: string,
-  { csr = false, viewTransitions = false }: SpaEntryOptions = {},
+  { csr = false, viewTransitions = false, clientEntry = false }: SpaEntryOptions = {},
 ): string {
   const table = clientTable(manifest);
   if (table === undefined) return "export {};\n";
@@ -63,15 +67,18 @@ ${modules.join("\n")}
   if (table.i18n !== undefined) {
     imports += `import { followLocaleLinks } from ${JSON.stringify(LOCALE_LINKS)};\n`;
   }
+  if (clientEntry) {
+    imports += `import { afterClientEntry, clientEntry } from ${JSON.stringify(CLIENT_ENTRY)};\n`;
+  }
   return csr
     ? `${imports}import { startCsr } from ${JSON.stringify(CSR)};
 
-startCsr(${config});
+startCsr(${config}${clientEntry ? ", clientEntry()" : ""});
 `
     : `${imports}import islands from "virtual:lumiose/islands";
 import { startSpa } from ${JSON.stringify(BOOT)};
 
-startSpa(islands, ${config});
+startSpa(islands, ${config}${clientEntry ? ", afterClientEntry(clientEntry())" : ""});
 `;
 }
 
@@ -79,7 +86,10 @@ startSpa(islands, ${config});
  * Serves `virtual:lumiose/spa` in the client environment from the current route manifest (`undefined`
  * until the routes were scanned).
  */
-export function spaEntryPlugin(manifest: () => Manifest | undefined): Plugin {
+export function spaEntryPlugin(
+  manifest: () => Manifest | undefined,
+  clientEntry: () => boolean = () => false,
+): Plugin {
   return {
     name: "lumiose:spa",
     resolveId: {
@@ -101,6 +111,7 @@ export function spaEntryPlugin(manifest: () => Manifest | undefined): Plugin {
         return spaEntryCode(current, this.environment.config.base, {
           csr,
           viewTransitions: options?.viewTransitions,
+          clientEntry: clientEntry(),
         });
       },
     },

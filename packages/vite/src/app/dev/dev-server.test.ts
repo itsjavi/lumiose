@@ -434,6 +434,24 @@ describe.skipIf(!binding)("lumiose dev", () => {
     );
   });
 
+  it("loads src/instrumentation.client.ts on every page, timed, and the loader waits for it (TASK-295)", async () => {
+    const tag = '<script type="module" src="/@id/__x00__lumiose:client" data-l-client></script>';
+    write("src/instrumentation.client.ts", "export const onError = () => {};\n");
+    await eventually(async () => (await (await get("/")).text()).includes(tag));
+    expect(await (await get("/island")).text()).toContain(tag);
+    const client = await (await get("/@id/__x00__lumiose:client")).text();
+    expect(client).toContain("/src/instrumentation.client.ts");
+    expect(client).toContain("performance.now() - start");
+    expect(client).toContain("Keep it under 16 ms");
+    const loader = await (await get("/@id/__x00__lumiose:loader")).text();
+    expect(loader).toContain("app/client-loader.ts");
+
+    rmSync(join(root, "src/instrumentation.client.ts"));
+    await eventually(async () => !(await (await get("/")).text()).includes("data-l-client"));
+    expect(await (await get("/@id/__x00__lumiose:loader")).text()).toContain("dom/loader.ts");
+    await settle();
+  });
+
   it("shows route manifest errors on every page until they are fixed", async () => {
     write(
       "src/routes/stream/page.tsx",

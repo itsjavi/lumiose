@@ -34,6 +34,7 @@ import {
   DOCUMENT_FILES,
   findAppFile,
   hrefDefine,
+  INSTRUMENTATION_CLIENT_FILES,
   INSTRUMENTATION_SERVER_FILES,
   isClientState,
   islandModules,
@@ -91,7 +92,17 @@ const APP_SERVER_ENTRY = runtimeFile("app/server/index.ts");
  * module instance with the islands' `lumiose`), also when lumiose lies outside `server.fs.allow`.
  */
 const ISLAND_LOADER = runtimeFile("dom/loader.ts");
+/** The island loader of apps with `src/instrumentation.client.ts`: islands wait for it. */
+const CLIENT_LOADER = runtimeFile("app/client-loader.ts");
 const LOADER_ID = "\0lumiose:loader";
+/**
+ * `src/instrumentation.client.ts` in dev (decision-49): pages load it through this module, which
+ * times it (from `\0lumiose:client-mark`, evaluated just before it) and warns past one frame.
+ */
+const CLIENT_ID = "\0lumiose:client";
+const CLIENT_MARK_ID = "\0lumiose:client-mark";
+/** Dev's budget for `src/instrumentation.client.ts` before hydration: one frame (Next.js's too). */
+const CLIENT_BUDGET_MS = 16;
 /** The dev client (./client.ts, `.js` once built), loaded on every page through `\0lumiose:dev`. */
 const DEV_CLIENT = normalizePath(
   fileURLToPath(
@@ -114,6 +125,8 @@ interface AppFiles {
   document: string | undefined;
   /** `src/instrumentation.server.ts` (decision-49). */
   instrumentation: string | undefined;
+  /** `src/instrumentation.client.ts` (decision-49). */
+  clientEntry: string | undefined;
   /** Route manifest errors, shown in the overlay of every page until fixed. */
   errors: OverlayError[];
   key: string;
@@ -158,6 +171,7 @@ export function lumioseDev(options: LumioseDevOptions = {}): Plugin {
     const middleware = findAppFile(root, MIDDLEWARE_FILES);
     const document = findAppFile(root, DOCUMENT_FILES);
     const instrumentation = findAppFile(root, INSTRUMENTATION_SERVER_FILES);
+    const clientEntry = findAppFile(root, INSTRUMENTATION_CLIENT_FILES);
     const errors = manifest.diagnostics
       .filter((diagnostic) => diagnostic.severity === "error")
       .map((diagnostic) => diagnosticError(diagnostic, root));
@@ -170,8 +184,9 @@ export function lumioseDev(options: LumioseDevOptions = {}): Plugin {
       middleware,
       document,
       instrumentation,
+      clientEntry,
     ]);
-    return { manifest, middleware, document, instrumentation, errors, key };
+    return { manifest, middleware, document, instrumentation, clientEntry, errors, key };
   }
 
   function reportDiagnostics(diagnostics: readonly AppDiagnostic[]): void {
@@ -196,10 +211,13 @@ export function lumioseDev(options: LumioseDevOptions = {}): Plugin {
         if (next.key === app.key) continue;
         reportDiagnostics(next.manifest.diagnostics);
         app = next;
-        // The SPA entry holds the route table (TASK-25).
+        // The SPA entry holds the route table (TASK-25); it and the loader depend on whether there
+        // is a client entry, which the client module serves.
         const graph = server.environments.client.moduleGraph;
-        const spa = graph.getModuleById(SPA_ENTRY_ID);
-        if (spa !== undefined) graph.invalidateModule(spa);
+        for (const id of [SPA_ENTRY_ID, LOADER_ID, CLIENT_ID]) {
+          const mod = graph.getModuleById(id);
+          if (mod !== undefined) graph.invalidateModule(mod);
+        }
         server.environments.client.hot.send({ type: "full-reload", path: "*" });
       } while (rescan);
     })()
@@ -220,7 +238,8 @@ export function lumioseDev(options: LumioseDevOptions = {}): Plugin {
     } else if (
       (MIDDLEWARE_FILES.includes(file) ||
         DOCUMENT_FILES.includes(file) ||
-        INSTRUMENTATION_SERVER_FILES.includes(file)) &&
+        INSTRUMENTATION_SERVER_FILES.includes(file) ||
+        INSTRUMENTATION_CLIENT_FILES.includes(file)) &&
       (event === "add" || event === "unlink")
     ) {
       refresh();
@@ -256,6 +275,9 @@ export function lumioseDev(options: LumioseDevOptions = {}): Plugin {
       ...(current.instrumentation === undefined
         ? {}
         : { instrumentation: current.instrumentation }),
+      ...(current.clientEntry === undefined
+        ? {}
+        : { clientEntry: { url: virtualUrl(base, CLIENT_ID) } }),
       headAssets: (files) => headAssets(current, files),
       env: serverEnv(server),
       dev: true,
@@ -390,18 +412,30 @@ export function lumioseDev(options: LumioseDevOptions = {}): Plugin {
     },
 
     resolveId: {
-      filter: { id: /^\0lumiose:(?:loader|spa|dev)$/ },
+      filter: { id: /^\0lumiose:(?:loader|spa|dev|client|client-mark)$/ },
       handler: (id) => id,
     },
 
     load: {
-      filter: { id: /^\0lumiose:(?:loader|spa|dev)$/ },
-      handler: (id) =>
-        id === SPA_ENTRY_ID
-          ? spaEntryCode(app.manifest, server.config.base, {
+      filter: { id: /^\0lumiose:(?:loader|spa|dev|client|client-mark)$/ },
+      handler(id) {
+        const clientEntry = app.clientEntry;
+        switch (id) {
+          case SPA_ENTRY_ID:
+            return spaEntryCode(app.manifest, server.config.base, {
               viewTransitions: project.viewTransitions,
-            })
-          : `import ${JSON.stringify(id === DEV_CLIENT_ID ? DEV_CLIENT : ISLAND_LOADER)};\n`,
+              clientEntry: clientEntry !== undefined,
+            });
+          case DEV_CLIENT_ID:
+            return `import ${JSON.stringify(DEV_CLIENT)};\n`;
+          case CLIENT_MARK_ID:
+            return "export const start = performance.now();\n";
+          case CLIENT_ID:
+            return clientEntry === undefined ? "export {};\n" : timedClientEntry(clientEntry);
+          default:
+            return `import ${JSON.stringify(clientEntry === undefined ? ISLAND_LOADER : CLIENT_LOADER)};\n`;
+        }
+      },
     },
 
     configResolved(config) {
@@ -579,6 +613,23 @@ if (import.meta.hot) import.meta.hot.accept((next) => {
       }
     }
   }
+}
+
+/**
+ * `\0lumiose:client`: `src/instrumentation.client.ts`, timed from the evaluation of
+ * `\0lumiose:client-mark` (imported first, so evaluated right before the file and its imports) to
+ * the end of its top-level code, top-level `await` included. Its exports pass through.
+ */
+function timedClientEntry(file: string): string {
+  const specifier = JSON.stringify(`/${file}`);
+  return `import { start } from ${JSON.stringify(CLIENT_MARK_ID)};
+import ${specifier};
+export * from ${specifier};
+const ms = performance.now() - start;
+if (ms > ${CLIENT_BUDGET_MS}) {
+  console.warn(\`Lumiose: ${file} took \${Math.round(ms)} ms before hydration. Keep it under ${CLIENT_BUDGET_MS} ms (one frame): import what is not needed at once lazily.\`);
+}
+`;
 }
 
 /**

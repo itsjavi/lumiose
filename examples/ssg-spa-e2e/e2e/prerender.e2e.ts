@@ -68,6 +68,28 @@ test("client navigation from a prerendered page stays in the document", async ({
   expect(await sameDocument(page)).toBe(true);
 });
 
+test("src/instrumentation.client.ts runs once, before the SPA hydrates (TASK-295)", async ({
+  page,
+}) => {
+  const html = await (await page.request.get("/tracks/2")).text();
+  expect(html).toMatch(/<script type="module" src="[^"]+" data-l-client><\/script>/);
+  await page.goto("/tracks/2");
+  await ready(page);
+  const read = () =>
+    page.evaluate(() => {
+      const state = window as unknown as {
+        clientEntry?: { runs: number; ran: boolean };
+        entryFirst?: boolean;
+      };
+      return { ...state.clientEntry, entryFirst: state.entryFirst };
+    });
+  expect(await read()).toEqual({ runs: 1, ran: true, entryFirst: true });
+  // Client navigations do not run it again.
+  await page.getByRole("link", { name: "Track 1", exact: true }).click();
+  await expect(page.locator("#track")).toHaveText("Track 1: Overworld");
+  expect(await read()).toEqual({ runs: 1, ran: true, entryFirst: true });
+});
+
 test("deep links with params load their own prerendered page", async ({ page }) => {
   for (const [id, name] of [
     ["1", "Overworld"],

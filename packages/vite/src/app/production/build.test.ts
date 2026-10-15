@@ -721,6 +721,94 @@ export function GET(): Response { throw new Error("endpoint failed"); }
     expect(onError).toHaveBeenCalledTimes(2);
   });
 
+  it("loads src/instrumentation.client.ts on every page, before islands and the SPA (TASK-295)", async () => {
+    const root = project({
+      "src/instrumentation.client.ts": `import { mark } from "./lib/mark.ts";
+await Promise.resolve();
+mark("client entry");
+export const onError = (error: unknown) => console.error(error);
+`,
+      "src/lib/mark.ts": `export const mark = (name: string) => performance.mark(name);
+`,
+      "src/components/Counter.stsx": `import { signal } from "lumiose";
+import { mark } from "../lib/mark.ts";
+export function Counter() {
+  const count = signal(0);
+  return <button onClick={() => { mark("click"); count.update((n) => n + 1); }}>{count()}</button>;
+}
+`,
+      "src/routes/page.stsx": `export default function Home() { return <h1>No JavaScript</h1>; }
+`,
+      "src/routes/island/page.stsx": `import { Counter } from "../../components/Counter.stsx";
+export default function Island() { return <main><Counter client:load /></main>; }
+`,
+      "src/routes/app/layout.stsx": `export const mode = "spa";
+export const prerender = true;
+export default function App(props: { children?: JSX.Element }) { return <div id="app">{props.children}</div>; }
+`,
+      "src/routes/app/page.stsx": `export default function AppHome() { return <h1>SPA</h1>; }
+`,
+      "src/routes/live/page.stsx": `export const mode = "spa";
+export default function Live() { return <h1>Live SPA</h1>; }
+`,
+    });
+    await build({ root, ...quiet() });
+    const entry = await entryOf(root);
+    const client = entry.app.clientEntry!;
+    expect(client.url).toMatch(/^\/assets\/instrumentation-[\w-]{8}\.js$/);
+    const tag = `<script type="module" src="${client.url}" data-l-client></script>`;
+    const preloads = client.preloads!.map((url) => `<link rel="modulepreload" href="${url}">`);
+    const scripts = (html: string) =>
+      [...html.matchAll(/<script type="module"[^>]*src="([^"]+)"/g)].map((match) => match[1]);
+
+    // A page without islands or SPA routes: the client entry and what it imports, nothing else.
+    const home = read(root, "index.html");
+    expect(home).toContain(
+      `<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">${preloads.join("")}${tag}`,
+    );
+    expect(scripts(home)).toEqual([client.url]);
+    const runtime = readdirSync(join(root, "dist/client/assets")).filter((file) =>
+      file.startsWith("lumiose-"),
+    );
+    const own = read(root, client.url.slice(1));
+    for (const file of runtime) expect(own).not.toContain(file);
+    for (const url of client.preloads!) {
+      for (const file of runtime) expect(read(root, url.slice(1))).not.toContain(file);
+    }
+
+    // An islands page: the loader that waits for the client entry.
+    const island = read(root, "island/index.html");
+    expect(island).toContain(tag);
+    const [, loader] = scripts(island);
+    expect(loader).toBe(entry.app.loader);
+    const loaderCode = read(root, loader!.slice(1));
+    const runtimeCode = runtime.map((file) => read(root, `assets/${file}`)).join("");
+    expect(loaderCode + runtimeCode).toContain("script[data-l-client]");
+
+    // SPA pages, prerendered or rendered per request: the SPA entry passes the gate.
+    // `startSpa(islands, config, afterClientEntry(clientEntry()))`, minified.
+    const spaCode = read(root, entry.app.spa!.slice(1));
+    expect(spaCode).toMatch(/\},\w+\(\w+\(\)\)\);\s*$/);
+    expect(read(root, "app/index.html")).toContain(tag);
+    const live = await entry.default.fetch(new Request("http://app.test/live"));
+    expect(await live.text()).toContain(tag);
+  });
+
+  it("stops with LUM4003 when src/instrumentation.client.ts imports server-only code (TASK-295)", async () => {
+    const root = project({
+      "src/instrumentation.client.ts": `import { secret } from "./lib/keys.server.ts";
+console.log(secret);
+`,
+      "src/lib/keys.server.ts": `export const secret = "s3cr3t";
+`,
+      "src/routes/page.stsx": `export default function Home() { return <h1>Home</h1>; }
+`,
+    });
+    await expect(build({ root, ...quiet() })).rejects.toThrow(
+      /LUM4003: src\/lib\/keys\.server\.ts is server-only, but client code imports it:\n {2}src\/instrumentation\.client\.ts/,
+    );
+  });
+
   it("prerenders spa routes with prerender into hydrating HTML, without dist/server (TASK-216)", async () => {
     const root = project({
       "vite.config.ts": `import lumiose from "@lumiose/vite";

@@ -64,6 +64,27 @@ describe("pages", () => {
     );
   });
 
+  it("loads src/instrumentation.client.ts first in every page's head (decision-49)", async () => {
+    const { fetch } = app(
+      {
+        "src/routes/page.stsx": page(() => `${testHead("<title>Home</title>")}<h1>Home</h1>`),
+        "src/routes/error.stsx": page((props) => `<p>${props.status}</p>`),
+      },
+      {
+        headAssets: () => `<link rel="stylesheet" href="/app.css">`,
+        clientEntry: { url: "/assets/instrumentation-a1.js", preloads: ["/assets/sdk-b2.js"] },
+      },
+    );
+    const tags =
+      '<link rel="modulepreload" href="/assets/sdk-b2.js">' +
+      '<script type="module" src="/assets/instrumentation-a1.js" data-l-client></script>';
+    expect(await (await fetch("/")).text()).toBe(
+      `${DOCUMENT_START}${tags}<title>Home</title><link rel="stylesheet" href="/app.css"></head><body><h1>Home</h1></body></html>`,
+    );
+    // Error pages too.
+    expect(await (await fetch("/missing")).text()).toContain(`${tags}<link rel="stylesheet"`);
+  });
+
   it("renders a custom src/document.stsx with { head, body } and adds the doctype", async () => {
     const { fetch } = app(
       {

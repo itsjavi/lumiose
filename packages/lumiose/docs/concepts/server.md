@@ -111,7 +111,9 @@ does not, since errors there fail the build. Its three exports are optional:
   outermost. Static files are served before the app and are not observed; a `fetchJSON()` the
   render handles in-process gets its phases observed, not a `request` of its own.
 
-Without the file nothing loads; with it, a phase without wrappers costs one check.
+Without the file nothing loads; with it, a phase without wrappers costs one check. Its browser
+counterpart, `src/instrumentation.client.ts`, runs on every page before hydration
+([Islands](islands.md#concept)).
 
 > **Status:** the request handler, middleware, endpoints, cookies, env, error pages and
 > instrumentation are available, served by `lumiose dev` and by the build output

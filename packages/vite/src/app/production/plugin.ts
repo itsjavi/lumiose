@@ -36,10 +36,12 @@ import type { TrailingSlash } from "lumiose/internal/app/server/handler.ts";
 import type { Prefetch } from "lumiose/internal/app/server/navigation.ts";
 import { SPA_ENTRY, spaEntryPlugin } from "../router/entry.ts";
 import { routeModuleNames, routeOutput } from "./chunk-names.ts";
-import { clientRuntime } from "./client-runtime.ts";
+import { CLIENT_LOADER, clientRuntime } from "./client-runtime.ts";
 import {
   configProjectOptions,
+  findAppFile,
   hrefDefine,
+  INSTRUMENTATION_CLIENT_FILES,
   islandModules,
   projectOptions,
   siteOrigin,
@@ -86,6 +88,10 @@ export interface BuildState {
   platformStaticFiles?: boolean;
   viewTransitions: boolean;
   prefetch: Prefetch;
+  /** `src/instrumentation.client.ts` (project-relative), found when the config resolves. */
+  clientEntryFile?: string;
+  /** Its chunk's URL and those of the chunks it imports, from the client build. */
+  clientEntry?: { url: string; preloads: string[] };
   /** Scanned before the builds. */
   app?: {
     manifest: RouteManifest;
@@ -119,7 +125,10 @@ export interface BuildState {
 export function lumioseBuild(state: BuildState): Plugin[] {
   return [
     lumioseBuildEnvironments(state),
-    spaEntryPlugin(() => state.app?.manifest),
+    spaEntryPlugin(
+      () => state.app?.manifest,
+      () => state.clientEntryFile !== undefined,
+    ),
     clientRuntime(state),
   ];
 }
@@ -141,6 +150,9 @@ function lumioseBuildEnvironments(state: BuildState): Plugin {
       const projectFile = (id: string) =>
         id.startsWith(rootPrefix) ? id.slice(rootPrefix.length) : undefined;
       const output = (dir: string) => routeOutput(dir, routeNames, projectFile);
+      // decision-49: an entry of its own, which every page loads; the loader waits for it.
+      state.clientEntryFile = findAppFile(state.root, INSTRUMENTATION_CLIENT_FILES);
+      const clientEntry = state.clientEntryFile;
       return {
         appType: "custom",
         define: hrefDefine(state.trailingSlash),
@@ -151,7 +163,13 @@ function lumioseBuildEnvironments(state: BuildState): Plugin {
               rolldownOptions: {
                 // The SPA entry is an input of every build; without `spa` pages it is empty and
                 // removed afterwards, like a loader without islands.
-                input: { loader: ISLAND_LOADER, spa: SPA_ENTRY },
+                input: {
+                  loader: clientEntry === undefined ? ISLAND_LOADER : CLIENT_LOADER,
+                  spa: SPA_ENTRY,
+                  ...(clientEntry === undefined
+                    ? {}
+                    : { instrumentation: join(state.root, clientEntry) }),
+                },
                 // Vite drops the exports of app entries; the island manifest's lazy imports are
                 // what puts each island in its own chunk.
                 preserveEntrySignatures: "exports-only",
@@ -474,6 +492,7 @@ export function serverEntryCode(state: BuildState, config: ResolvedConfig): stri
     ...(state.prefetch === "none" ? {} : { prefetch: state.prefetch }),
     islands: state.islands,
     ...(state.loader === undefined ? {} : { loader: state.loader }),
+    ...(state.clientEntry === undefined ? {} : { clientEntry: state.clientEntry }),
     ...(state.spa === undefined ? {} : { spa: state.spa }),
     ...(state.spaPreloads === undefined || Object.keys(state.spaPreloads).length === 0
       ? {}

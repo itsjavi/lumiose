@@ -87,6 +87,27 @@ the sample apps (`pnpm --filter lumiose size:apps` reports them; the runtime's 1
 `pnpm --filter lumiose size`). With your own server, pass its URL as
 `renderToStream(root, { loaderUrl })`.
 
+**Code before hydration: `src/instrumentation.client.ts`.** The place for what must run in the
+browser before any island hydrates: an error-reporting or analytics SDK, a polyfill, global
+listeners. The file is optional (`.ts`, `.js` or `.mjs`), and Lumiose loads it once per document
+load on every page the app serves, as the first `<script type="module">` of the head (in a build,
+with `<link rel="modulepreload">` for the chunks it imports):
+
+- **Before hydration.** Its top-level code completes, top-level `await` included, before any
+  island hydrates and before the SPA router starts (prerendered SPA pages and `ssr = false` shells
+  included). Meanwhile the loader already captures clicks, input and submits on islands, and
+  replays them once the islands hydrated. Client navigations of an SPA do not run it again.
+- **Pages without islands or SPA routes** load it as their only script, without the Lumiose
+  runtime.
+- **Failures.** What it throws is logged, and the page hydrates anyway.
+- **Keep it short.** `lumiose dev` warns when it takes longer than 16 ms (one frame) from the
+  start of its module to the end of its top-level code; `import()` what is not needed at once.
+- **Client code.** It is bundled like an island: only `PUBLIC_*` env reaches it, and importing
+  server-only code is `LUM4003`. An edit reloads the page in `lumiose dev`. With
+  `lumiose({ csp: "strict" })` its tags carry the nonce like the loader's.
+
+`src/instrumentation.server.ts` is its server counterpart ([Server](server.md#instrumentation)).
+
 **Build output.** `lumiose build` puts the Lumiose runtime in one chunk: the island loader's, the SPA
 entry's when the app has no islands, or a shared `lumiose-[hash].js` when it has both. The router's
 History API fallback is a separate chunk, loaded only by browsers without the Navigation API.
@@ -130,6 +151,7 @@ showcase app) are left out.
 | `export function X`                                                           | Islands must be exported, so the browser can import them (`LUM4001`). |
 | `*.server.ts`, `src/server/**`                                                | Server-only modules.                                                  |
 | `import.meta.env.PUBLIC_*`                                                    | Env values that may reach islands.                                    |
+| `src/instrumentation.client.ts`                                               | Runs once per page load, before islands hydrate and the SPA starts.   |
 
 ## Example
 
@@ -191,6 +213,9 @@ export default function Post() {
 - **Expecting `submit()` to refresh the page.** On MPA pages a successful `submit()` does not
   reload: the island owns its state and updates itself from the result. Call `invalidate()` when
   the page needs fresh server HTML ([Data and actions](data-and-actions.md)).
+- **Starting an SDK inside an island.** It runs only where that island renders, and after other
+  islands may have hydrated. Start it in `src/instrumentation.client.ts`, which every page runs
+  first.
 - **Making a whole page an island to get interactivity.** Mark only the interactive parts, or use
   an `spa` route ([Choosing a mode](rendering-modes.md#choosing-a-mode)).
 

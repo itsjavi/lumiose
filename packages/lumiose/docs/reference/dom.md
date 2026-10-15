@@ -71,7 +71,9 @@ the island loader and hydrating entries import it; bundles that never hydrate do
 The island loader: a client entry, with no exports, that `lumiose dev` and `lumiose build` add to every
 page that renders an island (`<script type="module" async>`, see [Islands](../concepts/islands.md));
 with your own server, pass its URL as `renderToStream(root, { loaderUrl })`. It imports the app's
-island manifest (`virtual:lumiose/islands`, from `@lumiose/vite`), and:
+island manifest (`virtual:lumiose/islands`, from `@lumiose/vite`), and (apps with
+`src/instrumentation.client.ts` get a variant from `lumiose dev` and `lumiose build` whose islands
+first wait for it, [Islands](../concepts/islands.md#concept)):
 
 - reads the island records (`<script type="application/json" data-l-islands>`) as each streamed
   chunk arrives, and finds each island's range;

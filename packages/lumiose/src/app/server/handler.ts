@@ -120,6 +120,12 @@ export interface RequestHandlerOptions {
    */
   instrumentation?: string;
   /**
+   * `src/instrumentation.client.ts` (decision-49): the URL every page loads, first in its head, as
+   * `<script type="module" data-l-client>`, and the chunks it imports, preloaded with it. The
+   * island loader and the SPA entry of such an app import the same URL and wait for it.
+   */
+  clientEntry?: { url: string; preloads?: readonly string[] };
+  /**
    * The Origin check against cross-site form posts (decision-18), on by default: cross-site form
    * actions and form-encoded endpoint requests get a 403. `false` turns it off.
    */
@@ -228,6 +234,7 @@ export function createRequestHandler(options: RequestHandlerOptions): RequestHan
   };
 
   const allowedOrigins = new Set(options.csrf === false ? [] : options.csrf?.allowedOrigins);
+  const clientHead = clientEntryHead(options.clientEntry);
   const appLimits = resolveLimits(options.limits, DEFAULT_LIMITS, "lumiose({ limits })");
 
   // `src/instrumentation.server.ts`: loaded on the first request, which waits for `register()`.
@@ -990,8 +997,15 @@ export function createRequestHandler(options: RequestHandlerOptions): RequestHan
           : `<script type="application/json" data-l-action>${jsonForScript(scope.action.encoded)}</script>`;
       const meta = scope.nonce === undefined ? "" : nonceMeta(scope.nonce);
       const pages = addNonce(navigation.pages, nonce);
+      // The client entry first: the island loader or SPA entry in the shell's head looks it up.
       const head =
-        meta + addNonce(extraHead, nonce) + shell.head + assets + pages + rules.head + action;
+        meta +
+        addNonce(clientHead + extraHead, nonce) +
+        shell.head +
+        assets +
+        pages +
+        rules.head +
+        action;
       const parts = documentParts(shell.body, head, document !== undefined, {
         ...(scope.i18n === undefined ? {} : { lang: scope.i18n.locale }),
         // Lumiose's canonical of a localized page: the page's or a layout's own replaces it.
@@ -1191,6 +1205,16 @@ function prerenderContext(ctx: RequestContext): RequestContext {
     env: ctx.env,
     platform: ctx.platform,
   };
+}
+
+/** The `<head>` tags of `src/instrumentation.client.ts`: its imports preloaded, then the module. */
+function clientEntryHead(entry: RequestHandlerOptions["clientEntry"]): string {
+  if (entry === undefined) return "";
+  let html = "";
+  for (const href of entry.preloads ?? []) {
+    html += `<link rel="modulepreload" href="${escapeHtml(href)}">`;
+  }
+  return `${html}<script type="module" src="${escapeHtml(entry.url)}" data-l-client></script>`;
 }
 
 /** The pathname below `base`, starting with "/"; `undefined` outside it. */

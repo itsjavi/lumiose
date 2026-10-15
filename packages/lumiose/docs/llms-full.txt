@@ -599,6 +599,7 @@ pages, render on the `server` and send `cache-control` headers to a CDN.
 | Route handlers: `GET(request, { params })`, `NextResponse.json()` | `export const GET: Endpoint<"/api/posts/[id]"> = (ctx) => Response`, with `ctx.request`, `ctx.params`, `ctx.url`, `ctx.cookies`; `Response.json()`.                                                                                                                      |
 | `middleware.ts` (`proxy.ts` in Next.js 16)                        | `src/middleware.ts`: `(ctx, next) => Response`. `NextResponse.next()` is `next()`; request data goes on `ctx.locals`.                                                                                                                                                    |
 | `config.matcher`                                                  | A `middleware.ts` in the route folder it covers (`src/routes/dashboard/middleware.ts` for `/dashboard/:path*`); it runs after `src/middleware.ts`. `ctx.route`, the matched pattern, serves other checks.                                                                |
+| `instrumentation-client.ts`                                       | `src/instrumentation.client.ts`: runs once per page load, before islands hydrate and the SPA starts, top-level `await` included; pages without JavaScript load only it ([Islands](../concepts/islands.md#concept)).                                                      |
 | `instrumentation.ts`: `register()`, `onRequestError()`            | `src/instrumentation.server.ts` with the same exports: `register()` runs once per server instance, `onRequestError(error, info)` gets `{ request, route, params, phase, digest }`; `instrumentations` time each phase ([Server](../concepts/server.md#instrumentation)). |
 | `metadata`, `generateMetadata()`                                  | `<Title>`, `<Meta>` and `<Head>` rendered by the page or layout; an async page awaits its data first. The deepest wins ([Head and document](../concepts/head.md)).                                                                                                       |
 | `generateViewport()`                                              | `<Meta name="viewport" … />`, or the tag in `document.stsx`.                                                                                                                                                                                                             |
@@ -632,21 +633,21 @@ pages, render on the `server` and send `cache-control` headers to a CDN.
 
 ## What has no equivalent
 
-| Next.js                                                  | Instead                                                                                                                                                 |
-| -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Parallel routes (`@slot`, `default.tsx`)                 | Render the parts as components of one layout or page; branch on `route()` or a search param for conditional areas.                                      |
-| Intercepting routes (`(.)photo`), route modals           | A `<dialog>` in an island, with the open item in `searchParams()`; or an `spa` route whose layout keeps the list mounted while the detail page renders. |
-| ISR (`revalidate`), on-demand revalidation on the server | Rebuild `static` pages, or render on the `server` and set `cache-control: s-maxage=…, stale-while-revalidate=…` for a CDN.                              |
-| A prebuilt shell with per-request holes (PPR)            | The two patterns in [Close to partial prerendering](../concepts/rendering-modes.md#close-to-partial-prerendering).                                      |
-| `template.tsx`                                           | None: page state resets on every navigation, and `spa` layouts keep theirs by design.                                                                   |
-| Middleware rewrites                                      | None: redirect instead, or render the same component from both routes.                                                                                  |
-| `instrumentation-client.ts`                              | This version has no client instrumentation file: `window` `error` and `unhandledrejection` listeners catch what escapes.                                |
-| Image optimization, `next/font` optimization             | None built in: see the `next/image` and `next/font` rows above.                                                                                         |
-| Generated images (`opengraph-image.tsx`, `icon.tsx`)     | Static files in `public/`, or an endpoint that returns the image.                                                                                       |
-| `forbidden.tsx`, `unauthorized.tsx`                      | `error(403)` and `error(401)` render `error.stsx`, which reads `status`.                                                                                |
-| Draft mode                                               | A `server` route that reads a preview cookie.                                                                                                           |
-| A custom server running `next dev`                       | This version has no dev handler for custom servers: develop with `lumiose dev`, and run your server against the build.                                  |
-| React component libraries                                | No React interop: native elements, web components or framework-agnostic libraries (see [Coming from React](react.md)).                                  |
+| Next.js                                                  | Instead                                                                                                                                                                                                 |
+| -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Parallel routes (`@slot`, `default.tsx`)                 | Render the parts as components of one layout or page; branch on `route()` or a search param for conditional areas.                                                                                      |
+| Intercepting routes (`(.)photo`), route modals           | A `<dialog>` in an island, with the open item in `searchParams()`; or an `spa` route whose layout keeps the list mounted while the detail page renders.                                                 |
+| ISR (`revalidate`), on-demand revalidation on the server | Rebuild `static` pages, or render on the `server` and set `cache-control: s-maxage=…, stale-while-revalidate=…` for a CDN.                                                                              |
+| A prebuilt shell with per-request holes (PPR)            | The two patterns in [Close to partial prerendering](../concepts/rendering-modes.md#close-to-partial-prerendering).                                                                                      |
+| `template.tsx`                                           | None: page state resets on every navigation, and `spa` layouts keep theirs by design.                                                                                                                   |
+| Middleware rewrites                                      | None: redirect instead, or render the same component from both routes.                                                                                                                                  |
+| `onRouterTransitionStart` in `instrumentation-client.ts` | This version has no client instrumentation hooks: `afterNavigate()` from `lumiose/router` in a layout observes navigations, and `window` `error` and `unhandledrejection` listeners catch what escapes. |
+| Image optimization, `next/font` optimization             | None built in: see the `next/image` and `next/font` rows above.                                                                                                                                         |
+| Generated images (`opengraph-image.tsx`, `icon.tsx`)     | Static files in `public/`, or an endpoint that returns the image.                                                                                                                                       |
+| `forbidden.tsx`, `unauthorized.tsx`                      | `error(403)` and `error(401)` render `error.stsx`, which reads `status`.                                                                                                                                |
+| Draft mode                                               | A `server` route that reads a preview cookie.                                                                                                                                                           |
+| A custom server running `next dev`                       | This version has no dev handler for custom servers: develop with `lumiose dev`, and run your server against the build.                                                                                  |
+| React component libraries                                | No React interop: native elements, web components or framework-agnostic libraries (see [Coming from React](react.md)).                                                                                  |
 
 ## Example
 
@@ -998,7 +999,7 @@ folder under `src/routes` is a URL segment, and `page`, `layout`, `route`, `erro
 | `HydrateFallback`                                                           | `<Suspense fallback>`, or the shell of an `ssr = false` route.                                                                                                                                                                                                           |
 | `entry.server.tsx`: `handleRequest`, streaming                              | No file: the handler streams the shell, then `<Suspense>` boundaries; headers go in middleware.                                                                                                                                                                          |
 | `handleError` in `entry.server.tsx`, server `instrumentations`              | `src/instrumentation.server.ts`: `onRequestError(error, info)` with the route and phase, and `instrumentations` that wrap `request`, `middleware`, `action`, `endpoint`, `render` and `stream`; `call()` never throws ([Server](../concepts/server.md#instrumentation)). |
-| `entry.client.tsx`: `hydrateRoot`                                           | No file: the island loader and the SPA entry hydrate.                                                                                                                                                                                                                    |
+| `entry.client.tsx`: `hydrateRoot`                                           | No file: the island loader and the SPA entry hydrate. Code that must run before hydration (an SDK, a polyfill) goes in `src/instrumentation.client.ts`, which every page runs first ([Islands](../concepts/islands.md#concept)).                                         |
 | `ssr: false` (SPA mode)                                                     | `lumiose({ mode: "spa", ssr: false })`, or `export const ssr = false` on an `spa` route.                                                                                                                                                                                 |
 | `prerender: [...]`                                                          | `static` routes (the default) with `staticPaths()` for params, and `export const prerender = true` on `spa` pages.                                                                                                                                                       |
 | `react-router-serve`                                                        | `@lumiose/adapter-node`'s `createServer()`, or `lumiose preview`; other hosts in [Deploy](../deploy/README.md).                                                                                                                                                          |
@@ -1329,28 +1330,28 @@ persistent layouts ([Rendering modes](../concepts/rendering-modes.md)).
 
 ### SolidStart
 
-| SolidStart                                                            | Lumiose                                                                                                                                     |
-| --------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| `app.config.ts` (Vinxi)                                               | `vite.config.ts` with the `lumiose()` plugin.                                                                                               |
-| `src/routes/index.tsx`, `about.tsx`                                   | `src/routes/page.stsx`, `about/page.stsx`: a folder is a URL segment.                                                                       |
-| `blog/[slug].tsx`, `[[id]].tsx`, `[...rest].tsx`, `(group)`           | `blog/[slug]/page.stsx`, `[[id]]/page.stsx`, `[...rest]` (one or more segments) or `[[...rest]]` (zero or more), `(group)`.                 |
-| `blog.tsx` next to `blog/` (a layout)                                 | `blog/layout.stsx`; `props.children` is the outlet.                                                                                         |
-| API routes: `export function GET(event)`                              | `route.ts` endpoints: `export const GET: Endpoint<"/api/x"> = (ctx) => Response`.                                                           |
-| `query(fn, "key")` and `createAsync(() => getUser(id))`               | `await query(["user", id], () => getUser(id))` in an async component (key first, an array as in TanStack Query), or `await fetchJSON(url)`. |
-| `"use server"` functions                                              | No RPC: form actions for mutations, endpoints for anything the browser fetches, and `*.server.ts` modules for server-only code.             |
-| `action(fn)` and `<form action={myAction} method="post">`             | `export const actions = { save(ctx) {…} }` and `<form method="post" action="?/save">`, which works without JavaScript.                      |
-| `useAction(myAction)`                                                 | `submit(target, { action: "?/save" })` from an island or `spa` route.                                                                       |
-| `useSubmission(myAction)`: `pending`, `result`                        | `isSubmitting("save")`, and `actionData()` or the result that `await submit(…)` resolves to.                                                |
-| `revalidate(key)`, `reload()`                                         | `invalidate(["key"])` refetches matching `query()` entries; `invalidate()` refreshes the page.                                              |
-| `redirect()`, `json()` from an action                                 | `redirect(to)` (it throws), and plain data as the return value; `fail(status, data)` for validation errors.                                 |
-| `entry-server.tsx` with `<StartServer document>`                      | `src/document.stsx` renders `{props.head}` and `{props.body}`.                                                                              |
-| `entry-client.tsx`, `app.tsx` with `<Router root>` and `<FileRoutes>` | No files: the router is built in; `src/routes/layout.stsx` is the root layout.                                                              |
-| `createMiddleware({ onRequest, onBeforeResponse })`                   | `src/middleware.ts`: `(ctx, next) => Response`, code before and after `await next()`; a `middleware.ts` in a route folder for its routes.   |
-| `event.locals`, `getRequestEvent()`                                   | `ctx.locals` (typed by augmenting `Locals`); `request()`, `locals()`, `cookies()` and `url()` during a server render.                       |
-| `useSession()`                                                        | `cookies` and `signedCookie(name)` ([Server](../concepts/server.md)).                                                                       |
-| `clientOnly(() => import("./Map"))`                                   | `client:only` on the usage: `<Map client:only />`.                                                                                          |
-| `ssr: false`, prerendering (`server.prerender`)                       | `lumiose({ mode: "spa", ssr: false })`; `static` routes (the default) with `staticPaths()`, and `prerender = true` on `spa` pages.          |
-| Deployment presets                                                    | `@lumiose/adapter-node`, or `lumiose({ adapter })` for Vercel, Netlify and Cloudflare ([Deploy](../deploy/README.md)).                      |
+| SolidStart                                                            | Lumiose                                                                                                                                       |
+| --------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| `app.config.ts` (Vinxi)                                               | `vite.config.ts` with the `lumiose()` plugin.                                                                                                 |
+| `src/routes/index.tsx`, `about.tsx`                                   | `src/routes/page.stsx`, `about/page.stsx`: a folder is a URL segment.                                                                         |
+| `blog/[slug].tsx`, `[[id]].tsx`, `[...rest].tsx`, `(group)`           | `blog/[slug]/page.stsx`, `[[id]]/page.stsx`, `[...rest]` (one or more segments) or `[[...rest]]` (zero or more), `(group)`.                   |
+| `blog.tsx` next to `blog/` (a layout)                                 | `blog/layout.stsx`; `props.children` is the outlet.                                                                                           |
+| API routes: `export function GET(event)`                              | `route.ts` endpoints: `export const GET: Endpoint<"/api/x"> = (ctx) => Response`.                                                             |
+| `query(fn, "key")` and `createAsync(() => getUser(id))`               | `await query(["user", id], () => getUser(id))` in an async component (key first, an array as in TanStack Query), or `await fetchJSON(url)`.   |
+| `"use server"` functions                                              | No RPC: form actions for mutations, endpoints for anything the browser fetches, and `*.server.ts` modules for server-only code.               |
+| `action(fn)` and `<form action={myAction} method="post">`             | `export const actions = { save(ctx) {…} }` and `<form method="post" action="?/save">`, which works without JavaScript.                        |
+| `useAction(myAction)`                                                 | `submit(target, { action: "?/save" })` from an island or `spa` route.                                                                         |
+| `useSubmission(myAction)`: `pending`, `result`                        | `isSubmitting("save")`, and `actionData()` or the result that `await submit(…)` resolves to.                                                  |
+| `revalidate(key)`, `reload()`                                         | `invalidate(["key"])` refetches matching `query()` entries; `invalidate()` refreshes the page.                                                |
+| `redirect()`, `json()` from an action                                 | `redirect(to)` (it throws), and plain data as the return value; `fail(status, data)` for validation errors.                                   |
+| `entry-server.tsx` with `<StartServer document>`                      | `src/document.stsx` renders `{props.head}` and `{props.body}`.                                                                                |
+| `entry-client.tsx`, `app.tsx` with `<Router root>` and `<FileRoutes>` | No files: the router is built in; `src/routes/layout.stsx` is the root layout. Code before hydration goes in `src/instrumentation.client.ts`. |
+| `createMiddleware({ onRequest, onBeforeResponse })`                   | `src/middleware.ts`: `(ctx, next) => Response`, code before and after `await next()`; a `middleware.ts` in a route folder for its routes.     |
+| `event.locals`, `getRequestEvent()`                                   | `ctx.locals` (typed by augmenting `Locals`); `request()`, `locals()`, `cookies()` and `url()` during a server render.                         |
+| `useSession()`                                                        | `cookies` and `signedCookie(name)` ([Server](../concepts/server.md)).                                                                         |
+| `clientOnly(() => import("./Map"))`                                   | `client:only` on the usage: `<Map client:only />`.                                                                                            |
+| `ssr: false`, prerendering (`server.prerender`)                       | `lumiose({ mode: "spa", ssr: false })`; `static` routes (the default) with `staticPaths()`, and `prerender = true` on `spa` pages.            |
+| Deployment presets                                                    | `@lumiose/adapter-node`, or `lumiose({ adapter })` for Vercel, Netlify and Cloudflare ([Deploy](../deploy/README.md)).                        |
 
 ### Solid Router
 
@@ -3052,6 +3053,27 @@ the sample apps (`pnpm --filter lumiose size:apps` reports them; the runtime's 1
 `pnpm --filter lumiose size`). With your own server, pass its URL as
 `renderToStream(root, { loaderUrl })`.
 
+**Code before hydration: `src/instrumentation.client.ts`.** The place for what must run in the
+browser before any island hydrates: an error-reporting or analytics SDK, a polyfill, global
+listeners. The file is optional (`.ts`, `.js` or `.mjs`), and Lumiose loads it once per document
+load on every page the app serves, as the first `<script type="module">` of the head (in a build,
+with `<link rel="modulepreload">` for the chunks it imports):
+
+- **Before hydration.** Its top-level code completes, top-level `await` included, before any
+  island hydrates and before the SPA router starts (prerendered SPA pages and `ssr = false` shells
+  included). Meanwhile the loader already captures clicks, input and submits on islands, and
+  replays them once the islands hydrated. Client navigations of an SPA do not run it again.
+- **Pages without islands or SPA routes** load it as their only script, without the Lumiose
+  runtime.
+- **Failures.** What it throws is logged, and the page hydrates anyway.
+- **Keep it short.** `lumiose dev` warns when it takes longer than 16 ms (one frame) from the
+  start of its module to the end of its top-level code; `import()` what is not needed at once.
+- **Client code.** It is bundled like an island: only `PUBLIC_*` env reaches it, and importing
+  server-only code is `LUM4003`. An edit reloads the page in `lumiose dev`. With
+  `lumiose({ csp: "strict" })` its tags carry the nonce like the loader's.
+
+`src/instrumentation.server.ts` is its server counterpart ([Server](server.md#instrumentation)).
+
 **Build output.** `lumiose build` puts the Lumiose runtime in one chunk: the island loader's, the SPA
 entry's when the app has no islands, or a shared `lumiose-[hash].js` when it has both. The router's
 History API fallback is a separate chunk, loaded only by browsers without the Navigation API.
@@ -3095,6 +3117,7 @@ showcase app) are left out.
 | `export function X`                                                           | Islands must be exported, so the browser can import them (`LUM4001`). |
 | `*.server.ts`, `src/server/**`                                                | Server-only modules.                                                  |
 | `import.meta.env.PUBLIC_*`                                                    | Env values that may reach islands.                                    |
+| `src/instrumentation.client.ts`                                               | Runs once per page load, before islands hydrate and the SPA starts.   |
 
 ## Example
 
@@ -3156,6 +3179,9 @@ export default function Post() {
 - **Expecting `submit()` to refresh the page.** On MPA pages a successful `submit()` does not
   reload: the island owns its state and updates itself from the result. Call `invalidate()` when
   the page needs fresh server HTML ([Data and actions](data-and-actions.md)).
+- **Starting an SDK inside an island.** It runs only where that island renders, and after other
+  islands may have hydrated. Start it in `src/instrumentation.client.ts`, which every page runs
+  first.
 - **Making a whole page an island to get interactivity.** Mark only the interactive parts, or use
   an `spa` route ([Choosing a mode](rendering-modes.md#choosing-a-mode)).
 
@@ -4072,7 +4098,9 @@ does not, since errors there fail the build. Its three exports are optional:
   outermost. Static files are served before the app and are not observed; a `fetchJSON()` the
   render handles in-process gets its phases observed, not a `request` of its own.
 
-Without the file nothing loads; with it, a phase without wrappers costs one check.
+Without the file nothing loads; with it, a phase without wrappers costs one check. Its browser
+counterpart, `src/instrumentation.client.ts`, runs on every page before hydration
+([Islands](islands.md#concept)).
 
 > **Status:** the request handler, middleware, endpoints, cookies, env, error pages and
 > instrumentation are available, served by `lumiose dev` and by the build output
@@ -4440,7 +4468,9 @@ chunk per SPA layout and page, and the island loader) and navigate with
 its SPA layouts and page (and their imports), so a deep link fetches them alongside the entry
 instead of after it has run. When nothing in a build hydrates (every SPA page is
 `ssr = false` and the app has no islands), the SPA entry starts the router without the island
-loader, and the build ships no hydration code.
+loader, and the build ships no hydration code. With
+[`src/instrumentation.client.ts`](islands.md#concept), the SPA root and the router start once its
+top-level code ran, on every page load (not on client navigations).
 
 - **`ssr` (the default):** the server renders the island and the browser hydrates it, replaying
   the server's awaited data.
@@ -9550,7 +9580,9 @@ the island loader and hydrating entries import it; bundles that never hydrate do
 The island loader: a client entry, with no exports, that `lumiose dev` and `lumiose build` add to every
 page that renders an island (`<script type="module" async>`, see [Islands](../concepts/islands.md));
 with your own server, pass its URL as `renderToStream(root, { loaderUrl })`. It imports the app's
-island manifest (`virtual:lumiose/islands`, from `@lumiose/vite`), and:
+island manifest (`virtual:lumiose/islands`, from `@lumiose/vite`), and (apps with
+`src/instrumentation.client.ts` get a variant from `lumiose dev` and `lumiose build` whose islands
+first wait for it, [Islands](../concepts/islands.md#concept)):
 
 - reads the island records (`<script type="application/json" data-l-islands>`) as each streamed
   chunk arrives, and finds each island's range;

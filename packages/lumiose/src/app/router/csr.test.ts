@@ -100,6 +100,18 @@ describe("startCsr", () => {
     expect(document.body.textContent).toBe("siteat /about: aboutend");
   });
 
+  it("starts once the client entry ran (decision-49)", async () => {
+    history.replaceState(null, "", "/");
+    shell("src/routes/page.tsx");
+    let done!: () => void;
+    startCsr(config, new Promise<void>((resolve) => (done = resolve)));
+    await settled();
+    expect(document.body.textContent).toBe("siteend");
+    done();
+    await settled();
+    expect(document.body.textContent).toBe("siteat /: homeend");
+  });
+
   it("restores scoped state from the shell's payload before the first render", async () => {
     history.replaceState(null, "", "/me");
     shell("src/routes/me/page.tsx");

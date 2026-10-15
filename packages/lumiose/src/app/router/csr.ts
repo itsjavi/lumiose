@@ -22,9 +22,10 @@ export function leavesOf(config: SpaConfig): Record<string, string> {
 /**
  * Starts an SPA whose pages are all client-rendered, without the island loader: finds the shell's
  * root island (`/<leaf>#lumiose:csr`, plain JSON props) once the document is parsed and renders the
- * router's root component before its closing marker.
+ * router's root component before its closing marker. With `src/instrumentation.client.ts`, once
+ * `ready` (its run, ../client-entry.ts) settled (decision-49).
  */
-export function startCsr(config: SpaConfig): void {
+export function startCsr(config: SpaConfig, ready?: Promise<unknown>): void {
   const leaves = leavesOf(config);
   const start = (): void => {
     // Scoped state values from the server (decision-33), before the SPA's first render.
@@ -55,6 +56,7 @@ export function startCsr(config: SpaConfig): void {
       }
     }
   };
-  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", start);
-  else start();
+  const begin = ready === undefined ? start : () => void ready.then(start);
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", begin);
+  else begin();
 }

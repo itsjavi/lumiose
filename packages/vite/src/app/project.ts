@@ -31,6 +31,12 @@ export function realProjectRoot(root: string = process.cwd()): string {
 
 export const MIDDLEWARE_FILES = ["src/middleware.ts", "src/middleware.js"];
 export const DOCUMENT_FILES = ["src/document.stsx", "src/document.tsx"];
+/** `src/instrumentation.client.ts` (decision-49): runs on every page, before hydration. */
+export const INSTRUMENTATION_CLIENT_FILES = [
+  "src/instrumentation.client.ts",
+  "src/instrumentation.client.js",
+  "src/instrumentation.client.mjs",
+];
 /** `src/instrumentation.server.ts` (decision-49): server-only by its `.server.` segment. */
 export const INSTRUMENTATION_SERVER_FILES = [
   "src/instrumentation.server.ts",

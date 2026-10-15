@@ -76,6 +76,19 @@ const ownPolicy: Middleware = async (_ctx, next) => {
 const sha = (source: string) => `'sha256-${createHash("sha256").update(source).digest("base64")}'`;
 
 describe('lumiose({ csp: "strict" })', () => {
+  it("puts the nonce on src/instrumentation.client.ts and its preloads (decision-49)", async () => {
+    const fetch = app(
+      { "src/routes/page.stsx": page },
+      { clientEntry: { url: "/assets/client.js", preloads: ["/assets/sdk.js"] } },
+    );
+    const res = await fetch("/");
+    const nonce = /'nonce-([^']+)'/.exec(res.headers.get("content-security-policy")!)![1]!;
+    const html = await res.text();
+    expect(html).toContain(
+      `<link nonce="${nonce}" rel="modulepreload" href="/assets/sdk.js"><script nonce="${nonce}" type="module" src="/assets/client.js" data-l-client></script>`,
+    );
+  });
+
   it("puts a fresh nonce on every inline script and style and in the policy header", async () => {
     const fetch = app({ "src/routes/page.stsx": page });
     const res = await fetch("/");

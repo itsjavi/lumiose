@@ -33,8 +33,10 @@ import { hasIslands, hasSpa, SPA_ENTRY_ID } from "../router/entry.ts";
 import type { BuildState } from "./plugin.ts";
 import { barrel, singleEntryModules, type Barrel } from "./runtime-chunks.ts";
 
-/** The island loader's client entry (`lumiose/dom/loader`). */
+/** The island loader's client entries: `lumiose/dom/loader`, or the one that waits for the client entry. */
 const ISLAND_LOADER = runtimeFile("dom/loader.ts");
+export const CLIENT_LOADER = runtimeFile("app/client-loader.ts");
+const isLoader = (id: string): boolean => id === ISLAND_LOADER || id === CLIENT_LOADER;
 const PRELOAD_HELPER = "\0vite/preload-helper.js";
 /** The router's History API fallback, loaded only without the Navigation API. */
 const HISTORY_FALLBACK = runtimeFile("app/router/history.ts");
@@ -59,7 +61,7 @@ export function clientRuntime(state: BuildState): Plugin {
 
   /** Whether module `id` goes to the runtime chunk. */
   const runtime = (id: string): boolean => {
-    if (id === ISLAND_LOADER) return islands && !spa();
+    if (isLoader(id)) return islands && !spa();
     if (id === SPA_ENTRY_ID) return !islands && spa();
     return isRuntime(id) && (FOLDED.has(id) || !single.has(id));
   };
@@ -87,7 +89,7 @@ export function clientRuntime(state: BuildState): Plugin {
       filter: { id: new RegExp(`^${escape(LUMIOSE_SRC)}.*\\.ts$`) },
       async handler(code, id) {
         if (this.environment.name !== "client") return;
-        if (id === ISLAND_LOADER) {
+        if (isLoader(id)) {
           islands = await hasIslands(this);
           return islands ? undefined : { code: "export {};\n", map: null };
         }
@@ -107,7 +109,7 @@ export function clientRuntime(state: BuildState): Plugin {
           resolve: async (source, importer) => (await this.resolve(source, importer))?.id ?? null,
         },
         barrels,
-        (id) => isRuntime(id) && id !== ISLAND_LOADER,
+        (id) => isRuntime(id) && !isLoader(id),
       );
     },
 

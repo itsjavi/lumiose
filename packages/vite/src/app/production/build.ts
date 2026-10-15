@@ -44,6 +44,7 @@ import type { TrailingSlash } from "lumiose/internal/app/server/handler.ts";
 import { typegen } from "../typegen/index.ts";
 import { lumioseBuild, type BuildState } from "./plugin.ts";
 import { ISLANDS_ID } from "../../islands.ts";
+import { SPA_ENTRY_ID } from "../router/entry.ts";
 import { precompress } from "./precompress.ts";
 import { prerender, type PrerenderedFile, type ServerEntryModule } from "./prerender.ts";
 import { serverReason } from "./static-site.ts";
@@ -261,6 +262,7 @@ async function unhashedAssets(
  * without islands, or an SPA entry without `spa` pages, is removed: no page loads it. `spaPreloads`
  * lists, per SPA layout and page, its chunk and the chunks it imports statically: the server
  * modulepreloads them so that a deep link does not wait for the entry to run first (TASK-123).
+ * `clientEntry` is the chunk of `src/instrumentation.client.ts` and the chunks it imports.
  */
 async function islandUrls(
   output: Awaited<ReturnType<Awaited<ReturnType<typeof createBuilder>>["build"]>>,
@@ -272,6 +274,7 @@ async function islandUrls(
   loader: string | undefined;
   spa: string | undefined;
   spaPreloads: Record<string, string[]>;
+  clientEntry?: { url: string; preloads: string[] };
 }> {
   const outputs = (Array.isArray(output) ? output : [output]) as Rollup.RolldownOutput[];
   const chunks = outputs.flatMap(({ output: files }) =>
@@ -288,6 +291,10 @@ async function islandUrls(
   const hasIslands =
     manifest !== undefined &&
     (manifest.isEntry && manifest.name === "spa" ? true : manifest.dynamicImports.length > 0);
+  // The SPA entry's module, with the lazy imports of the SPA's layouts and pages: in the `spa` entry
+  // chunk, or in the runtime chunk that entry chunk then only imports (TASK-295: an app with more
+  // entries than the loader and the SPA's).
+  const spaModule = chunks.find((chunk) => chunk.moduleIds.includes(SPA_ENTRY_ID));
   const islands: Record<string, string> = {};
   let loader: string | undefined;
   let spa: string | undefined;
@@ -298,7 +305,7 @@ async function islandUrls(
     }
     if (chunk.isEntry && chunk.name === "spa") {
       // An app without `spa` pages builds an empty SPA entry.
-      if (chunk.dynamicImports.length > 0) spa = base + chunk.fileName;
+      if ((spaModule?.dynamicImports.length ?? 0) > 0) spa = base + chunk.fileName;
       else await remove(chunk);
     }
     if (!chunk.isDynamicEntry || chunk.facadeModuleId === null) continue;
@@ -309,7 +316,7 @@ async function islandUrls(
   const spaEntry = chunks.find((chunk) => chunk.isEntry && chunk.name === "spa");
   if (spa !== undefined && spaEntry !== undefined) {
     const byFile = new Map(chunks.map((chunk) => [chunk.fileName, chunk]));
-    for (const fileName of spaEntry.dynamicImports) {
+    for (const fileName of spaModule?.dynamicImports ?? []) {
       const chunk = byFile.get(fileName);
       if (chunk?.facadeModuleId == null) continue;
       const path = normalizePath(relative(root, chunk.facadeModuleId));
@@ -326,5 +333,30 @@ async function islandUrls(
       spaPreloads[path] = [...closure].map((name) => base + name);
     }
   }
-  return { islands, loader, spa, spaPreloads };
+  // `src/instrumentation.client.ts` (decision-49): its chunk and those it imports statically, which
+  // pages preload with it.
+  const instrumentation = chunks.find((chunk) => chunk.isEntry && chunk.name === "instrumentation");
+  let clientEntry: { url: string; preloads: string[] } | undefined;
+  if (instrumentation !== undefined) {
+    const byFile = new Map(chunks.map((chunk) => [chunk.fileName, chunk]));
+    const closure = new Set<string>();
+    const visit = (name: string): void => {
+      if (closure.has(name)) return;
+      closure.add(name);
+      for (const imported of byFile.get(name)?.imports ?? []) visit(imported);
+    };
+    for (const imported of instrumentation.imports) visit(imported);
+    closure.delete(instrumentation.fileName);
+    clientEntry = {
+      url: base + instrumentation.fileName,
+      preloads: [...closure].map((name) => base + name),
+    };
+  }
+  return {
+    islands,
+    loader,
+    spa,
+    spaPreloads,
+    ...(clientEntry === undefined ? {} : { clientEntry }),
+  };
 }

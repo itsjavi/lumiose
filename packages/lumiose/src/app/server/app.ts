@@ -41,6 +41,11 @@ export interface BuiltApp extends BuiltAppConfig {
   document?: string;
   /** `src/instrumentation.server.ts` (decision-49), loaded by `loadModule` unless prerendering. */
   instrumentation?: string;
+  /**
+   * `src/instrumentation.client.ts` (decision-49): the URL of its chunk (with `base`) and of the
+   * chunks it imports, which every page loads.
+   */
+  clientEntry?: { url: string; preloads?: readonly string[] };
   csrf?: false | CsrfOptions;
   /** `lumiose({ limits })`. */
   limits?: LimitsOption;
@@ -90,6 +95,7 @@ export function createAppHandler(app: BuiltApp, options: AppHandlerOptions = {})
     ...(app.middleware === undefined ? {} : { middleware: app.middleware }),
     ...(app.document === undefined ? {} : { document: app.document }),
     ...(app.instrumentation === undefined ? {} : { instrumentation: app.instrumentation }),
+    ...(app.clientEntry === undefined ? {} : { clientEntry: app.clientEntry }),
     ...(app.csrf === undefined ? {} : { csrf: app.csrf }),
     ...(app.limits === undefined ? {} : { limits: app.limits }),
     ...(app.spa === undefined ? {} : { spaEntry: app.spa }),
