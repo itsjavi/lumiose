@@ -16,6 +16,11 @@ export function template(html: string): TemplateFactory;
 export function template(html: string, flags: number): TemplateFactory | MultiRootTemplateFactory;
 export function template(html: string, flags = 0): TemplateFactory | MultiRootTemplateFactory {
   let source: Node | undefined;
+  // Custom elements (a tag with a dash) are imported instead of cloned: those already defined
+  // upgrade at once, so their properties exist before the bindings write them (TASK-326).
+  const custom = /<\w+-/.test(html);
+  const clone = (node: Node): Node =>
+    custom ? document.importNode(node, true) : node.cloneNode(true);
   const parse = (): Node => {
     const t = document.createElement("template");
     t.innerHTML =
@@ -30,10 +35,10 @@ export function template(html: string, flags = 0): TemplateFactory | MultiRootTe
         const claimed = hydrator?.template(source, flags);
         return claimed !== undefined
           ? (claimed as Node[])
-          : Array.from(source.cloneNode(true).childNodes);
+          : Array.from(clone(source).childNodes);
       }
     : (): Element => {
         source ??= parse();
-        return (hydrator?.template(source, flags) ?? source.cloneNode(true)) as Element;
+        return (hydrator?.template(source, flags) ?? clone(source)) as Element;
       };
 }

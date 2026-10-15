@@ -1,0 +1,28 @@
+{
+  "upstream": {
+    "score": 100,
+    "basicSupport": {
+      "total": 16,
+      "failed": 0,
+      "passed": 16
+    },
+    "advancedSupport": {
+      "total": 16,
+      "failed": 0,
+      "passed": 16
+    }
+  },
+  "webkit": {
+    "score": 100,
+    "basicSupport": {
+      "total": 8,
+      "failed": 0,
+      "passed": 8
+    },
+    "advancedSupport": {
+      "total": 8,
+      "failed": 0,
+      "passed": 8
+    }
+  }
+}

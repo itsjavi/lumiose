@@ -97,6 +97,25 @@ importers:
         specifier: ^5.0.3
         version: 5.0.3(@types/node@24.19.1)(happy-dom@20.14.5)(vite@8.3.4(@types/node@24.19.1)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(yaml@2.9.1))
 
+  benchmarks/custom-elements-everywhere:
+    dependencies:
+      lumiose:
+        specifier: workspace:*
+        version: link:../../packages/lumiose
+    devDependencies:
+      '@lumiose/vite':
+        specifier: workspace:*
+        version: link:../../packages/vite
+      '@playwright/test':
+        specifier: 1.63.0
+        version: 1.63.0
+      '@types/node':
+        specifier: ^24.0.0
+        version: 24.19.1
+      vite:
+        specifier: ^8.3.4
+        version: 8.3.4(@types/node@24.19.1)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(yaml@2.9.1)
+
   benchmarks/fullstack/apps/astro:
     dependencies:
       '@astrojs/node':
