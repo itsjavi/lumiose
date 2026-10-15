@@ -19,6 +19,10 @@ import {
 import { anchorName, placement, withStyle, type PlacementProps } from "../placement/placement.ts";
 import popoverScript from "./popover.script.ts?client";
 
+/**
+ * `Popover.Root` renders no element: it holds the ids its parts share. `bind:open={signal}`
+ * stands in for `open` and `onOpenChange`.
+ */
 export interface PopoverRootProps {
   /**
    * Opens (`true`) or closes (`false`) the popover when it changes, in the browser. Pair it with
@@ -28,6 +32,7 @@ export interface PopoverRootProps {
   open?: boolean;
   /** Called after the popover opens or closes, whatever opened or closed it. */
   onOpenChange?: (open: boolean) => void;
+  /** The other parts: a `Popover.Trigger` and the `Popover.Popup`, anywhere inside. */
   children?: JSX.Element;
 }
 

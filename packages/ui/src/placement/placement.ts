@@ -9,6 +9,7 @@ export type Side = "top" | "bottom" | "left" | "right" | "inline-start" | "inlin
 /** How the popup aligns with the trigger along that side. */
 export type Align = "start" | "center" | "end";
 
+/** Where an anchored popup goes next to its trigger: the placement props of a `Popup`. */
 export interface PlacementProps {
   /** The trigger's side the popup goes on. It flips to the opposite side when it does not fit. */
   side?: Side;

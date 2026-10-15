@@ -9,6 +9,10 @@ import { createContext, effect, ref, useContext, useId } from "lumiose";
 import { anchorName, placement, withStyle, type PlacementProps } from "../placement/placement.ts";
 import tooltipScript from "./tooltip.script.ts?client";
 
+/**
+ * `Tooltip.Root` renders no element: it holds the ids its parts share. `bind:open={signal}`
+ * stands in for `open` and `onOpenChange`.
+ */
 export interface TooltipRootProps {
   /**
    * Opens (`true`) or closes (`false`) the tooltip when it changes, in the browser. Pair it with
@@ -24,9 +28,14 @@ export interface TooltipRootProps {
    * the pointer moves onto it. Default `false`: WCAG 1.4.13 asks for hoverable content.
    */
   disableHoverablePopup?: boolean;
+  /** The other parts: the `Tooltip.Trigger` and the `Tooltip.Popup`. */
   children?: JSX.Element;
 }
 
+/**
+ * A `<button>` described by the tip (`aria-describedby`); its delays reach the client script as
+ * `data-` attributes.
+ */
 export type TooltipTriggerProps = JSX.IntrinsicElements["button"] & {
   /** How long the pointer rests on the trigger before the tooltip opens, in ms. Default 600. */
   delay?: number;

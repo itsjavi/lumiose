@@ -23,7 +23,9 @@ declare module "lumiose/jsx-runtime" {
     interface IntrinsicElements {
       /** Tabs.Root's element: `value` is the selected tab's, `valuechange` reports a change. */
       "lu-tabs": JSX.HTMLProps<LuTabs> & {
+        /** The selected tab's value, `null` when none is; setting it selects that tab. */
         value?: string | null;
+        /** Sets `value` from the signal; the element's `valuechange` writes it back. */
         "bind:value"?: Signal<string | null>;
       };
     }
@@ -38,6 +40,10 @@ type ElementProps = {
   [K in keyof JSX.HTMLProps<LuTabs> as K extends string ? K : never]: JSX.HTMLProps<LuTabs>[K];
 };
 
+/**
+ * `Tabs.Root` renders `<lu-tabs>`, with the element props it is given. `bind:value={signal}`
+ * stands in for `value` and `onValueChange`.
+ */
 export interface TabsRootProps extends Omit<ElementProps, "children"> {
   /**
    * Selects the tab with this value when it changes. Pair it with `onValueChange` to keep a signal
@@ -50,9 +56,11 @@ export interface TabsRootProps extends Omit<ElementProps, "children"> {
   onValueChange?: (value: string) => void;
   /** The tab list's direction, for the arrow keys. Default `"horizontal"`. */
   orientation?: "horizontal" | "vertical";
+  /** The other parts: the `Tabs.List` and the `Tabs.Panel`s. */
   children?: JSX.Element;
 }
 
+/** The `<div role="tablist">` around the tabs. Name it with `aria-label` or `aria-labelledby`. */
 export type TabsListProps = JSX.IntrinsicElements["div"] & {
   /** Selecting a tab when it receives focus (automatic activation). Default `false`: manual. */
   activateOnFocus?: boolean;
@@ -60,6 +68,7 @@ export type TabsListProps = JSX.IntrinsicElements["div"] & {
   loopFocus?: boolean;
 };
 
+/** A `<button role="tab">`, paired with the `Tabs.Panel` of the same `value`. */
 export type TabsTabProps = Omit<JSX.IntrinsicElements["button"], "value"> & {
   /** Identifies the tab and its panel. */
   value: string;
@@ -67,6 +76,7 @@ export type TabsTabProps = Omit<JSX.IntrinsicElements["button"], "value"> & {
   disabled?: boolean;
 };
 
+/** A `<div role="tabpanel">`, shown while the tab of the same `value` is selected. */
 export type TabsPanelProps = JSX.IntrinsicElements["div"] & {
   /** The value of the tab that shows the panel. */
   value: string;
