@@ -49,7 +49,7 @@ export const footerColumns: FooterColumn[] = [
     links: [
       { href: href("/docs/[[...path]]", { path: "getting-started" }), label: "Getting started" },
       {
-        href: href("/docs/[[...path]]", { path: "coming-from-react" }),
+        href: href("/docs/[[...path]]", { path: "coming-from/react" }),
         label: "Coming from React",
       },
       { href: href("/docs/[[...path]]", { path: "concepts/components" }), label: "Components" },

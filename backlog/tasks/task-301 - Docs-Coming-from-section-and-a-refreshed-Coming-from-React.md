@@ -1,10 +1,11 @@
 ---
 id: TASK-301
 title: 'Docs: Coming from section and a refreshed Coming from React'
-status: To Do
+status: In Progress
 assignee:
   - '@Beacon'
 created_date: '2026-10-15 02:22'
+updated_date: '2026-10-15 04:23'
 labels:
   - docs
 milestone: m-10
@@ -28,3 +29,9 @@ The guides map concepts to the current API only; they are not migration or upgra
 - [ ] #3 The shared outline for the guides is set
 - [ ] #4 docs:gen, docs:check and the docs tests pass
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Beacon (M10 batch 1, worktree beacon-m10): started. Plan: docs/coming-from/ with a section README holding the shared outline; react.md moved from coming-from-react.md and refreshed; docs index, site nav (from the index), llms.txt, CLI section order and the docs contract test cover the section.
+<!-- SECTION:NOTES:END -->

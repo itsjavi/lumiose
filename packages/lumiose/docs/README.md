@@ -17,12 +17,19 @@ lumiose docs signals --format json
 ```
 
 Every concept page has the same sections, in order: **Concept**, **API**, **Example**, **Common
-mistakes** and **Related diagnostics**. Reference pages list every export with its signature.
+mistakes** and **Related diagnostics**. Reference pages list every export with its signature. The
+Coming from guides map another framework's concepts to the current API (they are not migration
+guides) and share one outline: **Mental model**, **From _framework_ to Lumiose** (a table from its
+APIs to Lumiose's), **What has no equivalent** (and what to do instead), **Example**, **Common
+mistakes** and **Related**.
 
 ## Start here
 
 - [Getting started](getting-started.md): Create a project, configure TypeScript and Vite, and render a first component.
-- [Coming from React](coming-from-react.md): Hooks mapped to signals, what goes away (the rules of hooks, dependency arrays, stale closures, memoization) and the mistakes React habits cause.
+
+## Coming from
+
+- [React](coming-from/react.md): Hooks mapped to signals, React 19's forms and server components mapped to form actions and islands, what goes away (the rules of hooks, dependency arrays, stale closures, memoization) and the mistakes React habits cause.
 
 ## Concepts
 

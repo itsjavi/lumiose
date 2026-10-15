@@ -49,6 +49,7 @@ export interface SearchResult extends DocEntry {
 const SECTIONS = [
   "README",
   "getting-started",
+  "coming-from/",
   "concepts/",
   "guides/",
   "deploy/",
