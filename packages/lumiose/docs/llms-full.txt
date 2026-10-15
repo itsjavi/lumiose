@@ -70,6 +70,7 @@ mistakes** and **Related**.
 - [Icons with Lucide](guides/icons.md): Lucide's SVG files (`lucide-static`), or any SVG icon set, as inline components through `?component` imports: install, size, colour and stroke with CSS, labels, and why not `lucide-react`.
 - [i18n with Paraglide JS and i18next](guides/i18n.md): Messages in server pages and islands with Paraglide JS (compile-time) or i18next (a `t` per request), keyed by `locale()`; a language switcher on `alternates()` that updates the detection cookie; `hreflang`, canonical and `site` for search engines.
 - [Realtime](guides/realtime.md): Server-sent events from an endpoint to an island's `EventSource`, WebSockets with `ws` on the Node adapter's server, proxy configs and per-platform notes.
+- [Web components](guides/web-components.md): Custom elements and web-component libraries: defining them in the browser, typing them in JSX, properties versus attributes (React 19's rule), events with `on:`, server rendering, and the Custom Elements Everywhere score (100).
 
 ## Deploy
 
@@ -611,14 +612,16 @@ pages, render on the `server` and send `cache-control` headers to a CDN.
 
 ### Navigation
 
-| Next.js                                                              | Lumiose                                                                                                                                                              |
-| -------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `next/link`                                                          | `<a href={href(…)}>`, or `<Link href prefetch>` from `lumiose/router`. MPA pages prefetch on hover by default; `prefetch="viewport"` matches Next.js.                |
-| Client-side navigation between pages                                 | On `spa` routes, with persistent layouts. `static` and `server` pages load the next document, with optional View Transitions (`lumiose({ viewTransitions: true })`). |
-| `useRouter().push(href)`, `.replace(href)`                           | `navigate(href)`, `navigate(href, { replace: true })` from `lumiose/router`.                                                                                         |
-| `usePathname()`, `useSearchParams()`, `useParams()`                  | `url().pathname`, `searchParams()` (and `searchParams.set()`), `params()` from `lumiose/router`.                                                                     |
-| `useSelectedLayoutSegment()`                                         | `route()`, the matched pattern: `route() === "/blog/[slug]"`.                                                                                                        |
-| `redirect()`, `permanentRedirect()`, `forbidden()`, `unauthorized()` | `redirect(to)`, `redirect(to, 308)`, `error(403)`, `error(401)`.                                                                                                     |
+| Next.js                                                                               | Lumiose                                                                                                                                                                     |
+| ------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `next/link`                                                                           | `<a href={href(…)}>`, or `<Link href prefetch>` from `lumiose/router`. MPA pages prefetch on hover by default; `prefetch="viewport"` matches Next.js.                       |
+| Client-side navigation between pages                                                  | On `spa` routes, with persistent layouts. `static` and `server` pages load the next document, with optional View Transitions (`lumiose({ viewTransitions: true })`).        |
+| `useRouter().push(href)`, `.replace(href)`                                            | `navigate(href)`, `navigate(href, { replace: true })` from `lumiose/router`.                                                                                                |
+| `usePathname()`, `useSearchParams()`, `useParams()`                                   | `url().pathname`, `searchParams()` (and `searchParams.set()`), `params()` from `lumiose/router`.                                                                            |
+| `useSelectedLayoutSegment()`                                                          | `route()`, the matched pattern: `route() === "/blog/[slug]"`.                                                                                                               |
+| `onRouterTransitionStart(url, type)`, a `useEffect` on `usePathname()` for page views | `afterNavigate(fn)` from `lumiose/router`: after each completed navigation, and once on mount with `type: "enter"` ([hooks](../reference/router.md#navigation-hooks)).      |
+| A `beforeunload` listener to protect unsaved changes                                  | `beforeNavigate((navigation) => navigation.cancel())`: it also stops SPA links, `navigate()` and back/forward; for a navigation that leaves the document, the browser asks. |
+| `redirect()`, `permanentRedirect()`, `forbidden()`, `unauthorized()`                  | `redirect(to)`, `redirect(to, 308)`, `error(403)`, `error(401)`.                                                                                                            |
 
 ### Rendering and deployment
 
@@ -1008,14 +1011,16 @@ folder under `src/routes` is a URL segment, and `page`, `layout`, `route`, `erro
 
 ### Navigation
 
-| React Router               | Lumiose                                                                                                              |
-| -------------------------- | -------------------------------------------------------------------------------------------------------------------- |
-| `<Link to>`, `<NavLink>`   | `<a href={href(…)}>` or `<Link href>` from `lumiose/router`; `<Link>` sets `aria-current="page"` on the active link. |
-| `<Link prefetch="intent">` | `<Link prefetch="hover">`, the default; MPA pages prefetch through speculation rules.                                |
-| `useNavigate()`            | `navigate(href, { replace })` from `lumiose/router`.                                                                 |
-| `useParams()`              | `props.params`, or `params()` from `lumiose/router` (reactive, also on the server).                                  |
-| `useSearchParams()`        | `searchParams()` and `searchParams.set()` from `lumiose/router`; `url().searchParams` in server code.                |
-| `useLocation()`            | `url()` from `lumiose/router`; `route()` is the matched pattern.                                                     |
+| React Router                                                | Lumiose                                                                                                                                                                                                                                                          |
+| ----------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `<Link to>`, `<NavLink>`                                    | `<a href={href(…)}>` or `<Link href>` from `lumiose/router`; `<Link>` sets `aria-current="page"` on the active link.                                                                                                                                             |
+| `<Link prefetch="intent">`                                  | `<Link prefetch="hover">`, the default; MPA pages prefetch through speculation rules.                                                                                                                                                                            |
+| `useNavigate()`                                             | `navigate(href, { replace })` from `lumiose/router`.                                                                                                                                                                                                             |
+| `useParams()`                                               | `props.params`, or `params()` from `lumiose/router` (reactive, also on the server).                                                                                                                                                                              |
+| `useSearchParams()`                                         | `searchParams()` and `searchParams.set()` from `lumiose/router`; `url().searchParams` in server code.                                                                                                                                                            |
+| `useLocation()`                                             | `url()` from `lumiose/router`; `route()` is the matched pattern.                                                                                                                                                                                                 |
+| `useBlocker()`, `unstable_usePrompt()`, `useBeforeUnload()` | `beforeNavigate((navigation) => navigation.cancel())` from `lumiose/router`: SPA links, `navigate()` and back/forward; for a navigation that leaves the document (`navigation.willUnload`), the browser asks ([hooks](../reference/router.md#navigation-hooks)). |
+| A `useEffect` on `useLocation()` (page views, focus)        | `afterNavigate(fn)`: after each completed navigation, and once on mount with `type: "enter"`.                                                                                                                                                                    |
 
 ## What has no equivalent
 
@@ -1025,7 +1030,6 @@ folder under `src/routes` is a URL segment, and `page`, `layout`, `route`, `erro
 | `clientMiddleware`                                            | None. Run the code in the `spa` layout (`effect`, `onMount`) or in the handler that navigates.                            |
 | Client `instrumentations` (`router.navigate`, `router.fetch`) | This version has no client instrumentation hooks: `window` `error` and `unhandledrejection` listeners catch what escapes. |
 | `useFetchers()`                                               | None: `isSubmitting(name)` counts every submission to an action, `isBusy()` anything in flight.                           |
-| `useBlocker()`, `unstable_usePrompt()`                        | This version has no navigation guards. A `beforeunload` listener covers leaving the document.                             |
 | `handle` and `useMatches()`                                   | Pass data down as props or context from the layout; compare `route()` with a pattern.                                     |
 | `useNavigation().location` and `.formData`                    | `isNavigating()` for pending UI, and `optimistic()` for the value being submitted.                                        |
 | A Vite dev server in middleware mode inside a custom server   | This version has no dev handler for custom servers: develop with `lumiose dev`, and run your server against the build.    |
@@ -1356,15 +1360,17 @@ persistent layouts ([Rendering modes](../concepts/rendering-modes.md)).
 
 ### Solid Router
 
-| Solid Router                                 | Lumiose                                                                                                         |
-| -------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
-| `<Router>` with `<Route path component>`     | File routes; `lumiose routes` lists them.                                                                       |
-| `<A href>`, `activeClass`                    | `<Link href>` from `lumiose/router`, with `aria-current="page"` on the active link; `href()` builds typed URLs. |
-| `useNavigate()`, `<Navigate href>`           | `navigate(href, { replace })`; `redirect(to)` while rendering.                                                  |
-| `useParams()`, `useLocation()`, `useMatch()` | `params()`, `url()` and `route()` (the matched pattern) from `lumiose/router`.                                  |
-| `useSearchParams()`: `[params, setParams]`   | `searchParams()` and `searchParams.set({ q })`.                                                                 |
-| `useIsRouting()`                             | `isNavigating()`.                                                                                               |
-| `preload` functions on routes                | None: data loads where it is awaited, and `<Link prefetch>` loads a page's modules ahead.                       |
+| Solid Router                                     | Lumiose                                                                                                                                                                                          |
+| ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `<Router>` with `<Route path component>`         | File routes; `lumiose routes` lists them.                                                                                                                                                        |
+| `<A href>`, `activeClass`                        | `<Link href>` from `lumiose/router`, with `aria-current="page"` on the active link; `href()` builds typed URLs.                                                                                  |
+| `useNavigate()`, `<Navigate href>`               | `navigate(href, { replace })`; `redirect(to)` while rendering.                                                                                                                                   |
+| `useParams()`, `useLocation()`, `useMatch()`     | `params()`, `url()` and `route()` (the matched pattern) from `lumiose/router`.                                                                                                                   |
+| `useSearchParams()`: `[params, setParams]`       | `searchParams()` and `searchParams.set({ q })`.                                                                                                                                                  |
+| `useIsRouting()`                                 | `isNavigating()`.                                                                                                                                                                                |
+| `useBeforeLeave((e) => e.preventDefault())`      | `beforeNavigate((navigation) => navigation.cancel())`; for a navigation that leaves the document (`navigation.willUnload`), the browser asks ([hooks](../reference/router.md#navigation-hooks)). |
+| A `createEffect` on `useLocation()` (page views) | `afterNavigate(fn)`: after each completed navigation, and once on mount with `type: "enter"`.                                                                                                    |
+| `preload` functions on routes                    | None: data loads where it is awaited, and `<Link prefetch>` loads a page's modules ahead.                                                                                                        |
 
 ## What has no equivalent
 
@@ -1377,7 +1383,6 @@ persistent layouts ([Rendering modes](../concepts/rendering-modes.md)).
 | `lazy()`                                                 | None: code splits per island and per `spa` page.                                                                                                                          |
 | Server functions (`"use server"`) called like functions  | Form actions and endpoints. Calling an endpoint with `fetchJSON()` from an island keeps the network boundary visible.                                                     |
 | `useSubmissions()`                                       | None: `isSubmitting(name)` counts every submission to an action.                                                                                                          |
-| `useBeforeLeave()`                                       | This version has no navigation guards. A `beforeunload` listener covers leaving the document.                                                                             |
 | `preload` and `query` preloading on hover                | `<Link prefetch>` loads the page's modules; data loads when the page renders.                                                                                             |
 | Solid component libraries (Kobalte, Corvu)               | They target Solid's runtime and do not run. Use native elements (`<dialog>`, `popover`), web components or framework-agnostic libraries.                                  |
 
@@ -2200,6 +2205,7 @@ the efficient form:
 | `aria-*`, `spellcheck`, …    | Booleans are written as `"true"`/`"false"` (`aria-pressed={false}` renders `aria-pressed="false"`): `aria-*`, `contenteditable`, `draggable`, `spellcheck` and the other enumerated attributes, static or not. Other attributes: `true` adds the attribute empty (`hidden`); `false`, `null` and `undefined` leave it out. |
 | `onClick`, `onKeyDown`, …    | camelCase handlers. Bubbling events are delegated (one listener per type at `document`); non-bubbling ones (`onFocus`, `onMouseEnter`, `onScroll`) get a direct listener.                                                                                                                                                  |
 | `on:click`, `on:my-event`    | A native `addEventListener` listener with the exact event name. Use it for custom and web-component events.                                                                                                                                                                                                                |
+| Props of a custom element    | The element's property when it defines one (arrays and objects as they are), else the attribute, as in React 19. See [Web components](../guides/web-components.md).                                                                                                                                                        |
 | `bind:value`, `bind:checked` | Two-way binding to a writable signal, on `input`, `select` and `textarea`.                                                                                                                                                                                                                                                 |
 | `attach={[fn]}`              | Runs `fn(el)` with the element in a tracked scope; it may return a cleanup.                                                                                                                                                                                                                                                |
 | `ref={fn}`                   | Called with the element. `ref<T>()` makes a callback you can read like a signal.                                                                                                                                                                                                                                           |
@@ -7143,6 +7149,177 @@ See also: [Data and actions](../concepts/data-and-actions.md) (endpoints, `submi
 [Islands](../concepts/islands.md), [`@lumiose/adapter-node`](../reference/adapter-node.md),
 [Deploy](../deploy/README.md).
 
+<!-- source: guides/web-components.md -->
+
+# Web components
+
+> Use custom elements and web-component libraries in Lumiose: define them in the browser, type them in JSX, pass properties and attributes, listen to their events with `on:`, and render them on the server. Lumiose scores 100 on Custom Elements Everywhere.
+
+Web components are how Lumiose works with UI libraries that are not written for it (decision-54):
+anything built as custom elements, by hand or with Lit, Stencil, FAST or Web Awesome, runs in
+Lumiose pages and islands without an adapter.
+
+## Custom Elements Everywhere
+
+[Custom Elements Everywhere](https://custom-elements-everywhere.com) tests how a framework passes
+data to custom elements and listens to their events. Lumiose runs its suites in
+`benchmarks/custom-elements-everywhere`, with upstream's tests, weights and scoring:
+
+| Engines                     | Score | Basic | Advanced |
+| --------------------------- | ----- | ----- | -------- |
+| Chrome and Firefox (scored) | 100   | 16/16 | 16/16    |
+| WebKit                      | 100   | 8/8   | 8/8      |
+
+Basic support: elements with and without children in a shadow root, booleans, numbers and strings,
+and events listened to imperatively. Advanced support: arrays and objects (camelCase names too) as
+properties, and events with lowercase, kebab-case, camelCase, CAPS and PascalCase names, listened
+to in JSX. Run it with `pnpm --filter @lumiose/bench-cee test:e2e`. The site does not list Lumiose
+yet.
+
+## Define the elements in the browser
+
+A custom element must be defined before the component that renders it runs, so that it is already
+upgraded when Lumiose passes it properties. `customElements` exists only in the browser, and
+components are also imported on the server, so load the definitions with a guarded import at the
+top of the island's module. The island then hydrates once the elements exist, and the server
+renders the tags with their attributes:
+
+```ts check file=elements/star-rating.ts
+// src/elements/star-rating.ts: a custom element of your own, or a library's entry point
+export class StarRating extends HTMLElement {
+  #value = 0;
+  labels: string[] = [];
+
+  get value(): number {
+    return this.#value;
+  }
+  set value(next: number) {
+    this.#value = next;
+    this.render();
+  }
+
+  connectedCallback(): void {
+    // Before an island sets the property, the server's attribute.
+    this.#value ||= Number(this.getAttribute("value") ?? 0);
+    this.attachShadow({ mode: "open" });
+    this.render();
+  }
+
+  render(): void {
+    if (!this.shadowRoot) return;
+    const max = Number(this.getAttribute("max") ?? 5);
+    this.shadowRoot.innerHTML = "";
+    for (let star = 1; star <= max; star++) {
+      const button = document.createElement("button");
+      button.textContent = star <= this.#value ? "★" : "☆";
+      button.title = this.labels[star - 1] ?? String(star);
+      button.onclick = () => {
+        this.value = star;
+        this.dispatchEvent(new CustomEvent("rating-change", { detail: star }));
+      };
+      this.shadowRoot.append(button);
+    }
+  }
+}
+
+customElements.define("star-rating", StarRating);
+```
+
+## Type it in JSX
+
+Undeclared custom elements accept any attribute. Declare an element to type-check its props, in
+any `.d.ts` or module of the project ([JSX types](../reference/jsx.md#custom-elements)):
+
+```tsx check file=components/Review.tsx
+// src/components/Review.tsx
+import { signal } from "lumiose";
+
+declare module "lumiose/jsx-runtime" {
+  namespace JSX {
+    interface IntrinsicElements {
+      "star-rating": JSX.HTMLProps<HTMLElement> & {
+        /** A property: the element defines `value`. */
+        value?: number;
+        /** An attribute: the element reads `max` with `getAttribute()`. */
+        max?: number;
+        /** A property holding an array. */
+        labels?: string[];
+      };
+    }
+  }
+}
+
+// Defines <star-rating> in the browser before the island hydrates; the server skips it.
+if (typeof customElements !== "undefined") await import("../elements/star-rating.ts");
+
+export function Review(props: { rating: number }) {
+  const rating = signal(props.rating);
+  return (
+    <figure>
+      <star-rating
+        value={rating()}
+        max={5}
+        labels={["Bad", "Poor", "Fair", "Good", "Great"]}
+        on:rating-change={(event: CustomEvent<number>) => rating.set(event.detail)}
+      />
+      <figcaption>{rating()} of 5</figcaption>
+    </figure>
+  );
+}
+```
+
+Render it as an island: `<Review client:visible rating={4} />` ([Islands](../concepts/islands.md)).
+
+## Properties and attributes
+
+Lumiose follows React 19's rule. On a custom element (a tag with a dash), each prop goes to:
+
+- **the property of that name, as it is**, when the element defines one (`name in element`, and not
+  a property that every element has, such as `id` or `title`): `value={rating()}` sets
+  `element.value`, and arrays, objects, booleans and camelCase names (`labels`, `camelCaseObj`)
+  arrive unchanged;
+- **the attribute** otherwise: `max={5}` writes `max="5"`, and `true`, `false` and `null` add or
+  remove it, as on built-in elements.
+
+Strings set as properties keep the URL check of attributes (a `javascript:` URL becomes a
+placeholder). An element that is not defined yet when the component runs gets attributes for
+everything, so load its definition first (above). `class`, `style`, `ref`, `attach` and
+`innerHTML` work as on any element, and a spread (`{...props}`) follows the same rule.
+
+## Events
+
+`on:name` adds a native listener for the event of that exact name, so any casing works:
+`on:rating-change`, `on:sl-change`, `on:valueChanged`, `on:PascalEvent`. Type the handler's event
+yourself, as above. `onClick` and the other camelCase handlers are for the standard DOM events,
+lowercased and delegated: use `on:` for a component's own events.
+
+## Server rendering
+
+On the server a custom element renders as its tag with the attributes Lumiose can write:
+strings, numbers and `true` (`<star-rating max="5" value="4">`), and its light-DOM children. Its
+shadow root and properties exist only once the browser defines the element; when the island
+hydrates, Lumiose sets the properties on the upgraded element. Arrays and objects are not
+attributes: in this version the server writes them as text (`labels="Bad,Poor,…"`), and the
+property replaces them when the island hydrates (TASK-337 leaves them out of the HTML, as React 19
+does). Elements outside islands stay server HTML: they upgrade when their definition loads, and
+read what they need from attributes.
+
+To show the element before its definition loads, style it with `:not(:defined)`:
+
+```css
+star-rating:not(:defined) {
+  display: inline-block;
+  inline-size: 7.5em;
+  block-size: 1.5em;
+}
+```
+
+## Related
+
+- [JSX](../concepts/jsx.md): element props and `on:` events.
+- [JSX types](../reference/jsx.md#custom-elements): declaring custom elements.
+- [Islands](../concepts/islands.md): hydration and directives.
+
 <!-- source: deploy/README.md -->
 
 # Deploy
@@ -10413,6 +10590,10 @@ export function Review() {
   );
 }
 ```
+
+A prop of a custom element goes to the element's property when the element defines one (not one
+every element has, such as `id`), else to the attribute, as in React 19; `on:name` listens to the
+event of that exact name. See [Web components](../guides/web-components.md).
 
 ## `lumiose/env`
 

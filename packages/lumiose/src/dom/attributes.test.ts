@@ -11,6 +11,7 @@ import {
   setStyle,
   setStyleProperty,
   setText,
+  template,
   toggleClass,
 } from "./index.ts";
 
@@ -189,5 +190,43 @@ describe("setNonce", () => {
     setNonce(own);
     expect(own.nonce).toBe("own");
     meta.remove();
+  });
+});
+
+describe("custom elements (TASK-326)", () => {
+  class RichList extends HTMLElement {
+    items: unknown;
+    open = false;
+    href = "";
+  }
+  if (customElements.get("rich-list") === undefined) customElements.define("rich-list", RichList);
+
+  it("writes the element's own properties as they are, everything else as attributes", () => {
+    const el = document.createElement("rich-list") as RichList;
+    const items = [{ id: 1 }];
+    setAttr(el, "items", items);
+    setAttr(el, "open", false);
+    setAttr(el, "title", "list");
+    setAttr(el, "data-x", 1);
+    expect(el.items).toBe(items);
+    expect(el.open).toBe(false);
+    expect(el.hasAttribute("items")).toBe(false);
+    // Properties every element has stay attributes, as do names the element does not define.
+    expect(el.getAttribute("title")).toBe("list");
+    expect(el.getAttribute("data-x")).toBe("1");
+    // URL strings keep the attribute check.
+    setAttr(el, "href", "javascript:alert(1)");
+    expect(el.href.startsWith("javascript:")).toBe(false);
+  });
+
+  it("imports templates with custom elements, so bindings see defined elements upgraded", () => {
+    const el = template("<div><rich-list></rich-list></div>")().firstChild as RichList;
+    expect(el).toBeInstanceOf(RichList);
+    setAttr(el, "items", [1]);
+    expect(el.items).toEqual([1]);
+    // A tag that is not defined yet gets attributes.
+    const unknown = template("<late-list></late-list>")();
+    setAttr(unknown, "items", "a");
+    expect(unknown.getAttribute("items")).toBe("a");
   });
 });

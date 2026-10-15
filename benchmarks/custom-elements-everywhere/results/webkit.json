@@ -1,0 +1,162 @@
+[
+  {
+    "suite": [
+      "basic support",
+      "no children"
+    ],
+    "description": "can display a Custom Element with no children",
+    "success": true,
+    "weight": 3,
+    "log": []
+  },
+  {
+    "suite": [
+      "basic support",
+      "with children"
+    ],
+    "description": "can display a Custom Element with children in a Shadow Root",
+    "success": true,
+    "weight": 3,
+    "log": []
+  },
+  {
+    "suite": [
+      "basic support",
+      "with children"
+    ],
+    "description": "can display a Custom Element with children in a Shadow Root and pass in Light DOM children",
+    "success": true,
+    "weight": 3,
+    "log": []
+  },
+  {
+    "suite": [
+      "basic support",
+      "with children"
+    ],
+    "description": "can display a Custom Element with children in the Shadow DOM and handle hiding and showing the element",
+    "success": true,
+    "weight": 3,
+    "log": []
+  },
+  {
+    "suite": [
+      "basic support",
+      "attributes and properties"
+    ],
+    "description": "will pass boolean data as either an attribute or a property",
+    "success": true,
+    "weight": 3,
+    "log": []
+  },
+  {
+    "suite": [
+      "basic support",
+      "attributes and properties"
+    ],
+    "description": "will pass numeric data as either an attribute or a property",
+    "success": true,
+    "weight": 3,
+    "log": []
+  },
+  {
+    "suite": [
+      "basic support",
+      "attributes and properties"
+    ],
+    "description": "will pass string data as either an attribute or a property",
+    "success": true,
+    "weight": 3,
+    "log": []
+  },
+  {
+    "suite": [
+      "basic support",
+      "events"
+    ],
+    "description": "can imperatively listen to a DOM event dispatched by a Custom Element",
+    "success": true,
+    "weight": 3,
+    "log": []
+  },
+  {
+    "suite": [
+      "advanced support",
+      "attributes and properties"
+    ],
+    "description": "will pass array data as a property",
+    "success": true,
+    "weight": 2,
+    "log": []
+  },
+  {
+    "suite": [
+      "advanced support",
+      "attributes and properties"
+    ],
+    "description": "will pass object data as a property",
+    "success": true,
+    "weight": 2,
+    "log": []
+  },
+  {
+    "suite": [
+      "advanced support",
+      "attributes and properties"
+    ],
+    "description": "will pass object data to a camelCase-named property",
+    "success": true,
+    "weight": 2,
+    "log": []
+  },
+  {
+    "suite": [
+      "advanced support",
+      "events"
+    ],
+    "description": "can declaratively listen to a lowercase DOM event dispatched by a Custom Element",
+    "success": true,
+    "weight": 2,
+    "log": []
+  },
+  {
+    "suite": [
+      "advanced support",
+      "events"
+    ],
+    "description": "can declaratively listen to a kebab-case DOM event dispatched by a Custom Element",
+    "success": true,
+    "weight": 1,
+    "log": []
+  },
+  {
+    "suite": [
+      "advanced support",
+      "events"
+    ],
+    "description": "can declaratively listen to a camelCase DOM event dispatched by a Custom Element",
+    "success": true,
+    "weight": 1,
+    "log": []
+  },
+  {
+    "suite": [
+      "advanced support",
+      "events"
+    ],
+    "description": "can declaratively listen to a CAPScase DOM event dispatched by a Custom Element",
+    "success": true,
+    "weight": 1,
+    "log": []
+  },
+  {
+    "suite": [
+      "advanced support",
+      "events"
+    ],
+    "description": "can declaratively listen to a PascalCase DOM event dispatched by a Custom Element",
+    "success": true,
+    "weight": 1,
+    "log": []
+  }
+]

@@ -109,15 +109,17 @@ persistent layouts ([Rendering modes](../concepts/rendering-modes.md)).
 
 ### Solid Router
 
-| Solid Router                                 | Lumiose                                                                                                         |
-| -------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
-| `<Router>` with `<Route path component>`     | File routes; `lumiose routes` lists them.                                                                       |
-| `<A href>`, `activeClass`                    | `<Link href>` from `lumiose/router`, with `aria-current="page"` on the active link; `href()` builds typed URLs. |
-| `useNavigate()`, `<Navigate href>`           | `navigate(href, { replace })`; `redirect(to)` while rendering.                                                  |
-| `useParams()`, `useLocation()`, `useMatch()` | `params()`, `url()` and `route()` (the matched pattern) from `lumiose/router`.                                  |
-| `useSearchParams()`: `[params, setParams]`   | `searchParams()` and `searchParams.set({ q })`.                                                                 |
-| `useIsRouting()`                             | `isNavigating()`.                                                                                               |
-| `preload` functions on routes                | None: data loads where it is awaited, and `<Link prefetch>` loads a page's modules ahead.                       |
+| Solid Router                                     | Lumiose                                                                                                                                                                                          |
+| ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `<Router>` with `<Route path component>`         | File routes; `lumiose routes` lists them.                                                                                                                                                        |
+| `<A href>`, `activeClass`                        | `<Link href>` from `lumiose/router`, with `aria-current="page"` on the active link; `href()` builds typed URLs.                                                                                  |
+| `useNavigate()`, `<Navigate href>`               | `navigate(href, { replace })`; `redirect(to)` while rendering.                                                                                                                                   |
+| `useParams()`, `useLocation()`, `useMatch()`     | `params()`, `url()` and `route()` (the matched pattern) from `lumiose/router`.                                                                                                                   |
+| `useSearchParams()`: `[params, setParams]`       | `searchParams()` and `searchParams.set({ q })`.                                                                                                                                                  |
+| `useIsRouting()`                                 | `isNavigating()`.                                                                                                                                                                                |
+| `useBeforeLeave((e) => e.preventDefault())`      | `beforeNavigate((navigation) => navigation.cancel())`; for a navigation that leaves the document (`navigation.willUnload`), the browser asks ([hooks](../reference/router.md#navigation-hooks)). |
+| A `createEffect` on `useLocation()` (page views) | `afterNavigate(fn)`: after each completed navigation, and once on mount with `type: "enter"`.                                                                                                    |
+| `preload` functions on routes                    | None: data loads where it is awaited, and `<Link prefetch>` loads a page's modules ahead.                                                                                                        |
 
 ## What has no equivalent
 
@@ -130,7 +132,6 @@ persistent layouts ([Rendering modes](../concepts/rendering-modes.md)).
 | `lazy()`                                                 | None: code splits per island and per `spa` page.                                                                                                                          |
 | Server functions (`"use server"`) called like functions  | Form actions and endpoints. Calling an endpoint with `fetchJSON()` from an island keeps the network boundary visible.                                                     |
 | `useSubmissions()`                                       | None: `isSubmitting(name)` counts every submission to an action.                                                                                                          |
-| `useBeforeLeave()`                                       | This version has no navigation guards. A `beforeunload` listener covers leaving the document.                                                                             |
 | `preload` and `query` preloading on hover                | `<Link prefetch>` loads the page's modules; data loads when the page renders.                                                                                             |
 | Solid component libraries (Kobalte, Corvu)               | They target Solid's runtime and do not run. Use native elements (`<dialog>`, `popover`), web components or framework-agnostic libraries.                                  |
 

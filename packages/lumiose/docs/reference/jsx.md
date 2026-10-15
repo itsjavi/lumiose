@@ -150,6 +150,10 @@ export function Review() {
 }
 ```
 
+A prop of a custom element goes to the element's property when the element defines one (not one
+every element has, such as `id`), else to the attribute, as in React 19; `on:name` listens to the
+event of that exact name. See [Web components](../guides/web-components.md).
+
 ## `lumiose/env`
 
 ```ts

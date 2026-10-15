@@ -95,14 +95,16 @@ folder under `src/routes` is a URL segment, and `page`, `layout`, `route`, `erro
 
 ### Navigation
 
-| React Router               | Lumiose                                                                                                              |
-| -------------------------- | -------------------------------------------------------------------------------------------------------------------- |
-| `<Link to>`, `<NavLink>`   | `<a href={href(…)}>` or `<Link href>` from `lumiose/router`; `<Link>` sets `aria-current="page"` on the active link. |
-| `<Link prefetch="intent">` | `<Link prefetch="hover">`, the default; MPA pages prefetch through speculation rules.                                |
-| `useNavigate()`            | `navigate(href, { replace })` from `lumiose/router`.                                                                 |
-| `useParams()`              | `props.params`, or `params()` from `lumiose/router` (reactive, also on the server).                                  |
-| `useSearchParams()`        | `searchParams()` and `searchParams.set()` from `lumiose/router`; `url().searchParams` in server code.                |
-| `useLocation()`            | `url()` from `lumiose/router`; `route()` is the matched pattern.                                                     |
+| React Router                                                | Lumiose                                                                                                                                                                                                                                                          |
+| ----------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `<Link to>`, `<NavLink>`                                    | `<a href={href(…)}>` or `<Link href>` from `lumiose/router`; `<Link>` sets `aria-current="page"` on the active link.                                                                                                                                             |
+| `<Link prefetch="intent">`                                  | `<Link prefetch="hover">`, the default; MPA pages prefetch through speculation rules.                                                                                                                                                                            |
+| `useNavigate()`                                             | `navigate(href, { replace })` from `lumiose/router`.                                                                                                                                                                                                             |
+| `useParams()`                                               | `props.params`, or `params()` from `lumiose/router` (reactive, also on the server).                                                                                                                                                                              |
+| `useSearchParams()`                                         | `searchParams()` and `searchParams.set()` from `lumiose/router`; `url().searchParams` in server code.                                                                                                                                                            |
+| `useLocation()`                                             | `url()` from `lumiose/router`; `route()` is the matched pattern.                                                                                                                                                                                                 |
+| `useBlocker()`, `unstable_usePrompt()`, `useBeforeUnload()` | `beforeNavigate((navigation) => navigation.cancel())` from `lumiose/router`: SPA links, `navigate()` and back/forward; for a navigation that leaves the document (`navigation.willUnload`), the browser asks ([hooks](../reference/router.md#navigation-hooks)). |
+| A `useEffect` on `useLocation()` (page views, focus)        | `afterNavigate(fn)`: after each completed navigation, and once on mount with `type: "enter"`.                                                                                                                                                                    |
 
 ## What has no equivalent
 
@@ -112,7 +114,6 @@ folder under `src/routes` is a URL segment, and `page`, `layout`, `route`, `erro
 | `clientMiddleware`                                            | None. Run the code in the `spa` layout (`effect`, `onMount`) or in the handler that navigates.                            |
 | Client `instrumentations` (`router.navigate`, `router.fetch`) | This version has no client instrumentation hooks: `window` `error` and `unhandledrejection` listeners catch what escapes. |
 | `useFetchers()`                                               | None: `isSubmitting(name)` counts every submission to an action, `isBusy()` anything in flight.                           |
-| `useBlocker()`, `unstable_usePrompt()`                        | This version has no navigation guards. A `beforeunload` listener covers leaving the document.                             |
 | `handle` and `useMatches()`                                   | Pass data down as props or context from the layout; compare `route()` with a pattern.                                     |
 | `useNavigation().location` and `.formData`                    | `isNavigating()` for pending UI, and `optimistic()` for the value being submitted.                                        |
 | A Vite dev server in middleware mode inside a custom server   | This version has no dev handler for custom servers: develop with `lumiose dev`, and run your server against the build.    |

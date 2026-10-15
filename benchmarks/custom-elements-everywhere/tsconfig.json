@@ -1,0 +1,11 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "types": ["node", "lumiose/env"],
+    "jsx": "preserve",
+    "jsxImportSource": "lumiose",
+    "allowJs": true,
+    "paths": { "chai": ["./src/chai.ts"] }
+  },
+  "include": ["src", "e2e", "scripts", "vite.config.ts", "playwright.config.ts"]
+}

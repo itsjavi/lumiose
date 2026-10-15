@@ -1186,6 +1186,36 @@ describe("island loader", () => {
   });
 });
 
+describe("custom elements (TASK-326)", () => {
+  it("renders attributes on the server; hydration sets properties and listens to events", async () => {
+    class HydrateStars extends HTMLElement {
+      items: unknown;
+    }
+    if (!customElements.get("hydrate-stars")) customElements.define("hydrate-stars", HydrateStars);
+    const { client, server } = await load(`
+      import { signal } from "lumiose";
+      export function Review() {
+        const picks = signal(0);
+        return (
+          <div>
+            <hydrate-stars max={5} items={["a", "b"]} on:pick={() => picks.set(picks() + 1)} />
+            <output>{picks()}</output>
+          </div>
+        );
+      }`);
+    await serve(server, [["Review", {}]]);
+    const el = document.querySelector("hydrate-stars") as HydrateStars;
+    expect(el.getAttribute("max")).toBe("5");
+    await hydrateAll(client);
+    expect(warn).not.toHaveBeenCalled();
+    expect(document.querySelector("hydrate-stars")).toBe(el);
+    expect(el.items).toEqual(["a", "b"]);
+    el.dispatchEvent(new CustomEvent("pick"));
+    flush();
+    expect(document.querySelector("output")!.textContent).toBe("1");
+  });
+});
+
 describe("fresh islands", () => {
   it("renders a component marked $$fresh on the client, replacing the server's nodes (TASK-231)", async () => {
     document.body.innerHTML = await renderToString(() =>

@@ -2,3 +2,5 @@
 .krausest/
 dist/
 dist-hand/
+# The checkout `pnpm bench:jsfb:upstream` checks the upstream entry in.
+.krausest-upstream/
