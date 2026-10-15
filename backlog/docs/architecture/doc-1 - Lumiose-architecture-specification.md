@@ -3,7 +3,7 @@ id: doc-1
 title: Lumiose architecture specification
 type: specification
 created_date: '2026-10-08 10:28'
-updated_date: '2026-10-10 00:23'
+updated_date: '2026-10-15 07:44'
 tags:
   - architecture
   - spec
@@ -549,7 +549,7 @@ export const MemberCard = $component(async function MemberCard(props) {
 ## 6. Runtime (decision-8)
 
 **Budgets.**
-- **Hard cap (set by the user, 2026-10-08; scope clarified by Lux, 2026-10-09):** the client framework JS that any one page can ship must stay **≤ 10 kB** min+brotli: every public client export, and a typical import set plus hydration and the island loader. The sum of all client code (12.35 kB today) is reported but not capped, because no page ships the SPA router and island hydration together. Smaller is better, but CPU performance takes priority over shaving bytes. **Update (user, 2026-10-10):** the API renames (decision-35) and the doc-6 primitives aim to stay under 10 kB by finding savings. If 10 kB turns out not to be possible, the cap may be raised, up to **12 kB** at most. `@lumiose/query` stays out of the core and is optional.
+- **Hard cap (set by the user, 2026-10-08; scope clarified by Lux, 2026-10-09):** the client framework JS that any one page can ship must stay **≤ 10 kB** min+brotli: every public client export, and a typical import set plus hydration and the island loader. The sum of all client code (12.35 kB today) is reported but not capped, because no page ships the SPA router and island hydration together. Smaller is better, but CPU performance takes priority over shaving bytes. **Update (user, 2026-10-10):** the API renames (decision-35) and the doc-6 primitives aim to stay under 10 kB by finding savings. If 10 kB turns out not to be possible, the cap may be raised, up to **12 kB** at most. `@lumiose/query` stays out of the core and is optional. **Update (user, 2026-10-15, decision-55):** the hard caps are 10 kB for what a page with islands ships (typical imports, hydration and the loader) and 15 kB for the whole client runtime (every export, hydration and the loader, 13.32 kB that day); the core + dom every-export figure is reported only, and the SPA router, actions and `fetchJSON` are reported on top.
 - **Soft targets (revised 2026-10-09 to today's sizes, to hold the line):** a typical app import set ≤ 6.25 kB, and hydration plus loader ≤ 2.75 kB. They ratchet down whenever a trim lands.
 - **Scope of the cap (user, 2026-10-09):** the cap and targets apply to the framework runtime, measured by `pnpm --filter lumiose size`. Sample apps and examples have no size budget: `pnpm --filter lumiose size:apps` reports their framework and app JS so regressions are visible, and stays as small as is reasonable, but it does not fail a build.
 - **js-framework-benchmark app bundle:** ≤ 8 kB.

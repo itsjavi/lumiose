@@ -1,25 +1,28 @@
-// Client runtime size report (spec §6 budgets, min+brotli: what any one page can ship ≤ 10 kB hard
-// cap, i.e. every export, and typical imports plus hydration and the loader; typical app imports
-// ≤ 6.25 kB soft target; hydration and the island loader ≤ 2.75 kB on top of what an app imports).
-// The whole runtime (every export plus hydration and the loader) is reported only. Bundles each entry with Vite (Rolldown, minified, tree-shaken) and prints
-// minified, gzip and brotli sizes. Exits 1 when a hard cap is exceeded (it runs in `pnpm check`);
-// soft targets are only reported. Run: `pnpm --filter lumiose size`.
+// Client runtime size report (spec §6 and decision-55 budgets, min+brotli). Hard caps: what an
+// islands page ships (typical imports plus hydration and the loader) ≤ 10 kB, and the whole client
+// runtime (every export, hydration and the loader) ≤ 15 kB; with the SPA router, actions, fetchJSON
+// and view transitions it is reported only. Soft targets: typical app imports ≤ 6.25 kB; hydration and the island loader
+// ≤ 2.75 kB on top of what an app imports. Bundles each entry with Vite (Rolldown, minified,
+// tree-shaken) and prints minified, gzip and brotli sizes. Exits 1 when a hard cap is exceeded (it
+// runs in `pnpm check`); soft targets are only reported. Run: `pnpm --filter lumiose size`.
 import { brotliCompressSync, constants, gzipSync } from "node:zlib";
 import { fileURLToPath } from "node:url";
 import { build, type Rollup } from "vite";
 
 // Forward slashes: the path goes into generated `import` strings (backslashes would be escapes on Windows).
 const src = fileURLToPath(new URL("../src/", import.meta.url)).replaceAll("\\", "/");
-const HARD_CAP = 10 * 1024;
-/** Entry name prefix → budget in bytes; `hard` budgets fail the run. */
+/** Entry name prefix → budget in bytes; `hard` budgets fail the run (decision-55). */
 const BUDGETS: Record<string, { limit: number; hard: boolean }> = {
   "core + dom (typical": { limit: 6.25 * 1024, hard: false },
-  "core + dom (every": { limit: HARD_CAP, hard: true },
-  "core + dom + islands (typical": { limit: HARD_CAP, hard: true },
+  "core + dom + islands (typical": { limit: 10 * 1024, hard: true },
+  "whole client runtime (": { limit: 15 * 1024, hard: true },
 };
 
 const TYPICAL = `export { signal, computed, effect, batch, untrack, onCleanup, onMount } from "${src}core/index.ts"; export { template, bind, setText, setAttr, setClass, toggleClass, setStyle, insert, list, branch, selector, createComponent, delegateEvents, listen, render } from "${src}dom/index.ts";`;
 const FETCH = `export { fetchJSON } from "${src}app/fetch-json.ts";`;
+// The app layer of the client: the SPA router's entry, form actions, the query cache and the
+// client entry (src/instrumentation.client.ts).
+const APP_LAYER = `export { startSpa } from "${src}app/router/boot.ts"; export { submit } from "${src}app/actions/client.ts"; export { query } from "${src}app/cache/client.ts"; export { clientEntry } from "${src}app/client-entry.ts";`;
 // The island loader's entry (dom/loader.ts) minus the manifest, which is app code.
 const ISLANDS = `export { loadIslands } from "${src}dom/islands.ts";`;
 // Opt-in APIs (decision-43): exported by `lumiose` from modules of their own, outside the capped
@@ -37,10 +40,13 @@ const entries: Record<string, string> = {
   "core + dom + hydrate (typical app imports, hydrate)": `${TYPICAL} export { hydrate } from "${src}dom/hydrate.ts";`,
   // What the js-framework-benchmark app needs (its bundle budget is 8 kB including app code).
   "core + dom (benchmark imports)": `export { signal, batch } from "${src}core/index.ts"; export { template, bind, setText, toggleClass, list, selector, createComponent, delegateEvents, render } from "${src}dom/index.ts";`,
+  // Report-only since decision-55's amendment: no app ships every export (tree-shaking).
   "core + dom (every export)": EVERY,
   "every export + view transitions, report-only (opt-in)": EVERY + OPT_IN,
-  // Every export plus hydration and the loader: no page ships all of it (report-only, spec §6).
-  "whole client runtime, report-only (every export, hydrate, loader)": `export * from "${src}core/index.ts"; export * from "${src}dom/index.ts"; export * from "${src}dom/public.ts"; export { hydrate } from "${src}dom/hydrate.ts"; ${ISLANDS}`,
+  // Every export plus hydration and the loader (hard cap 15 kB, decision-55).
+  "whole client runtime (every export, hydrate, loader)": `${EVERY} export { hydrate } from "${src}dom/hydrate.ts"; ${ISLANDS}`,
+  // Plus the app layer and view transitions: more than any one page ships (report-only).
+  "everything, report-only (whole runtime, router, actions, fetchJSON, view transitions)": `${EVERY} ${OPT_IN} export { hydrate } from "${src}dom/hydrate.ts"; ${ISLANDS} ${FETCH} ${APP_LAYER}`,
   "core (every export)": `export * from "${src}core/index.ts";`,
   // App layer, report-only: `fetchJSON` called in event handlers only (no async components or
   // resources), which leaves the keyed cache out, and the same with async components, which need it.
@@ -135,7 +141,6 @@ console.log(
 // Every entry above is measured without client instrumentation, which apps without
 // src/instrumentation.client.ts ship none of. With it (report-only): the islands entry, plus the
 // router, actions and fetchJSON/query, whose calls it wraps.
-const APP_LAYER = `export { startSpa } from "${src}app/router/boot.ts"; export { submit } from "${src}app/actions/client.ts"; export { query } from "${src}app/cache/client.ts"; export { clientEntry } from "${src}app/client-entry.ts";`;
 const appCode = `${entries["core + dom + islands (typical app imports, loader, hydrate)"]} ${FETCH} ${APP_LAYER}`;
 const plain = sizes(await bundle(appCode, false));
 const instrumented = sizes(await bundle(appCode, false, CLIENT_HOOKS));
@@ -143,6 +148,6 @@ console.log(
   `client instrumentation on top of islands, router, actions and fetchJSON, report-only: min ${kb(instrumented.min - plain.min)}, gzip ${kb(instrumented.gzip - plain.gzip)}, brotli ${kb(instrumented.brotli - plain.brotli)}`,
 );
 if (overHardCap.length > 0) {
-  console.error(`\nOver the ${kb(HARD_CAP)} hard cap (spec §6): ${overHardCap.join("; ")}`);
+  console.error(`\nOver a hard cap (decision-55): ${overHardCap.join("; ")}`);
   process.exitCode = 1;
 }

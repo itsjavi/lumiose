@@ -83,8 +83,8 @@ otherwise with the first streamed chunk that does. In a build, pages without isl
 JavaScript; the loader is the client entry, and each island is a chunk it imports when the island's
 trigger fires. The loader's chunk also holds the Lumiose runtime the islands share (signals, DOM,
 hydration), so a page loads one runtime file before its islands: about 8 to 10 kB min+brotli in
-the sample apps (`pnpm --filter lumiose size:apps` reports them; the runtime's 10 kB cap is checked by
-`pnpm --filter lumiose size`). With your own server, pass its URL as
+the sample apps (`pnpm --filter lumiose size:apps` reports them; `pnpm --filter lumiose size` checks
+the 10 kB cap on what an islands page ships and the 15 kB cap on the whole client runtime). With your own server, pass its URL as
 `renderToStream(root, { loaderUrl })`.
 
 **Code before hydration: `src/instrumentation.client.ts`.** The place for what must run in the
