@@ -5,7 +5,7 @@ status: In Progress
 assignee:
   - '@Halo'
 created_date: '2026-10-15 04:03'
-updated_date: '2026-10-15 12:32'
+updated_date: '2026-10-15 12:36'
 labels:
   - proposal
   - needs-decision
@@ -168,4 +168,6 @@ import { Combobox, Dialog, Menu } from "@lumiose/ui";
 - `pnpm --filter @lumiose-examples/ui-spike size` prints the size table.
 - `pnpm --filter @lumiose-examples/ui-spike test:e2e`: 28 tests (dev and build), axe included; the (a) menu-close test is an expected failure.
 - Option (c): `TIMELESS_SRC=<Timeless checkout> pnpm exec lumiose build` in the example, then `lumiose preview` (the server fails with the decorator `SyntaxError`).
+
+2026-10-15 (Lux): the spike's Lumiose findings are tasks: F1 TASK-346, F3 TASK-347, F4 TASK-348, F5 TASK-349; F2 went to TASK-283. Waiting for the user's review of the proposal (AC #2 and #3).
 <!-- SECTION:NOTES:END -->

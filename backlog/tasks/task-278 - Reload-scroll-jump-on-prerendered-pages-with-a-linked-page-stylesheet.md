@@ -5,7 +5,7 @@ status: Done
 assignee:
   - '@Nova'
 created_date: '2026-10-14 03:30'
-updated_date: '2026-10-15 12:28'
+updated_date: '2026-10-15 12:36'
 labels:
   - bug
   - css
@@ -69,6 +69,8 @@ After the change (real builds; travel journal with its CSP hash policy in place)
 **Decision to record (Lux).** "Pages that link stylesheets hold the parser with an inline script after them, instead of inlining more CSS" (rationale above); proposed for a decision record, not written by this worker.
 
 Validation: pnpm check green (1982 tests, size caps OK: 9.22 / 13.32 kB brotli); docs:check green; all 14 Playwright suites pass (ssg-travel-journal's inline-script list updated for the new script; its strict-CSP test passes with the hashed script). Root oxfmt --check flags 6 benchmark result JSONs untouched here (CI runs fmt:examples, which passes).
+
+2026-10-15 (Lux): recorded as decision-60.
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary
