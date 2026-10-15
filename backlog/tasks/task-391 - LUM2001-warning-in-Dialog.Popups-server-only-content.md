@@ -5,7 +5,7 @@ status: To Do
 assignee:
   - '@Halo'
 created_date: '2026-10-15 17:52'
-updated_date: '2026-10-15 19:07'
+updated_date: '2026-10-15 19:20'
 labels:
   - ui
   - diagnostics
@@ -31,4 +31,6 @@ Seen in the local showcase (2026-10-15): every dev compile of packages/ui/src/di
 
 <!-- SECTION:NOTES:BEGIN -->
 2026-10-15 (Spark, TASK-357): Menu's GroupElement (packages/ui/src/menu/menu.tsx) uses the same `const content = isServer ? children : undefined` pattern, so the server writes a group's aria-labelledby only when its GroupLabel rendered; it warns LUM2001 the same way. The fix for Dialog should cover both.
+
+2026-10-15 (Lux): Menu.Popup (packages/ui/src/menu/menu.tsx, const content = isServer ? children : undefined) warns LUM2001 the same way; Popover avoids it with untrack(() => children). Fix both alike.
 <!-- SECTION:NOTES:END -->
