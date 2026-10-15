@@ -185,6 +185,16 @@ one version (lockstep); nothing is bumped by hand.
    prepends the release to `CHANGELOG.md` from the Conventional Commits since the last `v*` tag
    (breaking changes, `feat`, `fix`, `perf`; `--since <rev>` picks another start), commits
    `chore(release): vX.Y.Z` and creates the annotated tag `vX.Y.Z`. It pushes nothing.
+
+   Before it writes anything, the **scale gate** (decision-55) runs the large-app benchmark as an
+   A/B of the last `v*` tag and the working tree
+   (`pnpm --filter @lumiose/bench-large-app ab <tag> . --json`, about 18 minutes, on this machine:
+   never in CI) and stops the release when any metric (production build, dev cold start, HMR
+   latency, server memory) is more than 20% worse. Its medians and ratios become the `### Scale`
+   section of the changelog, so the release notes carry them. A quiet machine gives steadier
+   numbers. `--skip-scale-gate` skips it (the notes then say it was not measured); a dry run only
+   says it would run; the first release has nothing to compare with.
+
 2. `git push origin HEAD vX.Y.Z` starts `.github/workflows/release.yml`: the Binaries workflow
    builds and smoke-tests every compiler binary, then `scripts/publish.ts` packs every package,
    puts each binary into its platform package, checks that the tag names the packages' version,
