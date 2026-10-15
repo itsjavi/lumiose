@@ -9,8 +9,12 @@ import { RecoveryKeys } from "./collapsible-1.tsx";
 import { AdvancedOptions } from "./collapsible-2.tsx";
 import { CityField } from "./combobox-1.tsx";
 import { TagPicker } from "./combobox-2.tsx";
+import { FileActions } from "./context-menu-1.tsx";
+import { GalleryOptions } from "./context-menu-2.tsx";
 import { DeleteProject } from "./dialog-1.tsx";
 import { EditProfile } from "./dialog-2.tsx";
+import { FiltersSheet } from "./drawer-1.tsx";
+import { NavigationDrawer } from "./drawer-2.tsx";
 import { EmailField } from "./field-1.tsx";
 import { AddressFields } from "./fieldset-1.tsx";
 import { SignupForm } from "./form-1.tsx";
@@ -49,10 +53,18 @@ export function UiDemo(props: { id: string }) {
       return <CityField />;
     case "combobox-2":
       return <TagPicker client:visible />;
+    case "context-menu-1":
+      return <FileActions />;
+    case "context-menu-2":
+      return <GalleryOptions client:visible />;
     case "dialog-1":
       return <DeleteProject />;
     case "dialog-2":
       return <EditProfile client:visible />;
+    case "drawer-1":
+      return <FiltersSheet />;
+    case "drawer-2":
+      return <NavigationDrawer client:visible />;
     case "field-1":
       return <EmailField />;
     case "fieldset-1":

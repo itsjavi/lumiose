@@ -37,6 +37,8 @@ const PAGES = [
   { name: "UI Collapsible", path: "/ui/collapsible" },
   { name: "UI Accordion", path: "/ui/accordion" },
   { name: "UI Toast", path: "/ui/toast" },
+  { name: "UI Context Menu", path: "/ui/context-menu" },
+  { name: "UI Drawer", path: "/ui/drawer" },
 ];
 
 /** Opens the first demo of a UI page: its popup, or (Tabs) another panel. */
@@ -106,6 +108,23 @@ const OPEN_DEMOS: { name: string; path: string; open: (page: Page) => Promise<vo
     open: async (page) => {
       await page.locator(".hero .preview").getByRole("button", { name: "Save" }).click();
       await expect(page.getByRole("status").filter({ hasText: "Saved" }).first()).toBeVisible();
+    },
+  },
+  {
+    name: "Context Menu",
+    path: "/ui/context-menu",
+    open: async (page) => {
+      await page.locator(".hero .preview [tabindex='0']").focus();
+      await page.keyboard.press("Shift+F10");
+      await expect(page.getByRole("menuitem", { name: "Rename" }).first()).toBeFocused();
+    },
+  },
+  {
+    name: "Drawer",
+    path: "/ui/drawer",
+    open: async (page) => {
+      await page.locator(".hero .preview").getByRole("button", { name: "Filters" }).click();
+      await expect(page.getByRole("dialog", { name: "Filters" }).first()).toBeVisible();
     },
   },
   {

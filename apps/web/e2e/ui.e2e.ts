@@ -7,7 +7,9 @@ const COMPONENTS = [
   "Accordion",
   "Collapsible",
   "Combobox",
+  "Context Menu",
   "Dialog",
+  "Drawer",
   "Menu",
   "Popover",
   "Select",
@@ -38,7 +40,7 @@ test("the UI section is in the site navigation, with a page per component", asyn
   }
   for (const name of COMPONENTS) {
     await nav.getByRole("link", { name, exact: true }).click();
-    await expect(page).toHaveURL(new RegExp(`/ui/${name.toLowerCase()}$`));
+    await expect(page).toHaveURL(new RegExp(`/ui/${name.toLowerCase().replaceAll(" ", "-")}$`));
     await expect(page.getByRole("heading", { level: 1 })).toHaveText(name);
     await expect(page).toHaveTitle(`${name} · Lumiose UI`);
     // A live demo at the top, and every live example above its code.
