@@ -35,6 +35,7 @@ Contract: decision-62 (approved by the user on 2026-10-15 from the TASK-332 spik
 - [x] #4 Unstyled: ships only the CSS the primitive needs to work, in one low-priority layer
 - [x] #5 Passes every item of the "UI primitives pitfall checklist" backlog doc (from Base UI and Zag/Ark) that applies
 - [x] #6 Meets WCAG 2.2 AA (doc-9 section 17): axe with the WCAG A and AA tags passes closed and open, with the default theme, in light and dark, and the manual criteria that apply are checked and recorded
+- [ ] #7 Its docs page in packages/ui/docs follows the component template (decision-64) and is listed in @lumiose/ui's llms.txt
 <!-- AC:END -->
 
 ## Implementation Notes
@@ -45,6 +46,8 @@ User decision 2026-10-15: @lumiose/ui reaches parity with Base UI's components b
 2026-10-15: the pitfall checklist is doc-9. The component gets its rules in the optional default theme (@lumiose/ui/themes/default.css, decision-62); the component itself stays unstyled.
 
 2026-10-15 (user): @lumiose/ui meets WCAG 2.2 AA (decision-62, doc-9 section 17).
+
+2026-10-15 (user): @lumiose/ui is agent-ready like lumiose (decision-64). The component's docs page lives in packages/ui/docs/<component>.md, follows dialog.md's sections (Anatomy, API, Example, Styling, Keyboard and focus, Without JavaScript, Browser support, Related) and is listed in the UI llms.txt.
 
 2026-10-15 Halo: claimed (branch claude/halo-m12b-eadea2).
 

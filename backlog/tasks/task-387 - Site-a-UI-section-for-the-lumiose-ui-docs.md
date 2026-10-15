@@ -5,7 +5,7 @@ status: To Do
 assignee:
   - '@Beacon'
 created_date: '2026-10-15 17:13'
-updated_date: '2026-10-15 18:00'
+updated_date: '2026-10-15 18:05'
 labels:
   - ui
   - docs
@@ -41,4 +41,6 @@ It is the default UI docs and getting-started reference, and grows with each com
 
 <!-- SECTION:NOTES:BEGIN -->
 2026-10-15 (user): @lumiose/ui meets WCAG 2.2 AA (decision-62, doc-9 section 17).
+
+2026-10-15 (user): @lumiose/ui is agent-ready like lumiose (decision-64). The component's docs page lives in packages/ui/docs/<component>.md, follows dialog.md's sections (Anatomy, API, Example, Styling, Keyboard and focus, Without JavaScript, Browser support, Related) and is listed in the UI llms.txt. The site's UI section renders packages/ui/docs (one source with the agent docs, TASK-393).
 <!-- SECTION:NOTES:END -->

@@ -5,7 +5,7 @@ status: To Do
 assignee:
   - '@Halo'
 created_date: '2026-10-15 16:46'
-updated_date: '2026-10-15 18:00'
+updated_date: '2026-10-15 18:05'
 labels:
   - ui
 milestone: m-12
@@ -30,6 +30,7 @@ Contract: decision-62 (approved by the user on 2026-10-15 from the TASK-332 spik
 - [ ] #3 Unstyled: ships only the CSS the primitive needs to work, in one low-priority layer
 - [ ] #4 Passes every item of the "UI primitives pitfall checklist" backlog doc (from Base UI and Zag/Ark) that applies
 - [ ] #5 Meets WCAG 2.2 AA (doc-9 section 17): axe with the WCAG A and AA tags passes closed and open, with the default theme, in light and dark, and the manual criteria that apply are checked and recorded
+- [ ] #6 Its docs page in packages/ui/docs follows the component template (decision-64) and is listed in @lumiose/ui's llms.txt
 <!-- AC:END -->
 
 ## Implementation Notes
@@ -42,4 +43,6 @@ User decision 2026-10-15: @lumiose/ui reaches parity with Base UI's components b
 2026-10-15: the per-component docs are published in the site's UI section (TASK-387), which the user asked for as the @lumiose/ui docs.
 
 2026-10-15 (user): @lumiose/ui meets WCAG 2.2 AA (decision-62, doc-9 section 17).
+
+2026-10-15 (user): @lumiose/ui is agent-ready like lumiose (decision-64). The component's docs page lives in packages/ui/docs/<component>.md, follows dialog.md's sections (Anatomy, API, Example, Styling, Keyboard and focus, Without JavaScript, Browser support, Related) and is listed in the UI llms.txt.
 <!-- SECTION:NOTES:END -->
