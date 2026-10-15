@@ -37,6 +37,12 @@ const COMPONENTS: Component[] = [
     scripts: ["dialog/dialog.script.ts"],
     css: "dialog/dialog.css",
   },
+  {
+    name: "menu",
+    module: "menu/menu.tsx",
+    scripts: ["menu/menu.script.ts"],
+    css: "menu/menu.css",
+  },
 ];
 
 const CLIENT_SCRIPT = /\?client$/;

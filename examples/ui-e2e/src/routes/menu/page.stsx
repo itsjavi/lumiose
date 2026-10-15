@@ -1,0 +1,89 @@
+import { Menu } from "@lumiose/ui";
+import { Title } from "lumiose";
+
+// Server-rendered, no island: the menus open from the HTML alone, and Menu's client script adds the
+// keyboard contract. Styled with the default theme.
+export default function MenuPage() {
+  return (
+    <>
+      <Title>Menu</Title>
+      <h1>Menu</h1>
+      <div class="grid">
+        <section aria-labelledby="actions-heading">
+          <h2 id="actions-heading">Actions</h2>
+          <Menu.Root>
+            <Menu.Trigger class="lu-button">Actions</Menu.Trigger>
+            <Menu.Popup class="lu-menu">
+              <Menu.Item>Rename</Menu.Item>
+              <Menu.Item>Duplicate</Menu.Item>
+              <Menu.LinkItem href="#help">Help</Menu.LinkItem>
+              <Menu.Separator />
+              <Menu.CheckboxItem defaultChecked>Pinned</Menu.CheckboxItem>
+              <Menu.CheckboxItem>Hidden from search</Menu.CheckboxItem>
+              <Menu.Separator />
+              <Menu.Group>
+                <Menu.GroupLabel>Sort by</Menu.GroupLabel>
+                <Menu.RadioGroup defaultValue="date">
+                  <Menu.RadioItem value="name">Name</Menu.RadioItem>
+                  <Menu.RadioItem value="date">Date</Menu.RadioItem>
+                  <Menu.RadioItem value="size">Size</Menu.RadioItem>
+                </Menu.RadioGroup>
+              </Menu.Group>
+              <Menu.Separator />
+              <Menu.SubmenuRoot>
+                <Menu.SubmenuTrigger>Share</Menu.SubmenuTrigger>
+                <Menu.Popup class="lu-menu">
+                  <Menu.Item>Email</Menu.Item>
+                  <Menu.Item>Copy link</Menu.Item>
+                  <Menu.SubmenuRoot>
+                    <Menu.SubmenuTrigger>More</Menu.SubmenuTrigger>
+                    <Menu.Popup class="lu-menu">
+                      <Menu.Item>Embed</Menu.Item>
+                      <Menu.Item>QR code</Menu.Item>
+                    </Menu.Popup>
+                  </Menu.SubmenuRoot>
+                </Menu.Popup>
+              </Menu.SubmenuRoot>
+              <Menu.Item disabled>Delete</Menu.Item>
+            </Menu.Popup>
+          </Menu.Root>
+          <button type="button" class="lu-button">
+            After the menu
+          </button>
+        </section>
+
+        <section aria-labelledby="placement-heading">
+          <h2 id="placement-heading">Placement</h2>
+          <Menu.Root>
+            <Menu.Trigger class="lu-button">Above, end-aligned</Menu.Trigger>
+            <Menu.Popup class="lu-menu" side="top" align="end" sideOffset={8}>
+              <Menu.Item>Zoom in</Menu.Item>
+              <Menu.Item>Zoom out</Menu.Item>
+            </Menu.Popup>
+          </Menu.Root>
+          <button type="button" class="lu-button">
+            Elsewhere
+          </button>
+        </section>
+
+        <section aria-labelledby="rtl-heading" dir="rtl" lang="ar">
+          <h2 id="rtl-heading">من اليمين إلى اليسار</h2>
+          <Menu.Root>
+            <Menu.Trigger class="lu-button">ملف</Menu.Trigger>
+            <Menu.Popup class="lu-menu">
+              <Menu.Item>جديد</Menu.Item>
+              <Menu.SubmenuRoot>
+                <Menu.SubmenuTrigger>تصدير</Menu.SubmenuTrigger>
+                <Menu.Popup class="lu-menu">
+                  <Menu.Item>PDF</Menu.Item>
+                  <Menu.Item>HTML</Menu.Item>
+                </Menu.Popup>
+              </Menu.SubmenuRoot>
+            </Menu.Popup>
+          </Menu.Root>
+        </section>
+      </div>
+      <p id="help">Help: the link item scrolls here.</p>
+    </>
+  );
+}

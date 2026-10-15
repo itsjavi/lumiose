@@ -14,6 +14,9 @@ export default function Home() {
         <li>
           <a href="/dialog">Dialog and alert dialog</a> (<a href="/dialog/island">in an island</a>)
         </li>
+        <li>
+          <a href="/menu">Menu</a> (<a href="/menu/island">in an island</a>)
+        </li>
       </ul>
     </article>
   );

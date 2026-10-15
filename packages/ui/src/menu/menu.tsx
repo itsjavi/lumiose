@@ -14,6 +14,7 @@ import {
   signal,
   useContext,
   useId,
+  untrack,
   type Signal,
 } from "lumiose";
 import type { MenuCheckedChangeDetail, MenuElement, MenuOpenChangeDetail } from "./menu.script.ts";
@@ -37,6 +38,10 @@ export type MenuSide = "top" | "bottom" | "left" | "right" | "inline-start" | "i
 /** How the popup aligns with the trigger along that side. */
 export type MenuAlign = "start" | "center" | "end";
 
+/**
+ * `Menu.Root` renders `<lu-menu>`, an element with no box that holds the menu's state and adds its
+ * keyboard and item behaviour. `bind:open={signal}` stands in for `open` and `onOpenChange`.
+ */
 export interface MenuRootProps {
   /**
    * Opens (`true`) or closes (`false`) the menu when it changes, in the browser. Pair it with
@@ -46,6 +51,7 @@ export interface MenuRootProps {
   open?: boolean;
   /** Called after the menu opens or closes, whatever opened or closed it. */
   onOpenChange?: (open: boolean) => void;
+  /** The other parts: a `Trigger` (or `SubmenuTrigger`) and the `Popup`. */
   children?: JSX.Element;
 }
 
@@ -58,6 +64,10 @@ export type MenuSubmenuRootProps = MenuRootProps;
  */
 export type MenuTriggerProps = JSX.IntrinsicElements["button"];
 
+/**
+ * The `<div role="menu" popover>` of items, placed next to its trigger by CSS anchor positioning
+ * and labelled by the trigger.
+ */
 export type MenuPopupProps = JSX.IntrinsicElements["div"] & {
   /**
    * The trigger's side the popup goes on: `"bottom"` (default for a menu), `"top"`, `"left"`,
@@ -78,11 +88,17 @@ interface ItemProps {
   disabled?: boolean;
   /** The text typeahead matches, when the item's text content is not it. */
   label?: string;
-  /** Whether running the item closes the menu. Default `true` for items and links, `false` for checkbox and radio items. */
+  /**
+   * Whether running the item closes the menu. Default `true` for items and links, `false` for
+   * checkbox and radio items.
+   */
   closeOnClick?: boolean;
 }
 
-/** A `<button role="menuitem">`: a command. Running it closes the menu and returns focus to the trigger. */
+/**
+ * A `<button role="menuitem">`: a command. Running it closes the menu and returns focus to the
+ * trigger before its `onClick` runs.
+ */
 export type MenuItemProps = Omit<JSX.IntrinsicElements["button"], "disabled"> & ItemProps;
 
 /** An `<a role="menuitem">`: a link. A Ctrl, Cmd or Shift click or a download leaves the menu open. */
@@ -98,6 +114,7 @@ type BindableProps<Tag extends keyof JSX.IntrinsicElements, Omitted extends stri
   symbol | Omitted
 >;
 
+/** A `<button role="menuitemcheckbox">` with `aria-checked`. It stays open when it toggles. */
 export type MenuCheckboxItemProps = BindableProps<"button", "disabled"> &
   ItemProps & {
     /** Checks (`true`) or unchecks it when it changes. Pair it with `onCheckedChange`. */
@@ -114,6 +131,10 @@ export type MenuGroupProps = JSX.IntrinsicElements["div"];
 /** A `<div role="presentation">` that names its group. */
 export type MenuGroupLabelProps = JSX.IntrinsicElements["div"];
 
+/**
+ * A `<div role="group">` of radio items, of which one is checked. `bind:value={signal}` stands in
+ * for `value` and `onValueChange`.
+ */
 export type MenuRadioGroupProps = BindableProps<"div"> & {
   /** Checks the radio item with this `value` when it changes. Pair it with `onValueChange`. */
   value?: string;
@@ -123,6 +144,7 @@ export type MenuRadioGroupProps = BindableProps<"div"> & {
   onValueChange?: (value: string) => void;
 };
 
+/** A `<button role="menuitemradio">` with `aria-checked`, inside a `RadioGroup`. */
 export type MenuRadioItemProps = Omit<JSX.IntrinsicElements["button"], "disabled" | "value"> &
   ItemProps & {
     /** The value its `RadioGroup` takes when it is checked. */
@@ -132,7 +154,10 @@ export type MenuRadioItemProps = Omit<JSX.IntrinsicElements["button"], "disabled
 /** A `<div role="separator">` between items or groups. */
 export type MenuSeparatorProps = JSX.IntrinsicElements["div"];
 
-/** The `<button role="menuitem" aria-haspopup="menu">` that opens a submenu, inside its parent's `Popup`. */
+/**
+ * The `<button role="menuitem" aria-haspopup="menu">` that opens a submenu: an item of the parent
+ * `Popup`, inside its `SubmenuRoot`.
+ */
 export type MenuSubmenuTriggerProps = Omit<JSX.IntrinsicElements["button"], "disabled"> &
   Omit<ItemProps, "closeOnClick">;
 
@@ -202,12 +227,16 @@ function MenuState(props: MenuRootProps & { submenu: boolean }) {
   };
 
   // The `open` prop drives the element; its `openchange` event reports back, so a signal written by
-  // `onOpenChange` sees the same value again and nothing loops.
+  // `onOpenChange` sees the same value again and nothing loops. A menu opened from the server HTML
+  // before the island hydrated stays open, and the signal hears of it.
+  let mounted = false;
   effect(() => {
     const menu = host();
     const wanted = props.open;
     if (!menu?.isConnected || wanted === undefined) return;
-    menu.open = wanted;
+    if (!mounted && !wanted && menu.open) untrack(() => props.onOpenChange?.(true));
+    else menu.open = wanted;
+    mounted = true;
   });
 
   return (

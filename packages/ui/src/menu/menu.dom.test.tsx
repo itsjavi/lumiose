@@ -168,18 +168,21 @@ describe("lu-menu: opening and focus", () => {
     expect(active()).toBe(item("Zoom in"));
   });
 
-  it("focuses the first item after Enter or Space (a click with no detail), the popup after a pointer", () => {
+  it("toggles on the trigger's click: Enter or Space (no detail) focus the first item, a tap the popup", () => {
     mount(() => <Edit />);
     const edit = trigger("Edit");
     const menu = menuOf(edit);
-    // What `popovertarget` does after the click the keyboard fires.
-    click(edit, { detail: 0 });
-    menu.popup!.showPopover();
+    // The element toggles the menu on the trigger's click, instead of `popovertarget`.
+    const enter = new MouseEvent("click", { bubbles: true, cancelable: true, detail: 0 });
+    edit.dispatchEvent(enter);
+    expect(enter.defaultPrevented).toBe(true);
+    expect(menu.open).toBe(true);
     expect(active()).toBe(item("Rename"));
-    menu.popup!.hidePopover();
+    click(edit, { detail: 0 });
+    expect(menu.open).toBe(false);
 
     click(edit, { detail: 1 });
-    menu.popup!.showPopover();
+    expect(menu.open).toBe(true);
     expect(active()).toBe(menu.popup);
   });
 

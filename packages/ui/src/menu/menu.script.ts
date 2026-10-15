@@ -6,7 +6,8 @@
 //
 // - Focus: a keyboard opening focuses the first item that can run (Arrow Up: the last one), a
 //   pointer opening the popup; closing returns focus to the trigger, without scrolling, unless an
-//   outside press landed on something focusable.
+//   outside press landed on something focusable. Once defined, the element toggles the popup on
+//   the trigger's click itself, so focus moves in before the next key.
 // - Keys: arrows (looping), Home, End, typeahead, Escape (one level), Tab and Shift+Tab (close the
 //   menu), and Arrow Right and Left to open and close submenus (swapped right to left).
 // - Items: running one closes the whole menu and returns focus before its handlers run; checkbox
@@ -351,17 +352,23 @@ export class MenuElement extends HTMLElement {
     const target = event.target as Element;
     const trigger = this.trigger;
     if (trigger?.contains(target)) {
+      // The element opens and closes the menu itself rather than through `popovertarget`, so
+      // focus moves in at once: the popover's `toggle` event comes a task later, after keys the
+      // user may already have typed. A click with no detail comes from Enter or Space.
+      event.preventDefault();
+      const keyboard = event.detail === 0;
       if (this.#parent()) {
         // A click keeps a submenu opened by hover open; Enter and Space move into it.
-        if (this.open) {
-          event.preventDefault();
-          if (event.detail === 0) this.#focus("first");
-        } else this.#edge = event.detail === 0 ? "first" : "none";
-      } else if (this.#pressedAt !== undefined && event.detail > 0) {
-        // The press already opened the menu: the click must not toggle it closed.
-        event.preventDefault();
+        if (!this.open) this.#show(keyboard ? "first" : "none");
+        else if (keyboard) this.#focus("first");
+      } else if (this.#pressedAt !== undefined && !keyboard) {
+        // The press already opened the menu.
         this.#pressedAt = undefined;
-      } else this.#edge = event.detail === 0 ? "first" : "popup";
+      } else if (this.open) {
+        this.#hide(false);
+      } else {
+        this.#show(keyboard ? "first" : "popup");
+      }
       return;
     }
     const item = target.closest<HTMLElement>(ITEM);
