@@ -18,6 +18,11 @@
 // link them again for an island or an SPA route (./client-runtime.ts). Merging keeps the cascade
 // order: the shared prefix comes first on every page, the rest in the page's own order. Dev links
 // every stylesheet on its own, for CSS HMR.
+//
+// Linked files do not make a reloaded page jump: the server writes a script after them that holds
+// the parser until they load (STYLESHEETS_LOADED, TASK-278). Inlining more would not have fixed
+// it: with the page's own CSS inlined at any size, Chrome still jumped on 5–13 of 30 reloads of the
+// sample apps, since the shared file stays linked.
 
 import { createHash } from "node:crypto";
 import { existsSync } from "node:fs";

@@ -17,6 +17,7 @@ import { addNonce, hashPolicy, withHashPolicy } from "./csp.ts";
 import type { Middleware } from "./context.ts";
 import { createRequestHandler, type ModuleExports, type RequestHandlerOptions } from "./handler.ts";
 import { cspNonce } from "./scope.ts";
+import { STYLESHEETS_LOADED } from "./stylesheets.ts";
 
 type Modules = Record<string, ModuleExports>;
 
@@ -34,7 +35,8 @@ function app(modules: Modules, options: Partial<RequestHandlerOptions> = {}) {
     viewTransitions: true,
     prefetch: "hover",
     headAssets: () =>
-      '<style data-l-css="/a.css">.a{}</style><link rel="stylesheet" href="/b.css">',
+      '<style data-l-css="/a.css">.a{}</style><link rel="stylesheet" href="/b.css">' +
+      STYLESHEETS_LOADED,
     ...options,
   });
   return (path: string) => fetch(new Request(new URL(path, "https://lumiose.test")));
@@ -110,7 +112,9 @@ describe('lumiose({ csp: "strict" })', () => {
     for (const tag of tags) {
       if (!tag.includes('type="application/json"')) expect(tag).toContain(`nonce="${nonce}"`);
     }
-    expect(html).toContain('<link rel="stylesheet" href="/b.css">');
+    expect(html).toContain(
+      `<link rel="stylesheet" href="/b.css"><script nonce="${nonce}">${STYLESHEETS_LOADED.slice(8)}`,
+    );
     // Another response, another nonce.
     const again = (await fetch("/")).headers.get("content-security-policy")!;
     expect(again).not.toContain(nonce);
@@ -208,6 +212,8 @@ describe('lumiose({ csp: "strict" })', () => {
     expect(meta).not.toBeNull();
     expect(meta![1]).toContain(sha('[data-l-v="0"]{color:red}'));
     expect(meta![1]).toContain(sha(".a{}"));
+    // The script after the linked stylesheets (TASK-278).
+    expect(meta![1]).toContain(sha(/<script>(.*)<\/script>/.exec(STYLESHEETS_LOADED)![1]!));
     expect(meta![1]).toMatch(/^script-src 'self' 'sha256-[^;]+; style-src 'self' /);
   });
 });

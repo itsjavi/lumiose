@@ -208,6 +208,10 @@ describe.skipIf(!binding)("lumiose dev", () => {
     expect(html).toMatch(
       /<link rel="stylesheet" href="\/src\/styles\.css" data-vite-dev-id="[^"]*\/src\/styles\.css">/,
     );
+    // The parser waits for them before the body (TASK-278).
+    expect(html.indexOf("<script>/* waits for the stylesheets above */</script>")).toBeGreaterThan(
+      html.lastIndexOf('rel="stylesheet"'),
+    );
     expect(html).toContain(
       "<div class=layout><main><h1>Home</h1><p class=slow>slow content</p></main></div>",
     );
