@@ -9,7 +9,10 @@ const tip = (page: Page, text: string) => page.getByRole("tooltip").filter({ has
 
 /** Rests the mouse on the middle of a button. */
 async function hover(page: Page, name: string) {
-  const box = (await page.getByRole("button", { name, exact: true }).boundingBox())!;
+  const trigger = page.getByRole("button", { name, exact: true });
+  // On a small viewport the trigger may sit below the fold, out of the mouse's reach.
+  await trigger.scrollIntoViewIfNeeded();
+  const box = (await trigger.boundingBox())!;
   await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
 }
 
