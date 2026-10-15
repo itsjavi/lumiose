@@ -324,13 +324,22 @@ In an island: several values bound to a signal, and options loaded as the user t
 import { Combobox } from "@lumiose/ui";
 import { signal } from "lumiose";
 
-export function TagPicker(props: { search: (text: string) => Promise<string[]> }) {
+const TAGS = ["accessibility", "bug", "docs", "performance", "security", "ui"];
+
+/** Stands in for a request to your API: the tags that contain `text`, a moment later. */
+function searchTags(text: string): Promise<string[]> {
+  const query = text.trim().toLowerCase();
+  const found = query ? TAGS.filter((tag) => tag.includes(query)) : [];
+  return new Promise((resolve) => setTimeout(() => resolve(found), 200));
+}
+
+export function TagPicker() {
   const tags = signal<string[]>([]);
   const results = signal<string[]>([]);
   const searching = signal(false);
   const search = async (text: string) => {
     searching.set(true);
-    results.set(await props.search(text));
+    results.set(await searchTags(text));
     searching.set(false);
   };
   return (
