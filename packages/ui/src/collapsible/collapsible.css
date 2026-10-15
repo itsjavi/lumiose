@@ -1,0 +1,12 @@
+/*
+ * Collapsible is a native <details>: the browser shows and hides its panel. What it needs on top:
+ * a disabled trigger (aria-disabled, which a <summary> has instead of `disabled`) ignores the
+ * pointer, also before the client script loads.
+ */
+@layer lu.core, lu.theme;
+
+@layer lu.core {
+  summary[aria-disabled="true"] {
+    pointer-events: none;
+  }
+}

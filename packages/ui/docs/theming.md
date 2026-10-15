@@ -23,16 +23,20 @@ If your app orders its own layers, put `lu` first: `@layer lu, reset, components
 surfaces, a blue primary, light and dark. It styles a few classes, which you put on the parts
 through their `class` prop:
 
-| Class         | On                  | Variants                                                                |
-| ------------- | ------------------- | ----------------------------------------------------------------------- |
-| `lu-button`   | any `<button>` part | `data-variant="primary"`, `data-variant="destructive"`                  |
-| `lu-dialog`   | `Dialog.Popup`      | Styles the backdrop, the title, the description and a `<footer>` inside |
-| `lu-popover`  | `Popover.Popup`     | Styles the title, the description and a `<footer>` inside               |
-| `lu-tooltip`  | `Tooltip.Popup`     |                                                                         |
-| `lu-tabs`     | `Tabs.Root`         | Styles the list, the tabs (the selected one underlined) and the panels  |
-| `lu-menu`     | every `Menu.Popup`  | Styles the items, their checkbox and radio marks, separators and labels |
-| `lu-combobox` | `Combobox.Root`     | Lays out the field (label, chips, input, buttons) and styles the popup  |
-| `lu-select`   | `Select.Root`       | Makes it a customizable select and styles the control and the picker    |
+| Class               | On                  | Variants                                                                |
+| ------------------- | ------------------- | ----------------------------------------------------------------------- |
+| `lu-button`         | any `<button>` part | `data-variant="primary"`, `data-variant="destructive"`                  |
+| `lu-dialog`         | `Dialog.Popup`      | Styles the backdrop, the title, the description and a `<footer>` inside |
+| `lu-popover`        | `Popover.Popup`     | Styles the title, the description and a `<footer>` inside               |
+| `lu-tooltip`        | `Tooltip.Popup`     |                                                                         |
+| `lu-tabs`           | `Tabs.Root`         | Styles the list, the tabs (the selected one underlined) and the panels  |
+| `lu-menu`           | every `Menu.Popup`  | Styles the items, their checkbox and radio marks, separators and labels |
+| `lu-combobox`       | `Combobox.Root`     | Lays out the field (label, chips, input, buttons) and styles the popup  |
+| `lu-select`         | `Select.Root`       | Makes it a customizable select and styles the control and the picker    |
+| `lu-collapsible`    | `Collapsible.Root`  | Styles the trigger (a chevron) and animates the panel's height          |
+| `lu-accordion`      | `Accordion.Root`    | Items between borders; styles the triggers and animates the panels      |
+| `lu-toast-viewport` | `Toast.Viewport`    | A column at the window's bottom end                                     |
+| `lu-toast`          | every `Toast.Root`  | Styles the title, description and close button; `data-type="error"`     |
 
 Its colours and radius are custom properties with shadcn/ui's names and a `--lu-` prefix, so a
 shadcn palette carries over:

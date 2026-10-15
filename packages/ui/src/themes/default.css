@@ -26,6 +26,13 @@
  *                                       and clear buttons), the popup, options, groups, states
  *   .lu-select                          a Select.Root: a customizable select (control, picker,
  *                                       options, groups, separators)
+ *   .lu-collapsible                     a Collapsible.Root: the trigger (a chevron) and the
+ *                                       panel, its height animated
+ *   .lu-accordion                       an Accordion.Root: items between borders, their triggers
+ *                                       and panels, as for Collapsible
+ *   .lu-toast-viewport                  a Toast.Viewport: a column at the bottom end
+ *   .lu-toast                           a Toast.Root: surface, title (h2), description (p), the
+ *                                       close button (Toast.Close); data-type="error"
  */
 @layer lu.core, lu.theme;
 
@@ -722,5 +729,216 @@
     margin: 0.25rem -0.25rem;
     border: 0;
     border-block-start: 1px solid var(--lu-border);
+  }
+
+  /* Collapsible and Accordion (TASK-370) ------------------------------------------------------ */
+
+  /*
+   * The trigger: a row with a chevron that turns while the panel is open (a shape, not only a
+   * colour), a 36px target. The panel's height animates between 0 and the size the client script
+   * measures (--collapsible-panel-height, --accordion-panel-height), and `::details-content` stays
+   * visible while it closes. Spacers inside the panel keep its content's focus rings clear of the
+   * clipping the animation needs.
+   */
+  :is(.lu-collapsible, .lu-accordion > details) > summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    min-block-size: 2.25rem;
+    padding: 0.5rem 0.25rem;
+    border-radius: calc(var(--lu-radius) - 4px);
+    color: var(--lu-foreground);
+    font-size: 0.875rem;
+    font-weight: 500;
+    line-height: 1.25;
+    list-style: none;
+    cursor: pointer;
+  }
+  :is(.lu-collapsible, .lu-accordion > details) > summary::-webkit-details-marker {
+    display: none;
+  }
+  :is(.lu-collapsible, .lu-accordion > details) > summary::after {
+    content: "";
+    flex: none;
+    inline-size: 0.4375rem;
+    block-size: 0.4375rem;
+    border-block-end: 1.5px solid currentColor;
+    border-inline-end: 1.5px solid currentColor;
+    rotate: 45deg;
+    translate: 0 -25%;
+  }
+  :is(.lu-collapsible, .lu-accordion > details)[open] > summary::after {
+    rotate: 225deg;
+    translate: 0 25%;
+  }
+  :is(.lu-collapsible, .lu-accordion > details) > summary:hover {
+    text-decoration: underline;
+    text-underline-offset: 0.2em;
+  }
+  :is(.lu-collapsible, .lu-accordion > details) > summary:focus-visible {
+    outline: 2px solid var(--lu-ring);
+    outline-offset: 2px;
+  }
+  :is(.lu-collapsible, .lu-accordion > details) > summary[aria-disabled="true"] {
+    color: color-mix(in srgb, var(--lu-muted-foreground) 55%, transparent);
+  }
+  .lu-accordion > details > summary > :is(h1, h2, h3, h4, h5, h6) {
+    margin: 0;
+    font: inherit;
+  }
+  .lu-accordion > details {
+    border-block-end: 1px solid var(--lu-border);
+  }
+  :is(.lu-collapsible, .lu-accordion > details) > :not(summary) {
+    overflow: hidden;
+    padding-inline: 0.25rem;
+    color: var(--lu-muted-foreground);
+    font-size: 0.875rem;
+    line-height: 1.5;
+  }
+  :is(.lu-collapsible, .lu-accordion > details) > :not(summary)::before,
+  :is(.lu-collapsible, .lu-accordion > details) > :not(summary)::after {
+    content: "";
+    display: block;
+    block-size: 0.25rem;
+  }
+  :is(.lu-collapsible, .lu-accordion > details) > :not(summary)::after {
+    block-size: 0.75rem;
+  }
+  .lu-collapsible > :not(summary) {
+    block-size: var(--collapsible-panel-height, auto);
+  }
+  .lu-accordion > details > :not(summary) {
+    block-size: var(--accordion-panel-height, auto);
+  }
+  :is(.lu-collapsible, .lu-accordion > details) > :is([data-starting-style], [data-ending-style]) {
+    block-size: 0;
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    :is(.lu-collapsible, .lu-accordion > details)::details-content {
+      transition: content-visibility 200ms allow-discrete;
+    }
+    :is(.lu-collapsible, .lu-accordion > details) > :not(summary) {
+      transition: block-size 200ms ease-out;
+    }
+    :is(.lu-collapsible, .lu-accordion > details) > summary::after {
+      transition:
+        rotate 200ms ease-out,
+        translate 200ms ease-out;
+    }
+  }
+
+  /* Toast (TASK-371) -------------------------------------------------------------------------- */
+
+  /*
+   * The viewport: a column at the window's bottom end, the newest toast nearest the corner. A toast:
+   * a popover surface with its title, description and buttons, the close button a 28px target. It
+   * slides in, fades out, follows a swipe and leaves in its direction. An error toast has a red
+   * edge besides its text.
+   */
+  .lu-toast-viewport {
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column-reverse;
+    gap: 0.5rem;
+    inline-size: min(24rem, 100vw);
+    padding: 1rem;
+    border-radius: var(--lu-radius);
+  }
+  .lu-toast-viewport:focus-visible {
+    outline: 2px solid var(--lu-ring);
+    outline-offset: -2px;
+  }
+  .lu-toast {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: start;
+    gap: 0.25rem 0.75rem;
+    padding: 0.875rem 0.75rem 0.875rem 1rem;
+    border: 1px solid var(--lu-border);
+    border-radius: var(--lu-radius);
+    background: var(--lu-popover);
+    color: var(--lu-popover-foreground);
+    box-shadow:
+      0 10px 15px -3px rgb(0 0 0 / 0.1),
+      0 4px 6px -4px rgb(0 0 0 / 0.1);
+    font-size: 0.875rem;
+    line-height: 1.4;
+    translate: var(--toast-swipe-movement-x, 0) var(--toast-swipe-movement-y, 0);
+  }
+  .lu-toast > * {
+    grid-column: 1;
+  }
+  .lu-toast :where(h2) {
+    margin: 0;
+    font-size: 0.875rem;
+    font-weight: 600;
+  }
+  .lu-toast :where(p) {
+    margin: 0;
+    color: var(--lu-muted-foreground);
+  }
+  .lu-toast :where(.lu-button) {
+    justify-self: start;
+    margin-block-start: 0.5rem;
+  }
+  .lu-toast > [command="--close-toast"] {
+    grid-column: 2;
+    grid-row: 1;
+    display: inline-grid;
+    place-items: center;
+    inline-size: 1.75rem;
+    block-size: 1.75rem;
+    margin-block: -0.25rem;
+    padding: 0;
+    border: 0;
+    border-radius: calc(var(--lu-radius) - 4px);
+    background: transparent;
+    color: var(--lu-muted-foreground);
+    font: inherit;
+    font-size: 1rem;
+    line-height: 1;
+    cursor: pointer;
+  }
+  .lu-toast > [command="--close-toast"]:hover {
+    background: var(--lu-accent);
+    color: var(--lu-accent-foreground);
+  }
+  .lu-toast > [command="--close-toast"]:focus-visible {
+    outline: 2px solid var(--lu-ring);
+    outline-offset: 0;
+  }
+  .lu-toast[data-type="error"] {
+    border-inline-start: 4px solid var(--lu-destructive);
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .lu-toast {
+      transition:
+        opacity 200ms ease-out,
+        translate 200ms ease-out;
+    }
+    .lu-toast[data-starting-style] {
+      opacity: 0;
+      translate: 0 0.75rem;
+    }
+    .lu-toast[data-ending-style] {
+      opacity: 0;
+    }
+    .lu-toast[data-ending-style][data-swipe-direction="right"] {
+      translate: calc(100% + 1rem) 0;
+    }
+    .lu-toast[data-ending-style][data-swipe-direction="left"] {
+      translate: calc(-100% - 1rem) 0;
+    }
+    .lu-toast[data-ending-style][data-swipe-direction="down"] {
+      translate: 0 calc(100% + 1rem);
+    }
+    .lu-toast[data-ending-style][data-swipe-direction="up"] {
+      translate: 0 calc(-100% - 1rem);
+    }
+    .lu-toast[data-swiping] {
+      transition: none;
+    }
   }
 }

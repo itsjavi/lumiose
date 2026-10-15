@@ -35,6 +35,12 @@
     "./combobox.css": "./src/combobox/combobox.css",
     "./select": "./src/select/select.tsx",
     "./select.css": "./src/select/select.css",
+    "./collapsible": "./src/collapsible/collapsible.tsx",
+    "./collapsible.css": "./src/collapsible/collapsible.css",
+    "./accordion": "./src/accordion/accordion.tsx",
+    "./accordion.css": "./src/accordion/accordion.css",
+    "./toast": "./src/toast/toast.tsx",
+    "./toast.css": "./src/toast/toast.css",
     "./themes/default.css": "./src/themes/default.css",
     "./package.json": "./package.json"
   },
@@ -56,6 +62,12 @@
       "./combobox.css": "./dist/combobox/combobox.css",
       "./select": "./dist/select/select.tsx",
       "./select.css": "./dist/select/select.css",
+      "./collapsible": "./dist/collapsible/collapsible.tsx",
+      "./collapsible.css": "./dist/collapsible/collapsible.css",
+      "./accordion": "./dist/accordion/accordion.tsx",
+      "./accordion.css": "./dist/accordion/accordion.css",
+      "./toast": "./dist/toast/toast.tsx",
+      "./toast.css": "./dist/toast/toast.css",
       "./themes/default.css": "./dist/themes/default.css",
       "./package.json": "./package.json"
     }

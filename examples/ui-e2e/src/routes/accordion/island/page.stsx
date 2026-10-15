@@ -1,0 +1,12 @@
+import { Title } from "lumiose";
+import { AccordionSignals } from "../../../islands/AccordionSignals.tsx";
+
+export default function AccordionIslandPage() {
+  return (
+    <>
+      <Title>Accordion in an island, bound to a signal</Title>
+      <h1>Accordion in an island, bound to a signal</h1>
+      <AccordionSignals client:load />
+    </>
+  );
+}

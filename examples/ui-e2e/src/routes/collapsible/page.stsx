@@ -1,0 +1,30 @@
+import { Collapsible } from "@lumiose/ui";
+import { Title } from "lumiose";
+
+// Server-rendered, no island: native <details>, the client script adds the animation hooks.
+export default function CollapsiblePage() {
+  return (
+    <>
+      <Title>Collapsible</Title>
+      <h1>Collapsible</h1>
+      <Collapsible.Root class="lu-collapsible" data-testid="keys">
+        <Collapsible.Trigger>Recovery keys</Collapsible.Trigger>
+        <Collapsible.Panel>
+          <p>
+            Store these keys somewhere safe. <a href="#keys-help">How keys work</a>
+          </p>
+          <p id="deep-link">alpha-bravo-charlie-delta</p>
+        </Collapsible.Panel>
+      </Collapsible.Root>
+      <Collapsible.Root class="lu-collapsible" defaultOpen data-testid="open">
+        <Collapsible.Trigger>Billing address</Collapsible.Trigger>
+        <Collapsible.Panel>1 Infinite Loop, Cupertino.</Collapsible.Panel>
+      </Collapsible.Root>
+      <Collapsible.Root class="lu-collapsible" disabled data-testid="disabled">
+        <Collapsible.Trigger>Archived notes</Collapsible.Trigger>
+        <Collapsible.Panel>Nothing here.</Collapsible.Panel>
+      </Collapsible.Root>
+      <p id="keys-help">Keys let you back in when you lose your device.</p>
+    </>
+  );
+}

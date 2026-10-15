@@ -12,3 +12,6 @@
 @import "./menu/menu.css";
 @import "./combobox/combobox.css";
 @import "./select/select.css";
+@import "./collapsible/collapsible.css";
+@import "./accordion/accordion.css";
+@import "./toast/toast.css";

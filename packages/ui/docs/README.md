@@ -63,15 +63,18 @@ custom properties, named as in shadcn/ui, are listed in [Theming](theming.md#the
 
 ## Components
 
-| Component                         | Status                                                                |
-| --------------------------------- | --------------------------------------------------------------------- |
-| [Dialog, alert dialog](dialog.md) | Available: native `<dialog>`, works without JavaScript                |
-| [Popover](popover.md)             | Available: native popover, works without JavaScript                   |
-| [Tooltip](tooltip.md)             | Available: native hint popover, opened by its script                  |
-| [Menu](menu.md)                   | Available: popover menu, opens without JavaScript                     |
-| [Combobox](combobox.md)           | Available: `<lu-combobox>`, a form control that filters its options   |
-| [Select](select.md)               | Available: native `<select>`, customizable where supported, no script |
-| [Tabs](tabs.md)                   | Available: server HTML with the full state, `<lu-tabs>` adds the keys |
+| Component                         | Status                                                                                    |
+| --------------------------------- | ----------------------------------------------------------------------------------------- |
+| [Dialog, alert dialog](dialog.md) | Available: native `<dialog>`, works without JavaScript                                    |
+| [Popover](popover.md)             | Available: native popover, works without JavaScript                                       |
+| [Tooltip](tooltip.md)             | Available: native hint popover, opened by its script                                      |
+| [Menu](menu.md)                   | Available: popover menu, opens without JavaScript                                         |
+| [Combobox](combobox.md)           | Available: `<lu-combobox>`, a form control that filters its options                       |
+| [Select](select.md)               | Available: native `<select>`, customizable where supported, no script                     |
+| [Tabs](tabs.md)                   | Available: server HTML with the full state, `<lu-tabs>` adds the keys                     |
+| [Collapsible](collapsible.md)     | Available: native `<details>`, works without JavaScript                                   |
+| [Accordion](accordion.md)         | Available: native `<details>` items, `<lu-accordion>` adds the keys                       |
+| [Toast](toast.md)                 | Available: server-rendered or from a manager, `<lu-toast-viewport>` times and closes them |
 
 ## Size
 
