@@ -42,6 +42,9 @@ third-party dependencies that do not affect Lumiose (report those upstream).
 ## How Lumiose is checked
 
 - Packages are published from CI with npm provenance and trusted publishing.
+- Every night, cargo-fuzz targets fuzz the compiler's scanner, JSX transform and SSR codegen, and
+  property tests run body parsing, the Origin check, redirect targets and unsafe-URL escaping with
+  hundreds of thousands of cases (`.github/workflows/fuzz.yml`).
 - A security review of the request handler, form actions, the Origin check, body parsing, the
   sanitizers and SSR escaping runs before each minor release; an independent external review is a
   criterion for 1.0.
