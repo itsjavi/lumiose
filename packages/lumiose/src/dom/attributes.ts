@@ -56,10 +56,20 @@ export function setAttr(el: Element, name: string, value: unknown): void {
   }
 }
 
-/** Sets a DOM property. Nullish clears string properties (`value`) instead of writing "undefined". */
+/**
+ * Sets a DOM property. Nullish clears string properties (`value`) instead of writing "undefined",
+ * and removes the attribute behind a number one: `<progress>` and `<meter>` throw on a non-finite
+ * `value`, and without the attribute a progress bar is indeterminate again (TASK-407).
+ */
 export function setProp(el: Element, name: string, value: unknown): void {
   const slots = el as unknown as Slots;
-  slots[name] = value == null && typeof slots[name] === "string" ? "" : value;
+  if (value != null) {
+    slots[name] = value;
+  } else if (typeof slots[name] === "number") {
+    el.removeAttribute(name);
+  } else {
+    slots[name] = typeof slots[name] === "string" ? "" : value;
+  }
 }
 
 function addTokens(value: unknown, out: Record<string, true>): void {
