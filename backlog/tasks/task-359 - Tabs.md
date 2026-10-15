@@ -1,11 +1,11 @@
 ---
 id: TASK-359
 title: Tabs
-status: In Progress
+status: Done
 assignee:
   - '@Halo'
 created_date: '2026-10-15 16:46'
-updated_date: '2026-10-15 18:49'
+updated_date: '2026-10-15 18:54'
 labels:
   - ui
 milestone: m-12
@@ -33,7 +33,7 @@ Contract: decision-62 (approved by the user on 2026-10-15 from the TASK-332 spik
 - [x] #4 Unstyled: ships only the CSS the primitive needs to work, in one low-priority layer
 - [x] #5 Passes every item of the "UI primitives pitfall checklist" backlog doc (from Base UI and Zag/Ark) that applies
 - [x] #6 Meets WCAG 2.2 AA (doc-9 section 17): axe with the WCAG A and AA tags passes closed and open, with the default theme, in light and dark, and the manual criteria that apply are checked and recorded
-- [ ] #7 Its docs page in packages/ui/docs follows the component template (decision-64) and is listed in @lumiose/ui's llms.txt
+- [x] #7 Its docs page in packages/ui/docs follows the component template (decision-64) and is listed in @lumiose/ui's llms.txt
 <!-- AC:END -->
 
 ## Implementation Notes
@@ -74,6 +74,8 @@ User decision 2026-10-15: @lumiose/ui reaches parity with Base UI's components b
 Screenshots: backlog/assets/task-359-tabs-light.png, task-359-tabs-dark.png (keyboard focus on the disabled Billing tab, Password selected).
 
 2026-10-15 Halo: AC #7 (decision-64, merged from main after this task was finished): the page now follows the template's sections (Anatomy, API, Example, Styling, Keyboard and focus, Without JavaScript, Browser support, Related). It still lives in packages/lumiose/docs/ui/ next to dialog.md and README.md: packages/ui/docs and the UI llms.txt are TASK-393's structure and generator (Beacon), not on main yet, and moving only these pages would split the UI docs. Parked In Progress until TASK-393 moves the UI pages and lists them; AC #1-#6 are done and verified.
+
+2026-10-15 Halo: AC #7 met. Merged main with TASK-393. The page is now packages/ui/docs/<component>.md, with the template's sections, and is listed in the UI llms.txt (Beacon's generator, regenerated with pnpm --filter @lumiose/ui docs:gen). Every part prop has JSDoc; Beacon's packages/cli/src/docs/ui.test.ts contract passes. The shared placement is also its own commit (5a95f4a9) for Spark's Menu; placement() takes a defaultAlign.
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary
