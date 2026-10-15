@@ -170,7 +170,8 @@ Lumiose language server, which proxies TypeScript for `.ts`, `.tsx` and `.stsx` 
 
 The extension bundles the server (it runs on VS Code's own Node.js) and uses the project's
 `typescript`; install `@lumiose/language-server` as a dev dependency only to pin the server to your
-`lumiose` version. See [Compiler and diagnostics](concepts/compiler.md).
+`lumiose` version. See [Compiler and diagnostics](concepts/compiler.md). Neovim and Helix run the
+same server: [Editors](guides/editors.md).
 
 ## Next
 
