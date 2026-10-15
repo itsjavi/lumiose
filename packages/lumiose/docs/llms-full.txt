@@ -9073,6 +9073,8 @@ a layout's or `lumiose({ prerender })`.
 With `lumiose({ i18n })`, the header names the locales and a `LOCALES` column lists the locales
 each route declares (its own `locales` export, a layout's, or the default locale alone);
 `locales() in <file>` marks a route whose `locales({ params })` function decides per params.
+When the app has middleware, a `MIDDLEWARE` column shows each route's chain in the order it runs:
+`src/middleware.ts`, then the folder `middleware.ts` files from the outermost folder in.
 
 ```sh
 $ lumiose routes
@@ -9091,7 +9093,14 @@ PATTERN       KIND  MODE    FILE                   LOCALES                      
 /about        page  static  about/page.stsx        en, es
 /blog/[slug]  page  static  blog/[slug]/page.stsx  locales() in blog/[slug]/page.stsx
 
-$ lumiose routes --format json   # { routesDir, defaultMode, i18n?, routes: [{ pattern, file, kind, mode, ssr?, prerender?, layouts, params, locales?, localesFrom? }], diagnostics, summary }
+$ lumiose routes   # with src/middleware.ts and src/routes/admin/middleware.ts
+Routes in src/routes (default mode: server): 2 pages, 0 endpoints
+
+PATTERN       KIND  MODE    FILE                   MIDDLEWARE                                LAYOUTS
+/             page  server  page.stsx              src/middleware.ts                         layout.stsx
+/admin/users  page  server  admin/users/page.stsx  src/middleware.ts > admin/middleware.ts  layout.stsx
+
+$ lumiose routes --format json   # { routesDir, defaultMode, i18n?, routes: [{ pattern, file, kind, mode, ssr?, prerender?, layouts, middleware, params, locales?, localesFrom? }], diagnostics, summary }
 ```
 
 Paths in JSON are project-relative. Exits 1 when the routes have errors.
@@ -9283,7 +9292,7 @@ exist. stdout carries the protocol; console output of app code goes to stderr an
 | `docs_search` | `query`, `limit?` (10)                                | `{ query, results: [{ topic, title, summary, score, snippet }] }`, best first; every term must occur in a page.                                                                                                                                                              |
 | `docs_get`    | `topic`                                               | The page as Markdown. A topic is a path (`concepts/signals`), a bare name (`signals`), a code (`LUM2001`) or `""` for the index. An exported name (`fetchJSON`) returns its reference section.                                                                               |
 | `check`       | `files?`, `project?`                                  | `lumiose check` as `{ ok, summary, diagnostics, notes? }`. With `files`, only their diagnostics, and `projectSummary` for the whole project.                                                                                                                                 |
-| `routes`      | none                                                  | `lumiose routes --format json`: `{ routesDir, defaultMode, i18n?, routes: [{ pattern, file, kind, mode, ssr?, prerender?, layouts, params, locales?, localesFrom? }], diagnostics, summary }`.                                                                               |
+| `routes`      | none                                                  | `lumiose routes --format json`: `{ routesDir, defaultMode, i18n?, routes: [{ pattern, file, kind, mode, ssr?, prerender?, layouts, middleware, params, locales?, localesFrom? }], diagnostics, summary }`.                                                                   |
 | `components`  | `file?`                                               | `{ files: [{ file, components, islands, fileScope, hasStyles, errors }] }` for one file, or for every `.stsx`/`.tsx` file under `src/`.                                                                                                                                      |
 | `compile`     | `file?` or `source`, `target?` (`both`)               | `{ file, client: { code, css, cssDeps }, server: { code }, diagnostics }`: what the Vite plugin compiles, without source maps.                                                                                                                                               |
 | `render`      | `path`, `method?`, `headers?`, `maxLength?`, `strip?` | `{ url, status, headers, body, truncated }` from an in-process dev server. Redirects are returned, not followed. `strip: true` returns only the visible markup of an HTML page (no scripts, styles, link/meta tags, templates, hydration comments or `data-l-*` attributes). |

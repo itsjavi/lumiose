@@ -146,6 +146,8 @@ a layout's or `lumiose({ prerender })`.
 With `lumiose({ i18n })`, the header names the locales and a `LOCALES` column lists the locales
 each route declares (its own `locales` export, a layout's, or the default locale alone);
 `locales() in <file>` marks a route whose `locales({ params })` function decides per params.
+When the app has middleware, a `MIDDLEWARE` column shows each route's chain in the order it runs:
+`src/middleware.ts`, then the folder `middleware.ts` files from the outermost folder in.
 
 ```sh
 $ lumiose routes
@@ -164,7 +166,14 @@ PATTERN       KIND  MODE    FILE                   LOCALES                      
 /about        page  static  about/page.stsx        en, es
 /blog/[slug]  page  static  blog/[slug]/page.stsx  locales() in blog/[slug]/page.stsx
 
-$ lumiose routes --format json   # { routesDir, defaultMode, i18n?, routes: [{ pattern, file, kind, mode, ssr?, prerender?, layouts, params, locales?, localesFrom? }], diagnostics, summary }
+$ lumiose routes   # with src/middleware.ts and src/routes/admin/middleware.ts
+Routes in src/routes (default mode: server): 2 pages, 0 endpoints
+
+PATTERN       KIND  MODE    FILE                   MIDDLEWARE                                LAYOUTS
+/             page  server  page.stsx              src/middleware.ts                         layout.stsx
+/admin/users  page  server  admin/users/page.stsx  src/middleware.ts > admin/middleware.ts  layout.stsx
+
+$ lumiose routes --format json   # { routesDir, defaultMode, i18n?, routes: [{ pattern, file, kind, mode, ssr?, prerender?, layouts, middleware, params, locales?, localesFrom? }], diagnostics, summary }
 ```
 
 Paths in JSON are project-relative. Exits 1 when the routes have errors.
