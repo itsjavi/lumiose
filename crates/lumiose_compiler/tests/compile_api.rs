@@ -61,10 +61,19 @@ fn server_attributes_of_custom_elements_leave_objects_to_the_client() {
         ..CompileOptions::default()
     };
     let code = compile(source, "/src/a.tsx", &options).code;
-    assert!(code.contains(r#"attr("items", props.items, true)"#), "{code}");
-    assert!(code.contains(r#"attr("max", props.items.length, true)"#), "{code}");
+    assert!(
+        code.contains(r#"attr("items", props.items, true)"#),
+        "{code}"
+    );
+    assert!(
+        code.contains(r#"attr("max", props.items.length, true)"#),
+        "{code}"
+    );
     assert!(code.contains("spreadAttrs(props.rest, true)"), "{code}");
-    assert!(code.contains(r#"attr("title", props.items.join())"#), "{code}");
+    assert!(
+        code.contains(r#"attr("title", props.items.join())"#),
+        "{code}"
+    );
 }
 
 #[test]
