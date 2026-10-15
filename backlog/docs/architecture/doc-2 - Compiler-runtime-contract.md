@@ -58,6 +58,7 @@ tags:
 | `delegateEvents(names)` | Document-level, idempotent. Dispatch calls `el.$$name(e)`, or `el.$$name(el.$$nameData, e)` when a data slot exists. It stops at the boundary of an island or app root, and respects `cancelBubble` |
 | `listen(el, name, handler, options?)` | `addEventListener` plus cleanup |
 | `bindValue`, `bindChecked` | Effect writes the property, and the `input`/`change` listener sets the signal |
+| `bindProperty(el, name, signal)` | `bind:x` on a custom element (decision-62): effect writes the `x` property; `input`, `change` and `xchange` (lowercase) events whose target is the element read it back into the signal |
 | `attach(el, () => list)` | Each attachment runs in a tracked scope; its cleanup runs on re-run or disposal |
 | `useRef(el, ref)` | Calls `ref(el)` synchronously after the element is created |
 | `$await(thunk, site)`, `$leave()` | §4 |

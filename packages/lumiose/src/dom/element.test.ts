@@ -2,7 +2,7 @@
 import { describe, expect, it } from "vitest";
 import { effect, flush, signal } from "../core/index.ts";
 import { createOwner, disposeOwner, runWithOwner, type Owner } from "../core/internal.ts";
-import { attach, bindChecked, bindValue, template, useRef } from "./index.ts";
+import { attach, bindChecked, bindProperty, bindValue, template, useRef } from "./index.ts";
 import { ref } from "./public.ts";
 
 function root(fn: () => void): Owner {
@@ -88,6 +88,50 @@ describe("bindChecked", () => {
     on.set(true);
     flush();
     expect(input.checked).toBe(true);
+  });
+});
+
+describe("bindProperty", () => {
+  // A light-DOM element like `lu-menu`: an `open` property and an `openchange` event.
+  class TestMenu extends HTMLElement {
+    open = false;
+    toggle(): void {
+      this.open = !this.open;
+      this.dispatchEvent(new Event("openchange", { bubbles: true }));
+    }
+  }
+  customElements.define("test-menu", TestMenu);
+
+  it("sets the property and reads it back on the element's xchange, change and input events", () => {
+    const menu = document.createElement("test-menu") as TestMenu;
+    const open = signal(true);
+    root(() => bindProperty(menu, "open", open));
+    expect(menu.open).toBe(true);
+    menu.toggle();
+    expect(open()).toBe(false);
+    open.set(true);
+    flush();
+    expect(menu.open).toBe(true);
+    for (const name of ["change", "input"]) {
+      menu.open = false;
+      menu.dispatchEvent(new Event(name));
+      expect(open(), name).toBe(false);
+      open.set(true);
+      flush();
+    }
+  });
+
+  it("ignores the events of its children and stops listening when disposed", () => {
+    const menu = document.createElement("test-menu") as TestMenu;
+    const child = menu.appendChild(document.createElement("input"));
+    const open = signal(false);
+    const owner = root(() => bindProperty(menu, "open", open));
+    menu.open = true;
+    child.dispatchEvent(new Event("change", { bubbles: true }));
+    expect(open()).toBe(false);
+    disposeOwner(owner);
+    menu.dispatchEvent(new Event("openchange"));
+    expect(open()).toBe(false);
   });
 });
 

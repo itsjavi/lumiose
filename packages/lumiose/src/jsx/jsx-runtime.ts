@@ -163,6 +163,32 @@ interface BindProps {
   };
 }
 
+/** The props `x` of `P` that come with an `onXChange` callback. */
+type BindableKeys<P> = {
+  [K in keyof P & string]: `on${Capitalize<K>}Change` extends keyof P ? K : never;
+}[keyof P & string];
+
+/**
+ * `bind:x` on a component (decision-62): a `bind:x` key for each bindable prop. The compiler
+ * expands `bind:x={signal}` to `x={signal()}` plus `onXChange={(value) => signal.set(value)}`, so
+ * a component without either prop has no `bind:x`.
+ */
+type ComponentBindings<P> = { [K in BindableKeys<P> as `bind:${K}`]?: WritableSource<P[K]> };
+
+/**
+ * The props with `bind:x` standing in for `x` and `onXChange`, for each bindable prop that is
+ * required; `never` (no extra union member, so no change to error messages) when there is none.
+ */
+type RequiredBindings<P> = {
+  [K in BindableKeys<P>]: {} extends Pick<P, K | ChangeKey<P, K>>
+    ? never
+    : Omit<P, K | ChangeKey<P, K>> &
+        Partial<Pick<P, ChangeKey<P, K>>> & { [B in `bind:${K}`]: WritableSource<P[K]> };
+}[BindableKeys<P>];
+
+/** `onXChange` of a bindable prop `x`, as a key of `P`. */
+type ChangeKey<P, K extends string> = `on${Capitalize<K>}Change` & keyof P;
+
 type Lookup<M, K> = K extends keyof M ? M[K] : unknown;
 
 /** `style` is omitted: `<style>` blocks belong in `.stsx` files (spec §4.1), so `.tsx` rejects them. */
@@ -255,7 +281,9 @@ export declare namespace JSX {
     ? P // an intrinsic element (TypeScript calls this for its contextual types too)
     : [P] extends [IslandProps<P>]
       ? P & IslandDirectives
-      : (P & NoIslandDirectives) | (IslandProps<P> & IslandDirectives);
+      :
+          | ((P | RequiredBindings<P>) & ComponentBindings<P> & NoIslandDirectives)
+          | (IslandProps<P> & IslandDirectives);
 
   /** The island directives (decision-9, spec §7.2). Island props must be serializable. */
   export interface IslandDirectives {

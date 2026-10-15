@@ -31,3 +31,51 @@ export const rejected = [
   // @ts-expect-error bind:checked only exists on input.
   <textarea bind:checked={agreed} />,
 ];
+
+// `bind:x` on components (decision-62): a prop `x` with an `onXChange` callback.
+declare function DialogRoot(props: {
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  children?: JSX.Element;
+}): JSX.Element;
+declare function ComboboxRoot(props: {
+  value?: string | null;
+  onValueChange?: (value: string | null) => void;
+  label: string;
+}): JSX.Element;
+declare function Toggle(props: {
+  pressed: boolean;
+  onPressedChange: (pressed: boolean) => void;
+}): JSX.Element;
+declare function Controlled(props: { open?: boolean }): JSX.Element;
+declare function Callback(props: { onOpenChange?: (open: boolean) => void }): JSX.Element;
+declare function Islandable(props: { count?: number }): JSX.Element;
+
+const open = signal(false);
+const choice = signal<string | null>(null);
+const label = signal("");
+
+export const acceptedComponents = [
+  <DialogRoot bind:open={open} />,
+  <DialogRoot bind:open={open} onOpenChange={(next) => console.log(next)} />,
+  <ComboboxRoot bind:value={choice} label="Fruit" />,
+  <ComboboxRoot bind:value={label} label="Fruit" />,
+  <Toggle bind:pressed={open} />,
+];
+
+export const rejectedComponents = [
+  // @ts-expect-error bind:open takes a writable signal, not its value.
+  <DialogRoot bind:open={open()} />,
+  // @ts-expect-error bind:open needs a boolean signal.
+  <DialogRoot bind:open={label} />,
+  // @ts-expect-error a component without `onOpenChange` has no bind:open.
+  <Controlled bind:open={open} />,
+  // @ts-expect-error a component without `open` has no bind:open.
+  <Callback bind:open={open} />,
+  // @ts-expect-error a component without either has no bind:count.
+  <Islandable bind:count={label} />,
+  // @ts-expect-error bind: does not reach an island: a signal is not serializable.
+  <DialogRoot client:load bind:open={open} />,
+  // @ts-expect-error without bind:pressed, the required callback is still required.
+  <Toggle pressed={true} />,
+];

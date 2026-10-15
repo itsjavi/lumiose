@@ -414,6 +414,31 @@ describe.skipIf(!binding)("server target renders on lumiose/server", () => {
     );
   });
 
+  it("bind: renders the signal's value on components and custom elements (TASK-360)", async () => {
+    const { module } = await load(
+      `
+      import { signal } from "lumiose";
+      function Disclosure(props: { open?: boolean; onOpenChange?: (open: boolean) => void }) {
+        return <p>{props.open ? "open" : "closed"}</p>;
+      }
+      export function Page() {
+        const open = signal(true);
+        const fruit = signal("apple");
+        return (
+          <div>
+            <Disclosure bind:open={open} />
+            <lu-menu bind:open={open} />
+            <lu-combobox bind:value={fruit} />
+          </div>
+        );
+      }`,
+      "server",
+    );
+    expect(await renderServer(module, "Page")).toBe(
+      '<div><p>open</p><lu-menu open></lu-menu><lu-combobox value="apple"></lu-combobox></div>',
+    );
+  });
+
   it("rows of a table go in the implicit tbody; select values mark their option", async () => {
     const { module } = await load(TABLE_SELECT, "server");
     expect(await renderServer(module, "Pick", { choice: 2 })).toBe(

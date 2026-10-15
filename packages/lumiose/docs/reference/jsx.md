@@ -115,6 +115,10 @@ the tsconfig's `rootDirs` leave out.
 (string or number signal) and `bind:checked` (boolean signal); `select` and `textarea` accept
 `bind:value`.
 
+**Component props.** A component accepts `bind:x` (a writable signal of the type of `x`) for each
+prop `x` that comes with an `onXChange` callback; when `x` or `onXChange` is required, `bind:x`
+stands in for both ([`bind:` on components](../concepts/jsx.md)).
+
 **Rejected on purpose** (type errors with a hint): `className` (use `class`), `htmlFor` (use
 `for`), camelCase `style` keys, exact-case or lowercase handlers (`onKeydown`, `onclick`), and
 `<style>` in `.tsx` files.
@@ -152,7 +156,8 @@ export function Review() {
 
 A prop of a custom element goes to the element's property when the element defines one (not one
 every element has, such as `id`), else to the attribute, as in React 19; `on:name` listens to the
-event of that exact name. See [Web components](../guides/web-components.md).
+event of that exact name. `bind:x` binds the `x` property to a signal; declare it on a typed
+element (`"bind:value"?: Signal<number>`). See [Web components](../guides/web-components.md).
 
 ## `lumiose/env`
 

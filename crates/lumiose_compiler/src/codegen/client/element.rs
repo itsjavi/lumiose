@@ -81,6 +81,11 @@ pub fn js_number(value: f64) -> String {
     }
 }
 
+/// A custom element's tag: one with a dash (`annotation-xml` aside, a MathML element).
+pub(super) fn is_custom_element(tag: &str) -> bool {
+    tag.contains('-') && tag != "annotation-xml"
+}
+
 /// Names written as DOM properties rather than attributes.
 pub(super) fn is_property(name: &str) -> bool {
     matches!(
@@ -265,14 +270,18 @@ impl<'a> Codegen<'a, '_> {
         &mut self,
         template: &mut Template<'a>,
         node: usize,
-        attributes: oxc_allocator::ArenaVec<'a, JSXAttributeItem<'a>>,
+        mut attributes: oxc_allocator::ArenaVec<'a, JSXAttributeItem<'a>>,
     ) -> bool {
         if attributes
             .iter()
             .any(|a| matches!(a, JSXAttributeItem::SpreadAttribute(_)))
         {
+            let bindings = take_bindings(self.ast, &mut attributes);
             let attributes = self.bake_before_spreads(template, node, attributes);
             self.spread_attributes(template, node, attributes);
+            if !bindings.is_empty() {
+                self.element_attributes(template, node, bindings);
+            }
             return false;
         }
         let mut inner_html = false;
@@ -289,6 +298,20 @@ impl<'a> Codegen<'a, '_> {
                 _ if name.starts_with("client:") => {}
                 "class" => self.class_attribute(template, node, value, span),
                 "style" => self.style_attribute(template, node, value, span),
+                _ if name.starts_with("bind:")
+                    && template.tag(node).is_some_and(is_custom_element) =>
+                {
+                    if let AttrValue::Expr(expr) = value {
+                        let property = self.ast.string(span, &name["bind:".len()..]);
+                        let signal = self.visited(expr);
+                        template.push(Op::Call {
+                            span,
+                            helper: "bindProperty",
+                            node,
+                            args: vec![property, signal],
+                        });
+                    }
+                }
                 "ref" | "attach" | "bind:value" | "bind:checked" => {
                     if let AttrValue::Expr(expr) = value {
                         self.helper_attribute(template, node, &name, expr, span);
@@ -761,6 +784,26 @@ impl<'a> Codegen<'a, '_> {
             args: vec![thunk],
         });
     }
+}
+
+/// Takes the `bind:` attributes out of a list with spreads: they are two-way bindings, not props,
+/// so they apply after the spread instead of going through it.
+pub(super) fn take_bindings<'a>(
+    ast: &super::super::ast::Ast<'a>,
+    attributes: &mut oxc_allocator::ArenaVec<'a, JSXAttributeItem<'a>>,
+) -> oxc_allocator::ArenaVec<'a, JSXAttributeItem<'a>> {
+    let mut bindings = ast.vec();
+    let mut index = 0;
+    while index < attributes.len() {
+        let is_binding = matches!(&attributes[index], JSXAttributeItem::Attribute(attribute)
+            if attribute_name(&attribute.name).starts_with("bind:"));
+        if is_binding {
+            bindings.push(attributes.remove(index));
+        } else {
+            index += 1;
+        }
+    }
+    bindings
 }
 
 pub(super) fn strip_parens(mut expr: Expression<'_>) -> Expression<'_> {

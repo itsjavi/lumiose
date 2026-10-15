@@ -18,8 +18,8 @@ use oxc_syntax::operator::BinaryOperator;
 
 use super::children::{Item, Kind, group_table_rows, is_isolated};
 use super::element::{
-    AttrValue, Literal, attr_value, attribute_name, literal, static_object_keys, static_strings,
-    strip_parens, tag_name,
+    AttrValue, Literal, attr_value, attribute_name, is_custom_element, literal, static_object_keys,
+    static_strings, strip_parens, tag_name, take_bindings,
 };
 use super::events::event_name;
 use super::html;
@@ -494,7 +494,7 @@ impl<'a> Codegen<'a, '_> {
     fn ssr_attributes(
         &mut self,
         tag: &str,
-        attributes: ArenaVec<'a, JSXAttributeItem<'a>>,
+        mut attributes: ArenaVec<'a, JSXAttributeItem<'a>>,
         open: &mut OpenTag<'a>,
         span: Span,
     ) {
@@ -502,7 +502,8 @@ impl<'a> Codegen<'a, '_> {
             .iter()
             .any(|a| matches!(a, JSXAttributeItem::SpreadAttribute(_)))
         {
-            // As on the client, every attribute goes through the spread, in order.
+            // As on the client, every attribute but `bind:` goes through the spread, in order.
+            let bindings = take_bindings(self.ast, &mut attributes);
             let props = self.props_expression(attributes, None, span);
             let hole = if is_custom_element(tag) {
                 // A custom element: objects and arrays are properties (TASK-337, `attr` below).
@@ -512,6 +513,9 @@ impl<'a> Codegen<'a, '_> {
                 self.helper_call("spreadAttrs", [props], span)
             };
             open.tail.push(Piece::Hole(hole));
+            if !bindings.is_empty() {
+                self.ssr_attributes(tag, bindings, open, span);
+            }
             return;
         }
         for item in attributes {
@@ -528,6 +532,17 @@ impl<'a> Codegen<'a, '_> {
                 _ if event_name(&name).is_some() => {}
                 "class" => self.ssr_class(open, value, span),
                 "style" => self.ssr_style(open, value, span),
+                _ if name.starts_with("bind:") && is_custom_element(tag) => {
+                    // The property's current value, as an attribute when it is one (TASK-337).
+                    if let AttrValue::Expr(expr) = value {
+                        let signal = self.visited(expr);
+                        let current = self.ast.call(span, signal, []);
+                        let property = self.ast.string(span, &name["bind:".len()..]);
+                        let custom = self.ast.boolean(span, true);
+                        let hole = self.helper_call("attr", [property, current, custom], span);
+                        open.tail.push(Piece::Hole(hole));
+                    }
+                }
                 "bind:value" | "bind:checked" => {
                     if let AttrValue::Expr(expr) = value {
                         let signal = self.visited(expr);
@@ -822,11 +837,6 @@ impl<'a> Codegen<'a, '_> {
         let callee = self.runtime(helper, span);
         self.ast.call(span, callee, args)
     }
-}
-
-/// A custom element's tag: one with a dash (`annotation-xml` aside, a MathML element).
-fn is_custom_element(tag: &str) -> bool {
-    tag.contains('-') && tag != "annotation-xml"
 }
 
 /// ` name` / ` name=value` as in client templates.

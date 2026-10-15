@@ -390,6 +390,57 @@ describe.skipIf(!binding)("compiled output runs on lumiose/dom", () => {
   });
 });
 
+describe.skipIf(!binding)("bind: on components and custom elements (TASK-360)", () => {
+  it("passes x and onXChange to a component, and calls an onXChange written next to it", async (ctx) => {
+    const { module, missing } = await load(`
+      import { signal } from "lumiose";
+      export const open = signal(false);
+      export const log: string[] = [];
+      function Disclosure(props: { open?: boolean; onOpenChange?: (open: boolean, reason: string) => void }) {
+        return <button onClick={() => props.onOpenChange?.(!props.open, "click")}>{props.open ? "open" : "closed"}</button>;
+      }
+      export function Page() {
+        return <Disclosure bind:open={open} onOpenChange={(next, reason) => log.push(\`\${next} \${reason}\`)} />;
+      }`);
+    if (!module) return ctx.skip(`lumiose/dom lacks ${missing.join(", ")}`);
+    const app = render(module.Page);
+    const button = app.querySelector("button")!;
+    expect(button.textContent).toBe("closed");
+    button.click();
+    lumiose.flush();
+    expect(module.open()).toBe(true);
+    expect(button.textContent).toBe("open");
+    expect(module.log).toEqual(["true click"]);
+    module.open.set(false);
+    lumiose.flush();
+    expect(button.textContent).toBe("closed");
+  });
+
+  it("sets a custom element's property and reads it back on its change events", async (ctx) => {
+    class Toggle extends HTMLElement {
+      pressed = false;
+    }
+    if (!customElements.get("x-toggle")) customElements.define("x-toggle", Toggle);
+    const { module, missing } = await load(`
+      import { signal } from "lumiose";
+      export const pressed = signal(true);
+      export function Page(props: Record<string, unknown>) {
+        return <x-toggle {...props} bind:pressed={pressed} />;
+      }`);
+    if (!module) return ctx.skip(`lumiose/dom lacks ${missing.join(", ")}`);
+    const app = render(module.Page, { title: "Bold" });
+    const toggle = app.querySelector("x-toggle") as Toggle;
+    expect(toggle.pressed).toBe(true);
+    expect(toggle.getAttribute("title")).toBe("Bold");
+    toggle.pressed = false;
+    toggle.dispatchEvent(new Event("pressedchange"));
+    expect(module.pressed()).toBe(false);
+    module.pressed.set(true);
+    lumiose.flush();
+    expect(toggle.pressed).toBe(true);
+  });
+});
+
 describe.skipIf(!binding)("async components on lumiose/dom", () => {
   it("renders after the awaits resolve, with for await and try/catch", async (ctx) => {
     const { module, missing, result } = await load(`
