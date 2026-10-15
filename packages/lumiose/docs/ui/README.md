@@ -65,6 +65,7 @@ through their `class` prop:
 | `lu-dialog`  | `Dialog.Popup`      | Styles the backdrop, the title, the description and a `<footer>` inside |
 | `lu-popover` | `Popover.Popup`     | Styles the title, the description and a `<footer>` inside               |
 | `lu-tooltip` | `Tooltip.Popup`     |                                                                         |
+| `lu-tabs`    | `Tabs.Root`         | Styles the list, the tabs (the selected one underlined) and the panels  |
 
 Its colours and radius are custom properties with shadcn/ui's names and a `--lu-` prefix, so a
 shadcn palette carries over:
@@ -112,14 +113,14 @@ Each component's page has an example stylesheet to start from.
 
 ## Components
 
-| Component                         | Status                                                 |
-| --------------------------------- | ------------------------------------------------------ |
-| [Dialog, alert dialog](dialog.md) | Available: native `<dialog>`, works without JavaScript |
-| [Popover](popover.md)             | Available: native popover, works without JavaScript    |
-| [Tooltip](tooltip.md)             | Available: native hint popover, opened by its script   |
-| Menu                              | Planned                                                |
-| Combobox, select                  | Planned                                                |
-| Tabs                              | Planned                                                |
+| Component                         | Status                                                                |
+| --------------------------------- | --------------------------------------------------------------------- |
+| [Dialog, alert dialog](dialog.md) | Available: native `<dialog>`, works without JavaScript                |
+| [Popover](popover.md)             | Available: native popover, works without JavaScript                   |
+| [Tooltip](tooltip.md)             | Available: native hint popover, opened by its script                  |
+| Menu                              | Planned                                                               |
+| Combobox, select                  | Planned                                                               |
+| [Tabs](tabs.md)                   | Available: server HTML with the full state, `<lu-tabs>` adds the keys |
 
 ## Size
 

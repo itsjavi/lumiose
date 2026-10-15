@@ -26,6 +26,8 @@
     "./popover.css": "./src/popover/popover.css",
     "./tooltip": "./src/tooltip/tooltip.tsx",
     "./tooltip.css": "./src/tooltip/tooltip.css",
+    "./tabs": "./src/tabs/tabs.tsx",
+    "./tabs.css": "./src/tabs/tabs.css",
     "./themes/default.css": "./src/themes/default.css",
     "./package.json": "./package.json"
   },
@@ -39,6 +41,8 @@
       "./popover.css": "./dist/popover/popover.css",
       "./tooltip": "./dist/tooltip/tooltip.tsx",
       "./tooltip.css": "./dist/tooltip/tooltip.css",
+      "./tabs": "./dist/tabs/tabs.tsx",
+      "./tabs.css": "./dist/tabs/tabs.css",
       "./themes/default.css": "./dist/themes/default.css",
       "./package.json": "./package.json"
     }

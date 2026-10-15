@@ -1,0 +1,95 @@
+import { Tabs } from "@lumiose/ui";
+import { Title } from "lumiose";
+
+// Server-rendered, no island: the HTML holds the state, <lu-tabs>' script adds the keys.
+export default function TabsPage() {
+  return (
+    <>
+      <Title>Tabs</Title>
+      <h1>Tabs</h1>
+      <section aria-labelledby="manual-heading">
+        <h2 id="manual-heading">Manual activation</h2>
+        <Tabs.Root class="lu-tabs" defaultValue="password" data-testid="manual">
+          <Tabs.List aria-label="Account settings">
+            <Tabs.Tab value="account">Account</Tabs.Tab>
+            <Tabs.Tab value="password">Password</Tabs.Tab>
+            <Tabs.Tab value="billing" disabled>
+              Billing
+            </Tabs.Tab>
+            <Tabs.Tab value="team">Team</Tabs.Tab>
+          </Tabs.List>
+          <Tabs.Panel value="account">
+            <p>Your name and email.</p>
+          </Tabs.Panel>
+          <Tabs.Panel value="password">
+            <p>
+              Change your password. <a href="#help">Help</a>
+            </p>
+          </Tabs.Panel>
+          <Tabs.Panel value="billing">
+            <p>Invoices and payment methods.</p>
+          </Tabs.Panel>
+          <Tabs.Panel value="team">
+            <p>Who can see this project.</p>
+          </Tabs.Panel>
+        </Tabs.Root>
+      </section>
+
+      <section aria-labelledby="automatic-heading">
+        <h2 id="automatic-heading">Automatic activation, no loop</h2>
+        <Tabs.Root class="lu-tabs" data-testid="automatic">
+          <Tabs.List aria-label="Reports" activateOnFocus loopFocus={false}>
+            <Tabs.Tab value="day">Day</Tabs.Tab>
+            <Tabs.Tab value="week">Week</Tabs.Tab>
+            <Tabs.Tab value="month">Month</Tabs.Tab>
+          </Tabs.List>
+          <Tabs.Panel value="day">Today's numbers.</Tabs.Panel>
+          <Tabs.Panel value="week">This week's numbers.</Tabs.Panel>
+          <Tabs.Panel value="month">This month's numbers.</Tabs.Panel>
+        </Tabs.Root>
+      </section>
+
+      <section aria-labelledby="vertical-heading">
+        <h2 id="vertical-heading">Vertical, first tab disabled</h2>
+        <Tabs.Root class="lu-tabs vertical" orientation="vertical" data-testid="vertical">
+          <Tabs.List aria-label="Sections">
+            <Tabs.Tab value="intro" disabled>
+              Intro
+            </Tabs.Tab>
+            <Tabs.Tab value="usage">Usage</Tabs.Tab>
+            <Tabs.Tab value="api">API</Tabs.Tab>
+          </Tabs.List>
+          <Tabs.Panel value="intro">Introduction.</Tabs.Panel>
+          <Tabs.Panel value="usage">How to use it.</Tabs.Panel>
+          <Tabs.Panel value="api">The props.</Tabs.Panel>
+        </Tabs.Root>
+      </section>
+
+      <section aria-labelledby="disabled-heading">
+        <h2 id="disabled-heading">Every tab disabled</h2>
+        <Tabs.Root class="lu-tabs" data-testid="none">
+          <Tabs.List aria-label="Archived">
+            <Tabs.Tab value="one" disabled>
+              One
+            </Tabs.Tab>
+            <Tabs.Tab value="two" disabled>
+              Two
+            </Tabs.Tab>
+          </Tabs.List>
+          <Tabs.Panel value="one">First.</Tabs.Panel>
+          <Tabs.Panel value="two">Second.</Tabs.Panel>
+        </Tabs.Root>
+      </section>
+    </>
+  );
+}
+
+<style>
+  section {
+    margin-block-end: 2rem;
+  }
+  :global(.vertical) {
+    display: flex;
+    gap: 1rem;
+  }
+</style>

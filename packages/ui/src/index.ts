@@ -25,3 +25,5 @@ export type {
   TooltipTriggerProps,
 } from "./tooltip/tooltip.tsx";
 export type { Align, PlacementProps, Side } from "./placement/placement.ts";
+export { Tabs } from "./tabs/tabs.tsx";
+export type { TabsListProps, TabsPanelProps, TabsRootProps, TabsTabProps } from "./tabs/tabs.tsx";

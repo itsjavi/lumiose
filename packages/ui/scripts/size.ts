@@ -49,6 +49,12 @@ const COMPONENTS: Component[] = [
     scripts: ["tooltip/tooltip.script.ts"],
     css: "tooltip/tooltip.css",
   },
+  {
+    name: "tabs",
+    module: "tabs/tabs.tsx",
+    scripts: ["tabs/tabs.script.ts"],
+    css: "tabs/tabs.css",
+  },
 ];
 
 const CLIENT_SCRIPT = /\?client$/;

@@ -69,11 +69,17 @@ export function clipped(scope: Locator): Promise<string[]> {
   });
 }
 
-/** WCAG 2.5.8 Target Size (Minimum): the buttons and links under `scope` smaller than 24 by 24. */
+/**
+ * WCAG 2.5.8 Target Size (Minimum): the buttons and links under `scope` smaller than 24 by 24.
+ * Links inside a sentence (`display: inline`) are the criterion's inline exception.
+ */
 export function smallTargets(scope: Locator): Promise<string[]> {
   return scope.evaluate((root) =>
     [...root.querySelectorAll<HTMLElement>("button, a[href], [role=tab], input")]
       .filter((element) => element.getClientRects().length > 0)
+      .filter(
+        (element) => !(element.localName === "a" && getComputedStyle(element).display === "inline"),
+      )
       .map((element) => ({ element, box: element.getBoundingClientRect() }))
       .filter(({ box }) => box.width < 24 || box.height < 24)
       .map(({ element, box }) => `${element.textContent?.trim()}: ${box.width}x${box.height}`),

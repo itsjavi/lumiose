@@ -1,0 +1,179 @@
+# Tabs
+
+> A tab list and the panel of the selected tab, after the WAI-ARIA tabs pattern: the server HTML holds the whole state (roles, `aria-selected`, the roving tab stop, the hidden panels), and `<lu-tabs>`, a 0.8 kB light-DOM element, adds the arrow keys and the selection. Manual or automatic activation, horizontal or vertical, right-to-left aware; `bind:value` (or `value` and `onValueChange`) keeps a signal in sync.
+
+```ts
+import { Tabs } from "@lumiose/ui"; // or "@lumiose/ui/tabs"
+import "@lumiose/ui/tabs.css"; // makes <lu-tabs> a block
+import "@lumiose/ui/themes/default.css"; // optional: the default theme
+```
+
+## Anatomy
+
+```tsx
+<Tabs.Root>
+  <Tabs.List>
+    <Tabs.Tab />
+  </Tabs.List>
+  <Tabs.Panel />
+</Tabs.Root>
+```
+
+| Part    | Renders                                                                                                                   |
+| ------- | ------------------------------------------------------------------------------------------------------------------------- |
+| `Root`  | `<lu-tabs>`, the element that handles the keys and the selection.                                                         |
+| `List`  | `<div role="tablist">`, with `aria-orientation="vertical"` when vertical. Name it with `aria-label` or `aria-labelledby`. |
+| `Tab`   | `<button type="button" role="tab" value="…" aria-selected="…" aria-controls="…" tabindex="…">`.                           |
+| `Panel` | `<div role="tabpanel" tabindex="0" aria-labelledby="…">`, `hidden` unless its tab is selected.                            |
+
+A `Tab` and a `Panel` with the same `value` belong together. Every panel stays in the page, hidden
+when its tab is not selected, so the browser can switch them before any script loads.
+
+## API
+
+### Tabs.Root
+
+| Prop            | Type                         | Default               |                                                  |
+| --------------- | ---------------------------- | --------------------- | ------------------------------------------------ |
+| `value`         | `string`                     |                       | Selects the tab with this value when it changes. |
+| `defaultValue`  | `string`                     | the first enabled tab | The tab selected at first, without `value`.      |
+| `onValueChange` | `(value: string) => void`    |                       | Called after the user selects another tab.       |
+| `bind:value`    | `Signal<string>`             |                       | Stands in for `value` and `onValueChange`.       |
+| `orientation`   | `"horizontal" \| "vertical"` | `"horizontal"`        | Which arrow keys move between the tabs.          |
+
+`Root` also takes the props of an element (`class`, `style`, `data-*`, events) and passes them to
+`<lu-tabs>`.
+
+### Tabs.List
+
+| Prop              | Type      | Default |                                                                                            |
+| ----------------- | --------- | ------- | ------------------------------------------------------------------------------------------ |
+| `activateOnFocus` | `boolean` | `false` | Selects a tab as soon as it receives focus (automatic activation), as Zag does by default. |
+| `loopFocus`       | `boolean` | `true`  | The arrow keys go from the last tab to the first and back.                                 |
+
+The element reads them from the list's attributes: `data-activate-on-focus` and
+`data-loop-focus="false"`.
+
+### Tabs.Tab and Tabs.Panel
+
+| Prop       | On    | Type      |                                                               |
+| ---------- | ----- | --------- | ------------------------------------------------------------- |
+| `value`    | both  | `string`  | Pairs a tab with its panel. Required.                         |
+| `disabled` | `Tab` | `boolean` | The tab takes focus but cannot be selected (`aria-disabled`). |
+
+Each takes the props of the element it renders. `role`, `id`, `value`, `aria-selected`,
+`aria-controls`, `aria-labelledby`, `tabindex` on tabs and `hidden` stay the parts' own.
+
+- **Disabled tabs.** A selected tab that becomes disabled gives its selection to the first enabled
+  tab. With every tab disabled, none is selected and the first tab is the tab stop.
+- **The element.** `<lu-tabs>`' `value` property reads and sets the selection, and it fires
+  `valuechange` (not bubbling) when the user changes it, so `bind:value` works on the element too.
+
+## Example
+
+```tsx check
+import { Tabs } from "@lumiose/ui";
+
+export function AccountSettings() {
+  return (
+    <Tabs.Root class="lu-tabs" defaultValue="account">
+      <Tabs.List aria-label="Account settings">
+        <Tabs.Tab value="account">Account</Tabs.Tab>
+        <Tabs.Tab value="password">Password</Tabs.Tab>
+        <Tabs.Tab value="billing" disabled>
+          Billing
+        </Tabs.Tab>
+      </Tabs.List>
+      <Tabs.Panel value="account">Your name and email.</Tabs.Panel>
+      <Tabs.Panel value="password">Change your password.</Tabs.Panel>
+      <Tabs.Panel value="billing">Invoices and payment methods.</Tabs.Panel>
+    </Tabs.Root>
+  );
+}
+```
+
+In an island, bound to a signal: `bind:value={tab}` is short for `value={tab()}` plus
+`onValueChange={(next) => tab.set(next)}`.
+
+```tsx check
+import { Tabs } from "@lumiose/ui";
+import { signal } from "lumiose";
+
+export function Project() {
+  const tab = signal("overview");
+  return (
+    <>
+      <Tabs.Root class="lu-tabs" bind:value={tab}>
+        <Tabs.List aria-label="Project" activateOnFocus>
+          <Tabs.Tab value="overview">Overview</Tabs.Tab>
+          <Tabs.Tab value="settings">Settings</Tabs.Tab>
+        </Tabs.List>
+        <Tabs.Panel value="overview">The project at a glance.</Tabs.Panel>
+        <Tabs.Panel value="settings">Name and members.</Tabs.Panel>
+      </Tabs.Root>
+      <button type="button" onClick={() => tab.set("settings")}>
+        Open the settings
+      </button>
+    </>
+  );
+}
+```
+
+## Styling
+
+**With the default theme**, put `lu-tabs` on `Root`: tabs in a row (or a column when vertical)
+over a rule, the selected one underlined (beside it when vertical) in the foreground colour,
+disabled ones faded, and focus rings on tabs and panels. The list wraps on narrow screens.
+
+**With your own CSS**, style the parts through `class` and their state: `[role="tab"]`,
+`[aria-selected="true"]`, `[aria-disabled="true"]`, `[role="tablist"][aria-orientation="vertical"]`
+and `[role="tabpanel"]`. Mark the selected tab with more than a colour (WCAG 1.4.1), such as a bar
+or a weight, at 3:1 against its background (WCAG 1.4.11).
+
+```css
+.tabs [role="tab"] {
+  padding: 0.5rem 1rem;
+  border: 0;
+  background: none;
+  color: #52525b;
+}
+.tabs [role="tab"][aria-selected="true"] {
+  color: #09090b;
+  box-shadow: inset 0 -2px currentColor;
+}
+```
+
+`@lumiose/ui/tabs.css` holds one rule, in the `lu.core` layer: `lu-tabs { display: block }`.
+
+## Keyboard and focus
+
+The [WAI-ARIA tabs pattern](https://www.w3.org/WAI/ARIA/apg/patterns/tabs/):
+
+| Key                   | Does                                                                                               |
+| --------------------- | -------------------------------------------------------------------------------------------------- |
+| Tab                   | Into the list, onto the selected tab; out of it, onto the panel.                                   |
+| ArrowRight, ArrowLeft | The next or previous tab (horizontal). Swapped in right-to-left. Loops unless `loopFocus={false}`. |
+| ArrowDown, ArrowUp    | The next or previous tab (vertical).                                                               |
+| Home, End             | The first or last tab.                                                                             |
+| Enter, Space          | Selects the focused tab (manual activation).                                                       |
+
+- **Manual activation** (the default, as in Base UI): the arrows move focus and Enter, Space or a
+  click selects. With `activateOnFocus`, moving focus selects too. Either way only the panels
+  change: nothing navigates or submits.
+- **Only the main button** selects: a right-click does not. Disabled tabs take focus but are
+  never selected.
+- The arrow keys do nothing while an input method is composing, or with Alt, Ctrl or Meta held.
+
+## Without JavaScript, and the element's script
+
+The server HTML is complete: the selected tab, its panel and the tab stop are right before any
+script loads, and the panels of the other tabs are `hidden`. Selecting another tab needs
+`<lu-tabs>`' script, a 0.8 kB (brotli) module that a page rendering `Tabs` loads once, without
+the Lumiose runtime; islands bundle it. `value`, `onValueChange` and `bind:value` need the
+component to run in an island.
+
+## Related
+
+- [UI components](README.md): the approach, styling, the default theme and the other components.
+- [Web components](../guides/web-components.md): custom elements, their properties and
+  `bind:` on them.

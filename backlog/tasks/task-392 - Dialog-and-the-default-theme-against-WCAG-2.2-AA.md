@@ -5,7 +5,7 @@ status: Done
 assignee:
   - '@Halo'
 created_date: '2026-10-15 18:00'
-updated_date: '2026-10-15 18:10'
+updated_date: '2026-10-15 18:47'
 labels:
   - ui
   - a11y
@@ -83,6 +83,8 @@ ordinal: 391000
 - 1.4.13, 2.5.1, 2.5.7, 4.1.3, 3.3.x: do not apply (no hover content, gestures, status messages or form errors in Dialog).
 
 Screenshots: backlog/assets/task-392-dialog-light.png, task-392-dialog-dark.png, task-392-dialog-320-text-spacing.png (320px, text spacing, keyboard focus on Cancel).
+
+2026-10-15 Halo (during TASK-359): a focusable aria-disabled .lu-button faded its focus ring with opacity 0.5 (ring about 2:1, 1.4.11); it now gets opacity 1 while focus-visible. Disabled tabs are dimmed by text colour instead.
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary

@@ -1,0 +1,12 @@
+import { Title } from "lumiose";
+import { TabsSignals } from "../../../islands/TabsSignals.tsx";
+
+export default function TabsIslandPage() {
+  return (
+    <>
+      <Title>Tabs in an island, bound to a signal</Title>
+      <h1>Tabs in an island, bound to a signal</h1>
+      <TabsSignals client:load />
+    </>
+  );
+}

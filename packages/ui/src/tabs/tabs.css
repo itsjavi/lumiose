@@ -1,0 +1,11 @@
+/*
+ * Tabs need almost no CSS: `hidden` hides the other panels. `<lu-tabs>`, a custom element, is
+ * inline until styled: it is a block, like the `<div>` it stands for.
+ */
+@layer lu.core, lu.theme;
+
+@layer lu.core {
+  lu-tabs {
+    display: block;
+  }
+}

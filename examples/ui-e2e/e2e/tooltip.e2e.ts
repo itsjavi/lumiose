@@ -42,8 +42,8 @@ test.describe("opening", () => {
 
   test("keyboard focus opens it at once; blur closes it", async ({ page }) => {
     await page.goto("/tooltip");
-    await page.getByRole("link", { name: "Popover and Tooltip in an island" }).focus();
-    await page.keyboard.press("Tab");
+    await page.getByRole("button", { name: "Italic" }).focus();
+    await page.keyboard.press("Shift+Tab");
     await expect(page.getByRole("button", { name: "Bold" })).toBeFocused();
     await expect(tip(page, "Bold (Ctrl+B)")).toBeVisible();
     await page.keyboard.press("Tab");
