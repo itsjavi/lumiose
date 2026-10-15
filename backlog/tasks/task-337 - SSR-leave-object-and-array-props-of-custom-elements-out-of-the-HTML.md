@@ -3,9 +3,9 @@ id: TASK-337
 title: 'SSR: leave object and array props of custom elements out of the HTML'
 status: To Do
 assignee:
-  - '@Photon'
+  - '@Spark'
 created_date: '2026-10-15 05:23'
-updated_date: '2026-10-15 05:39'
+updated_date: '2026-10-15 06:02'
 labels:
   - ssr
   - compiler
@@ -32,4 +32,6 @@ Found in TASK-326 (Spark). On the client, props of a custom element that defines
 
 <!-- SECTION:NOTES:BEGIN -->
 2026-10-15 (Lux): routed to Photon (the compiler marks custom-element props) in coordination with Nova (server rendering of those props); part of the M11 run after TASK-326.
+
+2026-10-15 (Lux, orchestrator): reassigned to Spark for the unattended M10/M11 run. New worker sessions cannot be started from automated turns, and Spark's session was idle with its own queue done; Spark may edit this task's area (crates, CI workflows, release scripts) for it, since no Photon or Halo worker is active.
 <!-- SECTION:NOTES:END -->

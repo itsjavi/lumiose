@@ -3,8 +3,9 @@ id: TASK-335
 title: 'Spike: StyleX in Lumiose apps'
 status: To Do
 assignee:
-  - '@Photon'
+  - '@Spark'
 created_date: '2026-10-15 04:11'
+updated_date: '2026-10-15 06:02'
 labels:
   - css
   - spike
@@ -31,3 +32,9 @@ Spike only: a throwaway app in scratch space, nothing committed to the source tr
 - [ ] #2 Findings compare ways to apply StyleX styles to elements given `class` instead of `className` (a user-land helper, a StyleX API for other frameworks if one exists, or a Lumiose change), with trade-offs
 - [ ] #3 A recommendation is recorded in the task: supported as is, supported with a documented helper, or documented as unsupported; any public API change is left as a proposal for the user
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+2026-10-15 (Lux, orchestrator): reassigned to Spark for the unattended M10/M11 run. New worker sessions cannot be started from automated turns, and Spark's session was idle with its own queue done; Spark may edit this task's area (crates, CI workflows, release scripts) for it, since no Photon or Halo worker is active.
+<!-- SECTION:NOTES:END -->

@@ -3,8 +3,9 @@ id: TASK-312
 title: 'Fuzz the CSS, SVG and content crates'
 status: To Do
 assignee:
-  - '@Halo'
+  - '@Spark'
 created_date: '2026-10-15 04:02'
+updated_date: '2026-10-15 06:02'
 labels:
   - security
   - fuzzing
@@ -27,3 +28,9 @@ Agreed with the user on 2026-10-15 (grilling session on adoption by developers u
 - [ ] #2 The nightly fuzz workflow runs them
 - [ ] #3 Crashes found while adding them are fixed or tracked as tasks
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+2026-10-15 (Lux, orchestrator): reassigned to Spark for the unattended M10/M11 run. New worker sessions cannot be started from automated turns, and Spark's session was idle with its own queue done; Spark may edit this task's area (crates, CI workflows, release scripts) for it, since no Photon or Halo worker is active.
+<!-- SECTION:NOTES:END -->
