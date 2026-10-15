@@ -1206,6 +1206,8 @@ describe("custom elements (TASK-326)", () => {
     await serve(server, [["Review", {}]]);
     const el = document.querySelector("hydrate-stars") as HydrateStars;
     expect(el.getAttribute("max")).toBe("5");
+    // Arrays and objects are not attributes: the server leaves them out (TASK-337).
+    expect(el.hasAttribute("items")).toBe(false);
     await hydrateAll(client);
     expect(warn).not.toHaveBeenCalled();
     expect(document.querySelector("hydrate-stars")).toBe(el);

@@ -13,6 +13,18 @@ import {
   type SignalNode,
 } from "./reactive.ts";
 
+/**
+ * The seeds of a test: 1 to `base`, or one per 10 cases of `LUMIOSE_PROPERTY_RUNS` when that is
+ * more (`pnpm --filter lumiose test:properties [runs]`, the nightly workflow); only
+ * `LUMIOSE_PROPERTY_SEED` when set, to reproduce a failure (it prints its seed).
+ */
+function seeds(base: number): number[] {
+  const only = process.env.LUMIOSE_PROPERTY_SEED;
+  if (only !== undefined) return [Number(only)];
+  const count = Math.max(base, Math.floor(Number(process.env.LUMIOSE_PROPERTY_RUNS ?? 0) / 10));
+  return Array.from({ length: count }, (_, i) => i + 1);
+}
+
 /** mulberry32: a small seeded PRNG, so failures are reproducible from the seed. */
 function createRandom(seed: number): { next: () => number; int: (n: number) => number } {
   let state = seed >>> 0;
@@ -257,7 +269,7 @@ function runScenario(seed: number, steps: number): string[] {
 describe("reactive core vs a naive reference", () => {
   it("agrees on values, effect runs and links for random graphs", () => {
     const failures: string[] = [];
-    for (let seed = 1; seed <= 400; seed++) {
+    for (const seed of seeds(400)) {
       failures.push(...runScenario(seed, 80));
       if (failures.length > 0) break;
     }
@@ -266,7 +278,7 @@ describe("reactive core vs a naive reference", () => {
 
   it("reaches the reference fixed point when effects write signals during the flush", () => {
     const failures: string[] = [];
-    for (let seed = 1; seed <= 300; seed++) {
+    for (const seed of seeds(300)) {
       failures.push(...runCascadeScenario(seed, 60));
       if (failures.length > 0) break;
     }

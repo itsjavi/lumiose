@@ -12,12 +12,42 @@ import {
   prependChangelog,
   release,
   renderChangelog,
+  renderScale,
+  scaleRegressions,
   setCargoLockVersions,
   setCargoVersion,
   setDocsVersion,
   setLoaderVersion,
   setPackageVersion,
+  type ScaleResult,
 } from "./release.ts";
+
+/** A runner of the A/B that must not run. */
+function never(): ScaleResult {
+  throw new Error("the A/B ran");
+}
+
+/** A large-app A/B result with the given ratios (buildMs, devColdStartMs, hmrMs, serverMemoryMb). */
+function scaleResult(ratios: [number, number, number, number]): ScaleResult {
+  const keys = ["buildMs", "devColdStartMs", "hmrMs", "serverMemoryMb"];
+  return {
+    machine: {
+      platform: "darwin 27.0.0 arm64",
+      cpu: "Apple M1 Max",
+      cores: 10,
+      memoryGb: 32,
+      node: "v26.8.1",
+    },
+    options: { rounds: 3 },
+    builds: {
+      a: { label: "v0.1.0 (abc12345)", version: "0.1.0", commit: "abc12345" },
+      b: { label: "working tree", version: "0.1.0", commit: "def67890" },
+    },
+    metrics: Object.fromEntries(
+      keys.map((key, i) => [key, { a: 100, b: 100 * ratios[i]!, ratio: ratios[i]! }]),
+    ),
+  };
+}
 
 const temps: string[] = [];
 after(() => {
@@ -245,11 +275,73 @@ describe("release", () => {
     writeFileSync(join(repo, "packages/lumiose/fix.ts"), "export {};\n");
     git(repo, "add", "-A");
     git(repo, "commit", "-q", "-m", "fix(dom): a crash");
-    release(repo, "0.1.1", { date: "2026-10-11", log: () => {} });
+    const runs: string[] = [];
+    release(repo, "0.1.1", {
+      date: "2026-10-11",
+      log: () => {},
+      runScale: (_repo, previous) => {
+        runs.push(previous);
+        return scaleResult([1, 1.05, 0.98, 1.2]);
+      },
+    });
+    assert.deepEqual(runs, ["v0.1.0"]);
     const changelog = readFileSync(join(repo, "CHANGELOG.md"), "utf8");
     const latest = changelog.slice(changelog.indexOf("## 0.1.1"), changelog.indexOf("## 0.1.0"));
     assert.match(latest, /a crash/);
     assert.doesNotMatch(latest, /signals/);
+    // The scale gate's numbers are the release notes' last section.
+    assert.match(latest, /### Scale\n\nThe large-app benchmark/);
+    assert.match(latest, /\| Server memory, peak RSS \(MB\) \| 100 \| 120 \| 1\.200 \|/);
+    // The first release had nothing to compare with.
+    assert.match(changelog, /## 0\.1\.0[\s\S]*Not measured: there is no previous release/);
+  });
+
+  it("stops before writing anything when a metric regresses by more than 20%", () => {
+    const repo = fixture();
+    release(repo, "0.1.0", { date: "2026-10-10", log: () => {} });
+    const head = git(repo, "rev-parse", "HEAD");
+    assert.throws(
+      () =>
+        release(repo, "0.1.1", {
+          log: () => {},
+          runScale: () => scaleResult([1, 1.21, 1, 1]),
+        }),
+      /scale gate stopped the release[\s\S]*Dev cold start \(ms\): 100 -> 121 \(1\.210\)/,
+    );
+    assert.equal(git(repo, "rev-parse", "HEAD"), head);
+    assert.equal(git(repo, "status", "--porcelain"), "");
+    assert.equal(git(repo, "tag", "--list"), "v0.1.0");
+    assert.equal(version(repo, "packages/lumiose/package.json"), "0.1.0");
+  });
+
+  it("can skip the gate, which the notes record; a dry run never runs it", () => {
+    const repo = fixture();
+    release(repo, "0.1.0", { date: "2026-10-10", log: () => {} });
+    const lines: string[] = [];
+    release(repo, "0.1.1", { dryRun: true, runScale: never, log: (l) => lines.push(l) });
+    assert.match(lines.join("\n"), /a release runs the scale gate first/);
+    release(repo, "0.1.1", { skipScaleGate: true, runScale: never, log: () => {} });
+    assert.match(readFileSync(join(repo, "CHANGELOG.md"), "utf8"), /scale gate was skipped/);
+  });
+});
+
+describe("scale gate", () => {
+  it("flags ratios above 1.2 and missing metrics", () => {
+    assert.deepEqual(scaleRegressions(scaleResult([1.2, 1, 1, 1])), []);
+    assert.deepEqual(scaleRegressions(scaleResult([1.25, 1, 0.5, 1.3])), [
+      "Production build (ms): 100 -> 125 (1.250)",
+      "Server memory, peak RSS (MB): 100 -> 130 (1.300)",
+    ]);
+    const missing = scaleResult([1, 1, 1, 1]);
+    delete missing.metrics.hmrMs;
+    assert.deepEqual(scaleRegressions(missing), ["HMR latency (ms): not measured"]);
+  });
+
+  it("renders the numbers for the release notes", () => {
+    const section = renderScale(scaleResult([1, 1.1, 0.9, 1]));
+    assert.match(section, /working tree against v0\.1\.0 \(abc12345\)/);
+    assert.match(section, /medians of 3 rounds on Apple M1 Max/);
+    assert.match(section, /\| HMR latency \(ms\) \| 100 \| 90 \| 0\.900 \|/);
   });
 
   it("refuses a dirty tree, a version that is not higher, and an existing tag", () => {

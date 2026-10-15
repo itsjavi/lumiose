@@ -6,7 +6,13 @@
 // the tag vX.Y.Z. It pushes nothing: pushing the tag starts the release workflow.
 // `--dry-run` prints the changes and writes nothing.
 //
-//   node scripts/release.ts <x.y.z> [--dry-run] [--since <rev>]
+// The scale gate (decision-55, TASK-320): before writing anything, a release runs the large-app
+// benchmark as an A/B of the last release tag and the working tree (benchmarks/large-app, about
+// 18 minutes, locally: never in CI) and stops when any metric regresses by more than 20%. Its
+// numbers go into the changelog section, which is the release's notes. `--skip-scale-gate` skips
+// it (the notes say so); a dry run reports it without running it.
+//
+//   node scripts/release.ts <x.y.z> [--dry-run] [--since <rev>] [--skip-scale-gate]
 
 import { execFileSync } from "node:child_process";
 import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
@@ -198,8 +204,98 @@ function cargoCrates(repo: string): Set<string> {
   return new Set(names);
 }
 
+/**
+ * What the scale gate reads of the large-app A/B (`pnpm --filter @lumiose/bench-large-app ab
+ * <a> <b> --json`): `a` is the last release, `b` the candidate; `ratio` is b/a of the medians.
+ */
+export interface ScaleResult {
+  machine: { platform: string; cpu: string; cores: number; memoryGb: number; node: string };
+  options: { rounds: number };
+  builds: Record<"a" | "b", { label: string; version: string; commit: string }>;
+  metrics: Record<string, { a: number; b: number; ratio: number }>;
+}
+
+/** The largest b/a ratio a release may ship with (decision-55: a regression above 20% stops it). */
+export const SCALE_LIMIT = 1.2;
+
+/** The metrics of the A/B, as the release notes name them. */
+const SCALE_METRICS: [string, string][] = [
+  ["buildMs", "Production build (ms)"],
+  ["devColdStartMs", "Dev cold start (ms)"],
+  ["hmrMs", "HMR latency (ms)"],
+  ["serverMemoryMb", "Server memory, peak RSS (MB)"],
+];
+
+/** The metrics that regressed by more than 20%, as `name a -> b (ratio)`; a missing one counts. */
+export function scaleRegressions(result: ScaleResult): string[] {
+  const regressions: string[] = [];
+  for (const [key, label] of SCALE_METRICS) {
+    const metric = result.metrics[key];
+    if (metric === undefined || !Number.isFinite(metric.ratio)) {
+      regressions.push(`${label}: not measured`);
+    } else if (metric.ratio > SCALE_LIMIT) {
+      regressions.push(`${label}: ${metric.a} -> ${metric.b} (${metric.ratio.toFixed(3)})`);
+    }
+  }
+  return regressions;
+}
+
+/** The changelog's `### Scale` subsection: the A/B's medians and ratios, or why it is missing. */
+export function renderScale(scale: ScaleResult | string): string {
+  const lines = ["### Scale", ""];
+  if (typeof scale === "string") {
+    lines.push(scale, "");
+    return lines.join("\n");
+  }
+  const { a, b } = scale.builds;
+  const { machine } = scale;
+  lines.push(
+    `The large-app benchmark (1,500 routes, 5,000 components), ${b.label} against ${a.label}, ` +
+      `medians of ${scale.options.rounds} rounds on ${machine.cpu} (${machine.cores} cores, ` +
+      `${machine.memoryGb} GB, ${machine.platform}, Node ${machine.node}). The release gate stops ` +
+      `at a ratio above ${SCALE_LIMIT}.`,
+    "",
+    "| Metric | Previous | This release | Ratio |",
+    "| ------ | -------- | ------------ | ----- |",
+  );
+  for (const [key, label] of SCALE_METRICS) {
+    const metric = scale.metrics[key];
+    if (metric !== undefined) {
+      lines.push(`| ${label} | ${metric.a} | ${metric.b} | ${metric.ratio.toFixed(3)} |`);
+    }
+  }
+  lines.push("");
+  return lines.join("\n");
+}
+
+/** The last release tag (`v*`) reachable from HEAD, if any. */
+function lastReleaseTag(repo: string): string | undefined {
+  try {
+    return git(repo, ["describe", "--tags", "--abbrev=0", "--match", "v*"]);
+  } catch {
+    return undefined;
+  }
+}
+
+/** Runs the large-app A/B of `previous` against the working tree (about 18 minutes). */
+function runScaleAb(repo: string, previous: string): ScaleResult {
+  const out = execFileSync(
+    "pnpm",
+    ["--filter", "@lumiose/bench-large-app", "ab", previous, ".", "--json"],
+    // The progress goes to stderr; stdout is only the JSON.
+    { cwd: repo, encoding: "utf8", stdio: ["ignore", "pipe", "inherit"], maxBuffer: 64 << 20 },
+  );
+  return JSON.parse(out) as ScaleResult;
+}
+
 export interface ReleaseOptions {
   dryRun?: boolean;
+  /** Skip the scale gate; the release notes say it was not measured. */
+  skipScaleGate?: boolean;
+  /** Runs the A/B of `previous` (a tag) against the working tree; the large-app benchmark by default. */
+  runScale?: (repo: string, previous: string) => ScaleResult;
+  /** The scale section of the notes: the A/B's result, or why there is none (set by `release`). */
+  scale?: ScaleResult | string;
   /** The revision the changelog starts after (default: the last `v*` tag). */
   since?: string;
   /** The release date for the changelog (default: today, UTC). */
@@ -244,7 +340,8 @@ export function planRelease(
     files.set(lock, setCargoLockVersions(readFileSync(lock, "utf8"), cargoCrates(repo), version));
   }
   const date = options.date ?? new Date().toISOString().slice(0, 10);
-  const changelog = renderChangelog(version, date, commitsSince(repo, options.since));
+  let changelog = renderChangelog(version, date, commitsSince(repo, options.since));
+  if (options.scale !== undefined) changelog += renderScale(options.scale);
   const changelogPath = join(repo, "CHANGELOG.md");
   const previous = existsSync(changelogPath) ? readFileSync(changelogPath, "utf8") : undefined;
   files.set(changelogPath, prependChangelog(previous, changelog));
@@ -264,9 +361,13 @@ export function release(repo: string, version: string, options: ReleaseOptions =
       throw new Error(`the working tree has changes; commit or stash them first:\n${status}`);
   }
   if (git(repo, ["tag", "--list", tag]) !== "") throw new Error(`the tag ${tag} already exists`);
-  const plan = planRelease(repo, version, options);
+  const scale = options.dryRun ? undefined : scaleGate(repo, options, log);
+  const plan = planRelease(repo, version, { ...options, scale });
   const paths = [...plan.files.keys()].map((path) => relative(repo, path).split(sep).join("/"));
   log(`${options.dryRun ? "dry run: " : ""}${plan.current} -> ${version}`);
+  if (options.dryRun && !options.skipScaleGate) {
+    log("(a release runs the scale gate first: the large-app A/B, about 18 minutes)");
+  }
   for (const path of paths) log(`  ${path}`);
   log("");
   log(plan.changelog);
@@ -278,20 +379,51 @@ export function release(repo: string, version: string, options: ReleaseOptions =
   log(`Committed and tagged ${tag}. Push both to release: git push origin HEAD ${tag}`);
 }
 
+/**
+ * Runs the scale gate: the A/B of the last release tag against the working tree. Throws, before
+ * anything is written, when a metric regressed by more than 20%; returns the notes' section.
+ */
+function scaleGate(
+  repo: string,
+  options: ReleaseOptions,
+  log: (line: string) => void,
+): ScaleResult | string {
+  if (options.skipScaleGate)
+    return "Not measured: the scale gate was skipped (`--skip-scale-gate`).";
+  const previous = lastReleaseTag(repo);
+  if (previous === undefined) return "Not measured: there is no previous release to compare with.";
+  log(`Scale gate: the large-app A/B of ${previous} and the working tree (about 18 minutes)…`);
+  const result = (options.runScale ?? runScaleAb)(repo, previous);
+  const regressions = scaleRegressions(result);
+  if (regressions.length > 0) {
+    throw new Error(
+      `the scale gate stopped the release: above ${SCALE_LIMIT}x ${previous}:\n  ${regressions.join("\n  ")}`,
+    );
+  }
+  return result;
+}
+
 if (import.meta.main) {
   const { values, positionals } = parseArgs({
     allowPositionals: true,
     options: {
       "dry-run": { type: "boolean", default: false },
       since: { type: "string" },
+      "skip-scale-gate": { type: "boolean", default: false },
     },
   });
   if (positionals.length !== 1) {
-    console.error("Usage: pnpm release:version <x.y.z> [--dry-run] [--since <rev>]");
+    console.error(
+      "Usage: pnpm release:version <x.y.z> [--dry-run] [--since <rev>] [--skip-scale-gate]",
+    );
     process.exit(2);
   }
   try {
-    release(REPO, positionals[0]!, { dryRun: values["dry-run"], since: values.since });
+    release(REPO, positionals[0]!, {
+      dryRun: values["dry-run"],
+      since: values.since,
+      skipScaleGate: values["skip-scale-gate"],
+    });
   } catch (error) {
     console.error(`release:version: ${(error as Error).message}`);
     process.exit(1);

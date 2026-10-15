@@ -16,15 +16,19 @@ pnpm --filter lumiose test:properties [runs]   # the property tests with many ca
 
 Property tests (`*.property.test.ts`, [fast-check](https://fast-check.dev)) cover request body
 parsing under the limits, the Origin check, redirect targets and unsafe URLs in rendered HTML
-(decision-56). `pnpm test` runs 100 cases of each; `test:properties` runs many more (the nightly
+(decision-56), and the reactive core against a naive reference on random signal graphs
+(`core/reactive.property.test.ts`, one seed per 10 cases). `pnpm test` runs 100 cases of each; `test:properties` runs many more (the nightly
 workflow's). A failure prints its seed: rerun with `LUMIOSE_PROPERTY_SEED=<seed>` to reproduce it.
 
 ### Fuzzing
 
 `fuzz/` holds the [cargo-fuzz](https://rust-fuzz.github.io/book/cargo-fuzz.html) targets of the
 Rust crates (decision-56), a workspace of its own: `scan` (the `.stsx` scanner and its masking
-invariant), `compile_client` (the JSX transform and client codegen) and `compile_server` (SSR
-codegen). `cargo fuzz list --fuzz-dir fuzz` lists them. To run one:
+invariant), `compile_client` (the JSX transform and client codegen), `compile_server` (SSR
+codegen), `css_process` (style blocks, `$` constants and scoping in `lumiose_css`),
+`svg_component` (the SVG allowlist sanitizer), `content_markdown` and `content_html` (Markdown,
+frontmatter and HTML imports, with their depth limits). `cargo fuzz list --fuzz-dir fuzz` lists
+them. To run one:
 
 ```sh
 cargo install cargo-fuzz                  # once
@@ -182,6 +186,16 @@ one version (lockstep); nothing is bumped by hand.
    prepends the release to `CHANGELOG.md` from the Conventional Commits since the last `v*` tag
    (breaking changes, `feat`, `fix`, `perf`; `--since <rev>` picks another start), commits
    `chore(release): vX.Y.Z` and creates the annotated tag `vX.Y.Z`. It pushes nothing.
+
+   Before it writes anything, the **scale gate** (decision-55) runs the large-app benchmark as an
+   A/B of the last `v*` tag and the working tree
+   (`pnpm --filter @lumiose/bench-large-app ab <tag> . --json`, about 18 minutes, on this machine:
+   never in CI) and stops the release when any metric (production build, dev cold start, HMR
+   latency, server memory) is more than 20% worse. Its medians and ratios become the `### Scale`
+   section of the changelog, so the release notes carry them. A quiet machine gives steadier
+   numbers. `--skip-scale-gate` skips it (the notes then say it was not measured); a dry run only
+   says it would run; the first release has nothing to compare with.
+
 2. `git push origin HEAD vX.Y.Z` starts `.github/workflows/release.yml`: the Binaries workflow
    builds and smoke-tests every compiler binary, then `scripts/publish.ts` packs every package,
    puts each binary into its platform package, checks that the tag names the packages' version,

@@ -21,6 +21,9 @@ libfuzzer-sys = "=0.4.13"
 [dependencies]
 libfuzzer-sys.workspace = true
 lumiose_compiler = { path = "../crates/lumiose_compiler" }
+lumiose_content = { path = "../crates/lumiose_content" }
+lumiose_css = { path = "../crates/lumiose_css", default-features = false }
+lumiose_svg = { path = "../crates/lumiose_svg" }
 
 [[bin]]
 name = "scan"
@@ -39,6 +42,34 @@ bench = false
 [[bin]]
 name = "compile_server"
 path = "fuzz_targets/compile_server.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "css_process"
+path = "fuzz_targets/css_process.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "svg_component"
+path = "fuzz_targets/svg_component.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "content_markdown"
+path = "fuzz_targets/content_markdown.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "content_html"
+path = "fuzz_targets/content_html.rs"
 test = false
 doc = false
 bench = false

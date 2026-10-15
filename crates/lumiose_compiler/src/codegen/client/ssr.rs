@@ -501,7 +501,13 @@ impl<'a> Codegen<'a, '_> {
         {
             // As on the client, every attribute goes through the spread, in order.
             let props = self.props_expression(attributes, None, span);
-            let hole = self.helper_call("spreadAttrs", [props], span);
+            let hole = if is_custom_element(tag) {
+                // A custom element: objects and arrays are properties (TASK-337, `attr` below).
+                let custom = self.ast.boolean(span, true);
+                self.helper_call("spreadAttrs", [props, custom], span)
+            } else {
+                self.helper_call("spreadAttrs", [props], span)
+            };
             open.tail.push(Piece::Hole(hole));
             return;
         }
@@ -563,6 +569,14 @@ impl<'a> Codegen<'a, '_> {
                     } else if text_content {
                         let escaped = self.helper_call("escape", [expr], span);
                         open.content = Some(Piece::Hole(escaped));
+                    } else if is_custom_element(tag) {
+                        // Objects and arrays are the element's properties, which the client
+                        // sets: `attr(name, value, true)` leaves them out, as React 19 does
+                        // (TASK-337).
+                        let name = self.ast.string(span, name);
+                        let custom = self.ast.boolean(span, true);
+                        let hole = self.helper_call("attr", [name, expr, custom], span);
+                        open.tail.push(Piece::Hole(hole));
                     } else if name != "indeterminate" {
                         let hole = self.attr_call(name, expr, span);
                         open.tail.push(Piece::Hole(hole));
@@ -805,6 +819,11 @@ impl<'a> Codegen<'a, '_> {
         let callee = self.runtime(helper, span);
         self.ast.call(span, callee, args)
     }
+}
+
+/// A custom element's tag: one with a dash (`annotation-xml` aside, a MathML element).
+fn is_custom_element(tag: &str) -> bool {
+    tag.contains('-') && tag != "annotation-xml"
 }
 
 /// ` name` / ` name=value` as in client templates.

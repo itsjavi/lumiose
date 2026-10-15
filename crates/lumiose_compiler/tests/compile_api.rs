@@ -43,6 +43,31 @@ fn server_target_imports_lumiose_server() {
 }
 
 #[test]
+fn server_attributes_of_custom_elements_leave_objects_to_the_client() {
+    // TASK-337: on a custom element (a tag with a dash), `attr(name, value, true)` and
+    // `spreadAttrs(props, true)`; other elements keep the two-argument forms.
+    let source = r#"export function A(props: { items: string[]; rest: object }) {
+  return (
+    <div>
+      <rating-stars max={props.items.length} items={props.items} />
+      <rating-stars {...props.rest} />
+      <p title={props.items.join()} />
+    </div>
+  );
+}
+"#;
+    let options = CompileOptions {
+        target: Target::Server,
+        ..CompileOptions::default()
+    };
+    let code = compile(source, "/src/a.tsx", &options).code;
+    assert!(code.contains(r#"attr("items", props.items, true)"#), "{code}");
+    assert!(code.contains(r#"attr("max", props.items.length, true)"#), "{code}");
+    assert!(code.contains("spreadAttrs(props.rest, true)"), "{code}");
+    assert!(code.contains(r#"attr("title", props.items.join())"#), "{code}");
+}
+
+#[test]
 fn syntax_errors_use_lum1001_with_spans() {
     let source = "export const A = () => <div>;\n";
     let result = compile(source, "/src/a.tsx", &CompileOptions::default());
