@@ -20,9 +20,10 @@ const PAGES = [
   { name: "showcase and demos", path: "/showcase" },
   { name: "playground", path: "/playground" },
   { name: "404", path: "/docs/nope" },
-  // The /ui section (TASK-387): the introduction with the theme's palette, and each component's
-  // page with its live demos on @lumiose/ui's default theme.
+  // The /ui section (TASK-387): the introduction, the theming page with the theme's palette, and
+  // each component's page with its live demos on @lumiose/ui's default theme.
   { name: "UI introduction", path: "/ui" },
+  { name: "UI theming", path: "/ui/theming" },
   { name: "UI Dialog", path: "/ui/dialog" },
   { name: "UI Menu", path: "/ui/menu" },
   { name: "UI Popover", path: "/ui/popover" },

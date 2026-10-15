@@ -3,6 +3,7 @@
 // `pnpm --filter @lumiose/web ui:demos`.
 import { DeleteProject } from "./dialog-1.tsx";
 import { EditProfile } from "./dialog-2.tsx";
+import { Help } from "./installation-1.tsx";
 import { ProjectMenu } from "./menu-1.tsx";
 import { Notifications } from "./popover-1.tsx";
 import { Filters } from "./popover-2.tsx";
@@ -17,6 +18,8 @@ export function UiDemo(props: { id: string }) {
       return <DeleteProject />;
     case "dialog-2":
       return <EditProfile client:visible />;
+    case "installation-1":
+      return <Help />;
     case "menu-1":
       return <ProjectMenu />;
     case "popover-1":

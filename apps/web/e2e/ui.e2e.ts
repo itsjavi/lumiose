@@ -21,6 +21,10 @@ test("the UI section is in the site navigation, with a page per component", asyn
     "aria-current",
     "page",
   );
+  for (const name of ["Installation", "Theming"]) {
+    await nav.getByRole("link", { name }).click();
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText(name);
+  }
   for (const name of COMPONENTS) {
     await nav.getByRole("link", { name, exact: true }).click();
     await expect(page).toHaveURL(new RegExp(`/ui/${name.toLowerCase()}$`));
@@ -107,8 +111,8 @@ test("demos keep the default theme's look, not the site's styles", async ({ page
   expect(await background()).toBe("");
 });
 
-test("the theming palette shows every --lu- property in light and dark", async ({ page }) => {
-  await page.goto("/ui");
+test("the theming page shows every --lu- property in light and dark", async ({ page }) => {
+  await page.goto("/ui/theming");
   const table = page.getByRole("region", { name: "Table: Property, Light, Dark" });
   await expect(table.getByRole("row", { name: /--lu-background #fff #09090b/ })).toBeVisible();
   await expect(table.getByRole("row", { name: /--lu-radius/ })).toBeVisible();
@@ -164,7 +168,7 @@ test("ui screenshots", async ({ page }) => {
     await preview(page).getByRole("button", { name: "Project" }).click();
     await page.waitForTimeout(400);
     await page.screenshot({ path: shot(`menu-${scheme}`) });
-    await page.goto("/ui");
+    await page.goto("/ui/theming");
     await page.locator(".palette").scrollIntoViewIfNeeded();
     await page.waitForTimeout(300);
     await page.screenshot({ path: shot(`theming-${scheme}`) });

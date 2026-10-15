@@ -41,7 +41,7 @@ ships, `packages/ui/docs`, in the order of `packages/ui/docs/llms.txt`. Nothing 
   `/ui` pages load them. The site's theme toggle sets the `color-scheme` that the theme's
   `light-dark()` colours follow. Inside a demo, `all: revert-layer` drops the site's own base
   styles, so the components look as the default theme draws them. The palette on the page with
-  the `--lu-` property table is read from the theme's stylesheet.
+  the `--lu-` property table (Theming) is read from the theme's stylesheet.
 
 **Adding a component** (such as Combobox, once its page lands in `packages/ui/docs`):
 

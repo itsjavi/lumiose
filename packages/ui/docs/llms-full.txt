@@ -19,7 +19,9 @@ workspace. The goal for its 1.0 is parity with [Base UI](https://base-ui.com)'s 
 table below lists them as they land.
 
 These pages ship in the package, in `node_modules/@lumiose/ui/docs`, so they match the installed
-version. For coding agents, `llms.txt` indexes them and `llms-full.txt` holds them all;
+version, and the Lumiose site renders them with a live demo of each example at
+[itsjavi.com/lumiose/ui](https://itsjavi.com/lumiose/ui/). Start with [Installation](installation.md)
+and [Theming](theming.md). For coding agents, `llms.txt` indexes them and `llms-full.txt` holds them all;
 `lumiose docs ui` and `lumiose docs dialog` print them; the MCP server's `ui_components` tool lists
 every component's parts, props, events and styling hooks; and `lumiose agents init` adds a UI
 section to `AGENTS.md` and the `lumiose-ui` skill. Every component page has the same sections:
@@ -58,9 +60,121 @@ This is the approach of [Timeless](https://timeless.build), ported to Lumiose.
 
 ## Styling
 
-`@lumiose/ui` is **unstyled**: its stylesheets hold only what a component needs to work
-(display, positioning and anchoring, the top layer, the CSS variables a component sets), in the
-`lu.core` cascade layer. A look is opt-in: the default theme, or your own CSS.
+`@lumiose/ui` is **unstyled**: its stylesheets hold only what a component needs to work (display,
+positioning and anchoring, the top layer, the CSS variables a component sets), in the `lu.core`
+cascade layer. A look is opt-in: the default theme, or your own CSS. [Installation](installation.md)
+shows the imports, and [Theming](theming.md) the layers, the theme's classes and custom properties,
+and how to style the parts yourself.
+
+### The default theme
+
+`@lumiose/ui/themes/default.css` is a ready look for demos, prototypes and getting started: neutral
+surfaces, a blue primary, light and dark. Its classes (`lu-button`, `lu-dialog`, …) and its `--lu-`
+custom properties, named as in shadcn/ui, are listed in [Theming](theming.md#the-default-theme).
+
+## Components
+
+| Component                         | Status                                                                |
+| --------------------------------- | --------------------------------------------------------------------- |
+| [Dialog, alert dialog](dialog.md) | Available: native `<dialog>`, works without JavaScript                |
+| [Popover](popover.md)             | Available: native popover, works without JavaScript                   |
+| [Tooltip](tooltip.md)             | Available: native hint popover, opened by its script                  |
+| [Menu](menu.md)                   | Available: popover menu, opens without JavaScript                     |
+| Combobox, select                  | Planned                                                               |
+| [Tabs](tabs.md)                   | Available: server HTML with the full state, `<lu-tabs>` adds the keys |
+
+## Size
+
+`@lumiose/ui` is opt-in, so its size is reported apart from the runtime's caps:
+`pnpm --filter @lumiose/ui size` prints, per component, the JavaScript a server-rendered page loads
+for its custom elements, the JavaScript an island that uses it loads, and its CSS (minified, gzip
+and brotli).
+
+## Related
+
+- [Web components](https://itsjavi.com/lumiose/docs/guides/web-components/): custom elements in Lumiose pages and islands.
+- [Islands](https://itsjavi.com/lumiose/docs/concepts/islands/): where components run in the browser.
+- [JSX](https://itsjavi.com/lumiose/docs/concepts/jsx/): `class`, events and `on:`.
+
+<!-- source: installation.md -->
+
+# Installation
+
+> Add `@lumiose/ui` to a Lumiose app and import its stylesheets, and the default theme if you want its look. The components then render in server HTML, without an island, and a page loads only the small scripts of the components it renders.
+
+**Status:** `@lumiose/ui` is not on npm yet. In this repository's workspace, an app adds it as
+`"@lumiose/ui": "workspace:*"` in its `dependencies`.
+
+## Add the package
+
+`@lumiose/ui` needs a Lumiose app: it ships its components as TSX, which the app's build compiles
+with the app's own code, and `lumiose` is its peer dependency. Once it is on npm:
+
+```sh
+pnpm add @lumiose/ui
+```
+
+A new app can start with it: `create-lumiose --ui` adds the dependency, imports the stylesheets in
+the root layout and adds the UI agent files (the `lumiose-ui` skill and a UI part in `AGENTS.md`).
+In an app that already depends on it, `lumiose agents init` adds those agent files.
+
+## Import the stylesheets
+
+Import them once, in the root layout (`src/routes/layout.stsx`), so every page has them:
+
+```ts
+import "@lumiose/ui/styles.css"; // what every component needs (or "@lumiose/ui/dialog.css", …)
+import "@lumiose/ui/themes/default.css"; // optional: the default theme
+```
+
+They sit in cascade layers, so your own CSS overrides them without specificity games
+([Theming](theming.md#cascade-layers)).
+
+## Use a component
+
+Import a component from `@lumiose/ui` (or its own entry, `@lumiose/ui/popover`) and compose its
+parts. In a page or a server component it renders as server HTML that works before any script
+loads; with the default theme, the `lu-` classes give it its look:
+
+```tsx check
+import { Popover } from "@lumiose/ui";
+
+export function Help() {
+  return (
+    <Popover.Root>
+      <Popover.Trigger class="lu-button">Help</Popover.Trigger>
+      <Popover.Popup class="lu-popover">
+        <Popover.Title>Help</Popover.Title>
+        <Popover.Description>
+          Server HTML: this popover opens without JavaScript.
+        </Popover.Description>
+      </Popover.Popup>
+    </Popover.Root>
+  );
+}
+```
+
+To keep a component's state in a signal (`bind:open`, `bind:value`), render it inside an
+[island](https://itsjavi.com/lumiose/docs/concepts/islands/). Each component's page lists its parts,
+props, keyboard contract and what works without JavaScript.
+
+## Related
+
+- [UI components](README.md): the approach and the components.
+- [Theming](theming.md): the default theme's classes and `--lu-` properties, and your own CSS.
+- [Getting started](https://itsjavi.com/lumiose/docs/getting-started/): a new Lumiose app.
+
+<!-- source: theming.md -->
+
+# Theming
+
+> `@lumiose/ui` is unstyled: its stylesheets hold only what the components need to work. The optional default theme gives them a look, light and dark, through `--lu-` custom properties you can change; or style the parts with your own CSS.
+
+## Cascade layers
+
+The components' stylesheets hold only what a component needs to work (display, positioning and
+anchoring, the top layer, the CSS variables a component sets), in the `lu.core` cascade layer. The
+default theme sits in `lu.theme`, above it:
 
 ```ts
 import "@lumiose/ui/styles.css"; // what every component needs (or "@lumiose/ui/dialog.css", …)
@@ -71,7 +185,7 @@ Both stylesheets declare the layers `lu.core, lu.theme`, in that order. CSS outs
 wins over layered CSS, so your own stylesheets override the package's without specificity games.
 If your app orders its own layers, put `lu` first: `@layer lu, reset, components;`.
 
-### The default theme
+## The default theme
 
 `@lumiose/ui/themes/default.css` is a ready look for demos, prototypes and getting started: neutral
 surfaces, a blue primary, light and dark. It styles a few classes, which you put on the parts
@@ -117,7 +231,7 @@ surface, and `--lu-input` (the borders of fields and controls) and `--lu-ring` (
 reach 3:1 on the surfaces they sit on. `--lu-border` is for decoration, such as a dialog's edge:
 it is too light to outline a control. Keep those ratios when you change the colours.
 
-### Your own CSS
+## Your own CSS
 
 Style the parts through:
 
@@ -129,29 +243,11 @@ Style the parts through:
 
 Each component's page has an example stylesheet to start from.
 
-## Components
-
-| Component                         | Status                                                                |
-| --------------------------------- | --------------------------------------------------------------------- |
-| [Dialog, alert dialog](dialog.md) | Available: native `<dialog>`, works without JavaScript                |
-| [Popover](popover.md)             | Available: native popover, works without JavaScript                   |
-| [Tooltip](tooltip.md)             | Available: native hint popover, opened by its script                  |
-| [Menu](menu.md)                   | Available: popover menu, opens without JavaScript                     |
-| Combobox, select                  | Planned                                                               |
-| [Tabs](tabs.md)                   | Available: server HTML with the full state, `<lu-tabs>` adds the keys |
-
-## Size
-
-`@lumiose/ui` is opt-in, so its size is reported apart from the runtime's caps:
-`pnpm --filter @lumiose/ui size` prints, per component, the JavaScript a server-rendered page loads
-for its custom elements, the JavaScript an island that uses it loads, and its CSS (minified, gzip
-and brotli).
-
 ## Related
 
-- [Web components](https://itsjavi.com/lumiose/docs/guides/web-components/): custom elements in Lumiose pages and islands.
-- [Islands](https://itsjavi.com/lumiose/docs/concepts/islands/): where components run in the browser.
-- [JSX](https://itsjavi.com/lumiose/docs/concepts/jsx/): `class`, events and `on:`.
+- [UI components](README.md): the approach and the components.
+- [Installation](installation.md): adding the package and importing its stylesheets.
+- [Styles](https://itsjavi.com/lumiose/docs/concepts/styles/): scoped CSS and global stylesheets in Lumiose.
 
 <!-- source: dialog.md -->
 

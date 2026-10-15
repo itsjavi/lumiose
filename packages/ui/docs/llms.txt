@@ -10,6 +10,8 @@ props, events and styling hooks. The Lumiose docs: `node_modules/lumiose/docs/ll
 ## Overview
 
 - [UI components](README.md): `@lumiose/ui`: accessible, unstyled UI primitives built on native elements (`<dialog>`, popover, invoker commands, CSS anchor positioning), server-rendered without hydration. Style them with your own CSS or the optional default theme.
+- [Installation](installation.md): Add `@lumiose/ui` to a Lumiose app and import its stylesheets, and the default theme if you want its look. The components then render in server HTML, without an island, and a page loads only the small scripts of the components it renders.
+- [Theming](theming.md): `@lumiose/ui` is unstyled: its stylesheets hold only what the components need to work. The optional default theme gives them a look, light and dark, through `--lu-` custom properties you can change; or style the parts with your own CSS.
 
 ## Components
 
