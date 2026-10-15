@@ -46,6 +46,10 @@
 //!   left untouched: the compiler reports why (`LUM3008`, `LUM3013`).
 //! - **Lightning CSS** parses each block with error recovery, lowers nesting and prefixes for
 //!   [`CssOptions::targets`], and minifies when [`CssOptions::minify`] is set.
+//! - **Tailwind CSS v4 at-rules** (`@apply`, `@reference`, `@theme`, `@utility`, `@variant`,
+//!   `@custom-variant`, `@slot`, `@source`, `@plugin`, `@config`) are kept as written, like any
+//!   unknown at-rule, for Tailwind's Vite plugin to process after Lumiose. Unlike other unknown
+//!   at-rules they are not reported (`LUM3015`); the rules around them are scoped as usual.
 //! - **Value checks.** Lightning CSS keeps a value it cannot parse as written, so browsers
 //!   drop the declaration silently. Such values are warned about (`LUM3017`, conservatively:
 //!   valid CSS the pinned Lightning CSS does not parse yet is never reported), as are unitless

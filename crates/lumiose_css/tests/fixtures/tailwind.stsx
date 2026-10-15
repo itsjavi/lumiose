@@ -1,0 +1,34 @@
+// Tailwind v4's at-rules pass through verbatim, without LUM3015, for Tailwind's Vite plugin.
+// Selectors stay scoped; other unknown at-rules still warn.
+<style>
+  @reference "../styles/app.css";
+  @source "../node_modules/@my-company/ui-lib";
+  @plugin "@tailwindcss/typography";
+  @config "../../tailwind.config.js";
+  @custom-variant theme-midnight (&:where([data-theme="midnight"] *));
+  @custom-variant pointer-coarse {
+    @media (pointer: coarse) {
+      @slot;
+    }
+  }
+  @theme {
+    --color-mint-500: oklch(0.72 0.11 178);
+  }
+  @utility content-auto {
+    content-visibility: auto;
+    &:hover { tab-size: 2; }
+  }
+  .card {
+    padding: 0;
+    @apply p-6 font-bold hover:bg-red-500;
+    margin: --spacing(4);
+    border: 2px solid theme(--color-red-500);
+    @variant dark {
+      color: white;
+    }
+    .title { @apply text-xl; }
+  }
+  @made-up-rule foo;
+  .b { @frobnicate x; }
+  .c { @APPLY p-2; }
+</style>

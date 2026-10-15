@@ -12,7 +12,7 @@ export default function About() {
 }
 
 // Tailwind's functions and directives need `@reference` to the stylesheet that imports Tailwind.
-// The compiler does not know Tailwind's at-rules yet: it keeps them, with a LUM3015 warning each.
+// The compiler keeps Tailwind's at-rules as written, without a warning, and scopes `.applied`.
 <style>
   @reference "../../styles/app.css";
   .applied {

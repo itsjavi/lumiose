@@ -1,0 +1,11 @@
+// @targets chrome 100
+// @minify
+// Lowered nesting keeps `@apply` in its rule, before the declarations that follow it.
+<style>
+  .card {
+    padding: 0;
+    @apply p-6 font-bold;
+    margin: --spacing(4);
+    .title { @apply text-xl; }
+  }
+</style>
