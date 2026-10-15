@@ -5,8 +5,9 @@ title: >-
   different element
 status: To Do
 assignee:
-  - '@Spark'
+  - '@Beacon'
 created_date: '2026-10-15 22:29'
+updated_date: '2026-10-15 22:39'
 labels:
   - runtime
   - hydration
@@ -28,3 +29,9 @@ Found by Halo in TASK-365 (2026-10-15); the repros are in TASK-365's notes. In a
 - [ ] #1 Both repros hydrate without LUM4006, with a regression test
 - [ ] #2 The ui-e2e form island uses the natural order (control before description) again
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+2026-10-16 (Lux, orchestrator): reassigned to Beacon for batch 5. New sessions cannot start from an automated turn, so the idle Beacon session takes it. Beacon may edit the runtime files the fix needs (packages/lumiose/src/dom/**, the compiler output tests), since no Spark session is running.
+<!-- SECTION:NOTES:END -->
