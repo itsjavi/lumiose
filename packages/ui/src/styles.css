@@ -6,3 +6,4 @@
 @layer lu.core, lu.theme;
 
 @import "./dialog/dialog.css";
+@import "./menu/menu.css";

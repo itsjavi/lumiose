@@ -1,0 +1,97 @@
+/*
+ * The CSS Menu needs to work, and nothing else (decision-62): `lu-menu` adds no box, the items
+ * stack, and CSS anchor positioning places each popup next to its trigger by the popup's
+ * `data-side` and `data-align`, flipping it when it does not fit, with the offsets of
+ * `--lu-side-offset` and `--lu-align-offset`. Browsers without anchor positioning show the popup
+ * where they show any popover, in the middle of the viewport. It sits in the `lu.core` layer, so
+ * any app CSS wins.
+ */
+@layer lu.core, lu.theme;
+
+@layer lu.core {
+  lu-menu {
+    display: contents;
+  }
+  lu-menu :is([role="menu"]:popover-open, [role="menu"] [role="group"]) {
+    display: grid;
+  }
+  lu-menu [role^="menuitem"] {
+    display: flex;
+    align-items: center;
+  }
+
+  @supports (position-area: bottom) {
+    lu-menu [role="menu"]:popover-open {
+      inset: auto;
+      position-area: var(--lu-menu-side) var(--lu-menu-align);
+      position-try-fallbacks:
+        flip-block,
+        flip-inline,
+        flip-block flip-inline;
+    }
+
+    /* The side, with the gap on the side that faces the trigger. */
+    lu-menu [role="menu"] {
+      --lu-menu-side: bottom;
+      margin: var(--lu-side-offset, 0) 0 0;
+    }
+    lu-menu [role="menu"][data-side="top"] {
+      --lu-menu-side: top;
+      margin: 0 0 var(--lu-side-offset, 0);
+    }
+    lu-menu [role="menu"][data-side="left"] {
+      --lu-menu-side: left;
+      margin: 0 var(--lu-side-offset, 0) 0 0;
+    }
+    lu-menu [role="menu"][data-side="right"] {
+      --lu-menu-side: right;
+      margin: 0 0 0 var(--lu-side-offset, 0);
+    }
+    lu-menu [role="menu"][data-side="inline-start"] {
+      --lu-menu-side: x-start;
+      margin: 0;
+      margin-inline-end: var(--lu-side-offset, 0);
+    }
+    lu-menu [role="menu"][data-side="inline-end"] {
+      --lu-menu-side: x-end;
+      margin: 0;
+      margin-inline-start: var(--lu-side-offset, 0);
+    }
+
+    /* The alignment along that side, with the shift away from the aligned edge. */
+    lu-menu [role="menu"]:is([data-side="top"], [data-side="bottom"]) {
+      --lu-menu-align: span-x-end;
+      margin-inline-start: var(--lu-align-offset, 0);
+    }
+    lu-menu [role="menu"]:is([data-side="top"], [data-side="bottom"])[data-align="center"] {
+      --lu-menu-align: center;
+      margin-inline-start: 0;
+    }
+    lu-menu [role="menu"]:is([data-side="top"], [data-side="bottom"])[data-align="end"] {
+      --lu-menu-align: span-x-start;
+      margin-inline: 0 var(--lu-align-offset, 0);
+    }
+    lu-menu [role="menu"]:is([data-side="left"], [data-side="right"], [data-side^="inline-"]) {
+      --lu-menu-align: span-y-end;
+      margin-block-start: var(--lu-align-offset, 0);
+    }
+    lu-menu
+      [role="menu"]:is(
+        [data-side="left"],
+        [data-side="right"],
+        [data-side^="inline-"]
+      )[data-align="center"] {
+      --lu-menu-align: center;
+      margin-block-start: 0;
+    }
+    lu-menu
+      [role="menu"]:is(
+        [data-side="left"],
+        [data-side="right"],
+        [data-side^="inline-"]
+      )[data-align="end"] {
+      --lu-menu-align: span-y-start;
+      margin-block: 0 var(--lu-align-offset, 0);
+    }
+  }
+}

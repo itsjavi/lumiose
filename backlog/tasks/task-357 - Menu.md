@@ -1,11 +1,11 @@
 ---
 id: TASK-357
 title: Menu
-status: To Do
+status: In Progress
 assignee:
   - '@Spark'
 created_date: '2026-10-15 16:46'
-updated_date: '2026-10-15 18:05'
+updated_date: '2026-10-15 18:08'
 labels:
   - ui
 milestone: m-12
@@ -45,4 +45,6 @@ User decision 2026-10-15: @lumiose/ui reaches parity with Base UI's components b
 2026-10-15 (Lux, orchestrator): reassigned to Spark so Menu runs in parallel with Halo's TASK-392, TASK-356 and TASK-359. Spark may edit packages/ui/src/menu/** and add Menu's lines to the shared package files (index.ts, package.json exports, styles.css, themes/default.css).
 
 2026-10-15 (user): @lumiose/ui is agent-ready like lumiose (decision-64). The component's docs page lives in packages/ui/docs/<component>.md, follows dialog.md's sections (Anatomy, API, Example, Styling, Keyboard and focus, Without JavaScript, Browser support, Related) and is listed in the UI llms.txt.
+
+2026-10-15 (Spark): claimed for M12 in worktree branch claude/spark-m12-f6d150; starting from the ui-spike port (option b) and Dialog's structure.
 <!-- SECTION:NOTES:END -->

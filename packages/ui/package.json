@@ -22,6 +22,8 @@
     "./dialog": "./src/dialog/dialog.tsx",
     "./styles.css": "./src/styles.css",
     "./dialog.css": "./src/dialog/dialog.css",
+    "./menu": "./src/menu/menu.tsx",
+    "./menu.css": "./src/menu/menu.css",
     "./themes/default.css": "./src/themes/default.css",
     "./package.json": "./package.json"
   },
@@ -31,6 +33,8 @@
       "./dialog": "./dist/dialog/dialog.tsx",
       "./styles.css": "./dist/styles.css",
       "./dialog.css": "./dist/dialog/dialog.css",
+      "./menu": "./dist/menu/menu.tsx",
+      "./menu.css": "./dist/menu/menu.css",
       "./themes/default.css": "./dist/themes/default.css",
       "./package.json": "./package.json"
     }
