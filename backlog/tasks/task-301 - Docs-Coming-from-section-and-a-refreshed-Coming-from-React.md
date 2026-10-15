@@ -5,7 +5,7 @@ status: In Progress
 assignee:
   - '@Beacon'
 created_date: '2026-10-15 02:22'
-updated_date: '2026-10-15 04:23'
+updated_date: '2026-10-15 04:30'
 labels:
   - docs
 milestone: m-10
@@ -34,4 +34,6 @@ The guides map concepts to the current API only; they are not migration or upgra
 
 <!-- SECTION:NOTES:BEGIN -->
 Beacon (M10 batch 1, worktree beacon-m10): started. Plan: docs/coming-from/ with a section README holding the shared outline; react.md moved from coming-from-react.md and refreshed; docs index, site nav (from the index), llms.txt, CLI section order and the docs contract test cover the section.
+
+Committed the section, the refreshed React guide and the outline contract test (5532ade5). The index lists the other three guides as TASK-302 to TASK-304 land; Done after that.
 <!-- SECTION:NOTES:END -->
