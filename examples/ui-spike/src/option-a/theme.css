@@ -1,0 +1,18 @@
+/* Option (a): Timeless's three CSS tiers, only for the components on the page. */
+@import "@timelessui/components/css/tokens.css";
+@import "@timelessui/components/css/core/button.css";
+@import "@timelessui/components/css/core/forms.css";
+@import "@timelessui/components/css/core/dialog.css";
+@import "@timelessui/components/css/core/floating.css";
+@import "@timelessui/components/css/core/menu.css";
+@import "@timelessui/components/css/core/options.css";
+@import "@timelessui/components/css/core/listbox.css";
+@import "@timelessui/components/css/core/combobox.css";
+@import "@timelessui/components/css/themes/atmosphere/tokens.css";
+@import "@timelessui/components/css/themes/atmosphere/button.css";
+@import "@timelessui/components/css/themes/atmosphere/forms.css";
+@import "@timelessui/components/css/themes/atmosphere/dialog.css";
+@import "@timelessui/components/css/themes/atmosphere/menu.css";
+@import "@timelessui/components/css/themes/atmosphere/options.css";
+@import "@timelessui/components/css/themes/atmosphere/listbox.css";
+@import "@timelessui/components/css/themes/atmosphere/combobox.css";

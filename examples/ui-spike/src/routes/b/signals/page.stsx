@@ -1,0 +1,11 @@
+import "../../../option-b/theme.css";
+import { SignalsB } from "../../../islands/SignalsB.tsx";
+
+export default function OptionBSignals() {
+  return (
+    <>
+      <h1>(b) Port, bound to signals in an island</h1>
+      <SignalsB client:load />
+    </>
+  );
+}
