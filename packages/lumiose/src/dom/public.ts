@@ -9,6 +9,8 @@ import { createComponent, restProps } from "./component.ts";
 import { insert } from "./insert.ts";
 import { spread } from "./spread.ts";
 import type { RenderedShell, RenderToStreamOptions } from "../server/render-types.ts";
+import { INSPECTED } from "./dev.ts";
+import { aliasValue, labelValue } from "./devtools.ts";
 
 export { ErrorBoundary, Suspense } from "./boundaries.ts";
 export type { ErrorBoundaryProps, SuspenseProps } from "./boundaries.ts";
@@ -22,6 +24,12 @@ export type { RenderedShell, RenderToStreamOptions };
  */
 export function ref<T extends Element>(): JSX.Ref<T> {
   const element = signal<T | undefined>(undefined);
+  if (import.meta.env?.DEV && INSPECTED) {
+    const read = ((...args: [T?]): T | undefined | void =>
+      args.length === 0 ? element() : element.set(args[0])) as JSX.Ref<T>;
+    aliasValue(read, element, "ref");
+    return read;
+  }
   return ((...args: [T?]): T | undefined | void =>
     args.length === 0 ? element() : element.set(args[0])) as JSX.Ref<T>;
 }
@@ -64,6 +72,7 @@ function createElement(tag: string, props: Record<string, unknown>): Element {
 export function Dynamic(props: DynamicProps): Renderable {
   const others = restProps(props, ["component"]) as Record<string, unknown>;
   const current = computed(() => props.component);
+  if (import.meta.env?.DEV && INSPECTED) labelValue(current, "Dynamic component", true);
   return () => {
     const component = current();
     return !component

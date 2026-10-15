@@ -1,9 +1,10 @@
 // Components and reactive props utilities (contract doc-2 §1-2, spec §4.2).
 import type { Component, Renderable } from "../contract/client.ts";
 import { currentOwner, runWithLazyOwner, setActiveSub } from "../core/internal.ts";
+import { enterComponent, exitComponent } from "./devtools.ts";
 import { createAsync, type AsyncTagged } from "./async.ts";
 import { childFrame, frame, setFrame } from "./frame.ts";
-import { DEV } from "./dev.ts";
+import { DEV, INSPECTED } from "./dev.ts";
 
 /** Untagged async components already warned about (dev only). */
 let warned: WeakSet<object> | undefined;
@@ -31,6 +32,15 @@ function runComponent(): void {
  */
 export function createComponent<P>(component: Component<P>, props: P): Renderable {
   const tagged = (component as AsyncTagged).$$async;
+  if (import.meta.env?.DEV && INSPECTED && tagged !== undefined) {
+    const record = enterComponent(component, props);
+    let result: Renderable;
+    try {
+      return (result = tagged(component, props));
+    } finally {
+      exitComponent(record, result);
+    }
+  }
   if (tagged !== undefined) {
     return tagged(component, props);
   }
@@ -45,6 +55,7 @@ export function createComponent<P>(component: Component<P>, props: P): Renderabl
   }
   componentFn = component;
   componentProps = props;
+  const record = import.meta.env?.DEV && INSPECTED ? enterComponent(component, props) : undefined;
   const prevSub = setActiveSub(undefined);
   // Instance paths exist only while an island hydrates (./frame.ts).
   const prevFrame = frame;
@@ -54,6 +65,7 @@ export function createComponent<P>(component: Component<P>, props: P): Renderabl
   try {
     runWithLazyOwner(currentOwner, runComponent);
   } finally {
+    if (import.meta.env?.DEV && INSPECTED) exitComponent(record, componentResult);
     setActiveSub(prevSub);
     if (prevFrame !== undefined) {
       setFrame!(prevFrame);

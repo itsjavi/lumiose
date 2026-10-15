@@ -61,6 +61,10 @@ lumiose dev --port 3000
 lumiose dev --format json   # one line once listening: { "command": "dev", "ok": true, "url": "http://localhost:5173/", "urls": { "local": [...], "network": [...] } }
 ```
 
+Every page gets the in-page inspector: Alt+Shift+L or the corner button opens it, and Alt+click
+opens an element's source in your editor ([Dev tools](../concepts/dev-tools.md)).
+`lumiose({ inspector: false })` turns it off.
+
 Like Vite, the server stops when its stdin ends; start it with an open stdin when it runs in the
 background. A project with its own Node server runs the same dev setup inside it with
 [`createDevHandler()`](vite.md#createdevhandler).

@@ -2,6 +2,8 @@
 // every named component with `$hot` (crates/lumiose_compiler/src/hot.rs) and accept their own
 // updates through `$hotAccept`. Nothing here runs in production builds: the compiler only emits
 // these calls with the `hot` compile option, and `import.meta.hot` is undefined outside dev.
+// With the in-page inspector on (decision-59), `$hot` also passes each component's source location
+// and its instances' later renders to the inspector's registry, and `$label` names signals.
 //
 // `$hot` returns one stable wrapper per component and module, kept in `import.meta.hot.data`
 // across module versions, so parents (in other modules, or the old version of this one) keep
@@ -16,6 +18,8 @@
 // server's as without the wrapper.
 
 import { signal, untrack, type Signal } from "../core/index.ts";
+import { INSPECTED } from "./dev.ts";
+import { currentComponent, labelValue, locateComponent, renderComponent } from "./devtools.ts";
 import { frame, setFrame } from "./frame.ts";
 
 // oxlint-disable-next-line typescript/no-explicit-any -- any props, as `createComponent` takes.
@@ -35,15 +39,20 @@ interface HotComponent {
 
 const WRAPPER = Symbol.for("lumiose.hotComponent");
 
-/** Registers a component and returns its stable wrapper (`component` itself without `hot`). */
+/**
+ * Registers a component and returns its stable wrapper (`component` itself without `hot`).
+ * `source`: where the component is declared (`src/Counter.stsx:4:17`), for the inspector.
+ */
 export function $hot<C extends Component>(
   hot: HotContext | undefined,
   name: string,
   component: C,
   version: string,
+  source?: string,
 ): C {
   // Outside `lumiose dev` (a build, or a test runner's partial `import.meta.hot`).
   if (hot?.data === undefined) return component;
+  if (import.meta.env?.DEV && INSPECTED && source !== undefined) locateComponent(component, source);
   const registry = (hot.data["lumioseComponents"] ??= new Map()) as Map<string, HotComponent>;
   const known = registry.get(name);
   if (known !== undefined) {
@@ -52,18 +61,23 @@ export function $hot<C extends Component>(
       known.version = version;
       known.current.set({ fn: component });
     }
+    if (import.meta.env?.DEV && INSPECTED && source !== undefined)
+      locateComponent(known.wrapper, source);
     return known.wrapper as C;
   }
   const current = signal({ fn: component });
+  if (import.meta.env?.DEV && INSPECTED) labelValue(current, "hot update", true);
   const entry: HotComponent = { version, current, wrapper: () => null };
   const wrapper: Component = (props) => {
     // The instance's hydration frame, for its first render only (later ones render afresh).
     let hydrating = frame;
+    // The inspector's record of the instance, which `createComponent` just opened.
+    const record = import.meta.env?.DEV && INSPECTED ? currentComponent() : undefined;
     return () => {
       const { fn } = current();
       const instanceFrame = hydrating;
       hydrating = undefined;
-      return untrack(() => {
+      const render = (): unknown => {
         if (instanceFrame === undefined) return fn(props);
         const prev = setFrame!(instanceFrame);
         try {
@@ -71,11 +85,15 @@ export function $hot<C extends Component>(
         } finally {
           setFrame!(prev);
         }
-      });
+      };
+      return untrack(
+        import.meta.env?.DEV && INSPECTED ? () => renderComponent(record, render) : render,
+      );
     };
   };
   entry.wrapper = wrapper;
   Object.defineProperty(wrapper, "name", { value: name });
+  if (import.meta.env?.DEV && INSPECTED && source !== undefined) locateComponent(wrapper, source);
   (wrapper as Component & { [WRAPPER]?: true })[WRAPPER] = true;
   registry.set(name, entry);
   return wrapper as C;
@@ -107,4 +125,13 @@ export function $hotAccept(
     exports.every((name) => (next[name] as { [WRAPPER]?: true } | undefined)?.[WRAPPER] === true);
   hot.data["lumioseExports"] = exports;
   if (!same) hot.invalidate("lumiose: the module's exports changed, or are not all components");
+}
+
+/**
+ * Names a signal or computed after the variable it is assigned to, for the inspector: the
+ * compiler's dev output wraps `const count = signal(0)` as `$label(signal(0), "count")`.
+ */
+export function $label<T>(value: T, name: string): T {
+  if (import.meta.env?.DEV && INSPECTED) labelValue(value, name);
+  return value;
 }

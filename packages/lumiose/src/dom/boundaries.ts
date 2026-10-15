@@ -17,6 +17,8 @@ import { signal } from "../core/signal.ts";
 import { hydrator } from "./hydration.ts";
 import { branch, createRange, renderRange } from "./insert.ts";
 import { INSTRUMENTED, notify } from "./instrument.ts";
+import { INSPECTED } from "./dev.ts";
+import { labelValue } from "./devtools.ts";
 
 export interface SuspenseProps {
   /** Shown while new content below is pending. */
@@ -32,6 +34,7 @@ export interface SuspenseProps {
  */
 export function Suspense(props: SuspenseProps): Renderable {
   const count = signal(0);
+  if (import.meta.env?.DEV && INSPECTED) labelValue(count, "Suspense pending", true);
   provideContext(SUSPENSE, count);
   // Under hydration the range claims the server block and the content adopts what is inside;
   // the server content then stays while the first runs replay, instead of the fallback.
@@ -73,6 +76,7 @@ export interface ErrorBoundaryProps {
 export function ErrorBoundary(props: ErrorBoundaryProps): Renderable {
   // `equals: false`: a reset after a synchronous failure (which never set it) still re-renders.
   const failure = signal<{ error: unknown } | undefined>(undefined, { equals: false });
+  if (import.meta.env?.DEV && INSPECTED) labelValue(failure, "ErrorBoundary error", true);
   const reset = (): void => failure.set(undefined);
   const capture = (error: unknown): void => failure.set({ error });
 

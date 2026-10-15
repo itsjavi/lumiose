@@ -20,6 +20,8 @@ import {
 import { activeSub } from "./reactive.ts";
 import { untrack } from "./reactive.ts";
 import { computed, signal, type Signal } from "./signal.ts";
+import { INSPECTED } from "../dom/dev.ts";
+import { labelValue } from "../dom/devtools.ts";
 
 /** Context key of an async instance's in-flight flag. */
 export const PENDING: unique symbol = Symbol();
@@ -46,6 +48,10 @@ export function isPending(): boolean {
 // Pure: bundles that never read `isBusy()` or register work drop them.
 const inFlight = /* @__PURE__ */ signal(0);
 const anyInFlight = /* @__PURE__ */ computed(() => inFlight() > 0);
+if (import.meta.env?.DEV && INSPECTED) {
+  labelValue(inFlight, "isBusy count", true);
+  labelValue(anyInFlight, "isBusy()", true);
+}
 
 /**
  * App-wide: whether anything is in flight (decision-20): an async component run, a `<Suspense>`
@@ -115,6 +121,11 @@ export function resource<T>(fetcher: (signal: AbortSignal) => T | PromiseLike<T>
   const value = signal<T | undefined>(undefined);
   const loading = signal(true);
   const error = signal<unknown>(undefined);
+  if (import.meta.env?.DEV && INSPECTED) {
+    labelValue(value, "resource value", true);
+    labelValue(loading, "resource loading", true);
+    labelValue(error, "resource error", true);
+  }
   const release = suspend(owner);
   const revision = lookupContext(owner, REVISION, undefined) as (() => number) | undefined;
   let current: Run | undefined;

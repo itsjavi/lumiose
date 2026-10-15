@@ -46,6 +46,14 @@ export const INSTRUMENTATION_CLIENT_FILES = [
 export const CLIENT_HOOKS_DEFINE: Record<string, string> = {
   "import.meta.env.LUMIOSE_CLIENT_HOOKS": "true",
 };
+/**
+ * The `define` of `lumiose dev` with the in-page inspector (decision-59): the runtime reports to
+ * the inspector's registry behind this flag (lumiose src/dom/dev.ts `INSPECTED`), and the compiler
+ * plugin writes source locations while it is set.
+ */
+export const INSPECTOR_DEFINE: Record<string, string> = {
+  "import.meta.env.LUMIOSE_INSPECTOR": "true",
+};
 /** `src/instrumentation.server.ts` (decision-49): server-only by its `.server.` segment. */
 export const INSTRUMENTATION_SERVER_FILES = [
   "src/instrumentation.server.ts",
@@ -96,6 +104,8 @@ export interface ProjectOptions {
   i18n?: I18nConfig;
   /** `lumiose({ site })`: the site's URL, normalized with a trailing slash (`https://example.com/docs/`). */
   site?: string;
+  /** `lumiose({ inspector })`: the in-page inspector of `lumiose dev` (decision-59). */
+  inspector?: boolean;
 }
 
 /** MPA navigation of `lumiose({ viewTransitions, prefetch })` with its defaults (decision-24). */

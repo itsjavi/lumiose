@@ -3,7 +3,8 @@
 import { currentOwner, releaseDeps, setActiveSub, setCurrentOwner } from "./reactive.ts";
 import type { ReactiveNode } from "./system.ts";
 // Dev-only error detail; production builds drop it.
-import { DEV } from "../dom/dev.ts";
+import { DEV, INSPECTED } from "../dom/dev.ts";
+import { inspectOwners, ownerCreated } from "../dom/devtools.ts";
 
 export type Cleanup = () => void;
 
@@ -48,6 +49,7 @@ export function createOwner(parent: Owner | undefined): Owner {
 
 /** Links a new owner under `parent`. Under a disposed parent, the owner starts disposed. */
 export function attachOwner(owner: Owner, parent: Owner | undefined): void {
+  if (import.meta.env?.DEV && INSPECTED) ownerCreated(owner, parent);
   if (parent === undefined) {
     return;
   }
@@ -389,4 +391,15 @@ export function handleError(owner: Owner | undefined, error: unknown): void {
     throw error;
   }
   handler(error);
+}
+
+// The in-page inspector's registry (./devtools.ts) reaches owners through these.
+if (import.meta.env?.DEV && INSPECTED) {
+  inspectOwners({
+    lookup: lookupOwner,
+    create: createOwner,
+    dispose: disposeOwner,
+    run: runWithOwner,
+    setActiveSub,
+  });
 }

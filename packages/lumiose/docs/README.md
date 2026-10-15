@@ -54,6 +54,7 @@ mistakes** and **Related**.
 - [Markdown and HTML imports](concepts/content.md): `.md` and `.html` files as static components; GFM, heading ids, frontmatter and its hook, scoped `<style>`, client `<script>`.
 - [Head and document](concepts/head.md): `<Title>`, `<Meta>`, `<Head>` and a custom `document.stsx`.
 - [Compiler and diagnostics](concepts/compiler.md): What the compiler does with `.stsx`/`.tsx`, and how `LUMxxxx` diagnostics work.
+- [Dev tools](concepts/dev-tools.md): The in-page inspector of `lumiose dev` (Alt+Shift+L): the component tree with props and source locations, signals with their dependents and last write, islands with their hydration state, why something updated, and Alt+click to open any element's source.
 - [Testing](concepts/testing.md): Component tests with Vitest and Testing Library (queries and user-event), server rendering as strings, and end-to-end tests with Playwright.
 - [Security](concepts/security.md): A strict Content Security Policy with nonces and hashes (`lumiose({ csp: "strict" })`, `cspNonce()`), and the cross-site form check.
 

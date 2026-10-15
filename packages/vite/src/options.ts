@@ -170,6 +170,15 @@ export interface LumioseOptions {
    * `base`: it becomes the base when the config sets none, and must match it otherwise.
    */
   site?: string;
+  /**
+   * The in-page inspector of `lumiose dev` (decision-59): Alt+Shift+L or the corner button opens
+   * it on every page (the component tree, signals, islands and why something updated), and
+   * Alt+click opens an element's source in your editor. Dev only: builds contain none of it.
+   * `false` removes it. Default: `true`.
+   *
+   * @example lumiose({ inspector: false })
+   */
+  inspector?: boolean;
 }
 
 /** The `api` of the `lumiose` plugin, read by the app layer (app/project.ts `projectOptions`). */
@@ -221,6 +230,7 @@ const KNOWN = [
   "adapter",
   "i18n",
   "site",
+  "inspector",
 ];
 
 /** Validates `lumiose({ … })` options and returns the project options; throws a `TypeError`. */
@@ -306,6 +316,12 @@ export function projectOptionsOf(options: LumioseOptions): ProjectOptions {
     }
   }
   if (options.site !== undefined) project.site = siteOf(options.site);
+  if (options.inspector !== undefined) {
+    if (typeof options.inspector !== "boolean") {
+      fail("inspector", `expected true or false, got ${describe(options.inspector)}`);
+    }
+    project.inspector = options.inspector;
+  }
   return project;
 }
 

@@ -1,5 +1,7 @@
 // The reactive engine: execution context, and signal, computed and trigger nodes (spec §6.1).
 // Effects and scheduling live in ./effect.ts, which installs the notify hook below.
+import { INSPECTED } from "../dom/dev.ts";
+import { nodeWritten } from "../dom/devtools.ts";
 import type { Owner } from "./owner.ts";
 import {
   createReactiveSystem,
@@ -177,6 +179,7 @@ export function peekSignal<T>(s: SignalNode<T>): T {
 
 export function writeSignal<T>(s: SignalNode<T>, value: T): void {
   if (!s.equals(s.pendingValue, value)) {
+    if (import.meta.env?.DEV && INSPECTED) nodeWritten(s, s.pendingValue, value);
     s.pendingValue = value;
     s.flags = MUTABLE | DIRTY;
     const subs = s.subs;
@@ -291,6 +294,7 @@ export function track(node: TriggerNode): void {
 
 /** Marks everything that tracked `node` as changed. */
 export function trigger(node: TriggerNode): void {
+  if (import.meta.env?.DEV && INSPECTED) nodeWritten(node, undefined, undefined);
   node.flags = MUTABLE | DIRTY;
   if (node.subs !== undefined) {
     propagate(node.subs, innerWrite());

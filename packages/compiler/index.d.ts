@@ -90,6 +90,11 @@ export interface CompileOptions {
    */
   hot?: boolean;
   /**
+   * Dev with the in-page inspector: elements carry `data-lumiose-source="file:line:column"`,
+   * `$hot` gets component locations and signals get labels. Default `false`.
+   */
+  devSource?: boolean;
+  /**
    * Report browser globals evaluated at module scope (LUM4004); always on for the server
    * target. Default `false`.
    */

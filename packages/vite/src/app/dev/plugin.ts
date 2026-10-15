@@ -20,6 +20,9 @@
 // - Errors: unexpected render errors and compiler diagnostics (LUMxxxx, with Vite's code frame)
 //   are logged and open Vite's error overlay on the page that hit them, on top of the dev
 //   `error`/fallback page; route manifest errors (LUM5002/5003) show on every page until fixed.
+// - Inspector (decision-59): unless `lumiose({ inspector: false })`, the dev client mounts the
+//   in-page inspector (./inspector.ts), and `INSPECTOR_DEFINE` has the runtime report to it and
+//   the compiler plugin write source locations.
 
 import { runtimeFile } from "../../runtime-files.ts";
 import { AsyncLocalStorage } from "node:async_hooks";
@@ -37,6 +40,7 @@ import {
   hrefDefine,
   INSTRUMENTATION_CLIENT_FILES,
   INSTRUMENTATION_SERVER_FILES,
+  INSPECTOR_DEFINE,
   isClientState,
   islandModules,
   MIDDLEWARE_FILES,
@@ -111,6 +115,12 @@ const DEV_CLIENT = normalizePath(
   ),
 );
 const DEV_CLIENT_ID = "\0lumiose:dev";
+/** The in-page inspector (./inspector.ts), which the dev client mounts (decision-59). */
+const INSPECTOR = normalizePath(
+  fileURLToPath(
+    new URL(import.meta.url.endsWith(".ts") ? "inspector.ts" : "inspector.js", import.meta.url),
+  ),
+);
 /** The browser URL of a virtual module id (`\0lumiose:spa` → `/@id/__x00__lumiose:spa`). */
 const virtualUrl = (base: string, id: string): string =>
   `${base}@id/${id.replace("\0", "__x00__")}`;
@@ -148,6 +158,7 @@ export function lumioseDev(options: LumioseDevOptions = {}): Plugin {
   let cached: { runtime: AppServerModule; app: AppFiles; handler: RequestHandler } | undefined;
   let reloadTimer: ReturnType<typeof setTimeout> | undefined;
   let pending: "reload" | "update" | undefined;
+  let inspector = true;
 
   /**
    * Reloads the browser, or has it patch the page (`update`), once for a burst of file events: one
@@ -404,15 +415,20 @@ export function lumioseDev(options: LumioseDevOptions = {}): Plugin {
     apply: "serve",
 
     config(config) {
-      const trailingSlash =
-        options.trailingSlash ?? configProjectOptions(config.plugins).trailingSlash ?? "ignore";
+      const configured = configProjectOptions(config.plugins);
+      const trailingSlash = options.trailingSlash ?? configured.trailingSlash ?? "ignore";
+      inspector = configured.inspector !== false;
       return {
         // No index.html fallback: every non-asset request is a route.
         ...(config.appType === undefined ? { appType: "custom" as const } : {}),
         // decision-49: in dev the runtime always calls the hooks of src/instrumentation.client.ts,
         // so creating or deleting the file needs no restart; without it they are no-ops. Dev's
         // `import.meta.env` only takes top-level defines.
-        define: { ...hrefDefine(trailingSlash), ...CLIENT_HOOKS_DEFINE },
+        define: {
+          ...hrefDefine(trailingSlash),
+          ...CLIENT_HOOKS_DEFINE,
+          ...(inspector ? INSPECTOR_DEFINE : {}),
+        },
       };
     },
 
@@ -432,7 +448,7 @@ export function lumioseDev(options: LumioseDevOptions = {}): Plugin {
               clientEntry: clientEntry !== undefined,
             });
           case DEV_CLIENT_ID:
-            return `import ${JSON.stringify(DEV_CLIENT)};\n`;
+            return `import ${JSON.stringify(DEV_CLIENT)};\n${inspector ? inspectorCode(root, server.config.base) : ""}`;
           case CLIENT_MARK_ID:
             return "export const start = performance.now();\n";
           case CLIENT_ID:
@@ -618,6 +634,13 @@ if (import.meta.hot) import.meta.hot.accept((next) => {
       }
     }
   }
+}
+
+/** The dev client's part that mounts the inspector (decision-59). */
+function inspectorCode(root: string, base: string): string {
+  return `import { mountInspector } from ${JSON.stringify(INSPECTOR)};
+mountInspector(${JSON.stringify({ root, base })});
+`;
 }
 
 /**

@@ -40,7 +40,7 @@ import { dirname, extname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { Diagnostic } from "@lumiose/compiler";
 import { writeLumioseTsconfig } from "./layout.ts";
-import { i18nDefine, siteBaseOf } from "./app/project.ts";
+import { i18nDefine, INSPECTOR_DEFINE, siteBaseOf } from "./app/project.ts";
 import {
   defaultClientConditions,
   defaultServerConditions,
@@ -149,6 +149,8 @@ export default function lumiose(options: LumioseOptions = {}): Plugin<LumiosePlu
   // Content modules (`<file>.md.stsx`) are Lumiose modules whatever `include` says.
   const lumioseModules = content ? [include, content.moduleFilter] : [include];
   let serve = false;
+  // `lumiose dev` with the in-page inspector (decision-59): it defines `INSPECTOR_DEFINE`.
+  let inspector = false;
   let root = process.cwd();
   let devServer: ViteDevServer | undefined;
   const islands = new IslandRegistry();
@@ -171,6 +173,8 @@ export default function lumiose(options: LumioseOptions = {}): Plugin<LumiosePlu
     // Component-level hot updates in dev (TASK-146; the compiler applies it to client code), not
     // under Vitest, whose modules are not hot-updated.
     ...(serve && process.env["VITEST"] === undefined ? { hot: true } : {}),
+    // Source locations and signal labels for the inspector; content modules are generated code.
+    ...(inspector && !content?.moduleFilter.test(cleanId(file)) ? { devSource: true } : {}),
   });
   const isLumioseFile = (file: string): boolean => include.test(file) && !exclude.test(file);
   // Server-rendered route modules (./server-routes.ts), scanned once and again after a route
@@ -233,6 +237,10 @@ export default function lumiose(options: LumioseOptions = {}): Plugin<LumiosePlu
 
       async configResolved(config) {
         root = config.root;
+        inspector =
+          serve &&
+          process.env["VITEST"] === undefined &&
+          Object.keys(INSPECTOR_DEFINE).every((key) => config.define?.[key] !== undefined);
         packages = new Packages(root, exclude);
         // Vite reads the project's tsconfig, which may extend the generated one (TASK-73).
         await writeLumioseTsconfig(root);

@@ -2,6 +2,8 @@
 // promise is pending. After React's useOptimistic and Solid 2's createOptimistic.
 import { onCleanup } from "./owner.ts";
 import { computed, signal } from "./signal.ts";
+import { INSPECTED } from "../dom/dev.ts";
+import { labelValue } from "../dom/devtools.ts";
 
 export interface Optimistic<T> {
   /** The source with the pending overlays applied, in order. Reactive. */
@@ -25,6 +27,10 @@ export function optimistic<T>(source: () => T): Optimistic<T> {
   const read = computed(() =>
     overlays().reduce((value, overlay) => overlay(value), source()),
   ) as Optimistic<T>;
+  if (import.meta.env?.DEV && INSPECTED) {
+    labelValue(overlays, "optimistic updates", true);
+    labelValue(read, "optimistic value", true);
+  }
   read.update = (fn, promise) => {
     if (!live) return;
     // A fresh function per call, so the same `fn` passed twice drops one entry at a time.

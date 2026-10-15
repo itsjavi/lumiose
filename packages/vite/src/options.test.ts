@@ -55,9 +55,16 @@ describe("lumiose() project options", () => {
       'lumiose({ include }): expected a RegExp, got "*.stsx".',
     );
     expect(create({ moed: "spa" })).toThrow(
-      "lumiose({ moed }): unknown option. Known options: include, exclude, mode, ssr, prerender, trailingSlash, csrf, svg, md, html, viewTransitions, prefetch, csp, headers, limits, streamTimeout, adapter, i18n, site.",
+      "lumiose({ moed }): unknown option. Known options: include, exclude, mode, ssr, prerender, trailingSlash, csrf, svg, md, html, viewTransitions, prefetch, csp, headers, limits, streamTimeout, adapter, i18n, site, inspector.",
     );
     expect(create(null)).toThrow("lumiose(): expected an options object, got null.");
+  });
+
+  it("validates inspector (decision-59)", () => {
+    expect(apiOf({ inspector: false })).toEqual({ inspector: false });
+    expect(create({ inspector: "off" })).toThrow(
+      'lumiose({ inspector }): expected true or false, got "off".',
+    );
   });
 
   it("validates prerender (TASK-216)", () => {

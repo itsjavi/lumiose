@@ -9,6 +9,8 @@
 // A build whose SPA pages are all client-rendered and that has no islands starts with ./csr.ts.
 // With `src/instrumentation.client.ts`, the entry passes `gate` (../client-entry.ts): the islands
 // and the router's root wait for it (decision-49).
+import { INSPECTED } from "../../dom/dev.ts";
+import { nameComponent } from "../../dom/devtools.ts";
 import { loadIslands, type IslandManifest } from "../../dom/islands.ts";
 import { createRouter, prepareRoot, type SpaConfig } from "./router.ts";
 import { leavesOf } from "./csr.ts";
@@ -25,6 +27,8 @@ export function startSpa(
   for (const [leaf, app] of Object.entries(leavesOf(config))) {
     const start = (csr: boolean) => () => {
       createRouter(config, app);
+      if (import.meta.env?.DEV && INSPECTED)
+        return prepareRoot(leaf, csr).then((root) => nameComponent(root, "SpaRoot"));
       return prepareRoot(leaf, csr);
     };
     manifest[`/${leaf}${SPA_REF}`] = start(false);

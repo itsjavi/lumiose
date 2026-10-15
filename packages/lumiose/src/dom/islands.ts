@@ -22,9 +22,11 @@
 // - Events: `click`, `input`, `submit` and `keydown` targeting an island that is not hydrated yet
 //   are stopped (clicks and submits also held back), hydrate it at once, and are dispatched again
 //   on their target afterwards; an `input` first restores the value typed meanwhile.
+// - Dev: with the in-page inspector on, each step reaches its registry (../core/devtools.ts).
 import type { Component } from "../contract/client.ts";
+import { islandState } from "./devtools.ts";
 import { decodeData } from "../server/serialize.ts";
-import { DEV } from "./dev.ts";
+import { DEV, INSPECTED } from "./dev.ts";
 import { hydrate } from "./hydrate.ts";
 import { INSTRUMENTED, instrument, islandRefs } from "./instrument.ts";
 import { reportError } from "./report.ts";
@@ -81,6 +83,7 @@ export function loadIslands(manifest: IslandManifest): () => void {
         if (typeof component !== "function") return false;
         island.x?.();
         while (island.s!.nextSibling !== island.e) (island.s!.nextSibling as ChildNode).remove();
+        if (import.meta.env?.DEV && INSPECTED) islandState(island, "hydrating");
         island.x = hydrate(
           component as Component<object>,
           decodeData(island.props) as object,
@@ -91,6 +94,7 @@ export function loadIslands(manifest: IslandManifest): () => void {
           true,
           island.idPrefix,
         );
+        if (import.meta.env?.DEV && INSPECTED) islandState(island, "hydrated");
         swapped = true;
       }
       return swapped;
@@ -153,6 +157,7 @@ export function loadIslands(manifest: IslandManifest): () => void {
 
   const arm = (island: Island): void => {
     island.g = 0;
+    if (import.meta.env?.DEV && INSPECTED) islandState(island, "waiting");
     const value = island.value;
     const start = (): void => go(island);
     switch (island.strategy) {
@@ -225,6 +230,7 @@ export function loadIslands(manifest: IslandManifest): () => void {
       return;
     }
     island.g = 1;
+    if (import.meta.env?.DEV && INSPECTED) islandState(island, "loading");
     const load = manifest[island.ref];
     if (DEV && load === undefined) {
       throw new Error(`Lumiose: the island ${island.ref} is missing from virtual:lumiose/islands.`);
@@ -236,6 +242,7 @@ export function loadIslands(manifest: IslandManifest): () => void {
     const start = (): Promise<void> =>
       load!().then((component) => {
         failed = 2;
+        if (import.meta.env?.DEV && INSPECTED) islandState(island, "hydrating");
         // A component marked `$$fresh` renders on the client instead of claiming the server's nodes
         // (an SPA root that renders another view than the server did, app/router/router.ts).
         const fresh = (component as { $$fresh?: true }).$$fresh === true;
@@ -254,6 +261,7 @@ export function loadIslands(manifest: IslandManifest): () => void {
         );
         if (DEV) island.x = dispose;
         island.g = 2;
+        if (import.meta.env?.DEV && INSPECTED) islandState(island, "hydrated");
         // Replayed awaits resolve in microtasks: dispatch caught events once they rendered.
         setTimeout(() => replay(island));
         // Islands inside slots this island inserted are in the document now.
@@ -267,6 +275,7 @@ export function loadIslands(manifest: IslandManifest): () => void {
     (INSTRUMENTED ? instrument("hydrate", { island: island.ref }, start) : start()).catch(
       (error: unknown) => {
         reportError(error, { phase: "hydrate", island: island.ref });
+        if (import.meta.env?.DEV && INSPECTED) islandState(island, "failed", error);
         // The caught events are dispatched again, unintercepted, so their default actions run (a
         // link navigates, a form submits).
         island.g = 2;

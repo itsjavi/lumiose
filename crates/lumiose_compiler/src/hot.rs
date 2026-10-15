@@ -23,12 +23,13 @@ use oxc_ast::ast::*;
 use oxc_ast_visit::{VisitMut, walk_mut};
 
 use crate::analyze::Analysis;
+use crate::dev_source::DevSource;
 use crate::scanner::StyleBlock;
 
 /// What the footer needs, collected before codegen rewrites the program.
 pub struct HotPlan {
-    /// Registered components: (name, version).
-    components: Vec<(String, String)>,
+    /// Registered components: (name, version, start offset).
+    components: Vec<(String, String, u32)>,
     /// The module's export names, or `None` when they cannot be listed (`export *`).
     exports: Option<Vec<String>>,
     /// Starts of the `const` declarations to turn into `let`.
@@ -74,7 +75,7 @@ impl HotPlan {
                 let mut hasher = DefaultHasher::new();
                 shared.hash(&mut hasher);
                 text(start as usize, end as usize).hash(&mut hasher);
-                (name, format!("{:x}", hasher.finish()))
+                (name, format!("{:x}", hasher.finish()), start)
             })
             .collect();
         Some(Self {
@@ -90,14 +91,18 @@ impl HotPlan {
         lets.visit_program(program);
     }
 
-    /// The code appended to the module: the registrations and the accept handler.
-    pub fn footer(&self) -> String {
+    /// The code appended to the module: the registrations and the accept handler. With `dev`
+    /// (the inspector, `dev_source.rs`), each registration passes the component's location.
+    pub fn footer(&self, dev: Option<(&DevSource, &str)>) -> String {
         let mut out = String::from(
             "\nimport { $hot as $$lumioseHot, $hotAccept as $$lumioseHotAccept } from \"lumiose/dom/hot\";\n",
         );
-        for (name, version) in &self.components {
+        for (name, version, start) in &self.components {
+            let source = dev
+                .map(|(dev, source)| format!(", {:?}", dev.at(source, *start)))
+                .unwrap_or_default();
             out.push_str(&format!(
-                "{name} = $$lumioseHot(import.meta.hot, {name:?}, {name}, {version:?});\n"
+                "{name} = $$lumioseHot(import.meta.hot, {name:?}, {name}, {version:?}{source});\n"
             ));
         }
         let exports = match &self.exports {

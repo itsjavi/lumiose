@@ -107,6 +107,8 @@ pub struct TransformOptions<'o> {
     pub style_import: bool,
     /// See [`crate::CompileOptions::strict_csp`].
     pub strict_csp: bool,
+    /// See [`crate::CompileOptions::dev_source`].
+    pub dev_source: Option<&'o crate::dev_source::DevSource>,
 }
 
 #[derive(Debug, Default)]
@@ -630,6 +632,19 @@ impl<'a> Codegen<'a, '_> {
     pub fn tbody_scope_tokens(&self, rows: Span) -> Vec<String> {
         let component = self.component().map(|c| c.name.as_str());
         self.options.scope_tokens.at(component, rows, true)
+    }
+
+    /// The `data-lumiose-source` attribute of the JSX element `tag` at `span`, in dev with the
+    /// inspector; none for elements that render no box (see `dev_source::is_located`).
+    pub fn source_attribute(&self, tag: &str, span: Span) -> Option<(String, String)> {
+        let dev = self.options.dev_source?;
+        if !crate::dev_source::is_located(tag) {
+            return None;
+        }
+        Some((
+            crate::dev_source::SOURCE_ATTRIBUTE.to_owned(),
+            dev.at(self.source, span.start),
+        ))
     }
 
     pub fn namespace(&self) -> Namespace {
