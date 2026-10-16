@@ -49,6 +49,10 @@ through their `class` prop:
 | `lu-meter`          | `Meter.Root`                                   | The label and value above a bar                                                             |
 | `lu-slider`         | `Slider.Root`                                  | The label and value above the track, the indicator and 24px thumbs                          |
 | `lu-number-field`   | `NumberField.Root`                             | The label above one bordered group: the input between its buttons                           |
+| `lu-otp-field`      | `OTPField.Root`                                | A box per character, the caret's box ringed while focused                                   |
+| `lu-preview-card`   | `PreviewCard.Popup`                            | A surface like a popover's, with a fade                                                     |
+| `lu-toolbar`        | `Toolbar.Root`                                 | A bordered row (or column), separators across it, links as tall as buttons                  |
+| `lu-scroll-area`    | `ScrollArea.Root`                              | A bordered box; 10px scrollbars shown on hover, scroll or focus                             |
 | `lu-drawer`         | `Drawer.Popup`                                 | A surface against its edge (a handle on a bottom sheet), title, description, footer; slides |
 | `lu-separator`      | `Separator`                                    | A 1px line in `--lu-border`, horizontal or vertical                                         |
 | `lu-avatar`         | `Avatar.Root`                                  | A 40px circle on a muted surface, the image covering it, the initials centred               |

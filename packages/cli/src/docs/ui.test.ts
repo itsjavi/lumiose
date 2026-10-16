@@ -56,7 +56,12 @@ function exportsOf(index: string): { values: string[]; types: string[] } {
   return { values, types };
 }
 
-const kebab = (name: string) => name.replace(/([a-z0-9])([A-Z])/g, "$1-$2").toLowerCase();
+/** `ToggleGroup` → `toggle-group`, `OTPField` → `otp-field` (an acronym stays one word). */
+const kebab = (name: string) =>
+  name
+    .replace(/([A-Z]+)([A-Z][a-z])/g, "$1-$2")
+    .replace(/([a-z0-9])([A-Z])/g, "$1-$2")
+    .toLowerCase();
 
 function pageOf(component: string): Doc | undefined {
   return docs.find(

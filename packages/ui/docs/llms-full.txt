@@ -102,6 +102,10 @@ custom properties, named as in shadcn/ui, are listed in [Theming](theming.md#the
 | [Slider](slider.md)                 | Available: native range inputs, `<lu-slider>` adds ranges and Page Up and Page Down       |
 | [Number Field](number-field.md)     | Available: native number input, or a formatted spinbutton; press-and-hold buttons         |
 | [Autocomplete](autocomplete.md)     | Available: free text with suggestions, on Combobox's `<lu-combobox>`                      |
+| [OTP Field](otp-field.md)           | Available: one native input under visual slots; autofill, paste, validation natively      |
+| [Preview Card](preview-card.md)     | Available: a link whose hover or focus opens a card; the link works without JavaScript    |
+| [Toolbar](toolbar.md)               | Available: `<lu-toolbar>`, one tab stop across buttons, links, inputs and toggles         |
+| [Scroll Area](scroll-area.md)       | Available: native scrolling, custom scrollbars from `<lu-scroll-area>`                    |
 | [Context Menu](context-menu.md)     | Available: Menu at the pointer, opened by its script (right-click, long press, keys)      |
 | [Drawer](drawer.md)                 | Available: a Dialog against an edge, works without JavaScript; its script adds the swipe  |
 | [Separator](separator.md)           | Available: native `<hr>`, horizontal or vertical, no script                               |
@@ -241,6 +245,10 @@ through their `class` prop:
 | `lu-meter`          | `Meter.Root`                                   | The label and value above a bar                                                             |
 | `lu-slider`         | `Slider.Root`                                  | The label and value above the track, the indicator and 24px thumbs                          |
 | `lu-number-field`   | `NumberField.Root`                             | The label above one bordered group: the input between its buttons                           |
+| `lu-otp-field`      | `OTPField.Root`                                | A box per character, the caret's box ringed while focused                                   |
+| `lu-preview-card`   | `PreviewCard.Popup`                            | A surface like a popover's, with a fade                                                     |
+| `lu-toolbar`        | `Toolbar.Root`                                 | A bordered row (or column), separators across it, links as tall as buttons                  |
+| `lu-scroll-area`    | `ScrollArea.Root`                              | A bordered box; 10px scrollbars shown on hover, scroll or focus                             |
 | `lu-drawer`         | `Drawer.Popup`                                 | A surface against its edge (a handle on a bottom sheet), title, description, footer; slides |
 | `lu-separator`      | `Separator`                                    | A 1px line in `--lu-border`, horizontal or vertical                                         |
 | `lu-avatar`         | `Avatar.Root`                                  | A 40px circle on a muted surface, the image covering it, the initials centred               |
@@ -3482,11 +3490,166 @@ Scrubbing uses pointer capture, without pointer lock.
 - [Slider](slider.md): a number picked by dragging along a range.
 - [Input](input.md): any other text.
 
+<!-- source: otp-field.md -->
+
+# OTP Field
+
+> A one-time code input, after Base UI's OTPField: one native `<input>` shown as one slot per character. SMS autofill (`autocomplete="one-time-code"`), paste, Backspace, the arrow keys, `maxlength`, `pattern`, `required` and the form's value are the platform's, without JavaScript too, and assistive technology meets one labelled text field. `<lu-otp-field>`'s 1.2 kB script lays the input over the slots, keeps the code to the allowed characters, and reports completion. `bind:value` keeps a signal in sync.
+
+```ts
+import { OTPField } from "@lumiose/ui"; // or "@lumiose/ui/otp-field"
+import "@lumiose/ui/otp-field.css"; // or "@lumiose/ui/styles.css" for every component
+import "@lumiose/ui/themes/default.css"; // optional: the default theme
+```
+
+## Anatomy
+
+```tsx
+<OTPField.Root length={6}>
+  <OTPField.Input />
+  <OTPField.Slot />
+  <OTPField.Slot />
+  <OTPField.Separator />
+  <OTPField.Slot />
+</OTPField.Root>
+```
+
+| Part        | Renders                                                                                                                 |
+| ----------- | ----------------------------------------------------------------------------------------------------------------------- |
+| `Root`      | `<lu-otp-field length validation-type>`, with `data-complete`, `data-filled` and `data-focused` from its script         |
+| `Input`     | `<input type="text" autocomplete="one-time-code" inputmode maxlength minlength pattern name>`: the field and its value  |
+| `Slot`      | `<div aria-hidden="true" data-slot>`: the next character (a dot with `mask`), `data-filled`, `data-active` at the caret |
+| `Separator` | `<div aria-hidden="true" data-orientation>`: a dash or a gap between slots                                              |
+
+Name the field with a [Field](field.md) (`Field.Label`), a `<label for>` the Root's `id`, or an
+`aria-label` on the `Input`.
+
+## API
+
+### OTPField.Root
+
+| Prop                               | Type                                               | Default           |                                                                                     |
+| ---------------------------------- | -------------------------------------------------- | ----------------- | ----------------------------------------------------------------------------------- |
+| `length`                           | `number`                                           |                   | How many characters the code has. Required.                                         |
+| `value`                            | `string`                                           |                   | Shows this code when it changes. Pair it with `onValueChange`.                      |
+| `defaultValue`                     | `string`                                           | `""`              | The code at first; a form reset goes back to it.                                    |
+| `onValueChange`                    | `(value: string) => void`                          |                   | Called as the code changes: typing, a paste, autofill, Backspace.                   |
+| `bind:value`                       | `Signal<string>`                                   |                   | Stands in for `value` and `onValueChange`.                                          |
+| `onValueComplete`                  | `(value: string) => void`                          |                   | Called when the last character is entered.                                          |
+| `onValueInvalid`                   | `(value: string) => void`                          |                   | Called with what was entered when it held characters the field does not allow.      |
+| `validationType`                   | `"numeric" \| "alpha" \| "alphanumeric" \| "none"` | `"numeric"`       | The characters the code may hold; spaces are always dropped.                        |
+| `inputMode`                        | `"numeric" \| "text" \| "tel" \| "none"`           | from the type     | The virtual keyboard: numeric for digits, text otherwise.                           |
+| `mask`                             | `boolean`                                          | `false`           | The slots show dots.                                                                |
+| `autoComplete`                     | `string`                                           | `"one-time-code"` | The input's `autocomplete`.                                                         |
+| `autoSubmit`                       | `boolean`                                          | `false`           | Submits the form when the last character is entered.                                |
+| `name`, `form`                     | `string`                                           |                   | The name the code is submitted under, and the id of its form when it is outside it. |
+| `id`                               | `string`                                           | generated         | The input's id, for a `<label for>`.                                                |
+| `required`, `disabled`, `readOnly` | `boolean`                                          | `false`           | As on a native input.                                                               |
+
+### The other parts
+
+`Input` takes `<input>` props except the code's own (`type`, `value`, `name`, `maxlength`,
+`pattern`, `inputmode`, `autocomplete`, …: the Root's); `placeholder` and `aria-label` pass
+through. `Slot` and `Separator` take `<div>` props. Inside a [Field](field.md), the input takes the
+field's id, name, description and error.
+
+**One input, not one per character.** Base UI renders an input per slot. Here one input holds the
+code: autofill of an SMS code works natively (it fills one field), a paste or Backspace needs no
+script, the browser validates the whole code (`pattern`, `minlength`) and submits it, and a screen
+reader meets one field named once instead of six. The slots are a picture of that input, drawn by
+the script; the input lies over them, transparent, so a press on a slot moves the caret there.
+
+**Differences from Base UI's OTPField.** `Slot` replaces the per-character `Input`s; the
+`Separator` is visual (`aria-hidden`). No `normalizeValue` (a function cannot reach a server
+page's script), no `inputRef`, no `render`.
+
+## Example
+
+```tsx check
+import { OTPField } from "@lumiose/ui";
+import { signal } from "lumiose";
+
+export function VerifyCode() {
+  const code = signal("");
+  return (
+    <form method="post">
+      <label for="code">Verification code</label>
+      <OTPField.Root
+        id="code"
+        name="code"
+        length={6}
+        required
+        bind:value={code}
+        class="lu-otp-field"
+      >
+        <OTPField.Input />
+        <OTPField.Slot />
+        <OTPField.Slot />
+        <OTPField.Slot />
+        <OTPField.Separator />
+        <OTPField.Slot />
+        <OTPField.Slot />
+        <OTPField.Slot />
+      </OTPField.Root>
+      <button type="submit" class="lu-button" disabled={code().length < 6}>
+        Verify
+      </button>
+    </form>
+  );
+}
+```
+
+## Styling
+
+**With the default theme**, put `lu-otp-field` on `Root`: a 2.5rem box per character (they shrink
+on narrow screens), the caret's box ringed while the field has focus with a blinking caret in it
+(still where motion is reduced), and a short dash for a separator.
+
+**With your own CSS**, style the slots through `[data-slot]`, `[data-filled]` and `[data-active]`,
+the separator through `[data-orientation]`, and the root through `[data-complete]`,
+`[data-focused]` and `:has(input:disabled)`.
+
+`@lumiose/ui/otp-field.css` (0.2 kB brotli) lays the input over the slots once the script runs
+(`:defined`), its text, caret and selection transparent, and until then shows the input as a plain
+field and hides the slots.
+
+## Keyboard and focus
+
+| Key                | Does                                                                                   |
+| ------------------ | -------------------------------------------------------------------------------------- |
+| A character        | Fills the caret's slot; in a full field, types over it. Refused characters do nothing. |
+| Backspace / Delete | Deletes the character before or after the caret, as in any text field.                 |
+| Arrow Left / Right | Moves the caret, and the ringed slot, one slot.                                        |
+| Home / End         | The first slot, or after the last character.                                           |
+| Tab                | Moves on: one tab stop.                                                                |
+
+A paste fills every slot from the caret, its spaces and dashes dropped, even past what
+`maxlength` would cut.
+
+## Without JavaScript, and the element's script
+
+The input is a native text field: autofill, typing, paste, `pattern` and `required` validation and
+submission work with no script, and the slots stay hidden. `<lu-otp-field>`'s script (1.2 kB
+brotli) shows the slots, cleans the value as it changes (firing `valueinvalid` for refused input),
+fires `valuecomplete`, auto-submits, and follows a form reset.
+
+## Browser support
+
+`autocomplete="one-time-code"`: Safari (iOS, macOS) and Chrome on Android offer received codes;
+elsewhere the field is a plain one. `pattern` with `\p{…}` classes needs the `v` flag that every
+current browser uses for `pattern`.
+
+## Related
+
+- [Field](field.md): a label, a description and errors for the code.
+- [Input](input.md): a text field without slots.
+- [Form](form.md): submitting the code to a form action.
+
 <!-- source: popover.md -->
 
 # Popover
 
-> A popup anchored to its trigger: a native `popover` opened and closed by the trigger's `popovertarget`, placed with CSS anchor positioning, so it works in server HTML with no JavaScript. A 2.1 kB script moves focus into it and back, dismisses it as Base UI does (not on a right-click), keeps `aria-expanded` current and places it in browsers without anchor positioning. `bind:open` (or `open` and `onOpenChange`) keeps a signal in sync in islands. A trigger can open it on hover (`openOnHover`), and a `modal` popover is a modal `<dialog>` that makes the page behind it inert.
+> A popup anchored to its trigger: a native `popover` opened and closed by the trigger's `popovertarget`, placed with CSS anchor positioning, so it works in server HTML with no JavaScript. A 2.3 kB script moves focus into it and back, dismisses it as Base UI does (not on a right-click), keeps `aria-expanded` current and places it in browsers without anchor positioning. `bind:open` (or `open` and `onOpenChange`) keeps a signal in sync in islands. A trigger can open it on hover (`openOnHover`), and a `modal` popover is a modal `<dialog>` that makes the page behind it inert.
 
 ```ts
 import { Popover } from "@lumiose/ui"; // or "@lumiose/ui/popover"
@@ -3708,7 +3871,7 @@ does a modal popover, through invoker commands and `closedby` (where a browser l
 script.
 `open`, `onOpenChange` and `bind:open` need the component to run in an island.
 
-A page that renders a `Popover` loads a 2.1 kB (brotli) module once, without the Lumiose runtime;
+A page that renders a `Popover` loads a 2.3 kB (brotli) module once, without the Lumiose runtime;
 islands bundle it. It covers every Popover on the page:
 
 - focus on open (the first focusable element, or the popup) and its return on close;
@@ -3737,6 +3900,132 @@ islands bundle it. It covers every Popover on the page:
 - [UI components](README.md): the approach, styling, the default theme and the other components.
 - [Tooltip](tooltip.md): a short tip on hover or focus, with the same placement props.
 - [Dialog](dialog.md): a modal popup.
+
+<!-- source: preview-card.md -->
+
+# Preview Card
+
+> A card that previews a link's destination while the pointer or keyboard focus rests on the link, after Base UI's PreviewCard. The trigger is the link itself, which works as a link without JavaScript; the card is a manual popover placed with [Popover](popover.md)'s placement and opened with its hover timing by a 2.0 kB script. It is hoverable, persistent and dismissible (WCAG 1.4.13). `bind:open` keeps a signal in sync.
+
+```ts
+import { PreviewCard } from "@lumiose/ui"; // or "@lumiose/ui/preview-card"
+import "@lumiose/ui/preview-card.css"; // places the card next to its link
+import "@lumiose/ui/themes/default.css"; // optional: the default theme
+```
+
+## Anatomy
+
+```tsx
+<PreviewCard.Root>
+  <p>
+    … <PreviewCard.Trigger href="…" /> …
+  </p>
+  <PreviewCard.Popup />
+</PreviewCard.Root>
+```
+
+| Part      | Renders                                                                                                    |
+| --------- | ---------------------------------------------------------------------------------------------------------- |
+| `Root`    | No element. Holds the ids the other parts share.                                                           |
+| `Trigger` | `<a href data-preview-card="…">`, with an `anchor-name` in its `style`; `data-popup-open` while it is open |
+| `Popup`   | `<div popover="manual" data-side data-align>`, placed next to the link                                     |
+
+The card is a `<div>`: put it after the paragraph that holds the link, not inside it (a `<p>`
+cannot hold a `<div>`), with the Root around both.
+
+## API
+
+### PreviewCard.Root
+
+| Prop           | Type                      | Default |                                                           |
+| -------------- | ------------------------- | ------- | --------------------------------------------------------- |
+| `open`         | `boolean`                 |         | Opens or closes the card when it changes, in the browser. |
+| `onOpenChange` | `(open: boolean) => void` |         | Called after the card opens or closes, whatever did it.   |
+| `bind:open`    | `Signal<boolean>`         |         | Stands in for `open` and `onOpenChange`.                  |
+
+### PreviewCard.Trigger
+
+| Prop         | Type     | Default |                                                                                |
+| ------------ | -------- | ------- | ------------------------------------------------------------------------------ |
+| `delay`      | `number` | `600`   | How long the pointer or focus rests on the link before the card opens, in ms.  |
+| `closeDelay` | `number` | `300`   | How long the card stays after the pointer leaves the link and the card, in ms. |
+
+Every other `<a>` prop passes through: `href`, `target`, `class`, `aria-*`.
+
+### PreviewCard.Popup
+
+`side`, `align`, `sideOffset` and `alignOffset`, as on [Popover.Popup](popover.md#popoverpopup);
+every other `<div>` prop passes through.
+
+**Differences from Base UI's PreviewCard.** No `Portal`, `Positioner`, `Backdrop`, `Arrow` or
+`Viewport`: the top layer and CSS anchor positioning replace them, and the placement props are on
+`Popup`. No detached triggers (`handle`, `payload`) or `actionsRef`.
+
+## Example
+
+```tsx check
+import { PreviewCard } from "@lumiose/ui";
+
+export function SignalsLink() {
+  return (
+    <PreviewCard.Root>
+      <p>
+        Lumiose components update through{" "}
+        <PreviewCard.Trigger href="/docs/concepts/signals">signals</PreviewCard.Trigger>.
+      </p>
+      <PreviewCard.Popup class="lu-preview-card">
+        <strong>Signals</strong>
+        <p>Values that update whatever reads them.</p>
+      </PreviewCard.Popup>
+    </PreviewCard.Root>
+  );
+}
+```
+
+A card is a visual enhancement, as Base UI says: what it shows should also be on the linked page.
+
+## Styling
+
+**With the default theme**, put `lu-preview-card` on `Popup`: a surface like a popover's, 8px from
+the link, with a fade (none where motion is reduced).
+
+**With your own CSS**, style the card through `class`, `:popover-open`, `[data-side]` and
+`[data-align]`, and the link through `[data-popup-open]`. `--lu-side-offset` and
+`--lu-align-offset` set the offsets.
+
+`@lumiose/ui/preview-card.css` is the placement Popover and Tooltip share (placement.css).
+
+## Keyboard and focus
+
+| Key    | Does                                                                                                        |
+| ------ | ----------------------------------------------------------------------------------------------------------- |
+| Tab    | Onto the link: the card opens after the delay, focus stays on the link. Again: into the open card, then on. |
+| Escape | Closes the card, without moving focus or the pointer.                                                       |
+| Enter  | Follows the link.                                                                                           |
+
+- **Hover** opens the card after the delay; it stays while the pointer is on the link or the card
+  (it may cross the gap between them) and closes after the close delay once it left both.
+- **Focus** opens it too; it closes when focus leaves the link and the card. The open card follows
+  its link in the focus order (the link is its invoker).
+- **Touch** follows the link: no card opens on a tap.
+- **A press outside** closes it, as Escape does (the dismissal model of Popover and Menu).
+
+## Without JavaScript, and the client script
+
+The link is a plain link and the card never opens. A page that renders a `PreviewCard` loads a
+2.0 kB (brotli) module once (with the hover timing it shares with Popover): hover and focus with
+their delays, dismissal, `data-popup-open`, and the placement in browsers without CSS anchor
+positioning.
+
+## Browser support
+
+Popover and CSS anchor positioning as in [Popover](popover.md#browser-support): the script places
+the card where anchor positioning is missing.
+
+## Related
+
+- [Popover](popover.md): a popup a click opens, or a hover with `openOnHover`.
+- [Tooltip](tooltip.md): a short text tip on hover or focus.
 
 <!-- source: progress.md -->
 
@@ -3978,6 +4267,150 @@ Native radios and `role="radiogroup"` on a fieldset: every supported browser.
 - [Select](select.md): one value from a longer list.
 - [Field](field.md): a description and errors for the group.
 - [Fieldset](fieldset.md): the legend.
+
+<!-- source: scroll-area.md -->
+
+# Scroll Area
+
+> A scrolling region with custom scrollbars laid over native scrolling, after Base UI's ScrollArea. The viewport scrolls natively (the wheel, touch, the keyboard, find-in-page), is focusable while it overflows, and traps nothing; without JavaScript its native scrollbars show. `<lu-scroll-area>`'s 1.4 kB script hides them and draws its own, which show on hover, while scrolling and while focused, take a thumb drag and a track press, and expose the overflow as data attributes and CSS variables.
+
+```ts
+import { ScrollArea } from "@lumiose/ui"; // or "@lumiose/ui/scroll-area"
+import "@lumiose/ui/scroll-area.css"; // or "@lumiose/ui/styles.css" for every component
+import "@lumiose/ui/themes/default.css"; // optional: the default theme
+```
+
+## Anatomy
+
+```tsx
+<ScrollArea.Root>
+  <ScrollArea.Viewport>
+    <ScrollArea.Content />
+  </ScrollArea.Viewport>
+  <ScrollArea.Scrollbar>
+    <ScrollArea.Thumb />
+  </ScrollArea.Scrollbar>
+  <ScrollArea.Scrollbar orientation="horizontal">
+    <ScrollArea.Thumb />
+  </ScrollArea.Scrollbar>
+  <ScrollArea.Corner />
+</ScrollArea.Root>
+```
+
+| Part        | Renders                                                                                             |
+| ----------- | --------------------------------------------------------------------------------------------------- |
+| `Root`      | `<lu-scroll-area>`: give it a size (a height or a max height); the viewport fills it                |
+| `Viewport`  | `<div tabindex="0" data-viewport>`: scrolls natively; `tabindex="-1"` while nothing overflows       |
+| `Content`   | `<div>`, at least as wide as what it holds                                                          |
+| `Scrollbar` | `<div aria-hidden="true" data-scrollbar data-orientation>` over an edge; hidden while its axis fits |
+| `Thumb`     | `<div data-thumb>`, sized and moved by the script                                                   |
+| `Corner`    | `<div data-corner hidden>`, where the scrollbars meet, shown while both axes overflow               |
+
+## API
+
+### ScrollArea.Root
+
+| Prop                    | Type     | Default |                                                                                       |
+| ----------------------- | -------- | ------- | ------------------------------------------------------------------------------------- |
+| `overflowEdgeThreshold` | `number` | `0`     | How many px of content past an edge before `data-overflow-*-start` or `-end` applies. |
+
+### ScrollArea.Scrollbar
+
+| Prop          | Type                         | Default      |                                                             |
+| ------------- | ---------------------------- | ------------ | ----------------------------------------------------------- |
+| `orientation` | `"vertical" \| "horizontal"` | `"vertical"` | The edge and axis: the inline end, or the bottom.           |
+| `keepMounted` | `boolean`                    | `false`      | Keeps the scrollbar shown while its axis does not overflow. |
+
+### The other parts
+
+Each part passes the props of its element through. Give the `Viewport` an `aria-label` and
+`role="region"` when it holds a section people should find; the scrollbars are `aria-hidden`
+pointer conveniences, since the viewport itself scrolls from the keyboard.
+
+**Data attributes and CSS variables.** On Root and Viewport: `data-has-overflow-x`,
+`data-has-overflow-y`, `data-overflow-x-start`, `-x-end`, `-y-start`, `-y-end`, `data-scrolling`
+(Root). On the Viewport: `--lu-scroll-area-overflow-x-start` (and `-x-end`, `-y-start`, `-y-end`),
+the px of content past each edge, for fades. On the Scrollbars: `data-orientation`,
+`data-hovering`, `data-scrolling`, and `--lu-scroll-area-thumb-height` (or `-width`). On Root:
+`--lu-scroll-area-corner-width` and `-height`.
+
+**What CSS can do alone.** `scrollbar-color`, `scrollbar-width` and `scrollbar-gutter` recolour
+and thin the native scrollbar in every current browser, with no script; they cannot shape it, lay
+it over the content, or show it only on hover. Style the native scrollbar that way for pages
+without JavaScript; the custom scrollbars take over once the script runs.
+
+**Differences from Base UI's ScrollArea.** The custom properties are `--lu-scroll-area-*` (Base
+UI's `--scroll-area-*`); the viewport is focusable while it overflows; no `render`.
+
+## Example
+
+```tsx check
+import { ScrollArea } from "@lumiose/ui";
+
+const RELEASES = ["1.4.0", "1.3.2", "1.3.1", "1.3.0", "1.2.0", "1.1.0", "1.0.0"];
+
+export function ReleaseList() {
+  return (
+    <ScrollArea.Root class="lu-scroll-area" style={{ "block-size": "8rem" }}>
+      <ScrollArea.Viewport role="region" aria-label="Releases">
+        <ScrollArea.Content>
+          <ul>
+            {RELEASES.map((release) => (
+              <li>{release}</li>
+            ))}
+          </ul>
+        </ScrollArea.Content>
+      </ScrollArea.Viewport>
+      <ScrollArea.Scrollbar>
+        <ScrollArea.Thumb />
+      </ScrollArea.Scrollbar>
+    </ScrollArea.Root>
+  );
+}
+```
+
+## Styling
+
+**With the default theme**, put `lu-scroll-area` on `Root`: a bordered box, padded content, 10px
+scrollbars whose rounded thumbs (`--lu-muted-foreground`, 3:1) show while the pointer is over the
+area, while it scrolls and while it has focus, and an inward focus ring on the viewport.
+
+**With your own CSS**, style the parts through `class`, `[data-scrollbar]`, `[data-thumb]`,
+`[data-orientation]`, `[data-hovering]`, `[data-scrolling]` and the overflow attributes and
+custom properties above; a fade at an edge reads `--lu-scroll-area-overflow-y-end`.
+
+`@lumiose/ui/scroll-area.css` (0.3 kB brotli) fills the root with the viewport, hides the native
+scrollbar once the script runs (`:defined`) and the custom ones until then, places the scrollbars
+over the edges leaving room for the corner, and sizes the thumbs from the custom properties.
+
+## Keyboard and focus
+
+| Key                         | Does                                                    |
+| --------------------------- | ------------------------------------------------------- |
+| Tab                         | Onto the viewport while it overflows, then on: no trap. |
+| Arrow keys                  | Scroll a line.                                          |
+| Page Up / Page Down / Space | Scroll a page.                                          |
+| Home / End                  | The top or the bottom.                                  |
+
+The keys are the browser's own scrolling of the focused viewport. A focusable child (a link) takes
+focus first, and the viewport scrolls it into view.
+
+## Without JavaScript, and the element's script
+
+The viewport scrolls with its native scrollbars, from the keyboard too. `<lu-scroll-area>`'s script
+(1.4 kB brotli) hides them and runs the custom ones: thumbs sized and moved on every scroll and
+resize (a ResizeObserver follows content that grows), dragging and track presses, hover and
+scrolling states, the overflow attributes and variables, the corner, right to left.
+
+## Browser support
+
+`scrollbar-width: none` and `::-webkit-scrollbar`, ResizeObserver and pointer capture: every
+supported browser.
+
+## Related
+
+- [Dialog](dialog.md): a modal whose long content scrolls in a Scroll Area.
+- [Combobox](combobox.md) and [Select](select.md): lists that scroll on their own.
 
 <!-- source: select.md -->
 
@@ -5281,6 +5714,9 @@ Toggle Group ships no stylesheet: it needs none to work.
 Arrows move focus without pressing, and skip disabled toggles. With `loopFocus={false}` they stop at
 the ends.
 
+Inside a [Toolbar](toolbar.md), the group still presses its toggles, but the toolbar's arrow keys
+and single tab stop take over: the toggles are toolbar items.
+
 ## Without JavaScript, and the element's script
 
 The server HTML has each toggle's `aria-pressed` and the tab stop. `<lu-toggle-group>`'s script
@@ -5297,6 +5733,138 @@ Custom elements and `aria-pressed`: every supported browser.
 - [Toggle](toggle.md): one toggle, on its own or in a group.
 - [Radio](radio-group.md): one choice submitted with a form.
 - [Tabs](tabs.md): toggles that switch panels.
+
+<!-- source: toolbar.md -->
+
+# Toolbar
+
+> A set of controls with one tab stop, after Base UI's Toolbar and the APG toolbar pattern: `<lu-toolbar role="toolbar">` moves focus between its items with the arrow keys, Home and End, following the orientation and the text direction. Its items are native: buttons that stay focusable when disabled, links, inputs, and the toggles of a [Toggle Group](toggle-group.md) inside it. The server HTML has the single tab stop already; a 0.9 kB script moves it.
+
+```ts
+import { Toolbar } from "@lumiose/ui"; // or "@lumiose/ui/toolbar"
+import "@lumiose/ui/toolbar.css"; // or "@lumiose/ui/styles.css" for every component
+import "@lumiose/ui/themes/default.css"; // optional: the default theme
+```
+
+## Anatomy
+
+```tsx
+<Toolbar.Root>
+  <Toolbar.Button />
+  <Toolbar.Link />
+  <Toolbar.Separator />
+  <Toolbar.Group>
+    <Toolbar.Button />
+  </Toolbar.Group>
+  <Toolbar.Input />
+</Toolbar.Root>
+```
+
+| Part        | Renders                                                                                            |
+| ----------- | -------------------------------------------------------------------------------------------------- |
+| `Root`      | `<lu-toolbar role="toolbar" aria-orientation data-orientation>`                                    |
+| `Button`    | A [Button](button.md): `<button type="button">`, `aria-disabled` when disabled (still focusable)   |
+| `Link`      | `<a>`                                                                                              |
+| `Input`     | `<input>`, `aria-disabled` and read-only when disabled (still focusable)                           |
+| `Group`     | `<div role="group">`                                                                               |
+| `Separator` | A [Separator](separator.md), `<hr>`, across the toolbar: vertical in a row, horizontal in a column |
+
+Every item gets `tabindex="0"` (the first) or `"-1"` and `data-orientation`. Name the toolbar with
+`aria-label` or `aria-labelledby`.
+
+## API
+
+### Toolbar.Root
+
+| Prop          | Type                         | Default        |                                                                        |
+| ------------- | ---------------------------- | -------------- | ---------------------------------------------------------------------- |
+| `orientation` | `"horizontal" \| "vertical"` | `"horizontal"` | A row moved through with Left and Right, or a column with Up and Down. |
+| `loopFocus`   | `boolean`                    | `true`         | The arrow keys go from the last item to the first, and back.           |
+| `disabled`    | `boolean`                    | `false`        | Disables every item; they stay focusable.                              |
+
+### Toolbar.Button, Toolbar.Input and Toolbar.Group
+
+| Prop                    | Type      | Default |                                                                    |
+| ----------------------- | --------- | ------- | ------------------------------------------------------------------ |
+| `disabled`              | `boolean` | `false` | Disables the item (a Group: its items).                            |
+| `focusableWhenDisabled` | `boolean` | `true`  | Button and Input: disabled, they stay focusable (`aria-disabled`). |
+
+Every other native prop passes through. A `ToggleGroup` inside a toolbar keeps pressing its
+toggles but leaves the arrow keys and the tab stop to the toolbar; a Menu or Popover trigger inside
+it is an item too (the script gives it its `tabindex`).
+
+**Differences from Base UI's Toolbar.** No `render` or `nativeButton`: put other triggers
+(`Menu.Trigger`, `Popover.Trigger`) in the toolbar directly. Disabled items are `aria-disabled`
+rather than `data-disabled` and `data-focusable`.
+
+## Example
+
+```tsx check
+import { Toggle, ToggleGroup, Toolbar } from "@lumiose/ui";
+
+export function FormattingToolbar() {
+  return (
+    <Toolbar.Root aria-label="Formatting" class="lu-toolbar">
+      <ToggleGroup aria-label="Text style" multiple class="lu-toggle-group">
+        <Toggle value="bold" class="lu-toggle">
+          Bold
+        </Toggle>
+        <Toggle value="italic" class="lu-toggle">
+          Italic
+        </Toggle>
+      </ToggleGroup>
+      <Toolbar.Separator />
+      <Toolbar.Button class="lu-button">Undo</Toolbar.Button>
+      <Toolbar.Button class="lu-button" disabled>
+        Redo
+      </Toolbar.Button>
+      <Toolbar.Link href="/help">Help</Toolbar.Link>
+    </Toolbar.Root>
+  );
+}
+```
+
+## Styling
+
+**With the default theme**, put `lu-toolbar` on `Root`: a bordered row (a column when vertical)
+that wraps on narrow screens, groups in rows, separators as 1px lines across it, links as tall as
+the buttons. Style the items with their own classes (`lu-button`, `lu-toggle`, `lu-input`).
+
+**With your own CSS**, style the parts through `class`, `[data-orientation]`, `[role="group"]`,
+`hr` and the items' `[aria-disabled="true"]` and `:focus-visible`.
+
+`@lumiose/ui/toolbar.css` makes `<lu-toolbar>` a block box, as Base UI's `<div>`.
+
+## Keyboard and focus
+
+| Key                      | Does                                                                            |
+| ------------------------ | ------------------------------------------------------------------------------- |
+| Tab                      | Into the toolbar on the last focused item (at first, the first), and out of it. |
+| Arrow Right / Arrow Left | In a row: the next or previous item (swapped right to left), looping.           |
+| Arrow Down / Arrow Up    | In a column: the next or previous item, looping.                                |
+| Home / End               | The first or last item.                                                         |
+| Enter / Space            | Acts on the item: presses a button or a toggle, follows a link.                 |
+
+Natively disabled controls are skipped. A control keeps the keys it needs: a text field its
+caret's Left and Right (focus moves on at its start or end) and Home and End, a number field or a
+slider its arrows, a select Up and Down. Base UI advises at most one input, last.
+
+## Without JavaScript, and the element's script
+
+The server HTML is a labelled toolbar with one tab stop, on its first item. `<lu-toolbar>`'s script
+(0.9 kB brotli with Button's) moves focus with the keys and keeps the tab stop on the last focused
+item.
+
+## Browser support
+
+Custom elements and `role="toolbar"`: every supported browser and screen reader.
+
+## Related
+
+- [Toggle Group](toggle-group.md): toggles that share a value, in or out of a toolbar.
+- [Button](button.md): the items' button, focusable when disabled.
+- [Separator](separator.md): the line between groups.
+- [Menu](menu.md): a menu opened from a toolbar button.
 
 <!-- source: tooltip.md -->
 

@@ -96,6 +96,9 @@ Toggle Group ships no stylesheet: it needs none to work.
 Arrows move focus without pressing, and skip disabled toggles. With `loopFocus={false}` they stop at
 the ends.
 
+Inside a [Toolbar](toolbar.md), the group still presses its toggles, but the toolbar's arrow keys
+and single tab stop take over: the toggles are toolbar items.
+
 ## Without JavaScript, and the element's script
 
 The server HTML has each toggle's `aria-pressed` and the tab stop. `<lu-toggle-group>`'s script

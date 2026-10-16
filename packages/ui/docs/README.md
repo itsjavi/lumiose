@@ -91,6 +91,10 @@ custom properties, named as in shadcn/ui, are listed in [Theming](theming.md#the
 | [Slider](slider.md)                 | Available: native range inputs, `<lu-slider>` adds ranges and Page Up and Page Down       |
 | [Number Field](number-field.md)     | Available: native number input, or a formatted spinbutton; press-and-hold buttons         |
 | [Autocomplete](autocomplete.md)     | Available: free text with suggestions, on Combobox's `<lu-combobox>`                      |
+| [OTP Field](otp-field.md)           | Available: one native input under visual slots; autofill, paste, validation natively      |
+| [Preview Card](preview-card.md)     | Available: a link whose hover or focus opens a card; the link works without JavaScript    |
+| [Toolbar](toolbar.md)               | Available: `<lu-toolbar>`, one tab stop across buttons, links, inputs and toggles         |
+| [Scroll Area](scroll-area.md)       | Available: native scrolling, custom scrollbars from `<lu-scroll-area>`                    |
 | [Context Menu](context-menu.md)     | Available: Menu at the pointer, opened by its script (right-click, long press, keys)      |
 | [Drawer](drawer.md)                 | Available: a Dialog against an edge, works without JavaScript; its script adds the swipe  |
 | [Separator](separator.md)           | Available: native `<hr>`, horizontal or vertical, no script                               |
