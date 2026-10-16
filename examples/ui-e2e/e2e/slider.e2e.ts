@@ -163,7 +163,11 @@ test.describe("Slider", () => {
     expect(await valueOf(low)).toBe((await valueOf(high)) - 5);
   });
 
-  test("vertical: up raises it; right to left: left raises it", async ({ page }) => {
+  test("vertical: up raises it; right to left: left raises it", async ({ page, browserName }) => {
+    test.skip(
+      browserName === "webkit",
+      "TASK-418: WebKit's native range does not mirror the arrow keys right to left",
+    );
     await page.goto("/slider");
     const level = thumb(page, "Level");
     await expect(level).toHaveAttribute("aria-orientation", "vertical");

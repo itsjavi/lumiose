@@ -36,7 +36,7 @@
 // the current search, and opens the popup when results arrive while the user types (async
 // options). It must not import `lumiose`: server-rendered pages load it without the runtime.
 
-import { openLayer } from "../layer/layer.ts";
+import { moved, openLayer } from "../layer/layer.ts";
 import { anchoring, place } from "../placement/place.ts";
 
 const OPTION = "[role=option]";
@@ -770,8 +770,8 @@ export class ComboboxElement extends HTMLElement {
   }
 
   #onPointerMove(event: PointerEvent): void {
-    // Keyboard scrolling under a resting pointer moves nothing (WebKit fires zero-delta moves).
-    if (event.pointerType === "touch" || (event.movementX === 0 && event.movementY === 0)) return;
+    // Keyboard scrolling under a resting pointer moves nothing (../layer/layer.ts).
+    if (!moved(this, event)) return;
     const option = (event.target as Element).closest?.<HTMLElement>(OPTION);
     if (option && this.listbox?.contains(option) && !disabled(option) && !option.hidden) {
       this.#highlight(option);

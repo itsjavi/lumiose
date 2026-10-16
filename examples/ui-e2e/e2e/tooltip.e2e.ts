@@ -217,7 +217,9 @@ test.describe("in an island", () => {
     await page.getByTestId("tooltip-toggle").click();
     await expect(help).toBeVisible();
     await expect(state).toHaveText("tip: true");
-    await page.getByTestId("tooltip-toggle").click();
+    // From the keyboard: a press outside an open tooltip closes it, so a pointer on the toggle
+    // would close it and then flip it again, in an order each browser times its own way.
+    await page.getByTestId("tooltip-toggle").press("Enter");
     await expect(help).toBeHidden();
     await expect(state).toHaveText("tip: false");
     await hover(page, "Help");

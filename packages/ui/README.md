@@ -37,7 +37,8 @@ in a project, `node_modules/@lumiose/ui/docs/`), and `lumiose docs ui` prints th
 - `pnpm --filter @lumiose/ui test`: unit tests (server rendering and the DOM, Vitest).
 - `pnpm --filter @lumiose/ui size`: JavaScript and CSS per component.
 - `pnpm --filter @lumiose-examples/ui-e2e test:e2e`: keyboard contracts, focus, axe and behaviour
-  without JavaScript, in Chromium.
+  without JavaScript, in Chromium; `test:e2e:browsers` runs them in Firefox and WebKit (CI's
+  ui-browsers workflow).
 
 ## Writing a component
 

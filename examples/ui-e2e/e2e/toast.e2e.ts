@@ -4,6 +4,7 @@
 // promise toasts, the top layer over a modal dialog, toasts that do not dismiss an open popover,
 // and WCAG 2.2 AA with the default theme.
 import { expect, test, type Locator, type Page } from "@playwright/test";
+import { dragPath } from "./browsers.ts";
 import { axe, clipped, SCHEMES, smallTargets, TEXT_SPACING } from "./a11y.ts";
 
 const viewport = (page: Page) => page.getByRole("region", { name: "Notifications (F6)" });
@@ -13,10 +14,9 @@ const toast = (page: Page, title: string) =>
 const button = (page: Page, name: string) => page.getByRole("button", { name, exact: true });
 
 /** Drags from the middle of `target` by `dx`, `dy` with the mouse. */
-async function drag(page: Page, target: Locator, dx: number, dy: number) {
+async function drag(page: Page, target: Locator, toX: number, toY: number) {
   const box = (await target.boundingBox())!;
-  const x = box.x + box.width / 3;
-  const y = box.y + box.height / 2;
+  const { x, y, dx, dy } = dragPath(page, box, toX, toY, { x: 1 / 3, y: 0.5 });
   await page.mouse.move(x, y);
   await page.mouse.down();
   await page.mouse.move(x + dx / 2, y + dy / 2, { steps: 4 });

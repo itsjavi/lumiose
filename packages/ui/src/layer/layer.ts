@@ -140,3 +140,19 @@ export function openLayer(layer: Layer): () => void {
     entry.watcher?.destroy();
   };
 }
+
+// Pointer moves that are not movements (doc-9 section 1, TASK-361): when the keyboard scrolls a
+// layer's list under a resting pointer, WebKit fires moves at the same position (with zero deltas),
+// and the list must not highlight what passes under it. The position tells, not the deltas: some
+// engines send none (Playwright's WebKit reports `movementX` and `movementY` as 0 for every move).
+
+/** The last position seen per element. */
+const last = new WeakMap<object, { x: number; y: number }>();
+
+/** Whether `event` moved the pointer since the last move `owner` saw (touch never counts). */
+export function moved(owner: object, event: PointerEvent): boolean {
+  if (event.pointerType === "touch") return false;
+  const before = last.get(owner);
+  last.set(owner, { x: event.clientX, y: event.clientY });
+  return before === undefined || before.x !== event.clientX || before.y !== event.clientY;
+}

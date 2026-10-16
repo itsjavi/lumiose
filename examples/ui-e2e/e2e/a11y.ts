@@ -101,10 +101,21 @@ export function focusRing(page: Page): Promise<string> {
 /**
  * The accessible description Chromium computes for `locator`, through the DevTools protocol.
  * Playwright's own `toHaveAccessibleDescription` leaves out the text of an `<output>` (a
- * `Field.Error`), which Chromium and screen readers include.
+ * `Field.Error`), which Chromium and screen readers include. Firefox and WebKit have no such
+ * protocol in Playwright: there it is the text of the `aria-describedby` targets, in order, which
+ * checks the wiring rather than their own computation (TASK-361).
  */
 export async function axDescription(locator: Locator): Promise<string> {
   const page = locator.page();
+  if (page.context().browser()?.browserType().name() !== "chromium") {
+    return locator.evaluate((element) =>
+      (element.getAttribute("aria-describedby") ?? "")
+        .split(/\s+/)
+        .map((id) => document.getElementById(id)?.textContent?.trim() ?? "")
+        .filter(Boolean)
+        .join(" "),
+    );
+  }
   const cdp = await page.context().newCDPSession(page);
   try {
     await locator.evaluate((element) => element.setAttribute("data-ax-probe", ""));

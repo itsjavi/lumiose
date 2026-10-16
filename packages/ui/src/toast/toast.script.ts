@@ -88,9 +88,6 @@ export class LuToastViewport extends HTMLElement {
     this.addEventListener("command", this.#onCommand, true);
     this.addEventListener("click", this.#onClick);
     this.addEventListener("pointerdown", this.#onPointerDown);
-    this.addEventListener("pointermove", this.#onPointerMove);
-    this.addEventListener("pointerup", this.#onPointerUp);
-    this.addEventListener("pointercancel", this.#onPointerCancel);
     this.#observer = new MutationObserver((records) => this.#onMutations(records));
     this.#observer.observe(this, {
       childList: true,
@@ -107,6 +104,7 @@ export class LuToastViewport extends HTMLElement {
   disconnectedCallback() {
     if (this.#moving) return;
     viewports.delete(this);
+    this.#follow(false);
     this.#observer?.disconnect();
     for (const timer of this.#timers.values()) clearTimeout(timer.handle);
     this.#timers.clear();
@@ -344,7 +342,24 @@ export class LuToastViewport extends HTMLElement {
       y: event.clientY,
       directions,
     };
+    this.#follow(true);
   };
+
+  /**
+   * While a press may become a swipe, the document's pointer events follow it, wherever the
+   * pointer goes (pointer capture would, but WebKit then stops dispatching Playwright's mouse).
+   */
+  #follow(on: boolean) {
+    const listeners = [
+      ["pointermove", this.#onPointerMove],
+      ["pointerup", this.#onPointerUp],
+      ["pointercancel", this.#onPointerCancel],
+    ] as const;
+    for (const [type, listener] of listeners) {
+      if (on) document.addEventListener(type, listener, true);
+      else document.removeEventListener(type, listener, true);
+    }
+  }
 
   #onPointerMove = (event: PointerEvent) => {
     const swipe = this.#swipe;
@@ -357,11 +372,14 @@ export class LuToastViewport extends HTMLElement {
       const along = axis === "x" ? ["left", "right"] : ["up", "down"];
       if (!swipe.directions.some((direction) => along.includes(direction))) {
         this.#swipe = undefined;
+        this.#follow(false);
         return;
       }
       swipe.axis = axis;
-      swipe.toast.setPointerCapture(event.pointerId);
       swipe.toast.setAttribute("data-swiping", "");
+      // Text the press began to select would be dragged by the next press (Firefox cancels the
+      // pointer then): a swipe selects nothing.
+      getSelection()?.removeAllRanges();
     }
     const delta = swipe.axis === "x" ? dx : dy;
     const direction =
@@ -376,6 +394,7 @@ export class LuToastViewport extends HTMLElement {
     const swipe = this.#swipe;
     if (!swipe || event.pointerId !== swipe.pointer) return;
     this.#swipe = undefined;
+    this.#follow(false);
     if (!swipe.axis) return;
     const delta = swipe.axis === "x" ? event.clientX - swipe.x : event.clientY - swipe.y;
     const direction =
@@ -390,6 +409,7 @@ export class LuToastViewport extends HTMLElement {
     const swipe = this.#swipe;
     if (!swipe || event.pointerId !== swipe.pointer) return;
     this.#swipe = undefined;
+    this.#follow(false);
     swipe.toast.removeAttribute("data-swiping");
     this.#reset(swipe.toast);
   };

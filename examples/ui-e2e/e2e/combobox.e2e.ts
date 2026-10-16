@@ -261,6 +261,9 @@ test.describe("multiple values", () => {
   test("choosing toggles a value and keeps the popup open; chips and Backspace remove", async ({
     page,
   }) => {
+    // Room below the field under the fixture's long nav, so the popup does not flip over the chips
+    // (Firefox's and WebKit's fonts on Linux make the page taller).
+    await page.setViewportSize({ width: 1280, height: 1000 });
     await page.goto("/combobox");
     await city(page);
     const input = page.getByRole("combobox", { name: "Tags" });

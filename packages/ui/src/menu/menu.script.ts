@@ -28,7 +28,7 @@
 // rerender items at any time. It must not import `lumiose`: server-rendered pages load it without
 // the runtime.
 
-import { openLayer } from "../layer/layer.ts";
+import { moved, openLayer } from "../layer/layer.ts";
 import { anchoring, place } from "../placement/place.ts";
 
 const ITEM = "[role^='menuitem']";
@@ -506,8 +506,8 @@ export class MenuElement extends HTMLElement {
   }
 
   #onPointerMove(event: PointerEvent): void {
-    // Keyboard scrolling under a resting pointer moves nothing (WebKit fires zero-delta moves).
-    if (event.pointerType === "touch" || (event.movementX === 0 && event.movementY === 0)) return;
+    // Keyboard scrolling under a resting pointer moves nothing (../layer/layer.ts).
+    if (!moved(this, event)) return;
     clearTimeout(this.#intentTimer);
     const target = event.target as Element;
     const trigger = this.trigger;
