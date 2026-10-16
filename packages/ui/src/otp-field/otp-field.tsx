@@ -235,7 +235,10 @@ function Root({
         auto-submit={autoSubmit}
         on:input={(event: Event) => {
           const input = element()?.input;
-          if (input && event.target === input) onValueChange?.(input.value);
+          // A composition reports once committed (the element fires `input` then, TASK-432).
+          if (input && event.target === input && !(event as InputEvent).isComposing) {
+            onValueChange?.(input.value);
+          }
         }}
         on:valuecomplete={(event: CustomEvent<OTPFieldValueDetail>) =>
           onValueComplete?.(event.detail.value)

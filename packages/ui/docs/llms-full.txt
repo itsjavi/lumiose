@@ -4222,7 +4222,9 @@ field and hides the slots.
 | Tab                | Moves on: one tab stop.                                                                |
 
 A paste fills every slot from the caret, its spaces and dashes dropped, even past what
-`maxlength` would cut.
+`maxlength` would cut. An IME composition (Chinese, Japanese, full-width digits) shows in the
+slots as it is; only the committed text is kept to the allowed characters, completes the field and
+auto-submits.
 
 ## Without JavaScript, and the element's script
 

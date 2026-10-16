@@ -6,6 +6,7 @@
 // sections 1, 15 and 17).
 import { expect, test, type Page } from "@playwright/test";
 import { axe, clipped, lastNavLink, SCHEMES, smallTargets, TEXT_SPACING } from "./a11y.ts";
+import { skipIn } from "./browsers.ts";
 
 /** Puts the whole page right to left. */
 const rtl = (page: Page) => page.evaluate(() => (document.documentElement.dir = "rtl"));
@@ -153,6 +154,36 @@ test.describe("OTP Field", () => {
     await page.getByRole("textbox", { name: "PIN (submits when complete)" }).focus();
     await page.keyboard.type("2468");
     await expect(page).toHaveURL(/\/otp-field\?pin=2468$/);
+  });
+});
+
+test.describe("IME composition (TASK-432)", () => {
+  // A real IME through the DevTools protocol, which only Chromium has in Playwright; the event
+  // order of the other engines is covered by otp-field.script.dom.test.ts.
+  skipIn(["firefox", "webkit"], "An IME composition needs Chromium's DevTools protocol (TASK-432)");
+
+  test("a commit is kept, and a composition never completes or submits", async ({ page }) => {
+    await page.goto("/otp-field");
+    const cdp = await page.context().newCDPSession(page);
+    const recovery = page.getByRole("textbox", { name: "Recovery code" });
+    await recovery.click();
+    await cdp.send("Input.imeSetComposition", { text: "zhon", selectionStart: 4, selectionEnd: 4 });
+    await cdp.send("Input.insertText", { text: "中文" });
+    await expect(recovery).toHaveValue("中文");
+    // Full-width digits are digits: composed but not committed, the PIN does not submit.
+    const pin = page.getByRole("textbox", { name: /PIN/ });
+    await pin.click();
+    await cdp.send("Input.imeSetComposition", {
+      text: "１２３４",
+      selectionStart: 4,
+      selectionEnd: 4,
+    });
+    await page.waitForTimeout(300);
+    await expect(page).toHaveURL(/\/otp-field$/);
+    // Committed, it completes and submits.
+    await cdp.send("Input.insertText", { text: "１２３４" });
+    await expect(page).toHaveURL(/pin=/);
+    await cdp.detach();
   });
 });
 

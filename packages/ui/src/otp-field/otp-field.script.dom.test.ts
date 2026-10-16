@@ -137,3 +137,35 @@ it("sets the value without events, and follows a form reset", async () => {
   await settle();
   expect(shown()).toEqual(["1", "2", "", ""]);
 });
+
+it("leaves an IME composition alone, and cleans, completes and submits its commit (TASK-432)", async () => {
+  const field = mount('length="4" validation-type="alphanumeric" auto-submit');
+  await settle();
+  const form = document.querySelector("form")!;
+  const submit = vi.spyOn(form, "requestSubmit").mockImplementation(() => {});
+  const complete = vi.fn();
+  field.addEventListener("valuecomplete", (event) => complete((event as CustomEvent).detail.value));
+  const compose = (text: string) => {
+    input().value = text;
+    input().dispatchEvent(new InputEvent("input", { bubbles: true, isComposing: true }));
+  };
+  // Latin keys while composing: not text yet, so nothing is cut or completed.
+  compose("zhon");
+  compose("zh o");
+  expect(input().value).toBe("zh o");
+  await settle();
+  expect(complete).not.toHaveBeenCalled();
+  expect(submit).not.toHaveBeenCalled();
+  // The commit replaces it; `compositionend` (Chromium fires no `input` after it) cleans it.
+  compose("中文");
+  input().dispatchEvent(new CompositionEvent("compositionend", { bubbles: true, data: "中文" }));
+  expect(field.value).toBe("中文");
+  // A commit that fills the field completes and submits once, also when an `input` follows.
+  compose("中文ab");
+  input().dispatchEvent(new CompositionEvent("compositionend", { bubbles: true, data: "ab" }));
+  input().dispatchEvent(new Event("input", { bubbles: true }));
+  await settle();
+  expect(field.value).toBe("中文ab");
+  expect(complete).toHaveBeenCalledTimes(1);
+  expect(submit).toHaveBeenCalledTimes(1);
+});
