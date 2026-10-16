@@ -561,7 +561,7 @@ not toggle, also from the keyboard.
 
 # Autocomplete
 
-> A text input with suggestions, for text that may be anything (a search, a tag, an address): the WAI-ARIA combobox pattern with list autocomplete, after Base UI's Autocomplete. Unlike a [Combobox](combobox.md), the text is the value: the input has the name and submits what is typed, and choosing a suggestion only fills it in. It runs on the Combobox's element (`<lu-combobox free>`, 4.5 kB) and parts, on server-rendered pages and in islands; `bind:value` keeps a signal in sync. Filtering, inline completion, groups, an empty state and a status.
+> A text input with suggestions, for text that may be anything (a search, a tag, an address): the WAI-ARIA combobox pattern with list autocomplete, after Base UI's Autocomplete. Unlike a [Combobox](combobox.md), the text is the value: the input has the name and submits what is typed, and choosing a suggestion only fills it in. It runs on the Combobox's element (`<lu-combobox free>`, 5.0 kB) and parts, on server-rendered pages and in islands; `bind:value` keeps a signal in sync. Filtering, inline completion, groups, an empty state and a status.
 
 ```ts
 import { Autocomplete } from "@lumiose/ui"; // or "@lumiose/ui/autocomplete"
@@ -706,7 +706,7 @@ Focus stays in the input: the highlight moves through `aria-activedescendant`.
 ## Without JavaScript, and the element's script
 
 The input is a native text field with the name: typing, `required`, submission and reset work with
-no script; the suggestions need it. `<lu-combobox>`'s script (4.5 kB brotli, shared with Combobox)
+no script; the suggestions need it. `<lu-combobox>`'s script (5.0 kB brotli, shared with Combobox)
 filters and opens them, moves the highlight, fills in a choice (firing `input` and `change` on the
 input) and runs inline completion.
 
@@ -1442,7 +1442,7 @@ page:
 
 # Combobox
 
-> A text input that filters a list of options, for picking one value or several from many: the WAI-ARIA combobox pattern with list autocomplete, after Base UI's Combobox. The input shows the option's label and the form gets its value. `<lu-combobox>`, a 4.5 kB form-associated light-DOM element, runs it on server-rendered pages and in islands; `bind:value` and `bind:open` keep signals in sync. Groups, an empty state, a status, a clear button, multiple values with chips, validation and async options.
+> A text input that filters a list of options, for picking one value or several from many: the WAI-ARIA combobox pattern with list autocomplete, after Base UI's Combobox. The input shows the option's label and the form gets its value. `<lu-combobox>`, a 5.0 kB form-associated light-DOM element, runs it on server-rendered pages and in islands; `bind:value` and `bind:open` keep signals in sync. Groups, an empty state, a status, a clear button, multiple values with chips, validation and async options.
 
 ```ts
 import { Combobox } from "@lumiose/ui"; // or "@lumiose/ui/combobox"
@@ -1743,7 +1743,7 @@ cannot be styled or grouped, and customizable select cannot filter). Without Jav
 HTML shows a labelled text field and nothing opens, and the form gets no value. For a choice that
 must work without JavaScript, use [Select](select.md).
 
-A page that renders a `Combobox` loads the script once, as a 4.5 kB (brotli) module without the
+A page that renders a `Combobox` loads the script once, as a 5.0 kB (brotli) module without the
 Lumiose runtime, and islands bundle it. It defines `lu-combobox`, which upgrades every combobox on
 the page in place: it reads the selection the server rendered (`aria-selected="true"`), puts its
 label in the input (text typed before it ran is kept, as a search), renders the chips, and from
@@ -1801,7 +1801,7 @@ The element is also an API of its own, for scripts and other frameworks:
 
 # Context Menu
 
-> A menu opened at the pointer by a right-click in its trigger area, a long press on a touch screen, or Shift+F10 and the ContextMenu key: Menu's popup and items, with Menu's keys, typeahead, submenus and dismissal. A 0.6 kB script on top of Menu's (4.2 kB together) opens it; without JavaScript the browser shows its own menu. `bind:open` (or `open` and `onOpenChange`) keeps a signal in sync in islands.
+> A menu opened at the pointer by a right-click in its trigger area, a long press on a touch screen, or Shift+F10 and the ContextMenu key: Menu's popup and items, with Menu's keys, typeahead, submenus and dismissal. A 0.6 kB script on top of Menu's (4.5 kB together) opens it; without JavaScript the browser shows its own menu. `bind:open` (or `open` and `onOpenChange`) keeps a signal in sync in islands.
 
 ```ts
 import { ContextMenu } from "@lumiose/ui"; // or "@lumiose/ui/context-menu"
@@ -1977,7 +1977,7 @@ browser's own menu, and the popup stays hidden. `open`, `onOpenChange` and `bind
 component to run in an island.
 
 A page that renders a `ContextMenu` loads Menu's script and a 0.6 kB (brotli) one of its own,
-4.2 kB together, without the Lumiose runtime; islands bundle them. The element opens the menu on a
+4.5 kB together, without the Lumiose runtime; islands bundle them. The element opens the menu on a
 right-click, a long press or the keys, at the pointer, through a zero-size anchor that it moves
 there (CSS anchor positioning places the popup, with Menu's flips; without it, the shared
 placement script does). Menu's script does the rest: keys, items, submenus, and dismissal shared
@@ -2001,7 +2001,7 @@ with [Popover](popover.md) and [Combobox](combobox.md).
 
 # Dialog
 
-> A modal dialog, or an alert dialog that needs an answer: a native `<dialog>` opened and closed by invoker commands, so it works in server HTML with no JavaScript, and a 1.3 kB script closes the native element's gaps where JavaScript runs. `bind:open` (or `open` and `onOpenChange`) keeps a signal in sync in islands.
+> A modal dialog, or an alert dialog that needs an answer: a native `<dialog>` opened and closed by invoker commands, so it works in server HTML with no JavaScript, and a 1.5 kB script closes the native element's gaps where JavaScript runs. `bind:open` (or `open` and `onOpenChange`) keeps a signal in sync in islands.
 
 ```ts
 import { Dialog } from "@lumiose/ui"; // or "@lumiose/ui/dialog"
@@ -2215,7 +2215,7 @@ server-rendered page works before any script loads, and with none. `open`, `onOp
 `bind:open` and a live `aria-expanded` need the component to run in the browser, in an island.
 
 Where the native element falls short of Base UI's dialog, a small script closes the gap: a page
-that renders a `Dialog` loads it once, as a 1.3 kB (brotli) module without the Lumiose runtime, and
+that renders a `Dialog` loads it once, as a 1.5 kB (brotli) module without the Lumiose runtime, and
 islands bundle it. It covers every `<dialog>` on the page:
 
 - a right-click or a second finger outside does not close the dialog;
@@ -2427,7 +2427,7 @@ The trigger, the close buttons, Escape and the click outside are HTML features, 
 drawer in a server-rendered page works before any script loads, and with none, against its edge.
 `open`, `onOpenChange` and `bind:open` need the component to run in an island.
 
-A page that renders a `Drawer` loads Dialog's script and a 1 kB (brotli) one of its own (2.2 kB
+A page that renders a `Drawer` loads Dialog's script and a 1 kB (brotli) one of its own (2.5 kB
 together), without the Lumiose runtime; islands bundle them. The drawer's script handles the
 swipe, with the mouse and pen through pointer events and on touch screens through touch events,
 taking the gesture from scrolling only once it is a swipe.
@@ -3043,7 +3043,7 @@ Every browser; input types and constraints as the browser supports them.
 
 # Menu
 
-> A menu of commands, links, checkbox and radio items and submenus, opened by a button: the trigger's `popovertarget` opens it and CSS anchor positioning places it, so it works in server HTML with no JavaScript, and a 3.7 kB script adds the APG Menu Button keyboard contract where JavaScript runs. `bind:open`, `bind:checked` and `bind:value` keep signals in sync in islands.
+> A menu of commands, links, checkbox and radio items and submenus, opened by a button: the trigger's `popovertarget` opens it and CSS anchor positioning places it, so it works in server HTML with no JavaScript, and a 4.0 kB script adds the APG Menu Button keyboard contract where JavaScript runs. `bind:open`, `bind:checked` and `bind:value` keep signals in sync in islands.
 
 ```ts
 import { Menu } from "@lumiose/ui"; // or "@lumiose/ui/menu"
@@ -3364,7 +3364,7 @@ Tab starts over from the top (the script returns focus to the trigger). `open`, 
 the `bind:` props need the component to run in the browser, in an island.
 
 The keyboard contract comes from a small script: a page that renders a `Menu` loads it once, as a
-3.7 kB (brotli) module without the Lumiose runtime, and islands bundle it. It defines `lu-menu`,
+4.0 kB (brotli) module without the Lumiose runtime, and islands bundle it. It defines `lu-menu`,
 which upgrades every menu on the page in place, and adds what the native popover lacks: focus on
 open and its return on close, the arrows, Home, End and typeahead, Escape one level at a time, Tab,
 submenus, checkbox and radio items, disabled items, `data-highlighted`, and the pointer behaviour
@@ -3410,7 +3410,7 @@ The element is also an API of its own, for scripts and other frameworks:
 
 # Menubar
 
-> A bar of menus, such as an app's File, Edit and View, after Base UI's Menubar and the WAI-ARIA menubar pattern: `Menu.Root`s inside `<lu-menubar role="menubar">`, whose triggers are the bar's items. Menu's popups, items, submenus and dismissal; the bar is one tab stop, the arrow keys move between its items and between open menus, and once a menu is open, hovering another item opens its menu instead. A 0.7 kB script on top of Menu's (4.4 kB together); without JavaScript each trigger opens its menu.
+> A bar of menus, such as an app's File, Edit and View, after Base UI's Menubar and the WAI-ARIA menubar pattern: `Menu.Root`s inside `<lu-menubar role="menubar">`, whose triggers are the bar's items. Menu's popups, items, submenus and dismissal; the bar is one tab stop, the arrow keys move between its items and between open menus, and once a menu is open, hovering another item opens its menu instead. A 0.7 kB script on top of Menu's (4.7 kB together); without JavaScript each trigger opens its menu.
 
 ```ts
 import { Menu, Menubar } from "@lumiose/ui"; // or "@lumiose/ui/menu" and "@lumiose/ui/menubar"
@@ -3579,7 +3579,7 @@ flex row (a column when vertical); each `<lu-menu>` adds no box.
 Each trigger opens its menu through `popovertarget`, and the browser light-dismisses it: without
 JavaScript every trigger is a tab stop, and the menus open with Enter, Space or a click.
 
-A page that renders a `Menubar` loads Menu's script and a 0.7 kB (brotli) one of its own, 4.4 kB
+A page that renders a `Menubar` loads Menu's script and a 0.7 kB (brotli) one of its own, 4.7 kB
 together, without the Lumiose runtime; islands bundle them. The menubar's script makes the bar one
 tab stop once the page has loaded, and adds the arrow keys between items and menus and the hover
 switching. Each menu stays Menu's: its keys, items, submenus and dismissal.
@@ -3704,7 +3704,7 @@ above. `role="meter"` reaches screen readers in recent versions; older ones read
 
 # Navigation Menu
 
-> A site's navigation whose items open panels of links, after Base UI's NavigationMenu and the WAI-ARIA disclosure navigation pattern: a `<nav>` landmark around a list, each trigger opening its content through `popovertarget` (a native popover placed under it by CSS anchor positioning), so the links work and the panels open on a click, one at a time, in server HTML with no JavaScript. A 3.2 kB script adds hover intent, the arrow keys, closing when focus leaves and the direction a panel comes in from. `bind:value` (or `value` and `onValueChange`) keeps the open item in a signal.
+> A site's navigation whose items open panels of links, after Base UI's NavigationMenu and the WAI-ARIA disclosure navigation pattern: a `<nav>` landmark around a list, each trigger opening its content through `popovertarget` (a native popover placed under it by CSS anchor positioning), so the links work and the panels open on a click, one at a time, in server HTML with no JavaScript. A 3.5 kB script adds hover intent, the arrow keys, closing when focus leaves and the direction a panel comes in from. `bind:value` (or `value` and `onValueChange`) keeps the open item in a signal.
 
 ```ts
 import { NavigationMenu } from "@lumiose/ui"; // or "@lumiose/ui/navigation-menu"
@@ -3938,7 +3938,7 @@ The `<nav>`, its links and the triggers are HTML: each trigger opens its content
 `popovertarget`, one at a time (an auto popover closes the others), and Escape or a click outside
 closes it. `value`, `onValueChange` and `bind:value` need the component to run in an island.
 
-A page that renders a `NavigationMenu` loads a 3.2 kB (brotli) script (its dismissal module is
+A page that renders a `NavigationMenu` loads a 3.5 kB (brotli) script (its dismissal module is
 Menu's and Popover's too), without the Lumiose runtime; islands bundle it. `<lu-navigation-menu>`
 takes over the trigger's click (so a click keeps a content opened by hover open), opens contents on
 hover, adds the arrow keys, closes a content when focus leaves its item, dismisses contents as Menu
@@ -4301,7 +4301,7 @@ current browser uses for `pattern`.
 
 # Popover
 
-> A popup anchored to its trigger: a native `popover` opened and closed by the trigger's `popovertarget`, placed with CSS anchor positioning, so it works in server HTML with no JavaScript. A 2.9 kB script moves focus into it and back, dismisses it as Base UI does (not on a right-click), keeps `aria-expanded` current and places it in browsers without anchor positioning. `bind:open` (or `open` and `onOpenChange`) keeps a signal in sync in islands. A trigger can open it on hover (`openOnHover`), and a `modal` popover is a modal `<dialog>` that makes the page behind it inert.
+> A popup anchored to its trigger: a native `popover` opened and closed by the trigger's `popovertarget`, placed with CSS anchor positioning, so it works in server HTML with no JavaScript. A 3.2 kB script moves focus into it and back, dismisses it as Base UI does (not on a right-click), keeps `aria-expanded` current and places it in browsers without anchor positioning. `bind:open` (or `open` and `onOpenChange`) keeps a signal in sync in islands. A trigger can open it on hover (`openOnHover`), and a `modal` popover is a modal `<dialog>` that makes the page behind it inert.
 
 ```ts
 import { Popover } from "@lumiose/ui"; // or "@lumiose/ui/popover"
@@ -4536,7 +4536,7 @@ does a modal popover, through invoker commands and `closedby` (where a browser l
 script.
 `open`, `onOpenChange` and `bind:open` need the component to run in an island.
 
-A page that renders a `Popover` loads a 2.9 kB (brotli) module once, without the Lumiose runtime;
+A page that renders a `Popover` loads a 3.2 kB (brotli) module once, without the Lumiose runtime;
 islands bundle it. It covers every Popover on the page:
 
 - focus on open (the first focusable element, or the popup) and its return on close;
@@ -4574,7 +4574,7 @@ popover's `dialog::backdrop`) styles the layer under it, without an element of i
 
 # Preview Card
 
-> A card that previews a link's destination while the pointer or keyboard focus rests on the link, after Base UI's PreviewCard. The trigger is the link itself, which works as a link without JavaScript; the card is a manual popover placed with [Popover](popover.md)'s placement and opened with its hover timing by a 2.4 kB script. It is hoverable, persistent and dismissible (WCAG 1.4.13). `bind:open` keeps a signal in sync.
+> A card that previews a link's destination while the pointer or keyboard focus rests on the link, after Base UI's PreviewCard. The trigger is the link itself, which works as a link without JavaScript; the card is a manual popover placed with [Popover](popover.md)'s placement and opened with its hover timing by a 2.7 kB script. It is hoverable, persistent and dismissible (WCAG 1.4.13). `bind:open` keeps a signal in sync.
 
 ```ts
 import { PreviewCard } from "@lumiose/ui"; // or "@lumiose/ui/preview-card"
@@ -4689,7 +4689,7 @@ the link, with a fade (none where motion is reduced).
 ## Without JavaScript, and the client script
 
 The link is a plain link and the card never opens. A page that renders a `PreviewCard` loads a
-2.4 kB (brotli) module once (with the hover timing it shares with Popover): hover and focus with
+2.7 kB (brotli) module once (with the hover timing it shares with Popover): hover and focus with
 their delays, dismissal, `data-popup-open`, and the placement in browsers without CSS anchor
 positioning.
 
@@ -6530,7 +6530,7 @@ Custom elements and `aria-pressed`: every supported browser.
 
 # Toolbar
 
-> A set of controls with one tab stop, after Base UI's Toolbar and the APG toolbar pattern: `<lu-toolbar role="toolbar">` moves focus between its items with the arrow keys, Home and End, following the orientation and the text direction. Its items are native: buttons that stay focusable when disabled, links, inputs, and the toggles of a [Toggle Group](toggle-group.md) inside it. In the server HTML every item is a tab stop, so each is reachable without JavaScript; a 1.0 kB script makes them one tab stop and moves it.
+> A set of controls with one tab stop, after Base UI's Toolbar and the APG toolbar pattern: `<lu-toolbar role="toolbar">` moves focus between its items with the arrow keys, Home and End, following the orientation and the text direction. Its items are native: buttons that stay focusable when disabled, links, inputs, and the toggles of a [Toggle Group](toggle-group.md) inside it. In the server HTML every item is a tab stop, so each is reachable without JavaScript; a 1.1 kB script makes them one tab stop and moves it.
 
 ```ts
 import { Toolbar } from "@lumiose/ui"; // or "@lumiose/ui/toolbar"
@@ -6652,7 +6652,7 @@ its text selected, as in Base UI. Base UI advises at most one input, last.
 ## Without JavaScript, and the element's script
 
 The server HTML is a labelled toolbar whose items are all tab stops, so Tab reaches each one
-without JavaScript or before the script runs. `<lu-toolbar>`'s script (1.0 kB brotli with Button's)
+without JavaScript or before the script runs. `<lu-toolbar>`'s script (1.1 kB brotli with Button's)
 makes the toolbar one tab stop, moves focus with the keys and keeps the tab stop on the last focused
 item.
 
@@ -6671,7 +6671,7 @@ Custom elements and `role="toolbar"`: every supported browser and screen reader.
 
 # Tooltip
 
-> A short tip next to its trigger, on hover or keyboard focus: a native `popover="hint"` with `role="tooltip"`, placed with CSS anchor positioning. The trigger is described by the tip in server HTML, so screen readers announce it without hovering; a 1.6 kB script opens and closes it as Base UI's tooltip does. `bind:open` (or `open` and `onOpenChange`) keeps a signal in sync in islands.
+> A short tip next to its trigger, on hover or keyboard focus: a native `popover="hint"` with `role="tooltip"`, placed with CSS anchor positioning. The trigger is described by the tip in server HTML, so screen readers announce it without hovering; a 1.9 kB script opens and closes it as Base UI's tooltip does. `bind:open` (or `open` and `onOpenChange`) keeps a signal in sync in islands.
 
 ```ts
 import { Tooltip } from "@lumiose/ui"; // or "@lumiose/ui/tooltip"
@@ -6782,7 +6782,7 @@ A tooltip inside a popover keeps the popover open, and one inside a dialog belon
 ## Without JavaScript, and the client script
 
 Without JavaScript the tip never shows, but the trigger keeps its description: screen readers
-announce it. A page that renders a `Tooltip` loads a 1.6 kB (brotli) module once, without the
+announce it. A page that renders a `Tooltip` loads a 1.9 kB (brotli) module once, without the
 Lumiose runtime; islands bundle it. It opens and closes every tooltip on the page, and places them
 in browsers without CSS anchor positioning.
 
