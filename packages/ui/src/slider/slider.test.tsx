@@ -147,4 +147,22 @@ describe("Slider on the server", () => {
       "aria-describedby": `${field.id}-description`,
     });
   });
+
+  it("points its Label and Value at the field's control in a Field (TASK-449 L22)", async () => {
+    const html = await renderToString(() => (
+      <Field.Root name="zoom">
+        <Slider.Root defaultValue={[20, 80]}>
+          <Slider.Label>Zoom</Slider.Label>
+          <Slider.Value />
+          <Slider.Control>
+            <Slider.Thumb />
+            <Slider.Thumb />
+          </Slider.Control>
+        </Slider.Root>
+      </Field.Root>
+    ));
+    const [first, second] = inputs(html);
+    expect(attrs(html, "label").for).toBe(first!.id);
+    expect(attrs(html, "output").for).toBe(`${first!.id} ${second!.id}`);
+  });
 });

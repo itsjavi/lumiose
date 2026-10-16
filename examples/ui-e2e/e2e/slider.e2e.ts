@@ -101,15 +101,24 @@ test.describe("Slider", () => {
     const high = thumb(page, "Maximum price");
     await expect(low).toHaveAttribute("aria-valuetext", "€20");
     await low.focus();
+    // End and Home stop at the other thumb, five steps short, as in Base UI (TASK-449 L21).
     await page.keyboard.press("End");
-    await expect(low).toHaveValue("95");
-    await expect(high).toHaveValue("100");
-    await expect(high).toHaveAttribute("aria-valuetext", "€100");
-    await expect(page.getByText("€95 – €100")).toBeVisible();
+    await expect(low).toHaveValue("75");
+    await expect(high).toHaveValue("80");
+    // A step past it pushes it.
+    await page.keyboard.press("PageUp");
+    await expect(low).toHaveValue("85");
+    await expect(high).toHaveValue("90");
+    await expect(high).toHaveAttribute("aria-valuetext", "€90");
+    await expect(page.getByText("€85 – €90")).toBeVisible();
     await high.focus();
+    await page.keyboard.press("PageDown");
+    await page.keyboard.press("PageDown");
+    await expect(high).toHaveValue("70");
+    await expect(low).toHaveValue("65");
     await page.keyboard.press("Home");
-    await expect(low).toHaveValue("0");
-    await expect(high).toHaveValue("5");
+    await expect(high).toHaveValue("70");
+    await expect(low).toHaveValue("65");
   });
 
   test('thumbCollisionBehavior="none": a thumb stops at the other', async ({ page }) => {
@@ -297,6 +306,25 @@ test.describe("in an island", () => {
     await page.mouse.click(end.x, end.y);
     await expect(state).toHaveText("volume: 76, range: 20–90, commits: 2");
     expect(warnings).toEqual([]);
+  });
+
+  test("a thumb blocked by the other reports nothing (TASK-449 L21)", async ({ page }) => {
+    await page.goto("/slider/island");
+    await hydrated(page);
+    const blocked = page.getByTestId("blocked-state");
+    const start = thumb(page, "Blocked start");
+    await start.focus();
+    // Against the end thumb, at the same value: nothing moves.
+    await page.keyboard.press("ArrowRight");
+    await page.keyboard.press("PageUp");
+    await page.keyboard.press("End");
+    await expect(start).toHaveValue("50");
+    await page.waitForTimeout(100);
+    await expect(blocked).toHaveText("blocked: 0 changes, 0 commits");
+    // A move that happens reports.
+    await page.keyboard.press("ArrowLeft");
+    await expect(start).toHaveValue("49");
+    await expect(blocked).toHaveText("blocked: 1 changes, 1 commits");
   });
 });
 

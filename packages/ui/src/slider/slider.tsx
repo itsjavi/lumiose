@@ -132,6 +132,8 @@ export type SliderThumbProps = Omit<
 
 interface SliderContextValue {
   id: string;
+  /** A thumb's id: in a Field the first one is the field's control (TASK-449 L22). */
+  thumbId: (index: number) => string;
   values: () => number[];
   min: () => number;
   max: () => number;
@@ -207,6 +209,7 @@ function Root<V extends SliderValue = number>({
   });
   const context: SliderContextValue = {
     id,
+    thumbId: (index) => (index === 0 && field ? controlId(field) : `${id}-thumb-${index}`),
     values,
     min: low,
     max: high,
@@ -269,7 +272,7 @@ function Label({ children, ...rest }: SliderLabelProps) {
   const slider = useSlider("Label");
   slider.labels.count++;
   return (
-    <label {...rest} id={`${slider.id}-label`} for={`${slider.id}-thumb-0`}>
+    <label {...rest} id={`${slider.id}-label`} for={slider.thumbId(0)}>
       {children}
     </label>
   );
@@ -281,7 +284,7 @@ function Value({ children, ...rest }: SliderValueProps) {
   const thumbs = () =>
     slider
       .values()
-      .map((_, i) => `${slider.id}-thumb-${i}`)
+      .map((_, i) => slider.thumbId(i))
       .join(" ");
   return (
     // Not a live region: the thumbs announce their values (TASK-439, M31).
@@ -334,7 +337,7 @@ function Thumb(props: SliderThumbProps) {
       aria-invalid={field?.invalid() ? "true" : undefined}
       {...props}
       type="range"
-      id={index === 0 && field ? controlId(field) : `${slider.id}-thumb-${index}`}
+      id={slider.thumbId(index)}
       min={slider.min()}
       max={slider.max()}
       step={slider.step()}

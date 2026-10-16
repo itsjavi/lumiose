@@ -77,6 +77,9 @@ name, description and error.
   dragged value and focus, and the drag goes on with it. A native drag keeps its own thumb, so
   that thumb stays put and hands its value on. The keys stop at the other thumb, as with
   `"none"`, and `minStepsBetweenValues` applies to keys only.
+- **Blocked moves.** A move that changes no value, such as a thumb pushed against its neighbour
+  with `"none"`, fires no `input` or `change`, so `onValueChange` and `onValueCommitted` do not
+  run.
 - **`thumbAlignment` and `--lu-slider-thumb-size`.** A native thumb stays inside its input. With
   the thumbs' size in `--lu-slider-thumb-size` (the default theme sets it), slider.css runs the
   track between the thumbs' centres at the ends, so the Indicator ends at a thumb's centre
@@ -143,14 +146,14 @@ only the thumbs of a range take the pointer.
 
 ## Keyboard and focus
 
-| Key                     | Does                                                                         |
-| ----------------------- | ---------------------------------------------------------------------------- |
-| Tab                     | Moves between the thumbs, then on: one tab stop per thumb.                   |
-| Arrow Right / Arrow Up  | One step up (Arrow Left goes up right to left).                              |
-| Arrow Left / Arrow Down | One step down (Arrow Right goes down right to left).                         |
-| Page Up / Page Down     | `largeStep` up or down.                                                      |
-| Shift + an arrow        | `largeStep` in that direction.                                               |
-| Home / End              | The minimum or the maximum (a range's thumb stops at, or pushes, the other). |
+| Key                     | Does                                                                                           |
+| ----------------------- | ---------------------------------------------------------------------------------------------- |
+| Tab                     | Moves between the thumbs, then on: one tab stop per thumb.                                     |
+| Arrow Right / Arrow Up  | One step up (Arrow Left goes up right to left).                                                |
+| Arrow Left / Arrow Down | One step down (Arrow Right goes down right to left).                                           |
+| Page Up / Page Down     | `largeStep` up or down.                                                                        |
+| Shift + an arrow        | `largeStep` in that direction.                                                                 |
+| Home / End              | The minimum or the maximum; in a range, at most the neighbouring thumb, which they never push. |
 
 Every drag has these keys as its alternative (WCAG 2.5.7). A press on a range's track moves the
 nearest thumb there and focuses it; a press on a single slider's track moves its thumb.
@@ -159,9 +162,9 @@ nearest thumb there and focuses it; a press on a single slider's track moves its
 
 The thumbs are native range inputs: dragging, the arrows, Home, End, right to left, vertical,
 submission, `disabled` and reset work with no script, and the server HTML has the Indicator's
-custom properties and the value text. `<lu-slider>`'s script (1.8 kB brotli) adds Page Up and Page
+custom properties and the value text. `<lu-slider>`'s script (2.0 kB brotli) adds Page Up and Page
 Down, runs the arrow keys the same in every browser (WebKit's native range does not mirror them
-right to left), keeps a range's thumbs in order and apart (or swaps them), moves the nearest thumb
+right to left), stops Home and End at a range's neighbouring thumb, keeps a range's thumbs in order and apart (or swaps them), moves the nearest thumb
 on a press on its track, and keeps the Indicator, `aria-valuetext` and the Value text current (also
 after a form reset).
 Without it, a range's thumbs can cross, and the Value text and the Indicator stay where the server
