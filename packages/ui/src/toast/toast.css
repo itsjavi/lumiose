@@ -28,6 +28,10 @@
   lu-toast-viewport > [hidden] {
     display: none !important;
   }
+  /* A control that takes focus scrolls clear of the toasts (the script sets the height). */
+  :root {
+    scroll-padding-block-end: var(--lu-toast-stack-block-size, 0px);
+  }
   lu-toast-viewport > [data-swiping] {
     user-select: none;
   }

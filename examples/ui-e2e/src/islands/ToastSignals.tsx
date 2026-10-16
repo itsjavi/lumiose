@@ -1,4 +1,4 @@
-import { Dialog, Popover, Toast } from "@lumiose/ui";
+import { Dialog, Drawer, Popover, Toast } from "@lumiose/ui";
 
 /** The island's toast manager: its buttons add toasts, its viewport shows them (TASK-371). */
 const toasts = Toast.createToastManager();
@@ -64,6 +64,23 @@ export function ToastSignals() {
             </footer>
           </Dialog.Popup>
         </Dialog.Root>
+        <Drawer.Root>
+          <Drawer.Trigger class="lu-button">Open a drawer</Drawer.Trigger>
+          <Drawer.Popup class="lu-drawer">
+            <Drawer.Title>Inbox</Drawer.Title>
+            <Drawer.Description>A toast's swipe never swipes this drawer.</Drawer.Description>
+            <footer>
+              <button
+                type="button"
+                class="lu-button"
+                onClick={() => toasts.add({ title: "From the drawer", timeout: 0 })}
+              >
+                Add from the drawer
+              </button>
+              <Drawer.Close class="lu-button">Close the drawer</Drawer.Close>
+            </footer>
+          </Drawer.Popup>
+        </Drawer.Root>
         <Popover.Root>
           <Popover.Trigger class="lu-button">Filters</Popover.Trigger>
           <Popover.Popup class="lu-popover">

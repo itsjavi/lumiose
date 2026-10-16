@@ -1,10 +1,11 @@
 ---
 id: TASK-436
 title: 'Release review, Medium: Layers and overlays'
-status: To Do
+status: Done
 assignee:
   - '@Halo'
 created_date: '2026-10-16 10:06'
+updated_date: '2026-10-16 11:32'
 labels:
   - ui
   - review
@@ -75,14 +76,38 @@ Found by Prism's release review of @lumiose/ui (TASK-386, 2026-10-16) on main 94
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 M1: Layers: closing a popup closes the popups and dialogs inside it
-- [ ] #2 M2: Popover: close a non-modal popover when focus leaves it
-- [ ] #3 M3: Popover: a hover-opened popover never moves focus on close
-- [ ] #4 M4: Popover: trap-focus and focus-on-open use real tab stops
-- [ ] #5 M5: Drawer: swipes start only inside the drawer
-- [ ] #6 M6: Drawer: no mouse swipe from Drawer.Content
-- [ ] #7 M7: Swipes on toasts never reach a Drawer they were moved into
-- [ ] #8 M8: Toast viewport returns home when the modal holding it is removed
-- [ ] #9 M9: Toast limit never hides the focused toast
-- [ ] #10 M10: Keep focused content clear of the toast stack
+- [x] #1 M1: Layers: closing a popup closes the popups and dialogs inside it
+- [x] #2 M2: Popover: close a non-modal popover when focus leaves it
+- [x] #3 M3: Popover: a hover-opened popover never moves focus on close
+- [x] #4 M4: Popover: trap-focus and focus-on-open use real tab stops
+- [x] #5 M5: Drawer: swipes start only inside the drawer
+- [x] #6 M6: Drawer: no mouse swipe from Drawer.Content
+- [x] #7 M7: Swipes on toasts never reach a Drawer they were moved into
+- [x] #8 M8: Toast viewport returns home when the modal holding it is removed
+- [x] #9 M9: Toast limit never hides the focused toast
+- [x] #10 M10: Keep focused content clear of the toast stack
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+2026-10-16 (Halo): claimed (release-review fix batch 1; branch claude/halo-m12c-4d6b9f).
+
+2026-10-16 (Halo), every finding fixed, each with a regression test that fails without the fix in dev, build, Firefox and WebKit (checked by reverting the sources):
+- M1 (7a6ef210): layer.ts closeInside() on a layer's release closes the popovers and dialogs open inside it, innermost first (toast regions aside); dialog.script.ts does the same on a dialog's close. Tests on /layers: a popover closed by script closes the modal dialog opened from it; a dialog closed by script closes its open menu.
+- M2: popover.script.ts closes a non-modal popover (and those around it) on focusout to an element outside it and its triggers; focus going nowhere is left to the outside press, focus into a toast keeps it open (the toast suite caught that). Test: Tab past Notifications closes it; Shift+Tab to the trigger keeps it. The 'last tabbable' test now holds the popup element across the Tab.
+- M3: a hover-opened popover gives focus back on close only if it held focus. Test: hover Ada, leave or Escape: body keeps focus.
+- M4: tabStops() (tabindex >= 0, shown, one radio per group: the checked or first enabled) for trap-focus and focus-on-open. Filters fixture gained two radio groups; test: opens on the checked Week, loops Newest -> Week.
+- M5/M6: drawer.script.ts start() rejects points outside the dialog's box and mouse/pen drags in Drawer.Content (data-drawer-content, rendered by Content). Tests: a backdrop drag on a closedby=closerequest side drawer; a mouse drag in the content at its top. The content-scroll test now swipes by touch.
+- M7: lu-toast-viewport sets data-swipe-ignore. Test: a flick on a toast in a drawer (toast island fixture gained a Drawer).
+- M8: the viewport goes home when the modal holding it is removed, and #relocate prunes disconnected modals. Test: dialog.remove() then a new toast shows.
+- M9: #layout never limits the focused toast. Test: Retry focused, three toasts added by script.
+- M10: the viewport publishes --lu-toast-stack-block-size on the root (ResizeObserver), toast.css sets :root scroll-padding-block-end from it. Test: 40 right-aligned controls under a persistent toast, none left covered by Tab.
+Docs: popover, dialog, drawer, toast. Sizes to update in a pass at the end of the batch.
+<!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+All ten layer and overlay findings fixed with regression tests that fail without them in Chromium, Firefox and WebKit: closing a layer closes what is inside; Popover closes on focus-out, keeps focus after hover, and traps real tab stops; Drawer swipes start only inside it and not from Content with a mouse; toasts never swipe a Drawer, return home when their modal is removed, never hide the focused toast, and keep focused controls clear via scroll padding.
+<!-- SECTION:FINAL_SUMMARY:END -->

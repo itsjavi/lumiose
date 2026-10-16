@@ -75,11 +75,11 @@ others `type: "success"` or `"error"` and the default timeout.
 
 ### Toast.Provider
 
-| Prop           | Type           | Default   |                                                                                             |
-| -------------- | -------------- | --------- | ------------------------------------------------------------------------------------------- |
-| `toastManager` | `ToastManager` | a new one | The manager its toasts come from, for `Toast.useToastManager()`.                            |
-| `timeout`      | `number`       | `5000`    | Milliseconds before a toast closes on its own; `0` keeps toasts open.                       |
-| `limit`        | `number`       | `3`       | How many toasts show at once; older ones wait, hidden and paused, until a newer one closes. |
+| Prop           | Type           | Default   |                                                                                                                                      |
+| -------------- | -------------- | --------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `toastManager` | `ToastManager` | a new one | The manager its toasts come from, for `Toast.useToastManager()`.                                                                     |
+| `timeout`      | `number`       | `5000`    | Milliseconds before a toast closes on its own; `0` keeps toasts open.                                                                |
+| `limit`        | `number`       | `3`       | How many toasts show at once; older ones wait, hidden and paused, until a newer one closes. The toast that holds focus always shows. |
 
 `Toast.useToastManager()` returns the closest provider's manager.
 
@@ -246,8 +246,13 @@ adds a red edge.
 
 `@lumiose/ui/toast.css`, in the `lu.core` layer, makes the viewport a box fixed to the window's
 bottom end, without a popover's default border, padding or centring; hides the toasts past the
-limit whatever display your CSS gives them; and sets `touch-action` on swipeable toasts, so a
-swipe does not scroll the page along its axes.
+limit whatever display your CSS gives them; sets `touch-action` on swipeable toasts, so a swipe
+does not scroll the page along its axes; and gives the page `scroll-padding-block-end` the height
+of the shown toasts (`--lu-toast-stack-block-size`, which the script keeps on the root), so a
+control that takes focus is scrolled clear of them (WCAG 2.4.11).
+
+A modal dialog makes everything outside it inert, so while one is open the region moves into it,
+and back when it closes or leaves the page.
 
 ## Keyboard and focus
 

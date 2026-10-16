@@ -12,6 +12,8 @@
 //   back.
 // - A drag never starts on a control (a button, link or field) or inside `[data-swipe-ignore]`,
 //   and not where the content under it can still scroll that way: the content scrolls instead.
+//   It starts only inside the drawer's box, not on its backdrop (TASK-436 M5), and a mouse or pen
+//   never starts one in `Drawer.Content` (`[data-drawer-content]`), where it selects text (M6).
 //   On a touch screen it takes the gesture (`touchmove`'s `preventDefault`) only once it is a swipe.
 // - The close buttons, Escape and a click on the backdrop close it without a gesture (WCAG 2.5.7).
 //
@@ -65,10 +67,14 @@ function scrolls(target: Element, dialog: HTMLDialogElement, direction: Directio
   return false;
 }
 
-function start(target: EventTarget | null, x: number, y: number): boolean {
+function start(target: EventTarget | null, x: number, y: number, mouse: boolean): boolean {
   if (!(target instanceof Element)) return false;
   const dialog = target.closest<HTMLDialogElement>("dialog[data-swipe-direction]");
   if (!dialog?.open || target.closest(CONTROLS)) return false;
+  // A press on the backdrop targets the dialog too: only presses in its box count.
+  const box = dialog.getBoundingClientRect();
+  if (x < box.left || x > box.right || y < box.top || y > box.bottom) return false;
+  if (mouse && target.closest("[data-drawer-content]")) return false;
   const direction = dialog.dataset["swipeDirection"] as Direction;
   if (scrolls(target, dialog, direction)) return false;
   drag = {
@@ -159,7 +165,7 @@ function on<K extends keyof DocumentEventMap>(
 // scrolling only once it is one.
 on("pointerdown", (event) => {
   if (event.pointerType !== "touch" && event.button === 0 && event.isPrimary) {
-    start(event.target, event.clientX, event.clientY);
+    start(event.target, event.clientX, event.clientY, true);
   }
 });
 on("pointermove", (event) => {
@@ -177,8 +183,9 @@ on("pointercancel", (event) => {
 });
 on("touchstart", (event) => {
   const touch = event.touches[0];
-  if (event.touches.length === 1 && touch) start(event.target, touch.clientX, touch.clientY);
-  else if (drag) end();
+  if (event.touches.length === 1 && touch) {
+    start(event.target, touch.clientX, touch.clientY, false);
+  } else if (drag) end();
 });
 on(
   "touchmove",

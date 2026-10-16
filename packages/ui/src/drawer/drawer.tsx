@@ -77,7 +77,12 @@ function Popup({ children, ...rest }: DrawerPopupProps) {
 }
 
 function Content({ children, ...rest }: DrawerContentProps) {
-  return <div {...rest}>{children}</div>;
+  // A mouse or pen drag here selects text: it never swipes the drawer (drawer.script.ts).
+  return (
+    <div {...rest} data-drawer-content="">
+      {children}
+    </div>
+  );
 }
 
 /**

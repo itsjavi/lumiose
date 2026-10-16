@@ -23,6 +23,19 @@ async function drag(page: Page, target: Locator, toX: number, toY: number, steps
   await page.mouse.up();
 }
 
+/** A touch swipe down by `dy` from the top of `target`, as the drawer's touch listeners see it. */
+async function touchSwipe(target: Locator, dy: number) {
+  const box = (await target.boundingBox())!;
+  const point = (y: number) => [{ clientX: box.x + 20, clientY: y, identifier: 1 }];
+  const start = box.y + 10;
+  await target.dispatchEvent("touchstart", { touches: point(start), changedTouches: point(start) });
+  for (let i = 1; i <= 8; i++) {
+    const y = start + (dy * i) / 8;
+    await target.dispatchEvent("touchmove", { touches: point(y), changedTouches: point(y) });
+  }
+  await target.dispatchEvent("touchend", { touches: [], changedTouches: point(start + dy) });
+}
+
 test.describe("without JavaScript", () => {
   test.use({ javaScriptEnabled: false });
 
@@ -86,17 +99,55 @@ test.describe("swipe", () => {
     await page.mouse.up();
   });
 
-  test("content that can still scroll scrolls instead; at its top it swipes", async ({ page }) => {
+  test("content that can still scroll scrolls instead; at its top a touch swipes", async ({
+    browser,
+  }) => {
+    const context = await browser.newContext({ hasTouch: true });
+    const page = await context.newPage();
     await page.goto("/drawer");
     await button(page, "Filters").click();
     const filters = drawer(page, "Filters");
     const content = page.getByTestId("content");
+    await expect(filters).toBeVisible();
     await content.evaluate((el) => (el.scrollTop = 100));
-    await drag(page, content, 0, 300);
+    await touchSwipe(content, 300);
+    await expect(filters).toBeVisible();
+    await content.evaluate((el) => (el.scrollTop = 0));
+    await touchSwipe(content, 300);
+    await expect(filters).toBeHidden();
+    await context.close();
+  });
+
+  test("a mouse drag in the content selects text and never swipes (TASK-436 M6)", async ({
+    page,
+  }) => {
+    await page.goto("/drawer");
+    await button(page, "Filters").click();
+    const filters = drawer(page, "Filters");
+    const content = page.getByTestId("content");
     await expect(filters).toBeVisible();
     await content.evaluate((el) => (el.scrollTop = 0));
     await drag(page, content, 0, 300);
-    await expect(filters).toBeHidden();
+    await expect(filters).toBeVisible();
+    await expect(filters).not.toHaveAttribute("data-swiping");
+  });
+
+  test("a drag that starts on the backdrop never swipes (TASK-436 M5)", async ({ page }) => {
+    await page.goto("/drawer");
+    await button(page, "Menu").click();
+    const menu = drawer(page, "Menu");
+    await expect(menu).toBeVisible();
+    const box = (await menu.boundingBox())!;
+    // On the backdrop, left of the drawer, toward its edge (closedby="closerequest").
+    const y = box.y + box.height / 2;
+    await page.mouse.move(box.x - 150, y);
+    await page.mouse.down();
+    for (let i = 1; i <= 10; i++) {
+      await page.mouse.move(box.x - 150 + i * 25, y);
+      await page.waitForTimeout(16);
+    }
+    await page.mouse.up();
+    await expect(menu).toBeVisible();
   });
 
   test("a side drawer swipes toward its side", async ({ page }) => {

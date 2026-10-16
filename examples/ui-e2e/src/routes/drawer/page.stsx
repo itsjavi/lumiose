@@ -32,7 +32,8 @@ export default function DrawerPage() {
       </Drawer.Root>
       <Drawer.Root swipeDirection="right">
         <Drawer.Trigger class="lu-button">Menu</Drawer.Trigger>
-        <Drawer.Popup class="lu-drawer" data-testid="side">
+        {/* Only Escape and the close button close it: a press on the backdrop does not. */}
+        <Drawer.Popup class="lu-drawer" data-testid="side" closedby="closerequest">
           <Drawer.Title>Menu</Drawer.Title>
           <nav aria-label="Site">
             <a href="#home">Home</a>

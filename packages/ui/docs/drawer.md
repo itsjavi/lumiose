@@ -57,7 +57,9 @@ buttons' `value`.
   scrolls it instead, until it reaches its end. When it scrolls, make it focusable for the
   keyboard: `tabindex={0}` with `role="region"` and an `aria-label`.
 - **`[data-swipe-ignore]`** on any element inside keeps swipes from starting on it, as on buttons,
-  links and fields.
+  links and fields. The toasts' region has it, so a toast's swipe never swipes a drawer it sits in.
+- A swipe starts only in the drawer's box: a drag that starts on the backdrop does nothing. A
+  mouse or pen drag in `Content` selects its text and never swipes (a touch swipe still does).
 
 ## Example
 

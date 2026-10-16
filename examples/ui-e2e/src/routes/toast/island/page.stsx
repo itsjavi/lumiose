@@ -7,11 +7,26 @@ export default function ToastIslandPage() {
       <Title>Toasts from an island's manager</Title>
       <h1>Toasts from an island's manager</h1>
       <ToastSignals client:load />
+      {/* A long page of controls at the inline end, where the toasts sit (TASK-436 M10). */}
+      <section class="tall" aria-label="A long page">
+        {Array.from({ length: 40 }, (_, i) => (
+          <button type="button" class="lu-button">
+            Step {i + 1}
+          </button>
+        ))}
+      </section>
     </>
   );
 }
 
 <style>
+  .tall {
+    display: grid;
+    justify-items: end;
+    gap: 0.5rem;
+    margin-block-start: 2rem;
+    padding-block-end: 60vh;
+  }
   :global(.actions) {
     display: flex;
     flex-wrap: wrap;

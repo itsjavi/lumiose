@@ -191,6 +191,85 @@ test.describe("toasts from an island's manager", () => {
   });
 });
 
+test.describe("toasts in overlays and focus (TASK-436)", () => {
+  test("M7: a flick on a toast in a drawer never dismisses the drawer", async ({ page }) => {
+    await page.goto("/toast/island");
+    await button(page, "Open a drawer").click();
+    const inbox = page.getByRole("dialog", { name: "Inbox" });
+    await expect(inbox).toBeVisible();
+    await button(page, "Add from the drawer").click();
+    const added = toast(page, "From the drawer");
+    await expect(added).toBeVisible();
+    // A flick: short and fast, which a drawer takes as a dismissal too.
+    const box = (await added.locator("h2").boundingBox())!;
+    const x = box.x + box.width / 3;
+    const y = box.y + box.height / 2;
+    await page.mouse.move(x, y);
+    await page.mouse.down();
+    await page.mouse.move(x, y + 30);
+    await page.mouse.move(x, y + 70);
+    await page.mouse.move(x, y + 110);
+    await page.mouse.up();
+    await page.waitForTimeout(300);
+    await expect(inbox).toBeVisible();
+    await expect(inbox).not.toHaveAttribute("data-swipe-dismiss");
+  });
+
+  test("M8: a modal dialog removed with the toasts in it gives the region back", async ({
+    page,
+  }) => {
+    await page.goto("/toast/island");
+    await button(page, "Open a dialog").click();
+    const settings = page.getByRole("dialog", { name: "Settings" });
+    await expect(settings).toBeVisible();
+    await button(page, "Add from the dialog").click();
+    await expect(toast(page, "From the dialog")).toBeVisible();
+    await settings.evaluate((el) => el.remove());
+    await button(page, "Add an error").click();
+    await expect(toast(page, "Payment failed")).toBeVisible();
+    expect(await page.locator("lu-toast-viewport").evaluate((el) => el.isConnected)).toBe(true);
+  });
+
+  test("M9: the focused toast stays when newer ones pass the limit", async ({ page }) => {
+    await page.goto("/toast/island");
+    await button(page, "Add an error").click();
+    const error = toast(page, "Payment failed");
+    await expect(error).toBeVisible();
+    await error.getByRole("button", { name: "Retry" }).focus();
+    // Three more arrive, while focus stays on Retry (not by clicks, which would move it).
+    await page.evaluate(() => {
+      const add = [...document.querySelectorAll("button")].find(
+        (b) => b.textContent === "Add a toast",
+      )!;
+      for (let i = 0; i < 3; i++) add.click();
+    });
+    await expect(error.getByRole("button", { name: "Retry" })).toBeFocused();
+    await expect(error).toBeVisible();
+  });
+
+  test("M10: Tab never leaves a control under a persistent toast (2.4.11)", async ({ page }) => {
+    await page.goto("/toast/island");
+    await button(page, "Add an error").click();
+    await expect(toast(page, "Payment failed")).toBeVisible();
+    await button(page, "Step 1").focus();
+    let covered = 0;
+    for (let i = 0; i < 39; i++) {
+      await page.keyboard.press("Tab");
+      covered += await page.evaluate(() => {
+        const active = document.activeElement!.getBoundingClientRect();
+        const stack = document.querySelector("lu-toast-viewport")!.getBoundingClientRect();
+        const under =
+          active.top >= stack.top &&
+          active.bottom <= stack.bottom &&
+          active.left >= stack.left &&
+          active.right <= stack.right;
+        return under ? 1 : 0;
+      });
+    }
+    expect(covered).toBe(0);
+  });
+});
+
 test("a server-rendered page loads Toast's client script and no island runtime", async ({
   page,
 }, testInfo) => {

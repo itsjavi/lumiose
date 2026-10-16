@@ -6,7 +6,13 @@
 // - Top layer: the viewport becomes a manual popover (`popover="manual"`) and shows itself, so it
 //   sits above the page and dialogs, and no other popover's light dismiss closes it. A modal
 //   dialog makes everything outside it inert, toasts included: while one is open, the viewport
-//   moves into the topmost modal dialog and back when it closes.
+//   moves into the topmost modal dialog and back when it closes, or when that dialog leaves the
+//   page (TASK-436 M8). It has `data-swipe-ignore`, so a toast's swipe never swipes a Drawer it
+//   was moved into (M7).
+// - Focus: the toast that holds focus is never hidden by the limit (M9). While toasts show, the
+//   stack's height is `--lu-toast-stack-block-size` on the root, which toast.css turns into the
+//   page's `scroll-padding-block-end`, so a control that takes focus is scrolled clear of the
+//   stack (M10).
 // - Timers: a toast closes after its `data-timeout` milliseconds (`0` keeps it). Timers pause
 //   while the pointer is over the viewport, while focus is in it, while the window is in the
 //   background or the page is hidden, and resume with the time that was left.
@@ -71,6 +77,7 @@ export class LuToastViewport extends HTMLElement {
   /** Where the viewport belongs while a modal dialog holds it. */
   #home: Comment | undefined;
   #moving = false;
+  #resize: ResizeObserver | undefined;
 
   /** Its toasts: its element children. */
   get toasts(): HTMLElement[] {
@@ -80,6 +87,9 @@ export class LuToastViewport extends HTMLElement {
   connectedCallback() {
     if (this.#moving) return;
     viewports.add(this);
+    this.setAttribute("data-swipe-ignore", "");
+    this.#resize = new ResizeObserver(() => this.#publish());
+    this.#resize.observe(this);
     this.addEventListener("pointerenter", this.#onPointerEnter);
     this.addEventListener("pointerleave", this.#onPointerLeave);
     this.addEventListener("focusin", this.#onFocusIn);
@@ -103,7 +113,20 @@ export class LuToastViewport extends HTMLElement {
 
   disconnectedCallback() {
     if (this.#moving) return;
+    // Removed with the modal dialog that held it: back home, still the page's toast region.
+    if (this.#home?.isConnected) {
+      this.#moving = true;
+      this.#home.replaceWith(this);
+      this.#home = undefined;
+      this.#moving = false;
+      this.#show();
+      return;
+    }
     viewports.delete(this);
+    this.#resize?.disconnect();
+    if (document.documentElement.style.getPropertyValue("--lu-toast-stack-block-size")) {
+      document.documentElement.style.removeProperty("--lu-toast-stack-block-size");
+    }
     this.#follow(false);
     this.#observer?.disconnect();
     for (const timer of this.#timers.values()) clearTimeout(timer.handle);
@@ -145,7 +168,19 @@ export class LuToastViewport extends HTMLElement {
     if (!this.matches(":popover-open")) this.showPopover();
   }
 
+  /** The stack's height while a toast shows, for the page's scroll padding. */
+  #publish() {
+    const root = document.documentElement.style;
+    const height = this.active ? this.getBoundingClientRect().height : 0;
+    if (height > 0) root.setProperty("--lu-toast-stack-block-size", `${Math.ceil(height)}px`);
+    else root.removeProperty("--lu-toast-stack-block-size");
+  }
+
   #relocate() {
+    // A modal dialog removed from the page fires no close: it holds nothing any more.
+    for (const dialog of modals.filter((each) => !each.isConnected)) {
+      modals.splice(modals.indexOf(dialog), 1);
+    }
     const top = modals.at(-1);
     const target = top && !top.contains(this) ? top : undefined;
     if (!target && (!this.#home || (top && top.contains(this)))) return;
@@ -255,10 +290,12 @@ export class LuToastViewport extends HTMLElement {
   /** Hides the toasts past the limit, numbers the shown ones and updates the timers. */
   #layout() {
     const limit = Number(this.dataset["limit"] ?? "3");
+    // The focused toast stays shown, past the limit too: hiding it would drop focus to the page.
+    const focused = this.#toastOf(document.activeElement);
     let index = 0;
     for (const toast of this.toasts) {
       if (this.#closing.has(toast)) continue;
-      const limited = limit > 0 && index >= limit;
+      const limited = limit > 0 && index >= limit && toast !== focused;
       toast.hidden = limited;
       toast.toggleAttribute("data-limited", limited);
       if (limited) toast.style.removeProperty("--lu-toast-index");
