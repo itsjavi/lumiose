@@ -9,6 +9,7 @@ describe("lumiose/dom contract", () => {
   it("exports every ClientRuntime member", () => {
     const members: (keyof ClientRuntime)[] = [
       "template",
+      "outputTemplate",
       "bind",
       "setText",
       "setAttr",

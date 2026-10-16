@@ -19,9 +19,6 @@
 //   shows its new verdict, if the field shows its errors by then.
 // - The control gets `aria-invalid` and `aria-describedby` for the errors shown and the field's
 //   descriptions.
-// - A form reset puts an Error's own nodes back: resetting an `<output>` replaces its children
-//   with its text (Firefox and WebKit even when the text is the same), and an island's Error would
-//   lose the text node Lumiose updates (TASK-424).
 //
 // It must not import `lumiose`: server-rendered pages load it without the runtime.
 
@@ -219,15 +216,6 @@ on("input", onEdit, false);
 on("change", onEdit, false);
 on("reset", (event) => {
   const form = event.target as HTMLFormElement;
-  // Before the reset replaces them; back after it.
-  const outputs = [...form.querySelectorAll<HTMLOutputElement>("lu-field output")].map(
-    (output) => [output, [...output.childNodes]] as const,
-  );
-  setTimeout(() => {
-    for (const [output, nodes] of outputs) {
-      if (nodes.some((node) => !node.isConnected)) output.replaceChildren(...nodes);
-    }
-  });
   // The controls take their default values after the event.
   queueMicrotask(() => {
     for (const field of form.querySelectorAll<HTMLElement>("lu-field")) {

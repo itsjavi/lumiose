@@ -3,7 +3,7 @@ id: doc-2
 title: Compiler-runtime contract
 type: specification
 created_date: '2026-10-08 12:27'
-updated_date: '2026-10-16 04:19'
+updated_date: '2026-10-16 05:58'
 tags:
   - architecture
   - contract
@@ -41,6 +41,7 @@ tags:
 | Name | Contract |
 |---|---|
 | `template(html, flags?)` | Parse once into `<template>`. The factory clones `content.firstChild`, or all roots when `flags & MultiRoot`. `Svg` and `MathMl` set the namespace. HTML is minified and may omit optional closing tags. `<!>` is a placeholder comment |
+| `outputTemplate(html, flags?)` | `template` for HTML that contains an `<output>` (**codegen**, TASK-425): the compiler emits it instead of `template` for such templates. A form reset replaces an output's children in Firefox and WebKit even when its text stays the same, which would detach the nodes bindings update. The first instance installs one capturing `reset` listener that takes the outputs whose reset would not change their text out of the form (an empty `form` attribute) until the next task. Only modules with an `<output>` import it |
 | `bind(target, compute, apply)` | Tracked `compute`; calls `apply(target, value)` only when the value changes (`Object.is`). The first run applies immediately. Disposed with the owner |
 | `setText`, `setAttr`, `setProp`, `setClass`, `toggleClass`, `setStyle`, `setStyleProperty` | Pure DOM writers, usable as `apply` functions. For `setAttr`: nullish or `false` removes the attribute, `true` sets `""` |
 | `setNonce(el)` | Under `csp: "strict"` (compile option `strictCsp`), sets the page's nonce from `<meta property="csp-nonce">` on a JSX-authored `<script>`/`<style>` without an explicit `nonce` (decision-27); static `style="…"` strings are applied through the CSSOM instead of the attribute |

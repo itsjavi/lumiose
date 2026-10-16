@@ -46,6 +46,14 @@ export interface ClientRuntime {
    */
   template(html: string): TemplateFactory;
   template(html: string, flags: number): TemplateFactory | MultiRootTemplateFactory;
+  /**
+   * `template()` for HTML that contains an `<output>`. A form reset replaces an output's children
+   * in Firefox and WebKit even when its text stays the same; the first instance installs a
+   * capturing `reset` listener that keeps such outputs out of the reset, so the nodes bindings
+   * update stay in the document (TASK-425).
+   */
+  outputTemplate(html: string): TemplateFactory;
+  outputTemplate(html: string, flags: number): TemplateFactory | MultiRootTemplateFactory;
 
   // ---- bindings ----------------------------------------------------------------------------------
   /**

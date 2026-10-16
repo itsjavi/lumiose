@@ -125,10 +125,13 @@ export function FormSignals() {
             )}
           </Field.Validity>
         </Field.Root>
-        {/* A <p>, not an <output>: a form reset would replace an output's text (TASK-424). */}
-        <p data-testid="login-checks">checks: {checks()}</p>
+        {/* Live text in an <output>, which a form reset replaces in Firefox and WebKit (TASK-425). */}
+        <output data-testid="login-checks">checks: {checks()}</output>
         <button type="submit" class="lu-button">
           Check login
+        </button>
+        <button type="reset" class="lu-button">
+          Reset login
         </button>
       </form>
       <div>

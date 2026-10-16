@@ -347,12 +347,32 @@ test.describe("a form reset in an island (TASK-424)", () => {
     await handle.fill("a b");
     await page.getByRole("button", { name: "Save" }).click();
     await expect(page.getByText("No spaces, please.")).toBeVisible();
-    // Resetting an <output> replaces its text in Firefox and WebKit; Field's script puts it back.
+    // Resetting an <output> replaces its text in Firefox and WebKit; the runtime keeps the
+    // Error out of the reset (TASK-425).
     await handle.evaluate((el) => (el as HTMLInputElement).form!.reset());
     await expect(page.getByText("No spaces, please.")).toBeHidden();
     await handle.fill("admin");
     await page.getByRole("button", { name: "Save" }).click();
     await expect(page.getByText("That handle is reserved.")).toBeVisible();
+  });
+});
+
+test.describe("live <output> text through a form reset (TASK-425)", () => {
+  // Firefox and WebKit replace an output's children on a reset, even with the same text; the
+  // runtime keeps such outputs out of it, so the text node it updates stays in place.
+  test("a reset button keeps the output's text node, which goes on updating", async ({ page }) => {
+    await page.goto("/form/island");
+    await hydrated(page);
+    await expect(checks(page)).toHaveText("checks: 1");
+    const text = await checks(page).evaluateHandle((el) => el.lastChild!);
+    await login(page).fill("ada");
+    await expect(checks(page)).toHaveText("checks: 2");
+    await page.getByRole("button", { name: "Reset login" }).click();
+    await expect(login(page)).toHaveValue("");
+    // The reset checks the default value again: the count goes on in the same text node.
+    await expect(checks(page)).toHaveText("checks: 3");
+    expect(await checks(page).evaluate((el, node) => el.lastChild === node, text)).toBe(true);
+    await expect(checks(page)).not.toHaveAttribute("form");
   });
 });
 

@@ -2,6 +2,7 @@
 // Implements `ClientRuntime` from the compiler-runtime contract (src/contract/client.ts, doc-2).
 export { renderEffect as bind } from "../core/internal.ts";
 export { template } from "./template.ts";
+export { outputTemplate } from "./output.ts";
 export {
   applyScope,
   setAttr,

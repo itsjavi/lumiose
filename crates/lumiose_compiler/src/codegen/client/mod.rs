@@ -124,6 +124,7 @@ pub struct TransformOutput {
 /// Runtime helpers in `lumiose/dom` contract order (also the import order).
 const CLIENT_RUNTIME: &[&str] = &[
     "template",
+    "outputTemplate",
     "bind",
     "setText",
     "setAttr",
@@ -390,7 +391,14 @@ impl<'a> Codegen<'a, '_> {
             return name.clone();
         }
         let name = self.names.fresh(&format!("_t{}", self.templates.len()));
-        let callee = self.runtime("template", span);
+        // A form reset replaces an `<output>`'s children in Firefox and WebKit; `outputTemplate`
+        // keeps them (TASK-425), and only modules with an output import it.
+        let helper = if html.contains("<output") {
+            "outputTemplate"
+        } else {
+            "template"
+        };
+        let callee = self.runtime(helper, span);
         let mut args = vec![
             self.ast
                 .template_literal(span, &html::template_literal_raw(html)),
