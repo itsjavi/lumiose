@@ -114,7 +114,3 @@ on("toggle", (event) => {
   );
   trigger?.toggleAttribute("data-popup-open", event.newState === "open");
 });
-
-// A module, so it runs once per page whoever imports it.
-// oxlint-disable-next-line unicorn/require-module-specifiers
-export {};

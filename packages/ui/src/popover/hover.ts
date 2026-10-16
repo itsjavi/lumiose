@@ -44,6 +44,11 @@ const ms = (trigger: HTMLElement, name: string, fallback: number) => {
   return Number.isFinite(value) ? value : fallback;
 };
 
+const on = <K extends keyof DocumentEventMap>(
+  type: K,
+  listener: (event: DocumentEventMap[K]) => void,
+) => document.addEventListener(type, listener, true);
+
 export function hoverIntent(source: HoverSource): HoverIntent {
   const hovered = new Map<HTMLElement, HTMLElement>();
   let opening: { trigger: HTMLElement; timer: ReturnType<typeof setTimeout> } | undefined;
@@ -93,11 +98,6 @@ export function hoverIntent(source: HoverSource): HoverIntent {
       }, delay),
     );
   };
-
-  const on = <K extends keyof DocumentEventMap>(
-    type: K,
-    listener: (event: DocumentEventMap[K]) => void,
-  ) => document.addEventListener(type, listener, true);
 
   on("pointerover", (event) => {
     if (event.pointerType === "touch") return;
