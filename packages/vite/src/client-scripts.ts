@@ -14,7 +14,7 @@
 // - Builds: the server graph does not exist yet when the client is built, so the client build
 //   builds every module that a `?client` import of the one-time scan names (./scan.ts) as an entry,
 //   and the server build embeds its URL. An import the scan did not see is a warning, and records
-//   nothing.
+//   nothing; a page that renders its component then warns which script it goes without (TASK-463).
 // - Dev: the URL is the module's own (root-relative, or `/@fs/` outside the root).
 
 import { basename, relative } from "node:path";
@@ -93,7 +93,14 @@ export function clientScriptsPlugin(options: ClientScriptsOptions): Plugin {
             );
           }
         }
-        if (script === undefined) return "export default function clientScript() {}\n";
+        if (script === undefined) {
+          // Rendering the component says which page goes without the script (TASK-463).
+          return `import { missingClientScript } from ${JSON.stringify(runtimeFile("app/server/missing-client-script.ts"))};
+export default function clientScript() {
+  missingClientScript(${JSON.stringify(normalizePath(relative(config.root, file)))});
+}
+`;
+        }
         return `import { clientScript as record } from ${JSON.stringify(runtimeFile("server/client-script.ts"))};
 export default function clientScript() {
   record(${JSON.stringify(script.url)}, ${JSON.stringify(script.preloads)});

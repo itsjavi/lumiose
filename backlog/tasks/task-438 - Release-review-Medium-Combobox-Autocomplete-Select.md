@@ -1,11 +1,11 @@
 ---
 id: TASK-438
 title: 'Release review, Medium: Combobox, Autocomplete, Select'
-status: In Progress
+status: Done
 assignee:
   - '@Beacon'
 created_date: '2026-10-16 10:06'
-updated_date: '2026-10-16 21:19'
+updated_date: '2026-10-16 21:29'
 labels:
   - ui
   - review
@@ -67,4 +67,6 @@ Found by Prism's release review of @lumiose/ui (TASK-386, 2026-10-16) on main 94
 2026-10-16 (Halo): M21's layer part done (fix batch 2). layer.ts exports composing(event) (isComposing, or keyCode 229: Safari's key that commits or cancels a composition comes after compositionend with isComposing false); the shared Escape handler ignores such keys, so an Escape that ends a composition in a field inside a Popover, Menu or Navigation Menu content closes nothing and is not cancelled. dialog.script's Escape handler does the same. Unit test in layer.dom.test.ts fails without it. dialog.md and popover.md keyboard tables mention it. Menu items and other layers' keys hold no text field, so no other guard is needed there.
 
 2026-10-16 (user, TASK-457): M26 and M24 are kept and documented, and M23 moves to the screen reader pass (TASK-361). Beacon writes the docs lines and then marks this task Done.
+
+2026-10-16 (Beacon): The user's answers (TASK-457, decision-62): M24's server-rendered label stays, documented in combobox.md (the input renders before the options, so the server cannot know the label; the script puts it in as it upgrades); M23 belongs to the screen reader pass; Escape on a closed combobox is TASK-465 (done).
 <!-- SECTION:NOTES:END -->

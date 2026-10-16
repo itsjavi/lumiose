@@ -213,7 +213,9 @@ export function CopyButton(props: { text: string }) {
 - **Builds** find `?client` imports in the project and its
   [Lumiose packages](../reference/vite.md#lumiose-packages), linked or installed from npm, and build
   each script as a chunk of its own. An import they do not find, such as one in a package that
-  does not depend on `lumiose`, is a build warning, and its pages do not load it. In `lumiose dev`
+  does not depend on `lumiose` or a module outside the project, is a build warning, and its pages
+  do not load it: the first page that renders its component, while prerendering or on the server,
+  warns which script it goes without. In `lumiose dev`
   the script loads from its own URL. Its type comes from `lumiose/env`: a default export
   `() => void`.
 

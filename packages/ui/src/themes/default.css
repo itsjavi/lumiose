@@ -2051,6 +2051,11 @@
       background: Highlight;
       color: HighlightText;
     }
+    /* The ring is outside, on Canvas: Firefox would draw it in the text colour, HighlightText, which
+       no contrast theme pairs with Canvas (TASK-462). */
+    .lu-toggle[aria-pressed="true"]:focus-visible {
+      outline-color: CanvasText;
+    }
     .lu-tabs [role="tab"] {
       border-block-end: 2px solid Canvas;
     }

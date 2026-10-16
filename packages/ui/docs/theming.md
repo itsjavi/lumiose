@@ -97,8 +97,10 @@ In forced colours (Windows' contrast themes), the browser drops shadows and grad
 backgrounds in its own palette, which would erase the state a colour shows. The theme draws those
 states again in system colours (`Highlight`, `HighlightText`, `ButtonText`, `Canvas`): a switch's
 thumb and its on state, a pressed toggle, the selected tab's bar, progress and meter values, a
-slider's range, the scroll thumb and the highlighted menu item. Do the same for the states your
-own CSS draws with a colour, in a `@media (forced-colors: active)` block.
+slider's range, the scroll thumb and the highlighted menu item. A pressed toggle's focus ring,
+outside its `Highlight` fill, is `CanvasText`, the colour every contrast theme pairs with the page
+(Firefox would draw it in the toggle's `HighlightText`). Do the same for the states your own CSS
+draws with a colour, in a `@media (forced-colors: active)` block.
 
 ## Your own CSS
 

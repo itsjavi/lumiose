@@ -855,12 +855,16 @@ export class ComboboxElement extends HTMLElement {
         return;
       }
       case "Escape":
-        // Closed: the key goes on, so a parent dialog closes.
         if (open) {
           event.preventDefault();
           // An inline completion goes back to the typed text.
           if (this.#free) input.value = this.#typed;
           this.#close();
+        } else if (input.value !== "" || this.#values.length > 0) {
+          // Closed with a value: Escape clears the text and the selection, as Base UI's, and is
+          // consumed, so a parent dialog stays open (user, TASK-465). Empty, the key goes on.
+          event.preventDefault();
+          this.#clear();
         }
         return;
       case "Tab":
@@ -930,13 +934,18 @@ export class ComboboxElement extends HTMLElement {
       else this.#show(true);
       this.input?.focus();
     } else if (command === "--clear") {
-      if (this.#free) this.#complete("", true);
-      else if (this.input) this.input.value = "";
-      this.#filter("");
-      this.#set([], true);
-      this.#close(false);
+      this.#clear();
       this.input?.focus();
     }
+  }
+
+  /** Empties the text and the selection, as the user would: `input` and `change` (Clear, Escape). */
+  #clear(): void {
+    if (this.#free) this.#complete("", true);
+    else if (this.input) this.input.value = "";
+    this.#filter("");
+    this.#set([], true);
+    this.#close(false);
   }
 
   #onPress(event: PointerEvent): void {

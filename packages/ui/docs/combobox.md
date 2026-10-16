@@ -271,20 +271,20 @@ The [WAI-ARIA combobox pattern](https://www.w3.org/WAI/ARIA/apg/patterns/combobo
 popup, list autocomplete and manual selection, with Base UI's behaviour where it leaves a choice.
 Focus stays in the input; the active option is `aria-activedescendant`.
 
-| Key                  | Does                                                                                                                                                                                                |
-| -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| A character          | Edits the text, filters the options and opens the popup when something matches (or there is an `Empty`). Never commits.                                                                             |
-| Arrow Down, Arrow Up | Closed: opens the popup on the selected option, else the first (Arrow Up: the last). Open: the next or previous option, past the last back to the input, then around. Disabled options are skipped. |
-| Alt+Arrow Down       | Opens the popup without highlighting an option.                                                                                                                                                     |
-| Alt+Arrow Up         | Closes the popup.                                                                                                                                                                                   |
-| Enter                | Chooses the highlighted option. With nothing highlighted, it does what Enter does in a form field.                                                                                                  |
-| Escape               | Closes the popup without choosing and puts the selection's label back. Closed, it goes on to the page, so a dialog closes.                                                                          |
-| Tab                  | Closes the popup without choosing and moves on.                                                                                                                                                     |
-| Backspace            | With `multiple`, in an empty input: removes the last value.                                                                                                                                         |
-| Arrow Left           | With `multiple`, at the start of the input: moves to the last chip (Arrow Right right to left).                                                                                                     |
-| Arrow Left, Right    | On a chip: the previous or next chip; past the last, back to the input.                                                                                                                             |
-| Backspace, Delete    | On a chip: removes its value; focus goes to the chip before it, else the one in its place, else the input.                                                                                          |
-| Home, End            | Move the text cursor, as in any text field.                                                                                                                                                         |
+| Key                  | Does                                                                                                                                                                                                                                |
+| -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| A character          | Edits the text, filters the options and opens the popup when something matches (or there is an `Empty`). Never commits.                                                                                                             |
+| Arrow Down, Arrow Up | Closed: opens the popup on the selected option, else the first (Arrow Up: the last). Open: the next or previous option, past the last back to the input, then around. Disabled options are skipped.                                 |
+| Alt+Arrow Down       | Opens the popup without highlighting an option.                                                                                                                                                                                     |
+| Alt+Arrow Up         | Closes the popup.                                                                                                                                                                                                                   |
+| Enter                | Chooses the highlighted option. With nothing highlighted, it does what Enter does in a form field.                                                                                                                                  |
+| Escape               | Open: closes the popup without choosing and puts the selection's label back. Closed: clears the text and the selection (a `change`), as Base UI's; closed and empty, it goes on to the page, so a dialog closes on the next Escape. |
+| Tab                  | Closes the popup without choosing and moves on.                                                                                                                                                                                     |
+| Backspace            | With `multiple`, in an empty input: removes the last value.                                                                                                                                                                         |
+| Arrow Left           | With `multiple`, at the start of the input: moves to the last chip (Arrow Right right to left).                                                                                                                                     |
+| Arrow Left, Right    | On a chip: the previous or next chip; past the last, back to the input.                                                                                                                                                             |
+| Backspace, Delete    | On a chip: removes its value; focus goes to the chip before it, else the one in its place, else the input.                                                                                                                          |
+| Home, End            | Move the text cursor, as in any text field.                                                                                                                                                                                         |
 
 - **Choosing** an option puts its label in the input and closes the popup, or, with `multiple`,
   toggles it, clears the text and keeps the popup open. It fires `change` once per change.
@@ -308,6 +308,10 @@ The combobox needs its script: there is no native element that filters a styled 
 cannot be styled or grouped, and customizable select cannot filter). Without JavaScript the server
 HTML shows a labelled text field and nothing opens, and the form gets no value. For a choice that
 must work without JavaScript, use [Select](select.md).
+
+In the server HTML the input is empty even with a selected value: the input renders before the
+options, so the server does not know the selected option's label when it writes the input. The
+script puts the label in as it upgrades the element (decision-62).
 
 A page that renders a `Combobox` loads the script once, as a 5.0 kB (brotli) module without the
 Lumiose runtime, and islands bundle it. It defines `lu-combobox`, which upgrades every combobox on

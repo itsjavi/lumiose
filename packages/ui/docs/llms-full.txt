@@ -353,8 +353,10 @@ In forced colours (Windows' contrast themes), the browser drops shadows and grad
 backgrounds in its own palette, which would erase the state a colour shows. The theme draws those
 states again in system colours (`Highlight`, `HighlightText`, `ButtonText`, `Canvas`): a switch's
 thumb and its on state, a pressed toggle, the selected tab's bar, progress and meter values, a
-slider's range, the scroll thumb and the highlighted menu item. Do the same for the states your
-own CSS draws with a colour, in a `@media (forced-colors: active)` block.
+slider's range, the scroll thumb and the highlighted menu item. A pressed toggle's focus ring,
+outside its `Highlight` fill, is `CanvasText`, the colour every contrast theme pairs with the page
+(Firefox would draw it in the toggle's `HighlightText`). Do the same for the states your own CSS
+draws with a colour, in a `@media (forced-colors: active)` block.
 
 ## Your own CSS
 
@@ -648,22 +650,22 @@ same.
 
 ### Autocomplete.Root
 
-| Prop                                | Type                                     | Default      |                                                                                 |
-| ----------------------------------- | ---------------------------------------- | ------------ | ------------------------------------------------------------------------------- |
-| `value`                             | `string`                                 |              | Puts this text in the input when it changes. Pair it with `onValueChange`.      |
-| `defaultValue`                      | `string`                                 |              | The text at first; a form reset goes back to it.                                |
-| `onValueChange`                     | `(value: string) => void`                |              | Called as the text changes: typing, choosing a suggestion, clearing.            |
-| `bind:value`                        | `Signal<string>`                         |              | Stands in for `value` and `onValueChange`.                                      |
-| `open`, `onOpenChange`, `bind:open` | `boolean`, `(open: boolean) => void`     |              | Open or close the suggestions, and hear about it, as in Combobox.               |
-| `mode`                              | `"list" \| "both" \| "inline" \| "none"` | `"list"`     | How the suggestions complete the text (below).                                  |
-| `filter`                            | `"contains" \| "startsWith"`             | `"contains"` | How `"list"` and `"both"` filter the suggestions, ignoring case and accents.    |
-| `openOnInputClick`                  | `boolean`                                | `false`      | A click on the input opens the suggestions; otherwise typing and Arrow Down do. |
-| `autoHighlight`                     | `boolean`                                | `false`      | The first suggestion is highlighted as you type, so Enter fills it in.          |
-| `keepHighlight`                     | `boolean`                                | `false`      | A suggestion the pointer highlighted stays highlighted when it leaves the list. |
+| Prop                                | Type                                     | Default      |                                                                                                         |
+| ----------------------------------- | ---------------------------------------- | ------------ | ------------------------------------------------------------------------------------------------------- |
+| `value`                             | `string`                                 |              | Puts this text in the input when it changes. Pair it with `onValueChange`.                              |
+| `defaultValue`                      | `string`                                 |              | The text at first; a form reset goes back to it.                                                        |
+| `onValueChange`                     | `(value: string) => void`                |              | Called as the text changes: typing, choosing a suggestion, clearing.                                    |
+| `bind:value`                        | `Signal<string>`                         |              | Stands in for `value` and `onValueChange`.                                                              |
+| `open`, `onOpenChange`, `bind:open` | `boolean`, `(open: boolean) => void`     |              | Open or close the suggestions, and hear about it, as in Combobox.                                       |
+| `mode`                              | `"list" \| "both" \| "inline" \| "none"` | `"list"`     | How the suggestions complete the text (below).                                                          |
+| `filter`                            | `"contains" \| "startsWith"`             | `"contains"` | How `"list"` and `"both"` filter the suggestions, ignoring case and accents.                            |
+| `openOnInputClick`                  | `boolean`                                | `false`      | A click on the input opens the suggestions; otherwise typing and Arrow Down do.                         |
+| `autoHighlight`                     | `boolean`                                | `false`      | The first suggestion is highlighted as you type, so Enter fills it in.                                  |
+| `keepHighlight`                     | `boolean`                                | `false`      | A suggestion the pointer highlighted stays highlighted when it leaves the list.                         |
 | `submitOnItemClick`                 | `boolean`                                | `false`      | Choosing a suggestion (a click, or Enter on it) fills it in and submits the form, as a search box does. |
-| `limit`                             | `number`                                 | no limit     | Shows at most this many suggestions; a narrower text shows the others.          |
-| `name`                              | `string`                                 |              | The name the text is submitted under (the input's).                             |
-| `required`, `disabled`              | `boolean`                                | `false`      | As on a native input.                                                           |
+| `limit`                             | `number`                                 | no limit     | Shows at most this many suggestions; a narrower text shows the others.                                  |
+| `name`                              | `string`                                 |              | The name the text is submitted under (the input's).                                                     |
+| `required`, `disabled`              | `boolean`                                | `false`      | As on a native input.                                                                                   |
 
 The modes follow Base UI's:
 
@@ -732,13 +734,13 @@ keeps filtered suggestions hidden.
 
 ## Keyboard and focus
 
-| Key                   | Does                                                                                             |
-| --------------------- | ------------------------------------------------------------------------------------------------ |
-| Typing                | Filters the suggestions (with `"list"` and `"both"`) and opens them; an empty input closes them. |
-| Arrow Down / Arrow Up | Opens the suggestions, then moves the highlight (with `"both"` and `"inline"`, into the input).  |
-| Enter                 | Fills in the highlighted suggestion (the first, with `autoHighlight`); with none, submits.       |
-| Escape                | Closes the suggestions and keeps the typed text (taking back an inline completion).              |
-| Tab                   | Closes the suggestions and moves on, keeping the text.                                           |
+| Key                   | Does                                                                                                                                                                       |
+| --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Typing                | Filters the suggestions (with `"list"` and `"both"`) and opens them; an empty input closes them.                                                                           |
+| Arrow Down / Arrow Up | Opens the suggestions, then moves the highlight (with `"both"` and `"inline"`, into the input).                                                                            |
+| Enter                 | Fills in the highlighted suggestion (the first, with `autoHighlight`); with none, submits.                                                                                 |
+| Escape                | Open: closes the suggestions and keeps the typed text (taking back an inline completion). Closed: clears the text, as Base UI's; closed and empty, it goes on to the page. |
+| Tab                   | Closes the suggestions and moves on, keeping the text.                                                                                                                     |
 
 Focus stays in the input: the highlight moves through `aria-activedescendant`.
 
@@ -1756,20 +1758,20 @@ The [WAI-ARIA combobox pattern](https://www.w3.org/WAI/ARIA/apg/patterns/combobo
 popup, list autocomplete and manual selection, with Base UI's behaviour where it leaves a choice.
 Focus stays in the input; the active option is `aria-activedescendant`.
 
-| Key                  | Does                                                                                                                                                                                                |
-| -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| A character          | Edits the text, filters the options and opens the popup when something matches (or there is an `Empty`). Never commits.                                                                             |
-| Arrow Down, Arrow Up | Closed: opens the popup on the selected option, else the first (Arrow Up: the last). Open: the next or previous option, past the last back to the input, then around. Disabled options are skipped. |
-| Alt+Arrow Down       | Opens the popup without highlighting an option.                                                                                                                                                     |
-| Alt+Arrow Up         | Closes the popup.                                                                                                                                                                                   |
-| Enter                | Chooses the highlighted option. With nothing highlighted, it does what Enter does in a form field.                                                                                                  |
-| Escape               | Closes the popup without choosing and puts the selection's label back. Closed, it goes on to the page, so a dialog closes.                                                                          |
-| Tab                  | Closes the popup without choosing and moves on.                                                                                                                                                     |
-| Backspace            | With `multiple`, in an empty input: removes the last value.                                                                                                                                         |
-| Arrow Left           | With `multiple`, at the start of the input: moves to the last chip (Arrow Right right to left).                                                                                                     |
-| Arrow Left, Right    | On a chip: the previous or next chip; past the last, back to the input.                                                                                                                             |
-| Backspace, Delete    | On a chip: removes its value; focus goes to the chip before it, else the one in its place, else the input.                                                                                          |
-| Home, End            | Move the text cursor, as in any text field.                                                                                                                                                         |
+| Key                  | Does                                                                                                                                                                                                                                |
+| -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| A character          | Edits the text, filters the options and opens the popup when something matches (or there is an `Empty`). Never commits.                                                                                                             |
+| Arrow Down, Arrow Up | Closed: opens the popup on the selected option, else the first (Arrow Up: the last). Open: the next or previous option, past the last back to the input, then around. Disabled options are skipped.                                 |
+| Alt+Arrow Down       | Opens the popup without highlighting an option.                                                                                                                                                                                     |
+| Alt+Arrow Up         | Closes the popup.                                                                                                                                                                                                                   |
+| Enter                | Chooses the highlighted option. With nothing highlighted, it does what Enter does in a form field.                                                                                                                                  |
+| Escape               | Open: closes the popup without choosing and puts the selection's label back. Closed: clears the text and the selection (a `change`), as Base UI's; closed and empty, it goes on to the page, so a dialog closes on the next Escape. |
+| Tab                  | Closes the popup without choosing and moves on.                                                                                                                                                                                     |
+| Backspace            | With `multiple`, in an empty input: removes the last value.                                                                                                                                                                         |
+| Arrow Left           | With `multiple`, at the start of the input: moves to the last chip (Arrow Right right to left).                                                                                                                                     |
+| Arrow Left, Right    | On a chip: the previous or next chip; past the last, back to the input.                                                                                                                                                             |
+| Backspace, Delete    | On a chip: removes its value; focus goes to the chip before it, else the one in its place, else the input.                                                                                                                          |
+| Home, End            | Move the text cursor, as in any text field.                                                                                                                                                                                         |
 
 - **Choosing** an option puts its label in the input and closes the popup, or, with `multiple`,
   toggles it, clears the text and keeps the popup open. It fires `change` once per change.
@@ -1793,6 +1795,10 @@ The combobox needs its script: there is no native element that filters a styled 
 cannot be styled or grouped, and customizable select cannot filter). Without JavaScript the server
 HTML shows a labelled text field and nothing opens, and the form gets no value. For a choice that
 must work without JavaScript, use [Select](select.md).
+
+In the server HTML the input is empty even with a selected value: the input renders before the
+options, so the server does not know the selected option's label when it writes the input. The
+script puts the label in as it upgrades the element (decision-62).
 
 A page that renders a `Combobox` loads the script once, as a 5.0 kB (brotli) module without the
 Lumiose runtime, and islands bundle it. It defines `lu-combobox`, which upgrades every combobox on
@@ -2749,10 +2755,16 @@ reports the first problem in its own bubble, and the form submits when everythin
 errors from a Form render in the HTML, visible and linked with `aria-describedby` and
 `aria-invalid`.
 
+Two limits of the server HTML, which the script corrects once it runs (decision-62): the server
+writes the control's attributes before it renders the parts after it, so a Description below the
+control is linked only by the script, and an invalid field's control points `aria-describedby` at
+the message Error's id (`Field.Error` without children or `match`) even when the field only has
+Errors with children or a `match`. Give a field that must read well without JavaScript a message
+Error, and its Descriptions before the control.
+
 A page that renders a `Field` loads a 1.5 kB (brotli) script once, without the Lumiose runtime;
 islands bundle it. On a submit attempt (a submit button, Enter in a field, `requestSubmit()` or
-the form's `reportValidity()`, which it wraps to tell them from a silent `checkValidity()`, which
-changes nothing) it cancels the browser's
+the form's `reportValidity()`; a silent `checkValidity()` changes nothing) it cancels the browser's
 `invalid` bubble for fields that have an Error part and shows the problem there instead (the
 browser's message, or one your `validate` set), with the timing above, and focuses the first
 invalid control, with no bubble on a later control outside a field. A form action's errors move
@@ -2763,6 +2775,14 @@ runs), and hides server errors once the value changes. When an async `validate` 
 fires `validitychange` (not bubbling) on the control, and the script shows the new verdict. When a
 form action's errors arrive in an island, Field.Root fires it on `<lu-field>` with the messages
 (`detail.errors`), and the script shows them as the server's, even when they repeat.
+
+**`requestSubmit()` and `reportValidity()`.** The browser fires the same `invalid` events for a
+silent `checkValidity()` as for a submit attempt, and only a submit attempt should show errors and
+move focus. A submit button's click and Enter are seen as they happen; the two methods are not, so
+the script wraps `HTMLFormElement.prototype.requestSubmit` and `reportValidity` once, when it
+loads. The wrappers only mark the form as attempting a submit for the duration of the call, and
+then call the browser's own method with the same `this`, arguments and return value, throwing what
+it throws (decision-62).
 
 ## Browser support
 

@@ -58,3 +58,55 @@ test.describe("a form action's errors move focus to the first field that shows o
     await expect(page.getByRole("textbox", { name: "Username" })).toBeFocused();
   });
 });
+
+// Field's script wraps HTMLFormElement.prototype.requestSubmit and reportValidity to mark a submit
+// attempt (decision-62): the wrappers keep the browser's arguments, return values and exceptions.
+test("the wrapped requestSubmit() and reportValidity() behave as the browser's", async ({
+  page,
+}) => {
+  await page.goto("/form/attempt");
+  await page.waitForLoadState("networkidle");
+  const result = await page.evaluate(() => {
+    const form = document.querySelector("form")!;
+    const errorName = (call: () => unknown) => {
+      try {
+        call();
+        return "none";
+      } catch (error) {
+        return (error as Error).name;
+      }
+    };
+    return {
+      wrapped: !HTMLFormElement.prototype.requestSubmit.toString().includes("[native code]"),
+      // An invalid form: false, as the browser answers.
+      invalid: form.reportValidity(),
+      // A submitter the form does not own, or one that cannot submit: the browser's errors.
+      foreign: errorName(() => form.requestSubmit(document.createElement("button"))),
+      notSubmit: errorName(() =>
+        form.requestSubmit(form.querySelector<HTMLElement>("input[name=nickname]")!),
+      ),
+    };
+  });
+  expect(result).toEqual({
+    wrapped: true,
+    invalid: false,
+    foreign: "NotFoundError",
+    notSubmit: "TypeError",
+  });
+  // A valid form: true, and requestSubmit(submitter) submits with the submitter's name and value.
+  await page.getByRole("textbox", { name: "Email" }).fill("ada@example.com");
+  await page.getByRole("textbox", { name: "Nickname" }).fill("ada");
+  await page.getByRole("combobox", { name: "Plan" }).selectOption("pro");
+  expect(await page.evaluate(() => document.querySelector("form")!.reportValidity())).toBe(true);
+  await page.evaluate(() => {
+    const form = document.querySelector("form")!;
+    const submitter = Object.assign(document.createElement("button"), {
+      type: "submit",
+      name: "via",
+      value: "wrapped",
+    });
+    form.append(submitter);
+    form.requestSubmit(submitter);
+  });
+  await expect(page).toHaveURL(/[?&]via=wrapped/);
+});

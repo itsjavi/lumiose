@@ -48,22 +48,22 @@ same.
 
 ### Autocomplete.Root
 
-| Prop                                | Type                                     | Default      |                                                                                 |
-| ----------------------------------- | ---------------------------------------- | ------------ | ------------------------------------------------------------------------------- |
-| `value`                             | `string`                                 |              | Puts this text in the input when it changes. Pair it with `onValueChange`.      |
-| `defaultValue`                      | `string`                                 |              | The text at first; a form reset goes back to it.                                |
-| `onValueChange`                     | `(value: string) => void`                |              | Called as the text changes: typing, choosing a suggestion, clearing.            |
-| `bind:value`                        | `Signal<string>`                         |              | Stands in for `value` and `onValueChange`.                                      |
-| `open`, `onOpenChange`, `bind:open` | `boolean`, `(open: boolean) => void`     |              | Open or close the suggestions, and hear about it, as in Combobox.               |
-| `mode`                              | `"list" \| "both" \| "inline" \| "none"` | `"list"`     | How the suggestions complete the text (below).                                  |
-| `filter`                            | `"contains" \| "startsWith"`             | `"contains"` | How `"list"` and `"both"` filter the suggestions, ignoring case and accents.    |
-| `openOnInputClick`                  | `boolean`                                | `false`      | A click on the input opens the suggestions; otherwise typing and Arrow Down do. |
-| `autoHighlight`                     | `boolean`                                | `false`      | The first suggestion is highlighted as you type, so Enter fills it in.          |
-| `keepHighlight`                     | `boolean`                                | `false`      | A suggestion the pointer highlighted stays highlighted when it leaves the list. |
+| Prop                                | Type                                     | Default      |                                                                                                         |
+| ----------------------------------- | ---------------------------------------- | ------------ | ------------------------------------------------------------------------------------------------------- |
+| `value`                             | `string`                                 |              | Puts this text in the input when it changes. Pair it with `onValueChange`.                              |
+| `defaultValue`                      | `string`                                 |              | The text at first; a form reset goes back to it.                                                        |
+| `onValueChange`                     | `(value: string) => void`                |              | Called as the text changes: typing, choosing a suggestion, clearing.                                    |
+| `bind:value`                        | `Signal<string>`                         |              | Stands in for `value` and `onValueChange`.                                                              |
+| `open`, `onOpenChange`, `bind:open` | `boolean`, `(open: boolean) => void`     |              | Open or close the suggestions, and hear about it, as in Combobox.                                       |
+| `mode`                              | `"list" \| "both" \| "inline" \| "none"` | `"list"`     | How the suggestions complete the text (below).                                                          |
+| `filter`                            | `"contains" \| "startsWith"`             | `"contains"` | How `"list"` and `"both"` filter the suggestions, ignoring case and accents.                            |
+| `openOnInputClick`                  | `boolean`                                | `false`      | A click on the input opens the suggestions; otherwise typing and Arrow Down do.                         |
+| `autoHighlight`                     | `boolean`                                | `false`      | The first suggestion is highlighted as you type, so Enter fills it in.                                  |
+| `keepHighlight`                     | `boolean`                                | `false`      | A suggestion the pointer highlighted stays highlighted when it leaves the list.                         |
 | `submitOnItemClick`                 | `boolean`                                | `false`      | Choosing a suggestion (a click, or Enter on it) fills it in and submits the form, as a search box does. |
-| `limit`                             | `number`                                 | no limit     | Shows at most this many suggestions; a narrower text shows the others.          |
-| `name`                              | `string`                                 |              | The name the text is submitted under (the input's).                             |
-| `required`, `disabled`              | `boolean`                                | `false`      | As on a native input.                                                           |
+| `limit`                             | `number`                                 | no limit     | Shows at most this many suggestions; a narrower text shows the others.                                  |
+| `name`                              | `string`                                 |              | The name the text is submitted under (the input's).                                                     |
+| `required`, `disabled`              | `boolean`                                | `false`      | As on a native input.                                                                                   |
 
 The modes follow Base UI's:
 
@@ -132,13 +132,13 @@ keeps filtered suggestions hidden.
 
 ## Keyboard and focus
 
-| Key                   | Does                                                                                             |
-| --------------------- | ------------------------------------------------------------------------------------------------ |
-| Typing                | Filters the suggestions (with `"list"` and `"both"`) and opens them; an empty input closes them. |
-| Arrow Down / Arrow Up | Opens the suggestions, then moves the highlight (with `"both"` and `"inline"`, into the input).  |
-| Enter                 | Fills in the highlighted suggestion (the first, with `autoHighlight`); with none, submits.       |
-| Escape                | Closes the suggestions and keeps the typed text (taking back an inline completion).              |
-| Tab                   | Closes the suggestions and moves on, keeping the text.                                           |
+| Key                   | Does                                                                                                                                                                       |
+| --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Typing                | Filters the suggestions (with `"list"` and `"both"`) and opens them; an empty input closes them.                                                                           |
+| Arrow Down / Arrow Up | Opens the suggestions, then moves the highlight (with `"both"` and `"inline"`, into the input).                                                                            |
+| Enter                 | Fills in the highlighted suggestion (the first, with `autoHighlight`); with none, submits.                                                                                 |
+| Escape                | Open: closes the suggestions and keeps the typed text (taking back an inline completion). Closed: clears the text, as Base UI's; closed and empty, it goes on to the page. |
+| Tab                   | Closes the suggestions and moves on, keeping the text.                                                                                                                     |
 
 Focus stays in the input: the highlight moves through `aria-activedescendant`.
 
