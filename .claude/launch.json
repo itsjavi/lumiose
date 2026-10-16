@@ -35,7 +35,7 @@
       "runtimeExecutable": "pnpm",
       "runtimeArgs": [
         "--dir",
-        "examples/ui-spike",
+        "examples/ui-e2e",
         "exec",
         "lumiose",
         "dev",
