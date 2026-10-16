@@ -149,7 +149,9 @@ test.describe("Toolbar", () => {
     page,
   }) => {
     await ready(page);
-    const [strong, fonts, share] = ["Strong", "Fonts", "Share"].map((name) => button(page, name));
+    const strong = button(page, "Strong");
+    const fonts = button(page, "Fonts");
+    const share = button(page, "Share");
     for (const item of [strong, fonts, share]) {
       await expect(item).toHaveAttribute("aria-disabled", "true");
     }
