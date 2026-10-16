@@ -91,6 +91,13 @@ surface, and `--lu-input` (the borders of fields and controls) and `--lu-ring` (
 reach 3:1 on the surfaces they sit on. `--lu-border` is for decoration, such as a dialog's edge:
 it is too light to outline a control. Keep those ratios when you change the colours.
 
+In forced colours (Windows' contrast themes), the browser drops shadows and gradients and paints
+backgrounds in its own palette, which would erase the state a colour shows. The theme draws those
+states again in system colours (`Highlight`, `HighlightText`, `ButtonText`, `Canvas`): a switch's
+thumb and its on state, a pressed toggle, the selected tab's bar, progress and meter values, a
+slider's range, the scroll thumb and the highlighted menu item. Do the same for the states your
+own CSS draws with a colour, in a `@media (forced-colors: active)` block.
+
 ## Your own CSS
 
 Style the parts through:

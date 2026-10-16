@@ -2003,4 +2003,80 @@
       }
     }
   }
+
+  /* Forced colours (TASK-441 M38) ------------------------------------------------------------- */
+
+  /*
+   * A forced palette drops shadows and gradients and paints author backgrounds as Canvas, so the
+   * state indicators drawn with them vanish; system colours, which it keeps, draw them again. A
+   * transparent border shows there: a border that must stay hidden is Canvas.
+   */
+  @media (forced-colors: active) {
+    .lu-switch::before {
+      background: ButtonText;
+    }
+    .lu-switch:checked {
+      border-color: Highlight;
+      background: Highlight;
+    }
+    .lu-switch:checked::before {
+      background: HighlightText;
+    }
+    .lu-toggle[aria-pressed="true"] {
+      border-color: Highlight;
+      background: Highlight;
+      color: HighlightText;
+    }
+    .lu-tabs [role="tab"] {
+      border-block-end: 2px solid Canvas;
+    }
+    .lu-tabs [aria-orientation="vertical"] [role="tab"] {
+      border-block-end: 0;
+      border-inline-end-color: Canvas;
+    }
+    .lu-tabs [role="tab"][aria-selected="true"] {
+      border-block-end-color: Highlight;
+    }
+    .lu-tabs [aria-orientation="vertical"] [role="tab"][aria-selected="true"] {
+      border-inline-end-color: Highlight;
+    }
+    .lu-tabs [data-indicator] {
+      border-color: Highlight;
+    }
+    .lu-tabs:defined [role="tablist"]:has(> [data-indicator]) [role="tab"][aria-selected="true"] {
+      border-color: Canvas;
+    }
+    .lu-progress > progress::-webkit-progress-value,
+    .lu-meter > meter::-webkit-meter-optimum-value,
+    .lu-meter > meter::-webkit-meter-suboptimum-value,
+    .lu-meter > meter::-webkit-meter-even-less-good-value {
+      background: Highlight;
+    }
+    .lu-progress > progress::-moz-progress-bar,
+    .lu-meter > meter::-moz-meter-bar {
+      background: Highlight;
+    }
+    /* The sliding segment is a gradient: kept, in system colours. */
+    .lu-progress > progress:indeterminate {
+      forced-color-adjust: none;
+      border-color: CanvasText;
+      background-color: Canvas;
+      background-image: linear-gradient(
+        to right,
+        transparent 0 35%,
+        Highlight 35% 65%,
+        transparent 65%
+      );
+    }
+    .lu-slider > div > div > :where(div) {
+      background: Highlight;
+    }
+    .lu-scroll-area :where([data-thumb]) {
+      background: CanvasText;
+    }
+    .lu-menu :where([role^="menuitem"][data-highlighted], [aria-expanded="true"]) {
+      background: Highlight;
+      color: HighlightText;
+    }
+  }
 }
