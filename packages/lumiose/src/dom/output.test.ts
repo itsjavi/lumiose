@@ -38,7 +38,9 @@ describe("outputTemplate", () => {
   });
 
   it("keeps an output whose text a reset would not change out of the form until the reset ran", async () => {
-    const form = outputTemplate(`<form><output> </output><output form=f2>b</output>`)();
+    const form = outputTemplate(
+      `<form><output> </output><output form=f2>b</output>`,
+    )() as HTMLFormElement;
     form.id = "f2";
     document.body.append(form);
     const [live, named] = [...form.querySelectorAll("output")];
@@ -53,7 +55,7 @@ describe("outputTemplate", () => {
   });
 
   it("leaves an output whose reset changes its text to the reset", async () => {
-    const form = outputTemplate(`<form><output>changed`)();
+    const form = outputTemplate(`<form><output>changed`)() as HTMLFormElement;
     document.body.append(form);
     const output = form.querySelector("output")!;
     stubDefault(output, () => "start");
