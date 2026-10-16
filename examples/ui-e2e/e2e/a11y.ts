@@ -135,6 +135,36 @@ export async function axDescription(locator: Locator): Promise<string> {
   }
 }
 
+/**
+ * A property of `locator`'s node in Chromium's accessibility tree (`required`, `invalid`, …),
+ * through the DevTools protocol; `undefined` when the node does not have it. Firefox and WebKit:
+ * the `aria-*` attribute of that name, as a boolean (TASK-431).
+ */
+export async function axProperty(locator: Locator, name: string): Promise<unknown> {
+  const page = locator.page();
+  if (page.context().browser()?.browserType().name() !== "chromium") {
+    const value = await locator.getAttribute(`aria-${name}`);
+    return value === null ? undefined : value === "true";
+  }
+  const cdp = await page.context().newCDPSession(page);
+  try {
+    await locator.evaluate((element) => element.setAttribute("data-ax-probe", ""));
+    const { root } = await cdp.send("DOM.getDocument", { depth: 0 });
+    const { nodeId } = await cdp.send("DOM.querySelector", {
+      nodeId: root.nodeId,
+      selector: "[data-ax-probe]",
+    });
+    const { nodes } = await cdp.send("Accessibility.getPartialAXTree", {
+      nodeId,
+      fetchRelatives: false,
+    });
+    return nodes[0]?.properties?.find((property) => property.name === name)?.value.value;
+  } finally {
+    await locator.evaluate((element) => element.removeAttribute("data-ax-probe"));
+    await cdp.detach();
+  }
+}
+
 /** The last link of the layout's nav, right before `<main>`: Tab from it enters the page. */
 export function lastNavLink(page: Page): Locator {
   return page.getByRole("navigation", { name: "Components" }).getByRole("link").last();

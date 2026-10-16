@@ -406,6 +406,10 @@ export class ComboboxElement extends HTMLElement {
       for (const value of this.#values) data.append(name, value);
       this.#internals.setFormValue(data);
     } else this.#internals.setFormValue(this.#values[0] ?? null);
+    // The input, which has the role, follows the element's `required` (TASK-431).
+    const input = this.input;
+    if (input && this.required) input.setAttribute("aria-required", "true");
+    else input?.removeAttribute("aria-required");
     if (this.hasAttribute("required") && this.#values.length === 0) {
       missing ??= Object.assign(document.createElement("select"), {
         required: true,

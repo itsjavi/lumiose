@@ -6,6 +6,7 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
 import {
   axe,
+  axProperty,
   clipped,
   focusRing,
   lastNavLink,
@@ -333,6 +334,19 @@ test.describe("forms", () => {
     await page.keyboard.press("Enter");
     await expect(input).toHaveValue("Berlin");
     await expect(input).not.toHaveAttribute("aria-invalid");
+  });
+
+  test("required shows on the input, which has the role (TASK-431)", async ({ page }) => {
+    await page.goto("/combobox");
+    const { input, root } = await city(page);
+    await expect(input).toHaveAttribute("aria-required", "true");
+    // What assistive technology reads: the combobox role is required.
+    expect(await axProperty(input, "required")).toBe(true);
+    // The input follows the element's attribute.
+    await root.evaluate((el) => el.removeAttribute("required"));
+    await expect(input).not.toHaveAttribute("aria-required");
+    await root.evaluate((el) => el.setAttribute("required", ""));
+    await expect(input).toHaveAttribute("aria-required", "true");
   });
 
   test("reset restores the initial values", async ({ page }) => {

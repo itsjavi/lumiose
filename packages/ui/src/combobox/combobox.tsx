@@ -226,6 +226,7 @@ function Root<Multiple extends boolean | undefined = false>({
     selected,
     multiple: () => multiple === true,
     disabled: () => disabled === true || field?.disabled() === true,
+    required: () => required === true,
     labels: signal(0),
     popup: false,
   };
@@ -314,6 +315,8 @@ function Input({ style, ...rest }: ComboboxInputProps) {
       id={combobox.inputId}
       role="combobox"
       aria-autocomplete={combobox.text?.autocomplete ?? "list"}
+      // The element holds `required`, but has no role: the input tells assistive technology.
+      aria-required={combobox.required?.() ? "true" : undefined}
       aria-expanded="false"
       aria-controls={`${combobox.id}-list`}
       disabled={combobox.disabled() || rest.disabled}

@@ -65,7 +65,7 @@ parts go next to it in a `Popup`, never inside the listbox.
 | `bind:open`     | `Signal<boolean>`                      |              | Stands in for `open` and `onOpenChange`.                                                                                    |
 | `multiple`      | `boolean`                              | `false`      | Several values: choosing an option toggles it and the popup stays open. `value` is then an array.                           |
 | `name`          | `string`                               |              | The name the value is submitted under; with `multiple`, each value is its own entry.                                        |
-| `required`      | `boolean`                              | `false`      | The form needs a value: the browser reports an empty combobox at its input on submit.                                       |
+| `required`      | `boolean`                              | `false`      | The form needs a value: the browser reports an empty combobox at its input on submit, and the input has `aria-required`.    |
 | `disabled`      | `boolean`                              | `false`      | The input and the buttons are disabled. A disabled `<fieldset>` around it does the same.                                    |
 | `filter`        | `"contains" \| "startsWith" \| "none"` | `"contains"` | How typing filters the options by their label, ignoring case and accents. `"none"` leaves filtering to you (async options). |
 
