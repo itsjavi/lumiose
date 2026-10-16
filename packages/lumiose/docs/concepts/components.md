@@ -20,7 +20,9 @@ are ordinary variables; state that changes lives in [signals](signals.md).
 **Props.** Props are the single parameter. The compiler keeps them reactive, even when you
 destructure them: `({ title, count = 0 })` is rewritten to reads of `props.title` and
 `props.count`, so a parent passing a signal value keeps the child up to date. `...rest` stays
-reactive too.
+reactive too. Destructuring the props object at the top of the body,
+`const { children, ...rest } = props`, is rewritten the same way, as long as you don't reassign
+the bindings; destructuring a nested prop (`const { name } = props.user`) reads it once.
 
 On the server, where nothing is reactive, a prop expression is evaluated **lazily and at most once
 per component instance** (decision-28): the first read runs it, later reads reuse the value, and a
@@ -30,7 +32,33 @@ read re-evaluates the expression, so keep prop expressions free of side effects.
 
 **Children** are lazy: `children` is evaluated where you insert it. Insert it once; to render
 something several times, take a render function as a prop. Named slots are ordinary props that hold
-JSX.
+JSX. Spreading props onto an element without content of its own renders their `children`, as in
+React: `<button {...props} />` renders what the caller wrapped in the component. When the caller
+passes no `children`, the element's content is left alone (a script may fill it).
+
+```tsx check
+function Button(props: JSX.HTMLProps<HTMLButtonElement>) {
+  return <button type="button" {...props} />;
+}
+
+function Trigger(props: JSX.HTMLProps<HTMLButtonElement> & { label: string }) {
+  const { children, label, ...rest } = props;
+  return (
+    <button type="button" aria-label={label} {...rest}>
+      {children}
+    </button>
+  );
+}
+
+export function Toolbar() {
+  return (
+    <>
+      <Button class="primary">Save</Button>
+      <Trigger label="Close">×</Trigger>
+    </>
+  );
+}
+```
 
 **Refs.** `ref` takes a callback `(el) => void`. `ref<T>()` returns such a callback that can also be
 read like a signal.

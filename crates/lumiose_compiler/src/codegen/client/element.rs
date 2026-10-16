@@ -4,7 +4,7 @@
 
 use oxc_allocator::ArenaBox;
 use oxc_ast::ast::*;
-use oxc_span::Span;
+use oxc_span::{GetSpan, Span};
 
 use super::class_flow::ClassFlow;
 use super::html::{self, Namespace};
@@ -203,6 +203,8 @@ impl<'a> Codegen<'a, '_> {
             span,
         );
         let mut attributes = opening.attributes;
+        let mut children = element.children;
+        let spread_children = self.props_children(&tag, &mut attributes, &mut children);
         // A `<select>`'s value can only select an option that exists: set it after the options
         // are inserted.
         let deferred = if tag == "select" {
@@ -231,7 +233,14 @@ impl<'a> Codegen<'a, '_> {
         }
         if !has_inner_html {
             let child_namespace = html::child_namespace(namespace, &tag);
-            self.build_children(template, Some(node), element.children, child_namespace);
+            self.build_children(template, Some(node), children, child_namespace);
+        }
+        if let Some(object) = spread_children {
+            template.push(Op::SpreadChildren {
+                span,
+                parent: node,
+                object,
+            });
         }
         if !deferred.is_empty() {
             self.element_attributes(template, node, deferred);
@@ -784,6 +793,134 @@ impl<'a> Codegen<'a, '_> {
             args: vec![thunk],
         });
     }
+
+    /// `<button {...props} />`: an element without content of its own renders the `children` of
+    /// its spreads and `children` attribute, as in React and Solid (TASK-347). As in the merged
+    /// props, the last source that has `children` wins; written content wins over all of them.
+    /// `children` attributes are taken out: they are never attributes.
+    ///
+    /// With a `children` attribute, the element gets a `{….children}` child, which compiles like a
+    /// written one on both targets. With spreads only, returns the (visited) props object: the
+    /// caller inserts its `children` only when the object has that key, on both targets, so an
+    /// element whose spreads carry none leaves its content to scripts and the browser
+    /// (`<selectedcontent>`, a list a script fills before the island hydrates).
+    pub(super) fn props_children(
+        &mut self,
+        tag: &str,
+        attributes: &mut oxc_allocator::ArenaVec<'a, JSXAttributeItem<'a>>,
+        children: &mut oxc_allocator::ArenaVec<'a, JSXChild<'a>>,
+    ) -> Option<Expression<'a>> {
+        let mut sources = Vec::new();
+        // A spread that awaits is not read twice: its await site would run twice.
+        let mut suspends = false;
+        let mut index = 0;
+        while index < attributes.len() {
+            match &attributes[index] {
+                JSXAttributeItem::SpreadAttribute(spread) => {
+                    suspends |= super::dynamic_and_suspends(&spread.argument).1;
+                    // Cloned: the spread keeps its own.
+                    let object = super::clone_expression(self.ast, &spread.argument);
+                    sources.push(ChildrenSource::Spread(object));
+                    index += 1;
+                }
+                JSXAttributeItem::Attribute(attribute)
+                    if attribute_name(&attribute.name) == "children" =>
+                {
+                    let JSXAttributeItem::Attribute(attribute) = attributes.remove(index) else {
+                        unreachable!("matched above");
+                    };
+                    let attribute = attribute.unbox();
+                    let span = attribute.span;
+                    let value = match attr_value(attribute.value) {
+                        AttrValue::Expr(expr) => expr,
+                        AttrValue::Str(text) => self.ast.string(span, &text),
+                        AttrValue::True => self.ast.boolean(span, true),
+                        AttrValue::Empty => self.ast.undefined(span),
+                    };
+                    sources.push(ChildrenSource::Value(value));
+                }
+                JSXAttributeItem::Attribute(_) => index += 1,
+            }
+        }
+        if suspends || !takes_markup(tag) || self.has_content(children) {
+            return None;
+        }
+        let last = sources.pop()?;
+        let span = last.span();
+        let spreads_only = sources
+            .iter()
+            .chain([&last])
+            .all(|source| matches!(source, ChildrenSource::Spread(_)));
+        let merged = |cg: &mut Self, sources: Vec<ChildrenSource<'a>>| {
+            let callee = cg.runtime("mergeProps", span);
+            let ast = cg.ast;
+            let arguments = sources.into_iter().map(|source| match source {
+                ChildrenSource::Spread(object) => object,
+                ChildrenSource::Value(value) => {
+                    ast.object(span, [ast.getter(span, "children", Vec::new(), value)])
+                }
+            });
+            ast.call(span, callee, arguments.collect::<Vec<_>>())
+        };
+        let value = match last {
+            ChildrenSource::Spread(object) if sources.is_empty() => {
+                return Some(self.visited(object));
+            }
+            last if spreads_only => {
+                sources.push(last);
+                let object = merged(self, sources);
+                return Some(self.visited(object));
+            }
+            // A later `children` attribute wins over every spread before it.
+            ChildrenSource::Value(value) => value,
+            last => {
+                sources.push(last);
+                let object = merged(self, sources);
+                self.ast.member(span, object, "children")
+            }
+        };
+        children.clear();
+        children.push(JSXChild::new_expression_container(
+            span,
+            JSXExpression::from(value),
+            self.ast,
+        ));
+        None
+    }
+
+    /// `"children" in props`: whether a spread's props object carries `children`
+    /// ([`Self::props_children`]). Its keys are fixed once created, like the props it spreads.
+    pub(super) fn has_children_key(&self, object: Expression<'a>, span: Span) -> Expression<'a> {
+        let key = self.ast.string(span, "children");
+        self.ast
+            .binary(span, key, oxc_syntax::operator::BinaryOperator::In, object)
+    }
+}
+
+/// Where an element's `children` prop can come from, in attribute order.
+enum ChildrenSource<'a> {
+    /// The argument of a spread.
+    Spread(Expression<'a>),
+    /// The value of a `children` attribute.
+    Value(Expression<'a>),
+}
+
+impl ChildrenSource<'_> {
+    fn span(&self) -> Span {
+        match self {
+            Self::Spread(expr) | Self::Value(expr) => expr.span(),
+        }
+    }
+}
+
+/// Whether an element's content is markup that `children` can render into: not a void element,
+/// raw text, a form value or a separate document.
+fn takes_markup(tag: &str) -> bool {
+    !html::is_void(tag)
+        && !matches!(
+            tag,
+            "script" | "style" | "textarea" | "template" | "noscript" | "iframe"
+        )
 }
 
 /// Takes the `bind:` attributes out of a list with spreads: they are two-way bindings, not props,

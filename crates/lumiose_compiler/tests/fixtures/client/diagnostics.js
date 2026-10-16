@@ -7,12 +7,12 @@ import { template, bind, setAttr, insert, insertText, list } from "lumiose/dom";
 const _t0 = /* @__PURE__ */ template(`<div><!><!><span> `);
 const _t1 = /* @__PURE__ */ template(`<li>: `);
 const _t2 = /* @__PURE__ */ template(`<ul>`);
-const _a0 = (el, v) => setAttr(el, "data-once", v);
-const _a1 = (el, v) => setAttr(el, "data-i", v);
+const _a0 = (el, v) => setAttr(el, "data-name", v);
+const _a1 = (el, v) => setAttr(el, "data-once", v);
+const _a2 = (el, v) => setAttr(el, "data-i", v);
 const shared = signal(0);
 export function Child(props) {
 	const upper = props.name.toUpperCase();
-	const { name } = props;
 	const once = signal(props.name);
 	shared.set(1);
 	if (!props.name) {
@@ -20,8 +20,8 @@ export function Child(props) {
 	}
 	const _el = _t0(), _marker = _el.firstChild, _marker2 = _marker.nextSibling, _span = _marker2.nextSibling, _text = _span.firstChild;
 	setAttr(_el, "title", upper);
-	setAttr(_el, "data-name", name);
-	bind(_el, once, _a0);
+	bind(_el, () => props.name, _a0);
+	bind(_el, once, _a1);
 	insert(_el, () => props.children, _marker);
 	insert(_el, () => props.children, _marker2);
 	insert(_el, () => Card({ title: "x" }), _span);
@@ -33,7 +33,7 @@ export function Rows(props) {
 	list(_el3, null, () => props.items, (item, i) => {
 		const position = i();
 		const _el2 = _t1(), _text2 = _el2.firstChild;
-		bind(_el2, () => i(), _a1);
+		bind(_el2, () => i(), _a2);
 		insert(_el2, position, _text2);
 		insert(_el2, item);
 		return _el2;
@@ -43,7 +43,6 @@ export function Rows(props) {
 
 // --- diagnostics ---
 // LUM2001 warning 10:9 `upper` is computed once from a reactive value, so the JSX that uses it never updates
-// LUM2001 warning 11:9 `name` is computed once from a reactive value, so the JSX that uses it never updates
 // LUM2002 error 13:3 `shared` is written while the component renders
 // LUM2003 error 14:7 this early return depends on a reactive value, but a component body runs once
 // LUM2005 warning 20:7 `children` is inserted more than once; children are created lazily and can only be placed once

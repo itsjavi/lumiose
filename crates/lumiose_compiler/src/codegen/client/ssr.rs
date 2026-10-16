@@ -23,7 +23,7 @@ use super::element::{
 };
 use super::events::event_name;
 use super::html;
-use super::{Codegen, Compiled};
+use super::{Codegen, Compiled, clone_expression};
 use crate::analyze::{is_jsx_like, property_key_name};
 
 /// Server output under construction: hoisted static parts around holes.
@@ -261,13 +261,15 @@ impl<'a> Codegen<'a, '_> {
         let element = element.unbox();
         let mut opening = element.opening_element.unbox();
         let tag = tag_name(&opening.name);
+        let mut children = element.children;
+        let spread_children = self.props_children(&tag, &mut opening.attributes, &mut children);
         let select = if tag == "select" {
             self.ssr_select_value(out, &mut opening.attributes)
         } else {
             None
         };
         let selected = if tag == "option" {
-            self.ssr_option_selected(&opening.attributes, &element.children, span)
+            self.ssr_option_selected(&opening.attributes, &children, span)
         } else {
             None
         };
@@ -303,7 +305,19 @@ impl<'a> Codegen<'a, '_> {
         self.select_values.extend(select);
         match open.content {
             Some(content) => out.piece(content),
-            None => self.ssr_children(out, &tag, element.children),
+            None => self.ssr_children(out, &tag, children),
+        }
+        if let Some(object) = spread_children {
+            // `"children" in props ? insert(props.children) : ""`, the client's guarded insert.
+            let children = self
+                .ast
+                .member(span, clone_expression(self.ast, &object), "children");
+            let insert = self.helper_call("insert", [children], span);
+            let test = self.has_children_key(object, span);
+            let hole = self
+                .ast
+                .conditional(span, test, insert, self.ast.string(span, ""));
+            out.hole(hole);
         }
         if has_select {
             self.select_values.pop();

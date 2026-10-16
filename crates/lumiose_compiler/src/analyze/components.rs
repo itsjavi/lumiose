@@ -2,9 +2,11 @@
 
 use oxc_ast::ast::*;
 use oxc_ast_visit::{Visit, walk};
+use oxc_semantic::Scoping;
 use oxc_syntax::scope::ScopeFlags;
 
-use super::reactivity::PropsSymbols;
+use super::reactivity::{PropsSymbols, symbol_of};
+use crate::span::Span;
 
 /// `Card`, `TeamPanel`: an uppercase ASCII first letter.
 pub fn is_component_name(name: &str) -> bool {
@@ -58,10 +60,25 @@ impl<'a> Visit<'a> for ReturnFinder {
     }
 }
 
+/// A component's props bindings ([`props_symbols`]), plus those destructured in its body and the
+/// spans of their declarators ([`body_props_patterns`]).
+pub fn component_props(
+    params: &FormalParameters<'_>,
+    body: Option<&FunctionBody<'_>>,
+    scoping: &Scoping,
+) -> (Option<PropsSymbols>, Vec<Span>) {
+    let mut props = props_symbols(params);
+    let body_props = match (&mut props, body) {
+        (Some(props), Some(body)) => body_props_patterns(body, scoping, props),
+        _ => Vec::new(),
+    };
+    (props, body_props)
+}
+
 /// The props bindings of a component's parameter list, or `None` when the parameter shape is
 /// not supported by the reactive destructuring rewrite (array patterns, computed keys, several
 /// parameters).
-pub fn props_symbols(params: &FormalParameters<'_>) -> Option<PropsSymbols> {
+fn props_symbols(params: &FormalParameters<'_>) -> Option<PropsSymbols> {
     let mut symbols = PropsSymbols::default();
     if params.rest.is_some() || params.items.len() > 1 {
         return None;
@@ -102,9 +119,64 @@ fn collect_object_pattern(
         let BindingPattern::BindingIdentifier(ident) = &rest.argument else {
             return false;
         };
-        symbols.rest = ident.symbol_id.get();
+        symbols.rest.extend(ident.symbol_id.get());
     }
     true
+}
+
+/// The declarators of a component body that destructure its props object, which the compiler
+/// rewrites like a destructured parameter (TASK-348): `const { children, ...rest } = props` reads
+/// `props.children` where `children` is used, instead of once in setup. Only top-level `const`
+/// and `let` declarations of a props parameter that is never reassigned qualify, with the shapes
+/// a parameter may have and bindings that are never reassigned. Their bindings are added to
+/// `symbols`; returns their spans.
+fn body_props_patterns(
+    body: &FunctionBody<'_>,
+    scoping: &Scoping,
+    symbols: &mut PropsSymbols,
+) -> Vec<Span> {
+    let Some(props) = symbols.object.filter(|&s| !scoping.symbol_is_mutated(s)) else {
+        return Vec::new();
+    };
+    let mut spans = Vec::new();
+    for statement in &body.statements {
+        let Statement::VariableDeclaration(declaration) = statement else {
+            continue;
+        };
+        if !matches!(
+            declaration.kind,
+            VariableDeclarationKind::Const | VariableDeclarationKind::Let
+        ) {
+            continue;
+        }
+        for declarator in &declaration.declarations {
+            let (BindingPattern::ObjectPattern(pattern), Some(init)) =
+                (&declarator.id, &declarator.init)
+            else {
+                continue;
+            };
+            let reads_props = matches!(init.without_parentheses(), Expression::Identifier(ident)
+                if symbol_of(scoping, ident) == Some(props));
+            let mut found = PropsSymbols::default();
+            if !reads_props || !collect_object_pattern(pattern, true, &mut found) {
+                continue;
+            }
+            let reassigned = declarator.id.get_binding_identifiers().iter().any(|ident| {
+                ident
+                    .symbol_id
+                    .get()
+                    .is_none_or(|s| scoping.symbol_is_mutated(s))
+            });
+            if reassigned {
+                continue;
+            }
+            symbols.destructured.extend(found.destructured);
+            symbols.rest.extend(found.rest);
+            symbols.children.extend(found.children);
+            spans.push(declarator.span.into());
+        }
+    }
+    spans
 }
 
 fn collect_binding(
@@ -117,7 +189,7 @@ fn collect_binding(
             if let Some(symbol) = ident.symbol_id.get() {
                 symbols.destructured.insert(symbol);
                 if is_children {
-                    symbols.children = Some(symbol);
+                    symbols.children.insert(symbol);
                 }
             }
             true

@@ -1,4 +1,4 @@
-import { template, restProps, mergeProps, spread } from "lumiose/dom";
+import { template, insert, restProps, mergeProps, spread } from "lumiose/dom";
 const _t0 = /* @__PURE__ */ template(`<svg viewBox="0 0 24 24" fill=none focusable><path d="M1 1h22">`);
 const _t1 = /* @__PURE__ */ template(`<input type=text>`);
 const _t2 = /* @__PURE__ */ template(`<div>`);
@@ -27,5 +27,6 @@ export function Dynamic(props) {
 	const attrs = props.attrs;
 	const _el3 = _t2();
 	spread(_el3, () => mergeProps({ role: "note" }, attrs()));
+	"children" in attrs() && insert(_el3, () => attrs().children);
 	return _el3;
 }

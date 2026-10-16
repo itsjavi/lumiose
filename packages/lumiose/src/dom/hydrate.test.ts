@@ -1396,3 +1396,91 @@ describe("hydrate: a component that returns a single dynamic item (TASK-415)", (
     },
   );
 });
+
+describe("hydrate: children carried by props", () => {
+  it("renders the children of a spread on an element without content (TASK-347)", async () => {
+    const { client, server } = await load(`
+      import { signal } from "lumiose";
+      function Button(props: { children?: any; [key: string]: unknown }) {
+        return <button {...props} />;
+      }
+      export function Page(props: { children?: any }) {
+        const count = signal(0);
+        return (
+          <div>
+            <Button class="a" onClick={() => count.set(count() + 1)}>
+              <b>{count()}</b> clicks
+            </Button>
+            <Button class="c">{props.children}</Button>
+          </div>
+        );
+      }`);
+    const { ssr } = await import("../server/index.ts");
+    await serve(server, [["Page", {}, { children: () => ssr(["<em>slot</em>"]) }]]);
+    const html =
+      '<div><button class="a"><b>0</b> clicks</button><button class="c"><em>slot</em></button></div>';
+    expect(visible()).toBe(html);
+    const [b, em] = ["b", "em"].map((tag) => document.querySelector(tag));
+    await hydrateAll(client);
+    expect(warn).not.toHaveBeenCalled();
+    expect(visible()).toBe(html);
+    expect(document.querySelector("b")).toBe(b);
+    expect(document.querySelector("em")).toBe(em);
+    document.querySelector<HTMLButtonElement>("button.a")!.click();
+    flush();
+    expect(b!.textContent).toBe("1");
+  });
+
+  it("leaves the content of a spread without children to scripts (TASK-347)", async () => {
+    const { client, server } = await load(`
+      function Chips(props: { [key: string]: unknown }) {
+        return <div {...props} role="list" />;
+      }
+      export function Page() {
+        return <section><Chips id="chips" /></section>;
+      }`);
+    await serve(server, [["Page", {}]]);
+    expect(visible()).toBe('<section><div id="chips" role="list"></div></section>');
+    // A script fills the list before the island hydrates, as @lumiose/ui's combobox does.
+    const chip = document.createElement("span");
+    document.getElementById("chips")!.replaceChildren(chip);
+    await hydrateAll(client);
+    expect(warn).not.toHaveBeenCalled();
+    expect(document.getElementById("chips")!.firstChild).toBe(chip);
+  });
+
+  it("reads children destructured in a component body where they are inserted (TASK-348)", async () => {
+    const { client, server } = await load(`
+      import { signal } from "lumiose";
+      function Trigger(props: { children?: any; [key: string]: unknown }) {
+        const { children, ...rest } = props;
+        return <button type="button" {...rest}>{children}</button>;
+      }
+      export function Page(props: { children?: any }) {
+        const count = signal(0);
+        return (
+          <div>
+            <Trigger class="b" onClick={() => count.set(count() + 1)}>
+              <i>{count()}</i>
+            </Trigger>
+            <Trigger class="c">{props.children}</Trigger>
+          </div>
+        );
+      }`);
+    const { ssr } = await import("../server/index.ts");
+    await serve(server, [["Page", {}, { children: () => ssr(["<em>slot</em>"]) }]]);
+    const html =
+      '<div><button type="button" class="b"><i>0</i></button>' +
+      '<button type="button" class="c"><em>slot</em></button></div>';
+    expect(visible()).toBe(html);
+    const [i, em] = ["i", "em"].map((tag) => document.querySelector(tag));
+    await hydrateAll(client);
+    expect(warn).not.toHaveBeenCalled();
+    expect(visible()).toBe(html);
+    expect(document.querySelector("i")).toBe(i);
+    expect(document.querySelector("em")).toBe(em);
+    document.querySelector<HTMLButtonElement>("button.b")!.click();
+    flush();
+    expect(i!.textContent).toBe("1");
+  });
+});

@@ -44,6 +44,7 @@ export function Settings(props) {
 	bindProperty(_lu_combobox, "value", fruit);
 	spread(_lu_combobox2, () => props);
 	bindProperty(_lu_combobox2, "value", fruit);
+	"children" in props && insert(_lu_combobox2, () => props.children);
 	spread(_input, () => props);
 	bindValue(_input, fruit);
 	return _el2;

@@ -129,6 +129,33 @@ impl<'a> Codegen<'a, '_> {
         merge_text(items)
     }
 
+    /// Whether an element has content of its own, as React counts children: anything but
+    /// whitespace that JSX drops (normalised as in [`Self::child_items`]) and empty `{}`.
+    pub(super) fn has_content(&self, children: &[JSXChild<'a>]) -> bool {
+        let mut text = String::new();
+        for child in children {
+            match child {
+                JSXChild::Text(node) => {
+                    for piece in split_text(self.source, node.span.into(), self.blocks) {
+                        match piece {
+                            TextPiece::Text(raw) => text.push_str(&raw),
+                            TextPiece::Raw(_) => return true,
+                        }
+                    }
+                }
+                JSXChild::ExpressionContainer(container)
+                    if matches!(container.expression, JSXExpression::EmptyExpression(_)) =>
+                {
+                    if normalize(&std::mem::take(&mut text)).is_some() {
+                        return true;
+                    }
+                }
+                _ => return true,
+            }
+        }
+        normalize(&text).is_some()
+    }
+
     fn push_expression(&self, expression: Expression<'a>, span: Span, items: &mut Vec<Item<'a>>) {
         match expression {
             Expression::ParenthesizedExpression(paren) => {

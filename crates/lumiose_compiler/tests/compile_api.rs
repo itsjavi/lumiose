@@ -710,8 +710,8 @@ export function A(props: { rows: Row[]; db: Db }) {
 fn server_routes_read_their_own_props_without_lum2001() {
     let page = r#"export default function Book(props: { params: { slug: string } }) {
   const title = props.params.slug.toUpperCase();
-  const { params } = props;
-  return <h1>{title} {params.slug}</h1>;
+  const { slug } = props.params;
+  return <h1>{title} {slug}</h1>;
 }
 "#;
     let named = r#"function Book({ params }: { params: { slug: string } }) {

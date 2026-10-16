@@ -1,7 +1,7 @@
 // Server attribute order follows the client DOM: static and baked attributes, scope tokens, then
 // dynamic ones. Properties: innerHTML/textContent/textarea value become content on the server.
 import { signal } from "lumiose";
-import { template, bind, setAttr, setProp, setClass, toggleClass, setStyleProperty, mergeProps, spread, applyScope, delegateEvents, bindValue, useRef } from "lumiose/dom";
+import { template, bind, setAttr, setProp, setClass, toggleClass, setStyleProperty, insert, mergeProps, spread, applyScope, delegateEvents, bindValue, useRef } from "lumiose/dom";
 import "/src/ssr-attributes.stsx?lumiose&type=style&lang.css";
 const _t0 = /* @__PURE__ */ template(`<form method=post data-l-0caa055f><input data-l-0caa055f><input data-l-0caa055f><p class=base style=color:red data-l-0caa055f></p><div data-l-0caa055f></div><span data-l-0caa055f></span><textarea data-l-0caa055f></textarea><textarea data-l-0caa055f></textarea><b data-l-0caa055f>`);
 const _a0 = (el, v) => setAttr(el, "title", v);
@@ -37,6 +37,7 @@ export function Field(props) {
 		id: "last",
 		onClick: () => {}
 	}));
+	"children" in props.rest && insert(_b, () => props.rest.children);
 	return _el;
 }
 delegateEvents(["input"]);

@@ -27,13 +27,12 @@ const _c2 = (h0) => h0 instanceof SSRHtml ? new SSRHtml("<ul>" + h0.t + "</ul>")
 const shared = signal(0);
 export function Child(props) {
 	const upper = props.name.toUpperCase();
-	const { name } = props;
 	const once = signal(props.name);
 	shared.set(1);
 	if (!props.name) {
 		return null;
 	}
-	return _c0(attr("title", upper), attr("data-name", name), attr("data-once", once()), insert(props.children), insert(props.children), insert(Card({ title: "x" })), insertText(shared.set(2)));
+	return _c0(attr("title", upper), attr("data-name", props.name), attr("data-once", once()), insert(props.children), insert(props.children), insert(Card({ title: "x" })), insertText(shared.set(2)));
 }
 export function Rows(props) {
 	return _c2(list(props.items, (item, i) => {
@@ -44,7 +43,6 @@ export function Rows(props) {
 
 // --- diagnostics ---
 // LUM2001 warning 10:9 `upper` is computed once from a reactive value, so the JSX that uses it never updates
-// LUM2001 warning 11:9 `name` is computed once from a reactive value, so the JSX that uses it never updates
 // LUM2002 error 13:3 `shared` is written while the component renders
 // LUM2003 error 14:7 this early return depends on a reactive value, but a component body runs once
 // LUM2005 warning 20:7 `children` is inserted more than once; children are created lazily and can only be placed once

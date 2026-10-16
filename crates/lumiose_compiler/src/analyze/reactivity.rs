@@ -23,17 +23,18 @@ use crate::span::Span;
 pub struct PropsSymbols {
     /// `props` in `function C(props)`.
     pub object: Option<SymbolId>,
-    /// Bindings destructured from the props parameter.
+    /// Bindings destructured from the props parameter, or from the props object in the
+    /// component body (`const { title } = props`, TASK-348).
     pub destructured: HashSet<SymbolId>,
-    /// `rest` in `({ a, ...rest })`.
-    pub rest: Option<SymbolId>,
-    /// The destructured `children` binding, if any.
-    pub children: Option<SymbolId>,
+    /// `rest` in `({ a, ...rest })` and in `const { a, ...rest } = props`.
+    pub rest: HashSet<SymbolId>,
+    /// The destructured `children` bindings.
+    pub children: HashSet<SymbolId>,
 }
 
 impl PropsSymbols {
     pub fn is_props_object(&self, symbol: SymbolId) -> bool {
-        self.object == Some(symbol) || self.rest == Some(symbol)
+        self.object == Some(symbol) || self.rest.contains(&symbol)
     }
 }
 
@@ -92,8 +93,13 @@ const SERVER_REQUEST_APIS: [&str; 7] = [
 /// `getProject(slug) ?? notFound()` derives nothing reactive.
 const CONTROL_FLOW_APIS: [&str; 3] = ["error", "notFound", "redirect"];
 
-/// Bindings whose calls never read a signal (TASK-86): `lumiose`'s request and control-flow APIs, and
-/// every import of a server-only module (`is_server_only(specifier)`), which cannot reach a client graph (LUM4003).
+/// `lumiose`'s APIs whose calls make a value or return a constant without reading a signal, so
+/// `const context = { id: useId(), open: signal() }` derives nothing reactive (TASK-349).
+const CONSTANT_APIS: [&str; 5] = ["createContext", "getAbortSignal", "ref", "signal", "useId"];
+
+/// Bindings whose calls never read a signal (TASK-86): `lumiose`'s request, control-flow and
+/// constant APIs, and every import of a server-only module (`is_server_only(specifier)`), which
+/// cannot reach a client graph (LUM4003).
 pub fn server_only_imports(
     program: &Program<'_>,
     is_server_only: impl Fn(&str) -> bool,
@@ -109,7 +115,8 @@ pub fn server_only_imports(
             let request_api = source == "lumiose"
                 && matches!(specifier, ImportDeclarationSpecifier::ImportSpecifier(s)
                     if SERVER_REQUEST_APIS.contains(&s.imported.name().as_str())
-                        || CONTROL_FLOW_APIS.contains(&s.imported.name().as_str()));
+                        || CONTROL_FLOW_APIS.contains(&s.imported.name().as_str())
+                        || CONSTANT_APIS.contains(&s.imported.name().as_str()));
             if (all || request_api)
                 && let Some(symbol) = specifier.local().symbol_id.get()
             {
