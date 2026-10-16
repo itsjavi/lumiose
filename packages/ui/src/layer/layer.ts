@@ -8,8 +8,8 @@
 //   Native light dismiss would also close on a right-click or a second finger, and cannot be
 //   cancelled: that is why the scripts make their popups manual instead of leaving dismissal to
 //   `popover="auto"`.
-// - On a close request: an Escape that no handler took (`preventDefault`), or the Android back
-//   gesture. One request closes the topmost layer only. Escape is handled on `keydown` in every
+// - On a close request: an Escape that no handler took (`preventDefault`) and that no input method
+//   composition owns (Safari's, with `keyCode` 229, TASK-438 M21), or the Android back gesture. One request closes the topmost layer only. Escape is handled on `keydown` in every
 //   browser (and cancelled, so no native close request follows): a `CloseWatcher` created without
 //   user activation joins the previous one's group, and one close request would close the whole
 //   group, a hover-opened popover and the dialog it is in, say (TASK-427). A layer opened with user
@@ -104,8 +104,14 @@ function onPointerUp(event: PointerEvent) {
   }
 }
 
+/**
+ * Whether a key belongs to an input method's composition: Safari sends the key that commits or
+ * cancels one (after `compositionend`) with `keyCode` 229 and `isComposing` false (TASK-438 M21).
+ */
+export const composing = (event: KeyboardEvent) => event.isComposing || event.keyCode === 229;
+
 function onKeyDown(event: KeyboardEvent) {
-  if (event.key !== "Escape" || event.defaultPrevented || event.isComposing) return;
+  if (event.key !== "Escape" || event.defaultPrevented || composing(event)) return;
   const top = stack.at(-1);
   if (!top) return;
   // Handled: a parent dialog keeps its own close request for the next Escape.

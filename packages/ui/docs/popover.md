@@ -198,12 +198,12 @@ them: `--lu-side-offset` and `--lu-align-offset`.
 
 ## Keyboard and focus
 
-| Key          | Does                                                                                                                             |
-| ------------ | -------------------------------------------------------------------------------------------------------------------------------- |
-| Enter, Space | On the trigger: opens or closes the popover.                                                                                     |
-| Tab          | Moves through the popup, then on to the element after the trigger. When the trigger is the last element, focus leaves the popup. |
-| Shift+Tab    | From the start of the popup, back to the trigger. The popover stays open.                                                        |
-| Escape       | Closes the popover on top. With nested popovers, or a popover in a dialog, one Escape closes one layer.                          |
+| Key          | Does                                                                                                                                                                      |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Enter, Space | On the trigger: opens or closes the popover.                                                                                                                              |
+| Tab          | Moves through the popup, then on to the element after the trigger. When the trigger is the last element, focus leaves the popup.                                          |
+| Shift+Tab    | From the start of the popup, back to the trigger. The popover stays open.                                                                                                 |
+| Escape       | Closes the popover on top. With nested popovers, or a popover in a dialog, one Escape closes one layer. An Escape that ends an input method's composition closes nothing. |
 
 - **On open**, focus moves to the popup's first tab stop (the checked radio of a group, not an
   item a roving widget takes out of the order), or to the popup itself when it has none. Opened by touch, the popup focuses itself, so no virtual keyboard opens.

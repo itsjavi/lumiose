@@ -188,11 +188,11 @@ or override the rule, to let the page scroll.
 The browser's modal dialog provides the
 [WAI-ARIA dialog pattern](https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/):
 
-| Key            | Does                                                                                                 |
-| -------------- | ---------------------------------------------------------------------------------------------------- |
-| Enter, Space   | On the trigger: opens the dialog.                                                                    |
-| Tab, Shift+Tab | Move between the focusable elements of the dialog. The page behind is inert: focus never reaches it. |
-| Escape         | Closes the dialog on top, alert dialogs included. With nested dialogs, one Escape closes one dialog. |
+| Key            | Does                                                                                                                                                                   |
+| -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Enter, Space   | On the trigger: opens the dialog.                                                                                                                                      |
+| Tab, Shift+Tab | Move between the focusable elements of the dialog. The page behind is inert: focus never reaches it.                                                                   |
+| Escape         | Closes the dialog on top, alert dialogs included. With nested dialogs, one Escape closes one dialog. An Escape that ends an input method's composition closes nothing. |
 
 - **On open**, focus moves to the element with `autofocus`, or else the first tab stop inside,
   or else the dialog, as in Base UI and the same in every browser: not a scroller before it, nor a

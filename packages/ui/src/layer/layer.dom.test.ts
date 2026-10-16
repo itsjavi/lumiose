@@ -121,3 +121,19 @@ describe("openLayer", () => {
     expect(parent.dismissed).toEqual([undefined]);
   });
 });
+
+it("leaves an Escape that ends an input method's composition alone (TASK-438 M21)", () => {
+  const { dismissed } = layer();
+  // Safari: the key that cancels a composition comes after compositionend, with keyCode 229.
+  const event = new KeyboardEvent("keydown", {
+    key: "Escape",
+    keyCode: 229,
+    bubbles: true,
+    cancelable: true,
+  });
+  document.body.dispatchEvent(event);
+  expect(dismissed).toEqual([]);
+  expect(event.defaultPrevented).toBe(false);
+  escape();
+  expect(dismissed).toEqual([undefined]);
+});

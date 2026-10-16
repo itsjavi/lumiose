@@ -210,7 +210,9 @@ function popupAbove(dialog: HTMLDialogElement): boolean {
 
 // On `window`, after the layers' listeners on `document`: an open layer takes the Escape first.
 window.addEventListener("keydown", (event) => {
+  // `keyCode` 229: Safari's key that ends an input method's composition (TASK-438 M21).
   if (event.key !== "Escape" || event.defaultPrevented || event.isComposing) return;
+  if (event.keyCode === 229) return;
   const dialog = modals.filter((each) => each.isConnected && each.matches(":modal")).at(-1);
   if (!dialog || popupAbove(dialog)) return;
   event.preventDefault();
