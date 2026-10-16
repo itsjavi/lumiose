@@ -95,7 +95,7 @@ it("renders on the server entry", async () => {
 let root: string | undefined;
 
 afterAll(() => {
-  if (root) rmSync(root, { recursive: true, force: true });
+  if (root) rmSync(root, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
 });
 
 describe.skipIf(!binding)("@lumiose/vite in Vitest", () => {

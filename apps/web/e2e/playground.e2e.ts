@@ -27,11 +27,11 @@ test("compiles in the browser and runs the preview", async ({ page }) => {
   await expect(preview(page).getByText("Doubled: 2")).toBeVisible();
 
   await page.getByRole("tab", { name: "Client JS" }).click();
-  await expect(page.locator("#panel-client")).toContainText('from "lumiose/dom"');
+  await expect(page.getByRole("tabpanel", { name: "Client JS" })).toContainText('from "lumiose/dom"');
   await page.getByRole("tab", { name: "Server JS" }).click();
-  await expect(page.locator("#panel-server")).toContainText('from "lumiose/server"');
+  await expect(page.getByRole("tabpanel", { name: "Server JS" })).toContainText('from "lumiose/server"');
   await page.getByRole("tab", { name: "CSS" }).click();
-  await expect(page.locator("#panel-css")).toContainText("[data-l-");
+  await expect(page.getByRole("tabpanel", { name: "CSS" })).toContainText("[data-l-");
 });
 
 test("reports diagnostics in the editor and the Diagnostics tab", async ({ page }) => {
@@ -48,7 +48,7 @@ test("reports diagnostics in the editor and the Diagnostics tab", async ({ page 
   await expect(page.locator(".stale")).toBeVisible();
 
   await page.getByRole("tab", { name: /Diagnostics/ }).click();
-  const item = page.locator("#panel-diagnostics li");
+  const item = page.getByRole("tabpanel", { name: /^Diagnostics/ }).locator("li");
   await expect(item).toContainText("unknown `<style>` attribute `lang`");
   await expect(item.getByRole("link", { name: "LUM1005" })).toHaveAttribute(
     "href",
@@ -137,9 +137,9 @@ test("the landing's live demo loads when visible, and edits update the outputs",
     preview(page).getByRole("button", { name: "Pressed, Clicked 0 times" }),
   ).toBeVisible();
   await page.getByRole("tab", { name: "Client JS" }).click();
-  await expect(page.locator("#panel-client")).toContainText("Pressed, Clicked");
+  await expect(page.getByRole("tabpanel", { name: "Client JS" })).toContainText("Pressed, Clicked");
   await page.getByRole("tab", { name: "CSS" }).click();
-  await expect(page.locator("#panel-css")).toContainText("gap: 80px");
+  await expect(page.getByRole("tabpanel", { name: "CSS" })).toContainText("gap: 80px");
 });
 
 test.describe("without JavaScript", () => {
@@ -176,7 +176,7 @@ test("screenshots", async ({ page }) => {
   await page.emulateMedia({ colorScheme: "light" });
   await page.getByLabel("Sample").selectOption("scoped");
   await page.getByRole("tab", { name: "CSS" }).click();
-  await expect(page.locator("#panel-css")).toContainText(".badge[data-l-");
+  await expect(page.getByRole("tabpanel", { name: "CSS" })).toContainText(".badge[data-l-");
   await page.screenshot({ path: out("css") });
   await page.getByRole("tab", { name: "Client JS" }).click();
   await page.screenshot({ path: out("client") });
@@ -192,7 +192,7 @@ test("screenshots", async ({ page }) => {
   await page.keyboard.type(' lang="scss"');
   await page.keyboard.press("Home");
   await page.getByRole("tab", { name: /Diagnostics/ }).click();
-  await expect(page.locator("#panel-diagnostics li")).toHaveCount(2);
+  await expect(page.getByRole("tabpanel", { name: /^Diagnostics/ }).locator("li")).toHaveCount(2);
   await page.screenshot({ path: out("diagnostics") });
   await page.setViewportSize({ width: 390, height: 844 });
   await open(page);

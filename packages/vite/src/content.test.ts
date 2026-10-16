@@ -109,7 +109,7 @@ beforeAll(async () => {
 afterAll(async () => {
   await server?.close();
   await plain?.close();
-  if (root) rmSync(dirname(root), { recursive: true, force: true });
+  if (root) rmSync(dirname(root), { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
 });
 
 describe.skipIf(!binding)(".md and .html imports", () => {

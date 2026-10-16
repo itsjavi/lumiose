@@ -160,6 +160,47 @@ describe.skipIf(!binding)("lumiose check with the generated tsconfig", () => {
     expect(existsSync(join(root, ".lumiose/shadow/src"))).toBe(false);
   });
 
+  it("type-checks .stsx modules of installed packages (TASK-398)", async () => {
+    // `@acme/ui` installed from npm, in pnpm's layout: its sources, `.stsx` included, in node_modules.
+    const store = "node_modules/.pnpm/@acme+ui@1.0.0/node_modules/@acme/ui";
+    const installed = Object.fromEntries(
+      Object.entries(UI).map(([path, content]) => [
+        path.replace("packages/ui", `app/${store}`),
+        path.endsWith("package.json")
+          ? {
+              ...(content as object),
+              version: "1.0.0",
+              dependencies: undefined,
+              peerDependencies: { lumiose: "*" },
+            }
+          : content,
+      ]),
+    );
+    const dir = await workspace({
+      ...installed,
+      "app/package.json": { name: "app", dependencies: { lumiose: "*", "@acme/ui": "1.0.0" } },
+      "app/tsconfig.json": EXTENDS_GENERATED,
+      "app/src/App.stsx": [
+        'import { Badge } from "@acme/ui";',
+        "",
+        'export const ok = <Badge tone="info" label="Hi" />;',
+        'export const bad = <Badge tone="loud" label="Hi" />;',
+        "",
+      ].join("\n"),
+    });
+    const root = join(dir, "app");
+    await link(root, { "@acme/ui": join(root, store) });
+
+    const { exitCode, report } = await checkJson(root);
+    // The generated tsconfig (written by the check) mirrors the root, node_modules included.
+    expect(shadowLayout(root).packages).toEqual([join(root, store)]);
+    expect(report.diagnostics).toEqual([
+      expect.objectContaining({ source: "ts", code: "TS2322", file: "src/App.stsx", line: 4 }),
+    ]);
+    expect(exitCode).toBe(1);
+    expect(existsSync(join(root, `.lumiose/shadow/${store}/src/Badge.stsx.tsx`))).toBe(true);
+  });
+
   it("reports errors in a package's .stsx at the package source", async () => {
     const dir = await workspace({
       ...UI,

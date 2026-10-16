@@ -108,7 +108,9 @@ const UI_DIR = "node_modules/.pnpm/@acme+ui@1.0.0/node_modules/@acme/ui";
 
 /** A Lumiose package installed from npm: it ships its sources in `dist/`, island and all. */
 const UI: Record<string, string> = {
-  "package.json": `{ "name": "@acme/ui", "version": "1.0.0", "type": "module", "exports": { ".": "./dist/index.ts" }, "peerDependencies": { "lumiose": "^0.1.0" } }\n`,
+  "package.json": `{ "name": "@acme/ui", "version": "1.0.0", "type": "module", "exports": { ".": "./dist/index.ts" }, "dependencies": { "cjs-dep": "1.0.0", "esm-dep": "1.0.0" }, "peerDependencies": { "lumiose": "^0.1.0" } }\n`,
+  // A CommonJS dependency, which the browser can only import pre-bundled (TASK-399).
+  "dist/answer.ts": `import answer from "cjs-dep";\nimport { greeting } from "esm-dep";\nexport const text = greeting + answer.value;\n`,
   "dist/index.ts": `export { Badge } from "./Badge.tsx";\n`,
   "dist/Badge.tsx": `import { Star } from "./Star.stsx";
 export function Badge() {
@@ -117,6 +119,19 @@ export function Badge() {
 `,
   "dist/Star.stsx": `export function Star() {
   return <i class="star">*<style>.star { color: gold; }</style></i>;
+}
+`,
+  // Two LUM2006 warnings: the package's to fix, not its users' (TASK-397).
+  "dist/Rows.tsx": `export function Rows(props: { items: string[] }) {
+  return (
+    <ol>
+      {props.items.map((item, i) => {
+        const position = i;
+        const again = i;
+        return <li>{item}{position}{again}</li>;
+      })}
+    </ol>
+  );
 }
 `,
 };
@@ -132,6 +147,18 @@ export function Header() {
 `,
   "src/Nav.stsx": `export function Nav() {
   return <nav>Docs</nav>;
+}
+`,
+  "src/Rows.tsx": `export function Rows(props: { items: string[] }) {
+  return (
+    <ol>
+      {props.items.map((item, i) => {
+        const position = i;
+        const again = i;
+        return <li>{item}{position}{again}</li>;
+      })}
+    </ol>
+  );
 }
 `,
   // A nested project (its own tsconfig), not part of the package: never scanned (TASK-99).
@@ -177,6 +204,17 @@ beforeAll(async () => {
     writeFileSync(join(root, UI_DIR, name), code);
   }
   symlinkSync(join(root, UI_DIR), join(root, "node_modules/@acme/ui"), "junction");
+  // Its dependencies, beside it in pnpm's layout: one CommonJS, one an ES module.
+  const deps = join(root, "node_modules/.pnpm/@acme+ui@1.0.0/node_modules");
+  mkdirSync(join(deps, "cjs-dep"));
+  writeFileSync(join(deps, "cjs-dep/package.json"), `{ "name": "cjs-dep", "main": "index.js" }\n`);
+  writeFileSync(join(deps, "cjs-dep/index.js"), "module.exports = { value: 42 };\n");
+  mkdirSync(join(deps, "esm-dep"));
+  writeFileSync(
+    join(deps, "esm-dep/package.json"),
+    `{ "name": "esm-dep", "type": "module", "exports": "./index.js" }\n`,
+  );
+  writeFileSync(join(deps, "esm-dep/index.js"), 'export const greeting = "hi ";\n');
   // An installed package that does not use Lumiose: left to Vite.
   mkdirSync(join(root, "node_modules/plain"));
   writeFileSync(join(root, "node_modules/plain/package.json"), `{ "name": "plain" }\n`);
@@ -232,7 +270,7 @@ const STYLE = "?lumiose&type=style&lang.css";
 
 afterAll(async () => {
   await server?.close();
-  if (base) rmSync(base, { recursive: true, force: true });
+  if (base) rmSync(base, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
 });
 
 describe.skipIf(!binding)("@lumiose/vite", () => {
@@ -299,6 +337,56 @@ describe.skipIf(!binding)("@lumiose/vite", () => {
   it("reports warnings", async () => {
     await server.environments.client.transformRequest("/Warning.tsx");
     expect(warnings.some((w) => w.includes("LUM2006") && w.includes("Warning.tsx"))).toBe(true);
+  });
+
+  it("pre-bundles the CommonJS dependencies of Lumiose packages for the browser (TASK-399)", async () => {
+    const { client, ssr } = server.environments;
+    expect(client.config.optimizeDeps.include).toContain("@acme/ui > cjs-dep");
+    expect(client.config.optimizeDeps.include).not.toContain("@acme/ui > esm-dep");
+    expect(ssr.config.optimizeDeps.include ?? []).not.toContain("@acme/ui > cjs-dep");
+    // The package's import of it goes to the pre-bundled module; the ES module is served as is.
+    const answer = await client.transformRequest(`/${UI_DIR}/dist/answer.ts`);
+    expect(answer!.code).toMatch(/from "\/node_modules\/\.vite\/deps\/[^"]*cjs-dep[^"]*"/);
+    expect(answer!.code).toMatch(/from "[^"]*esm-dep\/index\.js[^"]*"/);
+  });
+
+  it("summarizes the warnings of installed Lumiose packages; a linked one's show (TASK-397)", async () => {
+    const before = warnings.length;
+    await server.environments.client.transformRequest(`/${UI_DIR}/dist/Rows.tsx`);
+    await server.environments.ssr.transformRequest(`/${UI_DIR}/dist/Rows.tsx`);
+    const installed = warnings.slice(before);
+    expect(installed).toHaveLength(1);
+    expect(installed[0]).toContain("@acme/ui (installed) has compiler warnings in its files");
+    expect(installed[0]).toContain("LUM2006");
+    const after = warnings.length;
+    const fs = `/@fs${kit.startsWith("/") ? "" : "/"}${kit}`;
+    await server.environments.ssr.transformRequest(`${fs}/src/Rows.tsx`);
+    const linked = warnings.slice(after);
+    expect(linked.filter((w) => w.includes("LUM2006") && w.includes("Rows.tsx"))).toHaveLength(2);
+  });
+
+  it("ends a build with one line per installed package that had warnings (TASK-397)", async () => {
+    const logged: string[] = [];
+    const logger = createLogger("warn", { allowClearScreen: false });
+    logger.warn = (message) => void logged.push(message);
+    await build({
+      root,
+      configFile: false,
+      customLogger: logger,
+      plugins: [lumiose()],
+      build: {
+        write: false,
+        rolldownOptions: {
+          input: { rows: `${root}/${UI_DIR}/dist/Rows.tsx` },
+          preserveEntrySignatures: "strict",
+        },
+      },
+    });
+    expect(logged.filter((w) => w.includes("LUM2006"))).toEqual([
+      expect.stringContaining(
+        "@acme/ui (installed): 2 compiler warnings in its files (LUM2006 ×2), not shown",
+      ),
+    ]);
   });
 
   it("compiles island call sites with root-relative refs and serves the island manifest", async () => {

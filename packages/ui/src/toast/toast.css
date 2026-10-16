@@ -5,7 +5,7 @@
  * `<lu-toast-viewport>`, a custom element, is inline until styled. Toasts past the limit are
  * `hidden`, whatever display a stylesheet gives toasts (an important declaration in this first
  * layer wins over every later one). A toast that swipes leaves the pointer's moves to its script
- * rather than scrolling the page along its axes.
+ * rather than scrolling the page along its axes, and selects no text.
  */
 @layer lu.core, lu.theme;
 
@@ -27,6 +27,9 @@
   }
   lu-toast-viewport > [hidden] {
     display: none !important;
+  }
+  lu-toast-viewport > [data-swiping] {
+    user-select: none;
   }
   lu-toast-viewport > :is([data-swipe-directions~="up"], [data-swipe-directions~="down"]) {
     touch-action: pan-x;

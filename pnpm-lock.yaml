@@ -1192,6 +1192,9 @@ importers:
 
   packages/site-kit:
     dependencies:
+      '@lumiose/ui':
+        specifier: workspace:*
+        version: link:../ui
       lumiose:
         specifier: workspace:*
         version: link:../lumiose

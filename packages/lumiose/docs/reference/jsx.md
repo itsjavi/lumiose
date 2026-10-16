@@ -69,6 +69,13 @@ import may leave `src/` (`../../lib/x.ts`), and a component that a workspace pac
 from its own `.stsx` files (`@acme/ui` → `./Button.stsx`) is type-checked with your project, with
 errors pointing at its sources.
 
+Lumiose packages installed in the project's `node_modules` (from npm or a tarball) are below the
+project root, so their `.stsx` files are shadowed too, below `.lumiose/shadow/node_modules/…`, and
+an app that imports their components type-checks against them. A shadow resolves bare imports from
+where it sits, the project's `node_modules`: a package's `.stsx` that imports one of its own
+dependencies by name type-checks where that dependency is hoisted there (npm, Yarn, Bun), not with
+pnpm's isolated layout.
+
 ### Without `extends`
 
 A tsconfig can also set the options itself:

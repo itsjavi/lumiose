@@ -34,11 +34,15 @@ test.describe("without JavaScript", () => {
 
   test("the image is in the server HTML and covers the fallback once it loads", async ({
     page,
+    browserName,
   }) => {
     await page.goto("/avatar");
     const root = avatar(page, "loaded");
     const image = root.locator("img");
     await expect(image).toBeVisible();
+    await expect(avatar(page, "none").getByText("KJ")).toBeVisible();
+    // Playwright evaluates nothing in a Firefox page without JavaScript (TASK-361).
+    if (browserName === "firefox") return;
     await expect(image).toHaveJSProperty("complete", true);
     // The image is on top: the root's centre is the image.
     const top = await root.evaluate((el) => {
@@ -46,8 +50,6 @@ test.describe("without JavaScript", () => {
       return document.elementFromPoint(box.x + box.width / 2, box.y + box.height / 2)?.tagName;
     });
     expect(top).toBe("IMG");
-    // A root without an image shows its fallback.
-    await expect(avatar(page, "none").getByText("KJ")).toBeVisible();
   });
 });
 

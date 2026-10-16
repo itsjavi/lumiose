@@ -19,6 +19,7 @@
     "screenshots": "SCREENSHOTS=1 playwright test -c showcase/playwright.config.ts -g screenshots"
   },
   "dependencies": {
+    "@lumiose/ui": "workspace:*",
     "lumiose": "workspace:*"
   },
   "devDependencies": {

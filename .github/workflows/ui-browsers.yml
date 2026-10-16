@@ -1,0 +1,95 @@
+# @lumiose/ui in Firefox and WebKit (TASK-361): examples/ui-e2e's keyboard-contract, focus, axe and
+# behaviour suites against the fixture's production build, on Linux. CI's e2e job runs them in
+# Chromium on every push; this job runs only when the UI, its fixture or what compiles and runs it
+# changes, to keep CI's cost down. Tests a browser cannot pass skip it with the reason
+# (examples/ui-e2e/e2e/browsers.ts and the `test.skip` calls that name a task).
+name: UI browsers
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "packages/ui/**"
+      - "examples/ui-e2e/**"
+      - "packages/lumiose/src/**"
+      - "packages/vite/src/**"
+      - "crates/lumiose_compiler/**"
+      - ".github/workflows/ui-browsers.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "packages/ui/**"
+      - "examples/ui-e2e/**"
+      - "packages/lumiose/src/**"
+      - "packages/vite/src/**"
+      - "crates/lumiose_compiler/**"
+      - ".github/workflows/ui-browsers.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ui-browsers-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+  CARGO_INCREMENTAL: 0
+
+jobs:
+  ui-browsers:
+    name: ui-e2e (Firefox, WebKit)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Rust toolchain
+        run: rustup toolchain install
+
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Build the native compiler
+        run: pnpm build:compiler
+
+      - name: Playwright version
+        id: playwright
+        run: echo "version=$(pnpm --filter @lumiose-examples/ui-e2e exec playwright --version | awk '/^Version /{print $2}')" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        id: browsers
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-firefox-webkit-${{ runner.os }}-${{ steps.playwright.outputs.version }}
+
+      - name: Install Firefox and WebKit
+        if: steps.browsers.outputs.cache-hit != 'true'
+        run: pnpm --filter @lumiose-examples/ui-e2e exec playwright install --with-deps firefox webkit
+
+      - name: Firefox and WebKit system dependencies
+        if: steps.browsers.outputs.cache-hit == 'true'
+        run: pnpm --filter @lumiose-examples/ui-e2e exec playwright install-deps firefox webkit
+
+      - name: ui-e2e in Firefox and WebKit
+        working-directory: examples/ui-e2e
+        env:
+          UI_E2E_BROWSERS: firefox,webkit
+        run: pnpm exec playwright test --project firefox --project webkit --reporter=line
+
+      - if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: ui-browsers-results
+          path: examples/ui-e2e/test-results
+          if-no-files-found: ignore
+          retention-days: 7

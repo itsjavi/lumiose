@@ -92,11 +92,11 @@ test("a data-theme subtree has its own theme", async ({ page }) => {
 test("tabs follow the WAI-ARIA keyboard pattern", async ({ page }) => {
   await page.goto("/");
   const tabs = page.getByRole("tablist", { name: "Package manager" }).getByRole("tab");
-  const panels = page.locator(
-    "#install-panel-0, #install-panel-1, #install-panel-2, #install-panel-3",
-  );
+  // Every panel stays in the page, hidden unless its tab is selected.
+  const panels = page.locator("[role=tabpanel]").filter({ hasText: /lumiose/ });
   await expect(tabs).toHaveText(["pnpm", "npm", "yarn", "bun"]);
   await expect(tabs.nth(0)).toHaveAttribute("aria-selected", "true");
+  await expect(panels).toHaveCount(4);
   await expect(panels.nth(0)).toBeVisible();
   await expect(panels.nth(1)).toBeHidden();
   await expect(page.getByRole("tabpanel", { name: "pnpm" })).toBeVisible();

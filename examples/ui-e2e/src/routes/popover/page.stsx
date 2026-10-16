@@ -21,7 +21,7 @@ export default function PopoverPage() {
               </footer>
             </Popover.Popup>
           </Popover.Root>
-          <button type="button" class="lu-button">
+          <button type="button" class="lu-button next">
             Next step
           </button>
         </section>
@@ -111,6 +111,12 @@ export default function PopoverPage() {
 }
 
 <style>
+  /* After the trigger in the tab order, but shown below the open popup, where a press can land on
+     it; the layout around it does not move. */
+  .next {
+    position: relative;
+    inset-block-start: 11rem;
+  }
   .placements {
     margin-block: 6rem;
   }

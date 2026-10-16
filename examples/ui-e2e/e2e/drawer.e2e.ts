@@ -3,16 +3,17 @@
 // controls, not while the content can scroll, touch); the button and key alternatives and focus
 // return; the sync with a signal in an island; and WCAG 2.2 AA with the default theme.
 import { expect, test, type Locator, type Page } from "@playwright/test";
+import { dragPath } from "./browsers.ts";
 import { axe, clipped, focusRing, SCHEMES, smallTargets, TEXT_SPACING } from "./a11y.ts";
 
 const drawer = (page: Page, name: string) => page.getByRole("dialog", { name });
 const button = (page: Page, name: string) => page.getByRole("button", { name, exact: true });
 
 /** Drags with the mouse from `from` (relative to `target`'s box) by `dx`, `dy`, in `steps`. */
-async function drag(page: Page, target: Locator, dx: number, dy: number, steps = 10) {
+async function drag(page: Page, target: Locator, toX: number, toY: number, steps = 10) {
   const box = (await target.boundingBox())!;
-  const x = box.x + box.width / 2;
-  const y = box.y + Math.min(box.height / 2, 20);
+  const at = { x: 0.5, y: Math.min(0.5, 20 / box.height) };
+  const { x, y, dx, dy } = dragPath(page, box, toX, toY, at);
   await page.mouse.move(x, y);
   await page.mouse.down();
   for (let i = 1; i <= steps; i++) {

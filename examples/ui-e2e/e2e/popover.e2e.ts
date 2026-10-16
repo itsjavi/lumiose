@@ -91,7 +91,12 @@ test.describe("keyboard and focus", () => {
 
   test("when the trigger is the last tabbable element, Tab does not loop back in", async ({
     page,
+    browserName,
   }) => {
+    test.skip(
+      browserName === "firefox",
+      "Tab past the page's last element leaves the page; headless Firefox has no browser UI to take focus, so it stays",
+    );
     await page.goto("/popover");
     const trigger = page.getByRole("button", { name: "Help" });
     await trigger.focus();
@@ -115,6 +120,9 @@ test.describe("keyboard and focus", () => {
   test("a click outside returns focus to the trigger, unless it lands on a control", async ({
     page,
   }) => {
+    // Room below the trigger under the fixture's long nav, so the popup does not flip over the
+    // controls the test presses (Firefox's and WebKit's fonts on Linux make the page taller).
+    await page.setViewportSize({ width: 1280, height: 1000 });
     await page.goto("/popover");
     const trigger = page.getByRole("button", { name: "Notifications" });
     const notifications = popup(page, "Notifications");

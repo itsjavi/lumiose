@@ -56,6 +56,9 @@ async function devServer(options: Parameters<typeof lumiose>[0]): Promise<ViteDe
     plugins: [lumiose(options)],
     appType: "custom",
     server: { middlewareMode: true, ws: false, watch: null },
+    // No dependency pre-bundling: its writes to node_modules/.vite/deps could outlive close() and
+    // make the cleanup fail with ENOTEMPTY (TASK-409).
+    optimizeDeps: { noDiscovery: true, include: [] },
   });
 }
 
@@ -77,7 +80,8 @@ afterAll(async () => {
   await server?.close();
   await plain?.close();
   await custom?.close();
-  if (root) rmSync(dirname(root), { recursive: true, force: true });
+  // Retries cover a file still being written or released (ENOTEMPTY, EBUSY, EPERM on Windows).
+  if (root) rmSync(dirname(root), { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
 });
 
 describe.skipIf(!binding)(".svg imports", () => {

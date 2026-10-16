@@ -204,20 +204,36 @@ export function Showcase() {
         <Section
           id="tabs"
           title="Tabs"
-          lead="The WAI-ARIA tabs pattern: arrow keys, Home and End move between tabs. Each child is a panel."
+          lead="@lumiose/ui's Tabs in the site's look: arrow keys, Home and End move between tabs, and a tab and a panel share a value."
         >
-          <Tabs id="install" label="Package manager" labels={Object.keys(installSamples)}>
-            {Object.values(installSamples).map((code) => (
-              <div>
+          <Tabs.Root>
+            <Tabs.List aria-label="Package manager">
+              {Object.keys(installSamples).map((name) => (
+                <Tabs.Tab value={name}>{name}</Tabs.Tab>
+              ))}
+            </Tabs.List>
+            {Object.entries(installSamples).map(([name, code]) => (
+              <Tabs.Panel value={name}>
                 <CodeBlock code={code} lang="sh" highlight={highlight} />
-              </div>
+              </Tabs.Panel>
             ))}
-          </Tabs>
-          <Tabs id="modes" label="Rendering modes" labels={["SSR", "SSG", "SPA"]}>
-            <p>Rendered on each request, streamed, with islands hydrating in the browser.</p>
-            <p>Rendered at build time into static HTML: the docs site works this way.</p>
-            <p>Rendered in the browser only: the playground is a single-page app.</p>
-          </Tabs>
+          </Tabs.Root>
+          <Tabs.Root>
+            <Tabs.List aria-label="Rendering modes">
+              <Tabs.Tab value="ssr">SSR</Tabs.Tab>
+              <Tabs.Tab value="ssg">SSG</Tabs.Tab>
+              <Tabs.Tab value="spa">SPA</Tabs.Tab>
+            </Tabs.List>
+            <Tabs.Panel value="ssr">
+              <p>Rendered on each request, streamed, with islands hydrating in the browser.</p>
+            </Tabs.Panel>
+            <Tabs.Panel value="ssg">
+              <p>Rendered at build time into static HTML: the docs site works this way.</p>
+            </Tabs.Panel>
+            <Tabs.Panel value="spa">
+              <p>Rendered in the browser only: the playground is a single-page app.</p>
+            </Tabs.Panel>
+          </Tabs.Root>
         </Section>
 
         <Section

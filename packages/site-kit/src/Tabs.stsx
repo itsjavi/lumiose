@@ -1,91 +1,49 @@
-// Tabs (the WAI-ARIA tabs pattern): `labels` name the tabs, and each child element is the panel of
-// the label at the same position. Arrow keys, Home and End move between tabs (automatic
-// activation, roving tabindex). The props are plain data plus children, so Tabs also works as an
-// island (`<Tabs client:visible …>`): the panels are then a server-rendered slot, which Tabs
-// labels and shows or hides once it runs.
+// Tabs: @lumiose/ui's Tabs (the WAI-ARIA tabs pattern, server-rendered with its full state, a small
+// element for the keys) in the site's look. The parts are @lumiose/ui's, with automatic activation
+// by default (the arrow keys select). A `Tab` and a `Panel` with the same `value` belong together.
 
-import { effect, ref, signal } from "lumiose";
+import {
+  Tabs as Ui,
+  type TabsListProps,
+  type TabsPanelProps,
+  type TabsRootProps,
+  type TabsTabProps,
+} from "@lumiose/ui";
+import "@lumiose/ui/tabs.css";
 import { color, motion, radius, space, text, weight } from "./tokens.ts";
 
-export interface TabsProps {
-  /** One label per panel. */
-  labels: string[];
-  /** The panels: one child element per label. */
-  children: JSX.Element;
-  /** The accessible name of the tab list. */
-  label?: string;
-  /** Prefix of the tab and panel ids. Pass one when the page is server-rendered (stable ids). */
-  id?: string;
-  /** The index of the tab selected first. Default 0. */
-  initial?: number;
-  class?: JSX.ClassValue;
+export type { TabsListProps, TabsPanelProps, TabsRootProps, TabsTabProps };
+
+function Root({ class: className, ...rest }: TabsRootProps) {
+  return <Ui.Root {...rest} class={["tabs", className]} />;
 }
 
-let instances = 0;
-
-export function Tabs(props: TabsProps) {
-  const id = props.id ?? `tabs-${++instances}`;
-  const selected = signal(props.initial ?? 0);
-  const list = ref<HTMLDivElement>();
-  const panels = ref<HTMLDivElement>();
-
-  // The panels are the children's elements: label them, and show the selected one. The tabs point
-  // at them (aria-controls) only from here, once the panels have their ids: before Tabs runs (an
-  // island not hydrated yet, or no JavaScript), every panel shows, and no tab names a missing id.
-  effect(() => {
-    const container = panels();
-    if (!container) return;
-    const index = selected();
-    list()
-      ?.querySelectorAll('[role="tab"]')
-      .forEach((tab, i) => tab.setAttribute("aria-controls", `${id}-panel-${i}`));
-    Array.from(container.children).forEach((panel, i) => {
-      panel.id = `${id}-panel-${i}`;
-      panel.setAttribute("role", "tabpanel");
-      panel.setAttribute("aria-labelledby", `${id}-tab-${i}`);
-      panel.setAttribute("tabindex", "0");
-      panel.toggleAttribute("hidden", i !== index);
-    });
-  });
-
-  const onKeyDown = (event: KeyboardEvent) => {
-    const count = props.labels.length;
-    const keys: Record<string, number> = {
-      ArrowRight: (selected() + 1) % count,
-      ArrowLeft: (selected() - 1 + count) % count,
-      Home: 0,
-      End: count - 1,
-    };
-    const next = keys[event.key];
-    if (next === undefined) return;
-    event.preventDefault();
-    selected.set(next);
-    list()?.querySelectorAll<HTMLElement>('[role="tab"]')[next]?.focus();
-  };
-
-  return (
-    <div class={["tabs", props.class]}>
-      <div ref={list} class="list" role="tablist" aria-label={props.label} onKeyDown={onKeyDown}>
-        {props.labels.map((label, i) => (
-          <button
-            type="button"
-            role="tab"
-            id={`${id}-tab-${i}`}
-            class={{ selected: selected() === i }}
-            aria-selected={selected() === i ? "true" : "false"}
-            tabindex={selected() === i ? 0 : -1}
-            onClick={() => selected.set(i)}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
-      <div ref={panels} class="panels">
-        {props.children}
-      </div>
-    </div>
-  );
+function List({ class: className, activateOnFocus = true, ...rest }: TabsListProps) {
+  return <Ui.List {...rest} activateOnFocus={activateOnFocus} class={["list", className]} />;
 }
+
+function Tab({ class: className, ...rest }: TabsTabProps) {
+  return <Ui.Tab {...rest} class={["tab", className]} />;
+}
+
+function Panel({ class: className, ...rest }: TabsPanelProps) {
+  return <Ui.Panel {...rest} class={["panel", className]} />;
+}
+
+/**
+ * Tabs in the site's look: `Root`, `List` (name it with `aria-label`), `Tab` and `Panel`.
+ *
+ * @example
+ * <Tabs.Root>
+ *   <Tabs.List aria-label="Package manager">
+ *     <Tabs.Tab value="pnpm">pnpm</Tabs.Tab>
+ *     <Tabs.Tab value="npm">npm</Tabs.Tab>
+ *   </Tabs.List>
+ *   <Tabs.Panel value="pnpm">pnpm create lumiose</Tabs.Panel>
+ *   <Tabs.Panel value="npm">npm create lumiose</Tabs.Panel>
+ * </Tabs.Root>
+ */
+export const Tabs = { Root, List, Tab, Panel };
 
 <style>
   .tabs {
@@ -98,7 +56,7 @@ export function Tabs(props: TabsProps) {
     overflow-x: auto;
     scrollbar-width: none;
   }
-  button {
+  .tab {
     position: relative;
     padding: $space.xs $space.md;
     border: 0;
@@ -112,18 +70,18 @@ export function Tabs(props: TabsProps) {
       color $motion.fast $motion.ease,
       background-color $motion.fast $motion.ease;
   }
-  button:hover {
+  .tab:hover {
     color: $color.text;
     background: $color.sunken;
   }
-  button:focus-visible {
+  .tab:focus-visible {
     outline-offset: -2px;
   }
-  button.selected {
+  .tab[aria-selected="true"] {
     color: $color.text;
   }
   /* The selected tab is lit from below. */
-  button::after {
+  .tab::after {
     content: "";
     position: absolute;
     inset-inline: $space.xs;
@@ -135,13 +93,13 @@ export function Tabs(props: TabsProps) {
     transform: scaleX(0);
     transition: transform $motion.base $motion.ease;
   }
-  button.selected::after {
+  .tab[aria-selected="true"]::after {
     transform: scaleX(1);
   }
-  .panels > :deep(*) {
+  .panel {
     margin-block-start: $space.md;
   }
-  .panels > :deep([role="tabpanel"]:focus-visible) {
+  .panel:focus-visible {
     outline-offset: 4px;
   }
 </style>

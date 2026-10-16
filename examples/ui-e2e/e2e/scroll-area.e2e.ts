@@ -42,7 +42,12 @@ test.describe("without JavaScript", () => {
 
   test("the viewport scrolls natively, with its native scrollbar, from the keyboard too", async ({
     page,
+    browserName,
   }) => {
+    test.skip(
+      browserName === "firefox",
+      "TASK-420: without JavaScript, Firefox hides the native scrollbar (Gecko treats the element as :defined)",
+    );
     await page.goto("/scroll-area");
     const releases = region(page, "Releases");
     expect(await releases.evaluate((el) => getComputedStyle(el).scrollbarWidth)).not.toBe("none");

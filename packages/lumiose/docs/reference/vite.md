@@ -246,11 +246,17 @@ not. The plugin treats their modules like the app's own, whether the package is 
   `package.json`, `tsconfig.json` or `vite.config.*`).
 - **One `lumiose`.** They are bundled with the server code (`resolve.noExternal`) and kept out of
   Vite's dependency pre-bundling (`optimizeDeps.exclude`), so their modules and the app's share one
-  runtime instance, and Vite never compiles their JSX for React. A CommonJS dependency of a Lumiose
-  package then needs `optimizeDeps: { include: ["@acme/ui > some-cjs-dep"] }`.
+  runtime instance, and Vite never compiles their JSX for React. Their CommonJS dependencies,
+  which the browser can only import pre-bundled, are added to the browser's
+  `optimizeDeps.include` for you (`"@acme/ui > some-cjs-dep"`); ES-module dependencies are served
+  as they are.
 - **Stable names.** Island refs and scope tokens name their modules package-relatively
   (`@acme/ui/dist/Nav.tsx#Nav`), wherever the package manager put them (`node_modules/.pnpm/…`
   included).
+- **Their warnings stay theirs.** Compiler warnings in an installed package's files (`LUM2001`, …)
+  are the package's to fix, not the app's: `lumiose dev` says once per package that it has some,
+  and a build ends with one line per package, its codes and their counts, instead of each warning.
+  A linked package is being worked on, so its warnings show like the app's. Errors always show.
 
 **Publishing a component library.** Ship the sources (`.tsx`, `.stsx`, `.ts`, `.css`) and point
 `exports` at them, with `lumiose` as a peer dependency: no build step, and the app's compiler

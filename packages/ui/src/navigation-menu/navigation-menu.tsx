@@ -1,6 +1,6 @@
 // Navigation Menu (decision-62, TASK-380): site navigation whose items open panels of links, after
 // Base UI's NavigationMenu and the WAI-ARIA disclosure navigation pattern. Root is a `<nav>`
-// landmark (`role="none"` when nested in another menu's panel) around a list; each item's trigger
+// landmark (a `<div>` when nested in another menu's panel) around a list; each item's trigger
 // opens its content through `popovertarget`: a `popover="auto"` placed under the trigger by CSS
 // anchor positioning. So without JavaScript the links work, a panel opens on a click, one at a
 // time, and closes on Escape or a click outside. `<lu-navigation-menu>`
@@ -8,7 +8,7 @@
 // `value` and the activation direction. Base UI's Viewport, Positioner, Portal, Backdrop and Arrow
 // are left out: the top layer and anchor positioning place each panel, and without a portal the
 // panels cannot share one viewport.
-import { createContext, effect, onMount, ref, untrack, useContext, useId } from "lumiose";
+import { createContext, Dynamic, effect, onMount, ref, untrack, useContext, useId } from "lumiose";
 import { anchorName, placement, withStyle, type PlacementProps } from "../placement/placement.ts";
 import navigationMenuScript from "./navigation-menu.script.ts?client";
 import type {
@@ -35,8 +35,8 @@ declare module "lumiose/jsx-runtime" {
 export type NavigationMenuOrientation = "horizontal" | "vertical";
 
 /**
- * `NavigationMenu.Root` renders a `<nav>` (with `role="none"` inside another navigation menu's
- * content) inside `<lu-navigation-menu>`. `bind:value={signal}` stands in for `value` and `onValueChange`.
+ * `NavigationMenu.Root` renders a `<nav>` (a `<div>` inside another navigation menu's content)
+ * inside `<lu-navigation-menu>`. `bind:value={signal}` stands in for `value` and `onValueChange`.
  */
 export type NavigationMenuRootProps = Omit<JSX.IntrinsicElements["nav"], symbol> & {
   /**
@@ -154,10 +154,10 @@ function Root({
           onValueChange?.(event.detail.value)
         }
       >
-        {/* A nested menu is part of its parent's landmark: `role="none"`, as a `<div>` would be. */}
-        <nav {...attributes()} role={nested ? "none" : rest.role}>
+        {/* A nested menu is a `<div>`, inside its parent's landmark. */}
+        <Dynamic component={nested ? "div" : "nav"} {...attributes()}>
           {children}
-        </nav>
+        </Dynamic>
       </lu-navigation-menu>
     </RootContext>
   );

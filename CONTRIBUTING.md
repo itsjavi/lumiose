@@ -97,6 +97,16 @@ Windows:
 
 pnpm's store, Cargo's registry and `target/`, and the Playwright browsers are cached.
 
+`.github/workflows/ui-browsers.yml` runs examples/ui-e2e in Firefox and WebKit on Linux, against the
+fixture's production build, when a push or pull request to `main` changes `packages/ui`, the
+fixture, the runtime, the Vite plugin or the compiler. Tests a browser cannot pass skip it with the
+reason (a platform feature it lacks, a test tool only Chromium has, or a task). Locally:
+`pnpm --filter @lumiose-examples/ui-e2e test:e2e:browsers`. On macOS, WebKit's Tab reaches only
+fields, so run those browsers in Linux through the Playwright Docker image: start
+`node <playwright-core>/cli.js run-server --port 3123 --host 0.0.0.0` in
+`mcr.microsoft.com/playwright:v<version>-noble` (the workspace's `playwright-core` mounted
+read-only) and set `UI_E2E_WS=ws://127.0.0.1:3123/`.
+
 `.github/workflows/fuzz.yml` runs nightly (and by hand from the Actions tab), never on push: each
 target of `fuzz/` for 10 minutes on nightly Rust with AddressSanitizer, its corpus kept between
 runs, and `pnpm --filter lumiose test:properties 200000`. A crash fails the run and uploads its

@@ -1,7 +1,7 @@
 // Server HTML of Navigation Menu (TASK-380): a `<nav>` landmark inside `<lu-navigation-menu>`, a
 // list of items whose triggers open their contents through `popovertarget`, each content a
 // `popover="auto"` anchored to its trigger, links marked as the current page, a vertical
-// orientation, and a nested menu that is no landmark of its own.
+// orientation, and a nested menu rendering a `<div>`.
 import { renderToString } from "lumiose";
 import { describe, expect, it } from "vitest";
 import { attrs } from "../test/html.ts";
@@ -61,7 +61,7 @@ describe("NavigationMenu on the server", () => {
     expect(attrs(html, "a")).toEqual({ href: "/analytics" });
   });
 
-  it("places a vertical menu's contents at the inline end, and nests a menu without a landmark", async () => {
+  it("places a vertical menu's contents at the inline end, and nests a menu as a div", async () => {
     const html = await renderToString(() => (
       <NavigationMenu.Root aria-label="Sidebar" orientation="vertical">
         <NavigationMenu.List>
@@ -80,10 +80,11 @@ describe("NavigationMenu on the server", () => {
         </NavigationMenu.List>
       </NavigationMenu.Root>
     ));
-    // The nested menu is no landmark of its own.
-    expect(
-      [...html.matchAll(/<nav\b([^>]*)>/g)].map((m) => /role="(\w+)"/.exec(m[1]!)?.[1]),
-    ).toEqual([undefined, "none"]);
+    // The nested menu is a div, inside the outer landmark.
+    expect(html.match(/<nav\b/g)).toHaveLength(1);
+    expect(attrs(html, "div", (a) => a.popover === undefined)).toEqual({
+      "data-orientation": "horizontal",
+    });
     expect(attrs(html, "div", (a) => a.popover === "auto")).toMatchObject({
       "data-side": "inline-end",
       "data-align": "start",

@@ -10,7 +10,8 @@
     "build": "lumiose build",
     "preview": "lumiose preview",
     "typecheck": "lumiose check",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "test:e2e:browsers": "UI_E2E_BROWSERS=firefox,webkit playwright test --project firefox --project webkit"
   },
   "dependencies": {
     "@lumiose/adapter-node": "workspace:*",
