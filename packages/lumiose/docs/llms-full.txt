@@ -154,6 +154,21 @@ designed API; where this version does not implement something yet, the page says
 - Node.js 24 or later.
 - TypeScript (`typescript@^7`). Lumiose uses stock `tsc`, with no TypeScript plugins.
 - Vite 8.
+- macOS (arm64, x64), Linux (x64, arm64; glibc or musl) or Windows x64, where the compiler runs
+  natively. Elsewhere (Windows on Arm, FreeBSD, other CPUs) it runs as WebAssembly, which package
+  managers install only when you enable the `wasm32` architecture (see below).
+
+On a platform without a native compiler, enable `wasm32` before you install:
+
+```yaml
+# pnpm-workspace.yaml (pnpm), or .yarnrc.yml (Yarn 4)
+supportedArchitectures:
+  cpu:
+    - current
+    - wasm32
+```
+
+With npm, add `cpu=wasm32` to the project's `.npmrc` (or run `npm install --cpu=wasm32`).
 
 ## Create a project
 
@@ -672,8 +687,9 @@ export default function ClockPage() {
 | Passing a function or a class instance to an island         | Island props are serialized into the page.              | Pass plain data, and keep handlers inside the island ([LUM4002](../errors/LUM4002.md)).       |
 | Setting `document.title` in an effect                       | It fights with `<Title>`.                               | Render `<Title>`.                                                                             |
 
-Destructuring props is fine: `({ title })` compiles to reads of `props.title`, which stay reactive.
-Copying a signal's value into a variable is what freezes it.
+Destructuring props is fine: `({ title })` and `const { title, ...rest } = props` compile to reads
+of `props.title`, which stay reactive. Copying a signal's value into a variable is what freezes it.
+`<button {...props} />` renders `props.children`, as in React.
 
 ## Related
 
@@ -1772,7 +1788,9 @@ are ordinary variables; state that changes lives in [signals](signals.md).
 **Props.** Props are the single parameter. The compiler keeps them reactive, even when you
 destructure them: `({ title, count = 0 })` is rewritten to reads of `props.title` and
 `props.count`, so a parent passing a signal value keeps the child up to date. `...rest` stays
-reactive too.
+reactive too. Destructuring the props object at the top of the body,
+`const { children, ...rest } = props`, is rewritten the same way, as long as you don't reassign
+the bindings; destructuring a nested prop (`const { name } = props.user`) reads it once.
 
 On the server, where nothing is reactive, a prop expression is evaluated **lazily and at most once
 per component instance** (decision-28): the first read runs it, later reads reuse the value, and a
@@ -1782,7 +1800,33 @@ read re-evaluates the expression, so keep prop expressions free of side effects.
 
 **Children** are lazy: `children` is evaluated where you insert it. Insert it once; to render
 something several times, take a render function as a prop. Named slots are ordinary props that hold
-JSX.
+JSX. Spreading props onto an element without content of its own renders their `children`, as in
+React: `<button {...props} />` renders what the caller wrapped in the component. When the caller
+passes no `children`, the element's content is left alone (a script may fill it).
+
+```tsx check
+function Button(props: JSX.HTMLProps<HTMLButtonElement>) {
+  return <button type="button" {...props} />;
+}
+
+function Trigger(props: JSX.HTMLProps<HTMLButtonElement> & { label: string }) {
+  const { children, label, ...rest } = props;
+  return (
+    <button type="button" aria-label={label} {...rest}>
+      {children}
+    </button>
+  );
+}
+
+export function Toolbar() {
+  return (
+    <>
+      <Button class="primary">Save</Button>
+      <Trigger label="Close">×</Trigger>
+    </>
+  );
+}
+```
 
 **Refs.** `ref` takes a callback `(el) => void`. `ref<T>()` returns such a callback that can also be
 read like a signal.
@@ -2381,20 +2425,21 @@ the efficient form:
 
 **Elements.**
 
-| Prop                         | Rule                                                                                                                                                                                                                                                                                                                       |
-| ---------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `class`                      | A string, an array, or a `{ name: boolean }` record (nested arrays allowed). `className` is a type error.                                                                                                                                                                                                                  |
-| `style`                      | A string, or an object with **kebab-case** keys, including `--custom` properties. Each key updates on its own.                                                                                                                                                                                                             |
-| `aria-*`, `spellcheck`, …    | Booleans are written as `"true"`/`"false"` (`aria-pressed={false}` renders `aria-pressed="false"`): `aria-*`, `contenteditable`, `draggable`, `spellcheck` and the other enumerated attributes, static or not. Other attributes: `true` adds the attribute empty (`hidden`); `false`, `null` and `undefined` leave it out. |
-| `onClick`, `onKeyDown`, …    | camelCase handlers. Bubbling events are delegated (one listener per type at `document`); non-bubbling ones (`onFocus`, `onMouseEnter`, `onScroll`) get a direct listener.                                                                                                                                                  |
-| `on:click`, `on:my-event`    | A native `addEventListener` listener with the exact event name. Use it for custom and web-component events.                                                                                                                                                                                                                |
-| Props of a custom element    | The element's property when it defines one (arrays and objects as they are), else the attribute, as in React 19. See [Web components](../guides/web-components.md).                                                                                                                                                        |
-| `bind:value`, `bind:checked` | Two-way binding to a writable signal, on `input`, `select` and `textarea`. `bind:x` also works on components and custom elements (below).                                                                                                                                                                                  |
-| `attach={[fn]}`              | Runs `fn(el)` with the element in a tracked scope; it may return a cleanup.                                                                                                                                                                                                                                                |
-| `ref={fn}`                   | Called with the element. `ref<T>()` makes a callback you can read like a signal.                                                                                                                                                                                                                                           |
-| `innerHTML`                  | Sets unescaped HTML. The lint rule `no-unsafe-html` warns.                                                                                                                                                                                                                                                                 |
-| `key`                        | Allowed on intrinsic elements and components (list identity).                                                                                                                                                                                                                                                              |
-| `client:*`                   | Island directives, on components only. See [Islands](islands.md).                                                                                                                                                                                                                                                          |
+| Prop                         | Rule                                                                                                                                                                                                                                                                                                                                                                                                         |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `class`                      | A string, an array, or a `{ name: boolean }` record (nested arrays allowed). `className` is a type error.                                                                                                                                                                                                                                                                                                    |
+| `style`                      | A string, or an object with **kebab-case** keys, including `--custom` properties. Each key updates on its own.                                                                                                                                                                                                                                                                                               |
+| `aria-*`, `spellcheck`, …    | Booleans are written as `"true"`/`"false"` (`aria-pressed={false}` renders `aria-pressed="false"`): `aria-*`, `contenteditable`, `draggable`, `spellcheck` and the other enumerated attributes, static or not. Other attributes: `true` adds the attribute empty (`hidden`); `false`, `null` and `undefined` leave it out.                                                                                   |
+| `onClick`, `onKeyDown`, …    | camelCase handlers. Bubbling events are delegated (one listener per type at `document`); non-bubbling ones (`onFocus`, `onMouseEnter`, `onScroll`) get a direct listener.                                                                                                                                                                                                                                    |
+| `on:click`, `on:my-event`    | A native `addEventListener` listener with the exact event name. Use it for custom and web-component events.                                                                                                                                                                                                                                                                                                  |
+| Props of a custom element    | The element's property when it defines one (arrays and objects as they are), else the attribute, as in React 19. See [Web components](../guides/web-components.md).                                                                                                                                                                                                                                          |
+| `bind:value`, `bind:checked` | Two-way binding to a writable signal, on `input`, `select` and `textarea`. `bind:x` also works on components and custom elements (below).                                                                                                                                                                                                                                                                    |
+| `attach={[fn]}`              | Runs `fn(el)` with the element in a tracked scope; it may return a cleanup.                                                                                                                                                                                                                                                                                                                                  |
+| `ref={fn}`                   | Called with the element. `ref<T>()` makes a callback you can read like a signal.                                                                                                                                                                                                                                                                                                                             |
+| `innerHTML`                  | Sets unescaped HTML. The lint rule `no-unsafe-html` warns.                                                                                                                                                                                                                                                                                                                                                   |
+| `key`                        | Allowed on intrinsic elements and components (list identity).                                                                                                                                                                                                                                                                                                                                                |
+| `{...props}`, `children`     | A spread applies every prop it carries, in order with the other attributes. An element without content of its own renders the `children` of its spreads or of a `children` attribute, as in React: `<button {...props} />` renders what the caller passed. Written content wins. When the spread has no `children` prop at all, the element's content is left alone, so a script or the browser may fill it. |
+| `client:*`                   | Island directives, on components only. See [Islands](islands.md).                                                                                                                                                                                                                                                                                                                                            |
 
 Handlers receive the **native** event, with `currentTarget` typed as the element. There are no
 synthetic events.
@@ -14550,6 +14595,13 @@ A constant stored straight from a call of a function (`const count = signal(prop
 member of an imported module (`const toasts = Toast.createToastManager()`) holds what a factory
 made, not a derived value: factories read their arguments on purpose. A call on an imported module
 still warns when its arguments read a signal or a prop (`const day = format.date(props.date)`).
+`lumiose`'s APIs that make a value or return a constant are never reads, wherever they appear:
+`useId()`, `ref()`, `signal()`, `createContext()` and `getAbortSignal()`, so
+`const context = { id: useId(), open: signal(false) }` is fine.
+
+Destructuring the props object at the top of the body (`const { title, ...rest } = props`) is
+rewritten like a destructured parameter and stays reactive. Destructuring a nested prop
+(`const { name } = props.user`), or bindings you reassign later, still read once and warn.
 
 Pages and layouts whose route mode is `static` or `server` render once per request (or build), so
 their own props are plain values too: deriving from them is fine. Routes in `spa` mode, islands

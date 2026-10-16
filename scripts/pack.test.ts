@@ -102,6 +102,18 @@ describe("tarballProblems", () => {
     ]);
   });
 
+  it("reports a WASI binary that package managers would install next to a native one", () => {
+    const wasi = (fields: Partial<Manifest>): Manifest => ({
+      name: "@lumiose/compiler-wasm32-wasi",
+      version: "1.2.3",
+      main: "compiler.wasi.cjs",
+      ...fields,
+    });
+    const files = ["LICENSE", "README.md", "package.json", "compiler.wasi.cjs"];
+    assert.deepEqual(tarballProblems(wasi({}), files), ["a WASI binary without cpu wasm32"]);
+    assert.deepEqual(tarballProblems(wasi({ cpu: ["wasm32"] }), files), []);
+  });
+
   it("reports wildcard exports without files, private packages and workspace specifiers", () => {
     const problems = tarballProblems(
       manifest({

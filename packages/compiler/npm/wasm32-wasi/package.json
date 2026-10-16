@@ -20,6 +20,11 @@
   "main": "compiler.wasi.cjs",
   "browser": "compiler.wasi-browser.js",
   "types": "compiler.wasi.d.cts",
+  "publishConfig": {
+    "cpu": [
+      "wasm32"
+    ]
+  },
   "dependencies": {
     "@emnapi/core": "2.0.0-alpha.5",
     "@emnapi/runtime": "2.0.0-alpha.5",

@@ -95,6 +95,74 @@ impl<'a> Codegen<'a, '_> {
         self.components.push(ctx);
     }
 
+    /// Rewrites the declarators of the component body that destructure the props object
+    /// (`Component::body_props`, TASK-348) like a destructured parameter: their bindings read
+    /// `props.<key>` where they are used, and `const { a, ...rest } = props` becomes
+    /// `const rest = restProps(props, ["a"])`. A declaration left without declarators is removed.
+    pub(super) fn rewrite_body_props(
+        &mut self,
+        component: &Component,
+        body: &mut FunctionBody<'a>,
+    ) {
+        if component.body_props.is_empty() {
+            return;
+        }
+        let Some(props_name) = self.components.last().map(|ctx| ctx.props_name.clone()) else {
+            return;
+        };
+        let statements = body.statements.take_in(self.ast);
+        let mut out = self.ast.vec_from(Vec::with_capacity(statements.len()));
+        for mut statement in statements {
+            if let Statement::VariableDeclaration(declaration) = &mut statement {
+                let declarators = declaration.declarations.take_in(self.ast);
+                let mut kept = self.ast.vec();
+                for declarator in declarators {
+                    if !component.body_props.contains(&declarator.span.into()) {
+                        kept.push(declarator);
+                        continue;
+                    }
+                    let span = declarator.span;
+                    let BindingPattern::ObjectPattern(pattern) = declarator.id else {
+                        unreachable!("checked by the analysis");
+                    };
+                    let collected = collect_pattern(self.ast, pattern.unbox());
+                    let Some(ctx) = self.components.last_mut() else {
+                        unreachable!("inside a component");
+                    };
+                    ctx.props.extend(collected.props);
+                    let (Some(rest), Some(symbol)) = (collected.rest, collected.rest_symbol) else {
+                        continue;
+                    };
+                    if !collected.keys.iter().any(|key| key == "class") {
+                        ctx.class_carriers.insert(symbol);
+                    }
+                    ctx.props_objects.insert(symbol);
+                    let callee = self.runtime("restProps", span);
+                    let keys = collected
+                        .keys
+                        .iter()
+                        .map(|key| self.ast.string(span, key))
+                        .collect::<Vec<_>>();
+                    let call = self.ast.call(
+                        span,
+                        callee,
+                        [
+                            self.ast.ident(span, &props_name),
+                            self.ast.array(span, keys),
+                        ],
+                    );
+                    kept.push(self.ast.declarator(span, &rest, call));
+                }
+                if kept.is_empty() {
+                    continue;
+                }
+                declaration.declarations = kept;
+            }
+            out.push(statement);
+        }
+        body.statements = out;
+    }
+
     fn visit_formal_parameters_of(&mut self, params: &mut FormalParameters<'a>) {
         oxc_ast_visit::VisitMut::visit_formal_parameters(self, params);
     }
@@ -139,25 +207,7 @@ impl<'a> Codegen<'a, '_> {
         let BindingPattern::ObjectPattern(pattern) = param.pattern.take_in(self.ast) else {
             unreachable!("checked above");
         };
-        let mut collected = Collected {
-            props: HashMap::new(),
-            keys: Vec::new(),
-            rest: None,
-            rest_symbol: None,
-        };
-        let pattern = pattern.unbox();
-        for property in pattern.properties {
-            let key = property_key_name(&property.key)?.to_owned();
-            collected.keys.push(key.clone());
-            collect(self.ast, vec![], key, property.value, &mut collected.props);
-        }
-        if let Some(rest) = pattern.rest
-            && let BindingPattern::BindingIdentifier(ident) = &rest.argument
-        {
-            collected.rest = Some(ident.name.to_string());
-            collected.rest_symbol = ident.symbol_id.get();
-        }
-        Some(collected)
+        Some(collect_pattern(self.ast, pattern.unbox()))
     }
 
     fn pattern_is_rewritable(&self, pattern: &ObjectPattern<'a>) -> bool {
@@ -255,6 +305,30 @@ impl<'a> Codegen<'a, '_> {
         }
         expr
     }
+}
+
+/// The access paths, keys and rest of a rewritable props pattern (static keys only).
+fn collect_pattern<'a>(ast: &Ast<'a>, pattern: ObjectPattern<'a>) -> Collected<'a> {
+    let mut collected = Collected {
+        props: HashMap::new(),
+        keys: Vec::new(),
+        rest: None,
+        rest_symbol: None,
+    };
+    for property in pattern.properties {
+        let Some(key) = property_key_name(&property.key).map(str::to_owned) else {
+            continue;
+        };
+        collected.keys.push(key.clone());
+        collect(ast, vec![], key, property.value, &mut collected.props);
+    }
+    if let Some(rest) = pattern.rest
+        && let BindingPattern::BindingIdentifier(ident) = &rest.argument
+    {
+        collected.rest = Some(ident.name.to_string());
+        collected.rest_symbol = ident.symbol_id.get();
+    }
+    collected
 }
 
 fn nested_ok(pattern: &BindingPattern<'_>) -> bool {

@@ -99,6 +99,12 @@ export function tarballProblems(manifest: Manifest, files: string[]): string[] {
   ) {
     problems.push("a native binary without os and cpu");
   }
+  // The WASI fallback carries cpu wasm32, so that package managers install it only where wasm32
+  // is enabled (`supportedArchitectures`, `npm install --cpu=wasm32`), not next to a native
+  // binary (TASK-289).
+  if (manifest.main?.endsWith(".wasi.cjs") && manifest.cpu?.join() !== "wasm32") {
+    problems.push("a WASI binary without cpu wasm32");
+  }
   for (const file of files) {
     if (FORBIDDEN.some((pattern) => pattern.test(file))) problems.push(`ships ${file}`);
   }

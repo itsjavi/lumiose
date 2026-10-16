@@ -180,8 +180,9 @@ export default function ClockPage() {
 | Passing a function or a class instance to an island         | Island props are serialized into the page.              | Pass plain data, and keep handlers inside the island ([LUM4002](../errors/LUM4002.md)).       |
 | Setting `document.title` in an effect                       | It fights with `<Title>`.                               | Render `<Title>`.                                                                             |
 
-Destructuring props is fine: `({ title })` compiles to reads of `props.title`, which stay reactive.
-Copying a signal's value into a variable is what freezes it.
+Destructuring props is fine: `({ title })` and `const { title, ...rest } = props` compile to reads
+of `props.title`, which stay reactive. Copying a signal's value into a variable is what freezes it.
+`<button {...props} />` renders `props.children`, as in React.
 
 ## Related
 

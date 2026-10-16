@@ -36,6 +36,9 @@ pub struct Component {
     pub exported: bool,
     /// The props bindings, or `None` when the parameter shape is not rewritable.
     pub props: Option<PropsSymbols>,
+    /// Declarators of the body that destructure the props object and are rewritten like a
+    /// destructured parameter ([`components::component_props`]).
+    pub body_props: Vec<Span>,
     /// The default export of a route module rendered only on the server
     /// ([`crate::CompileOptions::server_route`]): its props are plain values, never reactive reads.
     pub server_props: bool,
@@ -325,8 +328,8 @@ impl<'s> Analyzer<'s> {
         id: Option<&BindingIdentifier<'_>>,
         is_async: bool,
         scope: Option<ScopeId>,
-        params: &FormalParameters<'_>,
         returns_jsx: bool,
+        props: impl FnOnce() -> (Option<PropsSymbols>, Vec<Span>),
     ) {
         let pending = self.pending.take();
         let from_default = pending.as_ref().is_some_and(|p| p.name == "default");
@@ -346,13 +349,15 @@ impl<'s> Analyzer<'s> {
             let index = self.analysis.components.len();
             let server_props = self.server_route
                 && (from_default || self.default_name.as_deref() == Some(name.as_str()));
+            let (props, body_props) = props();
             self.analysis.components.push(Component {
                 name,
                 span: span.into(),
                 scope,
                 is_async,
                 exported,
-                props: components::props_symbols(params),
+                props,
+                body_props,
                 server_props,
                 await_sites: Vec::new(),
             });
@@ -454,7 +459,11 @@ impl<'s> Analyzer<'s> {
             return;
         }
         let inner = init.without_parentheses();
-        let destructures_props = !matches!(declarator.id, BindingPattern::BindingIdentifier(_))
+        let rewritten = self
+            .current_component()
+            .is_some_and(|c| c.body_props.contains(&declarator.span.into()));
+        let destructures_props = !rewritten
+            && !matches!(declarator.id, BindingPattern::BindingIdentifier(_))
             && matches!(inner, Expression::Identifier(ident)
                 if symbol_of(self.scoping, ident).is_some_and(|s| props.is_props_object(s)));
         // Factory calls (`signal(props.start)`, `computed(…)`) read their arguments on purpose;
@@ -573,13 +582,14 @@ impl<'a> Visit<'a> for Analyzer<'_> {
             .body
             .as_ref()
             .is_some_and(|b| components::body_returns_jsx(b));
+        let scoping = self.scoping;
         self.enter_function(
             it.span,
             it.id.as_ref(),
             it.r#async,
             it.scope_id.get(),
-            &it.params,
             returns_jsx,
+            || components::component_props(&it.params, it.body.as_deref(), scoping),
         );
         walk::walk_function(self, it, flags);
         self.leave_function();
@@ -587,13 +597,18 @@ impl<'a> Visit<'a> for Analyzer<'_> {
 
     fn visit_arrow_function_expression(&mut self, it: &ArrowFunctionExpression<'a>) {
         let returns_jsx = components::arrow_returns_jsx(it);
+        let scoping = self.scoping;
+        let body = match &it.body {
+            ArrowFunctionBody::FunctionBody(body) => Some(&**body),
+            _ => None,
+        };
         self.enter_function(
             it.span,
             None,
             it.r#async,
             it.scope_id.get(),
-            &it.params,
             returns_jsx,
+            || components::component_props(&it.params, body, scoping),
         );
         walk::walk_arrow_function_expression(self, it);
         self.leave_function();
@@ -836,7 +851,7 @@ impl Analyzer<'_> {
         };
         match expr.without_parentheses() {
             Expression::Identifier(ident) => {
-                props.children.is_some() && symbol_of(self.scoping, ident) == props.children
+                symbol_of(self.scoping, ident).is_some_and(|s| props.children.contains(&s))
             }
             Expression::StaticMemberExpression(member) => {
                 member.property.name == "children"

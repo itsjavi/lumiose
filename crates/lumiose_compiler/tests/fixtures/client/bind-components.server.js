@@ -13,11 +13,12 @@ const _s1 = [
 	"></lu-menu><lu-combobox name=fruit",
 	"></lu-combobox><lu-combobox",
 	"",
-	"></lu-combobox><input",
+	">",
+	"</lu-combobox><input",
 	"",
 	"></section>"
 ];
-const _c1 = (h0, h1, h2, h3, h4, h5, h6, h7, h8, h9) => typeof h0 === "string" && typeof h1 === "string" && typeof h2 === "string" && typeof h3 === "string" && typeof h4 === "string" && typeof h5 === "string" && typeof h6 === "string" && typeof h7 === "string" && typeof h8 === "string" && typeof h9 === "string" ? new SSRHtml("<section>" + h0 + h1 + h2 + h3 + "<lu-menu class=menu" + h4 + "></lu-menu><lu-combobox name=fruit" + h5 + "></lu-combobox><lu-combobox" + h6 + h7 + "></lu-combobox><input" + h8 + h9 + "></section>") : ssr(_s1, h0, h1, h2, h3, h4, h5, h6, h7, h8, h9);
+const _c1 = (h0, h1, h2, h3, h4, h5, h6, h7, h8, h9, h10) => typeof h0 === "string" && typeof h1 === "string" && typeof h2 === "string" && typeof h3 === "string" && typeof h4 === "string" && typeof h5 === "string" && typeof h6 === "string" && typeof h7 === "string" && typeof h8 === "string" && typeof h9 === "string" && typeof h10 === "string" ? new SSRHtml("<section>" + h0 + h1 + h2 + h3 + "<lu-menu class=menu" + h4 + "></lu-menu><lu-combobox name=fruit" + h5 + "></lu-combobox><lu-combobox" + h6 + h7 + ">" + h8 + "</lu-combobox><input" + h9 + h10 + "></section>") : ssr(_s1, h0, h1, h2, h3, h4, h5, h6, h7, h8, h9, h10);
 export function Settings(props) {
 	const open = signal(false);
 	const fruit = signal(null);
@@ -47,7 +48,7 @@ export function Settings(props) {
 		},
 		onValueChange: (_v9) => _s.set(_v9),
 		label: "Fruit"
-	}))(useSelection()))), attr("open", open(), true), attr("value", fruit(), true), spreadAttrs(props, true), attr("value", fruit(), true), spreadAttrs(props), attr("value", fruit()));
+	}))(useSelection()))), attr("open", open(), true), attr("value", fruit(), true), spreadAttrs(props, true), attr("value", fruit(), true), "children" in props ? insert(props.children) : "", spreadAttrs(props), attr("value", fruit()));
 }
 export function Forwarded(props) {
 	const rest = restProps(props, ["open"]);

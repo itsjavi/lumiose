@@ -1021,7 +1021,8 @@ impl<'a> VisitMut<'a> for Codegen<'a, '_> {
             return;
         };
         self.enter_component(&component, &mut func.params);
-        if let Some(body) = &func.body {
+        if let Some(body) = &mut func.body {
+            self.rewrite_body_props(&component, body);
             self.find_class_carriers(body);
         }
         self.functions.push(true);
@@ -1045,7 +1046,8 @@ impl<'a> VisitMut<'a> for Codegen<'a, '_> {
         let component = self.analysis.component_at(arrow.span.start).cloned();
         if let Some(component) = &component {
             self.enter_component(component, &mut arrow.params);
-            if let ArrowFunctionBody::FunctionBody(body) = &arrow.body {
+            if let ArrowFunctionBody::FunctionBody(body) = &mut arrow.body {
+                self.rewrite_body_props(component, body);
                 self.find_class_carriers(body);
             }
         } else {
