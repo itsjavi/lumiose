@@ -3,6 +3,7 @@
 // `pnpm --filter @lumiose/web ui:demos`.
 import { ShippingFaq } from "./accordion-1.tsx";
 import { SettingsSections } from "./accordion-2.tsx";
+import { TopicSearch } from "./autocomplete-1.tsx";
 import { SavingButton } from "./button-1.tsx";
 import { NewsletterOptIn } from "./checkbox-1.tsx";
 import { ToppingsGroup } from "./checkbox-group-1.tsx";
@@ -24,8 +25,10 @@ import { Help } from "./installation-1.tsx";
 import { ProjectMenu } from "./menu-1.tsx";
 import { EditorMenu } from "./menu-2.tsx";
 import { StorageMeter } from "./meter-1.tsx";
+import { PriceField } from "./number-field-1.tsx";
 import { Notifications } from "./popover-1.tsx";
 import { Filters } from "./popover-2.tsx";
+import { HoverAndModal } from "./popover-3.tsx";
 import { UploadProgress } from "./progress-1.tsx";
 import { ShippingChoice } from "./radio-group-1.tsx";
 import { PlanField } from "./select-1.tsx";
@@ -47,6 +50,8 @@ export function UiDemo(props: { id: string }) {
       return <ShippingFaq />;
     case "accordion-2":
       return <SettingsSections client:visible />;
+    case "autocomplete-1":
+      return <TopicSearch client:visible />;
     case "button-1":
       return <SavingButton client:visible />;
     case "checkbox-1":
@@ -89,10 +94,14 @@ export function UiDemo(props: { id: string }) {
       return <EditorMenu client:visible />;
     case "meter-1":
       return <StorageMeter />;
+    case "number-field-1":
+      return <PriceField client:visible />;
     case "popover-1":
       return <Notifications />;
     case "popover-2":
       return <Filters client:visible />;
+    case "popover-3":
+      return <HoverAndModal />;
     case "progress-1":
       return <UploadProgress client:visible />;
     case "radio-group-1":
