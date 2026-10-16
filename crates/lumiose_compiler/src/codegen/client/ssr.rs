@@ -149,12 +149,18 @@ impl<'a> Codegen<'a, '_> {
     /// items become one `ssr()` node (a lone text stays a string, escaped by the runtime);
     /// dynamic items are values, rendered by whoever renders the array. In an array, they mirror
     /// the client's `fragment_item`: an `insertValue` range on the client is an `insertValue` here,
-    /// which writes the island block the range claims (TASK-234).
-    pub(super) fn ssr_fragment_items(&mut self, items: Vec<Item<'a>>, span: Span) -> Compiled<'a> {
+    /// which writes the island block the range claims (TASK-234). So is a fragment's single
+    /// dynamic item, unless `lazy` (a `children` getter, rendered by the consumer's `insert`).
+    pub(super) fn ssr_fragment_items(
+        &mut self,
+        items: Vec<Item<'a>>,
+        span: Span,
+        lazy: bool,
+    ) -> Compiled<'a> {
         let mut values = Vec::new();
         let mut setup = Vec::new();
         let mut run = Ssr::new();
-        let array = items.len() > 1;
+        let array = items.len() > 1 || !lazy;
         for item in items {
             match item {
                 Item::Text(text, _) => run.text(&text),

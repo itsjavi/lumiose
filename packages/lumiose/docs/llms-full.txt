@@ -406,6 +406,10 @@ The browser code targets the browsers covered by
 feature is used only with a fallback (View Transitions and speculation rules are progressive: other
 browsers navigate normally).
 
+Production CSS is minified for Chrome and Edge 123, Firefox 124 and Safari 17.4 (Baseline widely
+available on 2026-10-01), so syntax they all support, such as `:dir()` and nesting, stays as
+written. A `build.cssTarget` or `build.target` in your Vite config replaces that list.
+
 ## Security
 
 Until 1.0, only the latest minor release receives security fixes. Report vulnerabilities privately,
@@ -2895,6 +2899,11 @@ Folding regular properties, minification and browser targets come from
 [Lightning CSS](https://lightningcss.dev), the CSS parser, transformer and minifier from the Parcel
 project, which Lumiose's CSS compiler is built on. Lumiose adds `$` constants, scoping and the
 custom-property folding.
+
+Production builds minify CSS for the [supported browsers](../stability.md#browsers), which all
+have `:dir()`, nesting and the other modern syntax, so it ships as written. With an older
+`build.cssTarget` (or `build.target`) in your Vite config, Lightning CSS lowers what those browsers
+lack: `:dir(rtl)` becomes a list of `:lang()` selectors, which miss a `dir` attribute.
 
 ### Stylesheets, CSS Modules and Tailwind
 

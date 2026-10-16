@@ -125,6 +125,6 @@ export function ChildrenTextAndInsert() {
 }
 export function SingleInsert() {
 	const _el20 = _t3();
-	branch(_el20, null, show, () => () => item("a"));
+	branch(_el20, null, show, () => insertValue(() => item("a")));
 	return _el20;
 }

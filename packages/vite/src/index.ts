@@ -123,6 +123,13 @@ const VITE_FS_DENY = [
   ".yarnrc.yml",
   "**/.git/**",
 ];
+/**
+ * The browsers production CSS is minified for (docs/stability.md): Baseline widely available on
+ * 2026-10-01, re-checked at each release. Vite's default (Baseline on 2025-05-01, Chrome 111)
+ * makes Lightning CSS rewrite `:dir()` into `:lang()` selectors, which miss a `dir` attribute;
+ * these browsers all have `:dir()`, so it stays as written (TASK-422).
+ */
+const CSS_TARGET = ["chrome123", "edge123", "firefox124", "safari17.4", "ios17.4"];
 /** Resets scoped state before each test (./vitest-setup.ts, `.js` once built). */
 const VITEST_SETUP = fileURLToPath(
   new URL(`./vitest-setup${extname(fileURLToPath(import.meta.url))}`, import.meta.url),
@@ -226,6 +233,11 @@ export default function lumiose(options: LumioseOptions = {}): Plugin<LumiosePlu
         if (process.env["VITEST"] !== undefined) out.test = { setupFiles: [VITEST_SETUP] };
         // decision-29: only `PUBLIC_` variables reach client code through `import.meta.env`.
         if (config.envPrefix === undefined) out.envPrefix = "PUBLIC_";
+        // Production CSS keeps `:dir()` and the other syntax the supported browsers have. A
+        // `build.target` or `build.cssTarget` of the project's wins.
+        if (config.build?.cssTarget === undefined && config.build?.target === undefined) {
+          out.build = { cssTarget: CSS_TARGET };
+        }
         // The locales of `lumiose({ i18n })` for `href()` and `lumiose/router`, in every environment.
         if (api.options.i18n !== undefined) out.define = i18nDefine(api.options.i18n);
         // A path in `lumiose({ site })` is Vite's base: routes, assets and href() follow it.

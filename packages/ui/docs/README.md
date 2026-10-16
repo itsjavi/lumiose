@@ -119,9 +119,10 @@ attribute on `<html>` or on any container around it, when it acts (TASK-385). Ri
   so it mirrors with no extra rule. A numeric OTP Field keeps its slots left to right, as digits
   read in right-to-left scripts too.
 
-The theme avoids `:dir()`: Lightning CSS, which minifies production CSS, lowers it to a list of
-`:lang()` selectors that misses a `dir` attribute. It uses `[dir="rtl"]` around the component
-instead, or logical properties.
+The theme avoids `:dir()`, so it also mirrors in a project whose own `build.cssTarget` predates
+`:dir()`: Lightning CSS, which minifies production CSS, then lowers it to a list of `:lang()`
+selectors that misses a `dir` attribute. It uses `[dir="rtl"]` around the component instead, or
+logical properties.
 
 ## Size
 

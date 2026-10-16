@@ -1,6 +1,11 @@
 // Island (client:idle): search the docs as you type, over the prebuilt search.json index (fetched
-// once, on first focus). Arrow keys move through the results, Enter opens one, Escape closes the
-// list, and "/" focuses the box from anywhere on the page. Without JavaScript the input is inert.
+// once, on first focus). @lumiose/ui's Autocomplete runs the box (TASK-421): `mode="none"` leaves
+// the ranking to searchDocs, the arrow keys move through the results (the first one is
+// highlighted as you type), and Escape closes them, keeping the text. Each result is a link: Enter
+// opens the highlighted one and a click follows it, instead of filling the box. "/" focuses the
+// box from anywhere on the page. Without JavaScript the input is inert.
+import { Autocomplete } from "@lumiose/ui";
+import "@lumiose/ui/autocomplete.css";
 import { color, font, radius, shadow, space, text, weight } from "@lumiose/site-kit/tokens";
 import { computed, fetchJSON, onMount, signal } from "lumiose";
 import { searchDocs, type SearchEntry } from "../lib/search.ts";
@@ -9,8 +14,6 @@ export function DocsSearch(props: { index: string }) {
   const query = signal("");
   const entries = signal<SearchEntry[] | undefined>(undefined);
   const failed = signal(false);
-  const open = signal(false);
-  const active = signal(-1);
   const ready = signal(false);
   const results = computed(() => searchDocs(entries() ?? [], query()));
   let input: HTMLInputElement | undefined;
@@ -26,10 +29,28 @@ export function DocsSearch(props: { index: string }) {
     }
   };
 
+  /**
+   * Enter opens the highlighted result (or the first): on the input itself, so it runs before
+   * the autocomplete's element, which would fill the result's value into the box.
+   */
+  const onEnter = (event: KeyboardEvent) => {
+    if (event.key !== "Enter" || event.isComposing) return;
+    const id = input?.getAttribute("aria-activedescendant");
+    const url = id ? document.getElementById(id)?.dataset["value"] : results()[0]?.url;
+    if (url !== undefined) {
+      event.preventDefault();
+      location.assign(url);
+    }
+  };
+
   onMount(() => {
     ready.set(true);
     document.addEventListener("keydown", onShortcut);
-    return () => document.removeEventListener("keydown", onShortcut);
+    input?.addEventListener("keydown", onEnter);
+    return () => {
+      document.removeEventListener("keydown", onShortcut);
+      input?.removeEventListener("keydown", onEnter);
+    };
   });
 
   function loadIndex() {
@@ -42,36 +63,6 @@ export function DocsSearch(props: { index: string }) {
     );
   }
 
-  function onInput(value: string) {
-    loadIndex();
-    query.set(value);
-    active.set(-1);
-    open.set(value.trim() !== "");
-  }
-
-  function go(index: number) {
-    const result = results()[index];
-    if (result !== undefined) location.assign(result.url);
-  }
-
-  function onKeyDown(event: KeyboardEvent) {
-    const count = results().length;
-    if (event.key === "ArrowDown" && count > 0) {
-      event.preventDefault();
-      open.set(true);
-      active.set((active() + 1) % count);
-    } else if (event.key === "ArrowUp" && count > 0) {
-      event.preventDefault();
-      active.set(active() <= 0 ? count - 1 : active() - 1);
-    } else if (event.key === "Enter" && count > 0) {
-      event.preventDefault();
-      go(Math.max(0, active()));
-    } else if (event.key === "Escape") {
-      open.set(false);
-      active.set(-1);
-    }
-  }
-
   const status = () =>
     failed()
       ? "Search is unavailable right now."
@@ -81,64 +72,50 @@ export function DocsSearch(props: { index: string }) {
 
   return (
     <div class="search" role="search" data-ready={ready() ? "" : undefined}>
-      <label class="sr-only" for="docs-search">
-        Search the docs
-      </label>
-      <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
-        <circle cx="11" cy="11" r="6.5" />
-        <path d="m16 16 4.5 4.5" />
-      </svg>
-      <input
-        id="docs-search"
-        type="search"
-        placeholder="Search the docs"
-        autocomplete="off"
-        spellcheck={false}
-        role="combobox"
-        aria-autocomplete="list"
-        aria-controls="docs-search-results"
-        aria-expanded={open() && results().length > 0 ? "true" : "false"}
-        aria-activedescendant={active() >= 0 ? `docs-search-${active()}` : undefined}
-        ref={(element) => (input = element)}
-        onInput={(event) => onInput(event.currentTarget.value)}
-        onKeyDown={onKeyDown}
-        onFocus={() => {
+      <Autocomplete.Root
+        mode="none"
+        autoHighlight
+        onValueChange={(value) => {
           loadIndex();
-          open.set(query().trim() !== "");
+          query.set(value);
         }}
-        onBlur={() => setTimeout(() => open.set(false), 150)}
-      />
-      <kbd class="key" aria-hidden="true">
-        /
-      </kbd>
-      <div class="panel" hidden={!open()}>
-        <ul
-          id="docs-search-results"
-          role="listbox"
-          aria-label="Docs pages"
-          hidden={results().length === 0}
-        >
-          {results().map((result, index) => (
-            <li
-              id={`docs-search-${index}`}
-              role="option"
-              aria-selected={index === active() ? "true" : "false"}
-            >
-              <a href={result.url} tabindex="-1">
-                <span class="where">
-                  {result.section}
-                  {result.heading === undefined ? "" : ` · ${result.title}`}
-                </span>
-                <strong>{result.heading ?? result.title}</strong>
-                <span class="snippet">{result.snippet}</span>
-              </a>
-            </li>
-          ))}
-        </ul>
-        <p class="status" role="status" hidden={results().length > 0}>
-          {status()}
-        </p>
-      </div>
+      >
+        <Autocomplete.Label class="sr-only">Search the docs</Autocomplete.Label>
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="11" cy="11" r="6.5" />
+          <path d="m16 16 4.5 4.5" />
+        </svg>
+        <Autocomplete.Input
+          class="input"
+          placeholder="Search the docs"
+          spellcheck={false}
+          ref={(element) => (input = element)}
+          onFocus={loadIndex}
+        />
+        <kbd class="key" aria-hidden="true">
+          /
+        </kbd>
+        <Autocomplete.Popup class="panel" sideOffset={4}>
+          <Autocomplete.List>
+            {results().map((result) => (
+              <Autocomplete.Item class="result" value={result.url}>
+                {/* The link navigates, with modifier keys too; the element never sees the click. */}
+                <a href={result.url} tabindex="-1" on:click={(event) => event.stopPropagation()}>
+                  <span class="where">
+                    {result.section}
+                    {result.heading === undefined ? "" : ` · ${result.title}`}
+                  </span>
+                  <strong>{result.heading ?? result.title}</strong>
+                  <span class="snippet">{result.snippet}</span>
+                </a>
+              </Autocomplete.Item>
+            ))}
+          </Autocomplete.List>
+          {query().trim() !== "" && (
+            <Autocomplete.Empty class="status">{status()}</Autocomplete.Empty>
+          )}
+        </Autocomplete.Popup>
+      </Autocomplete.Root>
     </div>
   );
 }
@@ -160,7 +137,7 @@ export function DocsSearch(props: { index: string }) {
     stroke-linecap: round;
     pointer-events: none;
   }
-  input {
+  .input {
     inline-size: 100%;
     padding: 0.5rem 2.2rem 0.5rem 2.1rem;
     border: 1px solid $color.border;
@@ -168,13 +145,10 @@ export function DocsSearch(props: { index: string }) {
     background: $color.surface;
     font-size: $text.sm;
   }
-  input:focus-visible {
+  .input:focus-visible {
     outline: none;
     border-color: $color.accent;
     box-shadow: 0 0 0 3px $color.accentSoft;
-  }
-  input::-webkit-search-cancel-button {
-    display: none;
   }
   .key {
     position: absolute;
@@ -185,11 +159,8 @@ export function DocsSearch(props: { index: string }) {
     font-size: $text.xs;
     pointer-events: none;
   }
+  /* A popover in the top layer, placed under the input by @lumiose/ui's placement rules. */
   .panel {
-    position: absolute;
-    z-index: 30;
-    inset-inline-start: 0;
-    inset-block-start: calc(100% + $space.xs);
     inline-size: min(26rem, calc(100vw - 2rem));
     max-block-size: 70vh;
     overflow-y: auto;
@@ -199,12 +170,7 @@ export function DocsSearch(props: { index: string }) {
     background: $color.surface;
     box-shadow: $shadow.lg;
   }
-  ul {
-    margin: 0;
-    padding: 0;
-    list-style: none;
-  }
-  li a {
+  .result a {
     display: grid;
     gap: 0.1rem;
     padding: $space.xs $space.sm;
@@ -212,7 +178,7 @@ export function DocsSearch(props: { index: string }) {
     color: inherit;
     text-decoration: none;
   }
-  li a strong {
+  .result a strong {
     font-weight: $weight.semibold;
   }
   .where,
@@ -234,8 +200,8 @@ export function DocsSearch(props: { index: string }) {
   .status {
     padding: $space.xs $space.sm;
   }
-  li[aria-selected="true"] a,
-  li a:hover {
+  .result[data-highlighted] a,
+  .result a:hover {
     background: $color.accentSoft;
   }
 </style>

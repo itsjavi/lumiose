@@ -3,7 +3,7 @@ id: doc-2
 title: Compiler-runtime contract
 type: specification
 created_date: '2026-10-08 12:27'
-updated_date: '2026-10-15 06:49'
+updated_date: '2026-10-16 04:19'
 tags:
   - architecture
   - contract
@@ -50,7 +50,7 @@ tags:
 | `branch(parent, marker, cond, whenTrue, whenFalse?)` | Memoised on `!!cond()`. Disposes the inactive branch's owner |
 | `branchValue(cond, whenTrue, whenFalse?)` | `branch` without a parent: returns a `Renderable` range that `insert` places as one node. Memoised on `!!cond()`; disposes the inactive owner on a flip. Used for conditionals in component children, fragments and nested ternaries |
 | `listValue(source, render, key?)` | `list` without a parent: a `Renderable` range with the same keyed reconciliation and index rule. Clears remove rows one by one. **Codegen:** keep `branch`/`list` when the expression is a child of a template element (cheaper); use the value variants elsewhere, e.g. `get children() { return listValue(…) }`. Under hydration, TASK-18 maps the server `<!--[-->…<!--]-->` region onto the range |
-| `insertValue(value)` | `insert` without a parent: a `Renderable` range that `insert` places as one node, rendering `value` tracked like `insert`. **Codegen** (Photon, TASK-234): in an array of renderables (a fragment or component children with more than one item), every dynamic item that is not a reactive conditional, a list, a component or JSX becomes `insertValue(…)`, so that it claims the server's `insert` block under hydration |
+| `insertValue(value)` | `insert` without a parent: a `Renderable` range that `insert` places as one node, rendering `value` tracked like `insert`. **Codegen** (Photon, TASK-234): in an array of renderables (a fragment or component children with more than one item), every dynamic item that is not a reactive conditional, a list, a component or JSX becomes `insertValue(…)`, so that it claims the server's `insert` block under hydration. So does a fragment's single such item (TASK-415) |
 | `selector(source)` | Returns `isSelected(key)`. Only the previous and the next key re-notify |
 | `createComponent(C, props)` | New owner, untracked call. A native `async function` takes the async path (§4) |
 | `restProps(props, keys)`, `mergeProps(...)`, `spread(el, () => props)` | Reactive props utilities |
@@ -119,7 +119,7 @@ Inside `<!--l:ID-->…<!--/l:ID-->`, the server marks every range the client cla
 
 **Template/server alignment** (Photon, TASK-14):
 - The server never emits the client's `<!>` placeholders. Inside islands, each client `insert`/`list`/`branch` corresponds to exactly one marker region, in the same child order.
-- **Arrays of renderables** (Photon, TASK-234): the client creates the items of a fragment or of component children in document order, because their server nodes are claimed positionally. Each run of static items (text included) is a template of its own, created where the run starts. Components and JSX values are created in place, and a value that creates nodes is bound to a `const` before any later creation code. Other dynamic items are `insertValue` ranges on the client and `insertValue` blocks on the server. A single-item fragment stays a plain value.
+- **Arrays of renderables** (Photon, TASK-234): the client creates the items of a fragment or of component children in document order, because their server nodes are claimed positionally. Each run of static items (text included) is a template of its own, created where the run starts. Components and JSX values are created in place, and a value that creates nodes is bound to a `const` before any later creation code. Other dynamic items are `insertValue` ranges on the client and `insertValue` blocks on the server. A fragment with a single dynamic item compiles that item the same way (TASK-415): a component that returns `<>{fn(value())}</>` claims its server nodes when it is created, not when a consumer later reads a returned function, which would come after the siblings created after it. The single item of a `children` getter stays a plain value, read by the consumer's tracked `insert`.
 - A `text()` hole whose value is `""` renders no text node, so the hydrator must create one.
 - **Isolated text children** (Photon, TASK-65): a dynamic child that is provably text compiles to a template text node on the client (`setText`/`.data`) and a `text()` hole on the server. That holds anywhere the child has no adjacent JSX text or dynamic sibling, not only for sole children. Provably text means string/number literals, template literals, string methods, or a `const` initialised from one of these. Next to text or another dynamic child it stays `insert`.
 - **Server props** (Lux, TASK-78): on the server target, dynamic props whose expression is trivially safe compile to plain data properties instead of getters. Trivially safe means a literal, a template literal of safe parts, a local identifier, or a single-level `props.x` read. Every other expression, plus all JSX-valued props and `children`, stays a lazy getter. This keeps evaluation semantics identical to the client: nothing can throw or run earlier than it would there.

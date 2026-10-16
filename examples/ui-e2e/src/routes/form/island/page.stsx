@@ -110,19 +110,20 @@ export function FormSignals() {
           <Field.Control class="lu-input" />
           <Field.Description>An async check: "taken" and "slowpoke" are taken.</Field.Description>
           <Field.Error />
-          <p data-testid="login-validity">
-            <Field.Validity>
-              {(state) =>
-                state.validating
+          {/* An element-valued Field.Validity among the field's parts (TASK-415). */}
+          <Field.Validity>
+            {(state) => (
+              <p data-testid="login-validity">
+                {state.validating
                   ? "checking"
                   : state.validity.valid === null
                     ? "unchecked"
                     : state.validity.valid
                       ? "valid"
-                      : `invalid: ${state.error}`
-              }
-            </Field.Validity>
-          </p>
+                      : `invalid: ${state.error}`}
+              </p>
+            )}
+          </Field.Validity>
         </Field.Root>
         {/* A <p>, not an <output>: a form reset would replace an output's text (TASK-424). */}
         <p data-testid="login-checks">checks: {checks()}</p>

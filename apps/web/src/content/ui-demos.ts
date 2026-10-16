@@ -5,7 +5,8 @@
 //
 // An example becomes a demo when it exports exactly one component that takes no props. It is
 // server-rendered, so it works without JavaScript as far as the component does, unless it uses
-// signals, `bind:` or event handlers: then it hydrates as an island (`client:visible`).
+// signals, `bind:`, event handlers or another function prop (`validate={available}`): then it
+// hydrates as an island (`client:visible`).
 //
 // Pure (no Vite, no file system), so the generator script and the content layer share it.
 
@@ -26,6 +27,35 @@ export interface UiDemo {
 
 /** Marks an island: Lumiose's runtime (signals), two-way bindings, DOM events or event props. */
 const ISLAND = /\bbind:[a-z]|\bon:[a-z]|\bon[A-Z]\w*=|from "lumiose(?:\/[\w-]+)?"/;
+/** A prop whose value is a function written in place: `validate={(value) => …}`. */
+const FUNCTION_PROP =
+  /\b([a-zA-Z][\w-]*)=\{\s*(?:async\s+)?(?:function\b|(?:\([^()]*\)|[\w$]+)\s*=>)/g;
+/**
+ * The functions an example declares under a lowercase name (`function available(…)`,
+ * `const pick = (…) =>`): callbacks, where a capitalized one would be a component.
+ */
+const DECLARED_FUNCTION =
+  /^\s*(?:(?:async\s+)?function\s+([a-z_$][\w$]*)|(?:const|let)\s+([a-z_$][\w$]*)\s*=\s*(?:async\s+)?(?:function\b|(?:\([^()]*\)|[\w$]+)\s*=>))/gm;
+/** Function props that also run on the server, as formatters: `getAriaValueText`. */
+const SERVER_FUNCTION_PROP = /^get[A-Z]/;
+
+/**
+ * Whether an example needs the browser: the runtime, a binding or an event (`ISLAND`), or a
+ * function prop such as `validate`, which only runs once the component hydrates (TASK-423).
+ */
+export function needsIsland(code: string): boolean {
+  if (ISLAND.test(code)) return true;
+  const props = [...code.matchAll(FUNCTION_PROP)].map(([, prop]) => prop!);
+  for (const [, declared, assigned] of code.matchAll(DECLARED_FUNCTION)) {
+    const name = (declared ?? assigned)!.replaceAll("$", "\\$");
+    for (const [, prop] of code.matchAll(
+      new RegExp(`\\b([a-zA-Z][\\w-]*)=\\{\\s*${name}\\s*\\}`, "g"),
+    )) {
+      props.push(prop!);
+    }
+  }
+  return props.some((prop) => !SERVER_FUNCTION_PROP.test(prop));
+}
 
 /** Whether a fenced block's info string is a type-checked TSX example (`tsx check …`). */
 export function isCheckedTsx(lang: string | undefined): boolean {
@@ -53,7 +83,7 @@ export function uiDemos(page: string, source: string): UiDemo[] {
       page,
       code,
       name: exports[0]![1]!,
-      island: ISLAND.test(code),
+      island: needsIsland(code),
     });
   }
   return demos;

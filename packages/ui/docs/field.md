@@ -89,8 +89,6 @@ submit attempt, whatever the `validationMode`, and when a `validate` result or a
 arrives; a form reset makes it unchecked again. On the server, and without JavaScript, it renders
 the unchecked state (or the server's error) once.
 
-Render text inside an element of your own, as in `<p><Field.Validity>…</Field.Validity></p>`.
-
 ### Field.Control
 
 [Input](input.md)'s props: every native `<input>` prop, plus `value`, `defaultValue`,
@@ -155,7 +153,6 @@ shows its state:
 
 ```tsx check
 import { Field } from "@lumiose/ui";
-import { signal } from "lumiose";
 
 const TAKEN = ["admin", "lumiose"];
 
@@ -166,7 +163,6 @@ async function available(value: string | boolean) {
 }
 
 export function HandleField() {
-  const handle = signal("");
   return (
     <Field.Root
       name="handle"
@@ -176,15 +172,15 @@ export function HandleField() {
       class="lu-field"
     >
       <Field.Label>Handle</Field.Label>
-      <Field.Control required bind:value={handle} class="lu-input" />
+      <Field.Control required class="lu-input" />
       <Field.Error />
-      <p>
-        <Field.Validity>
-          {(state) =>
-            state.validating ? "Checking…" : state.validity.valid ? `${handle()} is free.` : ""
-          }
-        </Field.Validity>
-      </p>
+      <Field.Validity>
+        {(state) => (
+          <p>
+            {state.validating ? "Checking…" : state.validity.valid ? `${state.value} is free.` : ""}
+          </p>
+        )}
+      </Field.Validity>
     </Field.Root>
   );
 }
