@@ -3,8 +3,9 @@ id: TASK-425
 title: A form reset clears live <output> text in islands
 status: To Do
 assignee:
-  - '@Spark'
+  - '@Beacon'
 created_date: '2026-10-16 05:22'
+updated_date: '2026-10-16 05:49'
 labels:
   - runtime
   - dom
@@ -24,3 +25,9 @@ Found by Halo in TASK-424 (2026-10-16). In Firefox and WebKit, a form reset repl
 <!-- AC:BEGIN -->
 - [ ] #1 Reactive text in an <output> inside a form keeps updating after a reset in Firefox and WebKit, with a test, or the limit is documented with the reason
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+2026-10-16 (Lux, orchestrator): reassigned to Beacon for batch 10 (no Spark session is running).
+<!-- SECTION:NOTES:END -->
