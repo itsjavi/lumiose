@@ -28,11 +28,14 @@ import { ProjectMenu } from "./menu-1.tsx";
 import { EditorMenu } from "./menu-2.tsx";
 import { StorageMeter } from "./meter-1.tsx";
 import { PriceField } from "./number-field-1.tsx";
+import { VerifyCode } from "./otp-field-1.tsx";
 import { Notifications } from "./popover-1.tsx";
 import { Filters } from "./popover-2.tsx";
 import { HoverAndModal } from "./popover-3.tsx";
+import { SignalsLink } from "./preview-card-1.tsx";
 import { UploadProgress } from "./progress-1.tsx";
 import { ShippingChoice } from "./radio-group-1.tsx";
+import { ReleaseList } from "./scroll-area-1.tsx";
 import { PlanField } from "./select-1.tsx";
 import { ThemePicker } from "./select-2.tsx";
 import { FooterLinks } from "./separator-1.tsx";
@@ -45,6 +48,7 @@ import { SaveButton } from "./toast-1.tsx";
 import { UploadButton } from "./toast-2.tsx";
 import { PinToggle } from "./toggle-1.tsx";
 import { TextAlignment } from "./toggle-group-1.tsx";
+import { FormattingToolbar } from "./toolbar-1.tsx";
 import { BoldButton } from "./tooltip-1.tsx";
 
 /** A demo by id: server HTML, or an island that hydrates when it scrolls into view. */
@@ -104,16 +108,22 @@ export function UiDemo(props: { id: string }) {
       return <StorageMeter />;
     case "number-field-1":
       return <PriceField client:visible />;
+    case "otp-field-1":
+      return <VerifyCode client:visible />;
     case "popover-1":
       return <Notifications />;
     case "popover-2":
       return <Filters client:visible />;
     case "popover-3":
       return <HoverAndModal />;
+    case "preview-card-1":
+      return <SignalsLink />;
     case "progress-1":
       return <UploadProgress client:visible />;
     case "radio-group-1":
       return <ShippingChoice client:visible />;
+    case "scroll-area-1":
+      return <ReleaseList />;
     case "select-1":
       return <PlanField />;
     case "select-2":
@@ -138,6 +148,8 @@ export function UiDemo(props: { id: string }) {
       return <PinToggle client:visible />;
     case "toggle-group-1":
       return <TextAlignment client:visible />;
+    case "toolbar-1":
+      return <FormattingToolbar />;
     case "tooltip-1":
       return <BoldButton />;
     default:
