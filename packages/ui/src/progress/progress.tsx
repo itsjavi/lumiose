@@ -3,7 +3,7 @@
 // `aria-valuetext` with the formatted value), indeterminate when it has no value (`:indeterminate`);
 // the Root around it holds the label and the value text, and sets `--lu-value`. No script: a
 // progress only changes when the component renders it again.
-import { createContext, effect, isServer, ref, useContext, useId } from "lumiose";
+import { createContext, useContext, useId } from "lumiose";
 import { withStyle } from "../placement/placement.ts";
 import { formatValue, percent } from "./value.ts";
 
@@ -113,26 +113,16 @@ function Label({ children, ...rest }: ProgressLabelProps) {
 
 function Track(props: ProgressTrackProps) {
   const progress = useProgress("Track");
-  const element = ref<HTMLProgressElement>();
   // The native element counts from 0: the value's distance from `min`.
   const position = () => {
     const value = progress.value();
     return value === null ? undefined : value - progress.min();
   };
-  // `value` is a DOM property that cannot be unset (`undefined` throws), so in the browser an
-  // effect writes it, and removes the attribute to make the progress indeterminate again.
-  effect(() => {
-    const host = element();
-    const next = position();
-    if (!host) return;
-    if (next === undefined) host.removeAttribute("value");
-    else host.value = next;
-  });
+  // Without a value (`undefined`), the runtime removes the attribute: the bar is indeterminate.
   return (
     <progress
       {...props}
-      {...(isServer ? { value: position() } : {})}
-      ref={element}
+      value={position()}
       id={`${progress.id}-track`}
       max={progress.max() - progress.min()}
       aria-valuetext={progress.valueText()}

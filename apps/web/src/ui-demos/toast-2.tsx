@@ -1,9 +1,9 @@
 // Generated from packages/ui/docs/toast.md by apps/web/scripts/ui-demos.ts: do not edit.
 // Change the example there and run `pnpm --filter @lumiose/web ui:demos`.
-import { createToastManager, Toast } from "@lumiose/ui";
+import { Toast } from "@lumiose/ui";
 
 export function UploadButton() {
-  const toasts = createToastManager();
+  const toasts = Toast.createToastManager();
   const upload = () =>
     toasts
       .promise(new Promise((resolve) => setTimeout(resolve, 1000)), {

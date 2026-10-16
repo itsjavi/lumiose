@@ -3,7 +3,7 @@
 > Short notices in a region of their own, after Base UI's toast: server HTML renders them (a form action's result), and islands add, update and close them through a toast manager. `<lu-toast-viewport>`, a 2.3 kB light-DOM element, puts them in the top layer, times them (pausing on hover and focus), limits how many show, closes them on a swipe, Escape or their close button, focuses the region on F6, and makes screen readers announce them.
 
 ```ts
-import { createToastManager, Toast } from "@lumiose/ui"; // or "@lumiose/ui/toast"
+import { Toast } from "@lumiose/ui"; // or "@lumiose/ui/toast"
 import "@lumiose/ui/toast.css"; // the viewport's box, the limit, swipes on touch screens
 import "@lumiose/ui/themes/default.css"; // optional: the default theme
 ```
@@ -42,12 +42,10 @@ a named region that F6 reaches.
 
 ## API
 
-### createToastManager
+### Toast.createToastManager
 
-`createToastManager()` (also `Toast.createToastManager()`, as in Base UI) returns a manager.
-Create one in a module and import it where toasts are added and where they are shown: islands of
-a page share a module, so they share its manager. Inside a component, call the named import:
-`Toast.createToastManager()` there makes the compiler warn `LUM2001`.
+`Toast.createToastManager()` returns a manager. Create one in a module and import it where toasts
+are added and where they are shown: islands of a page share a module, so they share its manager.
 
 | Method                      | Does                                                                                                                                |
 | --------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
@@ -108,10 +106,10 @@ handlers, `ref`) and passes them through. Your props override the defaults (`rol
 In an island, a button and the toasts it adds, styled by the default theme:
 
 ```tsx check
-import { createToastManager, Toast } from "@lumiose/ui";
+import { Toast } from "@lumiose/ui";
 
 export function SaveButton() {
-  const toasts = createToastManager();
+  const toasts = Toast.createToastManager();
   return (
     <Toast.Provider toastManager={toasts}>
       <button
@@ -138,10 +136,10 @@ export function SaveButton() {
 A promise toast, and an error that stays (`timeout: 0`) with an action:
 
 ```tsx check
-import { createToastManager, Toast } from "@lumiose/ui";
+import { Toast } from "@lumiose/ui";
 
 export function UploadButton() {
-  const toasts = createToastManager();
+  const toasts = Toast.createToastManager();
   const upload = () =>
     toasts
       .promise(new Promise((resolve) => setTimeout(resolve, 1000)), {
@@ -207,9 +205,9 @@ island renders the viewport from it, the others call `toasts.add()`.
 
 ```ts
 // src/toasts.ts
-import { createToastManager } from "@lumiose/ui";
+import { Toast } from "@lumiose/ui";
 
-export const toasts = createToastManager();
+export const toasts = Toast.createToastManager();
 ```
 
 ## Styling

@@ -2,15 +2,32 @@
 // on any violation of the WCAG 2.0, 2.1 and 2.2 A and AA rules. Axe's "needs review" results (text
 // on gradients, canvases or images) are printed for a manual check; the criteria axe cannot see are
 // in the manual checklist (CONTRIBUTING.md) and, where a test can, in the checks below.
+import { readdirSync, readFileSync } from "node:fs";
+import { join } from "node:path";
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 
 const WCAG_AA = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"];
 
-/** One URL per page type. */
 /** The time a test that visits every page gets: it grows with the list. */
 const PER_PAGE = 5_000;
 
+/**
+ * Every page of the /ui section (TASK-387), one per packages/ui/docs/*.md, so a new component's
+ * page is checked without an edit here (TASK-406): the introduction, the guides (the theming page
+ * shows the theme's palette) and each component's page with its live demos on the default theme.
+ */
+const UI_DOCS = join(import.meta.dirname, "../../../packages/ui/docs");
+const UI_PAGES = readdirSync(UI_DOCS)
+  .filter((file) => file.endsWith(".md"))
+  .sort((a, b) => Number(b === "README.md") - Number(a === "README.md") || a.localeCompare(b))
+  .map((file) => {
+    const topic = file.slice(0, -".md".length);
+    const title = /^# (.+)$/m.exec(readFileSync(join(UI_DOCS, file), "utf8"))?.[1] ?? topic;
+    return { name: `UI ${title}`, path: topic === "README" ? "/ui" : `/ui/${topic}` };
+  });
+
+/** One URL per page type, and every UI page. */
 const PAGES = [
   { name: "landing", path: "/" },
   { name: "docs page", path: "/docs/concepts/styles" },
@@ -23,22 +40,7 @@ const PAGES = [
   { name: "showcase and demos", path: "/showcase" },
   { name: "playground", path: "/playground" },
   { name: "404", path: "/docs/nope" },
-  // The /ui section (TASK-387): the introduction, the theming page with the theme's palette, and
-  // each component's page with its live demos on @lumiose/ui's default theme.
-  { name: "UI introduction", path: "/ui" },
-  { name: "UI theming", path: "/ui/theming" },
-  { name: "UI Dialog", path: "/ui/dialog" },
-  { name: "UI Menu", path: "/ui/menu" },
-  { name: "UI Popover", path: "/ui/popover" },
-  { name: "UI Tabs", path: "/ui/tabs" },
-  { name: "UI Tooltip", path: "/ui/tooltip" },
-  { name: "UI Combobox", path: "/ui/combobox" },
-  { name: "UI Select", path: "/ui/select" },
-  { name: "UI Collapsible", path: "/ui/collapsible" },
-  { name: "UI Accordion", path: "/ui/accordion" },
-  { name: "UI Toast", path: "/ui/toast" },
-  { name: "UI Context Menu", path: "/ui/context-menu" },
-  { name: "UI Drawer", path: "/ui/drawer" },
+  ...UI_PAGES,
 ];
 
 /** Opens the first demo of a UI page: its popup, or (Tabs) another panel. */
@@ -201,7 +203,9 @@ for (const scheme of ["light", "dark"] as const) {
   for (const { name, path } of PAGES) {
     test(`axe: ${name} (${scheme}) has no WCAG 2.2 AA violations`, async ({ page }, testInfo) => {
       await page.emulateMedia({ colorScheme: scheme });
-      await page.goto(path);
+      const response = await page.goto(path);
+      // A docs page the site does not render (one missing from llms.txt) is not checked as a 404.
+      if (path.startsWith("/ui")) expect(response?.status(), path).toBe(200);
       await settle(page);
       const results = await new AxeBuilder({ page }).withTags(WCAG_AA).analyze();
       const review = needsReview(results.incomplete);
@@ -440,6 +444,10 @@ test("no ambient motion runs longer than 5 seconds (2.2.2 needs a pause control 
         .getAnimations()
         .filter((animation) => {
           const end = Number(animation.effect?.getComputedTiming().endTime ?? 0);
+          // An indeterminate progress bar (the UI Progress page) is an activity indicator: its
+          // motion tells that work goes on, as 2.2.2 allows, and it stops under reduced motion.
+          const target = (animation.effect as KeyframeEffect | null)?.target;
+          if (target?.matches("progress:indeterminate")) return false;
           return animation.playState === "running" && end > 5000;
         })
         .map((animation) => (animation as CSSAnimation).animationName ?? animation.id),

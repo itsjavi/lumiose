@@ -4,6 +4,8 @@
 import { ShippingFaq } from "./accordion-1.tsx";
 import { SettingsSections } from "./accordion-2.tsx";
 import { TopicSearch } from "./autocomplete-1.tsx";
+import { Reviewers } from "./avatar-1.tsx";
+import { ProfilePicture } from "./avatar-2.tsx";
 import { SavingButton } from "./button-1.tsx";
 import { NewsletterOptIn } from "./checkbox-1.tsx";
 import { ToppingsGroup } from "./checkbox-group-1.tsx";
@@ -33,6 +35,8 @@ import { UploadProgress } from "./progress-1.tsx";
 import { ShippingChoice } from "./radio-group-1.tsx";
 import { PlanField } from "./select-1.tsx";
 import { ThemePicker } from "./select-2.tsx";
+import { FooterLinks } from "./separator-1.tsx";
+import { AccountCard } from "./separator-2.tsx";
 import { PriceRange } from "./slider-1.tsx";
 import { AirplaneMode } from "./switch-1.tsx";
 import { AccountSettings } from "./tabs-1.tsx";
@@ -52,6 +56,10 @@ export function UiDemo(props: { id: string }) {
       return <SettingsSections client:visible />;
     case "autocomplete-1":
       return <TopicSearch client:visible />;
+    case "avatar-1":
+      return <Reviewers />;
+    case "avatar-2":
+      return <ProfilePicture client:visible />;
     case "button-1":
       return <SavingButton client:visible />;
     case "checkbox-1":
@@ -110,6 +118,10 @@ export function UiDemo(props: { id: string }) {
       return <PlanField />;
     case "select-2":
       return <ThemePicker client:visible />;
+    case "separator-1":
+      return <FooterLinks />;
+    case "separator-2":
+      return <AccountCard />;
     case "slider-1":
       return <PriceRange client:visible />;
     case "switch-1":

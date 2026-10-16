@@ -93,6 +93,8 @@ custom properties, named as in shadcn/ui, are listed in [Theming](theming.md#the
 | [Autocomplete](autocomplete.md)     | Available: free text with suggestions, on Combobox's `<lu-combobox>`                      |
 | [Context Menu](context-menu.md)     | Available: Menu at the pointer, opened by its script (right-click, long press, keys)      |
 | [Drawer](drawer.md)                 | Available: a Dialog against an edge, works without JavaScript; its script adds the swipe  |
+| [Separator](separator.md)           | Available: native `<hr>`, horizontal or vertical, no script                               |
+| [Avatar](avatar.md)                 | Available: an image over its fallback, `<lu-avatar>` follows its loading status           |
 
 ## Size
 

@@ -47,6 +47,9 @@ export default function Root(props: LayoutProps<"/">) {
         <a href="/autocomplete/island">Autocomplete in an island</a>
         <a href="/popover/hover-modal">Popover: hover and modal</a>
         <a href="/popover/hover-modal/island">Popover: hover and modal in an island</a>
+        <a href="/separator">Separator</a>
+        <a href="/avatar">Avatar</a>
+        <a href="/avatar/island">Avatar in an island</a>
       </nav>
       <main>{props.children}</main>
     </div>

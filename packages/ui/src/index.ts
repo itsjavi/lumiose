@@ -109,7 +109,7 @@ export type {
   AccordionRootProps,
   AccordionTriggerProps,
 } from "./accordion/accordion.tsx";
-export { createToastManager, Toast } from "./toast/toast.tsx";
+export { Toast } from "./toast/toast.tsx";
 export type {
   ToastActionProps,
   ToastCloseProps,
@@ -197,3 +197,12 @@ export type {
   AutocompleteStatusProps,
   AutocompleteTriggerProps,
 } from "./autocomplete/autocomplete.tsx";
+export { Separator } from "./separator/separator.tsx";
+export type { SeparatorOrientation, SeparatorProps } from "./separator/separator.tsx";
+export { Avatar } from "./avatar/avatar.tsx";
+export type {
+  AvatarFallbackProps,
+  AvatarImageProps,
+  AvatarLoadingStatus,
+  AvatarRootProps,
+} from "./avatar/avatar.tsx";

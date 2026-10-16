@@ -1,0 +1,45 @@
+import { Separator } from "@lumiose/ui";
+import { Title } from "lumiose";
+
+// Server-rendered, no island and no script: Separator is a native `<hr>`, horizontal between two
+// paragraphs and vertical between the links of a row that centres its items. Default theme.
+export default function SeparatorPage() {
+  return (
+    <>
+      <Title>Separator</Title>
+      <h1>Separator</h1>
+      <section aria-labelledby="horizontal-heading">
+        <h2 id="horizontal-heading">Horizontal</h2>
+        <p>Signed in as ada@example.com</p>
+        <Separator class="lu-separator" data-testid="horizontal" />
+        <p>Plan: Free</p>
+      </section>
+      <section aria-labelledby="vertical-heading">
+        <h2 id="vertical-heading">Vertical</h2>
+        <nav aria-label="Footer" class="row" data-testid="row">
+          <a href="#docs">Docs</a>
+          <a href="#blog">Blog</a>
+          <Separator orientation="vertical" class="lu-separator" data-testid="vertical" />
+          <a href="#privacy">Privacy</a>
+        </nav>
+      </section>
+      <section aria-labelledby="unstyled-heading">
+        <h2 id="unstyled-heading">Unstyled, in a row</h2>
+        <div class="row" data-testid="unstyled-row">
+          <span>Left</span>
+          <Separator orientation="vertical" data-testid="unstyled" />
+          <span>Right</span>
+        </div>
+      </section>
+    </>
+  );
+}
+
+<style>
+  .row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    min-block-size: 2.5rem;
+  }
+</style>

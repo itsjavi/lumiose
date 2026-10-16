@@ -1,0 +1,65 @@
+import { Avatar } from "@lumiose/ui";
+import { Title } from "lumiose";
+import { portrait } from "../../portrait.ts";
+
+// Server-rendered, no island: each Avatar stacks its image over its fallback, and `<lu-avatar>`
+// follows the image's loading status. An image that loads, one that fails (`/avatars/missing.jpg`
+// does not exist), one that the tests slow down (`/avatars/slow.svg`), behind a delayed fallback,
+// and one with no image. Default theme.
+export default function AvatarPage() {
+  return (
+    <>
+      <Title>Avatar</Title>
+      <h1>Avatar</h1>
+      <ul aria-label="Reviewers" class="people">
+        <li>
+          <Avatar.Root class="lu-avatar" data-testid="loaded">
+            <Avatar.Image src={portrait} alt="Ada Lovelace" />
+            <Avatar.Fallback role="img" aria-label="Ada Lovelace">
+              AL
+            </Avatar.Fallback>
+          </Avatar.Root>
+        </li>
+        <li>
+          <Avatar.Root class="lu-avatar" data-testid="missing">
+            <Avatar.Image src="/avatars/missing.jpg" alt="Grace Hopper" />
+            <Avatar.Fallback role="img" aria-label="Grace Hopper">
+              GH
+            </Avatar.Fallback>
+          </Avatar.Root>
+        </li>
+        <li>
+          <Avatar.Root class="lu-avatar" data-testid="slow">
+            <Avatar.Image src="/avatars/slow.svg" alt="Alan Turing" />
+            <Avatar.Fallback role="img" aria-label="Alan Turing" delay={600}>
+              AT
+            </Avatar.Fallback>
+          </Avatar.Root>
+        </li>
+        <li>
+          <span class="named">
+            <Avatar.Root class="lu-avatar" data-testid="none">
+              <Avatar.Fallback aria-hidden="true">KJ</Avatar.Fallback>
+            </Avatar.Root>
+            Katherine Johnson
+          </span>
+        </li>
+      </ul>
+    </>
+  );
+}
+
+<style>
+  .people {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    padding: 0;
+    list-style: none;
+  }
+  .named {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+</style>

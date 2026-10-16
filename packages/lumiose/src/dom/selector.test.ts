@@ -44,6 +44,28 @@ describe("selector", () => {
     disposeOwner(owner);
   });
 
+  it("runs the source from the first tracked check, under its own owner (TASK-402)", () => {
+    const selected = signal(1);
+    const source = vi.fn(() => selected());
+    const owner = createOwner(undefined);
+    const row = createOwner(owner);
+    let isSelected!: (key: number) => boolean;
+    runWithOwner(owner, () => {
+      isSelected = selector(source);
+    });
+    expect(source).not.toHaveBeenCalled();
+    const classes: boolean[] = [];
+    runWithOwner(row, () => bind(null, () => isSelected(2), (_, on) => classes.push(on)));
+    expect(classes).toEqual([false]);
+    // The row goes; the selector keeps notifying the next reader.
+    disposeOwner(row);
+    runWithOwner(owner, () => bind(null, () => isSelected(2), (_, on) => classes.push(on)));
+    selected.set(2);
+    flush();
+    expect(classes).toEqual([false, false, true]);
+    disposeOwner(owner);
+  });
+
   it("reads the latest value synchronously and works untracked", () => {
     const selected = signal(1);
     const isSelected = selector(computed(() => selected() * 10));

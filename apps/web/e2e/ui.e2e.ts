@@ -5,6 +5,7 @@ import { expect, test, type Page } from "@playwright/test";
 
 const COMPONENTS = [
   "Accordion",
+  "Avatar",
   "Collapsible",
   "Combobox",
   "Context Menu",
@@ -13,6 +14,7 @@ const COMPONENTS = [
   "Menu",
   "Popover",
   "Select",
+  "Separator",
   "Tabs",
   "Toast",
   "Tooltip",

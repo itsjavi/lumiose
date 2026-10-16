@@ -156,6 +156,18 @@ const COMPONENTS: Component[] = [
     scripts: ["combobox/combobox.script.ts"],
     css: "combobox/combobox.css",
   },
+  {
+    name: "separator",
+    module: "separator/separator.tsx",
+    scripts: [],
+    css: "separator/separator.css",
+  },
+  {
+    name: "avatar",
+    module: "avatar/avatar.tsx",
+    scripts: ["avatar/avatar.script.ts"],
+    css: "avatar/avatar.css",
+  },
 ];
 
 const CLIENT_SCRIPT = /\?client$/;

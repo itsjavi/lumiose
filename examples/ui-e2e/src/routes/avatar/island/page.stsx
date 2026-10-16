@@ -1,0 +1,25 @@
+import { Title } from "lumiose";
+import { AvatarSignals } from "../../../islands/AvatarSignals.tsx";
+
+export default function AvatarIslandPage() {
+  return (
+    <>
+      <Title>Avatar in an island, its status in a signal</Title>
+      <h1>Avatar in an island, its status in a signal</h1>
+      <AvatarSignals client:load />
+    </>
+  );
+}
+
+<style>
+  :global(.toolbar) {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  :global(.named) {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+</style>

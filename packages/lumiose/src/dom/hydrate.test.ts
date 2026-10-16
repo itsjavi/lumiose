@@ -1268,3 +1268,63 @@ describe("hydrate: component children that start with a component (TASK-403)", (
     }
   });
 });
+
+// `<progress>` and `<meter>` throw on a non-finite `value` (TASK-407).
+describe("hydrate: a progress value that switches to undefined (TASK-407)", () => {
+  it("removes the attribute instead of writing undefined, and writes numbers again", async () => {
+    const { client, server } = await load(`
+      import { signal } from "lumiose";
+      export function Upload() {
+        const done = signal<number | undefined>(undefined);
+        return (
+          <div>
+            <progress value={done()} max={1} />
+            <meter value={done()} />
+            <button type="button" onClick={() => done.set(done() === undefined ? 0.5 : undefined)}>toggle</button>
+          </div>
+        );
+      }`);
+    await serve(server, [["Upload", {}]]);
+    await hydrateAll(client);
+    expect(warn).not.toHaveBeenCalled();
+    const progress = document.querySelector("progress")!;
+    const meter = document.querySelector("meter")!;
+    const button = document.querySelector("button")!;
+    expect(progress.hasAttribute("value")).toBe(false);
+    button.click();
+    flush();
+    expect(progress.value).toBe(0.5);
+    expect(meter.value).toBe(0.5);
+    button.click();
+    flush();
+    expect(progress.hasAttribute("value")).toBe(false);
+    expect(meter.hasAttribute("value")).toBe(false);
+    button.click();
+    flush();
+    expect(progress.value).toBe(0.5);
+  });
+});
+
+// A list row's comparison with a selected value is hoisted into a selector at the component's top;
+// in a branch that never runs, its source must not be evaluated (TASK-402).
+describe("hydrate: a selector in a branch that never runs (TASK-402)", () => {
+  it("renders and hydrates without evaluating the comparison", async () => {
+    const { client, server } = await load(`
+      function boom(): { id: string } {
+        throw new Error("boom");
+      }
+      export function Mapped(props: { on: boolean }) {
+        return (
+          <div>
+            {["a"].map((id) => (props.on ? <p>{id === boom().id ? <b /> : <i />}</p> : <span>{id}</span>))}
+          </div>
+        );
+      }`);
+    await serve(server, [["Mapped", { on: false }]]);
+    const html = visible();
+    expect(html).toContain("<span>a</span>");
+    await hydrateAll(client);
+    expect(warn).not.toHaveBeenCalled();
+    expect(visible()).toBe(html);
+  });
+});

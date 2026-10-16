@@ -149,10 +149,13 @@ export function branchArm(active: boolean, out?: unknown): unknown {
   return html(wrap(active ? "<!--[-->" : "<!--[!-->", value, "<!--]-->"));
 }
 
-/** Same semantics as the client helper, evaluated once. */
+/**
+ * Same semantics as the client helper, evaluated once, when a row first reaches the comparison: a
+ * comparison in a branch that never runs leaves `source` alone (TASK-402).
+ */
 export function selector<T>(source: () => T): (key: T) => boolean {
-  const selected = source();
-  return (key) => key === selected;
+  let selected: { value: T } | undefined;
+  return (key) => key === (selected ??= { value: source() }).value;
 }
 
 /** `props` without `keys`, keeping getters lazy. */

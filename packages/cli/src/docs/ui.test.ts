@@ -202,7 +202,7 @@ function undocumented(name: string, files: readonly string[]): string[] {
 
 describe("@lumiose/ui docs contract", () => {
   const { values, types } = exportsOf(readFileSync(join(SRC, "index.ts"), "utf8"));
-  // Components are PascalCase (`Dialog`); a helper (`createToastManager`) is documented on its
+  // Components are PascalCase (`Dialog`); a lowercase helper would be documented on its
   // component's page.
   const components = values.filter((name) => /^[A-Z]/.test(name));
 

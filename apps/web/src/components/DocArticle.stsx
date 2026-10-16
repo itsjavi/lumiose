@@ -70,7 +70,7 @@ export function DocArticle(props: DocArticleProps) {
           <figure class="demo hero" id="live">
             {preview(first()!)}
             <figcaption class="note">
-              A live demo, with the default theme. <a href={`#demo-${first()?.id}`}>Its code</a>
+              A live demo, with the default theme. <a href={`#demo-${first()!.id}`}>Its code</a>
             </figcaption>
           </figure>
         )}
@@ -82,7 +82,7 @@ export function DocArticle(props: DocArticleProps) {
               <div class="chunk" innerHTML={block.html} />
             ) : block.demo !== undefined && props.demo !== undefined ? (
               <figure class="demo" id={`demo-${block.demo.id}`}>
-                {block.demo.id === first()?.id ? (
+                {block.demo.id === first()!.id ? (
                   <figcaption class="note">
                     <a href="#live">Live at the top of the page</a>:{" "}
                     {block.demo.island ? "an island" : "server-rendered, no island"}
@@ -415,9 +415,12 @@ export function DocArticle(props: DocArticleProps) {
   .chunk :deep(code) {
     font-family: $font.mono;
   }
-  /* A long path or expression in a sentence breaks rather than widening a phone's page, also with
-     WCAG's text-spacing overrides (1.4.10, 1.4.12). Table cells keep theirs on one line. */
+  /* A long path or expression in a sentence or a heading (`Toast.createToastManager`) breaks rather
+     than widening a phone's page, also with WCAG's text-spacing overrides (1.4.10, 1.4.12). Table
+     cells keep theirs on one line. */
   .chunk :deep(code),
+  .chunk :deep(h2),
+  .chunk :deep(h3),
   .lead :deep(code) {
     overflow-wrap: anywhere;
   }

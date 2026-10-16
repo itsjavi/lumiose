@@ -96,6 +96,20 @@ describe("setProp", () => {
     setProp(input, "checked", true);
     expect(input.checked).toBe(true);
   });
+
+  it("removes the attribute behind a number property on nullish: progress and meter (TASK-407)", () => {
+    for (const tag of ["progress", "meter"] as const) {
+      const el = document.createElement(tag);
+      setProp(el, "value", 0.4);
+      expect(el.value).toBe(0.4);
+      expect(() => setProp(el, "value", undefined)).not.toThrow();
+      expect(el.hasAttribute("value")).toBe(false);
+      setProp(el, "value", 0.6);
+      expect(el.value).toBe(0.6);
+      setProp(el, "value", null);
+      expect(el.hasAttribute("value")).toBe(false);
+    }
+  });
 });
 
 describe("setClass", () => {

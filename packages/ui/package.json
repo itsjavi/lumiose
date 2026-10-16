@@ -65,6 +65,10 @@
     "./number-field.css": "./src/number-field/number-field.css",
     "./autocomplete": "./src/autocomplete/autocomplete.tsx",
     "./autocomplete.css": "./src/combobox/combobox.css",
+    "./separator": "./src/separator/separator.tsx",
+    "./separator.css": "./src/separator/separator.css",
+    "./avatar": "./src/avatar/avatar.tsx",
+    "./avatar.css": "./src/avatar/avatar.css",
     "./themes/default.css": "./src/themes/default.css",
     "./package.json": "./package.json"
   },
@@ -116,6 +120,10 @@
       "./number-field.css": "./dist/number-field/number-field.css",
       "./autocomplete": "./dist/autocomplete/autocomplete.tsx",
       "./autocomplete.css": "./dist/combobox/combobox.css",
+      "./separator": "./dist/separator/separator.tsx",
+      "./separator.css": "./dist/separator/separator.css",
+      "./avatar": "./dist/avatar/avatar.tsx",
+      "./avatar.css": "./dist/avatar/avatar.css",
       "./themes/default.css": "./dist/themes/default.css",
       "./package.json": "./package.json"
     }
