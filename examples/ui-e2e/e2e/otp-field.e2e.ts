@@ -161,6 +161,20 @@ test.describe("in an island", () => {
     await expect(state).toHaveText("code: 1234, complete: 1234, rejected: 1x");
     expect(warnings).toEqual([]);
   });
+
+  test("normalizeValue turns what is typed into capitals (TASK-413)", async ({ page }) => {
+    await page.goto("/otp-field/island");
+    const input = page.getByRole("textbox", { name: "Code" });
+    await expect(async () => {
+      await page.getByTestId("set-signals").click({ timeout: 250 });
+      await expect(input).toHaveValue("4242", { timeout: 250 });
+    }).toPass();
+    const voucher = page.getByRole("textbox", { name: "Voucher" });
+    await voucher.focus();
+    await page.keyboard.type("ab1c");
+    await expect(voucher).toHaveValue("AB1C");
+    expect(await slots(page, "Voucher")).toEqual(["A", "B", "1", "C"]);
+  });
 });
 
 test.describe("WCAG 2.2 AA with the default theme (doc-9 section 17)", () => {

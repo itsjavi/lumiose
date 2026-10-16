@@ -24,6 +24,7 @@ import {
 import dialogScript from "../dialog/dialog.script.ts?client";
 import { anchorName, placement, withStyle, type PlacementProps } from "../placement/placement.ts";
 import popoverScript from "./popover.script.ts?client";
+import { OUTSIDE_TOOLBAR, ToolbarContext } from "../toolbar/context.ts";
 
 /**
  * `Popover.Root` renders no element: it holds the ids its parts share. `bind:open={signal}`
@@ -160,6 +161,9 @@ function Trigger({
   ...rest
 }: PopoverTriggerProps) {
   const popover = usePopover();
+  // Inside a Toolbar, the toolbar's single tab stop in the server HTML (TASK-413).
+  const toolbar = useContext(ToolbarContext);
+  const stop = untrack(() => toolbar?.stop());
   // A modal popover opens with an invoker command; the others with `popovertarget`.
   const opens = popover.modal
     ? { command: "show-modal", commandfor: popover.popupId, "aria-expanded": "false" as const }
@@ -172,6 +176,7 @@ function Trigger({
     <button
       type="button"
       aria-haspopup="dialog"
+      tabindex={stop}
       {...rest}
       {...hover}
       ref={(element: HTMLButtonElement) => {
@@ -198,7 +203,9 @@ function Popup({
   const popover = usePopover();
   // The server writes the attributes before it renders the children, so it renders them first to
   // know which Title and Description exist (as Dialog.Popup does), once.
-  const content = isServer ? untrack(() => children) : undefined;
+  // Its content is not a surrounding toolbar's (TASK-413).
+  const inside = () => <ToolbarContext value={OUTSIDE_TOOLBAR}>{children}</ToolbarContext>;
+  const content = isServer ? untrack(inside) : undefined;
   const attach = (element: HTMLElement) => {
     popover.popup(element);
     forwarded?.(element as HTMLDivElement);
@@ -220,7 +227,7 @@ function Popup({
       closedby="any"
       on:toggle={toggle}
     >
-      {isServer ? content : children}
+      {isServer ? content : inside()}
     </dialog>
   ) : (
     <div
@@ -239,7 +246,7 @@ function Popup({
       data-trap-focus={popover.trapFocus ? "" : undefined}
       on:toggle={toggle}
     >
-      {isServer ? content : children}
+      {isServer ? content : inside()}
     </div>
   );
 }

@@ -11,3 +11,10 @@ export interface ToolbarContextValue {
 }
 
 export const ToolbarContext = createContext<ToolbarContextValue>();
+
+/**
+ * What a popup gives its content instead (Menu.Popup, Popover.Popup): the content of a popup
+ * opened from a toolbar is not the toolbar's, whose script skips popups too, so its toggles and
+ * triggers keep their own tab stops.
+ */
+export const OUTSIDE_TOOLBAR = undefined as unknown as ToolbarContextValue;

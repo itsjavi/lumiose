@@ -20,6 +20,7 @@ import {
 import type { MenuCheckedChangeDetail, MenuElement, MenuOpenChangeDetail } from "./menu.script.ts";
 import menuScript from "./menu.script.ts?client";
 import { anchorName, placement, withStyle, type Align, type Side } from "../placement/placement.ts";
+import { OUTSIDE_TOOLBAR, ToolbarContext } from "../toolbar/context.ts";
 
 declare module "lumiose/jsx-runtime" {
   namespace JSX {
@@ -267,9 +268,13 @@ function SubmenuRoot(props: MenuSubmenuRootProps) {
 function Trigger({ children, style, ...rest }: MenuTriggerProps) {
   const menu = useMenu();
   register(menu.triggers);
+  // Inside a Toolbar, the toolbar's single tab stop in the server HTML (TASK-413).
+  const toolbar = useContext(ToolbarContext);
+  const stop = untrack(() => toolbar?.stop());
   return (
     <button
       type="button"
+      tabindex={stop}
       {...rest}
       id={menu.triggerId}
       role={menu.menubar ? "menuitem" : undefined}
@@ -318,7 +323,7 @@ function Popup({ children, side, align, sideOffset, alignOffset, style, ...rest 
         "start",
       )}
     >
-      {children}
+      <ToolbarContext value={OUTSIDE_TOOLBAR}>{children}</ToolbarContext>
     </div>
   );
 }

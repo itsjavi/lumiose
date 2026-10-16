@@ -4,6 +4,8 @@
 import { renderToString } from "lumiose";
 import { describe, expect, it } from "vitest";
 import { attrs } from "../test/html.ts";
+import { Menu } from "../menu/menu.tsx";
+import { Popover } from "../popover/popover.tsx";
 import { Toggle } from "../toggle/toggle.tsx";
 import { ToggleGroup } from "../toggle-group/toggle-group.tsx";
 import { Toolbar } from "./toolbar.tsx";
@@ -42,6 +44,33 @@ describe("Toolbar on the server", () => {
       "aria-label": "Actions",
       "data-orientation": "horizontal",
     });
+  });
+
+  it("gives a Menu's and a Popover's trigger its tab stop, not their popups' content", async () => {
+    const html = await renderToString(() => (
+      <Toolbar.Root aria-label="Editor">
+        <Toolbar.Button>Undo</Toolbar.Button>
+        <Popover.Root>
+          <Popover.Trigger>Format</Popover.Trigger>
+          <Popover.Popup aria-label="Format">
+            <Toggle>Bold</Toggle>
+          </Popover.Popup>
+        </Popover.Root>
+        <Menu.Root>
+          <Menu.Trigger>More</Menu.Trigger>
+          <Menu.Popup>
+            <Menu.Item>Print</Menu.Item>
+          </Menu.Popup>
+        </Menu.Root>
+      </Toolbar.Root>
+    ));
+    const tabindex = (name: string) => {
+      const match = [...html.matchAll(/<button\b([^>]*)>([^<]*)</g)].find((m) => m[2] === name)!;
+      return attrs(`<x${match[1]}>`, "x").tabindex;
+    };
+    expect(["Undo", "Format", "More"].map(tabindex)).toEqual(["0", "-1", "-1"]);
+    // The popover's toggle is not a toolbar item: no toolbar tab stop of its own.
+    expect(tabindex("Bold")).toBeUndefined();
   });
 
   it("keeps disabled items focusable, and runs vertically without looping", async () => {

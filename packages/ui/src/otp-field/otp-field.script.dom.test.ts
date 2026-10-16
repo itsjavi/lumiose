@@ -86,6 +86,21 @@ it("follows other validation types, and masks the slots", async () => {
   expect(shown()).toEqual(["•", "•", "•", ""]);
 });
 
+it("normalizes what is entered with normalizeValue, before the allowed characters", async () => {
+  const field = mount('length="4" validation-type="alphanumeric"');
+  await settle();
+  // An "O" for a zero, and capitals.
+  field.normalizeValue = (text) => text.toUpperCase().replaceAll("O", "0");
+  const invalid = vi.fn();
+  field.addEventListener("valueinvalid", invalid);
+  type("ab-o");
+  expect(field.value).toBe("AB0");
+  expect(shown()).toEqual(["A", "B", "0", ""]);
+  expect(invalid).toHaveBeenCalledOnce();
+  field.value = "xy12";
+  expect(field.value).toBe("XY12");
+});
+
 it("submits the form when complete with auto-submit", async () => {
   mount('length="4" auto-submit');
   await settle();

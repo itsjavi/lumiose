@@ -52,9 +52,16 @@ Every other `<a>` prop passes through: `href`, `target`, `class`, `aria-*`.
 `side`, `align`, `sideOffset` and `alignOffset`, as on [Popover.Popup](popover.md#popoverpopup);
 every other `<div>` prop passes through.
 
-**Differences from Base UI's PreviewCard.** No `Portal`, `Positioner`, `Backdrop`, `Arrow` or
-`Viewport`: the top layer and CSS anchor positioning replace them, and the placement props are on
-`Popup`. No detached triggers (`handle`, `payload`) or `actionsRef`.
+**Differences from Base UI's PreviewCard.** No `Portal`, `Positioner` or `Viewport`: the top
+layer and CSS anchor positioning replace them, and the placement props are on `Popup`.
+
+- **No `Backdrop`**: the open card is in the top layer, so `.lu-preview-card::backdrop` styles the
+  layer under it, without an element.
+- **No `Arrow`**, as in Popover and Tooltip: anchor positioning gives no arrow offset when the card
+  shifts to fit. A pointer that follows `data-side` is a `::before` of your CSS.
+- **No detached triggers** (`handle`, `payload`) or `actionsRef`: a card's content is markup
+  rendered with it, so each link has its Root and its card, in server HTML too. In an island, a
+  signal per link does what a payload does.
 
 ## Example
 

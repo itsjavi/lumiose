@@ -1,7 +1,10 @@
 import { OTPField } from "@lumiose/ui";
 import { signal } from "lumiose";
 
-/** An OTP Field bound with bind:value, with its completion and rejected input (TASK-376). */
+/**
+ * An OTP Field bound with bind:value, with its completion and rejected input (TASK-376), and one
+ * that normalizes what is typed (TASK-413).
+ */
 export function OTPFieldSignals() {
   const code = signal("");
   const done = signal("");
@@ -17,6 +20,19 @@ export function OTPFieldSignals() {
         class="lu-otp-field"
       >
         <OTPField.Input aria-label="Code" />
+        <OTPField.Slot />
+        <OTPField.Slot />
+        <OTPField.Slot />
+        <OTPField.Slot />
+      </OTPField.Root>
+      {/* A code of letters and digits typed in any case: capitals, as it is printed (TASK-413). */}
+      <OTPField.Root
+        length={4}
+        validationType="alphanumeric"
+        normalizeValue={(text) => text.toUpperCase()}
+        class="lu-otp-field"
+      >
+        <OTPField.Input aria-label="Voucher" />
         <OTPField.Slot />
         <OTPField.Slot />
         <OTPField.Slot />

@@ -4059,7 +4059,7 @@ Scrubbing uses pointer capture, without pointer lock.
 
 # OTP Field
 
-> A one-time code input, after Base UI's OTPField: one native `<input>` shown as one slot per character. SMS autofill (`autocomplete="one-time-code"`), paste, Backspace, the arrow keys, `maxlength`, `pattern`, `required` and the form's value are the platform's, without JavaScript too, and assistive technology meets one labelled text field. `<lu-otp-field>`'s 1.2 kB script lays the input over the slots, keeps the code to the allowed characters, and reports completion. `bind:value` keeps a signal in sync.
+> A one-time code input, after Base UI's OTPField: one native `<input>` shown as one slot per character. SMS autofill (`autocomplete="one-time-code"`), paste, Backspace, the arrow keys, `maxlength`, `pattern`, `required` and the form's value are the platform's, without JavaScript too, and assistive technology meets one labelled text field. `<lu-otp-field>`'s 1.3 kB script lays the input over the slots, keeps the code to the allowed characters, and reports completion. `bind:value` keeps a signal in sync.
 
 ```ts
 import { OTPField } from "@lumiose/ui"; // or "@lumiose/ui/otp-field"
@@ -4103,6 +4103,7 @@ Name the field with a [Field](field.md) (`Field.Label`), a `<label for>` the Roo
 | `onValueComplete`                  | `(value: string) => void`                          |                   | Called when the last character is entered.                                          |
 | `onValueInvalid`                   | `(value: string) => void`                          |                   | Called with what was entered when it held characters the field does not allow.      |
 | `validationType`                   | `"numeric" \| "alpha" \| "alphanumeric" \| "none"` | `"numeric"`       | The characters the code may hold; spaces are always dropped.                        |
+| `normalizeValue`                   | `(value: string) => string`                        |                   | Normalizes what is entered before the allowed characters are kept (an island).      |
 | `inputMode`                        | `"numeric" \| "text" \| "tel" \| "none"`           | from the type     | The virtual keyboard: numeric for digits, text otherwise.                           |
 | `mask`                             | `boolean`                                          | `false`           | The slots show dots.                                                                |
 | `autoComplete`                     | `string`                                           | `"one-time-code"` | The input's `autocomplete`.                                                         |
@@ -4125,8 +4126,9 @@ reader meets one field named once instead of six. The slots are a picture of tha
 the script; the input lies over them, transparent, so a press on a slot moves the caret there.
 
 **Differences from Base UI's OTPField.** `Slot` replaces the per-character `Input`s; the
-`Separator` is visual (`aria-hidden`). No `normalizeValue` (a function cannot reach a server
-page's script), no `inputRef`, no `render`.
+`Separator` is visual (`aria-hidden`). `normalizeValue` (`(text) => text.toUpperCase()`, say)
+works in an island, where Root hands it to the element: a server page's script cannot receive a
+function. No `inputRef`, no `render`.
 
 ## Example
 
@@ -4194,7 +4196,7 @@ A paste fills every slot from the caret, its spaces and dashes dropped, even pas
 ## Without JavaScript, and the element's script
 
 The input is a native text field: autofill, typing, paste, `pattern` and `required` validation and
-submission work with no script, and the slots stay hidden. `<lu-otp-field>`'s script (1.2 kB
+submission work with no script, and the slots stay hidden. `<lu-otp-field>`'s script (1.3 kB
 brotli) shows the slots, cleans the value as it changes (firing `valueinvalid` for refused input),
 fires `valuecomplete`, auto-submits, and follows a form reset.
 
@@ -4534,9 +4536,16 @@ Every other `<a>` prop passes through: `href`, `target`, `class`, `aria-*`.
 `side`, `align`, `sideOffset` and `alignOffset`, as on [Popover.Popup](popover.md#popoverpopup);
 every other `<div>` prop passes through.
 
-**Differences from Base UI's PreviewCard.** No `Portal`, `Positioner`, `Backdrop`, `Arrow` or
-`Viewport`: the top layer and CSS anchor positioning replace them, and the placement props are on
-`Popup`. No detached triggers (`handle`, `payload`) or `actionsRef`.
+**Differences from Base UI's PreviewCard.** No `Portal`, `Positioner` or `Viewport`: the top
+layer and CSS anchor positioning replace them, and the placement props are on `Popup`.
+
+- **No `Backdrop`**: the open card is in the top layer, so `.lu-preview-card::backdrop` styles the
+  layer under it, without an element.
+- **No `Arrow`**, as in Popover and Tooltip: anchor positioning gives no arrow offset when the card
+  shifts to fit. A pointer that follows `data-side` is a `::before` of your CSS.
+- **No detached triggers** (`handle`, `payload`) or `actionsRef`: a card's content is markup
+  rendered with it, so each link has its Root and its card, in server HTML too. In an island, a
+  signal per link does what a payload does.
 
 ## Example
 
@@ -6455,7 +6464,9 @@ Every item gets `tabindex="0"` (the first) or `"-1"` and `data-orientation`. Nam
 
 Every other native prop passes through. A `ToggleGroup` inside a toolbar keeps pressing its
 toggles but leaves the arrow keys and the tab stop to the toolbar; a Menu or Popover trigger inside
-it is an item too (the script gives it its `tabindex`).
+it is an item too, with the toolbar's `tabindex` in the server HTML already, so it is no extra tab
+stop before the script runs. What a Menu's or a Popover's popup holds is not the toolbar's: its
+toggles and triggers keep their own tab stops.
 
 **Differences from Base UI's Toolbar.** No `render` or `nativeButton`: put other triggers
 (`Menu.Trigger`, `Popover.Trigger`) in the toolbar directly. Disabled items are `aria-disabled`

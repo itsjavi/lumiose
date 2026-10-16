@@ -53,7 +53,9 @@ Every item gets `tabindex="0"` (the first) or `"-1"` and `data-orientation`. Nam
 
 Every other native prop passes through. A `ToggleGroup` inside a toolbar keeps pressing its
 toggles but leaves the arrow keys and the tab stop to the toolbar; a Menu or Popover trigger inside
-it is an item too (the script gives it its `tabindex`).
+it is an item too, with the toolbar's `tabindex` in the server HTML already, so it is no extra tab
+stop before the script runs. What a Menu's or a Popover's popup holds is not the toolbar's: its
+toggles and triggers keep their own tab stops.
 
 **Differences from Base UI's Toolbar.** No `render` or `nativeButton`: put other triggers
 (`Menu.Trigger`, `Popover.Trigger`) in the toolbar directly. Disabled items are `aria-disabled`

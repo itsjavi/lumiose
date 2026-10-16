@@ -16,7 +16,9 @@
 // - types over the character at the caret when the field is full, and moves the caret to the slot a
 //   press lands on;
 // - fires `valuecomplete` (`detail.value`) when the last slot fills, and with `auto-submit` submits
-//   the form.
+//   the form;
+// - with a `normalizeValue` function (a property: OTPField.Root sets it in an island, TASK-413),
+//   normalizes what is entered (`toUpperCase`, say) before it keeps it to the allowed characters.
 //
 // It must not import `lumiose`: server-rendered pages load it without the runtime.
 
@@ -35,6 +37,9 @@ const ALLOWED: Record<string, RegExp> = {
 export class OTPFieldElement extends HTMLElement {
   /** The value when the last `valuecomplete` fired, so it fires once per completion. */
   #completed = "";
+
+  /** Normalizes what is entered before the allowed characters are kept: an island sets it. */
+  normalizeValue: ((value: string) => string) | undefined;
 
   /** The input that holds the value. */
   get input(): HTMLInputElement | null {
@@ -100,16 +105,20 @@ export class OTPFieldElement extends HTMLElement {
   /** `text` kept to the allowed characters and the length. */
   #clean(text: string): string {
     const allowed = ALLOWED[this.getAttribute("validation-type") ?? "numeric"] ?? ALLOWED.numeric!;
-    return [...text]
+    return [...this.#normalize(text)]
       .filter((char) => allowed.test(char))
       .slice(0, this.#length)
       .join("");
   }
 
+  #normalize(text: string): string {
+    return this.normalizeValue ? this.normalizeValue(text) : text;
+  }
+
   /** Whether `text` holds characters the field does not allow (spaces aside). */
   #rejects(text: string): boolean {
     const allowed = ALLOWED[this.getAttribute("validation-type") ?? "numeric"] ?? ALLOWED.numeric!;
-    return [...text].some((char) => /\S/u.test(char) && !allowed.test(char));
+    return [...this.#normalize(text)].some((char) => /\S/u.test(char) && !allowed.test(char));
   }
 
   /** Writes the value to the slots, and the caret's slot while the input has focus. */

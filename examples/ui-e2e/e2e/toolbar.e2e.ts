@@ -46,6 +46,12 @@ test.describe("without JavaScript", () => {
       await expect(button(page, name)).toHaveAttribute("tabindex", "-1");
     }
     await expect(page.getByRole("link", { name: "Help" })).toHaveAttribute("tabindex", "-1");
+    // A Menu's trigger is an item too: no extra tab stop before the script (TASK-413).
+    await expect(button(page, "Insert")).toHaveAttribute("tabindex", "-1");
+    await button(page, "Bold").focus();
+    await page.keyboard.press("Tab");
+    await expect(page.getByRole("textbox", { name: "Font size" })).not.toBeFocused();
+    await expect(button(page, "Insert")).not.toBeFocused();
   });
 });
 

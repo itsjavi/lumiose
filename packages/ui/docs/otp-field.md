@@ -1,6 +1,6 @@
 # OTP Field
 
-> A one-time code input, after Base UI's OTPField: one native `<input>` shown as one slot per character. SMS autofill (`autocomplete="one-time-code"`), paste, Backspace, the arrow keys, `maxlength`, `pattern`, `required` and the form's value are the platform's, without JavaScript too, and assistive technology meets one labelled text field. `<lu-otp-field>`'s 1.2 kB script lays the input over the slots, keeps the code to the allowed characters, and reports completion. `bind:value` keeps a signal in sync.
+> A one-time code input, after Base UI's OTPField: one native `<input>` shown as one slot per character. SMS autofill (`autocomplete="one-time-code"`), paste, Backspace, the arrow keys, `maxlength`, `pattern`, `required` and the form's value are the platform's, without JavaScript too, and assistive technology meets one labelled text field. `<lu-otp-field>`'s 1.3 kB script lays the input over the slots, keeps the code to the allowed characters, and reports completion. `bind:value` keeps a signal in sync.
 
 ```ts
 import { OTPField } from "@lumiose/ui"; // or "@lumiose/ui/otp-field"
@@ -44,6 +44,7 @@ Name the field with a [Field](field.md) (`Field.Label`), a `<label for>` the Roo
 | `onValueComplete`                  | `(value: string) => void`                          |                   | Called when the last character is entered.                                          |
 | `onValueInvalid`                   | `(value: string) => void`                          |                   | Called with what was entered when it held characters the field does not allow.      |
 | `validationType`                   | `"numeric" \| "alpha" \| "alphanumeric" \| "none"` | `"numeric"`       | The characters the code may hold; spaces are always dropped.                        |
+| `normalizeValue`                   | `(value: string) => string`                        |                   | Normalizes what is entered before the allowed characters are kept (an island).      |
 | `inputMode`                        | `"numeric" \| "text" \| "tel" \| "none"`           | from the type     | The virtual keyboard: numeric for digits, text otherwise.                           |
 | `mask`                             | `boolean`                                          | `false`           | The slots show dots.                                                                |
 | `autoComplete`                     | `string`                                           | `"one-time-code"` | The input's `autocomplete`.                                                         |
@@ -66,8 +67,9 @@ reader meets one field named once instead of six. The slots are a picture of tha
 the script; the input lies over them, transparent, so a press on a slot moves the caret there.
 
 **Differences from Base UI's OTPField.** `Slot` replaces the per-character `Input`s; the
-`Separator` is visual (`aria-hidden`). No `normalizeValue` (a function cannot reach a server
-page's script), no `inputRef`, no `render`.
+`Separator` is visual (`aria-hidden`). `normalizeValue` (`(text) => text.toUpperCase()`, say)
+works in an island, where Root hands it to the element: a server page's script cannot receive a
+function. No `inputRef`, no `render`.
 
 ## Example
 
@@ -135,7 +137,7 @@ A paste fills every slot from the caret, its spaces and dashes dropped, even pas
 ## Without JavaScript, and the element's script
 
 The input is a native text field: autofill, typing, paste, `pattern` and `required` validation and
-submission work with no script, and the slots stay hidden. `<lu-otp-field>`'s script (1.2 kB
+submission work with no script, and the slots stay hidden. `<lu-otp-field>`'s script (1.3 kB
 brotli) shows the slots, cleans the value as it changes (firing `valueinvalid` for refused input),
 fires `valuecomplete`, auto-submits, and follows a form reset.
 

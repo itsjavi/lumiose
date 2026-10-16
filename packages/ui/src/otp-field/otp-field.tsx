@@ -64,6 +64,11 @@ export interface OTPFieldRootProps extends Omit<
   onValueInvalid?: (value: string) => void;
   /** The characters the code may hold. Default `"numeric"` (digits). */
   validationType?: OTPFieldValidationType;
+  /**
+   * Normalizes what is entered before the allowed characters are kept: `(text) =>
+   * text.toUpperCase()`, say. In an island: a server page's script cannot receive a function.
+   */
+  normalizeValue?: (value: string) => string;
   /** The virtual keyboard: default `"numeric"` for digits, `"text"` otherwise. */
   inputMode?: "numeric" | "text" | "tel" | "none";
   /** The slots show dots instead of the characters. */
@@ -161,6 +166,7 @@ function Root({
   onValueComplete,
   onValueInvalid,
   validationType,
+  normalizeValue,
   inputMode,
   mask,
   autoComplete,
@@ -185,6 +191,10 @@ function Root({
     const next = value;
     const host = element();
     if (next !== undefined && host?.isConnected && host.value !== next) host.value = next;
+  });
+  effect(() => {
+    const host = element();
+    if (host) host.normalizeValue = normalizeValue;
   });
   const context: OTPFieldContextValue = {
     inputId: untrack(() => id ?? (field ? controlId(field) : `${generated}-input`)),
