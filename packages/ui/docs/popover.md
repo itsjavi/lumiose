@@ -1,6 +1,6 @@
 # Popover
 
-> A popup anchored to its trigger: a native `popover` opened and closed by the trigger's `popovertarget`, placed with CSS anchor positioning, so it works in server HTML with no JavaScript. A 1.7 kB script moves focus into it and back, dismisses it as Base UI does (not on a right-click), keeps `aria-expanded` current and places it in browsers without anchor positioning. `bind:open` (or `open` and `onOpenChange`) keeps a signal in sync in islands.
+> A popup anchored to its trigger: a native `popover` opened and closed by the trigger's `popovertarget`, placed with CSS anchor positioning, so it works in server HTML with no JavaScript. A 2.1 kB script moves focus into it and back, dismisses it as Base UI does (not on a right-click), keeps `aria-expanded` current and places it in browsers without anchor positioning. `bind:open` (or `open` and `onOpenChange`) keeps a signal in sync in islands. A trigger can open it on hover (`openOnHover`), and a `modal` popover is a modal `<dialog>` that makes the page behind it inert.
 
 ```ts
 import { Popover } from "@lumiose/ui"; // or "@lumiose/ui/popover"
@@ -30,7 +30,11 @@ import "@lumiose/ui/themes/default.css"; // optional: the default theme
 | `Description` | `<p>`, which describes it.                                                                                                                                                  |
 | `Close`       | `<button type="button" popovertarget="…" popovertargetaction="hide">`.                                                                                                      |
 
-The popup is a non-modal dialog, as in Base UI: the page around it stays usable. A popover may
+With `modal`, the `Trigger` is a `<button command="show-modal" commandfor="…">`, the `Popup` a
+`<dialog closedby="any" data-side="…" data-align="…">` and the `Close` a
+`<button command="close" commandfor="…">`.
+
+The popup is a non-modal dialog, as in Base UI: the page around it stays usable (unless `modal`). A popover may
 contain another `Popover.Root`: the inner popup opens on top, and closing the outer one closes
 both.
 
@@ -43,6 +47,19 @@ both.
 | `open`         | `boolean`                 |         | Opens or closes the popover when it changes, in the browser. Server HTML always starts closed: a popover opens only from its trigger or script. |
 | `onOpenChange` | `(open: boolean) => void` |         | Called after the popover opens or closes, whatever did it: the trigger, a close button, Escape, a click outside, another popover or `open`.     |
 | `bind:open`    | `Signal<boolean>`         |         | Stands in for `open` and `onOpenChange`.                                                                                                        |
+| `modal`        | `boolean`                 | `false` | A modal popover: the page behind it is inert and does not scroll, focus stays inside, and a press outside or Escape closes it.                  |
+
+### Popover.Trigger
+
+| Prop          | Type      | Default |                                                                                                                                                          |
+| ------------- | --------- | ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `openOnHover` | `boolean` | `false` | A mouse or pen resting on the trigger opens the popover too, and it closes once the pointer has left the trigger and the popup. Not for a modal popover. |
+| `delay`       | `number`  | `300`   | With `openOnHover`: how long the pointer rests on the trigger before the popover opens, in ms.                                                           |
+| `closeDelay`  | `number`  | `0`     | With `openOnHover`: how long the popover stays open after the pointer leaves, in ms (at least 100 ms to cross the gap to the popup).                     |
+
+A hover opens the popover without moving focus, and a click on the trigger then keeps it open
+until it is dismissed. Touch and the keyboard open it with a click (a tap, Enter or Space), as
+without `openOnHover`.
 
 ### Popover.Popup
 
@@ -114,13 +131,48 @@ export function Filters() {
 }
 ```
 
+A profile card that opens on hover, and a modal popover with a form:
+
+```tsx check
+import { Popover } from "@lumiose/ui";
+
+export function HoverAndModal() {
+  return (
+    <>
+      <Popover.Root>
+        <Popover.Trigger class="lu-button" openOnHover delay={200}>
+          Ada Lovelace
+        </Popover.Trigger>
+        <Popover.Popup class="lu-popover" sideOffset={8}>
+          <Popover.Title>Ada Lovelace</Popover.Title>
+          <Popover.Description>Wrote the first published program.</Popover.Description>
+        </Popover.Popup>
+      </Popover.Root>
+      <Popover.Root modal>
+        <Popover.Trigger class="lu-button">Rename</Popover.Trigger>
+        <Popover.Popup class="lu-popover" align="start" sideOffset={8}>
+          <Popover.Title>Rename the file</Popover.Title>
+          <label>
+            Name <input class="lu-input" value="report.pdf" />
+          </label>
+          <footer>
+            <Popover.Close class="lu-button">Done</Popover.Close>
+          </footer>
+        </Popover.Popup>
+      </Popover.Root>
+    </>
+  );
+}
+```
+
 ## Styling
 
 **With the default theme**, put `lu-popover` on `Popup`: a surface with the title, the
 description and a `<footer>` styled, a 4px gap to the trigger, and a fade. Its colours come from the
 theme's `--lu-` properties ([UI components](README.md#the-default-theme)).
 
-**With your own CSS**, style the popup through `class` and its state: `:popover-open`,
+**With your own CSS**, style the popup through `class` and its state: `:popover-open` (`[open]`
+for a modal popover, whose `::backdrop` is transparent until you style it),
 `[data-side]` and `[data-align]` (the requested placement; a flip does not change them), and the
 trigger through `[aria-expanded]`. Two custom properties set the offsets, and the props override
 them: `--lu-side-offset` and `--lu-align-offset`.
@@ -156,14 +208,21 @@ them: `--lu-side-offset` and `--lu-align-offset`.
   parent, and opening another popover closes the first.
 - Popovers opened from a dialog belong inside its `Popup`: everything outside a modal dialog is
   inert.
+- **Opened on hover**, the popover leaves focus where it is; it stays open while the pointer is on
+  the trigger or the popup, and Escape closes it without moving the pointer (WCAG 1.4.13).
+- **A modal popover** keeps Tab inside it (the page behind it is inert), and Escape, a press
+  outside or a close button closes it; focus returns to the trigger.
 
 ## Without JavaScript, and the client script
 
 The trigger, the close buttons, Escape, the click outside and the placement are HTML and CSS
-features: a popover in a server-rendered page works before any script loads, and with none.
+features: a popover in a server-rendered page works before any script loads, and with none. So
+does a modal popover, through invoker commands and `closedby` (where a browser lacks them,
+[Dialog](dialog.md)'s script, which a modal popover loads, stands in). Opening on hover needs the
+script.
 `open`, `onOpenChange` and `bind:open` need the component to run in an island.
 
-A page that renders a `Popover` loads a 1.7 kB (brotli) module once, without the Lumiose runtime;
+A page that renders a `Popover` loads a 2.1 kB (brotli) module once, without the Lumiose runtime;
 islands bundle it. It covers every Popover on the page:
 
 - focus on open (the first focusable element, or the popup) and its return on close;
@@ -174,11 +233,15 @@ islands bundle it. It covers every Popover on the page:
   script loads, the browser's light dismiss closes it on any press outside;
 - `aria-expanded` on the triggers;
 - the placement in browsers without CSS anchor positioning, which it keeps current on scroll and
-  resize.
+  resize;
+- opening on hover: the delays, the grace to cross the gap to the popup, and keeping it open after
+  a click on the trigger.
 
 ## Browser support
 
 - **Popover and `popovertarget`**: every current browser (Baseline 2024).
+- **Invoker commands and `closedby`** (a modal popover): Chrome 135, Firefox 144, Safari 26.2 for
+  commands; Chrome 134 and Firefox 141 for `closedby`. Elsewhere Dialog's script stands in.
 - **CSS anchor positioning**: Chrome and Edge 125, Firefox 147, Safari 26. Elsewhere the client
   script places the popup; without JavaScript there it opens in the middle of the viewport.
 - Safari and Firefox do not follow a trigger moved by a CSS `transform`.

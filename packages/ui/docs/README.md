@@ -89,6 +89,8 @@ custom properties, named as in shadcn/ui, are listed in [Theming](theming.md#the
 | [Progress](progress.md)             | Available: native `<progress>`, indeterminate when unknown, no script                     |
 | [Meter](meter.md)                   | Available: native `<meter>`, no script                                                    |
 | [Slider](slider.md)                 | Available: native range inputs, `<lu-slider>` adds ranges and Page Up and Page Down       |
+| [Number Field](number-field.md)     | Available: native number input, or a formatted spinbutton; press-and-hold buttons         |
+| [Autocomplete](autocomplete.md)     | Available: free text with suggestions, on Combobox's `<lu-combobox>`                      |
 | [Context Menu](context-menu.md)     | Available: Menu at the pointer, opened by its script (right-click, long press, keys)      |
 | [Drawer](drawer.md)                 | Available: a Dialog against an edge, works without JavaScript; its script adds the swipe  |
 

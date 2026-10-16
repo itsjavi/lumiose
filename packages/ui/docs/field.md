@@ -28,7 +28,9 @@ import "@lumiose/ui/themes/default.css"; // optional: the default theme
 | `Error`       | `<output hidden>`: without children, the field's message (`for` the control); with children, your message. Shown while the field is invalid. |
 
 Instead of `Field.Control`, a field can hold a [Checkbox](checkbox.md), a [Switch](switch.md), a
-[Select](select.md) or a [Radio Group](radio-group.md): they take the field's wiring the same way.
+[Select](select.md), a [Radio Group](radio-group.md), a [Combobox](combobox.md), an
+[Autocomplete](autocomplete.md), a [Number Field](number-field.md) or a [Slider](slider.md): they
+take the field's wiring the same way (a Combobox and an Autocomplete through their input).
 
 ## API
 
@@ -184,6 +186,7 @@ runs), and hides server errors once the value changes.
 - [Input](input.md): `Field.Control`.
 - [Fieldset](fieldset.md): a group of fields with a legend.
 - [Checkbox](checkbox.md), [Switch](switch.md), [Radio Group](radio-group.md),
-  [Select](select.md): controls that take a field's wiring.
+  [Select](select.md), [Combobox](combobox.md), [Autocomplete](autocomplete.md),
+  [Number Field](number-field.md), [Slider](slider.md): controls that take a field's wiring.
 - [Data and actions](https://itsjavi.com/lumiose/docs/concepts/data-and-actions/): form actions,
   `fail()` and `actionData()`.

@@ -100,6 +100,8 @@ custom properties, named as in shadcn/ui, are listed in [Theming](theming.md#the
 | [Progress](progress.md)             | Available: native `<progress>`, indeterminate when unknown, no script                     |
 | [Meter](meter.md)                   | Available: native `<meter>`, no script                                                    |
 | [Slider](slider.md)                 | Available: native range inputs, `<lu-slider>` adds ranges and Page Up and Page Down       |
+| [Number Field](number-field.md)     | Available: native number input, or a formatted spinbutton; press-and-hold buttons         |
+| [Autocomplete](autocomplete.md)     | Available: free text with suggestions, on Combobox's `<lu-combobox>`                      |
 | [Context Menu](context-menu.md)     | Available: Menu at the pointer, opened by its script (right-click, long press, keys)      |
 | [Drawer](drawer.md)                 | Available: a Dialog against an edge, works without JavaScript; its script adds the swipe  |
 
@@ -219,7 +221,7 @@ through their `class` prop:
 | `lu-tooltip`        | `Tooltip.Popup`                                |                                                                                             |
 | `lu-tabs`           | `Tabs.Root`                                    | Styles the list, the tabs (the selected one underlined) and the panels                      |
 | `lu-menu`           | every `Menu.Popup`                             | Styles the items, their checkbox and radio marks, separators and labels                     |
-| `lu-combobox`       | `Combobox.Root`                                | Lays out the field (label, chips, input, buttons) and styles the popup                      |
+| `lu-combobox`       | `Combobox.Root`, `Autocomplete.Root`           | Lays out the field (label, chips, input, buttons) and styles the popup                      |
 | `lu-select`         | `Select.Root`                                  | Makes it a customizable select and styles the control and the picker                        |
 | `lu-field`          | `Field.Root`                                   | Stacks the label, control, description and errors; errors in red                            |
 | `lu-input`          | `Input`, `Field.Control`                       | A text field with a focus ring and a red border when invalid                                |
@@ -236,6 +238,7 @@ through their `class` prop:
 | `lu-progress`       | `Progress.Root`                                | The label and value above a bar; a sliding segment when indeterminate                       |
 | `lu-meter`          | `Meter.Root`                                   | The label and value above a bar                                                             |
 | `lu-slider`         | `Slider.Root`                                  | The label and value above the track, the indicator and 24px thumbs                          |
+| `lu-number-field`   | `NumberField.Root`                             | The label above one bordered group: the input between its buttons                           |
 | `lu-drawer`         | `Drawer.Popup`                                 | A surface against its edge (a handle on a bottom sheet), title, description, footer; slides |
 
 Its colours and radius are custom properties with shadcn/ui's names and a `--lu-` prefix, so a
@@ -497,6 +500,166 @@ not toggle, also from the keyboard.
 - [Collapsible](collapsible.md): one panel and its trigger.
 - [Tabs](tabs.md): one panel at a time, from a tab list.
 - [UI components](README.md): the approach, styling and the other components.
+
+<!-- source: autocomplete.md -->
+
+# Autocomplete
+
+> A text input with suggestions, for text that may be anything (a search, a tag, an address): the WAI-ARIA combobox pattern with list autocomplete, after Base UI's Autocomplete. Unlike a [Combobox](combobox.md), the text is the value: the input has the name and submits what is typed, and choosing a suggestion only fills it in. It runs on the Combobox's element (`<lu-combobox free>`, 4.1 kB) and parts, on server-rendered pages and in islands; `bind:value` keeps a signal in sync. Filtering, inline completion, groups, an empty state and a status.
+
+```ts
+import { Autocomplete } from "@lumiose/ui"; // or "@lumiose/ui/autocomplete"
+import "@lumiose/ui/autocomplete.css"; // Combobox's CSS: places the popup, hides filtered options
+import "@lumiose/ui/themes/default.css"; // optional: the default theme
+```
+
+## Anatomy
+
+```tsx
+<Autocomplete.Root>
+  <Autocomplete.Label />
+  <Autocomplete.Input />
+  <Autocomplete.Clear />
+  <Autocomplete.Trigger />
+  <Autocomplete.Popup>
+    <Autocomplete.List>
+      <Autocomplete.Item />
+      <Autocomplete.Group>
+        <Autocomplete.GroupLabel />
+        <Autocomplete.Item />
+      </Autocomplete.Group>
+    </Autocomplete.List>
+    <Autocomplete.Empty />
+    <Autocomplete.Status />
+  </Autocomplete.Popup>
+</Autocomplete.Root>
+```
+
+| Part                  | Renders                                                                             |
+| --------------------- | ----------------------------------------------------------------------------------- |
+| `Root`                | `<lu-combobox free>`: the element, with no box; `inline` with inline completion     |
+| `Label`               | `<label for>` the input                                                             |
+| `Input`               | `<input role="combobox" aria-autocomplete name value>`: the form control            |
+| `Clear`, `Trigger`    | `<button tabindex="-1">`: empty the text, or open and close the suggestions         |
+| `Popup`, `List`       | `<div popover>` around the `<div role="listbox">`, or the listbox as the popup      |
+| `Item`                | `<div role="option" data-value>`: a suggestion; its `value` is the text it fills in |
+| `Group`, `GroupLabel` | `<div role="group">` named by its `<div role="presentation">`                       |
+| `Empty`, `Status`     | `<div role="status">`: shown when nothing matches, or a message you update          |
+
+The parts are [Combobox](combobox.md)'s, under this Root: their props and styling hooks are the
+same.
+
+## API
+
+### Autocomplete.Root
+
+| Prop                                | Type                                     | Default      |                                                                                 |
+| ----------------------------------- | ---------------------------------------- | ------------ | ------------------------------------------------------------------------------- |
+| `value`                             | `string`                                 |              | Puts this text in the input when it changes. Pair it with `onValueChange`.      |
+| `defaultValue`                      | `string`                                 |              | The text at first; a form reset goes back to it.                                |
+| `onValueChange`                     | `(value: string) => void`                |              | Called as the text changes: typing, choosing a suggestion, clearing.            |
+| `bind:value`                        | `Signal<string>`                         |              | Stands in for `value` and `onValueChange`.                                      |
+| `open`, `onOpenChange`, `bind:open` | `boolean`, `(open: boolean) => void`     |              | Open or close the suggestions, and hear about it, as in Combobox.               |
+| `mode`                              | `"list" \| "both" \| "inline" \| "none"` | `"list"`     | How the suggestions complete the text (below).                                  |
+| `filter`                            | `"contains" \| "startsWith"`             | `"contains"` | How `"list"` and `"both"` filter the suggestions, ignoring case and accents.    |
+| `openOnInputClick`                  | `boolean`                                | `false`      | A click on the input opens the suggestions; otherwise typing and Arrow Down do. |
+| `name`                              | `string`                                 |              | The name the text is submitted under (the input's).                             |
+| `required`, `disabled`              | `boolean`                                | `false`      | As on a native input.                                                           |
+
+The modes follow Base UI's:
+
+- **`"list"`**: typing filters the suggestions; the input keeps what is typed while the arrows move
+  through them.
+- **`"both"`**: filtered, and the arrows show the highlighted suggestion in the input, its
+  completed part selected; Escape takes it back, Tab or a click elsewhere keeps it.
+- **`"inline"`**: the arrows show the highlighted suggestion in the input, unfiltered.
+- **`"none"`**: neither: the page filters the suggestions itself (results from a server).
+
+### The other parts
+
+As in [Combobox](combobox.md#the-other-parts). An `Item`'s `value` is the text it fills in (and its
+`label`, when the shown text differs, what typing matches). Inside a [Field](field.md), the input
+takes the field's id, name, description and error, and the field shows its validation.
+
+**Differences from Base UI's Autocomplete.** The suggestions are markup, not an `items` array, and
+filtering compares their text (`mode="none"` hands it to you, as Base UI's `filter={null}`). No
+`autoHighlight`, `keepHighlight`, `submitOnItemClick` or `limit`: Enter on a highlighted suggestion
+fills it in, and Enter with none highlighted submits the form. No `Portal`, `Positioner`,
+`Backdrop`, `Arrow`, `Value`, `Icon`, `Row`, `Collection` or `Separator`.
+
+## Example
+
+A search with suggestions, in an island:
+
+```tsx check
+import { Autocomplete } from "@lumiose/ui";
+import { signal } from "lumiose";
+
+const TOPICS = ["accessibility", "animation", "forms", "islands", "routing", "signals"];
+
+export function TopicSearch() {
+  const query = signal("");
+  return (
+    <>
+      <Autocomplete.Root name="q" bind:value={query} class="lu-combobox">
+        <Autocomplete.Label>Search the docs</Autocomplete.Label>
+        <Autocomplete.Input placeholder="Any topic" />
+        <Autocomplete.Popup>
+          <Autocomplete.List>
+            {TOPICS.map((topic) => (
+              <Autocomplete.Item value={topic}>{topic}</Autocomplete.Item>
+            ))}
+          </Autocomplete.List>
+          <Autocomplete.Empty>No suggestions: press Enter to search.</Autocomplete.Empty>
+        </Autocomplete.Popup>
+      </Autocomplete.Root>
+      <p>{query() ? `Searching for “${query()}”` : "Type to search."}</p>
+    </>
+  );
+}
+```
+
+## Styling
+
+**With the default theme**, put `lu-combobox` on `Root`, as for a Combobox: the label, the input
+with its buttons, and the popup with the highlighted suggestion marked.
+
+**With your own CSS**, style the parts through `class` and their state: `[aria-expanded]` on the
+input, `:popover-open` on the popup, `[data-highlighted]` and `[aria-disabled]` on the
+suggestions, `[hidden]` on filtered ones.
+
+`@lumiose/ui/autocomplete.css` is Combobox's stylesheet: it places the popup next to the input and
+keeps filtered suggestions hidden.
+
+## Keyboard and focus
+
+| Key                   | Does                                                                                             |
+| --------------------- | ------------------------------------------------------------------------------------------------ |
+| Typing                | Filters the suggestions (with `"list"` and `"both"`) and opens them; an empty input closes them. |
+| Arrow Down / Arrow Up | Opens the suggestions, then moves the highlight (with `"both"` and `"inline"`, into the input).  |
+| Enter                 | Fills in the highlighted suggestion; with none highlighted, submits the form.                    |
+| Escape                | Closes the suggestions and keeps the typed text (taking back an inline completion).              |
+| Tab                   | Closes the suggestions and moves on, keeping the text.                                           |
+
+Focus stays in the input: the highlight moves through `aria-activedescendant`.
+
+## Without JavaScript, and the element's script
+
+The input is a native text field with the name: typing, `required`, submission and reset work with
+no script; the suggestions need it. `<lu-combobox>`'s script (4.1 kB brotli, shared with Combobox)
+filters and opens them, moves the highlight, fills in a choice (firing `input` and `change` on the
+input) and runs inline completion.
+
+## Browser support
+
+As [Combobox](combobox.md#browser-support): popover, and CSS anchor positioning where available
+(the script places the popup elsewhere).
+
+## Related
+
+- [Combobox](combobox.md): a value picked from the options, when the text must match one.
+- [Field](field.md): a label, a description and errors for an autocomplete.
+- [Input](input.md): a text field without suggestions.
 
 <!-- source: button.md -->
 
@@ -1008,7 +1171,7 @@ page:
 
 # Combobox
 
-> A text input that filters a list of options, for picking one value or several from many: the WAI-ARIA combobox pattern with list autocomplete, after Base UI's Combobox. The input shows the option's label and the form gets its value. `<lu-combobox>`, a 3.8 kB form-associated light-DOM element, runs it on server-rendered pages and in islands; `bind:value` and `bind:open` keep signals in sync. Groups, an empty state, a status, a clear button, multiple values with chips, validation and async options.
+> A text input that filters a list of options, for picking one value or several from many: the WAI-ARIA combobox pattern with list autocomplete, after Base UI's Combobox. The input shows the option's label and the form gets its value. `<lu-combobox>`, a 4.1 kB form-associated light-DOM element, runs it on server-rendered pages and in islands; `bind:value` and `bind:open` keep signals in sync. Groups, an empty state, a status, a clear button, multiple values with chips, validation and async options.
 
 ```ts
 import { Combobox } from "@lumiose/ui"; // or "@lumiose/ui/combobox"
@@ -1114,7 +1277,9 @@ handlers, `ref`) and passes them through. Your props override the defaults (`tab
 own, since they connect the parts.
 
 - **`Input`**: `placeholder`, `onInput` (for async options) and `aria-describedby` pass through.
-  Its `type` and `value` are the combobox's.
+  Its `type` and `value` are the combobox's. Inside a [Field](field.md), it takes the field's id
+  (so `Field.Label` labels it), its description and error references and `aria-invalid`, and Root
+  takes the field's `name` and disabled state; the field shows the combobox's validation.
 - **`Trigger`** and **`Clear`**: out of the tab order, as in the APG examples; the input does
   everything from the keyboard. Name them with `aria-label` (or content).
 - **`Group`**: `aria-labelledby` points at its `GroupLabel` while one renders.
@@ -1299,7 +1464,7 @@ cannot be styled or grouped, and customizable select cannot filter). Without Jav
 HTML shows a labelled text field and nothing opens, and the form gets no value. For a choice that
 must work without JavaScript, use [Select](select.md).
 
-A page that renders a `Combobox` loads the script once, as a 3.8 kB (brotli) module without the
+A page that renders a `Combobox` loads the script once, as a 4.1 kB (brotli) module without the
 Lumiose runtime, and islands bundle it. It defines `lu-combobox`, which upgrades every combobox on
 the page in place: it reads the selection the server rendered (`aria-selected="true"`), puts its
 label in the input, renders the chips, and from then on owns the value, the filtering, the popup,
@@ -1339,8 +1504,11 @@ The element is also an API of its own, for scripts and other frameworks:
 
 ## Related
 
+- [Autocomplete](autocomplete.md): the same input and list for free text, when any text is fine
+  and the options only suggest it.
 - [Select](select.md): a native select, when the user picks from a short list without typing; it
   works without JavaScript.
+- [Field](field.md): a label, a description and errors for a combobox.
 - [Menu](menu.md): commands rather than values, and the dismissal model the combobox shares.
 - [UI components](README.md): the approach, styling, the default theme and the other components.
 - [Islands](https://itsjavi.com/lumiose/docs/concepts/islands/): running a component in the
@@ -2019,7 +2187,9 @@ import "@lumiose/ui/themes/default.css"; // optional: the default theme
 | `Error`       | `<output hidden>`: without children, the field's message (`for` the control); with children, your message. Shown while the field is invalid. |
 
 Instead of `Field.Control`, a field can hold a [Checkbox](checkbox.md), a [Switch](switch.md), a
-[Select](select.md) or a [Radio Group](radio-group.md): they take the field's wiring the same way.
+[Select](select.md), a [Radio Group](radio-group.md), a [Combobox](combobox.md), an
+[Autocomplete](autocomplete.md), a [Number Field](number-field.md) or a [Slider](slider.md): they
+take the field's wiring the same way (a Combobox and an Autocomplete through their input).
 
 ## API
 
@@ -2175,7 +2345,8 @@ runs), and hides server errors once the value changes.
 - [Input](input.md): `Field.Control`.
 - [Fieldset](fieldset.md): a group of fields with a legend.
 - [Checkbox](checkbox.md), [Switch](switch.md), [Radio Group](radio-group.md),
-  [Select](select.md): controls that take a field's wiring.
+  [Select](select.md), [Combobox](combobox.md), [Autocomplete](autocomplete.md),
+  [Number Field](number-field.md), [Slider](slider.md): controls that take a field's wiring.
 - [Data and actions](https://itsjavi.com/lumiose/docs/concepts/data-and-actions/): form actions,
   `fail()` and `actionData()`.
 
@@ -2940,11 +3111,179 @@ above. `role="meter"` reaches screen readers in recent versions; older ones read
 - [Progress](progress.md): a task's progress, which can be indeterminate.
 - [Slider](slider.md): a value the user picks within a range.
 
+<!-- source: number-field.md -->
+
+# Number Field
+
+> A number input with buttons to step it, after Base UI's NumberField and the APG spinbutton. Without `format` it is a native `<input type="number">`, which steps, validates and submits without JavaScript; with `format` (`Intl.NumberFormat` options: a currency, a percentage, grouping) it shows the formatted number, reads what is typed back in the same locale, and a hidden input submits the number. `<lu-number-field>`'s 2.2 kB script adds Page Up and Page Down, Home and End, press-and-hold buttons, a scrub area, the wheel when asked, and commit-time clamping. `bind:value` keeps a signal in sync.
+
+```ts
+import { NumberField } from "@lumiose/ui"; // or "@lumiose/ui/number-field"
+import "@lumiose/ui/number-field.css"; // or "@lumiose/ui/styles.css" for every component
+import "@lumiose/ui/themes/default.css"; // optional: the default theme
+```
+
+## Anatomy
+
+```tsx
+<NumberField.Root>
+  <NumberField.ScrubArea />
+  <NumberField.Group>
+    <NumberField.Decrement />
+    <NumberField.Input />
+    <NumberField.Increment />
+  </NumberField.Group>
+</NumberField.Root>
+```
+
+| Part        | Renders                                                                                                                           |
+| ----------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| `Root`      | `<lu-number-field>` with the range and format as attributes, and an `<input type="hidden">` that submits the number with `format` |
+| `ScrubArea` | `<span data-scrub>`: dragging across it steps the number (usually around the label)                                               |
+| `Group`     | `<div>` around the input and the buttons                                                                                          |
+| `Input`     | `<input type="number" inputmode="decimal" min max step>`, or with `format` `<input type="text" role="spinbutton" aria-value…>`    |
+| `Increment` | `<button type="button" tabindex="-1" aria-label="Increase" aria-controls="…">`, disabled at `max`                                 |
+| `Decrement` | `<button type="button" tabindex="-1" aria-label="Decrease" aria-controls="…">`, disabled at `min`                                 |
+
+Name the field with a [Field](field.md) (`Field.Label`), a `<label for>` the Root's `id`, or an
+`aria-label` on the `Input`.
+
+## API
+
+### NumberField.Root
+
+| Prop                               | Type                              | Default       |                                                                                                    |
+| ---------------------------------- | --------------------------------- | ------------- | -------------------------------------------------------------------------------------------------- |
+| `value`                            | `number \| null`                  |               | Shows this number (`null`: empty) when it changes. Pair it with `onValueChange`.                   |
+| `defaultValue`                     | `number \| null`                  | `null`        | The number at first; a form reset goes back to it.                                                 |
+| `onValueChange`                    | `(value: number \| null) => void` |               | Called as the number changes: typing, a key, a button, the wheel, a drag.                          |
+| `onValueCommitted`                 | `(value: number \| null) => void` |               | Called when a change is done: the input left, a key pressed, a button or a drag released.          |
+| `bind:value`                       | `Signal<number \| null>`          |               | Stands in for `value` and `onValueChange`.                                                         |
+| `min`, `max`                       | `number`                          |               | The range. A typed number outside it becomes its end when committed.                               |
+| `step`                             | `number`                          | `1`           | The step of the arrow keys, the buttons, the wheel and a drag.                                     |
+| `largeStep`                        | `number`                          | `10`          | The step of Page Up, Page Down and Shift with an arrow key.                                        |
+| `format`                           | `Intl.NumberFormatOptions`        |               | How the number is shown; with it, the input is a text field and a hidden input submits the number. |
+| `locale`                           | `string`                          | the browser's | The locale of the formatted number (the server's in server HTML).                                  |
+| `allowWheelScrub`                  | `boolean`                         | `false`       | The wheel steps the number while the input has focus and the pointer is over it.                   |
+| `allowOutOfRange`                  | `boolean`                         | `false`       | Typed numbers outside the range stay as typed, for the browser's validation to report.             |
+| `name`, `form`                     | `string`                          |               | The name the number is submitted under, and the id of its form when it is outside it.              |
+| `id`                               | `string`                          | generated     | The input's id, for a `<label for>`.                                                               |
+| `required`, `disabled`, `readOnly` | `boolean`                         | `false`       | As on a native input; read-only and disabled fields' buttons are disabled.                         |
+
+### NumberField.ScrubArea
+
+| Prop               | Type                         | Default        |                                                              |
+| ------------------ | ---------------------------- | -------------- | ------------------------------------------------------------ |
+| `direction`        | `"horizontal" \| "vertical"` | `"horizontal"` | The drag that changes the number: right goes up, or up does. |
+| `pixelSensitivity` | `number`                     | `2`            | How many pixels of drag make one step.                       |
+
+### The other parts
+
+`Group` takes `<div>` props. `Input` takes `<input>` props except the range's own (`type`, `value`,
+`min`, `max`, `step`, `name`, `required`, `readonly`, `id`: the Root's). `Increment` and
+`Decrement` take `<button>` props; give them an `aria-label` in the page's language. Inside a
+[Field](field.md), the input takes the field's id, name, description and error.
+
+**Native or formatted.** A native number input cannot show grouping, a currency or a percentage,
+and reads a typed number in the browser's own way, so a formatted field is a text field with the
+spinbutton role, and the number it submits sits in a hidden input. The native input is the default
+because it needs no JavaScript: typing, the arrow keys, `min`, `max` and `step` validation and the
+form value are the browser's.
+
+**Differences from Base UI's NumberField.** No `smallStep` (Alt with an arrow key) or
+`snapOnStep`: a native field validates its value against `step` itself. No `ScrubAreaCursor`
+(Base UI's pointer-locked cursor), no `inputRef`, no `render`. `locale` is a string, written to the
+element for its script.
+
+## Example
+
+```tsx check
+import { NumberField } from "@lumiose/ui";
+import { signal } from "lumiose";
+
+export function PriceField() {
+  const price = signal<number | null>(19.9);
+  return (
+    <NumberField.Root
+      id="price"
+      name="price"
+      bind:value={price}
+      min={0}
+      step={0.5}
+      format={{ style: "currency", currency: "EUR" }}
+      class="lu-number-field"
+    >
+      <NumberField.ScrubArea>
+        <label for="price">Price</label>
+      </NumberField.ScrubArea>
+      <NumberField.Group>
+        <NumberField.Decrement aria-label="Lower the price">−</NumberField.Decrement>
+        <NumberField.Input />
+        <NumberField.Increment aria-label="Raise the price">+</NumberField.Increment>
+      </NumberField.Group>
+    </NumberField.Root>
+  );
+}
+```
+
+## Styling
+
+**With the default theme**, put `lu-number-field` on `Root`: the label above one bordered group,
+the input centred between two 36px buttons that dim at the ends of the range, and a focus ring
+around the whole group.
+
+**With your own CSS**, style the parts through `class`, the input's `:focus-visible`, the buttons'
+`:disabled` and `[data-action="increment"]` / `[data-action="decrement"]`, the scrub area's
+`[data-scrub]`, and `lu-number-field[data-scrubbing]` while a drag is on.
+
+`@lumiose/ui/number-field.css` (0.2 kB brotli) hides the native spinners once the script runs
+(`:defined`) and hides the buttons until then, keeps held buttons from selecting text, and gives a
+scrub area its resize cursor and `touch-action: none`.
+
+## Keyboard and focus
+
+| Key                     | Does                                                                      |
+| ----------------------- | ------------------------------------------------------------------------- |
+| Arrow Up / Arrow Down   | One step up or down.                                                      |
+| Shift + Arrow Up / Down | `largeStep` up or down.                                                   |
+| Page Up / Page Down     | `largeStep` up or down.                                                   |
+| Home / End              | `min` or `max`, when set.                                                 |
+| Enter                   | Commits the typed number (clamped, formatted); a form submits.            |
+| Tab                     | Moves on: one tab stop, the input (the buttons are not in the tab order). |
+
+A press on a button steps once and keeps focus where it is; holding it steps again every 60 ms
+after 400 ms. A click from a keyboard or a screen reader on a button steps once. Every drag (the
+scrub area) has the arrow keys as its alternative (WCAG 2.5.7). The wheel steps the number only
+with `allowWheelScrub`, while the input has focus and the pointer is over it (Chromium's own
+stepping of a focused number input is turned off otherwise).
+
+## Without JavaScript, and the element's script
+
+Without `format`, the native number input works and submits with no script; the buttons, which
+need it, stay hidden and the native spinners show. With `format`, the text input submits its text
+as typed until the script moves the name to the hidden input, so a form that must work without
+JavaScript should leave `format` out.
+
+`<lu-number-field>`'s script (2.2 kB brotli) adds the large step, Home and End, the buttons, the
+scrub area and the wheel, clamps and formats on commit, keeps the hidden input, `aria-valuenow`
+and `aria-valuetext` current, and follows a form reset.
+
+## Browser support
+
+Native number inputs and `Intl.NumberFormat` (with `formatToParts`): every supported browser.
+Scrubbing uses pointer capture, without pointer lock.
+
+## Related
+
+- [Field](field.md): a label, a description and errors for a number field.
+- [Slider](slider.md): a number picked by dragging along a range.
+- [Input](input.md): any other text.
+
 <!-- source: popover.md -->
 
 # Popover
 
-> A popup anchored to its trigger: a native `popover` opened and closed by the trigger's `popovertarget`, placed with CSS anchor positioning, so it works in server HTML with no JavaScript. A 1.7 kB script moves focus into it and back, dismisses it as Base UI does (not on a right-click), keeps `aria-expanded` current and places it in browsers without anchor positioning. `bind:open` (or `open` and `onOpenChange`) keeps a signal in sync in islands.
+> A popup anchored to its trigger: a native `popover` opened and closed by the trigger's `popovertarget`, placed with CSS anchor positioning, so it works in server HTML with no JavaScript. A 2.1 kB script moves focus into it and back, dismisses it as Base UI does (not on a right-click), keeps `aria-expanded` current and places it in browsers without anchor positioning. `bind:open` (or `open` and `onOpenChange`) keeps a signal in sync in islands. A trigger can open it on hover (`openOnHover`), and a `modal` popover is a modal `<dialog>` that makes the page behind it inert.
 
 ```ts
 import { Popover } from "@lumiose/ui"; // or "@lumiose/ui/popover"
@@ -2974,7 +3313,11 @@ import "@lumiose/ui/themes/default.css"; // optional: the default theme
 | `Description` | `<p>`, which describes it.                                                                                                                                                  |
 | `Close`       | `<button type="button" popovertarget="…" popovertargetaction="hide">`.                                                                                                      |
 
-The popup is a non-modal dialog, as in Base UI: the page around it stays usable. A popover may
+With `modal`, the `Trigger` is a `<button command="show-modal" commandfor="…">`, the `Popup` a
+`<dialog closedby="any" data-side="…" data-align="…">` and the `Close` a
+`<button command="close" commandfor="…">`.
+
+The popup is a non-modal dialog, as in Base UI: the page around it stays usable (unless `modal`). A popover may
 contain another `Popover.Root`: the inner popup opens on top, and closing the outer one closes
 both.
 
@@ -2987,6 +3330,19 @@ both.
 | `open`         | `boolean`                 |         | Opens or closes the popover when it changes, in the browser. Server HTML always starts closed: a popover opens only from its trigger or script. |
 | `onOpenChange` | `(open: boolean) => void` |         | Called after the popover opens or closes, whatever did it: the trigger, a close button, Escape, a click outside, another popover or `open`.     |
 | `bind:open`    | `Signal<boolean>`         |         | Stands in for `open` and `onOpenChange`.                                                                                                        |
+| `modal`        | `boolean`                 | `false` | A modal popover: the page behind it is inert and does not scroll, focus stays inside, and a press outside or Escape closes it.                  |
+
+### Popover.Trigger
+
+| Prop          | Type      | Default |                                                                                                                                                          |
+| ------------- | --------- | ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `openOnHover` | `boolean` | `false` | A mouse or pen resting on the trigger opens the popover too, and it closes once the pointer has left the trigger and the popup. Not for a modal popover. |
+| `delay`       | `number`  | `300`   | With `openOnHover`: how long the pointer rests on the trigger before the popover opens, in ms.                                                           |
+| `closeDelay`  | `number`  | `0`     | With `openOnHover`: how long the popover stays open after the pointer leaves, in ms (at least 100 ms to cross the gap to the popup).                     |
+
+A hover opens the popover without moving focus, and a click on the trigger then keeps it open
+until it is dismissed. Touch and the keyboard open it with a click (a tap, Enter or Space), as
+without `openOnHover`.
 
 ### Popover.Popup
 
@@ -3058,13 +3414,48 @@ export function Filters() {
 }
 ```
 
+A profile card that opens on hover, and a modal popover with a form:
+
+```tsx check
+import { Popover } from "@lumiose/ui";
+
+export function HoverAndModal() {
+  return (
+    <>
+      <Popover.Root>
+        <Popover.Trigger class="lu-button" openOnHover delay={200}>
+          Ada Lovelace
+        </Popover.Trigger>
+        <Popover.Popup class="lu-popover" sideOffset={8}>
+          <Popover.Title>Ada Lovelace</Popover.Title>
+          <Popover.Description>Wrote the first published program.</Popover.Description>
+        </Popover.Popup>
+      </Popover.Root>
+      <Popover.Root modal>
+        <Popover.Trigger class="lu-button">Rename</Popover.Trigger>
+        <Popover.Popup class="lu-popover" align="start" sideOffset={8}>
+          <Popover.Title>Rename the file</Popover.Title>
+          <label>
+            Name <input class="lu-input" value="report.pdf" />
+          </label>
+          <footer>
+            <Popover.Close class="lu-button">Done</Popover.Close>
+          </footer>
+        </Popover.Popup>
+      </Popover.Root>
+    </>
+  );
+}
+```
+
 ## Styling
 
 **With the default theme**, put `lu-popover` on `Popup`: a surface with the title, the
 description and a `<footer>` styled, a 4px gap to the trigger, and a fade. Its colours come from the
 theme's `--lu-` properties ([UI components](README.md#the-default-theme)).
 
-**With your own CSS**, style the popup through `class` and its state: `:popover-open`,
+**With your own CSS**, style the popup through `class` and its state: `:popover-open` (`[open]`
+for a modal popover, whose `::backdrop` is transparent until you style it),
 `[data-side]` and `[data-align]` (the requested placement; a flip does not change them), and the
 trigger through `[aria-expanded]`. Two custom properties set the offsets, and the props override
 them: `--lu-side-offset` and `--lu-align-offset`.
@@ -3100,14 +3491,21 @@ them: `--lu-side-offset` and `--lu-align-offset`.
   parent, and opening another popover closes the first.
 - Popovers opened from a dialog belong inside its `Popup`: everything outside a modal dialog is
   inert.
+- **Opened on hover**, the popover leaves focus where it is; it stays open while the pointer is on
+  the trigger or the popup, and Escape closes it without moving the pointer (WCAG 1.4.13).
+- **A modal popover** keeps Tab inside it (the page behind it is inert), and Escape, a press
+  outside or a close button closes it; focus returns to the trigger.
 
 ## Without JavaScript, and the client script
 
 The trigger, the close buttons, Escape, the click outside and the placement are HTML and CSS
-features: a popover in a server-rendered page works before any script loads, and with none.
+features: a popover in a server-rendered page works before any script loads, and with none. So
+does a modal popover, through invoker commands and `closedby` (where a browser lacks them,
+[Dialog](dialog.md)'s script, which a modal popover loads, stands in). Opening on hover needs the
+script.
 `open`, `onOpenChange` and `bind:open` need the component to run in an island.
 
-A page that renders a `Popover` loads a 1.7 kB (brotli) module once, without the Lumiose runtime;
+A page that renders a `Popover` loads a 2.1 kB (brotli) module once, without the Lumiose runtime;
 islands bundle it. It covers every Popover on the page:
 
 - focus on open (the first focusable element, or the popup) and its return on close;
@@ -3118,11 +3516,15 @@ islands bundle it. It covers every Popover on the page:
   script loads, the browser's light dismiss closes it on any press outside;
 - `aria-expanded` on the triggers;
 - the placement in browsers without CSS anchor positioning, which it keeps current on scroll and
-  resize.
+  resize;
+- opening on hover: the delays, the grace to cross the gap to the popup, and keeping it open after
+  a click on the trigger.
 
 ## Browser support
 
 - **Popover and `popovertarget`**: every current browser (Baseline 2024).
+- **Invoker commands and `closedby`** (a modal popover): Chrome 135, Firefox 144, Safari 26.2 for
+  commands; Chrome 134 and Firefox 141 for `closedby`. Elsewhere Dialog's script stands in.
 - **CSS anchor positioning**: Chrome and Edge 125, Firefox 147, Safari 26. Elsewhere the client
   script places the popup; without JavaScript there it opens in the middle of the viewport.
 - Safari and Firefox do not follow a trigger moved by a CSS `transform`.

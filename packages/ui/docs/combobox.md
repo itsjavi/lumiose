@@ -1,6 +1,6 @@
 # Combobox
 
-> A text input that filters a list of options, for picking one value or several from many: the WAI-ARIA combobox pattern with list autocomplete, after Base UI's Combobox. The input shows the option's label and the form gets its value. `<lu-combobox>`, a 3.8 kB form-associated light-DOM element, runs it on server-rendered pages and in islands; `bind:value` and `bind:open` keep signals in sync. Groups, an empty state, a status, a clear button, multiple values with chips, validation and async options.
+> A text input that filters a list of options, for picking one value or several from many: the WAI-ARIA combobox pattern with list autocomplete, after Base UI's Combobox. The input shows the option's label and the form gets its value. `<lu-combobox>`, a 4.1 kB form-associated light-DOM element, runs it on server-rendered pages and in islands; `bind:value` and `bind:open` keep signals in sync. Groups, an empty state, a status, a clear button, multiple values with chips, validation and async options.
 
 ```ts
 import { Combobox } from "@lumiose/ui"; // or "@lumiose/ui/combobox"
@@ -106,7 +106,9 @@ handlers, `ref`) and passes them through. Your props override the defaults (`tab
 own, since they connect the parts.
 
 - **`Input`**: `placeholder`, `onInput` (for async options) and `aria-describedby` pass through.
-  Its `type` and `value` are the combobox's.
+  Its `type` and `value` are the combobox's. Inside a [Field](field.md), it takes the field's id
+  (so `Field.Label` labels it), its description and error references and `aria-invalid`, and Root
+  takes the field's `name` and disabled state; the field shows the combobox's validation.
 - **`Trigger`** and **`Clear`**: out of the tab order, as in the APG examples; the input does
   everything from the keyboard. Name them with `aria-label` (or content).
 - **`Group`**: `aria-labelledby` points at its `GroupLabel` while one renders.
@@ -291,7 +293,7 @@ cannot be styled or grouped, and customizable select cannot filter). Without Jav
 HTML shows a labelled text field and nothing opens, and the form gets no value. For a choice that
 must work without JavaScript, use [Select](select.md).
 
-A page that renders a `Combobox` loads the script once, as a 3.8 kB (brotli) module without the
+A page that renders a `Combobox` loads the script once, as a 4.1 kB (brotli) module without the
 Lumiose runtime, and islands bundle it. It defines `lu-combobox`, which upgrades every combobox on
 the page in place: it reads the selection the server rendered (`aria-selected="true"`), puts its
 label in the input, renders the chips, and from then on owns the value, the filtering, the popup,
@@ -331,8 +333,11 @@ The element is also an API of its own, for scripts and other frameworks:
 
 ## Related
 
+- [Autocomplete](autocomplete.md): the same input and list for free text, when any text is fine
+  and the options only suggest it.
 - [Select](select.md): a native select, when the user picks from a short list without typing; it
   works without JavaScript.
+- [Field](field.md): a label, a description and errors for a combobox.
 - [Menu](menu.md): commands rather than values, and the dismissal model the combobox shares.
 - [UI components](README.md): the approach, styling, the default theme and the other components.
 - [Islands](https://itsjavi.com/lumiose/docs/concepts/islands/): running a component in the

@@ -31,7 +31,7 @@ through their `class` prop:
 | `lu-tooltip`        | `Tooltip.Popup`                                |                                                                                             |
 | `lu-tabs`           | `Tabs.Root`                                    | Styles the list, the tabs (the selected one underlined) and the panels                      |
 | `lu-menu`           | every `Menu.Popup`                             | Styles the items, their checkbox and radio marks, separators and labels                     |
-| `lu-combobox`       | `Combobox.Root`                                | Lays out the field (label, chips, input, buttons) and styles the popup                      |
+| `lu-combobox`       | `Combobox.Root`, `Autocomplete.Root`           | Lays out the field (label, chips, input, buttons) and styles the popup                      |
 | `lu-select`         | `Select.Root`                                  | Makes it a customizable select and styles the control and the picker                        |
 | `lu-field`          | `Field.Root`                                   | Stacks the label, control, description and errors; errors in red                            |
 | `lu-input`          | `Input`, `Field.Control`                       | A text field with a focus ring and a red border when invalid                                |
@@ -48,6 +48,7 @@ through their `class` prop:
 | `lu-progress`       | `Progress.Root`                                | The label and value above a bar; a sliding segment when indeterminate                       |
 | `lu-meter`          | `Meter.Root`                                   | The label and value above a bar                                                             |
 | `lu-slider`         | `Slider.Root`                                  | The label and value above the track, the indicator and 24px thumbs                          |
+| `lu-number-field`   | `NumberField.Root`                             | The label above one bordered group: the input between its buttons                           |
 | `lu-drawer`         | `Drawer.Popup`                                 | A surface against its edge (a handle on a bottom sheet), title, description, footer; slides |
 
 Its colours and radius are custom properties with shadcn/ui's names and a `--lu-` prefix, so a
