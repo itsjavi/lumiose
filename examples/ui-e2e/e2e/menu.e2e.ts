@@ -351,6 +351,8 @@ test.describe("pointer", () => {
   test("a submenu opens on hover and stays open while the pointer crosses a sibling", async ({
     page,
   }) => {
+    // Room below the trigger under the fixture's long nav, so the menu opens downward in view.
+    await page.setViewportSize({ width: 1280, height: 1000 });
     await page.goto("/menu");
     const { trigger, menu, item } = actions(page);
     const share = page.getByRole("menu", { name: "Share" });

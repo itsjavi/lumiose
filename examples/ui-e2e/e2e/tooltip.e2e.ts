@@ -240,6 +240,7 @@ test("a server-rendered page with tooltips loads only the client scripts", async
   // The page also has a dialog and a popover; no island runtime.
   expect(scripts.toSorted()).toEqual([
     expect.stringMatching(/\/dialog\.script-[\w-]+\.js$/),
+    expect.stringMatching(/\/hover-[\w-]+\.js$/),
     expect.stringMatching(/\/layer-[\w-]+\.js$/),
     expect.stringMatching(/\/place-[\w-]+\.js$/),
     expect.stringMatching(/\/popover\.script-[\w-]+\.js$/),

@@ -352,6 +352,7 @@ test("a server-rendered page with popovers loads only Popover's client script", 
   // shares with Menu and Combobox, and Dialog's (the page has a dialog); no island runtime.
   expect(scripts.toSorted()).toEqual([
     expect.stringMatching(/\/dialog\.script-[\w-]+\.js$/),
+    expect.stringMatching(/\/hover-[\w-]+\.js$/),
     expect.stringMatching(/\/layer-[\w-]+\.js$/),
     expect.stringMatching(/\/place-[\w-]+\.js$/),
     expect.stringMatching(/\/popover\.script-[\w-]+\.js$/),
