@@ -5,7 +5,7 @@ status: To Do
 assignee:
   - '@Beacon'
 created_date: '2026-10-14 03:30'
-updated_date: '2026-10-14 03:47'
+updated_date: '2026-10-16 23:55'
 labels:
   - docs
   - islands
@@ -24,3 +24,9 @@ Found in the itsjavi.com port to Lumiose 0.4.0 (the port's FINDINGS.md), gap 7. 
 <!-- AC:BEGIN -->
 - [ ] #1 islands.md states which events are replayed and recommends client:load (or moving the trigger inside the island) for triggers outside it
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+2026-10-17 (Lux, orchestrator): Beacon's in unattended batch 2. For TASK-470 it may edit packages/lumiose/src/dom (no Spark session is running).
+<!-- SECTION:NOTES:END -->

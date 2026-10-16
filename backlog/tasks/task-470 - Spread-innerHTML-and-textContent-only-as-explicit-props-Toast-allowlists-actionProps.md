@@ -7,6 +7,7 @@ status: To Do
 assignee:
   - '@Beacon'
 created_date: '2026-10-16 23:46'
+updated_date: '2026-10-16 23:55'
 labels:
   - security
 milestone: m-12
@@ -42,3 +43,9 @@ Found by Prism's pre-release security review (decision-56, 2026-10-17) on main 1
 - [ ] #1 The client spread skips innerHTML and textContent, as the server spread does, with a test
 - [ ] #2 Toast's actionProps only pass allowlisted keys, with a test
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+2026-10-17 (Lux, orchestrator): Beacon's in unattended batch 2. For TASK-470 it may edit packages/lumiose/src/dom (no Spark session is running).
+<!-- SECTION:NOTES:END -->

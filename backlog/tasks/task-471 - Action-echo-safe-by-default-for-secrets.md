@@ -5,6 +5,7 @@ status: To Do
 assignee:
   - '@Beacon'
 created_date: '2026-10-16 23:46'
+updated_date: '2026-10-16 23:55'
 labels:
   - security
 milestone: m-12
@@ -45,3 +46,9 @@ Lux (2026-10-17): no new public API is needed. Form's `values` already takes a r
 - [ ] #1 form.md and data-and-actions.md echo only allow-listed fields, and no example echoes a whole FormData with a password in it
 - [ ] #2 In dev, serializing a FormData with a secret-looking name (password, token, secret, otp, card and the like) warns, with a test
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+2026-10-17 (Lux, orchestrator): Beacon's in unattended batch 2. For TASK-470 it may edit packages/lumiose/src/dom (no Spark session is running).
+<!-- SECTION:NOTES:END -->
