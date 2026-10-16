@@ -1,0 +1,12 @@
+import { Title } from "lumiose";
+import { OTPFieldSignals } from "../../../islands/OTPFieldSignals.tsx";
+
+export default function OTPFieldIslandPage() {
+  return (
+    <>
+      <Title>OTP Field in an island, bound to a signal</Title>
+      <h1>OTP Field in an island, bound to a signal</h1>
+      <OTPFieldSignals client:load />
+    </>
+  );
+}

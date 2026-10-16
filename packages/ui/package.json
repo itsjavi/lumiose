@@ -69,6 +69,8 @@
     "./separator.css": "./src/separator/separator.css",
     "./avatar": "./src/avatar/avatar.tsx",
     "./avatar.css": "./src/avatar/avatar.css",
+    "./otp-field": "./src/otp-field/otp-field.tsx",
+    "./otp-field.css": "./src/otp-field/otp-field.css",
     "./themes/default.css": "./src/themes/default.css",
     "./package.json": "./package.json"
   },
@@ -124,6 +126,8 @@
       "./separator.css": "./dist/separator/separator.css",
       "./avatar": "./dist/avatar/avatar.tsx",
       "./avatar.css": "./dist/avatar/avatar.css",
+      "./otp-field": "./dist/otp-field/otp-field.tsx",
+      "./otp-field.css": "./dist/otp-field/otp-field.css",
       "./themes/default.css": "./dist/themes/default.css",
       "./package.json": "./package.json"
     }

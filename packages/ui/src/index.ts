@@ -206,3 +206,11 @@ export type {
   AvatarLoadingStatus,
   AvatarRootProps,
 } from "./avatar/avatar.tsx";
+export { OTPField } from "./otp-field/otp-field.tsx";
+export type {
+  OTPFieldInputProps,
+  OTPFieldRootProps,
+  OTPFieldSeparatorProps,
+  OTPFieldSlotProps,
+  OTPFieldValidationType,
+} from "./otp-field/otp-field.tsx";

@@ -1,0 +1,44 @@
+/*
+ * The CSS OTP Field needs to work, and nothing else (decision-62). Once its script runs
+ * (`:defined`), the input lies over the slots, its text, caret and selection transparent, so a
+ * press anywhere reaches it and the slots show the code; until then (or without JavaScript) the
+ * input is a plain text field and the slots stay hidden. It sits in the `lu.core` layer, so any
+ * app CSS wins.
+ */
+@layer lu.core, lu.theme;
+
+@layer lu.core {
+  lu-otp-field {
+    display: inline-flex;
+    position: relative;
+  }
+  /* Important: a theme's display for the slots must not show them without the script. */
+  lu-otp-field:not(:defined) > [data-slot],
+  lu-otp-field:not(:defined) > [data-orientation] {
+    display: none !important;
+  }
+  lu-otp-field:defined > input {
+    position: absolute;
+    inset: 0;
+    inline-size: 100%;
+    block-size: 100%;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    outline: none;
+    background: transparent;
+    color: transparent;
+    caret-color: transparent;
+    font-size: 1px;
+    letter-spacing: 0;
+    -webkit-text-fill-color: transparent;
+    appearance: none;
+  }
+  lu-otp-field:defined > input::selection {
+    background: transparent;
+  }
+  /* Masked: a field without its script shows dots too. */
+  lu-otp-field[mask] > input {
+    -webkit-text-security: disc;
+  }
+}

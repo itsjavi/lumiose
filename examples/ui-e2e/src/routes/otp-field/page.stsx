@@ -1,0 +1,72 @@
+import { Field, OTPField } from "@lumiose/ui";
+import { Title } from "lumiose";
+
+// Server-rendered, no island: each OTP Field is one native input, which works, validates and
+// submits without JavaScript; `<lu-otp-field>`'s script lays it over the slots and keeps the value
+// to the allowed characters. The forms submit to this page (GET), so the codes show in the URL.
+// Styled with the default theme.
+export default function OTPFieldPage() {
+  return (
+    <>
+      <Title>OTP Field</Title>
+      <h1>OTP Field</h1>
+      <div class="grid">
+        <form method="get" action="/otp-field">
+          <Field.Root name="code" class="lu-field">
+            <Field.Label>Verification code</Field.Label>
+            <Field.Description>The 6 digits we sent by text message.</Field.Description>
+            <OTPField.Root length={6} required class="lu-otp-field">
+              <OTPField.Input />
+              <OTPField.Slot />
+              <OTPField.Slot />
+              <OTPField.Slot />
+              <OTPField.Separator />
+              <OTPField.Slot />
+              <OTPField.Slot />
+              <OTPField.Slot />
+            </OTPField.Root>
+            <Field.Error />
+          </Field.Root>
+          <Field.Root name="recovery" class="lu-field">
+            <Field.Label>Recovery code</Field.Label>
+            <OTPField.Root length={4} validationType="alphanumeric" mask class="lu-otp-field">
+              <OTPField.Input />
+              <OTPField.Slot />
+              <OTPField.Slot />
+              <OTPField.Slot />
+              <OTPField.Slot />
+            </OTPField.Root>
+          </Field.Root>
+          <footer>
+            <button type="submit" class="lu-button" data-variant="primary">
+              Verify
+            </button>
+            <button type="reset" class="lu-button">
+              Reset
+            </button>
+          </footer>
+        </form>
+
+        <form method="get" action="/otp-field">
+          <Field.Root name="pin" class="lu-field">
+            <Field.Label>PIN (submits when complete)</Field.Label>
+            <OTPField.Root length={4} autoSubmit class="lu-otp-field">
+              <OTPField.Input />
+              <OTPField.Slot />
+              <OTPField.Slot />
+              <OTPField.Slot />
+              <OTPField.Slot />
+            </OTPField.Root>
+          </Field.Root>
+        </form>
+      </div>
+    </>
+  );
+}
+
+<style>
+  form footer {
+    display: flex;
+    gap: 0.5rem;
+  }
+</style>

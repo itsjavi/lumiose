@@ -50,6 +50,8 @@
  *                                       the fallback's initials centred on a muted surface
  *   .lu-number-field                    a NumberField.Root: label, one bordered group with the
  *                                       input between its buttons
+ *   .lu-otp-field                       an OTPField.Root: a box per character, the caret's box
+ *                                       ringed while focused, a dash for a separator
  */
 @layer lu.core, lu.theme;
 
@@ -1586,5 +1588,71 @@
     inline-size: 100%;
     block-size: 100%;
     object-fit: cover;
+  }
+
+  /* OTP Field (TASK-376) ---------------------------------------------------------------------- */
+
+  .lu-otp-field {
+    align-items: center;
+    gap: 0.5rem;
+    max-inline-size: 100%;
+  }
+  /* A box per character; the caret's box gets the focus ring while the input has focus. */
+  .lu-otp-field > :where([data-slot]) {
+    display: grid;
+    place-items: center;
+    box-sizing: border-box;
+    flex: 0 1 2.5rem;
+    min-inline-size: 1.75rem;
+    block-size: 2.75rem;
+    border: 1px solid var(--lu-input);
+    border-radius: calc(var(--lu-radius) - 2px);
+    background: var(--lu-background);
+    color: var(--lu-foreground);
+    font-size: 1.25rem;
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+  }
+  .lu-otp-field > [data-slot][data-active] {
+    outline: 2px solid var(--lu-ring);
+    outline-offset: 2px;
+  }
+  /* The caret, in the caret's box while it is empty. */
+  .lu-otp-field > [data-slot][data-active]:not([data-filled])::after {
+    content: "";
+    inline-size: 1px;
+    block-size: 1.25rem;
+    background: var(--lu-foreground);
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .lu-otp-field > [data-slot][data-active]:not([data-filled])::after {
+      animation: lu-otp-caret 1s steps(1) infinite;
+    }
+  }
+  @keyframes lu-otp-caret {
+    50% {
+      opacity: 0;
+    }
+  }
+  .lu-otp-field > :where([data-orientation="horizontal"]) {
+    flex: 0 1 0.75rem;
+    min-inline-size: 0.25rem;
+    block-size: 2px;
+    background: var(--lu-muted-foreground);
+  }
+  .lu-otp-field:has(input:disabled) {
+    opacity: 0.5;
+  }
+  /* Without its script, the input is a plain field: style it as one. */
+  .lu-otp-field:not(:defined) > :where(input) {
+    box-sizing: border-box;
+    min-block-size: 2.25rem;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--lu-input);
+    border-radius: calc(var(--lu-radius) - 2px);
+    background: var(--lu-background);
+    color: var(--lu-foreground);
+    font: inherit;
+    letter-spacing: 0.5em;
   }
 }

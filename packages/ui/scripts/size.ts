@@ -168,6 +168,12 @@ const COMPONENTS: Component[] = [
     scripts: ["avatar/avatar.script.ts"],
     css: "avatar/avatar.css",
   },
+  {
+    name: "otp-field",
+    module: "otp-field/otp-field.tsx",
+    scripts: ["otp-field/otp-field.script.ts"],
+    css: "otp-field/otp-field.css",
+  },
 ];
 
 const CLIENT_SCRIPT = /\?client$/;
