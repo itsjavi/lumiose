@@ -106,6 +106,26 @@ test.describe("Toolbar", () => {
     await expect(size).toBeFocused();
   });
 
+  test("the arrows select a text field's text; Shift keeps its keys (TASK-452 L26)", async ({
+    page,
+  }) => {
+    await ready(page);
+    const size = page.getByRole("textbox", { name: "Font size" });
+    const selection = () =>
+      size.evaluate((input: HTMLInputElement) => [input.selectionStart, input.selectionEnd]);
+    await page.getByRole("link", { name: "Help" }).focus();
+    await page.keyboard.press("ArrowRight");
+    await expect(size).toBeFocused();
+    expect(await selection()).toEqual([0, 2]);
+    // Right collapses the selection at the end; Shift+Right there stays in the field.
+    await page.keyboard.press("ArrowRight");
+    await page.keyboard.press("Shift+ArrowRight");
+    await expect(size).toBeFocused();
+    await page.keyboard.press("Shift+ArrowLeft");
+    await expect(size).toBeFocused();
+    expect(await selection()).toEqual([1, 2]);
+  });
+
   test("the items act: a toggle presses, a disabled button does nothing, a menu opens", async ({
     page,
   }) => {

@@ -115,8 +115,9 @@ the buttons. Style the items with their own classes (`lu-button`, `lu-toggle`, `
 Natively disabled controls are skipped. When the item with the tab stop is removed, disabled or
 hidden, the first item takes it. A key an item handles itself (a Menu trigger's) moves nothing. A
 control keeps the keys it needs: a text field its
-caret's Left and Right (focus moves on at its start or end) and Home and End, a number field or a
-slider its arrows, a select Up and Down. Base UI advises at most one input, last.
+caret's Left and Right (focus moves on at its start or end; with Shift they select) and Home and
+End, a number field or a slider its arrows, a select Up and Down. A text field the arrows reach has
+its text selected, as in Base UI. Base UI advises at most one input, last.
 
 ## Without JavaScript, and the element's script
 

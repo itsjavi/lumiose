@@ -315,8 +315,10 @@ Base UI's behaviour where the pattern leaves a choice:
 
 The trigger opens the popup with `popovertarget`, and Escape or a click outside closes it: a menu
 in a server-rendered page opens before any script loads, and with none. Tab then moves through the
-items in order, and links work; commands, which run JavaScript, need it anyway. `open`,
-`onOpenChange` and the `bind:` props need the component to run in the browser, in an island.
+items in order, and links work; commands, which run JavaScript, need it anyway. Escape in a
+submenu closes it, but the browser leaves focus on the page rather than on the submenu's trigger:
+Tab starts over from the top (the script returns focus to the trigger). `open`, `onOpenChange` and
+the `bind:` props need the component to run in the browser, in an island.
 
 The keyboard contract comes from a small script: a page that renders a `Menu` loads it once, as a
 3.7 kB (brotli) module without the Lumiose runtime, and islands bundle it. It defines `lu-menu`,

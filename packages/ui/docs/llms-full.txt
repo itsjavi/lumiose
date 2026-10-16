@@ -3358,8 +3358,10 @@ Base UI's behaviour where the pattern leaves a choice:
 
 The trigger opens the popup with `popovertarget`, and Escape or a click outside closes it: a menu
 in a server-rendered page opens before any script loads, and with none. Tab then moves through the
-items in order, and links work; commands, which run JavaScript, need it anyway. `open`,
-`onOpenChange` and the `bind:` props need the component to run in the browser, in an island.
+items in order, and links work; commands, which run JavaScript, need it anyway. Escape in a
+submenu closes it, but the browser leaves focus on the page rather than on the submenu's trigger:
+Tab starts over from the top (the script returns focus to the trigger). `open`, `onOpenChange` and
+the `bind:` props need the component to run in the browser, in an island.
 
 The keyboard contract comes from a small script: a page that renders a `Menu` loads it once, as a
 3.7 kB (brotli) module without the Lumiose runtime, and islands bundle it. It defines `lu-menu`,
@@ -6643,8 +6645,9 @@ the buttons. Style the items with their own classes (`lu-button`, `lu-toggle`, `
 Natively disabled controls are skipped. When the item with the tab stop is removed, disabled or
 hidden, the first item takes it. A key an item handles itself (a Menu trigger's) moves nothing. A
 control keeps the keys it needs: a text field its
-caret's Left and Right (focus moves on at its start or end) and Home and End, a number field or a
-slider its arrows, a select Up and Down. Base UI advises at most one input, last.
+caret's Left and Right (focus moves on at its start or end; with Shift they select) and Home and
+End, a number field or a slider its arrows, a select Up and Down. A text field the arrows reach has
+its text selected, as in Base UI. Base UI advises at most one input, last.
 
 ## Without JavaScript, and the element's script
 
