@@ -1,6 +1,6 @@
 # Navigation Menu
 
-> A site's navigation whose items open panels of links, after Base UI's NavigationMenu and the WAI-ARIA disclosure navigation pattern: a `<nav>` landmark around a list, each trigger opening its content through `popovertarget` (a native popover placed under it by CSS anchor positioning), so the links work and the panels open on a click, one at a time, in server HTML with no JavaScript. A 2.2 kB script adds hover intent, the arrow keys, closing when focus leaves and the direction a panel comes in from. `bind:value` (or `value` and `onValueChange`) keeps the open item in a signal.
+> A site's navigation whose items open panels of links, after Base UI's NavigationMenu and the WAI-ARIA disclosure navigation pattern: a `<nav>` landmark around a list, each trigger opening its content through `popovertarget` (a native popover placed under it by CSS anchor positioning), so the links work and the panels open on a click, one at a time, in server HTML with no JavaScript. A 3.2 kB script adds hover intent, the arrow keys, closing when focus leaves and the direction a panel comes in from. `bind:value` (or `value` and `onValueChange`) keeps the open item in a signal.
 
 ```ts
 import { NavigationMenu } from "@lumiose/ui"; // or "@lumiose/ui/navigation-menu"
@@ -221,8 +221,10 @@ each content next to its trigger, with the same flips as Popover and Menu, and g
 | Escape                  | Closes the open content and returns to its trigger.                                                         |
 
 - **The pointer**: resting on a trigger opens its content after `delay`, at once while another one
-  is open; leaving the item closes it after `closeDelay`, unless a click kept it open. A click
-  toggles a content; a click outside closes it.
+  is open; leaving the item closes it after `closeDelay`, unless a click kept it open. On the way
+  from a trigger to its open content, another trigger the pointer crosses waits 300ms before it
+  takes over, so a diagonal path into a wide panel keeps it. A click toggles a content; a click
+  outside closes it, but not a right-click or a press in a toast.
 - **Focus** leaving an open item for elsewhere on the page closes its content. It is a navigation
   landmark, not a menu: links keep their roles and the browser's link behaviour.
 
@@ -232,11 +234,13 @@ The `<nav>`, its links and the triggers are HTML: each trigger opens its content
 `popovertarget`, one at a time (an auto popover closes the others), and Escape or a click outside
 closes it. `value`, `onValueChange` and `bind:value` need the component to run in an island.
 
-A page that renders a `NavigationMenu` loads a 2.2 kB (brotli) script, without the Lumiose runtime;
-islands bundle it. `<lu-navigation-menu>` takes over the trigger's click (so a click keeps a content
-opened by hover open), opens contents on hover, adds the arrow keys, closes a content when focus
-leaves its item, keeps `aria-expanded` and `data-activation-direction` current, and places the
-contents where CSS anchor positioning is missing.
+A page that renders a `NavigationMenu` loads a 3.2 kB (brotli) script (its dismissal module is
+Menu's and Popover's too), without the Lumiose runtime; islands bundle it. `<lu-navigation-menu>`
+takes over the trigger's click (so a click keeps a content opened by hover open), opens contents on
+hover, adds the arrow keys, closes a content when focus leaves its item, dismisses contents as Menu
+and Popover do (a press of the main button outside, an Escape, another layer opening), keeps
+`aria-expanded` and `data-activation-direction` current, and places the contents where CSS anchor
+positioning is missing.
 
 ## Browser support
 

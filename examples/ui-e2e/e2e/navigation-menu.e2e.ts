@@ -105,6 +105,48 @@ test.describe("pointer", () => {
     await expect(panel).toBeHidden();
   });
 
+  test("a right-click outside leaves a panel open (TASK-451 L24)", async ({ page }) => {
+    await page.goto("/navigation-menu");
+    await ready(page);
+    const panel = await panelOf(page, "Products");
+    await trigger(page, "Products").click();
+    await expect(panel).toBeVisible();
+    await page.mouse.click(700, 600, { button: "right" });
+    await page.waitForTimeout(200);
+    await expect(panel).toBeVisible();
+    await page.mouse.click(700, 600);
+    await expect(panel).toBeHidden();
+  });
+
+  test("on the way to a panel, crossing the next trigger keeps it (TASK-451 L25)", async ({
+    page,
+  }) => {
+    await page.goto("/navigation-menu");
+    await ready(page);
+    const products = trigger(page, "Products");
+    const panel = await panelOf(page, "Products");
+    const learnPanel = await panelOf(page, "Learn");
+    // A wide panel, reaching under Learn.
+    const id = await panel.getAttribute("id");
+    await page.addStyleTag({ content: `[id="${id}"] { inline-size: 40rem; }` });
+    await products.hover();
+    await expect(panel).toBeVisible();
+    const from = (await products.boundingBox())!;
+    const learn = (await trigger(page, "Learn").boundingBox())!;
+    const box = (await panel.boundingBox())!;
+    // A straight line from Products' centre through Learn's lower left corner, into the panel.
+    const start = { x: from.x + from.width / 2, y: from.y + from.height / 2 };
+    const via = { x: learn.x + 4, y: learn.y + learn.height - 4 };
+    const y = box.y + 6;
+    const end = { x: start.x + ((via.x - start.x) * (y - start.y)) / (via.y - start.y), y };
+    expect(end.x).toBeLessThan(box.x + box.width);
+    await page.mouse.move(start.x, start.y);
+    await page.mouse.move(end.x, end.y, { steps: 12 });
+    await page.waitForTimeout(400);
+    await expect(panel).toBeVisible();
+    await expect(learnPanel).toBeHidden();
+  });
+
   test("a link marked closeOnClick closes its panel", async ({ page }) => {
     await page.goto("/navigation-menu");
     await ready(page);
