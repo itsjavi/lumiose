@@ -105,10 +105,10 @@ test.describe("keyboard and focus", () => {
     const link = help.getByRole("link", { name: "Read more" });
     await expect(link).toBeFocused();
     // Held before the Tab: leaving for another element closes the popup (TASK-436 M2).
-    const popup = (await help.elementHandle())!;
+    const element = (await help.elementHandle())!;
     await page.keyboard.press("Tab");
     await expect
-      .poll(() => popup.evaluate((el) => el.contains(document.activeElement)))
+      .poll(() => element.evaluate((el) => el.contains(document.activeElement)))
       .toBe(false);
   });
 
