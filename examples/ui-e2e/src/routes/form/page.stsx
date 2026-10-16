@@ -101,7 +101,12 @@ export default function FormPage() {
           <Fieldset.Root class="lu-fieldset">
             <Fieldset.Legend>Preferences</Fieldset.Legend>
             <label>
-              <Switch.Root name="newsletter" defaultChecked uncheckedValue="off" class="lu-switch" />{" "}
+              <Switch.Root
+                name="newsletter"
+                defaultChecked
+                uncheckedValue="off"
+                class="lu-switch"
+              />{" "}
               Newsletter
             </label>
             <label>

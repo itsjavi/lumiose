@@ -94,7 +94,11 @@ export function FormSignals() {
           Save
         </button>
       </Form>
-      <form class="lu-fieldset" data-testid="login-form" onSubmit={(event) => event.preventDefault()}>
+      <form
+        class="lu-fieldset"
+        data-testid="login-form"
+        onSubmit={(event) => event.preventDefault()}
+      >
         <Field.Root
           name="login"
           class="lu-field"
