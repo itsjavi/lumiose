@@ -3,9 +3,10 @@
 // radio, or the first), arrow keys that move and select (skipping disabled radios, following the
 // direction), `required`, submission and reset, in server HTML and without JavaScript; the legend
 // names the group. checkbox.script.ts adds read-only.
-import { createContext, effect, signal, untrack, useContext, useId } from "lumiose";
+import { createContext, effect, ref, signal, untrack, useContext, useId } from "lumiose";
 import checkboxScript from "../checkbox/checkbox.script.ts?client";
 import { describedBy, useField, useFormValues } from "../field/context.ts";
+import { onFormReset } from "../form/reset.ts";
 
 interface RadioGroupContextValue {
   name: () => string;
@@ -88,10 +89,28 @@ export function RadioGroup({
     value: selected,
     required: () => required === true,
   };
+  // A form reset checks the default radio without a `change`: the group follows it, and
+  // `onValueChange` gets it ("" for none) (TASK-435).
+  const group = ref<HTMLFieldSetElement>();
+  onFormReset(
+    group,
+    () =>
+      [...group()!.querySelectorAll<HTMLInputElement>("input[type=radio]")].find(
+        (radio) => radio.checked && radio.closest("fieldset") === group(),
+      )?.value ?? "",
+    (next) => {
+      selected.set(next || undefined);
+      onValueChange?.(next);
+    },
+  );
   return (
     <RadioGroupContext value={context}>
       <fieldset
         {...rest}
+        ref={(element: HTMLFieldSetElement) => {
+          group(element);
+          rest.ref?.(element);
+        }}
         disabled={rest.disabled || field?.disabled() || undefined}
         aria-describedby={rest["aria-describedby"] ?? (field ? describedBy(field) : undefined)}
         aria-invalid={rest["aria-invalid"] ?? (field?.invalid() ? "true" : undefined)}

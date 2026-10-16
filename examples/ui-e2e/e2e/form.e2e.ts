@@ -424,6 +424,30 @@ test.describe("a form action's error that repeats (TASK-429)", () => {
   });
 });
 
+test.describe("bound values follow a form reset (TASK-435)", () => {
+  const INITIAL =
+    "name: ada, agree: false, dark: true, colours: red, size: m, plan: free, seats: 2, volume: 40, fruit: apple, topic: signals, code: none";
+  test("every control's signal takes its reset value", async ({ page }) => {
+    await page.goto("/form/reset");
+    const state = page.getByTestId("reset-state");
+    await expect(state).toHaveText(INITIAL);
+    // Signals changed while the island runs (the controls follow them), then a native reset.
+    await expect(async () => {
+      await page.getByTestId("change-signals").click();
+      await expect(state).toContainText("name: grace", { timeout: 250 });
+    }).toPass();
+    await expect(state).toHaveText(
+      "name: grace, agree: true, dark: false, colours: green blue, size: s, plan: pro, seats: 5, volume: 80, fruit: pear, topic: routing, code: 1234",
+    );
+    await page.getByRole("textbox", { name: "Name" }).fill("linus");
+    await expect(state).toContainText("name: linus");
+    await page.getByRole("button", { name: "Reset" }).click();
+    await expect(state).toHaveText(INITIAL);
+    await expect(page.getByRole("textbox", { name: "Name" })).toHaveValue("ada");
+    await expect(page.getByRole("combobox", { name: "Fruit" })).toHaveValue("Apple");
+  });
+});
+
 test.describe("live <output> text through a form reset (TASK-425)", () => {
   // Firefox and WebKit replace an output's children on a reset, even with the same text; the
   // runtime keeps such outputs out of it, so the text node it updates stays in place.

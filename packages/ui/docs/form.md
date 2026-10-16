@@ -93,6 +93,11 @@ Form adds nothing to style: style the `form` and its state, `form:invalid` (a fi
 and `form:has(:user-invalid)` (one the user touched is), and its fields
 ([Field](field.md#styling)). Form ships no stylesheet.
 
+**A form reset** (a `type="reset"` button, `form.reset()`) puts every control back to its default
+and reports it: `onValueChange` / `onCheckedChange` get the reset value a moment later, when it
+differs, so `bind:` signals in an island follow the form (the platform fires no `input` or
+`change` for a reset).
+
 ## Keyboard and focus
 
 The platform's: Enter in a text field submits the form. On a submit attempt with invalid fields,

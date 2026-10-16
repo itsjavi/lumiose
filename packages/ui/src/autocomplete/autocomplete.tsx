@@ -23,6 +23,7 @@ import type { ComboboxElement, ComboboxOpenChangeDetail } from "../combobox/comb
 import comboboxScript from "../combobox/combobox.script.ts?client";
 import { ComboboxContext, type ComboboxContextValue } from "../combobox/context.ts";
 import { controlId, useField, useFormValues } from "../field/context.ts";
+import { onFormReset } from "../form/reset.ts";
 
 /**
  * How the suggestions complete the text, as in Base UI: `"list"` filters them by the text,
@@ -166,6 +167,16 @@ function Root({
     const wanted = open;
     if (element?.isConnected && wanted !== undefined) element.open = wanted;
   });
+
+  // A form reset puts the input's text back without an `input` event: it goes to
+  // `onValueChange` (TASK-435).
+  if (onValueChange) {
+    onFormReset(
+      () => host()?.input ?? undefined,
+      () => host()?.input?.value ?? "",
+      onValueChange,
+    );
+  }
 
   return (
     <ComboboxContext value={context}>

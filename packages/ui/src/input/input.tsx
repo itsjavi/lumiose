@@ -1,8 +1,9 @@
 // Input (decision-62, TASK-365): a native `<input>` that takes its id, name, disabled state and ARIA
 // references from the Field around it, after Base UI's Input (Field.Control). Everything else is
 // the platform's: types, constraints, autofill, forms.
-import { untrack } from "lumiose";
+import { ref, untrack } from "lumiose";
 import { fieldProps, useField, useFormValues } from "../field/context.ts";
+import { onFormReset } from "../form/reset.ts";
 
 /**
  * An element's props without the brand of intrinsic elements' props, so that the component's
@@ -45,10 +46,17 @@ export function Input({ value, defaultValue, onValueChange, ...rest }: InputProp
         untrack(() => rest.name ?? field?.name()),
         untrack(() => rest.disabled),
       );
+  // A form reset fires no `input`: the reset value goes to `onValueChange` (TASK-435).
+  const input = ref<HTMLInputElement>();
+  if (onValueChange) onFormReset(input, () => input()!.value, onValueChange);
   return (
     <input
       {...rest}
       {...fieldProps(field, rest)}
+      ref={(element: HTMLInputElement) => {
+        input(element);
+        rest.ref?.(element);
+      }}
       value={value !== undefined ? value : untrack(() => sent?.[0] ?? defaultValue)}
       on:input={(event: Event) => onValueChange?.((event.currentTarget as HTMLInputElement).value)}
     />

@@ -2,10 +2,11 @@
 // a value (the checked ones' values), after Base UI's CheckboxGroup. The form submits each checked
 // box under the name, and a disabled group disables them all, without JavaScript. A parent
 // checkbox (`Checkbox.Root parent`) checks them all; checkbox.script.ts keeps it in step.
-import { effect, signal, untrack } from "lumiose";
+import { effect, ref, signal, untrack } from "lumiose";
 import checkboxScript from "../checkbox/checkbox.script.ts?client";
 import { CheckboxGroupContext } from "../checkbox/context.ts";
 import { useFormValues } from "../field/context.ts";
+import { onFormReset } from "../form/reset.ts";
 
 /** The fieldset props CheckboxGroup passes through, without the brand of intrinsic elements' props. */
 type FieldsetProps = Omit<JSX.IntrinsicElements["fieldset"], symbol>;
@@ -60,21 +61,30 @@ export function CheckboxGroup({
     if (next !== undefined) values.set(next);
   });
   const context = { values, allValues: () => allValues, name: () => name };
+  /** The values of the checked boxes: the DOM holds the state, a parent's toggle included. */
+  const checked = (group: HTMLFieldSetElement) =>
+    [...group.querySelectorAll<HTMLInputElement>("input[type=checkbox]:not([data-parent])")]
+      .filter((input) => input.closest("fieldset") === group && input.checked)
+      .map((input) => input.value);
+  const report = (next: string[]) => {
+    values.set(next);
+    onValueChange?.(next);
+  };
+  // A form reset puts the boxes back without a `change`: the group follows it (TASK-435).
+  const group = ref<HTMLFieldSetElement>();
+  onFormReset(group, () => checked(group()!), report);
   return (
     <CheckboxGroupContext value={context}>
       <fieldset
         {...rest}
+        ref={(element: HTMLFieldSetElement) => {
+          group(element);
+          rest.ref?.(element);
+        }}
         on:change={(event: Event) => {
-          const group = event.currentTarget as HTMLFieldSetElement;
           if (!(event.target as Element).matches("input[type=checkbox]")) return;
-          // The DOM holds the state, a parent's toggle included (checkbox.script.ts ran first).
-          const next = [
-            ...group.querySelectorAll<HTMLInputElement>("input[type=checkbox]:not([data-parent])"),
-          ]
-            .filter((input) => input.closest("fieldset") === group && input.checked)
-            .map((input) => input.value);
-          values.set(next);
-          onValueChange?.(next);
+          // checkbox.script.ts ran first, for a parent's toggle.
+          report(checked(event.currentTarget as HTMLFieldSetElement));
         }}
       >
         {children}

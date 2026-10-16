@@ -20,6 +20,7 @@ import {
   type Signal,
 } from "lumiose";
 import { controlId, describedBy, useField, useFormValues } from "../field/context.ts";
+import { onFormReset } from "../form/reset.ts";
 import { formatNumber, formatter } from "./format.ts";
 import type { NumberFieldElement } from "./number-field.script.ts";
 import numberFieldScript from "./number-field.script.ts?client";
@@ -237,6 +238,12 @@ function Root({
     current.set(next);
     onValueChange?.(next);
   };
+  // A form reset puts the number back without an `input` event: it is reported (TASK-435).
+  onFormReset(
+    () => element()?.input ?? undefined,
+    () => element()?.value ?? null,
+    report,
+  );
   return (
     <NumberFieldContext value={context}>
       <lu-number-field

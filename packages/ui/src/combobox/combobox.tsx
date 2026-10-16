@@ -24,6 +24,7 @@ import type {
 } from "./combobox.script.ts";
 import comboboxScript from "./combobox.script.ts?client";
 import { controlId, describedBy, useField, useFormValues } from "../field/context.ts";
+import { onFormReset } from "../form/reset.ts";
 import { anchorName, placement, withStyle, type PlacementProps } from "../placement/placement.ts";
 import { ComboboxContext, register, useCombobox, type ComboboxContextValue } from "./context.ts";
 
@@ -243,6 +244,15 @@ function Root<Multiple extends boolean | undefined = false>({
     const wanted = open;
     if (element?.isConnected && wanted !== undefined) element.open = wanted;
   });
+  // A form reset puts the selection back without a `change`: it is reported (TASK-435).
+  onFormReset(
+    host,
+    () => host()!.value,
+    (next) => {
+      selected.set(list(next));
+      onValueChange?.(next as ComboboxValue<Multiple>);
+    },
+  );
 
   return (
     <ComboboxContext value={context}>

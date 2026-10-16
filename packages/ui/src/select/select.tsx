@@ -10,6 +10,7 @@
 // native rather than the listbox pattern.
 import { createContext, effect, ref, untrack, useContext } from "lumiose";
 import { fieldProps, useField, useFormValues } from "../field/context.ts";
+import { onFormReset } from "../form/reset.ts";
 
 declare module "lumiose/jsx-runtime" {
   namespace JSX {
@@ -98,6 +99,8 @@ function Root({ value, defaultValue, onValueChange, children, ...rest }: SelectR
       element.value = wanted;
     }
   });
+  // A form reset fires no `change`: the reset value goes to `onValueChange` (TASK-435).
+  if (onValueChange) onFormReset(select, () => select()!.value, onValueChange);
   // Inside a Field: the field's id, name and ARIA references (TASK-365).
   const field = useField();
   return (

@@ -7,6 +7,7 @@
 // their `input` and `change` events report back through `onValueChange` and `onValueCommitted`.
 import { createContext, effect, onCleanup, ref, signal, untrack, useContext, useId } from "lumiose";
 import { controlId, describedBy, useField, useFormValues } from "../field/context.ts";
+import { onFormReset } from "../form/reset.ts";
 import { withStyle } from "../placement/placement.ts";
 import { percent } from "../progress/value.ts";
 import { formatValues } from "./format.ts";
@@ -220,6 +221,15 @@ function Root<V extends SliderValue = number>({
     labels: { count: 0 },
   };
   const current = () => (element()?.value ?? values()) as V;
+  // A form reset puts the thumbs back without an `input` event: it is reported (TASK-435).
+  onFormReset(
+    () => element()?.thumbs[0],
+    current,
+    (next) => {
+      values.set(asList(next, low()));
+      onValueChange?.(next);
+    },
+  );
   // The selected part of the track, in the server HTML too; the script keeps it from then on.
   const range = () => {
     const list = values();

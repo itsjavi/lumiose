@@ -3,9 +3,10 @@
 // value when on, reset and `required` work, in server HTML and without JavaScript (`<input switch>`
 // exists only in Safari). Inside a Field it takes the field's id, name and ARIA references;
 // checkbox.script.ts adds read-only.
-import { untrack } from "lumiose";
+import { ref, untrack } from "lumiose";
 import checkboxScript from "../checkbox/checkbox.script.ts?client";
 import { fieldProps, useField, useFormValues } from "../field/context.ts";
+import { onFormReset } from "../form/reset.ts";
 
 /**
  * The native checkbox props Root passes through, without the brand of intrinsic elements' props,
@@ -55,10 +56,17 @@ function Root({
     untrack(() => rest.disabled),
   );
   const initial = untrack(() => (sent ? sent.includes(value ?? "on") : defaultChecked));
+  // A form reset fires no `change`: the reset state goes to `onCheckedChange` (TASK-435).
+  const input = ref<HTMLInputElement>();
+  if (onCheckedChange) onFormReset(input, () => input()!.checked, onCheckedChange);
   return (
     <input
       {...rest}
       {...fieldProps(field, rest)}
+      ref={(element: HTMLInputElement) => {
+        input(element);
+        rest.ref?.(element);
+      }}
       type="checkbox"
       role="switch"
       value={value}

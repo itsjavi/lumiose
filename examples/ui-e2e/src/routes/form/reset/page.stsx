@@ -1,0 +1,12 @@
+import { Title } from "lumiose";
+import { FormResetSignals } from "../../../islands/FormResetSignals.tsx";
+
+export default function FormResetPage() {
+  return (
+    <>
+      <Title>Form controls bound to signals through a form reset</Title>
+      <h1>Form controls bound to signals through a form reset</h1>
+      <FormResetSignals client:load />
+    </>
+  );
+}

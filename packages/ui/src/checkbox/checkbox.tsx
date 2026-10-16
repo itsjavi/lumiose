@@ -8,6 +8,7 @@ import { effect, isServer, ref, untrack, useContext } from "lumiose";
 import { fieldProps, useField, useFormValues } from "../field/context.ts";
 import checkboxScript from "./checkbox.script.ts?client";
 import { CheckboxGroupContext } from "./context.ts";
+import { onFormReset } from "../form/reset.ts";
 
 /**
  * The native checkbox props Root passes through (`name`, `required`, `disabled`, `form`, `id`,
@@ -95,6 +96,11 @@ function Root({
   // `indeterminate` is a property only: the server writes `data-indeterminate`, which the script
   // turns into the property; in the browser the component sets it.
   const input = ref<HTMLInputElement>();
+  // A form reset fires no `change`: the reset state goes to `onCheckedChange` (TASK-435). In a
+  // group, the group reports it.
+  if (onCheckedChange && !group && !parent) {
+    onFormReset(input, () => input()!.checked, onCheckedChange);
+  }
   effect(() => {
     const element = input();
     if (element) element.indeterminate = isMixed();
