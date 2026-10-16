@@ -1,11 +1,11 @@
 ---
 id: TASK-418
 title: 'Slider: arrow keys in right-to-left and vertical sliders in WebKit'
-status: To Do
+status: Done
 assignee:
   - '@Halo'
 created_date: '2026-10-16 03:06'
-updated_date: '2026-10-16 03:39'
+updated_date: '2026-10-16 04:30'
 labels:
   - ui
   - browsers
@@ -22,11 +22,21 @@ Found by Beacon in TASK-361 (2026-10-16), in Linux WebKit (Playwright 1.63). sli
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 ArrowLeft raises a right-to-left Slider in WebKit, and the test runs there
+- [x] #1 ArrowLeft raises a right-to-left Slider in WebKit, and the test runs there
 <!-- AC:END -->
 
 ## Implementation Notes
 
 <!-- SECTION:NOTES:BEGIN -->
 2026-10-16 (Lux, orchestrator): assigned at the batch 8 merge. Found by Beacon's Firefox/WebKit runs (TASK-361); the test is skipped in that browser with this id.
+
+2026-10-16 (Halo): claimed (M12 batch 9, Firefox and WebKit; branch claude/halo-m12c-4d6b9f).
+
+2026-10-16 (Halo): lu-slider now runs every arrow key itself (not only Shift with one): Up and Right step up (Left in a right-to-left horizontal slider), Down and Left step down, by step or with Shift by large-step, with input and change as the platform fires them. WebKit's native range neither mirrored Left/Right right to left; a vertical thumb, whose writing mode turns its own direction, is not mirrored. Alt, Ctrl and Meta are left to the browser. The vertical/RTL test runs in WebKit again; the slider suite passes in dev, build, Firefox and WebKit. Script 1.80 kB brotli (was 1.76); slider.md updated.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Slider's arrow keys are lu-slider's own, mirrored right to left for horizontal sliders, so WebKit matches Chromium and Firefox. Test unskipped.
+<!-- SECTION:FINAL_SUMMARY:END -->

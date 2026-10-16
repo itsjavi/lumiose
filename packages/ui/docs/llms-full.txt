@@ -5522,9 +5522,10 @@ nearest thumb there and focuses it; a press on a single slider's track moves its
 The thumbs are native range inputs: dragging, the arrows, Home, End, right to left, vertical,
 submission, `disabled` and reset work with no script, and the server HTML has the Indicator's
 custom properties and the value text. `<lu-slider>`'s script (1.8 kB brotli) adds Page Up and Page
-Down, keeps a range's thumbs in order and apart (or swaps them), moves the nearest thumb on a press
-on its track,
-and keeps the Indicator, `aria-valuetext` and the Value text current (also after a form reset).
+Down, runs the arrow keys the same in every browser (WebKit's native range does not mirror them
+right to left), keeps a range's thumbs in order and apart (or swaps them), moves the nearest thumb
+on a press on its track, and keeps the Indicator, `aria-valuetext` and the Value text current (also
+after a form reset).
 Without it, a range's thumbs can cross, and the Value text and the Indicator stay where the server
 put them.
 

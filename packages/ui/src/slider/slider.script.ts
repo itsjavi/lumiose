@@ -14,7 +14,10 @@
 //   its value to the other one, which takes focus when the press ends (Firefox ends a native drag
 //   whose thumb loses focus). Presses on the track move the nearest thumb, and a drag goes on from
 //   there.
-// - Page Up and Page Down, and Shift with an arrow key, move by `large-step` (default 10).
+// - Page Up and Page Down, and Shift with an arrow key, move by `large-step` (default 10). The
+//   arrow keys are the element's too: Up and Right step up (Left right to left), Down and Left
+//   down, the same in every browser (WebKit's native range does not mirror them right to left,
+//   TASK-418).
 // - The values as text: `aria-valuetext` on the thumbs when the element has a `format`
 //   (`Intl.NumberFormat` options, JSON), and the Value part (an `<output for>` the thumbs) unless
 //   it renders content of its own (then it has no `for`).
@@ -201,20 +204,19 @@ export class SliderElement extends HTMLElement {
   #onKeyDown = (event: KeyboardEvent) => {
     const thumb = event.target as HTMLInputElement;
     if (!thumb.matches?.(THUMB) || thumb.disabled || event.isComposing) return;
+    if (event.altKey || event.ctrlKey || event.metaKey) return;
     const large = number(this.getAttribute("large-step"), 10);
     let delta = 0;
     if (event.key === "PageUp") delta = large;
     else if (event.key === "PageDown") delta = -large;
-    else if (event.shiftKey && event.key.startsWith("Arrow")) {
+    else if (event.key.startsWith("Arrow")) {
+      // A vertical thumb's writing mode turns its own direction: only a horizontal one mirrors.
       const vertical = thumb.getAttribute("aria-orientation") === "vertical";
       const rtl = !vertical && getComputedStyle(thumb).direction === "rtl";
-      const up = vertical
-        ? event.key === "ArrowUp"
-        : event.key === (rtl ? "ArrowLeft" : "ArrowRight") || event.key === "ArrowUp";
-      const down = vertical
-        ? event.key === "ArrowDown"
-        : event.key === (rtl ? "ArrowRight" : "ArrowLeft") || event.key === "ArrowDown";
-      delta = up ? large : down ? -large : 0;
+      const up = event.key === "ArrowUp" || event.key === (rtl ? "ArrowLeft" : "ArrowRight");
+      const down = event.key === "ArrowDown" || event.key === (rtl ? "ArrowRight" : "ArrowLeft");
+      const size = event.shiftKey ? large : this.#range(thumb).step;
+      delta = up ? size : down ? -size : 0;
     }
     if (delta === 0) return;
     event.preventDefault();
