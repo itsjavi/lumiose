@@ -432,11 +432,11 @@ test.describe("WCAG 2.2 AA with the default theme (doc-9 section 17)", () => {
     await input.focus();
     await page.keyboard.press("ArrowUp");
     await expect(list).toBeVisible();
-    const highlighted = list.locator("[data-highlighted]");
-    await expect(highlighted).toHaveCount(1);
+    const current = list.locator("[data-highlighted]");
+    await expect(current).toHaveCount(1);
     const { height } = page.viewportSize()!;
     const box = (await list.boundingBox())!;
-    const shown = (await highlighted.boundingBox())!;
+    const shown = (await current.boundingBox())!;
     expect(box.y).toBeGreaterThanOrEqual(0);
     expect(box.y + box.height).toBeLessThanOrEqual(height + 1);
     expect(shown.y + shown.height).toBeLessThanOrEqual(height + 1);
