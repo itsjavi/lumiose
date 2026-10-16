@@ -249,8 +249,11 @@ test.describe("WCAG 2.2 AA with the default theme (doc-9 section 17)", () => {
     });
     await ready(page);
     await page.waitForLoadState("networkidle");
+    // With the modules the scripts share with others (the layer model, the fallback placement).
     expect(scripts.toSorted()).toEqual([
       expect.stringMatching(/\/dialog\.script-[\w-]+\.js$/),
+      expect.stringMatching(/\/layer-[\w-]+\.js$/),
+      expect.stringMatching(/\/place-[\w-]+\.js$/),
       expect.stringMatching(/\/popover\.script-[\w-]+\.js$/),
     ]);
   });
