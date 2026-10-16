@@ -182,6 +182,17 @@ on("keydown", (event) => {
   if (event.key === "Enter" && target instanceof HTMLInputElement) attempting(target.form);
 });
 
+/** Runs `call` as a submit attempt of `form`. */
+function during<T>(form: HTMLFormElement, call: () => T): T {
+  const outer = attempt;
+  attempt = form;
+  try {
+    return call();
+  } finally {
+    attempt = outer;
+  }
+}
+
 for (const name of ["requestSubmit", "reportValidity"] as const) {
   const native = HTMLFormElement.prototype[name] as (
     this: HTMLFormElement,
@@ -191,13 +202,7 @@ for (const name of ["requestSubmit", "reportValidity"] as const) {
     configurable: true,
     writable: true,
     value(this: HTMLFormElement, ...args: never[]) {
-      const outer = attempt;
-      attempt = this;
-      try {
-        return native.apply(this, args);
-      } finally {
-        attempt = outer;
-      }
+      return during(this, () => native.apply(this, args));
     },
   });
 }
@@ -254,7 +259,9 @@ const arrived = new Set<HTMLElement>();
 function focusFirst(fields: Iterable<HTMLElement>): void {
   const first = [...fields]
     .flatMap((field) => controls(field).slice(0, 1))
-    .sort((a, b) => (a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1))[0];
+    .toSorted((a, b) =>
+      a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1,
+    )[0];
   if (first) focusTarget(first).focus();
 }
 
