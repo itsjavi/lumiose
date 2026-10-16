@@ -1,6 +1,6 @@
 # Checkbox
 
-> A native `<input type="checkbox">`, after Base UI's Checkbox: Space and a label click toggle it, the form submits its value when checked, reset and `required` work, in server HTML and without JavaScript. `indeterminate`, `readOnly`, the parent checkbox of a [Checkbox Group](checkbox-group.md) and `bind:checked` come on top, with a 0.8 kB script shared with Radio Group and Switch.
+> A native `<input type="checkbox">`, after Base UI's Checkbox: Space and a label click toggle it, the form submits its value when checked, reset and `required` work, in server HTML and without JavaScript. `indeterminate`, `readOnly`, the parent checkbox of a [Checkbox Group](checkbox-group.md) and `bind:checked` come on top, with a 1.0 kB script shared with Radio Group and Switch.
 
 ```ts
 import { Checkbox } from "@lumiose/ui"; // or "@lumiose/ui/checkbox"
@@ -111,7 +111,7 @@ Enter does not toggle it. A click on its label toggles it too.
 A native checkbox: toggling, submission, `required`, reset and `disabled` (its own or a fieldset's)
 work with no script.
 
-A page that renders a Checkbox, Checkbox Group, Radio Group or Switch loads one 0.8 kB (brotli)
+A page that renders a Checkbox, Checkbox Group, Radio Group or Switch loads one 1.0 kB (brotli)
 script once, without the Lumiose runtime; islands bundle it. It turns server HTML's
 `data-indeterminate` into the `indeterminate` property (which has no attribute), makes read-only
 inputs ignore clicks, Space and the label, runs the parent checkbox of a group and a [Radio

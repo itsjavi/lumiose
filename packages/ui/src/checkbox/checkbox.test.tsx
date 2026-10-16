@@ -93,9 +93,17 @@ describe("CheckboxGroup on the server", () => {
     const some = await group(["a"]);
     expect(attrs(some, "fieldset")).toEqual({ disabled: "", role: "group" });
     const [parent, a, b] = inputs(some);
-    expect(parent).toEqual({ type: "checkbox", "data-indeterminate": "", "data-parent": "" });
-    expect(a).toEqual({ type: "checkbox", name: "toppings", value: "a", checked: "" });
-    expect(b).toEqual({ type: "checkbox", name: "toppings", value: "b" });
+    // The parent names its checkboxes, whose ids come from the group's and their values (TASK-458).
+    expect(a!.id).toMatch(/-a$/);
+    expect(b!.id).toMatch(/-b$/);
+    expect(parent).toEqual({
+      type: "checkbox",
+      "aria-controls": `${a!.id} ${b!.id}`,
+      "data-indeterminate": "",
+      "data-parent": "",
+    });
+    expect(a).toEqual({ type: "checkbox", id: a!.id, name: "toppings", value: "a", checked: "" });
+    expect(b).toEqual({ type: "checkbox", id: b!.id, name: "toppings", value: "b" });
     const [all] = inputs(await group(["a", "b"]));
     expect(all).toMatchObject({ checked: "" });
     expect(all).not.toHaveProperty("data-indeterminate");

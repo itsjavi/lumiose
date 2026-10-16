@@ -289,6 +289,34 @@ test.describe("Checkbox, Checkbox Group, Radio Group and Switch", () => {
     await expect(all).not.toHaveAttribute("name");
   });
 
+  test("a parent with disabled checkboxes: Base UI's cycle, one count (TASK-458)", async ({
+    page,
+  }) => {
+    await page.goto("/form/parent");
+    const group = page.getByRole("group", { name: "Extras" });
+    const all = group.getByRole("checkbox", { name: "All extras" });
+    const box = (name: string) => group.getByRole("checkbox", { name, exact: true });
+    const state = () =>
+      group
+        .locator("input:not([data-parent])")
+        .evaluateAll((boxes: HTMLInputElement[]) => boxes.map((each) => each.checked));
+    // Three of four, the candles disabled and unchecked: mixed.
+    await expect(all).toBeChecked({ indeterminate: true });
+    // The user's choice: sauce and napkins.
+    await box("Cutlery").click();
+    expect(await state()).toEqual([true, true, false, false]);
+    // Mixed → all (the enabled ones), all → none (the disabled napkins stay), none → the choice.
+    await all.click();
+    expect(await state()).toEqual([true, true, true, false]);
+    // The script counts the disabled candles as the server does: still mixed, not checked.
+    await expect(all).toBeChecked({ indeterminate: true });
+    await all.click();
+    expect(await state()).toEqual([false, true, false, false]);
+    await all.click();
+    expect(await state()).toEqual([true, true, false, false]);
+    await expect(all).toBeChecked({ indeterminate: true });
+  });
+
   test("a radio group: one tab stop, arrows move and select, disabled radios are skipped", async ({
     page,
   }) => {
@@ -624,3 +652,23 @@ test.describe("right to left (TASK-385)", () => {
     await expect(radio("Medium")).toBeChecked();
   });
 });
+
+for (const javaScriptEnabled of [true, false]) {
+  test.describe(javaScriptEnabled ? "with JavaScript" : "without JavaScript", () => {
+    test.use({ javaScriptEnabled });
+
+    test("a parent's aria-controls names its checkboxes (TASK-458)", async ({ page }) => {
+      await page.goto("/form/parent");
+      const group = page.getByRole("group", { name: "Extras" });
+      const boxes = group.locator("input:not([data-parent])");
+      await expect(boxes).toHaveCount(4);
+      const ids: string[] = [];
+      for (let i = 0; i < 4; i++) ids.push((await boxes.nth(i).getAttribute("id")) ?? "");
+      expect(ids.every(Boolean)).toBe(true);
+      await expect(group.getByRole("checkbox", { name: "All extras" })).toHaveAttribute(
+        "aria-controls",
+        ids.join(" "),
+      );
+    });
+  });
+}

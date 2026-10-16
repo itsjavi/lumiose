@@ -2,7 +2,7 @@
 // a value (the checked ones' values), after Base UI's CheckboxGroup. The form submits each checked
 // box under the name, and a disabled group disables them all, without JavaScript. A parent
 // checkbox (`Checkbox.Root parent`) checks them all; checkbox.script.ts keeps it in step.
-import { effect, ref, signal, untrack } from "lumiose";
+import { effect, ref, signal, untrack, useId } from "lumiose";
 import checkboxScript from "../checkbox/checkbox.script.ts?client";
 import { CheckboxGroupContext } from "../checkbox/context.ts";
 import { describedBy, labelledBy, useField, useFormValues } from "../field/context.ts";
@@ -68,7 +68,13 @@ export function CheckboxGroup({
     const next = value;
     if (next !== undefined) values.set(next);
   });
-  const context = { values, allValues: () => allValues, name: () => name ?? field?.name() };
+  const id = useId();
+  const context = {
+    id,
+    values,
+    allValues: () => allValues,
+    name: () => name ?? field?.name(),
+  };
   const report = (next: string[]) => {
     values.set(next);
     onValueChange?.(next);

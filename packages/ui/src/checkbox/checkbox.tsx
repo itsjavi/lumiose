@@ -7,7 +7,7 @@
 import { effect, isServer, ref, untrack, useContext } from "lumiose";
 import { fieldProps, useField, useFormValues } from "../field/context.ts";
 import checkboxScript from "./checkbox.script.ts?client";
-import { CheckboxGroupContext } from "./context.ts";
+import { CheckboxGroupContext, optionId, type CheckboxGroupContextValue } from "./context.ts";
 import { afterFormReset, onFormReset } from "../form/reset.ts";
 
 /**
@@ -54,6 +54,10 @@ export type CheckboxRootProps = InputProps & {
    */
   uncheckedValue?: string;
 };
+
+/** A parent's `aria-controls`: its group's checkboxes, from `allValues` (TASK-458). */
+const controls = (group: CheckboxGroupContextValue) =>
+  (group.allValues() ?? []).map((value) => optionId(group, value)).join(" ") || undefined;
 
 function Root({
   checked,
@@ -120,6 +124,11 @@ function Root({
         rest.ref?.(element);
       }}
       type="checkbox"
+      // In a group, `<group>-<value>`, which a parent's `aria-controls` names (TASK-458).
+      {...(group && !parent && value !== undefined && rest.id === undefined
+        ? { id: optionId(group, value) }
+        : {})}
+      {...(group && parent ? { "aria-controls": controls(group) } : {})}
       // A parent is never submitted.
       name={parent ? undefined : (rest.name ?? group?.name() ?? field?.name())}
       value={value}

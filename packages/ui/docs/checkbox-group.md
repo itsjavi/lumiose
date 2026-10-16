@@ -87,15 +87,18 @@ CheckboxGroup ships no stylesheet: it needs none to work.
 
 ## Keyboard and focus
 
-Each checkbox is its own tab stop; Space toggles the focused one. Toggling the parent checks or
-unchecks every enabled checkbox of the group; toggling one updates the parent (checked, mixed or
-unchecked).
+Each checkbox is its own tab stop; Space toggles the focused one. The parent is checked, mixed or
+unchecked as all, some or none of the group's checkboxes are, disabled ones counted (as the server
+counts them, from `allValues`). Toggling it goes, as Base UI's, from a partial selection to all,
+then to none, then back to the selection the user last made with the checkboxes; disabled
+checkboxes keep their state through it. Its `aria-controls` names the checkboxes, whose ids are
+the group's and their values (`<id>-<value>`) unless you give them your own.
 
 ## Without JavaScript, and the client script
 
 The checkboxes are native: they toggle, submit under the group's name and reset with no script.
 The parent checkbox shows its server state and is never submitted, but checks nothing until the
-shared checkbox script (0.8 kB brotli, [Checkbox](checkbox.md#without-javascript-and-the-client-script))
+shared checkbox script (1.0 kB brotli, [Checkbox](checkbox.md#without-javascript-and-the-client-script))
 runs.
 
 ## Browser support

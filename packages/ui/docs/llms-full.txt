@@ -1066,7 +1066,7 @@ Native `<button>`: every browser.
 
 # Checkbox
 
-> A native `<input type="checkbox">`, after Base UI's Checkbox: Space and a label click toggle it, the form submits its value when checked, reset and `required` work, in server HTML and without JavaScript. `indeterminate`, `readOnly`, the parent checkbox of a [Checkbox Group](checkbox-group.md) and `bind:checked` come on top, with a 0.8 kB script shared with Radio Group and Switch.
+> A native `<input type="checkbox">`, after Base UI's Checkbox: Space and a label click toggle it, the form submits its value when checked, reset and `required` work, in server HTML and without JavaScript. `indeterminate`, `readOnly`, the parent checkbox of a [Checkbox Group](checkbox-group.md) and `bind:checked` come on top, with a 1.0 kB script shared with Radio Group and Switch.
 
 ```ts
 import { Checkbox } from "@lumiose/ui"; // or "@lumiose/ui/checkbox"
@@ -1177,7 +1177,7 @@ Enter does not toggle it. A click on its label toggles it too.
 A native checkbox: toggling, submission, `required`, reset and `disabled` (its own or a fieldset's)
 work with no script.
 
-A page that renders a Checkbox, Checkbox Group, Radio Group or Switch loads one 0.8 kB (brotli)
+A page that renders a Checkbox, Checkbox Group, Radio Group or Switch loads one 1.0 kB (brotli)
 script once, without the Lumiose runtime; islands bundle it. It turns server HTML's
 `data-indeterminate` into the `indeterminate` property (which has no attribute), makes read-only
 inputs ignore clicks, Space and the label, runs the parent checkbox of a group and a [Radio
@@ -1289,15 +1289,18 @@ CheckboxGroup ships no stylesheet: it needs none to work.
 
 ## Keyboard and focus
 
-Each checkbox is its own tab stop; Space toggles the focused one. Toggling the parent checks or
-unchecks every enabled checkbox of the group; toggling one updates the parent (checked, mixed or
-unchecked).
+Each checkbox is its own tab stop; Space toggles the focused one. The parent is checked, mixed or
+unchecked as all, some or none of the group's checkboxes are, disabled ones counted (as the server
+counts them, from `allValues`). Toggling it goes, as Base UI's, from a partial selection to all,
+then to none, then back to the selection the user last made with the checkboxes; disabled
+checkboxes keep their state through it. Its `aria-controls` names the checkboxes, whose ids are
+the group's and their values (`<id>-<value>`) unless you give them your own.
 
 ## Without JavaScript, and the client script
 
 The checkboxes are native: they toggle, submit under the group's name and reset with no script.
 The parent checkbox shows its server state and is never submitted, but checks nothing until the
-shared checkbox script (0.8 kB brotli, [Checkbox](checkbox.md#without-javascript-and-the-client-script))
+shared checkbox script (1.0 kB brotli, [Checkbox](checkbox.md#without-javascript-and-the-client-script))
 runs.
 
 ## Browser support
@@ -4994,7 +4997,7 @@ Left checks the next radio and Arrow Right the previous one.
 ## Without JavaScript, and the client script
 
 Native radios: the roving tab stop, the arrow keys, `required`, submission and reset work with no
-script. The shared checkbox script (0.8 kB brotli,
+script. The shared checkbox script (1.0 kB brotli,
 [Checkbox](checkbox.md#without-javascript-and-the-client-script)) adds read-only, and runs the
 arrow keys itself so that every browser follows the table above: without it, WebKit's native
 radios stop at the ends and keep Left and Right as they are right to left.
@@ -5793,7 +5796,7 @@ Enter does not toggle it. A click on its label does.
 ## Without JavaScript, and the client script
 
 A native checkbox with the switch role: toggling, submission, `required`, reset and `disabled`
-work with no script. The shared checkbox script (0.8 kB brotli,
+work with no script. The shared checkbox script (1.0 kB brotli,
 [Checkbox](checkbox.md#without-javascript-and-the-client-script)) adds read-only and
 `uncheckedValue`.
 

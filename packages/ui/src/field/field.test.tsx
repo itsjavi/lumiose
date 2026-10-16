@@ -168,7 +168,8 @@ describe("Field around a Checkbox Group or Radio Group", () => {
       attrs(`<input${m[1]}>`, "input"),
     );
     for (const box of boxes) {
-      expect(box).not.toHaveProperty("id");
+      // Not the field's control id: a group's checkboxes have ids of the group's (TASK-458).
+      expect(box.id).not.toBe(`${root.id}-control`);
       expect(box).not.toHaveProperty("aria-invalid");
       expect(box).not.toHaveProperty("aria-describedby");
     }
