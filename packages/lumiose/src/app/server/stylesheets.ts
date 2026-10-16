@@ -1,5 +1,5 @@
-// A page's stylesheet tags in builds (TASK-121): the merged file every page shares, then the page's
-// own stylesheets inline or merged, as `lumiose build` grouped them (../production/stylesheets.ts).
+// A page's stylesheet tags in builds (TASK-121): the merged files pages share, then the page's own
+// stylesheets inline or merged, as `lumiose build` grouped them (../production/stylesheets.ts).
 
 import { escapeAttr } from "../../server/node.ts";
 
@@ -13,27 +13,65 @@ import { escapeAttr } from "../../server/node.ts";
  */
 export const STYLESHEETS_LOADED = "<script>/* waits for the stylesheets above */</script>";
 
+/** A file of stylesheets that several pages link, in their cascade order. */
+export interface SharedStylesheets {
+  href: string;
+  /** The stylesheet URLs it holds, in order; never empty. */
+  covers: readonly string[];
+}
+
 /** What the server entry knows to write a page's stylesheets (`BuiltApp.styleTags`). */
 export interface StyleTags {
   /** The stylesheets every page links first, merged into one file. */
-  shared?: { href: string; covers: readonly string[] };
-  /** A page's stylesheet URLs after `shared`, joined by spaces → their tag. */
+  shared?: SharedStylesheets;
+  /**
+   * The stylesheets a group of pages links next, such as a route group's layout (TASK-285): a page
+   * links the one its stylesheets continue with, if any. No two can match the same page.
+   */
+  groups?: readonly SharedStylesheets[];
+  /** A page's stylesheet URLs after the shared files, joined by spaces → their tag. */
   rest: Readonly<Record<string, string>>;
 }
 
 /**
- * A page's stylesheet tags: the shared file and the rest, or one link per stylesheet, then
+ * The shared files a page links, in order (`shared`, then a group's), and its stylesheets after
+ * them. The build groups each page's own stylesheets with it too, so both agree.
+ */
+export function sharedStylesheets(
+  hrefs: readonly string[],
+  tags: StyleTags | undefined,
+): { files: SharedStylesheets[]; rest: readonly string[] } {
+  const files: SharedStylesheets[] = [];
+  let start = 0;
+  const shared = tags?.shared;
+  if (shared !== undefined && holds(hrefs, start, shared)) {
+    files.push(shared);
+    start += shared.covers.length;
+  }
+  const group = tags?.groups?.find((file) => holds(hrefs, start, file));
+  if (group !== undefined) {
+    files.push(group);
+    start += group.covers.length;
+  }
+  return { files, rest: start === 0 ? hrefs : hrefs.slice(start) };
+}
+
+/** Whether `hrefs` continue at `start` with every stylesheet `file` holds. */
+function holds(hrefs: readonly string[], start: number, file: SharedStylesheets): boolean {
+  return file.covers.every((href, i) => hrefs[start + i] === href);
+}
+
+/**
+ * A page's stylesheet tags: the shared files and the rest, or one link per stylesheet, then
  * `STYLESHEETS_LOADED` when any of them is linked.
  */
 export function stylesheetTags(hrefs: readonly string[], tags: StyleTags | undefined): string {
   let html = "";
-  let rest = hrefs;
-  const shared = tags?.shared;
-  if (shared !== undefined && shared.covers.every((href, i) => hrefs[i] === href)) {
+  const { files, rest } = sharedStylesheets(hrefs, tags);
+  for (const file of files) {
     const covers =
-      shared.covers.length > 1 ? ` data-l-css="${escapeAttr(shared.covers.join(" "))}"` : "";
-    html += `<link rel="stylesheet" href="${escapeAttr(shared.href)}"${covers}>`;
-    rest = hrefs.slice(shared.covers.length);
+      file.covers.length > 1 ? ` data-l-css="${escapeAttr(file.covers.join(" "))}"` : "";
+    html += `<link rel="stylesheet" href="${escapeAttr(file.href)}"${covers}>`;
   }
   let linked = html !== "";
   if (rest.length > 0) {
