@@ -5,7 +5,7 @@ status: To Do
 assignee:
   - '@Lux'
 created_date: '2026-10-15 19:52'
-updated_date: '2026-10-16 03:39'
+updated_date: '2026-10-16 05:22'
 labels:
   - ui
   - review
@@ -224,4 +224,14 @@ User request, 2026-10-15: start M12 worker batches autonomously, and review the 
 - Spark: TASK-415 (dev-only hydration).
 - Beacon: TASK-421 (DocsSearch), TASK-423 (docs demos with function props).
 - Photon: TASK-422 (`:dir()` in production CSS).
+
+## Batch 9 (2026-10-16): browser fixes (Halo: TASK-424, 416 to 420; Beacon: TASK-415, 422, 423, 421)
+
+**No new public names.** Firefox and WebKit pass with no new skips. Halo's run of ui-e2e across all four projects passed 1608 tests.
+
+**Worth the user's look:**
+- **Production CSS:** @lumiose/vite now sets `build.cssTarget` to Baseline widely available (Chrome and Edge 123, Firefox 124, Safari 17.4), so `:dir()`, nesting and other modern CSS survive minification for every app. A project's own target still wins. Recorded in decision-66.
+- **TASK-415:** turned out to be a compiler bug that affected builds too. A fragment with a single dynamic item now compiles to an `insertValue` range.
+- **Site search:** DocsSearch runs on @lumiose/ui's Autocomplete. Its results list is named "Search the docs".
+- **Radio Group and Slider:** both now handle their own arrow keys, so right-to-left works the same in every browser.
 <!-- SECTION:NOTES:END -->
