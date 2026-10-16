@@ -30,8 +30,6 @@ test.describe("customizable select (Chromium)", () => {
   test("the trigger shows the selected option's content; the picker opens anchored", async ({
     page,
   }) => {
-    // Room below the select under the fixture's long nav, so the picker does not flip above.
-    await page.setViewportSize({ width: 1280, height: 1000 });
     await page.goto("/select");
     const { select, option } = fruit(page);
     expect(await select.evaluate((el) => getComputedStyle(el).appearance)).toBe("base-select");

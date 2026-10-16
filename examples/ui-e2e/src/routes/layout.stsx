@@ -6,62 +6,10 @@ import type { LayoutProps } from "lumiose";
 export default function Root(props: LayoutProps<"/">) {
   return (
     <div class="shell">
+      {/* One link: the home page lists every fixture. A long nav pushed the fixtures below a 720px
+          viewport, where anchored popups flip (TASK-414). */}
       <nav aria-label="Components">
-        <a href="/">@lumiose/ui</a>
-        <a href="/dialog">Dialog</a>
-        <a href="/dialog/island">Dialog in an island</a>
-        <a href="/popover">Popover</a>
-        <a href="/tooltip">Tooltip</a>
-        <a href="/popover/island">Popover and Tooltip in an island</a>
-        <a href="/tabs">Tabs</a>
-        <a href="/tabs/island">Tabs in an island</a>
-        <a href="/menu">Menu</a>
-        <a href="/menu/island">Menu in an island</a>
-        <a href="/combobox">Combobox</a>
-        <a href="/combobox/island">Combobox in an island</a>
-        <a href="/select">Select</a>
-        <a href="/select/island">Select in an island</a>
-        <a href="/form">Form</a>
-        <a href="/form/island">Form in an island</a>
-        <a href="/collapsible">Collapsible</a>
-        <a href="/collapsible/island">Collapsible in an island</a>
-        <a href="/accordion">Accordion</a>
-        <a href="/accordion/island">Accordion in an island</a>
-        <a href="/toast">Toast</a>
-        <a href="/toast/island">Toasts from an island</a>
-        <a href="/button">Button</a>
-        <a href="/button/island">Button in an island</a>
-        <a href="/toggle">Toggle</a>
-        <a href="/toggle/island">Toggle in an island</a>
-        <a href="/progress">Progress and Meter</a>
-        <a href="/progress/island">Progress and Meter in an island</a>
-        <a href="/slider">Slider</a>
-        <a href="/slider/island">Slider in an island</a>
-        <a href="/context-menu">Context Menu</a>
-        <a href="/context-menu/island">Context Menu in an island</a>
-        <a href="/drawer">Drawer</a>
-        <a href="/drawer/island">Drawer in an island</a>
-        <a href="/number-field">Number Field</a>
-        <a href="/number-field/island">Number Field in an island</a>
-        <a href="/autocomplete">Autocomplete</a>
-        <a href="/autocomplete/island">Autocomplete in an island</a>
-        <a href="/popover/hover-modal">Popover: hover and modal</a>
-        <a href="/popover/hover-modal/island">Popover: hover and modal in an island</a>
-        <a href="/separator">Separator</a>
-        <a href="/avatar">Avatar</a>
-        <a href="/avatar/island">Avatar in an island</a>
-        <a href="/otp-field">OTP Field</a>
-        <a href="/otp-field/island">OTP Field in an island</a>
-        <a href="/preview-card">Preview Card</a>
-        <a href="/preview-card/island">Preview Card in an island</a>
-        <a href="/toolbar">Toolbar</a>
-        <a href="/toolbar/island">Toolbar in an island</a>
-        <a href="/scroll-area">Scroll Area</a>
-        <a href="/scroll-area/island">Scroll Area in an island</a>
-        <a href="/menubar">Menubar</a>
-        <a href="/menubar/island">Menubar in an island</a>
-        <a href="/navigation-menu">Navigation Menu</a>
-        <a href="/navigation-menu/island">Navigation Menu in an island</a>
+        <a href="/">All @lumiose/ui fixtures</a>
       </nav>
       <main>{props.children}</main>
     </div>

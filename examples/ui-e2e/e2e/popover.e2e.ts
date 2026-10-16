@@ -252,8 +252,6 @@ test.describe("placement", () => {
   test("each side, aligned to the end, with and without CSS anchor positioning", async ({
     page,
   }) => {
-    // Room on every side of the triggers below the fixture's long nav, so none flips.
-    await page.setViewportSize({ width: 1280, height: 1000 });
     await page.goto("/popover");
     const anchored = await placements(page);
     // The popup is beside the trigger on the requested side, its end edge 4px inside the trigger's.
