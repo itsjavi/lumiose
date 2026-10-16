@@ -2,9 +2,12 @@
 id: TASK-412
 title: Dynamic shifts useId between server and client
 status: To Do
-assignee: []
+assignee:
+  - '@Spark'
 created_date: '2026-10-16 01:09'
+updated_date: '2026-10-16 01:31'
 labels: []
+milestone: m-12
 dependencies: []
 priority: high
 ordinal: 411000
@@ -32,3 +35,9 @@ The server seems to count a component level for `Dynamic` that the client does n
 - [ ] #1 useId() under Dynamic returns the same id on the server and on the client, and hydration keeps the server's ids
 - [ ] #2 A hydration test covers Dynamic with an intrinsic tag and with a component
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+2026-10-16 (Lux, orchestrator): assigned to Spark (runtime), in M12 where it was found. Navigation Menu works around it by not using Dynamic.
+<!-- SECTION:NOTES:END -->

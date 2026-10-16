@@ -5,7 +5,7 @@ status: To Do
 assignee:
   - '@Lux'
 created_date: '2026-10-15 19:52'
-updated_date: '2026-10-16 00:24'
+updated_date: '2026-10-16 01:31'
 labels:
   - ui
   - review
@@ -157,4 +157,43 @@ User request, 2026-10-15: start M12 worker batches autonomously, and review the 
 - **Headings in the site's docs prose:** they now wrap anywhere, for 320px with text spacing.
 
 **Filed:** TASK-410 (gaps against Base UI) and TASK-411 (getter rule for custom elements).
+
+## Batch 7 (2026-10-16): TASK-376, 381, 383, 384 (Halo); TASK-379, 380, 411, 363 (Beacon)
+
+**Proposed public names (for the user's review):**
+- **OTP Field:**
+  - `OTPField` (`Root`, `Input`, `Slot`, `Separator`) with its `*Props` types and `OTPFieldValidationType`;
+  - the `lu-otp-field` element, with the `valuecomplete` and `valueinvalid` events;
+  - the `data-slot` and `data-active` attributes.
+- **Preview Card:** `PreviewCard` (`Root`, `Trigger`, `Popup`), with `data-preview-card` and `data-popup-open`.
+- **Toolbar:**
+  - `Toolbar` (`Root`, `Button`, `Link`, `Input`, `Group`, `Separator`);
+  - the `lu-toolbar` element, with `data-toolbar-item`.
+- **Scroll Area:**
+  - `ScrollArea` (`Root`, `Viewport`, `Content`, `Scrollbar`, `Thumb`, `Corner`);
+  - the `lu-scroll-area` element and its overflow attributes;
+  - the `--lu-scroll-area-*` variables. Base UI names them `--scroll-area-*`.
+- **Menubar:**
+  - `Menubar`, with `orientation` and `loopFocus`;
+  - the `lu-menubar` element, with `data-has-submenu-open` and `data-loop-focus`;
+  - Menu's new `MenubarContext` and `MenubarContextValue` exports.
+- **Navigation Menu:**
+  - `NavigationMenu` (`Root`, `List`, `Item`, `Trigger`, `Icon`, `Content`, `Link`);
+  - the `lu-navigation-menu` element, with `value` and `valuechange`;
+  - the attributes `data-activation-direction`, `data-active`, `data-close-on-click`, `data-delay` and `data-close-delay`.
+- **Theme classes:** `lu-otp-field`, `lu-preview-card`, `lu-toolbar`, `lu-scroll-area`, `lu-menubar`, `lu-navigation-menu`.
+- **Package entries:** one per component, plus a `.css` entry for each.
+
+**Worth the user's look:**
+- **OTP Field:** one native input under visual slots, not one input per character. This trades for SMS autofill, behaviour without JavaScript, and one labelled field for screen readers; the slots need the script.
+- **Navigation Menu:** it has no shared Viewport, because a shared resizing box needs a portal. Each panel slides in from its trigger's side.
+- **Preview Card:** it is reachable with the keyboard, unlike Base UI's.
+- **Scroll Area:** without JavaScript it falls back to native scrollbars.
+- **TASK-411:** the rule for `lu-` element getters is in @lumiose/ui's README, with a test.
+- **TASK-363:** examples/ui-spike is removed.
+
+**Filed:**
+- TASK-413: gaps against Base UI;
+- TASK-414: the ui-e2e nav;
+- TASK-412 (`useId` inside `Dynamic`): assigned to Spark.
 <!-- SECTION:NOTES:END -->
