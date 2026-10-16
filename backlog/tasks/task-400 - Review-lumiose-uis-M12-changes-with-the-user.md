@@ -5,7 +5,7 @@ status: To Do
 assignee:
   - '@Lux'
 created_date: '2026-10-15 19:52'
-updated_date: '2026-10-15 23:25'
+updated_date: '2026-10-16 00:24'
 labels:
   - ui
   - review
@@ -125,4 +125,36 @@ User request, 2026-10-15: start M12 worker batches autonomously, and review the 
 - TASK-403, the hydration bug, was dev-only: hot reloading delayed a component's first render. It is fixed in `dom/hot.ts`.
 
 **Filed:** TASK-407 (the runtime's `value` property), plus the Slider gaps against Base UI.
+
+## Batch 6 (2026-10-16): TASK-375, 377, 404, 394 (Halo); TASK-407, 401, 402, 406, 374 (Beacon)
+
+**Proposed public names (for the user's review):**
+- **Number Field:**
+  - `NumberField` with the parts `Root`, `Group`, `Input`, `Increment`, `Decrement` and `ScrubArea`, plus their `*Props` types;
+  - the `lu-number-field` element, with the attributes `min`, `max`, `step`, `large-step`, `format`, `locale`, `allow-wheel-scrub` and `allow-out-of-range`;
+  - the entries `/number-field` and `/number-field.css`.
+- **Autocomplete:**
+  - `Autocomplete`, `AutocompleteRootProps`, `AutocompleteMode` and eleven part `*Props` types;
+  - new `lu-combobox` attributes `free`, `inline` and `open-on-input-click`;
+  - the entries `/autocomplete` and `/autocomplete.css`.
+- **Popover:** `modal` on Root; `openOnHover`, `delay` and `closeDelay` on Trigger.
+- **Separator:** `Separator` with `orientation`, and the types `SeparatorProps` and `SeparatorOrientation`.
+- **Avatar:**
+  - `Avatar` with the parts `Root`, `Image` and `Fallback`, and the type `AvatarLoadingStatus`;
+  - the `lu-avatar` element with a `status` property;
+  - the event `loadingstatuschange` and the prop `onLoadingStatusChange`;
+  - the attributes `data-orientation`, `data-loading`, `data-error`, `data-loaded` and `data-fallback`;
+  - the variable `--lu-avatar-delay`.
+- **Theme classes:** `lu-separator`, `lu-avatar` and `lu-number-field`.
+- **Entries:** `/separator`, `/separator.css`, `/avatar` and `/avatar.css`.
+
+**Changes to earlier proposals:** the named `createToastManager` export is gone. TASK-401 fixed the false LUM2001, so `Toast.createToastManager()` is the only API, as in Base UI.
+
+**Worth the user's look:**
+- **Number Field with `format`:** without JavaScript it submits the typed text, not the parsed number.
+- **Popover `modal`:** the popup is a modal `<dialog>` anchored to its trigger.
+- **The site's a11y suite:** it exempts `progress:indeterminate` from its 5-second motion limit, as an activity indicator that stops under reduced motion. This is a policy choice.
+- **Headings in the site's docs prose:** they now wrap anywhere, for 320px with text spacing.
+
+**Filed:** TASK-410 (gaps against Base UI) and TASK-411 (getter rule for custom elements).
 <!-- SECTION:NOTES:END -->
