@@ -45,6 +45,14 @@ User decision, 2026-10-15.
   - Accordion.Header's heading sits inside `<summary>`.
   - A server-rendered Toast without JavaScript stays until the next page.
   - Dropped: CheckboxGroup `required`, `ScrubAreaCursor`, Popover Backdrop, and Preview Card's Arrow, Backdrop and detached triggers.
+- **Decisions from the release-review fixes** (user, 2026-10-16, TASK-457):
+  - **Refilling a form after a failed action** (TASK-430). Form takes `values` (type `FormValues`): a `FormData`, `URLSearchParams` or a record of the submitted values, such as the `FormData` an action passes back with `fail(400, { errors, values: form })`. The controls take those values as their defaults by `name`. Passwords, files, hidden inputs, OTP Fields and disabled controls are never refilled. Lumiose's action data may carry a `FormData`, text entries only, so this works without JavaScript.
+  - **Field's script wraps `HTMLFormElement.prototype.requestSubmit` and `reportValidity`.** The wrappers keep the native arguments and return values, and only mark the form as attempting to submit. They are installed once, on pages that render a Field, so that a programmatic attempt shows errors in the fields, as a click does. field.md documents this.
+  - **Server-rendering limits, kept and documented.**
+    - Without JavaScript, a Field's control may name an Error that isn't rendered in its `aria-describedby`.
+    - The server can't put a Combobox's selected label in its input. The script fills it in on load.
+  - **Ids of popups and panels.** Triggers, tabs, items, titles and labels honour a caller's `id`. Popups and panels keep generated ids, because their trigger references them before they render. No Root `id` for them for now.
+  - **Escape on a closed Combobox** clears the input and the selection, as Base UI does.
 - **`bind:` on components and custom elements** (a syntax decision): `bind:x` works on any component with an `x` prop and an `onXChange` callback, and on a custom element with an `x` property and a change event, like `bind:value` on inputs.
 - Rejected: depending on Timeless, merging it, the `lumiose-` and `l-` prefixes, `lu-`-prefixed events, a separate `AlertDialog`, a `data-part` attribute, explicit props without `bind:`.
 

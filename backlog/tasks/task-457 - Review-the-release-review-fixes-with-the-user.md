@@ -1,11 +1,11 @@
 ---
 id: TASK-457
 title: Review the release-review fixes with the user
-status: To Do
+status: Done
 assignee:
   - '@Lux'
 created_date: '2026-10-16 12:33'
-updated_date: '2026-10-16 13:43'
+updated_date: '2026-10-16 21:19'
 labels:
   - ui
   - review
@@ -39,7 +39,7 @@ Items so far (fix batch 1):
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 The user decided each item, and the approved names and choices are recorded in the decisions and tasks
+- [x] #1 The user decided each item, and the approved names and choices are recorded in the decisions and tasks
 <!-- AC:END -->
 
 ## Implementation Notes
@@ -60,4 +60,17 @@ What ships now (option b):
 The proposal (option a): let Root take `id` as that part's id, the way NumberField.Root's `id` names its input, which the server knows in time. Covered parts: the Dialog, Popover, Tooltip, Preview Card and Menu popups, and the Tabs, Accordion and Collapsible panels. A part's own `id` there would then work in islands only. Not built until the user decides.
 
 2026-10-16 (Beacon, from TASK-454 L32): a parity call for the user: Escape on a closed Combobox does nothing (the key goes on, so a parent dialog closes); Base UI clears the input and the selection. Keep ours (Escape never discards a value; Clear does) or follow Base UI?
+
+## The user's answers (2026-10-16)
+
+Asked one question at a time, each with a recommendation.
+
+1. **Form `values` (TASK-430):** approved as built: the `values` prop, `FormValues`, and FormData in action data.
+2. **Field's wrapper on `requestSubmit` and `reportValidity`:** keep it. Document it in field.md, with a test that the wrapped methods behave like the native ones.
+3. **The M26 and M24 server-rendering limits:** keep them and document them.
+4. **Root `id` for popups and panels:** not now.
+5. **Escape on a closed Combobox:** follow Base UI and clear the input and the selection. This becomes a new task.
+6. **Next steps:** the workers do the Escape change and the follow-ups (TASK-458 to TASK-464) in one more batch, while the user does the screen reader pass (TASK-361). Then Lux asks about publishing 0.1.0, after the pre-release security review.
+
+Recorded in decision-62.
 <!-- SECTION:NOTES:END -->
