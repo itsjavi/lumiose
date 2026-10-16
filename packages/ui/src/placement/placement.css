@@ -3,27 +3,40 @@
  * `data-side` and `data-align` is placed next to the trigger its inline `position-anchor` names,
  * with CSS anchor positioning, from the server HTML on. It flips to the opposite side when it does
  * not fit, and hides while its trigger is scrolled out of view; one beside the trigger that fits
- * on neither side goes below or above it. `--lu-side-offset` is the gap to the trigger and
+ * on neither side goes below or above it. A popup taller than the space on both sides takes the
+ * side with more room and shrinks to it, from its trigger to the viewport's edge, and scrolls
+ * (TASK-428). `--lu-side-offset` is the gap to the trigger and
  * `--lu-align-offset` a shift along the side (the `sideOffset` and `alignOffset` props set them; a
  * theme may too). Without anchor positioning the popup's client script places it instead
- * (placement/place.ts).
+ * (placement/place.ts), and writes the room it has as `--lu-available-height`.
  */
 @layer lu.core, lu.theme;
 
 @layer lu.core {
+  /* Too tall for the room beside its trigger, a popup scrolls. */
+  :is([popover], dialog)[data-side] {
+    max-block-size: var(--lu-available-height, none);
+    overflow: auto;
+  }
   @supports (anchor-name: --a) {
+    /*
+     * The fallbacks: the flips while the popup fits at its size, then the popup shrunk to the
+     * space below or above its trigger (one with at least 8rem, or 40% of the viewport, of room).
+     */
     :is([popover], dialog)[data-side] {
       inset: auto;
       margin: 0;
       position-try-fallbacks:
         flip-block,
         flip-inline,
-        flip-block flip-inline;
+        flip-block flip-inline,
+        --lu-fit-below,
+        --lu-fit-above;
       position-visibility: anchors-visible;
     }
     /*
      * A popup beside the trigger that does not fit tries the other side, then the other block-axis
-     * alignment, then below the trigger, then above it.
+     * alignment, then below the trigger, then above it, then shrunk beside it, below or above.
      */
     :is([popover], dialog)[data-side="left"],
     :is([popover], dialog)[data-side="right"],
@@ -33,7 +46,11 @@
         flip-block,
         flip-block flip-inline,
         --lu-below,
-        --lu-above;
+        --lu-above,
+        --lu-fit-start,
+        --lu-fit-end,
+        --lu-fit-below,
+        --lu-fit-above;
     }
 
     /* The side. */
@@ -93,4 +110,41 @@
   bottom: calc(anchor(top) + var(--lu-side-offset, 0px));
   justify-self: anchor-center;
   align-self: auto;
+}
+/*
+ * Shrunk to the room from the trigger to the viewport's edge: stretched between the two insets (an
+ * auto block size, not the `fit-content` of the popover and dialog UA styles), the popup scrolls
+ * (TASK-428). Tried only after the popup fitted nowhere at its own size, and only where it keeps
+ * a usable size: a side with too little room fails, for the other one. (Not `position-try-order:
+ * most-block-size`: Chromium sorts the base position in with the fallbacks, and moves popups that
+ * fit.)
+ */
+@position-try --lu-fit-below {
+  top: calc(anchor(bottom) + var(--lu-side-offset, 0px));
+  bottom: 0;
+  align-self: normal;
+  block-size: auto;
+  min-block-size: min(8rem, 40dvh);
+}
+@position-try --lu-fit-above {
+  top: 0;
+  bottom: calc(anchor(top) + var(--lu-side-offset, 0px));
+  align-self: normal;
+  block-size: auto;
+  min-block-size: min(8rem, 40dvh);
+}
+/* Beside the trigger, from its top (or bottom) to the viewport's edge. */
+@position-try --lu-fit-start {
+  top: calc(anchor(top) + var(--lu-align-offset, 0px));
+  bottom: 0;
+  align-self: normal;
+  block-size: auto;
+  min-block-size: min(8rem, 40dvh);
+}
+@position-try --lu-fit-end {
+  top: 0;
+  bottom: calc(anchor(bottom) + var(--lu-align-offset, 0px));
+  align-self: normal;
+  block-size: auto;
+  min-block-size: min(8rem, 40dvh);
 }

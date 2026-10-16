@@ -1,10 +1,11 @@
 ---
 id: TASK-428
 title: Size anchored popups to the space beside their trigger
-status: To Do
+status: Done
 assignee:
   - '@Halo'
 created_date: '2026-10-16 10:06'
+updated_date: '2026-10-16 10:51'
 labels:
   - ui
   - review
@@ -35,5 +36,19 @@ Found by Prism's release review of @lumiose/ui (TASK-386, 2026-10-16) on main 94
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Size anchored popups to the space beside their trigger, with a regression test that fails without the fix (in every engine the finding names)
+- [x] #1 Size anchored popups to the space beside their trigger, with a regression test that fails without the fix (in every engine the finding names)
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+2026-10-16 (Halo): claimed (release-review fix batch 1; branch claude/halo-m12c-4d6b9f).
+
+2026-10-16 (Halo): fixed. placement.css: anchored popups scroll (overflow: auto; max-block-size: var(--lu-available-height, none)), and after the flips they try new fallbacks that shrink them to the room beside the trigger: --lu-fit-below/--lu-fit-above (and --lu-fit-start/--lu-fit-end beside it), stretched between the trigger and the viewport edge. Two traps found: the popover and dialog UA styles give block-size: fit-content, which cannot stretch (the fallbacks set block-size: auto); and position-try-order: most-block-size, as proposed, makes Chromium sort the base position in with the fallbacks, so popups that fit moved (tooltip, popover end alignment and submenu tests broke): instead each fit fallback has min-block-size: min(8rem, 40dvh), so a side with too little room fails for the other. place.ts (no anchor positioning) takes the roomier side when neither fits and writes --lu-available-height; the theme's Menu and Combobox caps use it. Combobox core CSS: a Popup around the List is a flex column, so the list shrinks with it and scrolls. Menu script: a ResizeObserver keeps the focused item in view when the popup shrinks after an item took focus (during its opening transition, seen in dev). Tests: /menu at 640x400 (200% of 1280x800), End: menu and Delete in view; /combobox at 640x400: list and highlight in view. Both fail without the fix in dev, build, Firefox and WebKit, and pass with it; all popup suites green in the four projects. Docs: popover, menu, combobox.
+<!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Anchored popups that fit nowhere shrink to the room beside their trigger and scroll, the focused item or highlight in view; without anchor positioning --lu-available-height does the same. Regression tests at 200% zoom fail without the fix in Chromium, Firefox and WebKit.
+<!-- SECTION:FINAL_SUMMARY:END -->

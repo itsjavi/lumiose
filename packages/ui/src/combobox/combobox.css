@@ -16,4 +16,18 @@
   lu-combobox [hidden] {
     display: none !important;
   }
+  /*
+   * A popup around the list stacks its parts in a column, so when the popup shrinks to the room
+   * beside the input the list shrinks with it and scrolls, keeping the highlight in view
+   * (TASK-428).
+   */
+  lu-combobox [popover]:popover-open:has(> [role="listbox"]) {
+    display: flex;
+    flex-direction: column;
+  }
+  lu-combobox [popover] > [role="listbox"] {
+    flex: 0 1 auto;
+    min-block-size: 0;
+    overflow-y: auto;
+  }
 }

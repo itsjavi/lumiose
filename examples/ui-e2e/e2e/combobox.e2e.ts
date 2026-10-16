@@ -423,6 +423,25 @@ test.describe("in an island", () => {
 });
 
 test.describe("WCAG 2.2 AA with the default theme (doc-9 section 17)", () => {
+  test("in a short viewport the list fits beside its input, and the highlight shows (1.4.10, TASK-428)", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 640, height: 400 });
+    await page.goto("/combobox");
+    const { input, list } = await city(page);
+    await input.focus();
+    await page.keyboard.press("ArrowUp");
+    await expect(list).toBeVisible();
+    const highlighted = list.locator("[data-highlighted]");
+    await expect(highlighted).toHaveCount(1);
+    const { height } = page.viewportSize()!;
+    const box = (await list.boundingBox())!;
+    const shown = (await highlighted.boundingBox())!;
+    expect(box.y).toBeGreaterThanOrEqual(0);
+    expect(box.y + box.height).toBeLessThanOrEqual(height + 1);
+    expect(shown.y + shown.height).toBeLessThanOrEqual(height + 1);
+  });
+
   for (const scheme of SCHEMES) {
     test(`axe passes closed and open (${scheme})`, async ({ page }) => {
       await page.emulateMedia({ colorScheme: scheme });

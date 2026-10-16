@@ -73,8 +73,10 @@ UI's safe polygon), the popover waits; a stop or a turn away lets it close.
 | `alignOffset` | `number`                                                                   | `0`        | A shift along the side, in CSS pixels: away from the aligned edge, or right/down when centred. |
 
 The popup flips to the opposite side when it does not fit, and goes below (or above) the trigger
-when a `left` or `right` popup fits on neither side. It hides while its trigger is scrolled out
-of view.
+when a `left` or `right` popup fits on neither side. A popup too tall for the room on both sides shrinks to the room beside its trigger
+(below, or above when below has less than 8rem), and scrolls; without anchor positioning the
+script writes that room as `--lu-available-height`, which the default theme's caps use. It hides while its trigger is
+scrolled out of view.
 
 ### The other parts
 

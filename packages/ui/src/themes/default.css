@@ -381,7 +381,7 @@
   .lu-menu {
     box-sizing: border-box;
     min-inline-size: 8rem;
-    max-block-size: min(24rem, 100dvh - 1rem);
+    max-block-size: min(24rem, var(--lu-available-height, 100dvh - 1rem));
     overflow-y: auto;
     padding: 0.25rem;
     border: 1px solid var(--lu-border);
@@ -629,7 +629,7 @@
     }
   }
   .lu-combobox :where([role="listbox"]) {
-    max-block-size: min(20rem, 100dvh - 1rem);
+    max-block-size: min(20rem, var(--lu-available-height, 100dvh - 1rem));
     overflow-y: auto;
   }
   .lu-combobox :where([role="option"]) {

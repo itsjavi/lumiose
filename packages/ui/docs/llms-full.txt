@@ -1688,7 +1688,8 @@ A starting point:
 `lu-combobox` has no box, the options, groups and empty state the script hides stay hidden whatever
 `display` your CSS gives them, and the shared placement rules anchor the popup to the input (with
 CSS anchor positioning, a popup sits on its `data-side` and `data-align`, keeps the gaps of
-`--lu-side-offset` and `--lu-align-offset`, and flips when it does not fit).
+`--lu-side-offset` and `--lu-align-offset`, flips when it does not fit, and shrinks to the room
+beside the input when it fits nowhere: the list scrolls, its highlight in view).
 
 ## Keyboard and focus
 
@@ -3252,8 +3253,9 @@ no box, and the popup and its groups lay the items out in a column (`display: gr
 `display: flex`). It imports the placement rules Menu shares with Popover and Tooltip: with CSS
 anchor positioning, a popup sits on its `data-side` and `data-align`, keeps the gaps of
 `--lu-side-offset` and `--lu-align-offset`, flips when it does not fit (a submenu tries the other
-side, then the other alignment, then below and above its trigger) and hides while its trigger is
-scrolled out of view. The `sideOffset` and `alignOffset` props set those two properties on the
+side, then the other alignment, then below and above its trigger), shrinks to the room beside its
+trigger and scrolls when it fits nowhere (the focused item stays in view), and hides while its
+trigger is scrolled out of view. The `sideOffset` and `alignOffset` props set those two properties on the
 popup.
 
 ## Keyboard and focus
@@ -4302,8 +4304,10 @@ UI's safe polygon), the popover waits; a stop or a turn away lets it close.
 | `alignOffset` | `number`                                                                   | `0`        | A shift along the side, in CSS pixels: away from the aligned edge, or right/down when centred. |
 
 The popup flips to the opposite side when it does not fit, and goes below (or above) the trigger
-when a `left` or `right` popup fits on neither side. It hides while its trigger is scrolled out
-of view.
+when a `left` or `right` popup fits on neither side. A popup too tall for the room on both sides shrinks to the room beside its trigger
+(below, or above when below has less than 8rem), and scrolls; without anchor positioning the
+script writes that room as `--lu-available-height`, which the default theme's caps use. It hides while its trigger is
+scrolled out of view.
 
 ### The other parts
 

@@ -563,7 +563,32 @@ test.describe("in an island", () => {
   });
 });
 
+/** Whether `locator`'s box lies inside the viewport. */
+async function inView(page: Page, locator: Locator) {
+  const box = (await locator.boundingBox())!;
+  const { height, width } = page.viewportSize()!;
+  return (
+    box.y >= -1 && box.x >= -1 && box.y + box.height <= height + 1 && box.x + box.width <= width + 1
+  );
+}
+
 test.describe("WCAG 2.2 AA with the default theme (doc-9 section 17)", () => {
+  test("at 200% zoom the menu fits beside its trigger and scrolls to the focused item (1.4.10, 2.4.7, TASK-428)", async ({
+    page,
+  }) => {
+    // 1280 by 800 at 200%.
+    await page.setViewportSize({ width: 640, height: 400 });
+    await page.goto("/menu");
+    const { trigger, item } = actions(page);
+    await trigger.focus();
+    await page.keyboard.press("Enter");
+    await expect(item("Rename")).toBeFocused();
+    await page.keyboard.press("End");
+    await expect(item("Delete")).toBeFocused();
+    await expect.poll(() => inView(page, page.getByRole("menu").first())).toBe(true);
+    await expect.poll(() => inView(page, item("Delete"))).toBe(true);
+  });
+
   for (const scheme of SCHEMES) {
     test(`axe passes closed and open (${scheme})`, async ({ page }) => {
       await page.emulateMedia({ colorScheme: scheme });

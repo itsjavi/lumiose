@@ -271,8 +271,9 @@ no box, and the popup and its groups lay the items out in a column (`display: gr
 `display: flex`). It imports the placement rules Menu shares with Popover and Tooltip: with CSS
 anchor positioning, a popup sits on its `data-side` and `data-align`, keeps the gaps of
 `--lu-side-offset` and `--lu-align-offset`, flips when it does not fit (a submenu tries the other
-side, then the other alignment, then below and above its trigger) and hides while its trigger is
-scrolled out of view. The `sideOffset` and `alignOffset` props set those two properties on the
+side, then the other alignment, then below and above its trigger), shrinks to the room beside its
+trigger and scrolls when it fits nowhere (the focused item stays in view), and hides while its
+trigger is scrolled out of view. The `sideOffset` and `alignOffset` props set those two properties on the
 popup.
 
 ## Keyboard and focus

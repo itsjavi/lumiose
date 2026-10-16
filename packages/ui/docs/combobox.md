@@ -257,7 +257,8 @@ A starting point:
 `lu-combobox` has no box, the options, groups and empty state the script hides stay hidden whatever
 `display` your CSS gives them, and the shared placement rules anchor the popup to the input (with
 CSS anchor positioning, a popup sits on its `data-side` and `data-align`, keeps the gaps of
-`--lu-side-offset` and `--lu-align-offset`, and flips when it does not fit).
+`--lu-side-offset` and `--lu-align-offset`, flips when it does not fit, and shrinks to the room
+beside the input when it fits nowhere: the list scrolls, its highlight in view).
 
 ## Keyboard and focus
 

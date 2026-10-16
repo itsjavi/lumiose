@@ -88,6 +88,8 @@ export class MenuElement extends HTMLElement {
   #outside: Element | undefined;
   /** Stops dismissing the menu (../layer/layer.ts). */
   #release: (() => void) | undefined;
+  /** While open: keeps the focused item in view when the popup changes size. */
+  #resize: ResizeObserver | undefined;
 
   /** The menu's popup: its first `[role=menu][popover]`. */
   get popup(): HTMLElement | null {
@@ -289,7 +291,17 @@ export class MenuElement extends HTMLElement {
       this.#edge = undefined;
       this.#place();
       this.#focus(edge);
+      // The popup may shrink to the room beside its trigger after an item took focus (its opening
+      // transition): the focused item stays in view (TASK-428).
+      this.#resize ??= new ResizeObserver(() => {
+        const active = document.activeElement;
+        if (active instanceof HTMLElement && active.closest("[role=menu]") === this.popup) {
+          active.scrollIntoView({ block: "nearest" });
+        }
+      });
+      this.#resize.observe(popup);
     } else {
+      this.#resize?.disconnect();
       this.#listen(false);
       this.#release?.();
       clearTimeout(this.#intentTimer);
