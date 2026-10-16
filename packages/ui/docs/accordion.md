@@ -53,11 +53,11 @@ Without `value`, `onValueChange` or `bind:value` the items keep their own state.
 
 ### Accordion.Item
 
-| Prop           | Type                      | Default          |                                                           |
-| -------------- | ------------------------- | ---------------- | --------------------------------------------------------- |
-| `value`        | `string`                  | an id of its own | Identifies the item in the root's `value`.                |
-| `disabled`     | `boolean`                 | `false`          | Its trigger takes no focus and does not toggle the panel. |
-| `onOpenChange` | `(open: boolean) => void` |                  | Called after the item opens or closes.                    |
+| Prop           | Type                      | Default          |                                                                  |
+| -------------- | ------------------------- | ---------------- | ---------------------------------------------------------------- |
+| `value`        | `string`                  | an id of its own | Identifies the item in the root's `value`.                       |
+| `disabled`     | `boolean`                 | `false`          | Its trigger takes no focus and does not toggle the panel.        |
+| `onOpenChange` | `(open: boolean) => void` |                  | Called after the item opens or closes; not when it renders open. |
 
 ### The other parts
 

@@ -76,6 +76,9 @@ function Root({
     disabled: () => disabled === true,
   };
 
+  /** The state last reported: a `<details>` created open fires `toggle` too (TASK-441 M40). */
+  let shown = untrack(() => open ?? defaultOpen) === true;
+
   // The `open` prop drives the element; its `toggle` event reports back, so a signal written by
   // `onOpenChange` sees the same value again and nothing loops.
   effect(() => {
@@ -92,8 +95,13 @@ function Root({
           details(element);
           forwarded?.(element);
         }}
-        open={untrack(() => open ?? defaultOpen) === true}
-        on:toggle={(event: ToggleEvent) => onOpenChange?.(event.newState === "open")}
+        open={shown}
+        on:toggle={(event: ToggleEvent) => {
+          const now = event.newState === "open";
+          if (now === shown) return;
+          shown = now;
+          onOpenChange?.(now);
+        }}
       >
         {children}
       </details>
