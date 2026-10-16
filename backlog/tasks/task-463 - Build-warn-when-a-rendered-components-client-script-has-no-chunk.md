@@ -3,9 +3,9 @@ id: TASK-463
 title: 'Build: warn when a rendered component''s client script has no chunk'
 status: To Do
 assignee:
-  - '@Photon'
+  - '@Beacon'
 created_date: '2026-10-16 13:45'
-updated_date: '2026-10-16 15:39'
+updated_date: '2026-10-16 21:19'
 labels:
   - vite
   - build
@@ -30,4 +30,6 @@ From the 0.1.0 release review, TASK-456 L36 (Prism). A component that calls its 
 
 <!-- SECTION:NOTES:BEGIN -->
 2026-10-16 (Lux, orchestrator): assigned at the fix batch 2 merge. A follow-up from the release review, not needed for 0.1.0.
+
+2026-10-16 (Lux, orchestrator): reassigned to Beacon for the final M12 batch (no Photon session is running).
 <!-- SECTION:NOTES:END -->
