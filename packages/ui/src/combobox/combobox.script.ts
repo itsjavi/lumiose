@@ -108,6 +108,8 @@ export class ComboboxElement extends HTMLElement {
   #pointed = false;
   /** With `free`: an `input` event the element fires itself, which is no typing. */
   #echo = false;
+  /** When an outside press last closed the popup: an outside invoker's toggle then keeps it shut. */
+  #dismissed = Number.NEGATIVE_INFINITY;
 
   /** Whether the input's text is the value (Autocomplete). */
   get #free(): boolean {
@@ -261,6 +263,8 @@ export class ComboboxElement extends HTMLElement {
   }
 
   formResetCallback(): void {
+    // A reset takes back the submit attempt's verdict; in a field, Field's script does (L32).
+    if (!this.closest("lu-field")) this.input?.removeAttribute("aria-invalid");
     if (this.#free) {
       // The input resets itself, after the element.
       queueMicrotask(() => this.#showClear());
@@ -338,8 +342,8 @@ export class ComboboxElement extends HTMLElement {
         if (event.target !== this && !this.#free) event.stopPropagation();
         return;
       case "command": {
-        const { command } = event as Event & { command: string };
-        return this.#onCommand(command);
+        const { command, source } = event as Event & { command: string; source?: Element | null };
+        return this.#onCommand(command, source ?? null);
       }
       case "invalid":
         this.input?.setAttribute("aria-invalid", "true");
@@ -554,8 +558,21 @@ export class ComboboxElement extends HTMLElement {
     this.#release = openLayer({
       popup,
       contains: (node) => this.contains(node),
-      dismiss: () => this.#close(),
+      dismiss: () => {
+        this.#dismissed = performance.now();
+        this.#close();
+      },
     });
+    // Now, not on `toggle` a task later: `aria-activedescendant` may follow at once (L32).
+    this.#expanded(true);
+  }
+
+  /** `aria-expanded` on the input and on the Trigger buttons (TASK-454, L32). */
+  #expanded(open: boolean): void {
+    this.input?.setAttribute("aria-expanded", String(open));
+    for (const button of this.querySelectorAll<HTMLElement>("[command='--toggle']")) {
+      button.setAttribute("aria-expanded", String(open));
+    }
   }
 
   /** Closes the popup; `restore` puts the selection's label back in the input. */
@@ -564,13 +581,14 @@ export class ComboboxElement extends HTMLElement {
     this.#release?.();
     this.#release = undefined;
     if (this.open) this.popup!.hidePopover();
+    this.#expanded(false);
     if (restore) this.#showLabel();
   }
 
   #onToggle(event: ToggleEvent): void {
     if (event.target !== this.popup) return;
     const open = event.newState === "open";
-    this.input?.setAttribute("aria-expanded", String(open));
+    this.#expanded(open);
     if (!open) {
       this.#follow(false);
       this.#release?.();
@@ -785,6 +803,10 @@ export class ComboboxElement extends HTMLElement {
         if (open && option) {
           event.preventDefault();
           this.#choose(option);
+          // As a click on it does (TASK-454, L32).
+          if (this.hasAttribute("submit-on-item-click") && !disabled(option)) {
+            input.form?.requestSubmit();
+          }
         }
         return;
       }
@@ -840,9 +862,13 @@ export class ComboboxElement extends HTMLElement {
     }
   }
 
-  #onCommand(command: string): void {
+  #onCommand(command: string, source: Element | null = null): void {
     if (this.#disabled()) return;
     if (command === "--toggle") {
+      // A press on an invoker outside the element closed the popup as an outside press: its
+      // command, a moment later, is that same close, not a reopening (TASK-454, L32).
+      const outside = source !== null && !this.contains(source);
+      if (outside && !this.open && performance.now() - this.#dismissed < 400) return;
       if (this.open) this.#close();
       else this.#show(true);
       this.input?.focus();

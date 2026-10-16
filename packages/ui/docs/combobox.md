@@ -109,9 +109,11 @@ own, since they connect the parts.
   Its `type` and `value` are the combobox's. Inside a [Field](field.md), it takes the field's id
   (so `Field.Label` labels it), its description and error references and `aria-invalid`, and Root
   takes the field's `name` and disabled state; the field shows the combobox's validation.
-- **`Trigger`** and **`Clear`**: out of the tab order, as in the APG examples; the input does
+- **`Trigger`** and **`Clear`**: out of the tab order, as in the APG examples; the Trigger has
+  `aria-haspopup`, `aria-controls` and `aria-expanded`, and the input does
   everything from the keyboard. Name them with `aria-label` (or content).
 - **`Group`**: `aria-labelledby` points at its `GroupLabel` while one renders.
+- **`List`**: named by the `Label`, or inside a [Field](field.md) by the field's label.
 
 **Differences from Base UI's Combobox.** No `Portal`, `Positioner`, `Backdrop`, `Arrow`, `Value`,
 `Icon`, `ItemIndicator`, `Row`, `Collection` or `Separator`: the top layer and anchor positioning

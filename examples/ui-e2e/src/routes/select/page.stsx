@@ -17,18 +17,19 @@ export default function SelectPage() {
             <Select.Trigger>
               <Select.Value />
             </Select.Trigger>
-            <Select.Item value="apple">
+            {/* `label`: the options start with an emoji, which typeahead would match (TASK-454). */}
+            <Select.Item value="apple" label="Apple">
               <span aria-hidden="true">🍎</span> Apple
             </Select.Item>
-            <Select.Item value="banana">
+            <Select.Item value="banana" label="Banana">
               <span aria-hidden="true">🍌</span> Banana
             </Select.Item>
-            <Select.Item value="pear">
+            <Select.Item value="pear" label="Pear">
               <span aria-hidden="true">🍐</span> Pear
             </Select.Item>
             <Select.Separator />
             <Select.Group label="Citrus">
-              <Select.Item value="lemon">
+              <Select.Item value="lemon" label="Lemon">
                 <span aria-hidden="true">🍋</span> Lemon
               </Select.Item>
               <Select.Item value="lime" disabled>

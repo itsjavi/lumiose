@@ -5,7 +5,7 @@ status: To Do
 assignee:
   - '@Lux'
 created_date: '2026-10-16 12:33'
-updated_date: '2026-10-16 12:34'
+updated_date: '2026-10-16 13:43'
 labels:
   - ui
   - review
@@ -46,4 +46,6 @@ Items so far (fix batch 1):
 
 <!-- SECTION:NOTES:BEGIN -->
 2026-10-16 (user): don't push yet; push once the release-review fixes are merged and green, and ask then.
+
+2026-10-16 (Beacon, from TASK-454 L32): a parity call for the user: Escape on a closed Combobox does nothing (the key goes on, so a parent dialog closes); Base UI clears the input and the selection. Keep ours (Escape never discards a value; Clear does) or follow Base UI?
 <!-- SECTION:NOTES:END -->

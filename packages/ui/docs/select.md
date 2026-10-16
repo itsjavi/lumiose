@@ -1,6 +1,6 @@
 # Select
 
-> A native `<select>` for picking one value from a list: it works with no JavaScript, submits with its form and keeps the platform's keyboard, typeahead and mobile pickers. Where the browser has customizable select (`appearance: base-select`, Chrome 135, Safari 27), `Select.Trigger` and `Select.Value` shape the button, the picker is styleable and options may hold more than text; elsewhere it is the classic select. No script; `bind:value` keeps a signal in sync in islands.
+> A native `<select>` for picking one value from a list: it works with no JavaScript, submits with its form and keeps the platform's keyboard, typeahead and mobile pickers. Where the browser has customizable select (`appearance: base-select`, Chrome 135, Safari 26), `Select.Trigger` and `Select.Value` shape the button, the picker is styleable and options may hold more than text; elsewhere it is the classic select. No script; `bind:value` keeps a signal in sync in islands.
 
 ```ts
 import { Select } from "@lumiose/ui"; // or "@lumiose/ui/select"
@@ -56,10 +56,11 @@ handlers. Name it with a `<label for>` pointing at its `id`, or `aria-label`, or
 
 ### Select.Item
 
-| Prop       | Type      | Default |                                                                   |
-| ---------- | --------- | ------- | ----------------------------------------------------------------- |
-| `value`    | `string`  |         | Required: the value the select takes, and submits, when selected. |
-| `disabled` | `boolean` | `false` | The option cannot be selected; the arrow keys skip it.            |
+| Prop       | Type      | Default |                                                                                                                       |
+| ---------- | --------- | ------- | --------------------------------------------------------------------------------------------------------------------- |
+| `value`    | `string`  |         | Required: the value the select takes, and submits, when selected.                                                     |
+| `disabled` | `boolean` | `false` | The option cannot be selected; the arrow keys skip it.                                                                |
+| `label`    | `string`  |         | The option's text for typeahead and the classic select, when its content starts with an icon or holds more than text. |
 
 ### Select.Group
 
@@ -214,14 +215,16 @@ control's value when it changes, and its `change` event calls `onValueChange`.
 ## Browser support
 
 - **Customizable select** (`appearance: base-select`, `::picker(select)`, `<selectedcontent>`, a
-  `<button>` and rich content inside `<select>`): Chrome and Edge 135, Safari 27. Firefox has none
-  yet: it shows its classic select, styled by the theme when closed, with the options' text.
-- In browsers without customizable select, the HTML parser drops the `Trigger` and tags inside
-  options from server HTML, so an island's select falls back to rendering on the client there
-  ([LUM4006](https://itsjavi.com/lumiose/docs/errors/LUM4006/)); keep options to text if that
-  matters to you.
-- **`:open`** comes with customizable select; Safari 27's support is unverified here (the
-  end-to-end tests run in Chromium).
+  `<button>` and rich content inside `<select>`): Chrome and Edge 135, Safari 26 (the end-to-end
+  tests run it in Chromium and WebKit 26.6). Firefox has none yet: it shows its classic select,
+  styled by the theme when closed, with the options' text (or their `label`).
+- Firefox 155 keeps the `Trigger` and the tags inside options in the DOM (`select.css` hides the
+  `Trigger`). Older browsers without customizable select drop them from server HTML, so an
+  island's select falls back to rendering on the client there
+  ([LUM4006](https://itsjavi.com/lumiose/docs/errors/LUM4006/)).
+- **Typeahead** matches an option's text, or its `label`: give options that start with an icon a
+  `label`.
+- **`:open`** comes with customizable select.
 
 ## Related
 

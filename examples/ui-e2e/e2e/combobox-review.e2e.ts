@@ -121,3 +121,62 @@ test.describe("M24: before the script runs", () => {
     await expect(input).toHaveValue("Ber");
   });
 });
+
+test.describe("Combobox Lows (TASK-454, L32)", () => {
+  test("an invoker outside the element closes the open popup", async ({ page }) => {
+    const { input, root } = await city(page);
+    // An external `--toggle` invoker, as a page may render anywhere.
+    await root.evaluate((el) => {
+      const button = Object.assign(document.createElement("button"), {
+        type: "button",
+        textContent: "Cities",
+      });
+      button.setAttribute("commandfor", el.id);
+      button.setAttribute("command", "--toggle");
+      document.querySelector("h1")!.after(button);
+    });
+    const toggle = page.getByRole("button", { name: "Cities", exact: true });
+    await toggle.click();
+    await expect(input).toHaveAttribute("aria-expanded", "true");
+    await toggle.click();
+    await expect(input).toHaveAttribute("aria-expanded", "false");
+    await page.waitForTimeout(200);
+    await expect(input).toHaveAttribute("aria-expanded", "false");
+  });
+
+  test("aria-expanded is set with the highlight, and the Trigger says it too", async ({ page }) => {
+    const { input } = await city(page);
+    const trigger = page.getByRole("button", { name: "Show cities" });
+    await expect(trigger).toHaveAttribute("aria-expanded", "false");
+    await input.focus();
+    // In one task: the highlight's aria-activedescendant and aria-expanded together.
+    const state = await input.evaluate((el) => {
+      el.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "ArrowDown", bubbles: true, cancelable: true }),
+      );
+      return [el.getAttribute("aria-activedescendant") !== null, el.getAttribute("aria-expanded")];
+    });
+    expect(state).toEqual([true, "true"]);
+    await expect(trigger).toHaveAttribute("aria-expanded", "true");
+  });
+
+  test("a reset takes back aria-invalid outside a field", async ({ page }) => {
+    const { input } = await city(page);
+    await input.fill("");
+    await page.keyboard.press("Escape");
+    await page.getByRole("button", { name: "Save" }).click();
+    await expect(input).toHaveAttribute("aria-invalid", "true");
+    await page.getByRole("button", { name: "Reset" }).click();
+    await expect(input).not.toHaveAttribute("aria-invalid");
+  });
+
+  test("Autocomplete's submitOnItemClick submits on Enter too", async ({ page }) => {
+    await page.goto("/autocomplete");
+    const search = page.getByRole("combobox", { name: "Search" });
+    await search.click();
+    await search.pressSequentially("ui");
+    await expect(search).toHaveAttribute("aria-activedescendant", /.+/);
+    await page.keyboard.press("Enter");
+    await expect(page).toHaveURL(/[?&]q=/);
+  });
+});

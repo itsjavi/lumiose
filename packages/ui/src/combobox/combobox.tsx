@@ -23,7 +23,7 @@ import type {
   ComboboxOpenChangeDetail,
 } from "./combobox.script.ts";
 import comboboxScript from "./combobox.script.ts?client";
-import { controlId, describedBy, useField, useFormValues } from "../field/context.ts";
+import { controlId, describedBy, labelledBy, useField, useFormValues } from "../field/context.ts";
 import { onFormReset } from "../form/reset.ts";
 import { anchorName, placement, withStyle, type PlacementProps } from "../placement/placement.ts";
 import { ComboboxContext, register, useCombobox, type ComboboxContextValue } from "./context.ts";
@@ -333,6 +333,10 @@ function Trigger({ children, ...rest }: ComboboxTriggerProps) {
       tabindex={-1}
       {...rest}
       disabled={combobox.disabled() || rest.disabled}
+      // The popup it opens and closes, as the input says (TASK-454, L32).
+      aria-haspopup="listbox"
+      aria-controls={`${combobox.id}-list`}
+      aria-expanded="false"
       command="--toggle"
       commandfor={combobox.id}
     >
@@ -401,6 +405,7 @@ function List({
   ...rest
 }: ComboboxListProps) {
   const combobox = useCombobox();
+  const field = useField();
   // The listbox is the popover unless a Popup holds it.
   const popover = combobox.popup
     ? { style }
@@ -415,7 +420,8 @@ function List({
       };
   return (
     <div
-      aria-labelledby={combobox.labels() > 0 ? `${combobox.id}-label` : undefined}
+      // Named by the Label, or in a field by the field's (TASK-454, L32).
+      aria-labelledby={combobox.labels() > 0 ? `${combobox.id}-label` : labelledBy(field)}
       {...rest}
       {...popover}
       id={`${combobox.id}-list`}
@@ -436,7 +442,8 @@ function Item({ children, value, label, disabled, ...rest }: ComboboxItemProps) 
       role="option"
       data-value={value}
       data-label={label}
-      aria-selected={combobox.selected().includes(value)}
+      // An Autocomplete selects nothing: its options carry no `aria-selected` (TASK-454, L32).
+      aria-selected={combobox.text ? undefined : combobox.selected().includes(value)}
       aria-disabled={disabled || undefined}
     >
       {children}

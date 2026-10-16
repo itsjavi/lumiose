@@ -4,7 +4,6 @@
 // island, layers (a dialog), and WCAG 2.2 AA with the default theme (doc-9 sections 7 and 17).
 import { expect, test, type Locator, type Page } from "@playwright/test";
 import { axe, focusRing, lastNavLink, SCHEMES, smallTargets } from "./a11y.ts";
-import { skipIn } from "./browsers.ts";
 
 /** Puts the whole page right to left. */
 const rtl = (page: Page) => page.evaluate(() => (document.documentElement.dir = "rtl"));
@@ -36,8 +35,12 @@ test.describe("without JavaScript", () => {
   });
 });
 
-test.describe("customizable select (Chromium)", () => {
-  skipIn(["firefox", "webkit"], CLASSIC);
+// Chromium, and WebKit since 26.6 (TASK-454, L33); Firefox 155 has the classic select.
+test.describe("customizable select", () => {
+  test.beforeEach(async ({ page }) => {
+    await page.goto("/select");
+    test.skip(!(await customizable(page)), CLASSIC);
+  });
   test("the trigger shows the selected option's content; the picker opens anchored", async ({
     page,
   }) => {
@@ -59,6 +62,7 @@ test.describe("customizable select (Chromium)", () => {
 
   test("keyboard: Space opens on the selected option, arrows skip disabled ones, Escape closes", async ({
     page,
+    browserName,
   }) => {
     await page.goto("/select");
     const { select, option } = fruit(page);
@@ -88,12 +92,17 @@ test.describe("customizable select (Chromium)", () => {
     await expect(option("Lemon")).toBeFocused();
     await page.keyboard.press("Home");
     await expect(option("Apple")).toBeFocused();
-    // Tab closes the picker; Chromium leaves focus on the control.
+    // Tab closes the picker; Chromium leaves focus on the control, WebKit moves on.
     await page.keyboard.press("Tab");
     expect(await isOpen(select)).toBe(false);
-    await expect(select).toBeFocused();
+    if (browserName === "chromium") await expect(select).toBeFocused();
 
-    // Typeahead matches the options' text (the fruits' starts with an emoji).
+    // Typeahead matches the options' labels: the fruits' text starts with an emoji (L33).
+    await select.focus();
+    await page.keyboard.press(" ");
+    await page.keyboard.press("l");
+    await expect(option("Lemon")).toBeFocused();
+    await page.keyboard.press("Escape");
     const size = page.getByLabel("Size");
     await size.focus();
     await page.keyboard.press(" ");
