@@ -6,7 +6,7 @@ status: accepted
 ---
 ## Context
 
-Decision-54 set the direction for @lumiose/ui (accessible UI primitives, Timeless-based, Base UI's API as inspiration) and left open whether to depend on Timeless, port it or merge it. The TASK-332 spike prototyped dialog, menu and combobox for each option (examples/ui-spike). Depending on `@timelessui/components` 0.2.0 cost 14.75 kB brotli of JS for the three and showed four gaps with signals and ARIA (no dialog `open` property, the combobox shows the value instead of the label, `aria-selected` does not follow `value`, running a menu item leaves the menu open). The port cost 1.71 kB (dialog: none) with no such gaps. Merging fails to build: Timeless's TC39 decorators pass through Vite 8 unlowered and neither Node 26 nor Chrome 152 parse them. axe found no violations in either prototype.
+Decision-54 set the direction for @lumiose/ui (accessible UI primitives, Timeless-based, Base UI's API as inspiration) and left open whether to depend on Timeless, port it or merge it. The TASK-332 spike prototyped dialog, menu and combobox for each option (examples/ui-spike, removed in TASK-363; it remains in the git history). Depending on `@timelessui/components` 0.2.0 cost 14.75 kB brotli of JS for the three and showed four gaps with signals and ARIA (no dialog `open` property, the combobox shows the value instead of the label, `aria-selected` does not follow `value`, running a menu item leaves the menu open). The port cost 1.71 kB (dialog: none) with no such gaps. Merging fails to build: Timeless's TC39 decorators pass through Vite 8 unlowered and neither Node 26 nor Chrome 152 parse them. axe found no violations in either prototype.
 
 ## Decision
 
