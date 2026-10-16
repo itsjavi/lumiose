@@ -5,6 +5,7 @@ status: To Do
 assignee:
   - '@Halo'
 created_date: '2026-10-16 10:07'
+updated_date: '2026-10-16 13:03'
 labels:
   - ui
   - review
@@ -34,3 +35,9 @@ Found by Prism's release review of @lumiose/ui (TASK-386, 2026-10-16) on main 94
   - Shift+ArrowRight at the end leaves the field.
 - [ ] #2 L27: Menu without JS: Escape in a submenu leaves focus on a hidden item.
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+2026-10-16 (Lux, orchestrator): Halo's in release-review fix batch 2.
+<!-- SECTION:NOTES:END -->

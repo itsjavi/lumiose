@@ -5,6 +5,7 @@ status: To Do
 assignee:
   - '@Halo'
 created_date: '2026-10-16 10:07'
+updated_date: '2026-10-16 13:03'
 labels:
   - ui
   - review
@@ -39,3 +40,9 @@ Found by Prism's release review of @lumiose/ui (TASK-386, 2026-10-16) on main 94
 - [ ] #3 L30: Docs: preventing `cancel` stops only the first Escape.
 - [ ] #4 L31: Drawer initial focus goes to the first control; BU 1.9 focuses the popup.
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+2026-10-16 (Lux, orchestrator): Halo's in release-review fix batch 2.
+<!-- SECTION:NOTES:END -->
