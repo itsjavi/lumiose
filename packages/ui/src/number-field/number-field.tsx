@@ -203,7 +203,10 @@ function Root({
     if (next === undefined) return;
     current.set(next);
     const host = element();
-    if (host?.isConnected) host.value = next;
+    // Not the echo of what is being typed: rewriting the text then would format it under the
+    // caret ("7." loses its point) and, in Firefox and WebKit, cancel the `change` on blur
+    // (TASK-416).
+    if (host?.isConnected && host.value !== next) host.value = next;
   });
   const context: NumberFieldContextValue = {
     // Ids do not change.

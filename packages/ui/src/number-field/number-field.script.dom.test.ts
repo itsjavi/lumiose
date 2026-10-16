@@ -77,9 +77,7 @@ it("steps by small-step with Alt, and snaps to the step's multiples with snap-on
   key("PageDown");
   expect(field.value).toBe(10);
   // A Shift press on a button takes the large step too.
-  button("decrement").dispatchEvent(
-    new MouseEvent("click", { bubbles: true, shiftKey: true }),
-  );
+  button("decrement").dispatchEvent(new MouseEvent("click", { bubbles: true, shiftKey: true }));
   expect(field.value).toBe(0);
 });
 
