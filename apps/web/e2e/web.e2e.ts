@@ -179,7 +179,7 @@ test("search finds pages and headings", async ({ page }) => {
   await page.keyboard.press("/");
   await expect(box).toBeFocused();
   await page.keyboard.type("staticPaths");
-  const results = page.getByRole("listbox", { name: "Docs pages" });
+  const results = page.getByRole("listbox", { name: "Search the docs" });
   await expect(results.getByRole("option").first()).toBeVisible();
   await page.keyboard.press("Enter");
   await expect(page).toHaveURL(/\/docs\/.+/);
@@ -244,7 +244,7 @@ test("below a base path every URL keeps the base", async ({ page }) => {
   await page.getByRole("link", { name: "Get started" }).first().click();
   await expect(page).toHaveURL(/\/lumiose\/docs\/getting-started\/?$/);
   await (await search(page)).fill("islands");
-  await page.getByRole("listbox", { name: "Docs pages" }).getByRole("option").first().click();
+  await page.getByRole("listbox", { name: "Search the docs" }).getByRole("option").first().click();
   await expect(page).toHaveURL(/\/lumiose\/docs\/.+/);
   expect(outside).toEqual([]);
   expect(failures).toEqual([]);
@@ -283,7 +283,7 @@ test("screenshots", async ({ page }) => {
   await page.screenshot({ path: out("diagnostic") });
   await page.goto("/docs/concepts/islands");
   await (await search(page)).fill("bind:value");
-  await expect(page.getByRole("listbox", { name: "Docs pages" })).toBeVisible();
+  await expect(page.getByRole("listbox", { name: "Search the docs" })).toBeVisible();
   await page.screenshot({ path: out("search") });
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/docs/concepts/signals");

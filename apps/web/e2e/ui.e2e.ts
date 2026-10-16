@@ -177,7 +177,7 @@ test("search finds the UI pages", async ({ page }) => {
   await page.goto("/ui/tabs");
   await expect(page.locator(".search[data-ready]")).toBeAttached();
   await page.getByRole("combobox", { name: "Search the docs" }).fill("tooltip");
-  const option = page.getByRole("listbox", { name: "Docs pages" }).getByRole("option").first();
+  const option = page.getByRole("listbox", { name: "Search the docs" }).getByRole("option").first();
   await expect(option).toContainText("UI · Components");
   await option.click();
   await expect(page).toHaveURL(/\/ui\/tooltip/);
