@@ -103,6 +103,25 @@ test.describe("Preview Card", () => {
     await expect(link(page, "islands")).toBeFocused();
   });
 
+  test("Escape with focus in the card gives focus back to its link (2.4.3, TASK-434)", async ({
+    page,
+  }) => {
+    await ready(page);
+    await lastNavLink(page).focus();
+    await page.keyboard.press("Tab");
+    await expect(card(page, "Interactive components")).toBeVisible();
+    await page.keyboard.press("Tab");
+    await expect(link(page, "Read about islands")).toBeFocused();
+    await page.keyboard.press("Escape");
+    await expect(card(page, "Interactive components")).toBeHidden();
+    await expect(link(page, "islands")).toBeFocused();
+    // It stays closed, and Tab goes on from the link.
+    await page.waitForTimeout(800);
+    await expect(card(page, "Interactive components")).toBeHidden();
+    await page.keyboard.press("Tab");
+    await expect(link(page, "guide")).toBeFocused();
+  });
+
   test("a click follows the link", async ({ page }) => {
     await ready(page);
     await link(page, "signals").click();

@@ -4599,7 +4599,7 @@ the link, with a fade (none where motion is reduced).
 | Key    | Does                                                                                                        |
 | ------ | ----------------------------------------------------------------------------------------------------------- |
 | Tab    | Onto the link: the card opens after the delay, focus stays on the link. Again: into the open card, then on. |
-| Escape | Closes the card, without moving focus or the pointer.                                                       |
+| Escape | Closes the card without moving the pointer; from inside the card, focus goes back to the link.              |
 | Enter  | Follows the link.                                                                                           |
 
 - **Hover** opens the card after the delay; it stays while the pointer is on the link or the card

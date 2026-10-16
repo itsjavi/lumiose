@@ -1,10 +1,11 @@
 ---
 id: TASK-434
 title: 'Preview Card: return focus to the link when the card closes with focus inside'
-status: To Do
+status: Done
 assignee:
   - '@Halo'
 created_date: '2026-10-16 10:06'
+updated_date: '2026-10-16 10:53'
 labels:
   - ui
   - review
@@ -30,5 +31,19 @@ Found by Prism's release review of @lumiose/ui (TASK-386, 2026-10-16) on main 94
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Preview Card: return focus to the link when the card closes with focus inside, with a regression test that fails without the fix (in every engine the finding names)
+- [x] #1 Preview Card: return focus to the link when the card closes with focus inside, with a regression test that fails without the fix (in every engine the finding names)
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+2026-10-16 (Halo): claimed (release-review fix batch 1; branch claude/halo-m12c-4d6b9f).
+
+2026-10-16 (Halo): fixed as proposed. preview-card.script.ts notes on a closing beforetoggle whether the card holds focus, and on the closed toggle, if focus fell to the page (or is still inside), focuses the link with preventScroll. That focus does not reopen the card (keyboard focus on the link opens it otherwise). Test: Tab to islands, Tab into the card's link, Escape: the card closes, focus is on islands, the card stays closed and Tab goes on to the next link. It fails without the fix in dev, build, Firefox and WebKit. preview-card.md's Escape row updated.
+<!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Preview Card gives focus back to its link when it closes with focus inside (Escape), without reopening; regression test fails without the fix in Chromium, Firefox and WebKit.
+<!-- SECTION:FINAL_SUMMARY:END -->
