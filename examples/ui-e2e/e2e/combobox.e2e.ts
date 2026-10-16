@@ -326,9 +326,12 @@ test.describe("forms", () => {
     await expect(input).toHaveAttribute("aria-invalid", "true");
     expect(await root.evaluate((el) => (el as HTMLInputElement).validity.valueMissing)).toBe(true);
     expect(await root.evaluate((el) => (el as HTMLInputElement).validationMessage)).not.toBe("");
-    // Choosing a value makes it valid again.
-    await input.click();
-    await page.getByRole("option", { name: "Berlin" }).click();
+    // Choosing a value makes it valid again. By the keys: Firefox's validation bubble, under the
+    // input, covers the first option and takes a click there (TASK-424).
+    await input.focus();
+    await page.keyboard.press("ArrowDown");
+    await page.keyboard.press("Enter");
+    await expect(input).toHaveValue("Berlin");
     await expect(input).not.toHaveAttribute("aria-invalid");
   });
 

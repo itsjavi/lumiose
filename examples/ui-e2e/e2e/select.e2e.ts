@@ -220,6 +220,8 @@ test.describe("WCAG 2.2 AA with the default theme (doc-9 section 17)", () => {
 test.describe("right to left (TASK-385)", () => {
   test("the picker lines up with the select's inline start: its right edge", async ({ page }) => {
     await page.goto("/select");
+    // The classic select's picker is the browser's own, outside the page (TASK-424).
+    test.skip(!(await customizable(page)), CLASSIC);
     await rtl(page);
     const { select, option } = fruit(page);
     await select.click();

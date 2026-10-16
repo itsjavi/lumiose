@@ -248,12 +248,7 @@ test.describe("Checkbox, Checkbox Group, Radio Group and Switch", () => {
 
   test("a radio group: one tab stop, arrows move and select, disabled radios are skipped", async ({
     page,
-    browserName,
   }) => {
-    test.skip(
-      browserName === "webkit",
-      "WebKit's native radio group stops at the last enabled radio instead of wrapping past a disabled one: the platform's keys, as the docs say",
-    );
     await ready(page);
     const group = page.getByRole("radiogroup", { name: "Size" });
     await expect(group).toHaveAttribute("aria-required", "true");
@@ -264,7 +259,13 @@ test.describe("Checkbox, Checkbox Group, Radio Group and Switch", () => {
     await page.keyboard.press("ArrowDown");
     await expect(radio("Medium")).toBeFocused();
     await expect(radio("Medium")).toBeChecked();
-    // Large is disabled: around to Small.
+    // Large is disabled: on to Extra large, then around to Small.
+    await page.keyboard.press("ArrowDown");
+    await expect(radio("Extra large")).toBeChecked();
+    await page.keyboard.press("ArrowRight");
+    await expect(radio("Small")).toBeChecked();
+    await page.keyboard.press("ArrowUp");
+    await expect(radio("Extra large")).toBeFocused();
     await page.keyboard.press("ArrowDown");
     await expect(radio("Small")).toBeChecked();
     await page.keyboard.press("Tab");
@@ -337,6 +338,23 @@ test.describe("in an island", () => {
 const login = (page: Page) => page.getByRole("textbox", { name: "Login" });
 const validity = (page: Page) => page.getByTestId("login-validity");
 const checks = (page: Page) => page.getByTestId("login-checks");
+
+test.describe("a form reset in an island (TASK-424)", () => {
+  test("an Error's text stays live: the next action error shows", async ({ page }) => {
+    await page.goto("/form/island");
+    const handle = page.getByRole("textbox", { name: "Handle" });
+    await hydrated(page);
+    await handle.fill("a b");
+    await page.getByRole("button", { name: "Save" }).click();
+    await expect(page.getByText("No spaces, please.")).toBeVisible();
+    // Resetting an <output> replaces its text in Firefox and WebKit; Field's script puts it back.
+    await handle.evaluate((el) => (el as HTMLInputElement).form!.reset());
+    await expect(page.getByText("No spaces, please.")).toBeHidden();
+    await handle.fill("admin");
+    await page.getByRole("button", { name: "Save" }).click();
+    await expect(page.getByText("That handle is reserved.")).toBeVisible();
+  });
+});
 
 test.describe("async validate and Field.Validity (TASK-405)", () => {
   test("the latest edit's verdict wins: a slower, older check is dropped", async ({ page }) => {
@@ -484,7 +502,11 @@ test.describe("right to left (TASK-385)", () => {
     await radio("Small").focus();
     await page.keyboard.press("ArrowLeft");
     await expect(radio("Medium")).toBeFocused();
+    await expect(radio("Medium")).toBeChecked();
+    // Past the disabled Large; left to right, Arrow Left from Small would go to Extra large.
+    await page.keyboard.press("ArrowLeft");
+    await expect(radio("Extra large")).toBeChecked();
     await page.keyboard.press("ArrowRight");
-    await expect(radio("Small")).toBeFocused();
+    await expect(radio("Medium")).toBeChecked();
   });
 });

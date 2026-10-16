@@ -124,7 +124,8 @@ export function FormSignals() {
             </Field.Validity>
           </p>
         </Field.Root>
-        <output data-testid="login-checks">checks: {checks()}</output>
+        {/* A <p>, not an <output>: a form reset would replace an output's text (TASK-424). */}
+        <p data-testid="login-checks">checks: {checks()}</p>
         <button type="submit" class="lu-button">
           Check login
         </button>

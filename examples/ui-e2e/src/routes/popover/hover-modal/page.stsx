@@ -63,7 +63,8 @@ export default function PopoverHoverModalPage() {
           </Popover.Root>
           <Popover.Root modal="trap-focus">
             <Popover.Trigger class="lu-button">Filters</Popover.Trigger>
-            <Popover.Popup class="lu-popover" align="start" sideOffset={8}>
+            {/* Beside its trigger, clear of "Behind" below it, which a press outside reaches. */}
+            <Popover.Popup class="lu-popover" side="right" align="start" sideOffset={8}>
               <Popover.Title>Filters</Popover.Title>
               <label>
                 From <input class="lu-input" value="2024" />

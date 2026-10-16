@@ -58,23 +58,33 @@ it("stops a thumb at its neighbour with thumb-collision-behavior none", () => {
   expect(slider.value).toEqual([68, 70]);
 });
 
+/** A native drag of thumb 0 starts and ends. */
+const press = () =>
+  thumb(0).dispatchEvent(new PointerEvent("pointerdown", { bubbles: true, isPrimary: true }));
+const release = () => document.dispatchEvent(new PointerEvent("pointerup", { isPrimary: true }));
+
 it("swaps thumbs dragged past each other with swap, and stops them with the keys", () => {
   const slider = mount([20, 60], 'thumb-collision-behavior="swap"');
   // The pointer drags thumb 0 natively past thumb 1.
-  thumb(0).dispatchEvent(new PointerEvent("pointerdown", { bubbles: true, isPrimary: true }));
+  press();
   drag(0, 70);
   expect(slider.value).toEqual([60, 70]);
-  expect(document.activeElement).toBe(thumb(1));
-  // Its drag goes on: thumb 0 stays put, thumb 1 follows the pointer, past the start too.
+  // Its drag goes on: thumb 0 stays put, thumb 1 follows the pointer.
   drag(0, 80);
   expect(slider.value).toEqual([60, 80]);
+  // Focus follows when the press ends (Firefox ends a native drag whose thumb loses focus).
+  expect(document.activeElement).not.toBe(thumb(1));
+  release();
+  expect(document.activeElement).toBe(thumb(1));
+  // Back past the start: thumb 0 takes the value again.
+  press();
+  drag(0, 90);
   drag(0, 10);
-  expect(slider.value).toEqual([10, 60]);
-  expect(document.activeElement).toBe(thumb(0));
-  document.dispatchEvent(new PointerEvent("pointerup", { isPrimary: true }));
+  expect(slider.value).toEqual([10, 80]);
+  release();
   // No pointer: the keys and other moves stop at the neighbour.
   drag(0, 90);
-  expect(slider.value).toEqual([60, 60]);
+  expect(slider.value).toEqual([80, 80]);
 });
 
 it("stops a pushed thumb at the end of the range, and the moved one before it", () => {

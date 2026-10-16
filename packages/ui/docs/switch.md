@@ -84,7 +84,7 @@ Enter does not toggle it. A click on its label does.
 ## Without JavaScript, and the client script
 
 A native checkbox with the switch role: toggling, submission, `required`, reset and `disabled`
-work with no script. The shared checkbox script (0.5 kB brotli,
+work with no script. The shared checkbox script (0.8 kB brotli,
 [Checkbox](checkbox.md#without-javascript-and-the-client-script)) adds read-only and
 `uncheckedValue`.
 

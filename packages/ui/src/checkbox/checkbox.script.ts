@@ -10,6 +10,10 @@
 //   `name`, so it is never submitted.
 // - Read-only (`aria-readonly="true"` on the input, or on a radio group): a click, Space or an arrow
 //   key does not change it. Native `readonly` does not apply to checkboxes and radios.
+// - A Radio Group's arrow keys, after the APG: Down and Right (Left right to left) check the next
+//   enabled radio, Up and Left the previous one, around the ends and past disabled radios. Native
+//   radios do it too, but not the same everywhere: WebKit stops at the ends and does not mirror
+//   Left and Right right to left (TASK-424).
 // - `data-unchecked-value` (a Checkbox's or Switch's `uncheckedValue`): an unchecked, enabled box
 //   with a name submits that value, appended to the form's data (the `formdata` event), so it
 //   comes after the form's other values. Without the script it submits nothing, as natively.
@@ -92,6 +96,38 @@ document.addEventListener(
   },
   true,
 );
+
+document.addEventListener("keydown", (event) => {
+  const radio = event.target;
+  if (!(radio instanceof HTMLInputElement) || radio.type !== "radio" || event.defaultPrevented) {
+    return;
+  }
+  if (event.altKey || event.ctrlKey || event.metaKey || event.isComposing) return;
+  const group = radio.closest<HTMLElement>("[role=radiogroup]");
+  if (!group) return;
+  const rtl = getComputedStyle(radio).direction === "rtl";
+  const steps: Record<string, number> = {
+    ArrowDown: 1,
+    ArrowUp: -1,
+    ArrowRight: rtl ? -1 : 1,
+    ArrowLeft: rtl ? 1 : -1,
+  };
+  const step = steps[event.key];
+  if (!step) return;
+  const radios = [...group.querySelectorAll<HTMLInputElement>("input[type=radio]")].filter(
+    (each) =>
+      each.name === radio.name &&
+      each.closest("[role=radiogroup]") === group &&
+      !each.matches(":disabled"),
+  );
+  const at = radios.indexOf(radio);
+  if (at === -1) return;
+  event.preventDefault();
+  const next = radios[(at + step + radios.length) % radios.length]!;
+  next.focus();
+  // Checks it, with `input` and `change`; a read-only group cancels the click (above).
+  if (next !== radio) next.click();
+});
 
 document.addEventListener("reset", (event) => {
   const form = event.target as HTMLFormElement;

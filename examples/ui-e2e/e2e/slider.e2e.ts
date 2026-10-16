@@ -177,15 +177,15 @@ test.describe("Slider", () => {
     await page.mouse.move(from.x, from.y);
     await page.mouse.down();
     await page.mouse.move(past.x, past.y, { steps: 8 });
-    // The thumbs traded places: the oldest one holds the dragged value and takes focus.
+    // The thumbs traded places: the oldest one holds the dragged value.
     await expect.poll(() => valueOf(youngest)).toBe(60);
     expect(Math.abs((await valueOf(oldest)) - 75)).toBeLessThanOrEqual(2);
-    await expect(oldest).toBeFocused();
-    // The drag goes on with it.
+    // The drag goes on with it, and it takes focus when the press ends.
     await page.mouse.move(further.x, further.y, { steps: 4 });
     await page.mouse.up();
     expect(await valueOf(youngest)).toBe(60);
     expect(Math.abs((await valueOf(oldest)) - 90)).toBeLessThanOrEqual(2);
+    await expect(oldest).toBeFocused();
     // The keys stop at the other thumb.
     await page.keyboard.press("Home");
     await expect(oldest).toHaveValue("60");

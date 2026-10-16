@@ -11,8 +11,9 @@
 //   (`"none"`). With `"swap"`, a thumb dragged past another trades places with it: the drag goes
 //   on with the thumb that holds the dragged value, which takes focus (the keys stop at the other
 //   thumb, as with `"none"`). A native drag keeps its own thumb, so that thumb stays put and hands
-//   its value to the other one. Presses on the track move the nearest thumb, and a drag goes on
-//   from there.
+//   its value to the other one, which takes focus when the press ends (Firefox ends a native drag
+//   whose thumb loses focus). Presses on the track move the nearest thumb, and a drag goes on from
+//   there.
 // - Page Up and Page Down, and Shift with an arrow key, move by `large-step` (default 10).
 // - The values as text: `aria-valuetext` on the thumbs when the element has a `format`
 //   (`Intl.NumberFormat` options, JSON), and the Value part (an `<output for>` the thumbs) unless
@@ -139,8 +140,10 @@ export class SliderElement extends HTMLElement {
     if (active === moved) return;
     if (this.#dragging) this.#dragging = active;
     if (this.#pressed) {
+      // The native drag goes on in its own thumb: focus follows when the press ends.
       this.#proxy =
         active === this.#pressed ? undefined : { target: active, value: this.#pressed.value };
+      return;
     }
     active.focus({ preventScroll: true });
   }
@@ -246,6 +249,7 @@ export class SliderElement extends HTMLElement {
         if (next.pointerId !== event.pointerId) return;
         document.removeEventListener("pointerup", end, true);
         document.removeEventListener("pointercancel", end, true);
+        this.#proxy?.target.focus({ preventScroll: true });
         this.#pressed = this.#proxy = undefined;
       };
       document.addEventListener("pointerup", end, true);

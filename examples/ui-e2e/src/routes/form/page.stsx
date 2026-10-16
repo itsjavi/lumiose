@@ -91,6 +91,9 @@ export default function FormPage() {
               <label>
                 <Radio.Root value="l" class="lu-radio" disabled /> Large (sold out)
               </label>
+              <label>
+                <Radio.Root value="xl" class="lu-radio" /> Extra large
+              </label>
             </RadioGroup>
             <Field.Error>Choose a size.</Field.Error>
           </Field.Root>

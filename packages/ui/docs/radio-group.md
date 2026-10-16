@@ -101,16 +101,19 @@ Radio Group ships no stylesheet: it needs none to work.
 | ----------------------- | --------------------------------------------------------------- |
 | Tab                     | Into the group, on the checked radio (or the first); out of it. |
 | Arrow Down, Arrow Right | Checks the next enabled radio, around at the end.               |
-| Arrow Up, Arrow Left    | Checks the previous enabled radio.                              |
+| Arrow Up, Arrow Left    | Checks the previous enabled radio, around at the start.         |
 | Space                   | Checks the focused radio.                                       |
 
-Enter does not check a radio. Read-only radios move focus but do not change.
+Enter does not check a radio. Read-only radios move focus but do not change. Right to left, Arrow
+Left checks the next radio and Arrow Right the previous one.
 
 ## Without JavaScript, and the client script
 
 Native radios: the roving tab stop, the arrow keys, `required`, submission and reset work with no
-script. The shared checkbox script (0.5 kB brotli,
-[Checkbox](checkbox.md#without-javascript-and-the-client-script)) adds read-only.
+script. The shared checkbox script (0.8 kB brotli,
+[Checkbox](checkbox.md#without-javascript-and-the-client-script)) adds read-only, and runs the
+arrow keys itself so that every browser follows the table above: without it, WebKit's native
+radios stop at the ends and keep Left and Right as they are right to left.
 
 ## Browser support
 
