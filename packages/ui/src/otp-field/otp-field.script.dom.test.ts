@@ -181,3 +181,20 @@ it("types digits of any script as ASCII, and keeps ASCII letters only (TASK-440,
   type("ＡbかＺ9");
   expect(code.value).toBe("AbZ9");
 });
+
+it("types over the character at the caret, also before the field is full (TASK-448, L20)", async () => {
+  const field = mount();
+  await settle();
+  type("123");
+  input().setSelectionRange(1, 1);
+  const event = new InputEvent("beforeinput", {
+    bubbles: true,
+    cancelable: true,
+    inputType: "insertText",
+    data: "9",
+  });
+  input().dispatchEvent(event);
+  expect(event.defaultPrevented).toBe(true);
+  expect(field.value).toBe("193");
+  expect(input().selectionStart).toBe(2);
+});

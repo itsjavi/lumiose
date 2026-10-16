@@ -149,11 +149,14 @@ scrub area its resize cursor and `touch-action: none`.
 | Tab                     | Moves on: one tab stop, the input (the buttons are not in the tab order). |
 
 Right to left, dragging the scrub area toward the left steps up, as a slider runs. A press on a
-button steps once (by `largeStep` with Shift, `smallStep` with Alt) and keeps focus where it is; holding it steps again every 60 ms
-after 400 ms. A click from a keyboard or a screen reader on a button steps once. Every drag (the
+button steps once (by `largeStep` with Shift, `smallStep` with Alt) and, with a mouse, puts focus
+in the input, so the arrow keys go on stepping (a touch leaves focus where it is, so no virtual
+keyboard opens); holding it steps again every 60 ms after 400 ms. A click from a keyboard or a screen reader on a button steps once. Every drag (the
 scrub area) has the arrow keys as its alternative (WCAG 2.5.7). The wheel steps the number only
-with `allowWheelScrub`, while the input has focus and the pointer is over it (Chromium's own
-stepping of a focused number input is turned off otherwise).
+with `allowWheelScrub`, while the input has focus and the pointer is over it; otherwise the wheel
+scrolls the page, as over any field (Chromium's own stepping of a focused number input is turned
+off). Ctrl with the wheel zooms the page, and a sideways swipe never steps. Text that is no number
+(Firefox lets letters into a number input) goes on commit, and the last number comes back.
 
 ## Without JavaScript, and the element's script
 

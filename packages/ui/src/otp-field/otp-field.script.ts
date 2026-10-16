@@ -231,7 +231,10 @@ export class OTPFieldElement extends HTMLElement {
     this.#key = plain ? event.key : "";
   };
 
-  /** A full field: typing replaces the character at the caret instead of being refused. */
+  /**
+   * Typing replaces the character at the caret (the ringed slot), as Base UI's, instead of
+   * inserting before it (TASK-448, L20), and in a full field instead of being refused.
+   */
   #onBeforeInput = (event: InputEvent) => {
     const input = this.input;
     // WebKit cuts `data` to what `maxlength` lets in: nothing in a full field. The key tells.
@@ -239,9 +242,7 @@ export class OTPFieldElement extends HTMLElement {
     this.#key = "";
     if (!input || event.target !== input || event.inputType !== "insertText" || !typed) return;
     const { selectionStart: start, selectionEnd: end, value } = input;
-    if (value.length < this.#length || start === null || start !== end || start >= value.length) {
-      return;
-    }
+    if (start === null || start !== end || start >= value.length) return;
     event.preventDefault();
     const char = this.#clean(typed).slice(0, 1);
     if (!char) {

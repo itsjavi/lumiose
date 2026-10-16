@@ -123,13 +123,13 @@ field and hides the slots.
 
 ## Keyboard and focus
 
-| Key                | Does                                                                                   |
-| ------------------ | -------------------------------------------------------------------------------------- |
-| A character        | Fills the caret's slot; in a full field, types over it. Refused characters do nothing. |
-| Backspace / Delete | Deletes the character before or after the caret, as in any text field.                 |
-| Arrow Left / Right | Moves the caret, and the ringed slot, one slot.                                        |
-| Home / End         | The first slot, or after the last character.                                           |
-| Tab                | Moves on: one tab stop.                                                                |
+| Key                | Does                                                                                                               |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------ |
+| A character        | Fills the caret's slot, typing over its character (the ringed slot), as in Base UI. Refused characters do nothing. |
+| Backspace / Delete | Deletes the character before or after the caret, as in any text field.                                             |
+| Arrow Left / Right | Moves the caret, and the ringed slot, one slot.                                                                    |
+| Home / End         | The first slot, or after the last character.                                                                       |
+| Tab                | Moves on: one tab stop.                                                                                            |
 
 A paste fills every slot from the caret, its spaces and dashes dropped, even past what
 `maxlength` would cut. An IME composition (Chinese, Japanese, full-width digits) shows in the

@@ -294,6 +294,11 @@ export class NumberFieldElement extends HTMLElement {
     if (this.formatted) {
       const parsed = parseNumber(input.value, this.#format());
       value = parsed !== null && Number.isNaN(parsed) ? this.#committed : parsed;
+    } else if (input.validity.badInput) {
+      // Firefox keeps text like "12abc" in a number input, read as "": the last number comes
+      // back, and the text goes (TASK-447, L19).
+      value = this.#committed;
+      input.value = "";
     } else value = input.value === "" ? null : input.valueAsNumber;
     if (value !== null && !this.hasAttribute("allow-out-of-range")) value = this.#clamp(value);
     // As shown: the formatted value is what the field holds.
@@ -327,9 +332,15 @@ export class NumberFieldElement extends HTMLElement {
   #onWheel = (event: WheelEvent) => {
     const input = this.input;
     if (event.target !== input || document.activeElement !== input || event.deltaY === 0) return;
+    // Ctrl (or a pinch) zooms the page, and a mostly horizontal swipe is no step (TASK-447, L17).
+    if (event.ctrlKey || Math.abs(event.deltaX) > Math.abs(event.deltaY)) return;
     if (!this.hasAttribute("allow-wheel-scrub")) {
       // Chromium steps a focused number input on the wheel: here only `allow-wheel-scrub` does.
-      if (!this.formatted) event.preventDefault();
+      // Cancelling that also stops the page's scroll, so the wheel scrolls it here (L17).
+      if (!this.formatted) {
+        event.preventDefault();
+        scrollFor(input!, event);
+      }
       return;
     }
     if (!this.#usable()) return;
@@ -379,8 +390,10 @@ export class NumberFieldElement extends HTMLElement {
     const target = event.target as Element;
     const button = target.closest?.<HTMLButtonElement>("button[data-action]");
     if (button && this.contains(button) && !button.disabled) {
-      // Focus stays where it is: no virtual keyboard opens, and the input keeps its caret.
+      // No focus on the button. A mouse puts it in the input, so the arrow keys go on stepping
+      // (TASK-447, L18); a touch leaves it where it is, so no virtual keyboard opens.
       event.preventDefault();
+      if (event.pointerType === "mouse") this.input?.focus({ preventScroll: true });
       this.#pressed = true;
       const size = this.#stepFor(event);
       const amount = button.dataset.action === "increment" ? size : -size;
@@ -457,6 +470,19 @@ export class NumberFieldElement extends HTMLElement {
       },
     );
   }
+}
+
+/** Scrolls the input's nearest scrollable ancestor (or the page) as the wheel would have. */
+function scrollFor(input: HTMLElement, event: WheelEvent): void {
+  const unit = event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? window.innerHeight : 1;
+  let box = input.parentElement;
+  while (box && box !== document.body) {
+    const { overflowY } = getComputedStyle(box);
+    if (/auto|scroll/.test(overflowY) && box.scrollHeight > box.clientHeight) break;
+    box = box.parentElement;
+  }
+  const target = box && box !== document.body ? box : window;
+  target.scrollBy({ left: event.deltaX * unit, top: event.deltaY * unit });
 }
 
 if (!customElements.get("lu-number-field")) {
