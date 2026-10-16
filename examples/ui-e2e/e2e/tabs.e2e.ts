@@ -52,9 +52,32 @@ test.describe("without JavaScript", () => {
       "vertical",
     );
   });
+
+  test("one tab stop when the first tab is disabled (TASK-437 M17)", async ({ page }) => {
+    await page.goto("/tabs");
+    const vertical = root(page, "vertical");
+    await expect(vertical.locator("[role=tab][tabindex='0']")).toHaveCount(1);
+    await expect(tab(vertical, "Usage")).toHaveAttribute("tabindex", "0");
+  });
 });
 
 test.describe("keyboard contract (APG Tabs)", () => {
+  test("one tab stop when the first tab is disabled (TASK-437 M17)", async ({ page }) => {
+    await page.goto("/tabs");
+    await page.waitForFunction(() => customElements.get("lu-tabs"));
+    const vertical = root(page, "vertical");
+    await expect(vertical.locator("[role=tab][tabindex='0']")).toHaveCount(1);
+    // Shift+Tab from the panel comes to Usage, and from there leaves the list.
+    await vertical.getByRole("tabpanel").focus();
+    await page.keyboard.press("Shift+Tab");
+    await expect(tab(vertical, "Usage")).toBeFocused();
+    await page.keyboard.press("Shift+Tab");
+    await expect(tab(vertical, "Intro")).not.toBeFocused();
+    expect(await vertical.evaluate((element) => element.contains(document.activeElement))).toBe(
+      false,
+    );
+  });
+
   test("manual: arrows move focus, Enter or Space selects, Tab goes to the panel", async ({
     page,
   }) => {

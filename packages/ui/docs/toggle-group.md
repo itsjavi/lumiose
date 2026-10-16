@@ -102,7 +102,9 @@ and single tab stop take over: the toggles are toolbar items.
 ## Without JavaScript, and the element's script
 
 The server HTML has each toggle's `aria-pressed` and the tab stop. `<lu-toggle-group>`'s script
-(0.8 kB brotli) presses the toggles and moves focus, on server pages and in islands; with no script
+(0.9 kB brotli) presses the toggles and moves focus, on server pages and in islands; when the tab
+stop's toggle goes or is disabled, or a disabled group is enabled, the first pressed (else enabled)
+toggle takes the tab stop. With no script
 at all the toggles show their state but do not change. For values a form submits, use a
 [Checkbox Group](checkbox-group.md) or a [Radio](radio-group.md) group.
 

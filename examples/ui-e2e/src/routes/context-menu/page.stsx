@@ -39,6 +39,23 @@ export default function ContextMenuPage() {
           <ContextMenu.Item>Never</ContextMenu.Item>
         </ContextMenu.Popup>
       </ContextMenu.Root>
+      {/* A context menu inside another's area: the inner one opens there (TASK-437 M15). */}
+      <ContextMenu.Root>
+        <ContextMenu.Trigger class="area" tabindex={0} aria-label="Board" data-testid="board">
+          Board
+          <ContextMenu.Root>
+            <ContextMenu.Trigger class="area" tabindex={0} aria-label="Card" data-testid="card">
+              Card
+            </ContextMenu.Trigger>
+            <ContextMenu.Popup class="lu-menu" aria-label="Card actions">
+              <ContextMenu.Item>Edit card</ContextMenu.Item>
+            </ContextMenu.Popup>
+          </ContextMenu.Root>
+        </ContextMenu.Trigger>
+        <ContextMenu.Popup class="lu-menu" aria-label="Board actions">
+          <ContextMenu.Item>Add card</ContextMenu.Item>
+        </ContextMenu.Popup>
+      </ContextMenu.Root>
       <p id="history">History.</p>
     </>
   );
@@ -52,5 +69,11 @@ export default function ContextMenuPage() {
     margin-block-end: 1rem;
     border: 2px dashed currentColor;
     border-radius: 0.5rem;
+  }
+  /* The card inside the board, with room around it for the board's own right-click. */
+  :global(.area .area) {
+    inline-size: 60%;
+    min-block-size: 4rem;
+    margin-block-end: 0;
   }
 </style>

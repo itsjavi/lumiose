@@ -1,6 +1,6 @@
 # Scroll Area
 
-> A scrolling region with custom scrollbars laid over native scrolling, after Base UI's ScrollArea. The viewport scrolls natively (the wheel, touch, the keyboard, find-in-page), is focusable while it overflows, and traps nothing; without JavaScript its native scrollbars show. `<lu-scroll-area>`'s 1.4 kB script hides them and draws its own, which show on hover, while scrolling and while focused, take a thumb drag and a track press, and expose the overflow as data attributes and CSS variables.
+> A scrolling region with custom scrollbars laid over native scrolling, after Base UI's ScrollArea. The viewport scrolls natively (the wheel, touch, the keyboard, find-in-page), is focusable while it overflows, and traps nothing; without JavaScript its native scrollbars show. `<lu-scroll-area>`'s 1.6 kB script hides them and draws its own, which show on hover, while scrolling and while focused, take a thumb drag and a track press, and expose the overflow as data attributes and CSS variables.
 
 ```ts
 import { ScrollArea } from "@lumiose/ui"; // or "@lumiose/ui/scroll-area"
@@ -126,8 +126,9 @@ focus first, and the viewport scrolls it into view.
 ## Without JavaScript, and the element's script
 
 The viewport scrolls with its native scrollbars, from the keyboard too. `<lu-scroll-area>`'s script
-(1.4 kB brotli) hides them and runs the custom ones: thumbs sized and moved on every scroll and
-resize (a ResizeObserver follows content that grows), dragging and track presses, hover and
+(1.6 kB brotli) hides them and runs the custom ones: thumbs sized and moved on every scroll and
+resize (a ResizeObserver follows content that grows), dragging and track presses, the wheel over
+a scrollbar (which scrolls the viewport, and the page once the viewport is at its end), hover and
 scrolling states, the overflow attributes and variables, the corner, right to left.
 
 ## Browser support

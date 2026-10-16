@@ -17,6 +17,8 @@
 //   it already moved elsewhere (an outside press on a control).
 // - A right-click inside the open menu shows neither menu.
 // - `data-disabled` on the element leaves the browser's menu alone.
+// - Nested: in the area of a context menu inside another's, the inner one opens (unless it is
+//   disabled, where the outer one does).
 //
 // It must not import `lumiose`: server-rendered pages load it without the runtime.
 import "../menu/menu.script.ts";
@@ -78,6 +80,11 @@ export class ContextMenuElement extends HTMLElement {
     }
     if (!menu || this.hasAttribute("data-disabled")) return;
     const target = event.target as Node;
+    // A context menu nested in this one's area opens instead (TASK-437 M15).
+    const owner = (target instanceof Element ? target : target.parentElement)?.closest(
+      "lu-context-menu:not([data-disabled])",
+    );
+    if (owner !== this) return;
     const inMenu = menu.contains(target);
     switch (event.type) {
       case "contextmenu": {

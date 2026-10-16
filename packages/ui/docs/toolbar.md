@@ -1,6 +1,6 @@
 # Toolbar
 
-> A set of controls with one tab stop, after Base UI's Toolbar and the APG toolbar pattern: `<lu-toolbar role="toolbar">` moves focus between its items with the arrow keys, Home and End, following the orientation and the text direction. Its items are native: buttons that stay focusable when disabled, links, inputs, and the toggles of a [Toggle Group](toggle-group.md) inside it. The server HTML has the single tab stop already; a 0.9 kB script moves it.
+> A set of controls with one tab stop, after Base UI's Toolbar and the APG toolbar pattern: `<lu-toolbar role="toolbar">` moves focus between its items with the arrow keys, Home and End, following the orientation and the text direction. Its items are native: buttons that stay focusable when disabled, links, inputs, and the toggles of a [Toggle Group](toggle-group.md) inside it. In the server HTML every item is a tab stop, so each is reachable without JavaScript; a 1.0 kB script makes them one tab stop and moves it.
 
 ```ts
 import { Toolbar } from "@lumiose/ui"; // or "@lumiose/ui/toolbar"
@@ -31,8 +31,8 @@ import "@lumiose/ui/themes/default.css"; // optional: the default theme
 | `Group`     | `<div role="group">`                                                                               |
 | `Separator` | A [Separator](separator.md), `<hr>`, across the toolbar: vertical in a row, horizontal in a column |
 
-Every item gets `tabindex="0"` (the first) or `"-1"` and `data-orientation`. Name the toolbar with
-`aria-label` or `aria-labelledby`.
+Every item gets `data-orientation`; the script gives the tab stop `tabindex="0"` and the other
+items `"-1"`. Name the toolbar with `aria-label` or `aria-labelledby`.
 
 ## API
 
@@ -42,7 +42,7 @@ Every item gets `tabindex="0"` (the first) or `"-1"` and `data-orientation`. Nam
 | ------------- | ---------------------------- | -------------- | ---------------------------------------------------------------------- |
 | `orientation` | `"horizontal" \| "vertical"` | `"horizontal"` | A row moved through with Left and Right, or a column with Up and Down. |
 | `loopFocus`   | `boolean`                    | `true`         | The arrow keys go from the last item to the first, and back.           |
-| `disabled`    | `boolean`                    | `false`        | Disables every item; they stay focusable.                              |
+| `disabled`    | `boolean`                    | `false`        | Disables every item but links; they stay focusable.                    |
 
 ### Toolbar.Button, Toolbar.Input and Toolbar.Group
 
@@ -53,9 +53,11 @@ Every item gets `tabindex="0"` (the first) or `"-1"` and `data-orientation`. Nam
 
 Every other native prop passes through. A `ToggleGroup` inside a toolbar keeps pressing its
 toggles but leaves the arrow keys and the tab stop to the toolbar; a Menu or Popover trigger inside
-it is an item too, with the toolbar's `tabindex` in the server HTML already, so it is no extra tab
-stop before the script runs. What a Menu's or a Popover's popup holds is not the toolbar's: its
-toggles and triggers keep their own tab stops.
+it is an item too. A disabled Root or Group reaches them: its toggles and triggers render
+`aria-disabled="true"` and stay focusable, but press and open nothing, without JavaScript too (the
+triggers lose `popovertarget`). A Menu in a vertical toolbar opens beside it, at its inline end, as
+in a vertical [Menubar](menubar.md). What a Menu's or a Popover's popup holds is not the toolbar's:
+its toggles and triggers keep their own tab stops.
 
 **Differences from Base UI's Toolbar.** No `render` or `nativeButton`: put other triggers
 (`Menu.Trigger`, `Popover.Trigger`) in the toolbar directly. Disabled items are `aria-disabled`
@@ -101,22 +103,26 @@ the buttons. Style the items with their own classes (`lu-button`, `lu-toggle`, `
 
 ## Keyboard and focus
 
-| Key                      | Does                                                                            |
-| ------------------------ | ------------------------------------------------------------------------------- |
-| Tab                      | Into the toolbar on the last focused item (at first, the first), and out of it. |
-| Arrow Right / Arrow Left | In a row: the next or previous item (swapped right to left), looping.           |
-| Arrow Down / Arrow Up    | In a column: the next or previous item, looping.                                |
-| Home / End               | The first or last item.                                                         |
-| Enter / Space            | Acts on the item: presses a button or a toggle, follows a link.                 |
+| Key                      | Does                                                                             |
+| ------------------------ | -------------------------------------------------------------------------------- |
+| Tab                      | Into the toolbar on the last focused item (at first, the first), and out of it.  |
+| Arrow Right / Arrow Left | In a row: the next or previous item (swapped right to left), looping.            |
+| Arrow Down / Arrow Up    | In a column: the next or previous item, looping.                                 |
+| Home / End               | The first or last item.                                                          |
+| Enter / Space            | Acts on the item: presses a button or a toggle, follows a link.                  |
+| Arrow Right              | In a column, on a Menu's trigger: opens the menu beside it (Left right to left). |
 
-Natively disabled controls are skipped. A control keeps the keys it needs: a text field its
+Natively disabled controls are skipped. When the item with the tab stop is removed, disabled or
+hidden, the first item takes it. A key an item handles itself (a Menu trigger's) moves nothing. A
+control keeps the keys it needs: a text field its
 caret's Left and Right (focus moves on at its start or end) and Home and End, a number field or a
 slider its arrows, a select Up and Down. Base UI advises at most one input, last.
 
 ## Without JavaScript, and the element's script
 
-The server HTML is a labelled toolbar with one tab stop, on its first item. `<lu-toolbar>`'s script
-(0.9 kB brotli with Button's) moves focus with the keys and keeps the tab stop on the last focused
+The server HTML is a labelled toolbar whose items are all tab stops, so Tab reaches each one
+without JavaScript or before the script runs. `<lu-toolbar>`'s script (1.0 kB brotli with Button's)
+makes the toolbar one tab stop, moves focus with the keys and keeps the tab stop on the last focused
 item.
 
 ## Browser support

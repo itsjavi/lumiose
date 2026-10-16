@@ -161,22 +161,23 @@ function Trigger({
   ...rest
 }: PopoverTriggerProps) {
   const popover = usePopover();
-  // Inside a Toolbar, the toolbar's single tab stop in the server HTML (TASK-413).
+  // A disabled Toolbar disables it: focusable, it opens nothing (TASK-437 M13).
   const toolbar = useContext(ToolbarContext);
-  const stop = untrack(() => toolbar?.stop());
+  const off = untrack(() => toolbar?.disabled() === true);
   // A modal popover opens with an invoker command; the others with `popovertarget`.
-  const opens = popover.modal
-    ? { command: "show-modal", commandfor: popover.popupId, "aria-expanded": "false" as const }
-    : { popovertarget: popover.popupId };
+  const opens = off
+    ? { "aria-disabled": "true" as const }
+    : popover.modal
+      ? { command: "show-modal", commandfor: popover.popupId, "aria-expanded": "false" as const }
+      : { popovertarget: popover.popupId };
   const hover =
-    openOnHover && !popover.modal
+    openOnHover && !popover.modal && !off
       ? { "data-open-on-hover": "", "data-delay": delay, "data-close-delay": closeDelay }
       : {};
   return (
     <button
       type="button"
       aria-haspopup="dialog"
-      tabindex={stop}
       {...rest}
       {...hover}
       ref={(element: HTMLButtonElement) => {

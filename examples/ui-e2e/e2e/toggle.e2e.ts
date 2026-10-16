@@ -91,6 +91,45 @@ test.describe("Toggle Group on a server page", () => {
     await expect(toggle(page, "Board")).toBeDisabled();
   });
 
+  test("the tab stop moves on when its toggle goes or is disabled (TASK-437 M11)", async ({
+    page,
+  }) => {
+    await page.goto("/toggle");
+    await page.waitForFunction(() => customElements.get("lu-toggle-group"));
+    const bold = toggle(page, "Bold");
+    // Left, the pressed toggle, is the stop: it goes.
+    await bold.focus();
+    await toggle(page, "Left").evaluate((item) => item.remove());
+    await page.keyboard.press("Shift+Tab");
+    await expect(toggle(page, "Center")).toBeFocused();
+    // Center, the stop now, is disabled.
+    await bold.focus();
+    await toggle(page, "Center").evaluate((item) => ((item as HTMLButtonElement).disabled = true));
+    await page.keyboard.press("Shift+Tab");
+    await expect(toggle(page, "Right")).toBeFocused();
+  });
+
+  test("a group rendered disabled gets a tab stop once enabled (TASK-437 M11)", async ({
+    page,
+  }) => {
+    await page.goto("/toggle");
+    await page.waitForFunction(() => customElements.get("lu-toggle-group"));
+    const sizes = page.getByRole("group", { name: "Size" }).getByRole("button");
+    // As the server renders a disabled group: no toggle is a tab stop.
+    await sizes.evaluateAll((items: HTMLButtonElement[]) => {
+      for (const item of items) {
+        item.disabled = true;
+        item.tabIndex = -1;
+      }
+    });
+    await sizes.evaluateAll((items: HTMLButtonElement[]) => {
+      for (const item of items) item.disabled = false;
+    });
+    await toggle(page, "List").focus();
+    await page.keyboard.press("Tab");
+    await expect(toggle(page, "Small")).toBeFocused();
+  });
+
   test("right to left: the left arrow moves forward", async ({ page }) => {
     await page.goto("/toggle");
     await toggle(page, "Small").focus();

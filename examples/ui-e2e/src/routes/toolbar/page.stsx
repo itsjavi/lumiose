@@ -1,4 +1,4 @@
-import { Menu, Toggle, ToggleGroup, Toolbar } from "@lumiose/ui";
+import { Menu, Popover, Toggle, ToggleGroup, Toolbar } from "@lumiose/ui";
 import { Title } from "lumiose";
 
 // Server-rendered, no island: `<lu-toolbar>`'s script moves focus between the items; the toggle
@@ -56,6 +56,42 @@ export default function ToolbarPage() {
           <Toolbar.Button class="lu-button">End</Toolbar.Button>
         </Toolbar.Root>
       </div>
+
+      {/* A menu in a column opens beside it, on Arrow Right (TASK-437 M14). */}
+      <h2>Vertical, with a menu</h2>
+      <Toolbar.Root aria-label="Shapes" orientation="vertical" class="lu-toolbar">
+        <Toolbar.Button class="lu-button">Square</Toolbar.Button>
+        <Menu.Root>
+          <Menu.Trigger class="lu-button">Arrange</Menu.Trigger>
+          <Menu.Popup class="lu-menu">
+            <Menu.Item>Bring forward</Menu.Item>
+            <Menu.Item>Send backward</Menu.Item>
+          </Menu.Popup>
+        </Menu.Root>
+        <Toolbar.Button class="lu-button">Circle</Toolbar.Button>
+      </Toolbar.Root>
+
+      {/* `disabled` reaches the toggles and the triggers, which open nothing (TASK-437 M13). */}
+      <h2>Disabled</h2>
+      <Toolbar.Root aria-label="Locked" disabled class="lu-toolbar">
+        <ToggleGroup aria-label="Emphasis" class="lu-toggle-group">
+          <Toggle value="strong" class="lu-toggle">
+            Strong
+          </Toggle>
+        </ToggleGroup>
+        <Popover.Root>
+          <Popover.Trigger class="lu-button">Fonts</Popover.Trigger>
+          <Popover.Popup class="lu-popover" aria-label="Fonts">
+            Serif
+          </Popover.Popup>
+        </Popover.Root>
+        <Menu.Root>
+          <Menu.Trigger class="lu-button">Share</Menu.Trigger>
+          <Menu.Popup class="lu-menu">
+            <Menu.Item>Copy link</Menu.Item>
+          </Menu.Popup>
+        </Menu.Root>
+      </Toolbar.Root>
     </>
   );
 }

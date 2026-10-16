@@ -1,6 +1,6 @@
 # Navigation Menu
 
-> A site's navigation whose items open panels of links, after Base UI's NavigationMenu and the WAI-ARIA disclosure navigation pattern: a `<nav>` landmark around a list, each trigger opening its content through `popovertarget` (a native popover placed under it by CSS anchor positioning), so the links work and the panels open on a click, one at a time, in server HTML with no JavaScript. A 2.1 kB script adds hover intent, the arrow keys, closing when focus leaves and the direction a panel comes in from. `bind:value` (or `value` and `onValueChange`) keeps the open item in a signal.
+> A site's navigation whose items open panels of links, after Base UI's NavigationMenu and the WAI-ARIA disclosure navigation pattern: a `<nav>` landmark around a list, each trigger opening its content through `popovertarget` (a native popover placed under it by CSS anchor positioning), so the links work and the panels open on a click, one at a time, in server HTML with no JavaScript. A 2.2 kB script adds hover intent, the arrow keys, closing when focus leaves and the direction a panel comes in from. `bind:value` (or `value` and `onValueChange`) keeps the open item in a signal.
 
 ```ts
 import { NavigationMenu } from "@lumiose/ui"; // or "@lumiose/ui/navigation-menu"
@@ -232,7 +232,7 @@ The `<nav>`, its links and the triggers are HTML: each trigger opens its content
 `popovertarget`, one at a time (an auto popover closes the others), and Escape or a click outside
 closes it. `value`, `onValueChange` and `bind:value` need the component to run in an island.
 
-A page that renders a `NavigationMenu` loads a 2.1 kB (brotli) script, without the Lumiose runtime;
+A page that renders a `NavigationMenu` loads a 2.2 kB (brotli) script, without the Lumiose runtime;
 islands bundle it. `<lu-navigation-menu>` takes over the trigger's click (so a click keeps a content
 opened by hover open), opens contents on hover, adds the arrow keys, closes a content when focus
 leaves its item, keeps `aria-expanded` and `data-activation-direction` current, and places the

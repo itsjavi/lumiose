@@ -131,6 +131,27 @@ test.describe("items, dismissal and focus", () => {
     await expect(item(page, "Move to")).toBeFocused();
   });
 
+  test("nested, the innermost opens, by right-click and by Shift+F10 (TASK-437 M15)", async ({
+    page,
+  }) => {
+    await page.goto("/context-menu");
+    const [board, card] = [menu(page, "Board actions"), menu(page, "Card actions")];
+    await rightClick(area(page, "card"));
+    await expect(card).toBeVisible();
+    await expect(board).toBeHidden();
+    await page.keyboard.press("Escape");
+    await expect(card).toBeHidden();
+    await area(page, "card").focus();
+    await page.keyboard.press("Shift+F10");
+    await expect(item(page, "Edit card")).toBeFocused();
+    await expect(board).toBeHidden();
+    await page.keyboard.press("Escape");
+    // Outside the card, the board's own.
+    await rightClick(area(page, "board"), 20, 10);
+    await expect(board).toBeVisible();
+    await expect(card).toBeHidden();
+  });
+
   test("a click outside closes it; a right-click inside shows no other menu", async ({ page }) => {
     await page.goto("/context-menu");
     await rightClick(area(page));

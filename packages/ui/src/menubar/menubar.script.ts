@@ -3,7 +3,8 @@
 // pattern's bar behaviour, after Base UI's Menubar:
 //
 // - One tab stop: the item focused last (the first at first) keeps `tabindex="0"`, the others get
-//   `-1`. Without this script every trigger stays a tab stop.
+//   `-1`. Without this script every trigger stays a tab stop. When the tab stop is removed,
+//   disabled or hidden, the first item takes it (TASK-437 M11).
 // - On an item: Arrow Right and Left (Down and Up when vertical; swapped right to left) move
 //   between the items, looping unless `data-loop-focus="false"`; Home and End; a letter moves to the
 //   next item starting with it. A menu that is open follows: moving opens the next item's menu.
@@ -20,12 +21,22 @@ const enabled = (item: Element) =>
   item.getAttribute("aria-disabled") !== "true" && !item.matches(":disabled");
 
 export class MenubarElement extends HTMLElement {
+  /** The tab stop, kept while it stays an item. */
+  #stop: HTMLElement | undefined;
+  /** Moves the tab stop on when items come, go, or are disabled or hidden. */
+  #observer = new MutationObserver(() => this.#rove(undefined));
+
   connectedCallback(): void {
     this.addEventListener("keydown", this);
     this.addEventListener("pointerover", this);
     this.addEventListener("focusin", this);
     // `openchange` does not bubble: the capture phase sees each menu's.
     this.addEventListener("openchange", this, true);
+    this.#observer.observe(this, {
+      subtree: true,
+      childList: true,
+      attributeFilter: ["disabled", "hidden"],
+    });
     // The element may connect while the page is still parsing, before its items: it makes the bar
     // one tab stop once the document has loaded (or after the current task, in an island).
     if (document.readyState === "loading") {
@@ -46,6 +57,7 @@ export class MenubarElement extends HTMLElement {
     this.removeEventListener("pointerover", this);
     this.removeEventListener("focusin", this);
     this.removeEventListener("openchange", this, true);
+    this.#observer.disconnect();
   }
 
   handleEvent(event: Event): void {
@@ -64,13 +76,14 @@ export class MenubarElement extends HTMLElement {
     }
   }
 
-  /** The bar's items: its menus' triggers, in order, without natively disabled ones. */
+  /** The bar's items: its menus' triggers, in order, without natively disabled or hidden ones. */
   #items(): HTMLElement[] {
     return [...this.querySelectorAll<HTMLElement>("[role=menuitem]")].filter(
       (item) =>
         item.closest("lu-menubar") === this &&
         item.closest("[role=menu]") === null &&
-        !item.matches(":disabled"),
+        !item.matches(":disabled") &&
+        (item.checkVisibility?.() ?? true),
     );
   }
 
@@ -87,10 +100,14 @@ export class MenubarElement extends HTMLElement {
     return undefined;
   }
 
-  /** Makes `item` the bar's one tab stop. */
+  /** Makes `item` the bar's one tab stop; without one, keeps the current one, else the first. */
   #rove(item: HTMLElement | undefined): void {
-    if (!item) return;
-    for (const other of this.#items()) other.tabIndex = other === item ? 0 : -1;
+    const items = this.#items();
+    const kept = this.#stop && items.includes(this.#stop) ? this.#stop : undefined;
+    const stop = item ?? kept ?? items[0];
+    if (!stop) return;
+    this.#stop = stop;
+    for (const other of items) other.tabIndex = other === stop ? 0 : -1;
   }
 
   /** The item `step` places from `from` (wrapping unless the bar does not loop). */

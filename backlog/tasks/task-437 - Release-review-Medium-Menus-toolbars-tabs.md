@@ -1,10 +1,11 @@
 ---
 id: TASK-437
 title: 'Release review, Medium: Menus, toolbars, tabs'
-status: To Do
+status: Done
 assignee:
   - '@Halo'
 created_date: '2026-10-16 10:06'
+updated_date: '2026-10-16 12:00'
 labels:
   - ui
   - review
@@ -61,12 +62,36 @@ Found by Prism's release review of @lumiose/ui (TASK-386, 2026-10-16) on main 94
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 M11: Roving widgets keep a tab stop when items change
-- [ ] #2 M12: Toolbar: every item keyboard-reachable before the script runs
-- [ ] #3 M13: Toolbar: disabled reaches Menu and Popover triggers and toggles
-- [ ] #4 M14: Toolbar: Menu triggers in a vertical toolbar
-- [ ] #5 M15: Context Menu: the innermost nested context menu opens
-- [ ] #6 M16: Menu: Space runs a LinkItem
-- [ ] #7 M17: Tabs: exactly one tab stop in server HTML and after settle
-- [ ] #8 M18: Scroll Area: wheel over the scrollbars scrolls the viewport
+- [x] #1 M11: Roving widgets keep a tab stop when items change
+- [x] #2 M12: Toolbar: every item keyboard-reachable before the script runs
+- [x] #3 M13: Toolbar: disabled reaches Menu and Popover triggers and toggles
+- [x] #4 M14: Toolbar: Menu triggers in a vertical toolbar
+- [x] #5 M15: Context Menu: the innermost nested context menu opens
+- [x] #6 M16: Menu: Space runs a LinkItem
+- [x] #7 M17: Tabs: exactly one tab stop in server HTML and after settle
+- [x] #8 M18: Scroll Area: wheel over the scrollbars scrolls the viewport
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+2026-10-16 (Halo): claimed (release-review fix batch 1; branch claude/halo-m12c-4d6b9f).
+
+2026-10-16 (Halo): fixed all eight findings; each regression test fails without its fix in dev, build, Firefox and WebKit (52 runs fail on HEAD sources, pass with the fixes).
+- M11: toolbar, menubar and toggle-group scripts observe their subtree (childList, disabled, hidden) and re-rove. Toolbar and Menubar keep the stop while it stays an item (#stop), else the first item; Toggle Group the first pressed, else enabled. Menubar items now skip hidden ones too. Tests: toolbar/menubar/toggle e2e 'the tab stop moves on…' and 'a group rendered disabled gets a tab stop once enabled'.
+- M12: Toolbar's context has no stop(); items render no tabindex, so every item is a tab stop in server HTML; the script collapses them. The TASK-413 no-JS test now asserts Tab reaches every item. toolbar.test.tsx updated.
+- M13: a disabled Root/Group gives Menu.Trigger, Popover.Trigger and Toggles aria-disabled; the triggers lose popovertarget/commandfor/data-open-on-hover (nothing opens without JS either); Toolbar.Root loads button.script, which cancels aria-disabled clicks. Fixture 'Locked' toolbar; unit and e2e tests (JS on and off).
+- M14: the toolbar skips defaultPrevented keys; Menu treats a trigger in a vertical toolbar like one in a vertical menubar (opens on the inline-end arrow), and Menu.Popup defaults to side inline-end there. Fixture 'Shapes' toolbar.
+- M15: lu-context-menu returns unless the closest enabled lu-context-menu around the target is itself. Fixture Board/Card on /context-menu.
+- M16: Space on an a[role^=menuitem] (not while typing) prevents default and clicks it.
+- M17: the server gives the stop to the tab value/defaultValue names (even a disabled one), else the first enabled tab so far (isServer); in the browser the reactive rule is unchanged. #settle always runs #select, normalising aria-selected, tabindex and panels. Unit (SSR, happy-dom) and e2e tests (JS on and off).
+- M18: Scroll Area adds a non-passive wheel listener to each scrollbar: deltas scaled by deltaMode, applied with scrollBy(instant), preventDefault only when the viewport moved; ctrlKey skipped.
+- macOS note: the new fixtures made /toolbar scroll at 720px, where Playwright's Home/End scroll the page instead of moving a text field's caret; the loop test sets a 1200px viewport.
+- Docs: toolbar, menu, menubar, toggle-group, context-menu, tabs, scroll-area; script sizes refreshed across docs from pnpm size (dialog 1.3, popover 2.9, tooltip 1.6, menu 3.7, combobox/autocomplete 4.5, toast 2.6, toggle-group 0.9, context-menu 4.2 together, drawer 2.2 together, toolbar 1.0, scroll-area 1.6, menubar 0.7/4.4, navigation-menu 2.2, preview-card 2.4).
+<!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+All eight Medium findings fixed with regression tests that fail without them in dev, build, Firefox and WebKit: roving tab stops survive removed/disabled items (Toolbar, Menubar, Toggle Group); toolbar items are all tab stops before the script; a disabled toolbar disables Menu/Popover triggers and Toggles; vertical toolbars open menus sideways; nested Context Menus open the innermost; Space runs Menu link items; Tabs has exactly one tab stop in server HTML and after settle; the wheel over Scroll Area scrollbars scrolls the area. Docs updated, sizes refreshed.
+<!-- SECTION:FINAL_SUMMARY:END -->

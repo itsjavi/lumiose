@@ -7,6 +7,7 @@
 import {
   createContext,
   effect,
+  isServer,
   onCleanup,
   ref,
   signal,
@@ -98,6 +99,8 @@ interface TabRecord {
 interface TabsContextValue {
   /** The selected value: a disabled or missing tab gives its place to the first enabled one. */
   current: () => string | undefined;
+  /** The value asked for (`value`, `defaultValue` or the user's choice), even a disabled tab's. */
+  wanted: () => string | undefined;
   tabs: Signal<TabRecord[]>;
   orientation: () => "horizontal" | "vertical";
   tabId: (value: string) => string;
@@ -138,6 +141,7 @@ function Root({
       if (wanted !== undefined && (!tab || !tab.disabled())) return wanted;
       return list.find((each) => !each.disabled())?.value;
     },
+    wanted: selected,
     tabs,
     orientation: () => orientation ?? "horizontal",
     tabId: (of) => `${id}-tab-${fragment(of)}`,
@@ -191,8 +195,17 @@ function Tab({ children, value, disabled, ...rest }: TabsTabProps) {
   tabs.tabs.update((list) => [...list, record]);
   onCleanup(() => tabs.tabs.update((list) => list.filter((each) => each !== record)));
   const selected = () => tabs.current() === value;
-  // The tab stop: the selected tab, or the first one when none is selected.
-  const stop = () => selected() || (tabs.current() === undefined && tabs.tabs()[0] === record);
+  // The tab stop: the selected tab, or the first one when none is selected. The server renders
+  // once, before the later tabs exist, so there it is the tab asked for (a disabled one stays
+  // focusable), else the first enabled one so far: one tab stop either way (TASK-437 M17). The
+  // script gives it to the selected tab.
+  const stop = () => {
+    if (isServer) {
+      const wanted = tabs.wanted();
+      return wanted === undefined ? selected() : wanted === value;
+    }
+    return selected() || (tabs.current() === undefined && tabs.tabs()[0] === record);
+  };
   return (
     <button
       type="button"

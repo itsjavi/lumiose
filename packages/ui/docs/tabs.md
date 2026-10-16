@@ -67,7 +67,10 @@ Each takes the props of the element it renders. `role`, `id`, `value`, `aria-sel
 `aria-controls`, `aria-labelledby`, `tabindex` on tabs and `hidden` stay the parts' own.
 
 - **Disabled tabs.** A selected tab that becomes disabled gives its selection to the first enabled
-  tab. With every tab disabled, none is selected and the first tab is the tab stop.
+  tab. With every tab disabled, none is selected and the first tab is the tab stop. There is one
+  tab stop: in the server HTML, the tab `value` or `defaultValue` names (a disabled one keeps it
+  until the script selects another), else the first enabled tab; once the script runs, the
+  selected tab.
 - **The element.** `<lu-tabs>`' `value` property reads and sets the selection, and it fires
   `valuechange` (not bubbling) when the user changes it, so `bind:value` works on the element too.
 

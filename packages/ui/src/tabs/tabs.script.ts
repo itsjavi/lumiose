@@ -10,6 +10,8 @@
 //   has `data-activate-on-focus`. Only the main button activates. Disabled tabs
 //   (`aria-disabled="true"`) take focus but are never selected; a selected tab that is disabled
 //   gives its selection to the first enabled tab, and with every tab disabled none is selected.
+//   Once the element's content is parsed, the selected tab (else the first) is the only tab stop
+//   and the only selected tab, whatever the server HTML had (TASK-437 M17).
 // - `value` reads and sets the selection; a change by the user fires `valuechange` (not
 //   bubbling), so `bind:value` works on the element too.
 // - With a `[data-indicator]` in the list (Tabs.Indicator, TASK-395): the selected tab's box, from
@@ -65,7 +67,8 @@ export class LuTabs extends HTMLElement {
     this.addEventListener("keydown", this.#onKeyDown);
     this.addEventListener("click", this.#onClick);
     this.addEventListener("focusin", this.#onFocusIn);
-    // Server HTML may select a disabled tab: fix it once the element's content is parsed.
+    // Server HTML may select a disabled tab or leave the tab stop elsewhere: fix it once the
+    // element's content is parsed.
     if (document.readyState === "loading") {
       document.addEventListener("DOMContentLoaded", () => this.#settle(), { once: true });
     } else queueMicrotask(() => this.#settle());
@@ -87,8 +90,10 @@ export class LuTabs extends HTMLElement {
 
   #settle() {
     const tabs = this.tabs;
-    const selected = tabs.find((tab) => tab.getAttribute("aria-selected") === "true");
-    if (!selected || !enabled(selected)) this.#select(tabs.find(enabled), true);
+    const selected = tabs.find(
+      (tab) => tab.getAttribute("aria-selected") === "true" && enabled(tab),
+    );
+    this.#select(selected ?? tabs.find(enabled), true);
     const list = this.list;
     if (list && this.#indicator() && !this.#resize) {
       // The tabs' sizes change with fonts, text and the viewport, and an island may select a tab

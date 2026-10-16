@@ -44,7 +44,8 @@ export function Toggle({
   ...rest
 }: ToggleProps) {
   const group = useContext(ToggleGroupContext);
-  // Inside a Toolbar, the toolbar's single tab stop (TASK-383).
+  // Inside a Toolbar, the toolbar moves the tab stop (TASK-383) and its `disabled` reaches the
+  // toggle, which stays focusable (TASK-437 M13).
   const toolbar = useContext(ToolbarContext);
   // Standalone: the component holds the state; in a group, the group's element and value do.
   const state = signal(untrack(() => pressed ?? defaultPressed ?? false));
@@ -59,11 +60,11 @@ export function Toggle({
   const on = () => (group ? value !== undefined && group.values().includes(value) : state());
   /**
    * The group's tab stop in the server HTML: its first pressed toggle, or its first enabled one
-   * when none is pressed. The element keeps it from then on.
+   * when none is pressed. The element keeps it from then on. In a toolbar every item is a tab stop
+   * until the toolbar's script makes them one.
    */
   const stop = untrack(() => {
-    if (toolbar) return toolbar.stop();
-    if (!group) return undefined;
+    if (toolbar || !group) return undefined;
     const usable = group.items().filter((each) => !each.disabled() && !group.disabled());
     const values = group.values();
     const first =
@@ -78,6 +79,7 @@ export function Toggle({
       tabindex={stop}
       {...rest}
       disabled={rest.disabled || group?.disabled() || undefined}
+      aria-disabled={toolbar?.disabled() ? "true" : rest["aria-disabled"]}
       value={value}
       aria-pressed={on() ? "true" : "false"}
       on:click={(event: MouseEvent) => {

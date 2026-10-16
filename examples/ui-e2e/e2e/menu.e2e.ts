@@ -193,6 +193,20 @@ test.describe("keyboard contract (APG Menu Button)", () => {
     await expect(menu).toBeHidden();
   });
 
+  test("Space follows a link item and closes the menu (TASK-437 M16)", async ({ page }) => {
+    await page.goto("/menu");
+    const { trigger, menu, item } = actions(page);
+    await trigger.focus();
+    await page.keyboard.press("Enter");
+    await expect(item("Rename")).toBeFocused();
+    await page.keyboard.press("ArrowDown");
+    await page.keyboard.press("ArrowDown");
+    await expect(item("Help")).toBeFocused();
+    await page.keyboard.press(" ");
+    await expect(page).toHaveURL(/#help$/);
+    await expect(menu).toBeHidden();
+  });
+
   test("Tab closes the menu and moves on; Shift+Tab closes it onto the trigger", async ({
     page,
   }) => {

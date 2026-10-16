@@ -268,17 +268,17 @@ function SubmenuRoot(props: MenuSubmenuRootProps) {
 function Trigger({ children, style, ...rest }: MenuTriggerProps) {
   const menu = useMenu();
   register(menu.triggers);
-  // Inside a Toolbar, the toolbar's single tab stop in the server HTML (TASK-413).
+  // A disabled Toolbar disables it: focusable, it opens nothing (TASK-437 M13).
   const toolbar = useContext(ToolbarContext);
-  const stop = untrack(() => toolbar?.stop());
+  const off = () => toolbar?.disabled() === true;
   return (
     <button
       type="button"
-      tabindex={stop}
       {...rest}
+      aria-disabled={off() ? "true" : rest["aria-disabled"]}
       id={menu.triggerId}
       role={menu.menubar ? "menuitem" : undefined}
-      popovertarget={menu.popupId}
+      popovertarget={off() ? undefined : menu.popupId}
       aria-haspopup="menu"
       style={withStyle(style, { "anchor-name": anchorName(menu.id) })}
     >
@@ -308,6 +308,10 @@ function SubmenuTrigger({ children, disabled, label, style, ...rest }: MenuSubme
 
 function Popup({ children, side, align, sideOffset, alignOffset, style, ...rest }: MenuPopupProps) {
   const menu = useMenu();
+  // A menu of a vertical Toolbar opens beside it, as one of a vertical Menubar (TASK-437 M14).
+  const toolbar = useContext(ToolbarContext);
+  const beside = () =>
+    menu.submenu || menu.menubar === "vertical" || toolbar?.orientation() === "vertical";
   return (
     <div
       tabindex={-1}
@@ -319,7 +323,7 @@ function Popup({ children, side, align, sideOffset, alignOffset, style, ...rest 
       {...placement(
         { side, align, sideOffset, alignOffset, style },
         menu.id,
-        menu.submenu || menu.menubar === "vertical" ? "inline-end" : "bottom",
+        beside() ? "inline-end" : "bottom",
         "start",
       )}
     >

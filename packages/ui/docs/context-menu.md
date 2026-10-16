@@ -1,6 +1,6 @@
 # Context Menu
 
-> A menu opened at the pointer by a right-click in its trigger area, a long press on a touch screen, or Shift+F10 and the ContextMenu key: Menu's popup and items, with Menu's keys, typeahead, submenus and dismissal. A 0.6 kB script on top of Menu's (3.9 kB together) opens it; without JavaScript the browser shows its own menu. `bind:open` (or `open` and `onOpenChange`) keeps a signal in sync in islands.
+> A menu opened at the pointer by a right-click in its trigger area, a long press on a touch screen, or Shift+F10 and the ContextMenu key: Menu's popup and items, with Menu's keys, typeahead, submenus and dismissal. A 0.6 kB script on top of Menu's (4.2 kB together) opens it; without JavaScript the browser shows its own menu. `bind:open` (or `open` and `onOpenChange`) keeps a signal in sync in islands.
 
 ```ts
 import { ContextMenu } from "@lumiose/ui"; // or "@lumiose/ui/context-menu"
@@ -161,6 +161,8 @@ preview over the menu on a long press.
 - **A right-click or a long press** opens the menu with focus on the popup: the arrows then reach
   the items. A right-click inside the open menu does nothing; another one in the area moves the
   menu there.
+- **Nested**: in the area of a Context Menu inside another's, the inner one opens, by a right-click,
+  a long press or the keys; a disabled inner one leaves it to the outer.
 - **On close**, focus returns to where it was before the menu opened (the area, for the keys),
   unless a click outside landed on a control, which keeps it.
 - **A long press** (500ms, one finger, moving less than 10px) is the touch alternative to the
@@ -174,7 +176,7 @@ browser's own menu, and the popup stays hidden. `open`, `onOpenChange` and `bind
 component to run in an island.
 
 A page that renders a `ContextMenu` loads Menu's script and a 0.6 kB (brotli) one of its own,
-3.9 kB together, without the Lumiose runtime; islands bundle them. The element opens the menu on a
+4.2 kB together, without the Lumiose runtime; islands bundle them. The element opens the menu on a
 right-click, a long press or the keys, at the pointer, through a zero-size anchor that it moves
 there (CSS anchor positioning places the popup, with Menu's flips; without it, the shared
 placement script does). Menu's script does the rest: keys, items, submenus, and dismissal shared

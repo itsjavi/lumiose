@@ -329,11 +329,13 @@ export class MenuElement extends HTMLElement {
     const forward = rtl ? "ArrowLeft" : "ArrowRight";
     if (this.trigger?.contains(target)) {
       // Enter and Space open the menu through `popovertarget`; the arrows choose the item that
-      // gets focus. A submenu, and a menu of a vertical Menubar, opens with the arrow that points
-      // at it; its parent (or the menubar) handles the rest.
+      // gets focus. A submenu, and a menu of a vertical Menubar or Toolbar, opens with the arrow
+      // that points at it; its parent (or the bar) handles the rest (TASK-437 M14).
+      const bar = this.trigger!.closest("[popover], dialog, lu-menubar, lu-toolbar");
       const sideways =
         this.#parent() !== null ||
-        this.closest("lu-menubar")?.getAttribute("aria-orientation") === "vertical";
+        (bar?.matches("lu-menubar, lu-toolbar") === true &&
+          bar.getAttribute("aria-orientation") === "vertical");
       const opens = sideways ? event.key === forward : /^Arrow(Down|Up)$/.test(event.key);
       if (!opens || !enabled(this.trigger!)) return;
       event.preventDefault();
@@ -381,8 +383,14 @@ export class MenuElement extends HTMLElement {
       default: {
         if (event.key.length !== 1 || event.ctrlKey || event.metaKey || event.altKey) return;
         const typing = event.timeStamp - this.#typedAt < TYPEAHEAD_RESET;
-        // Space runs the item, except while typing, where it is part of the text.
-        if (event.key === " " && !typing) return;
+        // Space runs the item, except while typing, where it is part of the text. A link has no
+        // Space of its own (TASK-437 M16).
+        if (event.key === " " && !typing) {
+          if (!target.matches(`a${ITEM}`)) return;
+          event.preventDefault();
+          target.click();
+          return;
+        }
         event.preventDefault();
         next = this.#typeahead(items, index, event.key.toLowerCase(), typing, event.timeStamp);
       }

@@ -8,7 +8,8 @@
 // - `value` (the pressed toggles' values) and a `valuechange` event after the user changes it.
 // - One tab stop, moved by the arrow keys along `data-orientation` (swapped right to left), Home
 //   and End, looping unless `data-loop-focus="false"`. Disabled toggles are native `disabled`
-//   buttons, which focus skips.
+//   buttons, which focus skips. When the tab stop is removed or disabled, or the group is enabled,
+//   the first pressed or enabled toggle takes it (TASK-437 M11).
 //
 // A Toggle outside a group needs no script: the component presses it, in an island. Inside a
 // Toolbar (`lu-toolbar`), the group still presses its toggles but leaves the tab stop and the
@@ -23,6 +24,8 @@ export interface ToggleChangeDetail {
 const ITEM = "button[aria-pressed]";
 
 const pressed = (item: Element) => item.getAttribute("aria-pressed") === "true";
+/** Whether focus can move to `item`: not natively disabled, nor hidden. */
+const usable = (item: HTMLButtonElement) => !item.disabled && (item.checkVisibility?.() ?? true);
 
 /** Asks with a cancelable `pressedchange` whether `item` may become `next`, and sets it if so. */
 function press(item: HTMLElement, next: boolean): boolean {
@@ -38,6 +41,9 @@ function press(item: HTMLElement, next: boolean): boolean {
 }
 
 export class ToggleGroupElement extends HTMLElement {
+  /** Moves the tab stop on when toggles come, go, or are disabled or enabled. */
+  #observer = new MutationObserver(() => this.#rove());
+
   /** The group's own toggles: nested groups keep theirs. */
   get items(): HTMLButtonElement[] {
     return [...this.querySelectorAll<HTMLButtonElement>(ITEM)].filter(
@@ -70,6 +76,11 @@ export class ToggleGroupElement extends HTMLElement {
     this.addEventListener("click", this.#onClick);
     this.addEventListener("keydown", this.#onKeyDown);
     this.addEventListener("focusin", this.#onFocusIn);
+    this.#observer.observe(this, {
+      subtree: true,
+      childList: true,
+      attributeFilter: ["disabled", "hidden"],
+    });
     if (document.readyState === "loading") {
       document.addEventListener("DOMContentLoaded", () => this.#rove(), { once: true });
     } else queueMicrotask(() => this.#rove());
@@ -79,6 +90,7 @@ export class ToggleGroupElement extends HTMLElement {
     this.removeEventListener("click", this.#onClick);
     this.removeEventListener("keydown", this.#onKeyDown);
     this.removeEventListener("focusin", this.#onFocusIn);
+    this.#observer.disconnect();
   }
 
   /** Whether a Toolbar around the group moves focus instead. */
@@ -90,9 +102,9 @@ export class ToggleGroupElement extends HTMLElement {
   #rove(to?: HTMLElement): void {
     if (this.#inToolbar) return;
     const items = this.items;
-    const usable = items.filter((item) => !item.disabled);
-    const current = usable.find((item) => item.tabIndex === 0);
-    const stop = to ?? current ?? usable.find(pressed) ?? usable[0];
+    const enabled = items.filter(usable);
+    const current = enabled.find((item) => item.tabIndex === 0);
+    const stop = to ?? current ?? enabled.find(pressed) ?? enabled[0];
     for (const item of items) item.tabIndex = item === stop ? 0 : -1;
   }
 
@@ -132,20 +144,20 @@ export class ToggleGroupElement extends HTMLElement {
     const steps: Record<string, number> = vertical
       ? { ArrowDown: 1, ArrowUp: -1 }
       : { ArrowRight: rtl ? -1 : 1, ArrowLeft: rtl ? 1 : -1 };
-    const usable = this.items.filter((each) => !each.disabled);
-    const at = usable.indexOf(item);
+    const enabled = this.items.filter(usable);
+    const at = enabled.indexOf(item);
     const loop = this.dataset.loopFocus !== "false";
     let next: number | undefined;
     if (event.key === "Home") next = 0;
-    else if (event.key === "End") next = usable.length - 1;
+    else if (event.key === "End") next = enabled.length - 1;
     else if (steps[event.key] !== undefined) {
       next = at + steps[event.key]!;
-      if (next < 0) next = loop ? usable.length - 1 : 0;
-      if (next >= usable.length) next = loop ? 0 : usable.length - 1;
+      if (next < 0) next = loop ? enabled.length - 1 : 0;
+      if (next >= enabled.length) next = loop ? 0 : enabled.length - 1;
     }
     if (next === undefined) return;
     event.preventDefault();
-    usable[next]?.focus();
+    enabled[next]?.focus();
   };
 }
 

@@ -72,6 +72,26 @@ test.describe("keyboard", () => {
     await expect(editor.item("Edit")).toBeFocused();
   });
 
+  test("the tab stop moves on when its item goes or is disabled (TASK-437 M11)", async ({
+    page,
+  }) => {
+    await page.goto("/menubar");
+    await ready(page);
+    const editor = bar(page, "Editor");
+    const projects = bar(page, "Workspace").item("Projects");
+    // Edit is the stop: its menu goes, trigger and all.
+    await editor.item("Edit").focus();
+    await projects.focus();
+    await editor.item("Edit").evaluate((item) => item.closest("lu-menu")!.remove());
+    await page.keyboard.press("Shift+Tab");
+    await expect(editor.item("File")).toBeFocused();
+    // File, the stop now, is disabled.
+    await projects.focus();
+    await editor.item("File").evaluate((item) => ((item as HTMLButtonElement).disabled = true));
+    await page.keyboard.press("Shift+Tab");
+    await expect(editor.item("View")).toBeFocused();
+  });
+
   test("arrows loop over the items, skipping a disabled one; Home, End and letters", async ({
     page,
   }) => {

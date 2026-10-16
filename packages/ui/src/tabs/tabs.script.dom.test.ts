@@ -98,6 +98,14 @@ it("gives a disabled selected tab's place to the first enabled tab", async () =>
   expect(tabs.value).toBe("b");
 });
 
+it("leaves one tab stop, on the selected tab, whatever the server HTML had (TASK-437 M17)", async () => {
+  mount({ selected: "b" });
+  tab("a").tabIndex = 0;
+  tab("c").tabIndex = 0;
+  await Promise.resolve();
+  expect(["a", "b", "c"].map((value) => tab(value).tabIndex)).toEqual([-1, 0, -1]);
+});
+
 const box = (left: number, top: number, width: number, height: number) =>
   ({ left, top, width, height, right: left + width, bottom: top + height }) as DOMRect;
 

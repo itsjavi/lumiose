@@ -62,6 +62,25 @@ describe("Tabs on the server", () => {
       "aria-selected": "false",
     });
     expect(tab(html, "two words")).toMatchObject({ "aria-selected": "true", tabindex: "0" });
+    // One tab stop, though the disabled first tab renders before the server knows of the second
+    // (TASK-437 M17).
+    expect(tab(html, "account").tabindex).toBe("-1");
+  });
+
+  it("gives one tab stop to a value whose tab is disabled (TASK-437 M17)", async () => {
+    const html = await renderToString(() => (
+      <Tabs.Root defaultValue="b">
+        <Tabs.List aria-label="Letters">
+          <Tabs.Tab value="a">A</Tabs.Tab>
+          <Tabs.Tab value="b" disabled>
+            B
+          </Tabs.Tab>
+          <Tabs.Tab value="c">C</Tabs.Tab>
+        </Tabs.List>
+      </Tabs.Root>
+    ));
+    // The disabled tab stays focusable: it keeps the stop until the script selects A.
+    expect(["a", "b", "c"].map((value) => tab(html, value).tabindex)).toEqual(["-1", "0", "-1"]);
   });
 
   it("writes the orientation and the List's options", async () => {

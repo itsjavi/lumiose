@@ -1,6 +1,6 @@
 # Toast
 
-> Short notices in a region of their own, after Base UI's toast: server HTML renders them (a form action's result), and islands add, update and close them through a toast manager. `<lu-toast-viewport>`, a 2.3 kB light-DOM element, puts them in the top layer, times them (pausing on hover and focus), limits how many show, closes them on a swipe, Escape or their close button, focuses the region on F6, and makes screen readers announce them.
+> Short notices in a region of their own, after Base UI's toast: server HTML renders them (a form action's result), and islands add, update and close them through a toast manager. `<lu-toast-viewport>`, a 2.6 kB light-DOM element, puts them in the top layer, times them (pausing on hover and focus), limits how many show, closes them on a swipe, Escape or their close button, focuses the region on F6, and makes screen readers announce them.
 
 ```ts
 import { Toast } from "@lumiose/ui"; // or "@lumiose/ui/toast"
@@ -279,7 +279,7 @@ and back when it closes or leaves the page.
 
 What is server-rendered and what needs the client:
 
-| Server HTML                                                                   | The element's script (2.3 kB, loaded once per page)                                                      |
+| Server HTML                                                                   | The element's script (2.6 kB, loaded once per page)                                                      |
 | ----------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
 | The region and the toasts a page renders, with their text, roles and buttons. | The top layer (a manual popover), so toasts sit above dialogs and survive other popovers' light dismiss. |
 | Toasts show at the window's bottom end (`toast.css`).                         | Timers, pausing, the limit, closing (button, Escape, swipe), F6, focus when a toast goes.                |

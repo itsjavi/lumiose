@@ -1,6 +1,6 @@
 # Menu
 
-> A menu of commands, links, checkbox and radio items and submenus, opened by a button: the trigger's `popovertarget` opens it and CSS anchor positioning places it, so it works in server HTML with no JavaScript, and a 3.3 kB script adds the APG Menu Button keyboard contract where JavaScript runs. `bind:open`, `bind:checked` and `bind:value` keep signals in sync in islands.
+> A menu of commands, links, checkbox and radio items and submenus, opened by a button: the trigger's `popovertarget` opens it and CSS anchor positioning places it, so it works in server HTML with no JavaScript, and a 3.7 kB script adds the APG Menu Button keyboard contract where JavaScript runs. `bind:open`, `bind:checked` and `bind:value` keep signals in sync in islands.
 
 ```ts
 import { Menu } from "@lumiose/ui"; // or "@lumiose/ui/menu"
@@ -281,16 +281,16 @@ popup.
 The [WAI-ARIA Menu Button pattern](https://www.w3.org/WAI/ARIA/apg/patterns/menu-button/), with
 Base UI's behaviour where the pattern leaves a choice:
 
-| Key                       | Does                                                                                                                 |
-| ------------------------- | -------------------------------------------------------------------------------------------------------------------- |
-| Enter, Space              | On the trigger: opens the menu on its first item. On an item: runs it, or checks it. On a submenu trigger: opens it. |
-| Arrow Down, Arrow Up      | On the trigger: opens the menu on its first item, or on its last. In the menu: the next or previous item, looping.   |
-| Home, End                 | The first or last item.                                                                                              |
-| Arrow Right (Left in RTL) | On a submenu trigger: opens the submenu on its first item.                                                           |
-| Arrow Left (Right in RTL) | In a submenu: closes it, back on its trigger.                                                                        |
-| A character               | The next item whose text starts with it; characters typed within 750 ms add up, and Space among them is text.        |
-| Escape                    | Closes one level: the submenu on top, or the menu. Focus goes back to its trigger.                                   |
-| Tab, Shift+Tab            | Close the whole menu. Tab moves on from the trigger; Shift+Tab stays on it.                                          |
+| Key                       | Does                                                                                                                                   |
+| ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| Enter, Space              | On the trigger: opens the menu on its first item. On an item: runs it (a link item too), or checks it. On a submenu trigger: opens it. |
+| Arrow Down, Arrow Up      | On the trigger: opens the menu on its first item, or on its last. In the menu: the next or previous item, looping.                     |
+| Home, End                 | The first or last item.                                                                                                                |
+| Arrow Right (Left in RTL) | On a submenu trigger, or the trigger of a menu in a vertical Toolbar or Menubar: opens it on its first item.                           |
+| Arrow Left (Right in RTL) | In a submenu: closes it, back on its trigger.                                                                                          |
+| A character               | The next item whose text starts with it; characters typed within 750 ms add up, and Space among them is text.                          |
+| Escape                    | Closes one level: the submenu on top, or the menu. Focus goes back to its trigger.                                                     |
+| Tab, Shift+Tab            | Close the whole menu. Tab moves on from the trigger; Shift+Tab stays on it.                                                            |
 
 - **On open**, focus moves to the first item that can run (Arrow Up: the last one). Opened by a
   pointer, the popup itself takes focus and no item is highlighted until a key or the pointer
@@ -319,7 +319,7 @@ items in order, and links work; commands, which run JavaScript, need it anyway. 
 `onOpenChange` and the `bind:` props need the component to run in the browser, in an island.
 
 The keyboard contract comes from a small script: a page that renders a `Menu` loads it once, as a
-3.3 kB (brotli) module without the Lumiose runtime, and islands bundle it. It defines `lu-menu`,
+3.7 kB (brotli) module without the Lumiose runtime, and islands bundle it. It defines `lu-menu`,
 which upgrades every menu on the page in place, and adds what the native popover lacks: focus on
 open and its return on close, the arrows, Home, End and typeahead, Escape one level at a time, Tab,
 submenus, checkbox and radio items, disabled items, `data-highlighted`, and the pointer behaviour

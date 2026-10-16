@@ -16,7 +16,9 @@
 //   `-height` on the element.
 // - `data-scrolling` while scrolling (and 500 ms after), `data-hovering` on the scrollbars while
 //   the pointer is over the area.
-// - Dragging a thumb scrolls with it; a press on a scrollbar's track scrolls there.
+// - Dragging a thumb scrolls with it; a press on a scrollbar's track scrolls there. The wheel over
+//   a scrollbar scrolls the viewport (which the scrollbar is not inside), and the page only once
+//   the viewport cannot scroll that way (TASK-437 M18); a pinch zoom (Ctrl) is the page's.
 // - Right to left, a horizontal thumb runs from the right.
 //
 // It must not import `lumiose`: server-rendered pages load it without the runtime.
@@ -33,6 +35,8 @@ export class ScrollAreaElement extends HTMLElement {
   #observed: Element[] = [];
   #scrolling: ReturnType<typeof setTimeout> | undefined;
   #frame = 0;
+  /** The scrollbars that listen to the wheel. */
+  #wheeled = new WeakSet<HTMLElement>();
 
   /** The scrolling element. */
   get viewport(): HTMLElement | null {
@@ -150,6 +154,11 @@ export class ScrollAreaElement extends HTMLElement {
   #thumb(axis: Axis, viewport: HTMLElement, overflows: boolean): void {
     const scrollbar = this.#scrollbar(axis);
     if (!scrollbar) return;
+    if (!this.#wheeled.has(scrollbar)) {
+      // Not passive: a wheel the viewport takes must not scroll the page too.
+      scrollbar.addEventListener("wheel", this.#onWheel, { passive: false });
+      this.#wheeled.add(scrollbar);
+    }
     scrollbar.hidden = !overflows && !scrollbar.hasAttribute("data-keep-mounted");
     const thumb = scrollbar.querySelector<HTMLElement>("[data-thumb]");
     if (!thumb || scrollbar.hidden) return;
@@ -185,6 +194,25 @@ export class ScrollAreaElement extends HTMLElement {
         scrollbar.removeAttribute("data-scrolling");
       }
     }, SCROLLING);
+  };
+
+  /** The wheel over a scrollbar scrolls the viewport, in pixels, lines or pages. */
+  #onWheel = (event: WheelEvent) => {
+    const viewport = this.viewport;
+    if (!viewport || event.ctrlKey) return;
+    const line = Number.parseFloat(getComputedStyle(viewport).lineHeight) || 16;
+    const [x, y] =
+      event.deltaMode === WheelEvent.DOM_DELTA_LINE
+        ? [line, line]
+        : event.deltaMode === WheelEvent.DOM_DELTA_PAGE
+          ? [viewport.clientWidth, viewport.clientHeight]
+          : [1, 1];
+    const { scrollLeft, scrollTop } = viewport;
+    // Instant even under `scroll-behavior: smooth`, so the new position can be read back.
+    viewport.scrollBy({ left: event.deltaX * x, top: event.deltaY * y, behavior: "instant" });
+    if (viewport.scrollLeft !== scrollLeft || viewport.scrollTop !== scrollTop) {
+      event.preventDefault();
+    }
   };
 
   #onHover = (event: PointerEvent) => {

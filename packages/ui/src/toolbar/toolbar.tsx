@@ -3,9 +3,13 @@
 // (toolbar.script.ts) moves focus between the items with the arrow keys, Home and End, following
 // the orientation and the direction. The items are native: Button is a `<button>` that stays
 // focusable when disabled (`aria-disabled`), Link an `<a>`, Input an `<input>`; a ToggleGroup's
-// toggles inside a toolbar are its items too. The server HTML has the single tab stop already.
-import { untrack, useContext } from "lumiose";
+// toggles inside a toolbar are its items too. In the server HTML every item is a tab stop, so all
+// are reachable before the script (or without it); the script makes them one (TASK-437 M12).
+// `disabled` reaches every item but links: Menu and Popover triggers and Toggles render
+// `aria-disabled`, and button.script.ts cancels their clicks (TASK-437 M13).
+import { useContext } from "lumiose";
 import { Button, type ButtonProps } from "../button/button.tsx";
+import buttonScript from "../button/button.script.ts?client";
 import { Separator, type SeparatorProps } from "../separator/separator.tsx";
 import { ToolbarContext, type ToolbarContextValue } from "./context.ts";
 import type { ToolbarElement } from "./toolbar.script.ts";
@@ -66,15 +70,11 @@ function useToolbar(part: string): ToolbarContextValue {
 function Root({ orientation, loopFocus, disabled, children, ...rest }: ToolbarRootProps) {
   // The arrow keys and the single tab stop, on server pages and in islands (decision-63).
   toolbarScript();
-  let first = true;
+  // Cancels the clicks of its `aria-disabled` items, Menu and Popover triggers and Toggles included.
+  buttonScript();
   const context: ToolbarContextValue = {
     orientation: () => orientation ?? "horizontal",
     disabled: () => disabled === true,
-    stop: () => {
-      const stop = first ? 0 : -1;
-      first = false;
-      return stop;
-    },
   };
   return (
     <ToolbarContext value={context}>
@@ -94,11 +94,8 @@ function Root({ orientation, loopFocus, disabled, children, ...rest }: ToolbarRo
 
 function ToolbarButton({ disabled, focusableWhenDisabled, children, ...rest }: ToolbarButtonProps) {
   const toolbar = useToolbar("Button");
-  // Once, in render order: the server HTML's tab stop; the script keeps it from then on.
-  const stop = untrack(() => toolbar.stop());
   return (
     <Button
-      tabindex={stop}
       {...rest}
       disabled={disabled === true || toolbar.disabled()}
       focusableWhenDisabled={focusableWhenDisabled ?? true}
@@ -111,10 +108,8 @@ function ToolbarButton({ disabled, focusableWhenDisabled, children, ...rest }: T
 
 function Link({ children, ...rest }: ToolbarLinkProps) {
   const toolbar = useToolbar("Link");
-  // Once, in render order: the server HTML's tab stop; the script keeps it from then on.
-  const stop = untrack(() => toolbar.stop());
   return (
-    <a tabindex={stop} {...rest} data-orientation={toolbar.orientation()}>
+    <a {...rest} data-orientation={toolbar.orientation()}>
       {children}
     </a>
   );
@@ -122,13 +117,10 @@ function Link({ children, ...rest }: ToolbarLinkProps) {
 
 function Input({ disabled, focusableWhenDisabled, ...rest }: ToolbarInputProps) {
   const toolbar = useToolbar("Input");
-  // Once, in render order: the server HTML's tab stop; the script keeps it from then on.
-  const stop = untrack(() => toolbar.stop());
   const off = () => disabled === true || toolbar.disabled();
   const soft = () => off() && focusableWhenDisabled !== false;
   return (
     <input
-      tabindex={stop}
       {...rest}
       disabled={off() && !soft()}
       readonly={soft() || rest.readonly}

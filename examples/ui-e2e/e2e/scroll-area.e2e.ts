@@ -98,6 +98,25 @@ test.describe("Scroll Area", () => {
     await expect(area(page, "Releases")).not.toHaveAttribute("data-scrolling");
   });
 
+  test("the wheel over a scrollbar scrolls the area, and the page at its end (TASK-437 M18)", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 800, height: 400 });
+    await ready(page);
+    const releases = region(page, "Releases");
+    const box = (await releases.boundingBox())!;
+    await page.mouse.move(box.x + 10, box.y + 10);
+    const track = (await scrollbar(page, "Releases").boundingBox())!;
+    await page.mouse.move(track.x + track.width / 2, track.y + track.height / 2);
+    await page.mouse.wheel(0, 120);
+    await expect.poll(() => scrollTop(releases)).toBeGreaterThan(0);
+    expect(await page.evaluate(() => window.scrollY)).toBe(0);
+    // At the end of the list the page takes the wheel.
+    await releases.evaluate((viewport) => (viewport.scrollTop = viewport.scrollHeight));
+    await page.mouse.wheel(0, 120);
+    await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(0);
+  });
+
   test("dragging the thumb scrolls with it; a press on the track scrolls there", async ({
     page,
   }) => {
