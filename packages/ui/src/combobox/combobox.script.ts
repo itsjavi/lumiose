@@ -108,7 +108,7 @@ export class ComboboxElement extends HTMLElement {
   #pointed = false;
   /** With `free`: an `input` event the element fires itself, which is no typing. */
   #echo = false;
-  /** When an outside press last closed the popup: an outside invoker's toggle then keeps it shut. */
+  /** When the popup last closed: an outside invoker's toggle right after keeps it shut. */
   #dismissed = Number.NEGATIVE_INFINITY;
 
   /** Whether the input's text is the value (Autocomplete). */
@@ -558,10 +558,7 @@ export class ComboboxElement extends HTMLElement {
     this.#release = openLayer({
       popup,
       contains: (node) => this.contains(node),
-      dismiss: () => {
-        this.#dismissed = performance.now();
-        this.#close();
-      },
+      dismiss: () => this.#close(),
     });
     // Now, not on `toggle` a task later: `aria-activedescendant` may follow at once (L32).
     this.#expanded(true);
@@ -580,7 +577,10 @@ export class ComboboxElement extends HTMLElement {
     this.#highlight(undefined);
     this.#release?.();
     this.#release = undefined;
-    if (this.open) this.popup!.hidePopover();
+    if (this.open) {
+      this.popup!.hidePopover();
+      this.#dismissed = performance.now();
+    }
     this.#expanded(false);
     if (restore) this.#showLabel();
   }
@@ -865,8 +865,8 @@ export class ComboboxElement extends HTMLElement {
   #onCommand(command: string, source: Element | null = null): void {
     if (this.#disabled()) return;
     if (command === "--toggle") {
-      // A press on an invoker outside the element closed the popup as an outside press: its
-      // command, a moment later, is that same close, not a reopening (TASK-454, L32).
+      // A press on an invoker outside the element closed the popup (focus left it, or an outside
+      // press): its command, a moment later, is that same close, not a reopening (TASK-454, L32).
       const outside = source !== null && !this.contains(source);
       if (outside && !this.open && performance.now() - this.#dismissed < 400) return;
       if (this.open) this.#close();
