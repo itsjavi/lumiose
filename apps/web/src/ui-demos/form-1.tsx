@@ -7,7 +7,8 @@ export const actions = {
   async signup(ctx: ActionContext) {
     const form = await ctx.formData();
     if (form.get("username") === "admin") {
-      return fail(400, { username: "That username is taken." });
+      // The errors, and what the user typed: the form renders back filled in.
+      return fail(400, { errors: { username: "That username is taken." }, values: form });
     }
     return { welcome: String(form.get("username")) };
   },
@@ -15,8 +16,9 @@ export const actions = {
 
 export function SignupForm() {
   const result = actionData<typeof actions>();
+  const failed = result && "errors" in result ? result : undefined;
   return (
-    <Form method="post" action="?/signup" errors={result}>
+    <Form method="post" action="?/signup" errors={failed?.errors} values={failed?.values}>
       <Field.Root name="username" class="lu-field">
         <Field.Label>Username</Field.Label>
         <Field.Control required minlength={3} autocomplete="username" class="lu-input" />
