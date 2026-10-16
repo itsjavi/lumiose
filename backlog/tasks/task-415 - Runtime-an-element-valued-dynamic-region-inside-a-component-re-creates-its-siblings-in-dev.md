@@ -5,9 +5,9 @@ title: >-
   siblings in dev
 status: To Do
 assignee:
-  - '@Spark'
+  - '@Beacon'
 created_date: '2026-10-16 02:28'
-updated_date: '2026-10-16 03:39'
+updated_date: '2026-10-16 04:06'
 labels:
   - runtime
   - bug
@@ -33,4 +33,6 @@ Found by Halo in TASK-405 (2026-10-16). In `lumiose dev` (not in a build), a com
 
 <!-- SECTION:NOTES:BEGIN -->
 2026-10-16 (Lux, orchestrator): assigned at the batch 8 merge. Runtime bug (dev-only hydration), Spark's area.
+
+2026-10-16 (Lux, orchestrator): reassigned to Beacon for batch 9 (no Spark or Photon session is running; it may edit the files the fix needs).
 <!-- SECTION:NOTES:END -->
