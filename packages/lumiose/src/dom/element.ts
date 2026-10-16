@@ -2,10 +2,13 @@
 import type { WritableSource } from "../contract/client.ts";
 import { effect } from "../core/effect.ts";
 import {
+  createTrigger,
   disposeOwner,
   getOwner,
   renderEffect,
   runWithLazyOwner,
+  track,
+  trigger,
   type Owner,
 } from "../core/internal.ts";
 import { untrack } from "../core/reactive.ts";
@@ -32,29 +35,53 @@ function applyChecked(el: HTMLInputElement, value: unknown): void {
 }
 
 /**
+ * The render effect of a two-way binding, and what its event calls with the value the element now
+ * shows, before writing the signal. That value is recorded as applied, and the effect re-runs at
+ * the next flush even if the signal ends where it was: code that writes the previous value back
+ * before the flush (typing "b" over "a", then `set("a")`) still reaches the element (TASK-388).
+ */
+function twoWay<E, T>(
+  el: E,
+  signal: () => T,
+  apply: (el: E, value: T) => void,
+): (shown: T) => void {
+  const again = createTrigger();
+  const binding = renderEffect(
+    el,
+    () => {
+      track(again);
+      return signal();
+    },
+    apply,
+  );
+  return (shown) => {
+    binding.value = shown;
+    trigger(again);
+  };
+}
+
+/**
  * `bind:value`: the signal drives the element's value, and `input` events write it back. A number
  * signal on `type="number"` or `type="range"` reads and writes `valueAsNumber`.
  */
 export function bindValue(el: ValueElement, signal: WritableSource<unknown>): void {
   const numeric =
     (el.type === "number" || el.type === "range") && typeof untrack(signal) === "number";
-  const binding = numeric
-    ? renderEffect(el as HTMLInputElement, signal as () => number, applyNumber)
-    : renderEffect(el, signal, applyValue);
+  const shown = numeric
+    ? twoWay(el as HTMLInputElement, signal as () => number, applyNumber)
+    : twoWay(el, signal, applyValue);
   listen(el, "input", () => {
     const value = numeric ? (el as HTMLInputElement).valueAsNumber : el.value;
-    // The element already shows `value`: record it as applied, so a later write of the
-    // previous value (before the next flush) is still applied.
-    binding.value = value;
+    (shown as (value: unknown) => void)(value);
     signal.set(value);
   });
 }
 
 /** `bind:checked`: the signal drives `checked`, and `change` events write it back. */
 export function bindChecked(el: HTMLInputElement, signal: WritableSource<boolean>): void {
-  const binding = renderEffect(el, signal, applyChecked);
+  const shown = twoWay(el, signal, applyChecked);
   listen(el, "change", () => {
-    binding.value = el.checked;
+    shown(el.checked);
     signal.set(el.checked);
   });
 }
@@ -66,12 +93,12 @@ export function bindChecked(el: HTMLInputElement, signal: WritableSource<boolean
  */
 export function bindProperty(el: Element, name: string, signal: WritableSource<unknown>): void {
   const slots = el as unknown as Record<string, unknown>;
-  const binding = renderEffect(el, signal, (_, value) => {
+  const shown = twoWay(el, signal, (_, value) => {
     slots[name] = value;
   });
   const update = (event: Event): void => {
     if (event.target === el) {
-      binding.value = slots[name];
+      shown(slots[name]);
       signal.set(slots[name]);
     }
   };

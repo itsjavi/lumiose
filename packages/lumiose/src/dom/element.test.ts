@@ -200,3 +200,56 @@ describe("refs", () => {
     expect(seen).toEqual([undefined, el]);
   });
 });
+
+// The element changes the signal, then code writes the previous value back before the flush: the
+// signal's net value is unchanged, and the element must still show it (TASK-388).
+describe("two-way bindings: the previous value written back before the flush (TASK-388)", () => {
+  it("bindValue applies it to a text input and a number input", () => {
+    const input = document.createElement("input");
+    const text = signal("a");
+    const range = document.createElement("input");
+    range.type = "range";
+    const level = signal(3);
+    root(() => {
+      bindValue(input, text);
+      bindValue(range, level);
+    });
+    type(input, "b");
+    text.set("a");
+    flush();
+    expect(input.value).toBe("a");
+    type(range, "7");
+    level.set(3);
+    flush();
+    expect(range.valueAsNumber).toBe(3);
+    // A plain edit is not written back over itself.
+    type(input, "c");
+    flush();
+    expect(input.value).toBe("c");
+  });
+
+  it("bindChecked applies it", () => {
+    const box = document.createElement("input");
+    box.type = "checkbox";
+    const on = signal(false);
+    root(() => bindChecked(box, on));
+    box.checked = true;
+    box.dispatchEvent(new Event("change"));
+    on.set(false);
+    flush();
+    expect(box.checked).toBe(false);
+  });
+
+  it("bindProperty applies it", () => {
+    const menu = document.createElement("test-menu") as HTMLElement & {
+      open: boolean;
+      toggle(): void;
+    };
+    const open = signal(false);
+    root(() => bindProperty(menu, "open", open));
+    menu.toggle();
+    open.set(false);
+    flush();
+    expect(menu.open).toBe(false);
+  });
+});
