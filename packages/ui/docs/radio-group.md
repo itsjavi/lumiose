@@ -110,7 +110,7 @@ Left checks the next radio and Arrow Right the previous one.
 ## Without JavaScript, and the client script
 
 Native radios: the roving tab stop, the arrow keys, `required`, submission and reset work with no
-script. The shared checkbox script (0.8 kB brotli,
+script. The shared checkbox script (1.0 kB brotli,
 [Checkbox](checkbox.md#without-javascript-and-the-client-script)) adds read-only, and runs the
 arrow keys itself so that every browser follows the table above: without it, WebKit's native
 radios stop at the ends and keep Left and Right as they are right to left.

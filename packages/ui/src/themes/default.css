@@ -608,6 +608,11 @@
   .lu-combobox :where([role="listitem"] > button:hover) {
     background: var(--lu-accent);
   }
+  /* A chip the arrow keys reach (TASK-461). */
+  .lu-combobox :where([role="listitem"]:focus-visible) {
+    outline: 2px solid var(--lu-ring);
+    outline-offset: 1px;
+  }
   /* The popup: the List, or the Popup around it; the list scrolls. */
   .lu-combobox :where([popover]) {
     --lu-side-offset: 0.25rem;

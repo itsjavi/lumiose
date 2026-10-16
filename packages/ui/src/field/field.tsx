@@ -236,6 +236,8 @@ function Root({
   // result stale.
   let latest = 0;
   let timer: ReturnType<typeof setTimeout> | undefined;
+  /** A debounced check that has not run yet: a submit attempt runs it first (TASK-459). */
+  let due: (() => void) | undefined;
   /** The value of the last async check, whose verdict (pending or not) stands for that value. */
   let checking: { value: string | boolean } | undefined;
   onCleanup(() => clearTimeout(timer));
@@ -249,6 +251,7 @@ function Root({
     if (checking?.value === value) return;
     const mine = ++latest;
     clearTimeout(timer);
+    due = undefined;
     const apply = (message: string | null | undefined, later: boolean) => {
       if (mine !== latest || !control.isConnected) return;
       control.setCustomValidity(message ?? "");
@@ -273,7 +276,26 @@ function Root({
     if (wait <= 0) return check(false);
     control.setCustomValidity("");
     pending(true);
-    timer = setTimeout(() => check(true), wait);
+    due = () => {
+      due = undefined;
+      check(true);
+    };
+    timer = setTimeout(due, wait);
+  };
+  /**
+   * A submission inside the debounce window would pass the browser's checks without `validate`
+   * (cleared while it waits): its check runs now, and a synchronous one that fails stops the
+   * submission, which the form then reports. An async check still waits for the server.
+   */
+  const onSubmit = (event: Event) => {
+    if (!due) return;
+    clearTimeout(timer);
+    due();
+    const control = document.getElementById(controlId(field)) as HTMLInputElement | null;
+    if (!control || control.validity.valid) return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    (event.currentTarget as HTMLFormElement).reportValidity();
   };
   effect(() => {
     if (!validate) return;
@@ -304,9 +326,12 @@ function Root({
     const owner = element.closest("form");
     element.addEventListener("invalid", onInvalid, true);
     owner?.addEventListener("reset", onReset);
+    // Capturing: before the form's own `submit` listeners.
+    owner?.addEventListener("submit", onSubmit, true);
     onCleanup(() => {
       element.removeEventListener("invalid", onInvalid, true);
       owner?.removeEventListener("reset", onReset);
+      owner?.removeEventListener("submit", onSubmit, true);
     });
   });
 

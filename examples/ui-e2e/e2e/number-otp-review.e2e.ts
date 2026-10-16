@@ -89,9 +89,14 @@ test.describe("Number Field Lows (TASK-447)", () => {
     await page.mouse.move(at.x + at.width / 2, at.y + at.height / 2);
     await page.mouse.wheel(120, 10);
     await expect(zoom).toHaveValue(value);
-    await page.keyboard.down("Control");
-    await page.mouse.wheel(0, -100);
-    await page.keyboard.up("Control");
+    // Dispatched: a real Ctrl+wheel zooms Firefox, which keeps that zoom for the site in the
+    // contexts of later tests, whose clicks then miss (TASK-464).
+    await zoom.dispatchEvent("wheel", {
+      deltaY: -100,
+      ctrlKey: true,
+      bubbles: true,
+      cancelable: true,
+    });
     await expect(zoom).toHaveValue(value);
   });
 

@@ -281,6 +281,9 @@ Focus stays in the input; the active option is `aria-activedescendant`.
 | Escape               | Closes the popup without choosing and puts the selection's label back. Closed, it goes on to the page, so a dialog closes.                                                                          |
 | Tab                  | Closes the popup without choosing and moves on.                                                                                                                                                     |
 | Backspace            | With `multiple`, in an empty input: removes the last value.                                                                                                                                         |
+| Arrow Left           | With `multiple`, at the start of the input: moves to the last chip (Arrow Right right to left).                                                                                                     |
+| Arrow Left, Right    | On a chip: the previous or next chip; past the last, back to the input.                                                                                                                             |
+| Backspace, Delete    | On a chip: removes its value; focus goes to the chip before it, else the one in its place, else the input.                                                                                          |
 | Home, End            | Move the text cursor, as in any text field.                                                                                                                                                         |
 
 - **Choosing** an option puts its label in the input and closes the popup, or, with `multiple`,
@@ -322,8 +325,9 @@ The element is also an API of its own, for scripts and other frameworks:
 - `open`: a property; setting it opens or closes the popup.
 - `name`, `required`, `disabled`, `multiple`: reflect their attributes; `filter` is an attribute.
 - `form`, `validity`, `validationMessage`, `willValidate`, `checkValidity()`, `reportValidity()`:
-  as on native controls. It submits under `name`, resets with its form and follows a disabled
-  `<fieldset>`.
+  as on native controls. It submits under `name`, resets with its form (to the server's selection)
+  and follows a disabled `<fieldset>`. After a back navigation the browser restores the user's
+  choice, and a reset still goes to the server's selection.
 - `change`: a bubbling event after the user chooses, removes or clears a value. The inner input's
   own `change` stays inside.
 - `openchange`: an event (not bubbling, like `toggle`) with `detail.open`, after the popup opens or

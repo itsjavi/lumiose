@@ -19,6 +19,8 @@
 //   disabled fieldset.
 // - Focus stays in the input: options are highlighted through `aria-activedescendant` and
 //   `data-highlighted`, and presses in the popup keep focus where it is.
+// - Chips (`multiple`): the arrow toward them at the input's start moves into them, the arrows move
+//   between them and back to the input, and Backspace or Delete removes the focused one (TASK-461).
 // - The popup is a manual popover dismissed by the shared layer model (../layer/layer.ts): an
 //   outside press with the main button, a close request, Tab, Escape (which then stops there, so a
 //   parent dialog stays open), or focus moving elsewhere. It is placed by anchor positioning, or by
@@ -231,12 +233,7 @@ export class ComboboxElement extends HTMLElement {
       const input = this.input;
       const typed = input && input.value !== input.defaultValue ? input.value : undefined;
       if (this.#free) this.#typed = this.input?.value ?? "";
-      const selected = this.#options().filter((o) => o.getAttribute("aria-selected") === "true");
-      for (const option of selected)
-        this.#labels.set(option.dataset.value ?? "", optionLabel(option));
-      const values = selected.map((option) => option.dataset.value ?? "");
-      this.#defaults = this.multiple ? values : values.slice(0, 1);
-      this.#set(this.#defaults, false);
+      this.#set(this.#serverDefaults(), false);
       if (typed !== undefined && input && !this.#free) {
         input.value = typed;
         this.#filter(typed);
@@ -281,8 +278,27 @@ export class ComboboxElement extends HTMLElement {
     if (off) this.#close();
   }
 
+  /**
+   * The server's selection, from the options it rendered selected: the reset default. Read once,
+   * before a restored state changes the options (TASK-460).
+   */
+  #serverDefaults(): string[] {
+    if (!this.#defaults) {
+      const selected = this.#options().filter((o) => o.getAttribute("aria-selected") === "true");
+      for (const option of selected) {
+        this.#labels.set(option.dataset.value ?? "", optionLabel(option));
+      }
+      const values = selected.map((option) => option.dataset.value ?? "");
+      this.#defaults = this.multiple ? values : values.slice(0, 1);
+    }
+    return this.#defaults;
+  }
+
   formStateRestoreCallback(state: string | FormData | null): void {
     if (this.#free) return;
+    // A back navigation restores the user's choice, which must not become the reset default: the
+    // server's selection is read first, and the element's start then leaves the choice as it is.
+    this.#serverDefaults();
     const values =
       state instanceof FormData
         ? state.getAll(this.name).map(String)
@@ -476,6 +492,8 @@ export class ComboboxElement extends HTMLElement {
         const chip = document.createElement("span");
         chip.setAttribute("role", "listitem");
         chip.dataset.value = value;
+        // The keys reach it from the input (TASK-461).
+        chip.tabIndex = -1;
         const button = document.createElement("button");
         Object.assign(button, { type: "button", tabIndex: -1, textContent: "×", value });
         button.setAttribute("aria-label", `${remove} ${label}`);
@@ -767,7 +785,33 @@ export class ComboboxElement extends HTMLElement {
     this.#highlight(this.#reachable()[0]);
   }
 
+  /**
+   * The chips' keys (`multiple`, after Base UI, TASK-461): the arrows move between the chips and,
+   * past the last, back to the input; Backspace and Delete remove the focused chip's value, and
+   * focus goes to the chip before it, else the one in its place, else the input.
+   */
+  #onChipKey(event: KeyboardEvent): boolean {
+    const list = this.#part("chips");
+    const chip = (event.target as Element).closest?.<HTMLElement>("[role=listitem]");
+    if (!list || !chip || !list.contains(chip) || event.defaultPrevented) return false;
+    const chips = () => [...list.querySelectorAll<HTMLElement>(":scope > [role=listitem]")];
+    const at = chips().indexOf(chip);
+    const rtl = getComputedStyle(list).direction === "rtl";
+    if (event.key === (rtl ? "ArrowRight" : "ArrowLeft")) {
+      chips()[Math.max(at - 1, 0)]?.focus();
+    } else if (event.key === (rtl ? "ArrowLeft" : "ArrowRight")) {
+      (chips()[at + 1] ?? this.input)?.focus();
+    } else if (event.key === "Backspace" || event.key === "Delete") {
+      this.#remove(chip.dataset.value!);
+      const rest = chips();
+      (rest[at - 1] ?? rest[at] ?? this.input)?.focus();
+    } else return false;
+    event.preventDefault();
+    return true;
+  }
+
   #onKeyDown(event: KeyboardEvent): void {
+    if (this.#onChipKey(event)) return;
     const input = this.input;
     if (!input || event.target !== input || event.isComposing || event.defaultPrevented) return;
     const open = this.open;
@@ -822,6 +866,19 @@ export class ComboboxElement extends HTMLElement {
       case "Tab":
         this.#close();
         return;
+      case "ArrowLeft":
+      case "ArrowRight": {
+        // At the start of the input, the arrow toward the chips moves into them (TASK-461).
+        const back = getComputedStyle(input).direction === "rtl" ? "ArrowRight" : "ArrowLeft";
+        const last = this.#part("chips")?.querySelector<HTMLElement>(
+          ":scope > [role=listitem]:last-child",
+        );
+        if (event.key !== back || event.shiftKey || !last) return;
+        if (input.selectionStart !== 0 || input.selectionEnd !== 0) return;
+        event.preventDefault();
+        last.focus();
+        return;
+      }
       case "Backspace":
         // With `multiple`, Backspace in an empty input removes the last value.
         if (this.multiple && input.value === "" && this.#values.length > 0) {

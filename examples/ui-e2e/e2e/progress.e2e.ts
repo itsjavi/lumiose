@@ -16,13 +16,21 @@ const lumioseWarnings = (page: Page) => {
   return warnings;
 };
 
-/** Waits for /progress/island to hydrate: "Advance" answers. */
+/**
+ * Waits for /progress/island to hydrate, then advances it to 50%. The probe is "Restart", which a
+ * retry may click again: a retried "Advance", answered late, would overshoot to 100% (TASK-464).
+ */
 async function hydrated(page: Page) {
   const bar = page.getByRole("progressbar", { name: "Task" });
   await expect(async () => {
-    await page.getByTestId("advance").click({ timeout: 250 });
-    await expect(bar).toHaveAttribute("aria-valuetext", "50%", { timeout: 250 });
+    await page.getByTestId("restart").click({ timeout: 250 });
+    await expect(bar).not.toHaveAttribute("aria-valuetext", { timeout: 250 });
   }).toPass();
+  // From indeterminate (none done), two steps of 25.
+  await page.getByTestId("advance").click();
+  await expect(bar).toHaveAttribute("aria-valuetext", "25%");
+  await page.getByTestId("advance").click();
+  await expect(bar).toHaveAttribute("aria-valuetext", "50%");
 }
 
 test.describe("without JavaScript", () => {

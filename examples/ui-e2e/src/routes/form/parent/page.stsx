@@ -1,0 +1,41 @@
+import { Checkbox, CheckboxGroup, Fieldset } from "@lumiose/ui";
+import { Title } from "lumiose";
+
+// Server-rendered, no island: a parent checkbox over a group with disabled checkboxes, one
+// checked (napkins) and one not (candles), after Base UI's parent checkbox (TASK-458). The server
+// and the script count the same four boxes, so the parent starts mixed and stays so.
+const EXTRAS = ["sauce", "napkins", "cutlery", "candles"];
+
+export default function ParentCheckboxPage() {
+  return (
+    <>
+      <Title>A parent checkbox</Title>
+      <h1>A parent checkbox</h1>
+      <form method="get" action="/form/parent">
+        <CheckboxGroup
+          name="extras"
+          defaultValue={["sauce", "napkins", "cutlery"]}
+          allValues={EXTRAS}
+          class="lu-fieldset"
+        >
+          <Fieldset.Legend>Extras</Fieldset.Legend>
+          <label>
+            <Checkbox.Root parent class="lu-checkbox" /> All extras
+          </label>
+          <label>
+            <Checkbox.Root value="sauce" class="lu-checkbox" /> Sauce
+          </label>
+          <label>
+            <Checkbox.Root value="napkins" disabled class="lu-checkbox" /> Napkins (always)
+          </label>
+          <label>
+            <Checkbox.Root value="cutlery" class="lu-checkbox" /> Cutlery
+          </label>
+          <label>
+            <Checkbox.Root value="candles" disabled class="lu-checkbox" /> Candles (sold out)
+          </label>
+        </CheckboxGroup>
+      </form>
+    </>
+  );
+}

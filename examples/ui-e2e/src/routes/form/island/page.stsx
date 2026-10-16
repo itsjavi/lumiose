@@ -31,6 +31,7 @@ export const actions = {
  */
 export function FormSignals() {
   const checks = signal(0);
+  const promos = signal(0);
   /** A server check of the login: "slow…" names answer after 400ms, the others after 20ms. */
   const available = async (value: string | boolean) => {
     checks.update((n) => n + 1);
@@ -132,6 +133,30 @@ export function FormSignals() {
         </button>
         <button type="reset" class="lu-button">
           Reset login
+        </button>
+      </form>
+      {/* A synchronous check behind a long debounce, and a submit inside the window (TASK-459). */}
+      <form
+        class="lu-fieldset"
+        data-testid="promo-form"
+        onSubmit={(event) => {
+          event.preventDefault();
+          promos.update((n) => n + 1);
+        }}
+      >
+        <Field.Root
+          name="promo"
+          class="lu-field"
+          validationDebounceTime={1000}
+          validate={(value) => (/\d/.test(String(value)) ? "Letters only." : null)}
+        >
+          <Field.Label>Promo code</Field.Label>
+          <Field.Control class="lu-input" />
+          <Field.Error />
+        </Field.Root>
+        <p data-testid="promo-submits">submits: {promos()}</p>
+        <button type="submit" class="lu-button">
+          Apply
         </button>
       </form>
       <div>

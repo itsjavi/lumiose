@@ -300,6 +300,81 @@ test.describe("multiple values", () => {
     await expect(chips.getByRole("listitem")).toHaveCount(0);
     await expect(input).toBeFocused();
   });
+
+  test("the arrows reach the chips from the input; Backspace and Delete remove one (TASK-461)", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1280, height: 1000 });
+    await page.goto("/combobox");
+    await city(page);
+    const input = page.getByRole("combobox", { name: "Tags" });
+    const list = page.getByRole("listbox", { name: "Tags" });
+    const chips = page.locator("lu-combobox[name=tags] [role=list]");
+    const chip = (name: string) => chips.getByRole("listitem").filter({ hasText: name });
+    await input.click();
+    for (const tag of ["bug", "docs", "performance"]) {
+      await list.getByRole("option", { name: tag }).click();
+    }
+    await expect(chips.getByRole("listitem")).toHaveText([/^ui/, /^bug/, /^docs/, /^performance/]);
+    await page.keyboard.press("Escape");
+    // Text in the input: Left moves its caret until its start, then into the last chip.
+    await input.pressSequentially("ab");
+    await page.keyboard.press("ArrowLeft");
+    await page.keyboard.press("ArrowLeft");
+    await expect(input).toBeFocused();
+    await page.keyboard.press("ArrowLeft");
+    await expect(chip("performance")).toBeFocused();
+    await page.keyboard.press("ArrowLeft");
+    await expect(chip("docs")).toBeFocused();
+    await page.keyboard.press("ArrowRight");
+    await page.keyboard.press("ArrowRight");
+    await expect(input).toBeFocused();
+    // Backspace on a chip removes it; the chip before it takes focus.
+    await page.keyboard.press("ArrowLeft");
+    await page.keyboard.press("ArrowLeft");
+    await expect(chip("docs")).toBeFocused();
+    await page.keyboard.press("Backspace");
+    await expect(chips.getByRole("listitem")).toHaveText([/^ui/, /^bug/, /^performance/]);
+    await expect(chip("bug")).toBeFocused();
+    // Delete on the first chip: the one in its place takes focus.
+    await page.keyboard.press("ArrowLeft");
+    await expect(chip("ui")).toBeFocused();
+    await page.keyboard.press("Delete");
+    await expect(chips.getByRole("listitem")).toHaveText([/^bug/, /^performance/]);
+    await expect(chip("bug")).toBeFocused();
+  });
+});
+
+// A page restored from the back-forward cache keeps its scripts' state as it was; none of the
+// engines restores one under Playwright, so this is the reloaded page, whose form state the browser
+// restores through `formStateRestoreCallback`.
+test.describe("back navigation (TASK-460)", () => {
+  test("the user's choice comes back, and a reset goes to the server's", async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 1000 });
+    await page.goto("/combobox");
+    const { input, list } = await city(page);
+    await input.click();
+    await list.getByRole("option", { name: "Berlin" }).click();
+    await expect(input).toHaveValue("Berlin");
+    const tags = page.getByRole("combobox", { name: "Tags" });
+    const chips = page.locator("lu-combobox[name=tags] [role=list]");
+    await tags.click();
+    await page.getByRole("listbox", { name: "Tags" }).getByRole("option", { name: "docs" }).click();
+    await expect(chips.getByRole("listitem")).toHaveText([/^ui/, /^docs/]);
+    await page.goto("/button");
+    await page.goBack();
+    const valueOf = (name: string) =>
+      page.locator(`lu-combobox[name=${name}]`).evaluate((el) => (el as any).value);
+    await expect.poll(() => valueOf("city")).toBe("ber");
+    await expect(input).toHaveValue("Berlin");
+    await expect.poll(() => valueOf("tags")).toEqual(["ui", "docs"]);
+    await expect(chips.getByRole("listitem")).toHaveText([/^ui/, /^docs/]);
+    // A reset goes back to the server's default, not to what the browser restored.
+    await page.getByRole("button", { name: "Reset" }).click();
+    await expect.poll(() => valueOf("city")).toBe("lis");
+    await expect(input).toHaveValue("Lisbon");
+    await expect.poll(() => valueOf("tags")).toEqual(["ui"]);
+  });
 });
 
 test.describe("forms", () => {

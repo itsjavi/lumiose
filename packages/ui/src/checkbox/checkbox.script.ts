@@ -5,9 +5,12 @@
 // - Indeterminate: a checkbox's `indeterminate` is a property only, so the server renders
 //   `data-indeterminate` and the script turns it into the property (mixed for assistive
 //   technology, `:indeterminate` for CSS) and drops the attribute. Islands set the property.
-// - A parent checkbox (`data-parent`) in a Checkbox Group: checking it checks every enabled
-//   checkbox of its group, and it is checked, unchecked or indeterminate as they are. It has no
-//   `name`, so it is never submitted.
+// - A parent checkbox (`data-parent`) in a Checkbox Group, after Base UI's: it is checked,
+//   unchecked or indeterminate as its group's checkboxes are, disabled ones counted (as the server
+//   counts them). Toggling it goes from a partial selection to all, then none, then back to the
+//   selection the user last made with the checkboxes; disabled checkboxes keep their state
+//   (TASK-458). Its `aria-controls` names the checkboxes. It has no `name`, so it is never
+//   submitted.
 // - Read-only (`aria-readonly="true"` on the input, or on a radio group): a click, Space or an arrow
 //   key does not change it. Native `readonly` does not apply to checkboxes and radios.
 // - A Radio Group's arrow keys, after the APG: Down and Right (Left right to left) check the next
@@ -28,11 +31,34 @@ const mixed = new WeakSet<HTMLInputElement>();
 /** The fieldset a checkbox belongs to, for a group. */
 const groupOf = (input: Element) => input.closest("fieldset");
 
-/** The group's checkboxes a parent checks and follows: enabled, not parents, not nested. */
+/** The group's checkboxes a parent follows: not parents, not nested; disabled ones included. */
 function children(group: HTMLFieldSetElement): HTMLInputElement[] {
   return [...group.querySelectorAll<HTMLInputElement>(`${BOX}:not([data-parent])`)].filter(
-    (input) => groupOf(input) === group && !input.disabled,
+    (input) => groupOf(input) === group,
   );
+}
+
+/** Each group's checked boxes as the user last chose them, one at a time: a parent restores it. */
+const chosen = new WeakMap<HTMLFieldSetElement, HTMLInputElement[]>();
+
+const same = (a: HTMLInputElement[], b: HTMLInputElement[]) =>
+  a.length === b.length && a.every((box) => b.includes(box));
+
+/** A parent's toggle: a partial choice → all → none → the choice again (Base UI's cycle). */
+function cycle(group: HTMLFieldSetElement): void {
+  const boxes = children(group);
+  const now = boxes.filter((box) => box.checked);
+  // Disabled boxes keep their state: "none" keeps the checked ones, "all" leaves out the others.
+  const none = boxes.filter((box) => box.disabled && box.checked);
+  const all = boxes.filter((box) => !box.disabled || box.checked);
+  const choice = chosen.get(group) ?? now;
+  const partial = choice.length > 0 && choice.length < all.length;
+  let next: HTMLInputElement[];
+  if (!partial) next = same(now, all) ? none : all;
+  else if (same(now, all)) next = none;
+  else if (same(now, none)) next = choice;
+  else next = all;
+  for (const box of boxes) if (!box.disabled) box.checked = next.includes(box);
 }
 
 /** Sets the group's parent checkboxes from their children. */
@@ -70,9 +96,12 @@ document.addEventListener(
     input.removeAttribute("data-indeterminate");
     const group = groupOf(input);
     if (!group) return;
-    if (input.hasAttribute("data-parent")) {
-      for (const child of children(group)) child.checked = input.checked;
-    }
+    if (input.hasAttribute("data-parent")) cycle(group);
+    else
+      chosen.set(
+        group,
+        children(group).filter((box) => box.checked),
+      );
     // Before the group's own `change` listener, which reads the checkboxes.
     follow(group);
   },
@@ -141,7 +170,9 @@ document.addEventListener("reset", (event) => {
     }
     for (const parent of form.querySelectorAll<HTMLInputElement>(`${BOX}[data-parent]`)) {
       const group = groupOf(parent);
-      if (group) follow(group);
+      if (!group) continue;
+      chosen.delete(group);
+      follow(group);
     }
   });
 });
@@ -167,6 +198,15 @@ function start() {
     input.indeterminate = true;
     if (!input.hasAttribute("data-parent")) mixed.add(input);
     input.removeAttribute("data-indeterminate");
+  }
+  // A parent names its checkboxes as they are, ids of their own included.
+  for (const parent of document.querySelectorAll<HTMLInputElement>(`${BOX}[data-parent]`)) {
+    const group = groupOf(parent);
+    if (!group) continue;
+    const ids = children(group)
+      .map((box) => box.id)
+      .filter(Boolean);
+    if (ids.length > 0) parent.setAttribute("aria-controls", ids.join(" "));
   }
 }
 if (document.readyState === "loading") {
