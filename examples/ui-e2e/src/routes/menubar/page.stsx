@@ -1,0 +1,76 @@
+import { Menu, Menubar } from "@lumiose/ui";
+import { Title } from "lumiose";
+
+// Server-rendered, no island: a horizontal menubar (File with a submenu, Edit with a checkbox item,
+// View with radio items, a disabled Help) and a vertical one. Menu's and the menubar's scripts add
+// the keys; without JavaScript each trigger opens its popover. Default theme.
+export default function MenubarPage() {
+  return (
+    <>
+      <Title>Menubar</Title>
+      <h1>Menubar</h1>
+      <Menubar aria-label="Editor" class="lu-menubar">
+        <Menu.Root>
+          <Menu.Trigger>File</Menu.Trigger>
+          <Menu.Popup class="lu-menu">
+            <Menu.Item>New file</Menu.Item>
+            <Menu.Item>Open…</Menu.Item>
+            <Menu.SubmenuRoot>
+              <Menu.SubmenuTrigger>Share</Menu.SubmenuTrigger>
+              <Menu.Popup class="lu-menu">
+                <Menu.Item>Email</Menu.Item>
+                <Menu.Item>Copy link</Menu.Item>
+              </Menu.Popup>
+            </Menu.SubmenuRoot>
+            <Menu.Separator />
+            <Menu.LinkItem href="#closed">Close</Menu.LinkItem>
+          </Menu.Popup>
+        </Menu.Root>
+        <Menu.Root>
+          <Menu.Trigger>Edit</Menu.Trigger>
+          <Menu.Popup class="lu-menu">
+            <Menu.Item>Undo</Menu.Item>
+            <Menu.Item>Redo</Menu.Item>
+            <Menu.Separator />
+            <Menu.CheckboxItem>Word wrap</Menu.CheckboxItem>
+          </Menu.Popup>
+        </Menu.Root>
+        <Menu.Root>
+          <Menu.Trigger>View</Menu.Trigger>
+          <Menu.Popup class="lu-menu">
+            <Menu.RadioGroup defaultValue="100">
+              <Menu.GroupLabel>Zoom</Menu.GroupLabel>
+              <Menu.RadioItem value="75">75%</Menu.RadioItem>
+              <Menu.RadioItem value="100">100%</Menu.RadioItem>
+              <Menu.RadioItem value="150">150%</Menu.RadioItem>
+            </Menu.RadioGroup>
+          </Menu.Popup>
+        </Menu.Root>
+        <Menu.Root>
+          <Menu.Trigger disabled>Help</Menu.Trigger>
+          <Menu.Popup class="lu-menu">
+            <Menu.Item>Docs</Menu.Item>
+          </Menu.Popup>
+        </Menu.Root>
+      </Menubar>
+
+      <h2>Vertical</h2>
+      <Menubar aria-label="Workspace" orientation="vertical" class="lu-menubar">
+        <Menu.Root>
+          <Menu.Trigger>Projects</Menu.Trigger>
+          <Menu.Popup class="lu-menu">
+            <Menu.Item>Lumiose</Menu.Item>
+            <Menu.Item>Website</Menu.Item>
+          </Menu.Popup>
+        </Menu.Root>
+        <Menu.Root>
+          <Menu.Trigger>Settings</Menu.Trigger>
+          <Menu.Popup class="lu-menu">
+            <Menu.Item>Profile</Menu.Item>
+            <Menu.Item>Billing</Menu.Item>
+          </Menu.Popup>
+        </Menu.Root>
+      </Menubar>
+    </>
+  );
+}

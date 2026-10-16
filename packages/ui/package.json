@@ -69,6 +69,10 @@
     "./separator.css": "./src/separator/separator.css",
     "./avatar": "./src/avatar/avatar.tsx",
     "./avatar.css": "./src/avatar/avatar.css",
+    "./menubar": "./src/menubar/menubar.tsx",
+    "./menubar.css": "./src/menubar/menubar.css",
+    "./navigation-menu": "./src/navigation-menu/navigation-menu.tsx",
+    "./navigation-menu.css": "./src/navigation-menu/navigation-menu.css",
     "./themes/default.css": "./src/themes/default.css",
     "./package.json": "./package.json"
   },
@@ -124,6 +128,10 @@
       "./separator.css": "./dist/separator/separator.css",
       "./avatar": "./dist/avatar/avatar.tsx",
       "./avatar.css": "./dist/avatar/avatar.css",
+      "./menubar": "./dist/menubar/menubar.tsx",
+      "./menubar.css": "./dist/menubar/menubar.css",
+      "./navigation-menu": "./dist/navigation-menu/navigation-menu.tsx",
+      "./navigation-menu.css": "./dist/navigation-menu/navigation-menu.css",
       "./themes/default.css": "./dist/themes/default.css",
       "./package.json": "./package.json"
     }

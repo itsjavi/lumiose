@@ -23,35 +23,37 @@ If your app orders its own layers, put `lu` first: `@layer lu, reset, components
 surfaces, a blue primary, light and dark. It styles a few classes, which you put on the parts
 through their `class` prop:
 
-| Class               | On                                             | Variants                                                                                    |
-| ------------------- | ---------------------------------------------- | ------------------------------------------------------------------------------------------- |
-| `lu-button`         | `Button`, any `<button>` part                  | `data-variant="primary"`, `data-variant="destructive"`                                      |
-| `lu-dialog`         | `Dialog.Popup`                                 | Styles the backdrop, the title, the description and a `<footer>` inside                     |
-| `lu-popover`        | `Popover.Popup`                                | Styles the title, the description and a `<footer>` inside                                   |
-| `lu-tooltip`        | `Tooltip.Popup`                                |                                                                                             |
-| `lu-tabs`           | `Tabs.Root`                                    | Styles the list, the tabs (the selected one underlined) and the panels                      |
-| `lu-menu`           | every `Menu.Popup`                             | Styles the items, their checkbox and radio marks, separators and labels                     |
-| `lu-combobox`       | `Combobox.Root`, `Autocomplete.Root`           | Lays out the field (label, chips, input, buttons) and styles the popup                      |
-| `lu-select`         | `Select.Root`                                  | Makes it a customizable select and styles the control and the picker                        |
-| `lu-field`          | `Field.Root`                                   | Stacks the label, control, description and errors; errors in red                            |
-| `lu-input`          | `Input`, `Field.Control`                       | A text field with a focus ring and a red border when invalid                                |
-| `lu-fieldset`       | `Fieldset.Root`, `CheckboxGroup`, `RadioGroup` | The legend and the items in a column                                                        |
-| `lu-checkbox`       | `Checkbox.Root`                                | An 18px box in a 24px target, a ✓ or a dash                                                 |
-| `lu-radio`          | `Radio.Root`                                   | An 18px circle in a 24px target, a thick ring when checked                                  |
-| `lu-switch`         | `Switch.Root`                                  | A track and a thumb on the side that tells on from off                                      |
-| `lu-collapsible`    | `Collapsible.Root`                             | Styles the trigger (a chevron) and animates the panel's height                              |
-| `lu-accordion`      | `Accordion.Root`                               | Items between borders; styles the triggers and animates the panels                          |
-| `lu-toast-viewport` | `Toast.Viewport`                               | A column at the window's bottom end                                                         |
-| `lu-toast`          | every `Toast.Root`                             | Styles the title, description and close button; `data-type="error"`                         |
-| `lu-toggle`         | `Toggle`                                       | Pressed: a filled surface and a bar along the bottom                                        |
-| `lu-toggle-group`   | `ToggleGroup`                                  | The toggles in a row, or a column when vertical                                             |
-| `lu-progress`       | `Progress.Root`                                | The label and value above a bar; a sliding segment when indeterminate                       |
-| `lu-meter`          | `Meter.Root`                                   | The label and value above a bar                                                             |
-| `lu-slider`         | `Slider.Root`                                  | The label and value above the track, the indicator and 24px thumbs                          |
-| `lu-number-field`   | `NumberField.Root`                             | The label above one bordered group: the input between its buttons                           |
-| `lu-drawer`         | `Drawer.Popup`                                 | A surface against its edge (a handle on a bottom sheet), title, description, footer; slides |
-| `lu-separator`      | `Separator`                                    | A 1px line in `--lu-border`, horizontal or vertical                                         |
-| `lu-avatar`         | `Avatar.Root`                                  | A 40px circle on a muted surface, the image covering it, the initials centred               |
+| Class                | On                                             | Variants                                                                                    |
+| -------------------- | ---------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| `lu-button`          | `Button`, any `<button>` part                  | `data-variant="primary"`, `data-variant="destructive"`                                      |
+| `lu-dialog`          | `Dialog.Popup`                                 | Styles the backdrop, the title, the description and a `<footer>` inside                     |
+| `lu-popover`         | `Popover.Popup`                                | Styles the title, the description and a `<footer>` inside                                   |
+| `lu-tooltip`         | `Tooltip.Popup`                                |                                                                                             |
+| `lu-tabs`            | `Tabs.Root`                                    | Styles the list, the tabs (the selected one underlined) and the panels                      |
+| `lu-menu`            | every `Menu.Popup`                             | Styles the items, their checkbox and radio marks, separators and labels                     |
+| `lu-combobox`        | `Combobox.Root`, `Autocomplete.Root`           | Lays out the field (label, chips, input, buttons) and styles the popup                      |
+| `lu-select`          | `Select.Root`                                  | Makes it a customizable select and styles the control and the picker                        |
+| `lu-field`           | `Field.Root`                                   | Stacks the label, control, description and errors; errors in red                            |
+| `lu-input`           | `Input`, `Field.Control`                       | A text field with a focus ring and a red border when invalid                                |
+| `lu-fieldset`        | `Fieldset.Root`, `CheckboxGroup`, `RadioGroup` | The legend and the items in a column                                                        |
+| `lu-checkbox`        | `Checkbox.Root`                                | An 18px box in a 24px target, a ✓ or a dash                                                 |
+| `lu-radio`           | `Radio.Root`                                   | An 18px circle in a 24px target, a thick ring when checked                                  |
+| `lu-switch`          | `Switch.Root`                                  | A track and a thumb on the side that tells on from off                                      |
+| `lu-collapsible`     | `Collapsible.Root`                             | Styles the trigger (a chevron) and animates the panel's height                              |
+| `lu-accordion`       | `Accordion.Root`                               | Items between borders; styles the triggers and animates the panels                          |
+| `lu-toast-viewport`  | `Toast.Viewport`                               | A column at the window's bottom end                                                         |
+| `lu-toast`           | every `Toast.Root`                             | Styles the title, description and close button; `data-type="error"`                         |
+| `lu-toggle`          | `Toggle`                                       | Pressed: a filled surface and a bar along the bottom                                        |
+| `lu-toggle-group`    | `ToggleGroup`                                  | The toggles in a row, or a column when vertical                                             |
+| `lu-progress`        | `Progress.Root`                                | The label and value above a bar; a sliding segment when indeterminate                       |
+| `lu-meter`           | `Meter.Root`                                   | The label and value above a bar                                                             |
+| `lu-slider`          | `Slider.Root`                                  | The label and value above the track, the indicator and 24px thumbs                          |
+| `lu-number-field`    | `NumberField.Root`                             | The label above one bordered group: the input between its buttons                           |
+| `lu-drawer`          | `Drawer.Popup`                                 | A surface against its edge (a handle on a bottom sheet), title, description, footer; slides |
+| `lu-separator`       | `Separator`                                    | A 1px line in `--lu-border`, horizontal or vertical                                         |
+| `lu-avatar`          | `Avatar.Root`                                  | A 40px circle on a muted surface, the image covering it, the initials centred               |
+| `lu-menubar`         | `Menubar`                                      | A bordered bar of the triggers, the open one filled; `lu-menu` on each popup                |
+| `lu-navigation-menu` | `NavigationMenu.Root`                          | The list in a row, the current page underlined, contents as surfaces that slide in          |
 
 Its colours and radius are custom properties with shadcn/ui's names and a `--lu-` prefix, so a
 shadcn palette carries over:

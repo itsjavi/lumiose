@@ -317,9 +317,12 @@ export class MenuElement extends HTMLElement {
     const forward = rtl ? "ArrowLeft" : "ArrowRight";
     if (this.trigger?.contains(target)) {
       // Enter and Space open the menu through `popovertarget`; the arrows choose the item that
-      // gets focus. A submenu opens with the arrow that points at it; its parent handles the rest.
-      const sub = this.#parent() !== null;
-      const opens = sub ? event.key === forward : /^Arrow(Down|Up)$/.test(event.key);
+      // gets focus. A submenu, and a menu of a vertical Menubar, opens with the arrow that points
+      // at it; its parent (or the menubar) handles the rest.
+      const sideways =
+        this.#parent() !== null ||
+        this.closest("lu-menubar")?.getAttribute("aria-orientation") === "vertical";
+      const opens = sideways ? event.key === forward : /^Arrow(Down|Up)$/.test(event.key);
       if (!opens || !enabled(this.trigger!)) return;
       event.preventDefault();
       const edge = event.key === "ArrowUp" ? "last" : "first";

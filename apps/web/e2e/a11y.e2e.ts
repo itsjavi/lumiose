@@ -130,6 +130,26 @@ const OPEN_DEMOS: { name: string; path: string; open: (page: Page) => Promise<vo
     },
   },
   {
+    name: "Menubar",
+    path: "/ui/menubar",
+    open: async (page) => {
+      await page.locator(".hero .preview").getByRole("menuitem", { name: "File" }).click();
+      await expect(page.getByRole("menu", { name: "File" }).first()).toBeVisible();
+    },
+  },
+  {
+    name: "Navigation Menu",
+    path: "/ui/navigation-menu",
+    open: async (page) => {
+      await page.locator(".hero .preview").getByRole("button", { name: "Products" }).click();
+      await expect(
+        page
+          .locator(".hero .preview [popover]:popover-open")
+          .getByRole("link", { name: "Analytics" }),
+      ).toBeVisible();
+    },
+  },
+  {
     name: "Tooltip",
     path: "/ui/tooltip",
     open: async (page) => {

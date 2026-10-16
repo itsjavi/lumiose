@@ -168,6 +168,18 @@ const COMPONENTS: Component[] = [
     scripts: ["avatar/avatar.script.ts"],
     css: "avatar/avatar.css",
   },
+  {
+    name: "menubar",
+    module: "menubar/menubar.tsx",
+    scripts: ["menu/menu.script.ts", "menubar/menubar.script.ts"],
+    css: "menubar/menubar.css",
+  },
+  {
+    name: "navigation-menu",
+    module: "navigation-menu/navigation-menu.tsx",
+    scripts: ["navigation-menu/navigation-menu.script.ts"],
+    css: "navigation-menu/navigation-menu.css",
+  },
 ];
 
 const CLIENT_SCRIPT = /\?client$/;

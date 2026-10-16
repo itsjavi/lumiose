@@ -26,7 +26,11 @@ import { BookSearch } from "./input-1.tsx";
 import { Help } from "./installation-1.tsx";
 import { ProjectMenu } from "./menu-1.tsx";
 import { EditorMenu } from "./menu-2.tsx";
+import { EditorMenus } from "./menubar-1.tsx";
+import { DocumentMenus } from "./menubar-2.tsx";
 import { StorageMeter } from "./meter-1.tsx";
+import { MainNavigation } from "./navigation-menu-1.tsx";
+import { SiteNavigation } from "./navigation-menu-2.tsx";
 import { PriceField } from "./number-field-1.tsx";
 import { Notifications } from "./popover-1.tsx";
 import { Filters } from "./popover-2.tsx";
@@ -100,8 +104,16 @@ export function UiDemo(props: { id: string }) {
       return <ProjectMenu />;
     case "menu-2":
       return <EditorMenu client:visible />;
+    case "menubar-1":
+      return <EditorMenus />;
+    case "menubar-2":
+      return <DocumentMenus client:visible />;
     case "meter-1":
       return <StorageMeter />;
+    case "navigation-menu-1":
+      return <MainNavigation />;
+    case "navigation-menu-2":
+      return <SiteNavigation client:visible />;
     case "number-field-1":
       return <PriceField client:visible />;
     case "popover-1":

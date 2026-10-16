@@ -48,6 +48,11 @@
  *   .lu-separator                       a Separator: a 1px line, horizontal or vertical
  *   .lu-avatar                          an Avatar.Root: a 40px circle, the image covering it,
  *                                       the fallback's initials centred on a muted surface
+ *   .lu-menubar                         a Menubar: a bordered bar of its menus' triggers (the
+ *                                       open one filled); `lu-menu` on each Menu.Popup
+ *   .lu-navigation-menu                 a NavigationMenu.Root: its list in a row (a column when
+ *                                       vertical), triggers and links, the current page
+ *                                       underlined, contents as surfaces of links that slide in
  *   .lu-number-field                    a NumberField.Root: label, one bordered group with the
  *                                       input between its buttons
  */
@@ -1586,5 +1591,148 @@
     inline-size: 100%;
     block-size: 100%;
     object-fit: cover;
+  }
+
+  /* Menubar (TASK-379) ------------------------------------------------------------------------ */
+
+  .lu-menubar {
+    display: inline-flex;
+    gap: 0.125rem;
+    padding: 0.25rem;
+    border: 1px solid var(--lu-border);
+    border-radius: var(--lu-radius);
+    background: var(--lu-background);
+  }
+  .lu-menubar > lu-menu > [role="menuitem"] {
+    min-block-size: 2rem;
+    padding: 0.25rem 0.75rem;
+    border: 0;
+    border-radius: calc(var(--lu-radius) - 4px);
+    background: transparent;
+    color: var(--lu-foreground);
+    font: inherit;
+    font-size: 0.875rem;
+    font-weight: 500;
+    text-align: start;
+    cursor: pointer;
+  }
+  .lu-menubar > lu-menu > [role="menuitem"]:is(:hover, [aria-expanded="true"]) {
+    background: var(--lu-accent);
+    color: var(--lu-accent-foreground);
+  }
+  .lu-menubar > lu-menu > [role="menuitem"]:focus-visible {
+    outline: 2px solid var(--lu-ring);
+    outline-offset: -2px;
+  }
+  .lu-menubar > lu-menu > [role="menuitem"]:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  /* Navigation Menu (TASK-380) ---------------------------------------------------------------- */
+
+  .lu-navigation-menu :where(ul) {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .lu-navigation-menu > ul {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+  }
+  .lu-navigation-menu[data-orientation="vertical"] > ul {
+    flex-direction: column;
+    align-items: start;
+  }
+  .lu-navigation-menu > ul > li {
+    display: flex;
+  }
+  .lu-navigation-menu > ul > li > :is(button, a) {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    min-block-size: 2.25rem;
+    padding: 0.375rem 0.75rem;
+    border: 0;
+    border-radius: calc(var(--lu-radius) - 2px);
+    background: transparent;
+    color: var(--lu-foreground);
+    font: inherit;
+    font-size: 0.875rem;
+    font-weight: 500;
+    text-decoration: none;
+    cursor: pointer;
+  }
+  .lu-navigation-menu > ul > li > :is(button, a):is(:hover, [aria-expanded="true"]) {
+    background: var(--lu-accent);
+    color: var(--lu-accent-foreground);
+  }
+  /* The current page: underlined, a shape and not only a colour. */
+  .lu-navigation-menu a[aria-current="page"] {
+    text-decoration: underline 2px;
+    text-underline-offset: 0.35em;
+  }
+  .lu-navigation-menu :is(button, a):focus-visible {
+    outline: 2px solid var(--lu-ring);
+    outline-offset: 2px;
+  }
+  .lu-navigation-menu button[aria-expanded="true"] > [aria-hidden="true"] {
+    rotate: 180deg;
+  }
+  .lu-navigation-menu [popover] {
+    --lu-side-offset: 4px;
+    box-sizing: border-box;
+    min-inline-size: 12rem;
+    max-inline-size: min(28rem, 100vw - 1rem);
+    padding: 0.375rem;
+    border: 1px solid var(--lu-border);
+    border-radius: var(--lu-radius);
+    background: var(--lu-popover);
+    color: var(--lu-popover-foreground);
+    box-shadow:
+      0 10px 15px -3px rgb(0 0 0 / 0.1),
+      0 4px 6px -4px rgb(0 0 0 / 0.1);
+  }
+  .lu-navigation-menu [popover] a {
+    display: block;
+    padding: 0.5rem 0.75rem;
+    border-radius: calc(var(--lu-radius) - 4px);
+    color: inherit;
+    font-size: 0.875rem;
+    text-decoration: none;
+  }
+  .lu-navigation-menu [popover] a:is(:hover, :focus-visible) {
+    background: var(--lu-accent);
+    color: var(--lu-accent-foreground);
+  }
+  /* Fade in and out, sliding in from where the previous content was; `overlay` keeps a content in
+     the top layer while it fades out, in Chromium only. */
+  @media (prefers-reduced-motion: no-preference) {
+    .lu-navigation-menu button > [aria-hidden="true"] {
+      transition: rotate 150ms ease;
+    }
+    .lu-navigation-menu [popover] {
+      transition:
+        opacity 150ms ease,
+        translate 150ms ease,
+        overlay 150ms allow-discrete,
+        display 150ms allow-discrete;
+    }
+    .lu-navigation-menu [popover]:not(:popover-open) {
+      opacity: 0;
+    }
+    @starting-style {
+      .lu-navigation-menu [popover]:popover-open {
+        opacity: 0;
+        translate: 0 -4px;
+      }
+      .lu-navigation-menu [popover][data-activation-direction="right"]:popover-open {
+        translate: 1rem 0;
+      }
+      .lu-navigation-menu [popover][data-activation-direction="left"]:popover-open {
+        translate: -1rem 0;
+      }
+    }
   }
 }
