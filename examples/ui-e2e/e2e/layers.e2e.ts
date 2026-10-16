@@ -97,15 +97,23 @@ test.describe("closing a layer closes the layers inside it (TASK-436 M1)", () =>
 
   test("a dialog closed by script closes the menu open in it", async ({ page }) => {
     await page.goto("/layers");
-    await page.getByRole("button", { name: "Settings…" }).click();
+    await page.waitForFunction(() => customElements.get("lu-menu"));
+    // The keyboard only, the pointer out of the way: a pointer resting where the dialog opens
+    // could open its hover popover, a layer that would close the menu.
+    await page.mouse.move(0, 0);
+    await page.getByRole("button", { name: "Settings…" }).focus();
+    await page.keyboard.press("Enter");
     const settings = dialog(page, "Settings");
     await expect(settings).toBeVisible();
-    await settings.getByRole("button", { name: "Options" }).click();
+    await settings.getByRole("button", { name: "Options" }).focus();
+    await page.keyboard.press("Enter");
     const menu = page.getByRole("menu");
-    await expect(menu).toBeVisible();
+    await expect(page.getByRole("menuitem", { name: "Reset" })).toBeFocused();
     await settings.evaluate((el) => (el as HTMLDialogElement).close());
     await expect(settings).toBeHidden();
     await expect(menu).toBeHidden();
-    expect(await page.evaluate(() => document.querySelectorAll(":popover-open").length)).toBe(0);
+    await expect
+      .poll(() => page.evaluate(() => document.querySelectorAll(":popover-open").length))
+      .toBe(0);
   });
 });
