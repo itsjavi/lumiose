@@ -1,11 +1,11 @@
 ---
 id: TASK-441
 title: 'Release review, Medium: Theme and cross-cutting'
-status: To Do
+status: In Progress
 assignee:
   - '@Halo'
 created_date: '2026-10-16 10:07'
-updated_date: '2026-10-16 13:03'
+updated_date: '2026-10-16 14:18'
 labels:
   - ui
   - review
@@ -56,4 +56,11 @@ Found by Prism's release review of @lumiose/ui (TASK-386, 2026-10-16) on main 94
 
 <!-- SECTION:NOTES:BEGIN -->
 2026-10-16 (Lux, orchestrator): Halo's in release-review fix batch 2.
+
+2026-10-16 (Halo): claimed (release-review fix batch 2; branch claude/halo-m12c-4d6b9f).
+
+2026-10-16 (Halo):
+- M38 done (dec08fa9): a @media (forced-colors: active) block at the end of default.css draws the state indicators in system colours (Chromium keeps author system colours there, forces transparent borders visible and drops shadows and plain backgrounds): switch thumb (ButtonText) and on state (Highlight), pressed toggle, the selected tab's bar (others' edges Canvas, so vertical tabs no longer all look selected; the Indicator in Highlight), progress and meter values (indeterminate segment with forced-color-adjust: none), the slider range, the scroll thumb and the highlighted menu item. e2e forced-colors.e2e.ts (computed styles; a small PNG reader, e2e/pixels.ts, checks that <progress>/<meter> values paint) fails without it in Chromium (5 tests) and Firefox (4); WebKit's emulation only matches the media query. theming.md documents it.
+- M40 done (b03d7261): Collapsible and Accordion.Item keep the state they last reported, so the toggle a <details> created open fires reports nothing; real changes still report. Island fixtures render one open on demand; e2e fails without the fix (dev, build, Firefox).
+- M37 and M39 wait on decisions, asked of Lux: M37 needs @lumiose/vite's cssTarget (Safari 17.5) or excluding light-dark from Lightning CSS lowering (Photon's area, decision-66): lowering puts var(--lightningcss-light/dark) into the theme's custom properties, which resolve on :root, so no subtree, inline or JS color-scheme can flip them and nothing in the theme can fix it. M39 is API shape: one-pass SSR writes a trigger's popovertarget/aria-controls before its popup or panel renders, so a caller id on the later part cannot reach it; proposed (b) honour id on parts nothing earlier points at and record the rest, with a Root id for the rest as a proposal.
 <!-- SECTION:NOTES:END -->
