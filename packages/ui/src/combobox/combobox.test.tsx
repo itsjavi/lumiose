@@ -4,6 +4,7 @@
 import { renderToString } from "lumiose";
 import { describe, expect, it } from "vitest";
 import { attrs } from "../test/html.ts";
+import { Field } from "../field/field.tsx";
 import { Combobox } from "./combobox.tsx";
 
 function City(props: { value?: string; defaultValue?: string }) {
@@ -88,11 +89,16 @@ describe("Combobox on the server", () => {
   it("makes the buttons invokers of the element, out of the tab order", async () => {
     const empty = await renderToString(() => <City />);
     const root = attrs(empty, "lu-combobox");
+    const list = attrs(empty, "div", (a) => a.role === "listbox");
     expect(attrs(empty, "button", (a) => a.command === "--toggle")).toMatchObject({
       type: "button",
       tabindex: "-1",
       commandfor: root.id,
       "aria-label": "Show cities",
+      // The popup it controls (TASK-454, L32).
+      "aria-haspopup": "listbox",
+      "aria-controls": list.id,
+      "aria-expanded": "false",
     });
     // Clear shows only while there is something to clear.
     expect(attrs(empty, "button", (a) => a.command === "--clear")).toMatchObject({
@@ -136,5 +142,23 @@ describe("Combobox on the server", () => {
     expect(empty).toContain(`id="${root.id}-empty"`);
     expect(empty).toContain("hidden");
     expect(status).not.toContain("hidden");
+  });
+
+  it("names its listbox by the field's Label inside a Field (TASK-454, L32)", async () => {
+    const html = await renderToString(() => (
+      <Field.Root name="city">
+        <Field.Label>City</Field.Label>
+        <Combobox.Root>
+          <Combobox.Input />
+          <Combobox.List>
+            <Combobox.Item value="lis">Lisbon</Combobox.Item>
+          </Combobox.List>
+        </Combobox.Root>
+      </Field.Root>
+    ));
+    const root = attrs(html, "lu-field");
+    expect(attrs(html, "div", (a) => a.role === "listbox")).toMatchObject({
+      "aria-labelledby": `${root.id}-label`,
+    });
   });
 });

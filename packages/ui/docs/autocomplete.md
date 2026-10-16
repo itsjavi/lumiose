@@ -60,7 +60,7 @@ same.
 | `openOnInputClick`                  | `boolean`                                | `false`      | A click on the input opens the suggestions; otherwise typing and Arrow Down do. |
 | `autoHighlight`                     | `boolean`                                | `false`      | The first suggestion is highlighted as you type, so Enter fills it in.          |
 | `keepHighlight`                     | `boolean`                                | `false`      | A suggestion the pointer highlighted stays highlighted when it leaves the list. |
-| `submitOnItemClick`                 | `boolean`                                | `false`      | A click on a suggestion fills it in and submits the form, as a search box does. |
+| `submitOnItemClick`                 | `boolean`                                | `false`      | Choosing a suggestion (a click, or Enter on it) fills it in and submits the form, as a search box does. |
 | `limit`                             | `number`                                 | no limit     | Shows at most this many suggestions; a narrower text shows the others.          |
 | `name`                              | `string`                                 |              | The name the text is submitted under (the input's).                             |
 | `required`, `disabled`              | `boolean`                                | `false`      | As on a native input.                                                           |

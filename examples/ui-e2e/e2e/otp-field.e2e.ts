@@ -165,11 +165,12 @@ test.describe("IME composition (TASK-432)", () => {
   test("a commit is kept, and a composition never completes or submits", async ({ page }) => {
     await page.goto("/otp-field");
     const cdp = await page.context().newCDPSession(page);
-    const recovery = page.getByRole("textbox", { name: "Recovery code" });
+    // The recovery code keeps ASCII letters and digits; a full-width commit is typed as ASCII.
+    const recovery = page.getByLabel("Recovery code");
     await recovery.click();
     await cdp.send("Input.imeSetComposition", { text: "zhon", selectionStart: 4, selectionEnd: 4 });
-    await cdp.send("Input.insertText", { text: "中文" });
-    await expect(recovery).toHaveValue("中文");
+    await cdp.send("Input.insertText", { text: "ＡＢ１" });
+    await expect(recovery).toHaveValue("AB1");
     // Full-width digits are digits: composed but not committed, the PIN does not submit.
     const pin = page.getByRole("textbox", { name: /PIN/ });
     await pin.click();

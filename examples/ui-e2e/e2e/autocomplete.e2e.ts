@@ -157,7 +157,7 @@ test.describe("Autocomplete", () => {
 });
 
 test.describe("autoHighlight, limit, submitOnItemClick and keepHighlight (TASK-410)", () => {
-  test("the first match is highlighted as one types, at most three show, Enter fills it in", async ({
+  test("the first match is highlighted as one types, at most three show, Enter chooses it", async ({
     page,
   }) => {
     await ready(page);
@@ -170,14 +170,15 @@ test.describe("autoHighlight, limit, submitOnItemClick and keepHighlight (TASK-4
       "aria-activedescendant",
       (await search.highlighted.getAttribute("id"))!,
     );
-    await search.input.press("ArrowDown");
-    await expect(search.highlighted).toHaveText("animation");
-    await search.input.press("Enter");
-    await expect(search.input).toHaveValue("animation");
-    await expect(page).toHaveURL(/\/autocomplete$/);
     // A narrower text shows the matches past the limit.
     await search.input.fill("perf");
     expect(await search.shown()).toEqual(["performance"]);
+    await search.input.fill("a");
+    await search.input.press("ArrowDown");
+    await expect(search.highlighted).toHaveText("animation");
+    // With submitOnItemClick, choosing by Enter submits as a click does, as Base UI's (TASK-454).
+    await search.input.press("Enter");
+    await expect(page).toHaveURL(/[?&]q=animation$/);
   });
 
   test("a click on a suggestion submits the search", async ({ page }) => {

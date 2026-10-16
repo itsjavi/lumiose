@@ -41,7 +41,8 @@ describe("OTPField on the server", () => {
       autocomplete: "one-time-code",
       maxlength: "4",
       minlength: "4",
-      pattern: "\\p{Nd}{4}",
+      // ASCII digits, as the script keeps them (TASK-440, M34).
+      pattern: "[0-9]{4}",
       required: "",
     });
     expect(slots(html)).toEqual(["1", "2", "", ""]);
@@ -67,9 +68,12 @@ describe("OTPField on the server", () => {
     expect(attrs(html, "lu-otp-field")).toMatchObject({ mask: "" });
     // Letters follow the page's direction.
     expect(attrs(html, "lu-otp-field")).not.toHaveProperty("dir");
+    // Masked, a password input: assistive technology does not speak the code (TASK-440, M33).
     expect(attrs(html, "input")).toMatchObject({
+      type: "password",
       inputmode: "text",
-      pattern: "[\\p{L}\\p{Nd}]{3}",
+      autocomplete: "one-time-code",
+      pattern: "[A-Za-z0-9]{3}",
     });
     expect(slots(html)).toEqual(["•", "•", ""]);
   });

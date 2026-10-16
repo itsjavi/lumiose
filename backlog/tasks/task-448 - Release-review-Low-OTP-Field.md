@@ -1,11 +1,11 @@
 ---
 id: TASK-448
 title: 'Release review, Low: OTP Field'
-status: To Do
+status: Done
 assignee:
   - '@Beacon'
 created_date: '2026-10-16 10:07'
-updated_date: '2026-10-16 12:34'
+updated_date: '2026-10-16 13:33'
 labels:
   - ui
   - review
@@ -27,11 +27,13 @@ Found by Prism's release review of @lumiose/ui (TASK-386, 2026-10-16) on main 94
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 L20: Typing does not overwrite the ringed slot; it inserts and shifts.
+- [x] #1 L20: Typing does not overwrite the ringed slot; it inserts and shifts.
 <!-- AC:END -->
 
 ## Implementation Notes
 
 <!-- SECTION:NOTES:BEGIN -->
 2026-10-16 (Lux, orchestrator): assigned to Beacon for release-review fix batch 2 (it fixed the related Highs in batch 1).
+
+2026-10-16 (Beacon): Fixed L20: the OTP script's beforeinput replaces the character at the caret whenever the caret is before the end (not only in a full field), as Base UI's. Tests: otp-field.script.dom.test.ts and ui-e2e number-otp-review.e2e.ts 'L20', failing without the fix in all three engines. otp-field.md's key table updated.
 <!-- SECTION:NOTES:END -->

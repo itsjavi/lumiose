@@ -139,7 +139,7 @@ it("sets the value without events, and follows a form reset", async () => {
 });
 
 it("leaves an IME composition alone, and cleans, completes and submits its commit (TASK-432)", async () => {
-  const field = mount('length="4" validation-type="alphanumeric" auto-submit');
+  const field = mount('length="4" validation-type="none" auto-submit');
   await settle();
   const form = document.querySelector("form")!;
   const submit = vi.spyOn(form, "requestSubmit").mockImplementation(() => {});
@@ -168,4 +168,33 @@ it("leaves an IME composition alone, and cleans, completes and submits its commi
   expect(field.value).toBe("中文ab");
   expect(complete).toHaveBeenCalledTimes(1);
   expect(submit).toHaveBeenCalledTimes(1);
+});
+
+it("types digits of any script as ASCII, and keeps ASCII letters only (TASK-440, M34)", async () => {
+  const field = mount();
+  await settle();
+  type("１２٣४");
+  expect(field.value).toBe("1234");
+  document.body.innerHTML = "";
+  const code = mount('length="4" validation-type="alphanumeric"');
+  await settle();
+  type("ＡbかＺ9");
+  expect(code.value).toBe("AbZ9");
+});
+
+it("types over the character at the caret, also before the field is full (TASK-448, L20)", async () => {
+  const field = mount();
+  await settle();
+  type("123");
+  input().setSelectionRange(1, 1);
+  const event = new InputEvent("beforeinput", {
+    bubbles: true,
+    cancelable: true,
+    inputType: "insertText",
+    data: "9",
+  });
+  input().dispatchEvent(event);
+  expect(event.defaultPrevented).toBe(true);
+  expect(field.value).toBe("193");
+  expect(input().selectionStart).toBe(2);
 });

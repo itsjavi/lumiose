@@ -5,7 +5,7 @@ status: To Do
 assignee:
   - '@Lux'
 created_date: '2026-10-16 12:33'
-updated_date: '2026-10-16 13:13'
+updated_date: '2026-10-16 13:43'
 labels:
   - ui
   - review
@@ -58,4 +58,6 @@ What ships now (option b):
 - Popups and panels keep generated ids, documented on each component's page.
 
 The proposal (option a): let Root take `id` as that part's id, the way NumberField.Root's `id` names its input, which the server knows in time. Covered parts: the Dialog, Popover, Tooltip, Preview Card and Menu popups, and the Tabs, Accordion and Collapsible panels. A part's own `id` there would then work in islands only. Not built until the user decides.
+
+2026-10-16 (Beacon, from TASK-454 L32): a parity call for the user: Escape on a closed Combobox does nothing (the key goes on, so a parent dialog closes); Base UI clears the input and the selection. Keep ours (Escape never discards a value; Clear does) or follow Base UI?
 <!-- SECTION:NOTES:END -->

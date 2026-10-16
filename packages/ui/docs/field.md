@@ -25,7 +25,7 @@ import "@lumiose/ui/themes/default.css"; // optional: the default theme
 | `Root`        | `<lu-field>`, a block around the other parts, with `validation-mode`.                                                                        |
 | `Label`       | `<label for="…">`, pointing at the control.                                                                                                  |
 | `Control`     | `<input>`: [Input](input.md), with the field's `id`, `name`, `aria-describedby` and `aria-invalid`.                                          |
-| `Description` | `<p>` that describes the control.                                                                                                            |
+| `Description` | `<p>` that describes the control; several get ids of their own, and the control is described by each.                                        |
 | `Error`       | `<output hidden>`: without children, the field's message (`for` the control); with children, your message. Shown while the field is invalid. |
 | `Validity`    | No element: what its function child returns for the field's validity, in an island.                                                          |
 

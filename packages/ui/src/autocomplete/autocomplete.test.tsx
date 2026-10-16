@@ -41,10 +41,10 @@ describe("Autocomplete on the server", () => {
     expect(attrs(html, "label")).toMatchObject({ for: `${root.id}-input` });
     // There is text to clear.
     expect(attrs(html, "button")).not.toHaveProperty("hidden");
-    expect(attrs(html, "div", (a) => a.role === "option")).toMatchObject({
-      "data-value": "lumiose",
-      "aria-selected": "false",
-    });
+    // An Autocomplete selects nothing: no `aria-selected` on its options (TASK-454, L32).
+    const option = attrs(html, "div", (a) => a.role === "option");
+    expect(option).toMatchObject({ "data-value": "lumiose" });
+    expect(option).not.toHaveProperty("aria-selected");
   });
 
   it("announces inline completion, and leaves filtering to the page without it", async () => {

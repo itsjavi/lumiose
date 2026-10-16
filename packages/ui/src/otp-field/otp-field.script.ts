@@ -26,11 +26,40 @@ export interface OTPFieldValueDetail {
   value: string;
 }
 
-/** The characters each validation type keeps. */
+const DIGIT = /\p{Nd}/u;
+
+/**
+ * `text` with full-width letters as ASCII (NFKC) and every decimal digit of any script as its
+ * ASCII digit: Unicode encodes each script's digits as runs of ten, 0 to 9 (TASK-440, M34). A copy
+ * of ../locale/digits.ts: importing it would make a chunk of its own, shared with Number Field's
+ * script, and one more request on a page with both.
+ */
+function asciiDigits(text: string): string {
+  let out = "";
+  for (const char of text.normalize("NFKC")) {
+    if (!DIGIT.test(char)) {
+      out += char;
+      continue;
+    }
+    let code = char.codePointAt(0)!;
+    let index = 0;
+    while (DIGIT.test(String.fromCodePoint(code - 1))) {
+      code--;
+      index++;
+    }
+    out += String(index % 10);
+  }
+  return out;
+}
+
+/**
+ * The characters each validation type keeps, as Base UI's: ASCII digits and letters. Digits of
+ * other scripts and full-width letters are typed as their ASCII forms first (TASK-440, M34).
+ */
 const ALLOWED: Record<string, RegExp> = {
-  numeric: /\p{Nd}/u,
-  alpha: /\p{L}/u,
-  alphanumeric: /[\p{L}\p{Nd}]/u,
+  numeric: /[0-9]/,
+  alpha: /[A-Za-z]/,
+  alphanumeric: /[A-Za-z0-9]/,
   none: /\S/u,
 };
 
@@ -118,7 +147,8 @@ export class OTPFieldElement extends HTMLElement {
   }
 
   #normalize(text: string): string {
-    return this.normalizeValue ? this.normalizeValue(text) : text;
+    const ascii = this.getAttribute("validation-type") === "none" ? text : asciiDigits(text);
+    return this.normalizeValue ? this.normalizeValue(ascii) : ascii;
   }
 
   /** Whether `text` holds characters the field does not allow (spaces aside). */
@@ -201,7 +231,10 @@ export class OTPFieldElement extends HTMLElement {
     this.#key = plain ? event.key : "";
   };
 
-  /** A full field: typing replaces the character at the caret instead of being refused. */
+  /**
+   * Typing replaces the character at the caret (the ringed slot), as Base UI's, instead of
+   * inserting before it (TASK-448, L20), and in a full field instead of being refused.
+   */
   #onBeforeInput = (event: InputEvent) => {
     const input = this.input;
     // WebKit cuts `data` to what `maxlength` lets in: nothing in a full field. The key tells.
@@ -209,9 +242,7 @@ export class OTPFieldElement extends HTMLElement {
     this.#key = "";
     if (!input || event.target !== input || event.inputType !== "insertText" || !typed) return;
     const { selectionStart: start, selectionEnd: end, value } = input;
-    if (value.length < this.#length || start === null || start !== end || start >= value.length) {
-      return;
-    }
+    if (start === null || start !== end || start >= value.length) return;
     event.preventDefault();
     const char = this.#clean(typed).slice(0, 1);
     if (!char) {

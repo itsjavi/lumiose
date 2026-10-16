@@ -26,7 +26,7 @@ import "@lumiose/ui/themes/default.css"; // optional: the default theme
 | `Root`      | `<lu-number-field>` with the range and format as attributes, and an `<input type="hidden">` that submits the number with `format` |
 | `ScrubArea` | `<span data-scrub>`: dragging across it steps the number (usually around the label)                                               |
 | `Group`     | `<div>` around the input and the buttons                                                                                          |
-| `Input`     | `<input type="number" inputmode="decimal" min max step>`, or with `format` `<input type="text" role="spinbutton" aria-value…>`    |
+| `Input`     | `<input type="number" inputmode min max step>`, or with `format` `<input type="text" role="spinbutton" aria-value…>`              |
 | `Increment` | `<button type="button" tabindex="-1" aria-label="Increase" aria-controls="…">`, disabled at `max`                                 |
 | `Decrement` | `<button type="button" tabindex="-1" aria-label="Decrease" aria-controls="…">`, disabled at `min`                                 |
 
@@ -78,7 +78,13 @@ because it needs no JavaScript: typing, the arrow keys, `min`, `max` and `step` 
 form value are the browser's.
 
 With `snapOnStep`, each kind of step snaps to its own size: Shift steps 37 up to 40, Alt steps
-1.37 up to 1.4. A native field (no `format`) still validates the value against `step`.
+1.37 up to 1.4. A native field (no `format`) validates the value against `step` without
+JavaScript; the script sets its `step` to `any`, so the values Alt's small step, Home, End and
+clamping give always submit.
+
+The keyboard: `inputmode="decimal"` when `min` is 0 or more, `"text"` otherwise, since iOS's
+decimal keyboard has no minus sign. Digits of other scripts (full-width `１`, Arabic-Indic `٤`) are
+read as numbers.
 
 **Differences from Base UI's NumberField.** No `ScrubAreaCursor`: Base UI draws a cursor because
 its scrub area locks the pointer (which hides the real one); this scrub area keeps the real cursor
@@ -143,11 +149,14 @@ scrub area its resize cursor and `touch-action: none`.
 | Tab                     | Moves on: one tab stop, the input (the buttons are not in the tab order). |
 
 Right to left, dragging the scrub area toward the left steps up, as a slider runs. A press on a
-button steps once (by `largeStep` with Shift, `smallStep` with Alt) and keeps focus where it is; holding it steps again every 60 ms
-after 400 ms. A click from a keyboard or a screen reader on a button steps once. Every drag (the
+button steps once (by `largeStep` with Shift, `smallStep` with Alt) and, with a mouse, puts focus
+in the input, so the arrow keys go on stepping (a touch leaves focus where it is, so no virtual
+keyboard opens); holding it steps again every 60 ms after 400 ms. A click from a keyboard or a screen reader on a button steps once. Every drag (the
 scrub area) has the arrow keys as its alternative (WCAG 2.5.7). The wheel steps the number only
-with `allowWheelScrub`, while the input has focus and the pointer is over it (Chromium's own
-stepping of a focused number input is turned off otherwise).
+with `allowWheelScrub`, while the input has focus and the pointer is over it; otherwise the wheel
+scrolls the page, as over any field (Chromium's own stepping of a focused number input is turned
+off). Ctrl with the wheel zooms the page, and a sideways swipe never steps. Text that is no number
+(Firefox lets letters into a number input) goes on commit, and the last number comes back.
 
 ## Without JavaScript, and the element's script
 

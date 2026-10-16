@@ -11,11 +11,8 @@ const same = (a: unknown, b: unknown) =>
     ? a.length === b.length && a.every((item, i) => Object.is(item, b[i]))
     : Object.is(a, b);
 
-export function onFormReset<T>(
-  element: () => Element | undefined,
-  read: () => T,
-  report: (value: T) => void,
-): void {
+/** Calls `atReset` when `element`'s form resets, and what it returns a task later. */
+function listen(element: () => Element | undefined, atReset: () => () => void): void {
   onMount(() => {
     const host = element();
     const form =
@@ -23,12 +20,9 @@ export function onFormReset<T>(
     if (!form) return;
     let timer: ReturnType<typeof setTimeout> | undefined;
     const listener = () => {
-      const before = read();
+      const later = atReset();
       clearTimeout(timer);
-      timer = setTimeout(() => {
-        const after = read();
-        if (!same(before, after)) report(after);
-      });
+      timer = setTimeout(later);
     };
     form.addEventListener("reset", listener);
     onCleanup(() => {
@@ -36,4 +30,23 @@ export function onFormReset<T>(
       form.removeEventListener("reset", listener);
     });
   });
+}
+
+export function onFormReset<T>(
+  element: () => Element | undefined,
+  read: () => T,
+  report: (value: T) => void,
+): void {
+  listen(element, () => {
+    const before = read();
+    return () => {
+      const after = read();
+      if (!same(before, after)) report(after);
+    };
+  });
+}
+
+/** Runs `run` a task after `element`'s form resets, once the controls hold their defaults. */
+export function afterFormReset(element: () => Element | undefined, run: () => void): void {
+  listen(element, () => run);
 }

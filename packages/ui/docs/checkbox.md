@@ -25,17 +25,17 @@ Name it with a wrapping `<label>`, a `<label for>`, a `Field.Label`, or `aria-la
 
 ### Checkbox.Root
 
-| Prop              | Type                         | Default |                                                                                                      |
-| ----------------- | ---------------------------- | ------- | ---------------------------------------------------------------------------------------------------- |
-| `checked`         | `boolean`                    |         | Checks or unchecks it when it changes. Pair it with `onCheckedChange`.                               |
-| `defaultChecked`  | `boolean`                    | `false` | Whether it starts checked; a form reset goes back to it.                                             |
-| `onCheckedChange` | `(checked: boolean) => void` |         | Called after the user checks or unchecks it.                                                         |
-| `bind:checked`    | `Signal<boolean>`            |         | Stands in for `checked` and `onCheckedChange`.                                                       |
-| `indeterminate`   | `boolean`                    | `false` | Neither checked nor unchecked (mixed for assistive technology) until the user toggles it.            |
-| `value`           | `string`                     | `"on"`  | What it submits when checked, and its identity in a Checkbox Group.                                  |
-| `parent`          | `boolean`                    | `false` | The "select all" checkbox of a Checkbox Group: it checks them all and follows them. Never submitted. |
-| `readOnly`        | `boolean`                    | `false` | It cannot be toggled, but stays focusable and is submitted.                                          |
-| `uncheckedValue`  | `string`                     |         | What it submits when unchecked (by the script); by default an unchecked box submits nothing.         |
+| Prop              | Type                         | Default |                                                                                                                         |
+| ----------------- | ---------------------------- | ------- | ----------------------------------------------------------------------------------------------------------------------- |
+| `checked`         | `boolean`                    |         | Checks or unchecks it when it changes. Pair it with `onCheckedChange`.                                                  |
+| `defaultChecked`  | `boolean`                    | `false` | Whether it starts checked; a form reset goes back to it.                                                                |
+| `onCheckedChange` | `(checked: boolean) => void` |         | Called after the user checks or unchecks it.                                                                            |
+| `bind:checked`    | `Signal<boolean>`            |         | Stands in for `checked` and `onCheckedChange`.                                                                          |
+| `indeterminate`   | `boolean`                    | `false` | Neither checked nor unchecked (mixed for assistive technology) until the user toggles it, and again after a form reset. |
+| `value`           | `string`                     | `"on"`  | What it submits when checked, and its identity in a Checkbox Group.                                                     |
+| `parent`          | `boolean`                    | `false` | The "select all" checkbox of a Checkbox Group: it checks them all and follows them. Never submitted.                    |
+| `readOnly`        | `boolean`                    | `false` | It cannot be toggled, but stays focusable and is submitted.                                                             |
+| `uncheckedValue`  | `string`                     |         | What it submits when unchecked (by the script); by default an unchecked box submits nothing.                            |
 
 Every other native prop passes through: `name`, `required`, `disabled`, `form`, `id`, `class`,
 `aria-*`. Inside a Field it takes the field's `id`, `name`, `aria-describedby` and

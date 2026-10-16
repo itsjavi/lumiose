@@ -424,8 +424,9 @@
     outline: 2px solid var(--lu-ring);
     outline-offset: -2px;
   }
+  /* Dimmed by its text, not `opacity`, which would fade its focus ring to 2:1 (TASK-455, L34). */
   .lu-menu :where([role^="menuitem"][aria-disabled="true"]) {
-    opacity: 0.5;
+    color: color-mix(in srgb, var(--lu-muted-foreground) 55%, transparent);
   }
   /* Checkbox and radio marks: a symbol, not only a colour; empty alt text keeps them out of the name. */
   .lu-menu :where([role="menuitemcheckbox"], [role="menuitemradio"])::before {

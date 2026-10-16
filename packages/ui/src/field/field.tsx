@@ -21,6 +21,8 @@ import {
   controlId,
   errorId,
   FieldContext,
+  nextIndex,
+  numbered,
   FormContext,
   type FieldContextValue,
   type FieldValidityState,
@@ -204,6 +206,7 @@ function Root({
     invalid: () => invalid === true || messages().length > 0,
     messages,
     descriptions: signal(0),
+    rendered: new Map(),
     labels: signal(0),
     validity,
   };
@@ -379,7 +382,7 @@ function Description({ children, ...rest }: FieldDescriptionProps) {
   if (isServer) register();
   else onMount(register);
   return (
-    <p {...rest} id={`${field.id}-description`}>
+    <p {...rest} id={numbered(`${field.id}-description`, nextIndex(field, "description"))}>
       {children}
     </p>
   );
@@ -392,11 +395,15 @@ function ErrorPart({ match, children, ...rest }: FieldErrorProps) {
   // writes into the same text node a new server error updates.
   const visible = () => match === true || (match === undefined && field.invalid());
   const message = () => children === undefined;
-  /** `<id>-error`, `<id>-error-invalid`, `<id>-error-always`, `<id>-error-<key>`. */
-  const id = () =>
-    `${errorId(field)}${
-      match === undefined ? (message() ? "" : "-invalid") : match === true ? "-always" : `-${match}`
-    }`;
+  /**
+   * `<id>-error`, `<id>-error-invalid`, `<id>-error-always`, `<id>-error-<key>`; a second Error
+   * of the same kind adds `-2` (TASK-446, L14).
+   */
+  const kind = `${errorId(field)}${
+    match === undefined ? (message() ? "" : "-invalid") : match === true ? "-always" : `-${match}`
+  }`;
+  const index = nextIndex(field, kind);
+  const id = () => numbered(kind, index);
   return (
     // Not a live region: the control's description says it, without re-announcing each keystroke
     // (TASK-439, M31).

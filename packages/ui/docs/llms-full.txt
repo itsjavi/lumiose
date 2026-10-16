@@ -157,6 +157,20 @@ The theme avoids `:dir()`, so it also mirrors in a project whose own `build.cssT
 selectors that misses a `dir` attribute. It uses `[dir="rtl"]` around the component instead, or
 logical properties.
 
+## Localisation
+
+Labels and messages come from your markup, with four English defaults to override for another
+language (TASK-456):
+
+| Default                | Where                                                     | Override                          |
+| ---------------------- | --------------------------------------------------------- | --------------------------------- |
+| "Notifications (F6)"   | [Toast](toast.md)`.Viewport`, the landmark's name         | `aria-label` on `Toast.Viewport`  |
+| "Remove"               | [Combobox](combobox.md)`.Chips`, before each chip's label | `removeLabel` on `Combobox.Chips` |
+| "Increase", "Decrease" | [Number Field](number-field.md)'s step buttons            | `aria-label` on each button       |
+
+Validation messages are the browser's, in its language; a Field's `validate` and a form action's
+errors are yours.
+
 ## Size
 
 `@lumiose/ui` is opt-in, so its size is reported apart from the runtime's caps:
@@ -646,7 +660,7 @@ same.
 | `openOnInputClick`                  | `boolean`                                | `false`      | A click on the input opens the suggestions; otherwise typing and Arrow Down do. |
 | `autoHighlight`                     | `boolean`                                | `false`      | The first suggestion is highlighted as you type, so Enter fills it in.          |
 | `keepHighlight`                     | `boolean`                                | `false`      | A suggestion the pointer highlighted stays highlighted when it leaves the list. |
-| `submitOnItemClick`                 | `boolean`                                | `false`      | A click on a suggestion fills it in and submits the form, as a search box does. |
+| `submitOnItemClick`                 | `boolean`                                | `false`      | Choosing a suggestion (a click, or Enter on it) fills it in and submits the form, as a search box does. |
 | `limit`                             | `number`                                 | no limit     | Shows at most this many suggestions; a narrower text shows the others.          |
 | `name`                              | `string`                                 |              | The name the text is submitted under (the input's).                             |
 | `required`, `disabled`              | `boolean`                                | `false`      | As on a native input.                                                           |
@@ -1077,17 +1091,17 @@ Name it with a wrapping `<label>`, a `<label for>`, a `Field.Label`, or `aria-la
 
 ### Checkbox.Root
 
-| Prop              | Type                         | Default |                                                                                                      |
-| ----------------- | ---------------------------- | ------- | ---------------------------------------------------------------------------------------------------- |
-| `checked`         | `boolean`                    |         | Checks or unchecks it when it changes. Pair it with `onCheckedChange`.                               |
-| `defaultChecked`  | `boolean`                    | `false` | Whether it starts checked; a form reset goes back to it.                                             |
-| `onCheckedChange` | `(checked: boolean) => void` |         | Called after the user checks or unchecks it.                                                         |
-| `bind:checked`    | `Signal<boolean>`            |         | Stands in for `checked` and `onCheckedChange`.                                                       |
-| `indeterminate`   | `boolean`                    | `false` | Neither checked nor unchecked (mixed for assistive technology) until the user toggles it.            |
-| `value`           | `string`                     | `"on"`  | What it submits when checked, and its identity in a Checkbox Group.                                  |
-| `parent`          | `boolean`                    | `false` | The "select all" checkbox of a Checkbox Group: it checks them all and follows them. Never submitted. |
-| `readOnly`        | `boolean`                    | `false` | It cannot be toggled, but stays focusable and is submitted.                                          |
-| `uncheckedValue`  | `string`                     |         | What it submits when unchecked (by the script); by default an unchecked box submits nothing.         |
+| Prop              | Type                         | Default |                                                                                                                         |
+| ----------------- | ---------------------------- | ------- | ----------------------------------------------------------------------------------------------------------------------- |
+| `checked`         | `boolean`                    |         | Checks or unchecks it when it changes. Pair it with `onCheckedChange`.                                                  |
+| `defaultChecked`  | `boolean`                    | `false` | Whether it starts checked; a form reset goes back to it.                                                                |
+| `onCheckedChange` | `(checked: boolean) => void` |         | Called after the user checks or unchecks it.                                                                            |
+| `bind:checked`    | `Signal<boolean>`            |         | Stands in for `checked` and `onCheckedChange`.                                                                          |
+| `indeterminate`   | `boolean`                    | `false` | Neither checked nor unchecked (mixed for assistive technology) until the user toggles it, and again after a form reset. |
+| `value`           | `string`                     | `"on"`  | What it submits when checked, and its identity in a Checkbox Group.                                                     |
+| `parent`          | `boolean`                    | `false` | The "select all" checkbox of a Checkbox Group: it checks them all and follows them. Never submitted.                    |
+| `readOnly`        | `boolean`                    | `false` | It cannot be toggled, but stays focusable and is submitted.                                                             |
+| `uncheckedValue`  | `string`                     |         | What it submits when unchecked (by the script); by default an unchecked box submits nothing.                            |
 
 Every other native prop passes through: `name`, `required`, `disabled`, `form`, `id`, `class`,
 `aria-*`. Inside a Field it takes the field's `id`, `name`, `aria-describedby` and
@@ -1580,9 +1594,11 @@ commands and the anchor stay the parts' own, since they connect the parts.
   Its `type` and `value` are the combobox's. Inside a [Field](field.md), it takes the field's id
   (so `Field.Label` labels it), its description and error references and `aria-invalid`, and Root
   takes the field's `name` and disabled state; the field shows the combobox's validation.
-- **`Trigger`** and **`Clear`**: out of the tab order, as in the APG examples; the input does
+- **`Trigger`** and **`Clear`**: out of the tab order, as in the APG examples; the Trigger has
+  `aria-haspopup`, `aria-controls` and `aria-expanded`, and the input does
   everything from the keyboard. Name them with `aria-label` (or content).
 - **`Group`**: `aria-labelledby` points at its `GroupLabel` while one renders.
+- **`List`**: named by the `Label`, or inside a [Field](field.md) by the field's label.
 
 **Differences from Base UI's Combobox.** No `Portal`, `Positioner`, `Backdrop`, `Arrow`, `Value`,
 `Icon`, `ItemIndicator`, `Row`, `Collection` or `Separator`: the top layer and anchor positioning
@@ -2506,7 +2522,7 @@ import "@lumiose/ui/themes/default.css"; // optional: the default theme
 | `Root`        | `<lu-field>`, a block around the other parts, with `validation-mode`.                                                                        |
 | `Label`       | `<label for="…">`, pointing at the control.                                                                                                  |
 | `Control`     | `<input>`: [Input](input.md), with the field's `id`, `name`, `aria-describedby` and `aria-invalid`.                                          |
-| `Description` | `<p>` that describes the control.                                                                                                            |
+| `Description` | `<p>` that describes the control; several get ids of their own, and the control is described by each.                                        |
 | `Error`       | `<output hidden>`: without children, the field's message (`for` the control); with children, your message. Shown while the field is invalid. |
 | `Validity`    | No element: what its function child returns for the field's validity, in an island.                                                          |
 
@@ -4022,7 +4038,7 @@ import "@lumiose/ui/themes/default.css"; // optional: the default theme
 | `Root`      | `<lu-number-field>` with the range and format as attributes, and an `<input type="hidden">` that submits the number with `format` |
 | `ScrubArea` | `<span data-scrub>`: dragging across it steps the number (usually around the label)                                               |
 | `Group`     | `<div>` around the input and the buttons                                                                                          |
-| `Input`     | `<input type="number" inputmode="decimal" min max step>`, or with `format` `<input type="text" role="spinbutton" aria-value…>`    |
+| `Input`     | `<input type="number" inputmode min max step>`, or with `format` `<input type="text" role="spinbutton" aria-value…>`              |
 | `Increment` | `<button type="button" tabindex="-1" aria-label="Increase" aria-controls="…">`, disabled at `max`                                 |
 | `Decrement` | `<button type="button" tabindex="-1" aria-label="Decrease" aria-controls="…">`, disabled at `min`                                 |
 
@@ -4074,7 +4090,13 @@ because it needs no JavaScript: typing, the arrow keys, `min`, `max` and `step` 
 form value are the browser's.
 
 With `snapOnStep`, each kind of step snaps to its own size: Shift steps 37 up to 40, Alt steps
-1.37 up to 1.4. A native field (no `format`) still validates the value against `step`.
+1.37 up to 1.4. A native field (no `format`) validates the value against `step` without
+JavaScript; the script sets its `step` to `any`, so the values Alt's small step, Home, End and
+clamping give always submit.
+
+The keyboard: `inputmode="decimal"` when `min` is 0 or more, `"text"` otherwise, since iOS's
+decimal keyboard has no minus sign. Digits of other scripts (full-width `１`, Arabic-Indic `٤`) are
+read as numbers.
 
 **Differences from Base UI's NumberField.** No `ScrubAreaCursor`: Base UI draws a cursor because
 its scrub area locks the pointer (which hides the real one); this scrub area keeps the real cursor
@@ -4139,11 +4161,14 @@ scrub area its resize cursor and `touch-action: none`.
 | Tab                     | Moves on: one tab stop, the input (the buttons are not in the tab order). |
 
 Right to left, dragging the scrub area toward the left steps up, as a slider runs. A press on a
-button steps once (by `largeStep` with Shift, `smallStep` with Alt) and keeps focus where it is; holding it steps again every 60 ms
-after 400 ms. A click from a keyboard or a screen reader on a button steps once. Every drag (the
+button steps once (by `largeStep` with Shift, `smallStep` with Alt) and, with a mouse, puts focus
+in the input, so the arrow keys go on stepping (a touch leaves focus where it is, so no virtual
+keyboard opens); holding it steps again every 60 ms after 400 ms. A click from a keyboard or a screen reader on a button steps once. Every drag (the
 scrub area) has the arrow keys as its alternative (WCAG 2.5.7). The wheel steps the number only
-with `allowWheelScrub`, while the input has focus and the pointer is over it (Chromium's own
-stepping of a focused number input is turned off otherwise).
+with `allowWheelScrub`, while the input has focus and the pointer is over it; otherwise the wheel
+scrolls the page, as over any field (Chromium's own stepping of a focused number input is turned
+off). Ctrl with the wheel zooms the page, and a sideways swipe never steps. Text that is no number
+(Firefox lets letters into a number input) goes on commit, and the last number comes back.
 
 ## Without JavaScript, and the element's script
 
@@ -4191,12 +4216,12 @@ import "@lumiose/ui/themes/default.css"; // optional: the default theme
 </OTPField.Root>
 ```
 
-| Part        | Renders                                                                                                                 |
-| ----------- | ----------------------------------------------------------------------------------------------------------------------- |
-| `Root`      | `<lu-otp-field length validation-type>`, with `data-complete`, `data-filled` and `data-focused` from its script         |
-| `Input`     | `<input type="text" autocomplete="one-time-code" inputmode maxlength minlength pattern name>`: the field and its value  |
-| `Slot`      | `<div aria-hidden="true" data-slot>`: the next character (a dot with `mask`), `data-filled`, `data-active` at the caret |
-| `Separator` | `<div aria-hidden="true" data-orientation>`: a dash or a gap between slots                                              |
+| Part        | Renders                                                                                                                       |
+| ----------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `Root`      | `<lu-otp-field length validation-type>`, with `data-complete`, `data-filled` and `data-focused` from its script               |
+| `Input`     | `<input type="text" autocomplete="one-time-code" inputmode maxlength minlength pattern name>` (`type="password"` with `mask`) |
+| `Slot`      | `<div aria-hidden="true" data-slot>`: the next character (a dot with `mask`), `data-filled`, `data-active` at the caret       |
+| `Separator` | `<div aria-hidden="true" data-orientation>`: a dash or a gap between slots                                                    |
 
 Name the field with a [Field](field.md) (`Field.Label`), a `<label for>` the Root's `id`, or an
 `aria-label` on the `Input`.
@@ -4205,24 +4230,24 @@ Name the field with a [Field](field.md) (`Field.Label`), a `<label for>` the Roo
 
 ### OTPField.Root
 
-| Prop                               | Type                                               | Default           |                                                                                     |
-| ---------------------------------- | -------------------------------------------------- | ----------------- | ----------------------------------------------------------------------------------- |
-| `length`                           | `number`                                           |                   | How many characters the code has. Required.                                         |
-| `value`                            | `string`                                           |                   | Shows this code when it changes. Pair it with `onValueChange`.                      |
-| `defaultValue`                     | `string`                                           | `""`              | The code at first; a form reset goes back to it.                                    |
-| `onValueChange`                    | `(value: string) => void`                          |                   | Called as the code changes: typing, a paste, autofill, Backspace.                   |
-| `bind:value`                       | `Signal<string>`                                   |                   | Stands in for `value` and `onValueChange`.                                          |
-| `onValueComplete`                  | `(value: string) => void`                          |                   | Called when the last character is entered.                                          |
-| `onValueInvalid`                   | `(value: string) => void`                          |                   | Called with what was entered when it held characters the field does not allow.      |
-| `validationType`                   | `"numeric" \| "alpha" \| "alphanumeric" \| "none"` | `"numeric"`       | The characters the code may hold; spaces are always dropped.                        |
-| `normalizeValue`                   | `(value: string) => string`                        |                   | Normalizes what is entered before the allowed characters are kept (an island).      |
-| `inputMode`                        | `"numeric" \| "text" \| "tel" \| "none"`           | from the type     | The virtual keyboard: numeric for digits, text otherwise.                           |
-| `mask`                             | `boolean`                                          | `false`           | The slots show dots.                                                                |
-| `autoComplete`                     | `string`                                           | `"one-time-code"` | The input's `autocomplete`.                                                         |
-| `autoSubmit`                       | `boolean`                                          | `false`           | Submits the form when the last character is entered.                                |
-| `name`, `form`                     | `string`                                           |                   | The name the code is submitted under, and the id of its form when it is outside it. |
-| `id`                               | `string`                                           | generated         | The input's id, for a `<label for>`.                                                |
-| `required`, `disabled`, `readOnly` | `boolean`                                          | `false`           | As on a native input.                                                               |
+| Prop                               | Type                                               | Default           |                                                                                                                                                     |
+| ---------------------------------- | -------------------------------------------------- | ----------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `length`                           | `number`                                           |                   | How many characters the code has. Required.                                                                                                         |
+| `value`                            | `string`                                           |                   | Shows this code when it changes. Pair it with `onValueChange`.                                                                                      |
+| `defaultValue`                     | `string`                                           | `""`              | The code at first; a form reset goes back to it.                                                                                                    |
+| `onValueChange`                    | `(value: string) => void`                          |                   | Called as the code changes: typing, a paste, autofill, Backspace.                                                                                   |
+| `bind:value`                       | `Signal<string>`                                   |                   | Stands in for `value` and `onValueChange`.                                                                                                          |
+| `onValueComplete`                  | `(value: string) => void`                          |                   | Called when the last character is entered.                                                                                                          |
+| `onValueInvalid`                   | `(value: string) => void`                          |                   | Called with what was entered when it held characters the field does not allow.                                                                      |
+| `validationType`                   | `"numeric" \| "alpha" \| "alphanumeric" \| "none"` | `"numeric"`       | The characters the code may hold, ASCII as in Base UI (other scripts' digits and full-width letters are typed as ASCII); spaces are always dropped. |
+| `normalizeValue`                   | `(value: string) => string`                        |                   | Normalizes what is entered before the allowed characters are kept (an island).                                                                      |
+| `inputMode`                        | `"numeric" \| "text" \| "tel" \| "none"`           | from the type     | The virtual keyboard: numeric for digits, text otherwise.                                                                                           |
+| `mask`                             | `boolean`                                          | `false`           | The slots show dots, and the input is a password input, so screen readers do not speak the code.                                                    |
+| `autoComplete`                     | `string`                                           | `"one-time-code"` | The input's `autocomplete`.                                                                                                                         |
+| `autoSubmit`                       | `boolean`                                          | `false`           | Submits the form when the last character is entered.                                                                                                |
+| `name`, `form`                     | `string`                                           |                   | The name the code is submitted under, and the id of its form when it is outside it.                                                                 |
+| `id`                               | `string`                                           | generated         | The input's id, for a `<label for>`.                                                                                                                |
+| `required`, `disabled`, `readOnly` | `boolean`                                          | `false`           | As on a native input.                                                                                                                               |
 
 ### The other parts
 
@@ -4294,13 +4319,13 @@ field and hides the slots.
 
 ## Keyboard and focus
 
-| Key                | Does                                                                                   |
-| ------------------ | -------------------------------------------------------------------------------------- |
-| A character        | Fills the caret's slot; in a full field, types over it. Refused characters do nothing. |
-| Backspace / Delete | Deletes the character before or after the caret, as in any text field.                 |
-| Arrow Left / Right | Moves the caret, and the ringed slot, one slot.                                        |
-| Home / End         | The first slot, or after the last character.                                           |
-| Tab                | Moves on: one tab stop.                                                                |
+| Key                | Does                                                                                                               |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------ |
+| A character        | Fills the caret's slot, typing over its character (the ringed slot), as in Base UI. Refused characters do nothing. |
+| Backspace / Delete | Deletes the character before or after the caret, as in any text field.                                             |
+| Arrow Left / Right | Moves the caret, and the ringed slot, one slot.                                                                    |
+| Home / End         | The first slot, or after the last character.                                                                       |
+| Tab                | Moves on: one tab stop.                                                                                            |
 
 A paste fills every slot from the caret, its spaces and dashes dropped, even past what
 `maxlength` would cut. An IME composition (Chinese, Japanese, full-width digits) shows in the
@@ -4321,8 +4346,8 @@ page; pass `dir` to choose.
 ## Browser support
 
 `autocomplete="one-time-code"`: Safari (iOS, macOS) and Chrome on Android offer received codes;
-elsewhere the field is a plain one. `pattern` with `\p{…}` classes needs the `v` flag that every
-current browser uses for `pattern`.
+elsewhere the field is a plain one. The transparent input over the slots is 16px, so iOS Safari
+does not zoom into it on focus.
 
 ## Related
 
@@ -4956,12 +4981,12 @@ Radio Group ships no stylesheet: it needs none to work.
 
 ## Keyboard and focus
 
-| Key                     | Does                                                            |
-| ----------------------- | --------------------------------------------------------------- |
-| Tab                     | Into the group, on the checked radio (or the first); out of it. |
-| Arrow Down, Arrow Right | Checks the next enabled radio, around at the end.               |
-| Arrow Up, Arrow Left    | Checks the previous enabled radio, around at the start.         |
-| Space                   | Checks the focused radio.                                       |
+| Key                     | Does                                                                              |
+| ----------------------- | --------------------------------------------------------------------------------- |
+| Tab                     | Into the group, on the checked radio (or the first, from either side); out of it. |
+| Arrow Down, Arrow Right | Checks the next enabled radio, around at the end.                                 |
+| Arrow Up, Arrow Left    | Checks the previous enabled radio, around at the start.                           |
+| Space                   | Checks the focused radio.                                                         |
 
 Enter does not check a radio. Read-only radios move focus but do not change. Right to left, Arrow
 Left checks the next radio and Arrow Right the previous one.
@@ -5139,7 +5164,7 @@ supported browser.
 
 # Select
 
-> A native `<select>` for picking one value from a list: it works with no JavaScript, submits with its form and keeps the platform's keyboard, typeahead and mobile pickers. Where the browser has customizable select (`appearance: base-select`, Chrome 135, Safari 27), `Select.Trigger` and `Select.Value` shape the button, the picker is styleable and options may hold more than text; elsewhere it is the classic select. No script; `bind:value` keeps a signal in sync in islands.
+> A native `<select>` for picking one value from a list: it works with no JavaScript, submits with its form and keeps the platform's keyboard, typeahead and mobile pickers. Where the browser has customizable select (`appearance: base-select`, Chrome 135, Safari 26), `Select.Trigger` and `Select.Value` shape the button, the picker is styleable and options may hold more than text; elsewhere it is the classic select. No script; `bind:value` keeps a signal in sync in islands.
 
 ```ts
 import { Select } from "@lumiose/ui"; // or "@lumiose/ui/select"
@@ -5195,10 +5220,11 @@ handlers. Name it with a `<label for>` pointing at its `id`, or `aria-label`, or
 
 ### Select.Item
 
-| Prop       | Type      | Default |                                                                   |
-| ---------- | --------- | ------- | ----------------------------------------------------------------- |
-| `value`    | `string`  |         | Required: the value the select takes, and submits, when selected. |
-| `disabled` | `boolean` | `false` | The option cannot be selected; the arrow keys skip it.            |
+| Prop       | Type      | Default |                                                                                                                       |
+| ---------- | --------- | ------- | --------------------------------------------------------------------------------------------------------------------- |
+| `value`    | `string`  |         | Required: the value the select takes, and submits, when selected.                                                     |
+| `disabled` | `boolean` | `false` | The option cannot be selected; the arrow keys skip it.                                                                |
+| `label`    | `string`  |         | The option's text for typeahead and the classic select, when its content starts with an icon or holds more than text. |
 
 ### Select.Group
 
@@ -5353,14 +5379,16 @@ control's value when it changes, and its `change` event calls `onValueChange`.
 ## Browser support
 
 - **Customizable select** (`appearance: base-select`, `::picker(select)`, `<selectedcontent>`, a
-  `<button>` and rich content inside `<select>`): Chrome and Edge 135, Safari 27. Firefox has none
-  yet: it shows its classic select, styled by the theme when closed, with the options' text.
-- In browsers without customizable select, the HTML parser drops the `Trigger` and tags inside
-  options from server HTML, so an island's select falls back to rendering on the client there
-  ([LUM4006](https://itsjavi.com/lumiose/docs/errors/LUM4006/)); keep options to text if that
-  matters to you.
-- **`:open`** comes with customizable select; Safari 27's support is unverified here (the
-  end-to-end tests run in Chromium).
+  `<button>` and rich content inside `<select>`): Chrome and Edge 135, Safari 26 (the end-to-end
+  tests run it in Chromium and WebKit 26.6). Firefox has none yet: it shows its classic select,
+  styled by the theme when closed, with the options' text (or their `label`).
+- Firefox 155 keeps the `Trigger` and the tags inside options in the DOM (`select.css` hides the
+  `Trigger`). Older browsers without customizable select drop them from server HTML, so an
+  island's select falls back to rendering on the client there
+  ([LUM4006](https://itsjavi.com/lumiose/docs/errors/LUM4006/)).
+- **Typeahead** matches an option's text, or its `label`: give options that start with an icon a
+  `label`.
+- **`:open`** comes with customizable select.
 
 ## Related
 
