@@ -3,9 +3,9 @@ id: TASK-380
 title: Navigation Menu
 status: To Do
 assignee:
-  - '@Halo'
+  - '@Beacon'
 created_date: '2026-10-15 16:55'
-updated_date: '2026-10-15 18:05'
+updated_date: '2026-10-16 00:39'
 labels:
   - ui
 milestone: m-12
@@ -39,4 +39,6 @@ User decision 2026-10-15: @lumiose/ui reaches parity with Base UI's components b
 2026-10-15 (user): @lumiose/ui meets WCAG 2.2 AA (decision-62, doc-9 section 17).
 
 2026-10-15 (user): @lumiose/ui is agent-ready like lumiose (decision-64). The component's docs page lives in packages/ui/docs/<component>.md, follows dialog.md's sections (Anatomy, API, Example, Styling, Keyboard and focus, Without JavaScript, Browser support, Related) and is listed in the UI llms.txt.
+
+2026-10-16 (Lux, orchestrator): reassigned to Beacon for batch 7 (the idle Beacon session takes it; it may edit the files the task needs).
 <!-- SECTION:NOTES:END -->

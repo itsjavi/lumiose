@@ -3,8 +3,9 @@ id: TASK-363
 title: Remove examples/ui-spike
 status: To Do
 assignee:
-  - '@Lux'
+  - '@Beacon'
 created_date: '2026-10-15 16:46'
+updated_date: '2026-10-16 00:39'
 labels:
   - ui
 milestone: m-12
@@ -26,3 +27,9 @@ Contract: decision-62 (approved by the user on 2026-10-15 from the TASK-332 spik
 <!-- AC:BEGIN -->
 - [ ] #1 examples/ui-spike is removed and CI no longer runs it
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+2026-10-16 (Lux, orchestrator): reassigned to Beacon for batch 7 (the idle Beacon session takes it; it may edit the files the task needs).
+<!-- SECTION:NOTES:END -->
