@@ -13,6 +13,8 @@
 //   trigger is gone), focus goes to the opener, else to a trigger of the dialog, without scrolling.
 // - Scroll lock (dialog.css locks <html> and keeps its scrollbar's gutter): a <body> that scrolls is
 //   locked too, and a page without a scrollbar gets no empty gutter.
+// - A dialog that closes closes the popovers and dialogs open inside it, innermost first, so none
+//   outlives it (TASK-436 M1; Chromium would keep a popover showing without its dialog).
 // - One Escape closes one layer (TASK-427): an Escape that nothing above took closes the topmost
 //   modal dialog through `requestClose()` (not one with `closedby="none"`), and is cancelled, so
 //   the browser's own close request does not follow. A dialog opened without user activation
@@ -186,6 +188,13 @@ on("toggle", (event) => {
     else each.style.removeProperty("--lu-nested-dialogs");
   }
   if (event.newState !== "closed") return;
+  for (const each of [
+    ...dialog.querySelectorAll<HTMLElement>(":popover-open, dialog[open]"),
+  ].toReversed()) {
+    if (each.closest("lu-toast-viewport")) continue;
+    if (isDialog(each)) each.close();
+    else if (each.matches(":popover-open")) each.hidePopover();
+  }
   // The browser has already restored focus, or failed to: fix only the failure.
   const opener = openers.get(dialog);
   openers.delete(dialog);

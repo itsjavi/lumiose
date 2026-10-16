@@ -17,6 +17,8 @@
 // - When another layer opens outside it, as the auto popover stack does: opening a layer closes the
 //   open layers it is not inside of. Layers nest through the DOM (a submenu inside its menu's
 //   popup, a combobox inside a popover).
+// - With it: a layer that closes, whatever closed it (a bound `open` set to false), closes the
+//   popovers and dialogs open inside it, innermost first (TASK-436 M1).
 //
 // Server HTML keeps `popover="auto"` where a popup should open without JavaScript (Menu, Popover):
 // native light dismiss and Escape work there until a script takes the popup over.
@@ -148,7 +150,22 @@ export function openLayer(layer: Layer): () => void {
     stack.splice(index, 1);
     // Now, not a task later: the next close request belongs to the layer below.
     entry.watcher?.destroy();
+    closeInside(layer.popup);
   };
+}
+
+/**
+ * Closes the popovers and dialogs open inside `popup`, innermost first: they must not outlive it
+ * (a modal dialog left open in a hidden popover has no box, and takes every click). Toasts, whose
+ * region may sit in a dialog, stay.
+ */
+export function closeInside(popup: HTMLElement): void {
+  const open = [...popup.querySelectorAll<HTMLElement>(":popover-open, dialog[open]")];
+  for (const each of open.toReversed()) {
+    if (each.localName === "lu-toast-viewport" || each.closest("lu-toast-viewport")) continue;
+    if (each instanceof HTMLDialogElement) each.close();
+    else if (each.matches(":popover-open")) each.hidePopover();
+  }
 }
 
 // Pointer moves that are not movements (doc-9 section 1, TASK-361): when the keyboard scrolls a

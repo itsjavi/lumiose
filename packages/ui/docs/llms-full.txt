@@ -2176,7 +2176,7 @@ The browser's modal dialog provides the
   keyboard opens over it (an `autofocus` element still gets focus).
 - **On close**, focus returns to the element that had it before: the trigger, or the button that
   set the signal. If that element is gone, focus goes to another trigger of the dialog, without
-  scrolling the page.
+  scrolling the page. The popovers, menus and dialogs open inside it close with it.
 - **A click outside** closes a dialog, not an alert dialog, and only the dialog on top. A press
   that starts inside and ends outside, such as selecting text, does not count, and neither does a
   right-click or a second finger.
@@ -4436,20 +4436,26 @@ them: `--lu-side-offset` and `--lu-align-offset`.
 | Shift+Tab    | From the start of the popup, back to the trigger. The popover stays open.                                                        |
 | Escape       | Closes the popover on top. With nested popovers, or a popover in a dialog, one Escape closes one layer.                          |
 
-- **On open**, focus moves to the first focusable element in the popup, or to the popup itself
-  when it has none. Opened by touch, the popup focuses itself, so no virtual keyboard opens.
+- **On open**, focus moves to the popup's first tab stop (the checked radio of a group, not an
+  item a roving widget takes out of the order), or to the popup itself when it has none. Opened by touch, the popup focuses itself, so no virtual keyboard opens.
 - **On close**, focus returns to the trigger without scrolling, unless a click outside landed on
   another control, which keeps it. Escape and the close buttons return it too.
+- **Tab past the popup** closes it, so it never covers the control that takes focus; Shift+Tab
+  back to its trigger keeps it open, and so does focus moving into a toast.
+- **Closing it**, whatever closed it (a bound `open` set to false), closes the popovers, menus and
+  dialogs open inside it.
 - **A click outside** closes the popover; a right-click or a second finger does not. A press inside a nested popover does not close its
   parent, and opening another popover closes the first.
 - Popovers opened from a dialog belong inside its `Popup`: everything outside a modal dialog is
   inert.
-- **Opened on hover**, the popover leaves focus where it is; it stays open while the pointer is on
-  the trigger or the popup, and Escape closes it without moving the pointer (WCAG 1.4.13).
+- **Opened on hover**, the popover leaves focus where it is, and closing it moves none (unless
+  focus had gone into it); it stays open while the pointer is on the trigger or the popup, and
+  Escape closes it without moving the pointer (WCAG 1.4.13).
 - **A modal popover** keeps Tab inside it (the page behind it is inert), and Escape, a press
   outside or a close button closes it; focus returns to the trigger.
-- **`modal="trap-focus"`** keeps Tab and Shift+Tab going around inside the popup, and nothing
-  else: the page scrolls, and a press outside lands where it is pressed (and closes the popover).
+- **`modal="trap-focus"`** keeps Tab and Shift+Tab going around the popup's tab stops (a radio
+  group is one stop, as a roving toolbar is), and nothing else: the page scrolls, and a press
+  outside lands where it is pressed (and closes the popover).
 
 ## Without JavaScript, and the client script
 

@@ -1,4 +1,4 @@
-import { Dialog, Popover, PreviewCard } from "@lumiose/ui";
+import { Dialog, Menu, Popover, PreviewCard } from "@lumiose/ui";
 import { Title } from "lumiose";
 
 // Server-rendered, no island: layers inside layers, for the shared dismissal model (layer.ts and
@@ -58,11 +58,40 @@ export default function LayersPage() {
                   <p>A web framework.</p>
                 </PreviewCard.Popup>
               </PreviewCard.Root>
+              <Menu.Root>
+                <Menu.Trigger class="lu-button">Options</Menu.Trigger>
+                <Menu.Popup class="lu-menu">
+                  <Menu.Item>Reset</Menu.Item>
+                  <Menu.Item>Export</Menu.Item>
+                </Menu.Popup>
+              </Menu.Root>
               <footer>
                 <Dialog.Close class="lu-button">Done</Dialog.Close>
               </footer>
             </Dialog.Popup>
           </Dialog.Root>
+        </section>
+
+        <section aria-labelledby="closing-heading">
+          <h2 id="closing-heading">Closing takes the inner layers along</h2>
+          <Popover.Root>
+            <Popover.Trigger class="lu-button">Outer</Popover.Trigger>
+            <Popover.Popup class="lu-popover" side="bottom" align="start" sideOffset={8}>
+              <Popover.Title>Outer</Popover.Title>
+              <Dialog.Root>
+                <Dialog.Trigger class="lu-button">Open dialog</Dialog.Trigger>
+                <Dialog.Popup class="lu-dialog">
+                  <Dialog.Title>Inner dialog</Dialog.Title>
+                  <footer>
+                    <Dialog.Close class="lu-button">Close</Dialog.Close>
+                  </footer>
+                </Dialog.Popup>
+              </Dialog.Root>
+            </Popover.Popup>
+          </Popover.Root>
+          <button type="button" class="lu-button">
+            Elsewhere
+          </button>
         </section>
       </div>
     </>

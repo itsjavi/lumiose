@@ -197,7 +197,7 @@ The browser's modal dialog provides the
   keyboard opens over it (an `autofocus` element still gets focus).
 - **On close**, focus returns to the element that had it before: the trigger, or the button that
   set the signal. If that element is gone, focus goes to another trigger of the dialog, without
-  scrolling the page.
+  scrolling the page. The popovers, menus and dialogs open inside it close with it.
 - **A click outside** closes a dialog, not an alert dialog, and only the dialog on top. A press
   that starts inside and ends outside, such as selecting text, does not count, and neither does a
   right-click or a second finger.

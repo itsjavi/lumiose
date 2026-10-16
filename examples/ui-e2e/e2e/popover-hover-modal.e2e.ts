@@ -168,21 +168,47 @@ test.describe("the safe triangle and trap-focus (TASK-410)", () => {
     const filters = card(page, "Filters");
     await trigger(page, "Filters").click();
     await expect(filters).toBeVisible();
+    const week = filters.getByRole("radio", { name: "Week" });
     const from = filters.getByRole("textbox", { name: "From" });
     const done = filters.getByRole("button", { name: "Done" });
+    const newest = filters.getByRole("radio", { name: "Newest" });
+    // The first tab stop: the checked radio of the first group (TASK-436 M4).
+    await expect(week).toBeFocused();
+    await page.keyboard.press("Tab");
     await expect(from).toBeFocused();
     await page.keyboard.press("Tab");
     await page.keyboard.press("Tab");
     await expect(done).toBeFocused();
     await page.keyboard.press("Tab");
-    await expect(from).toBeFocused();
+    await expect(newest).toBeFocused();
+    // From the last tab stop, the checked radio of the last group, around to the first.
+    await page.keyboard.press("Tab");
+    await expect(week).toBeFocused();
     await page.keyboard.press("Shift+Tab");
-    await expect(done).toBeFocused();
+    await expect(newest).toBeFocused();
     // Not modal otherwise: the page scrolls, and a press outside lands (and closes it).
     expect(await page.evaluate(() => document.documentElement.style.overflow)).toBe("");
     await page.getByRole("button", { name: "Behind" }).click();
     await expect(filters).toBeHidden();
     await expect(page.getByRole("button", { name: "Behind" })).toBeFocused();
+  });
+});
+
+test.describe("focus after a hover (TASK-436 M3)", () => {
+  test("a popover a hover opened and closed moves no focus", async ({ page }) => {
+    await ready(page);
+    await hover(page, "Ada Lovelace");
+    const ada = card(page, "Ada Lovelace");
+    await expect(ada).toBeVisible();
+    await page.mouse.move(5, 5);
+    await expect(ada).toBeHidden();
+    expect(await page.evaluate(() => document.activeElement === document.body)).toBe(true);
+    // Escape too.
+    await hover(page, "Ada Lovelace");
+    await expect(ada).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(ada).toBeHidden();
+    expect(await page.evaluate(() => document.activeElement === document.body)).toBe(true);
   });
 });
 

@@ -104,9 +104,12 @@ test.describe("keyboard and focus", () => {
     const help = page.getByRole("dialog").filter({ hasText: "Press Tab to leave." });
     const link = help.getByRole("link", { name: "Read more" });
     await expect(link).toBeFocused();
+    // Held before the Tab: leaving for another element closes the popup (TASK-436 M2).
+    const popup = (await help.elementHandle())!;
     await page.keyboard.press("Tab");
-    await expect(link).not.toBeFocused();
-    expect(await help.evaluate((el) => el.contains(document.activeElement))).toBe(false);
+    await expect
+      .poll(() => popup.evaluate((el) => el.contains(document.activeElement)))
+      .toBe(false);
   });
 
   test("a popup with nothing to focus takes focus itself", async ({ page }) => {
@@ -363,6 +366,32 @@ test("a server-rendered page with popovers loads only Popover's client script", 
     expect.stringMatching(/\/place-[\w-]+\.js$/),
     expect.stringMatching(/\/popover\.script-[\w-]+\.js$/),
   ]);
+});
+
+test.describe("focus leaving (TASK-436 M2)", () => {
+  test("Tab past a non-modal popover closes it, so it covers nothing focused (2.4.11)", async ({
+    page,
+  }) => {
+    await page.goto("/popover");
+    const trigger = page.getByRole("button", { name: "Notifications", exact: true });
+    await trigger.focus();
+    await page.keyboard.press("Enter");
+    const popup = page.getByRole("dialog", { name: "Notifications" });
+    await expect(popup).toBeVisible();
+    await expect(popup.getByRole("link", { name: "Settings" })).toBeFocused();
+    await page.keyboard.press("Tab");
+    await expect(popup.getByRole("button", { name: "Close" })).toBeFocused();
+    await page.keyboard.press("Tab");
+    await expect(popup).toBeHidden();
+    await expect(page.getByRole("button", { name: "Next step" })).toBeFocused();
+    // Shift+Tab back to its trigger keeps it open.
+    await trigger.focus();
+    await page.keyboard.press("Enter");
+    await expect(popup.getByRole("link", { name: "Settings" })).toBeFocused();
+    await page.keyboard.press("Shift+Tab");
+    await expect(trigger).toBeFocused();
+    await expect(popup).toBeVisible();
+  });
 });
 
 test.describe("WCAG 2.2 AA with the default theme (doc-9 section 17)", () => {

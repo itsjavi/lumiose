@@ -66,6 +66,16 @@ export default function PopoverHoverModalPage() {
             {/* Beside its trigger, clear of "Behind" below it, which a press outside reaches. */}
             <Popover.Popup class="lu-popover" side="right" align="start" sideOffset={8}>
               <Popover.Title>Filters</Popover.Title>
+              {/* Radio groups: one tab stop each, the checked radio (TASK-436 M4). */}
+              <fieldset>
+                <legend>Range</legend>
+                <label>
+                  <input type="radio" name="range" value="day" /> Day
+                </label>
+                <label>
+                  <input type="radio" name="range" value="week" checked /> Week
+                </label>
+              </fieldset>
               <label>
                 From <input class="lu-input" value="2024" />
               </label>
@@ -73,6 +83,15 @@ export default function PopoverHoverModalPage() {
                 To <input class="lu-input" value="2026" />
               </label>
               <Popover.Close class="lu-button">Done</Popover.Close>
+              <fieldset>
+                <legend>Order</legend>
+                <label>
+                  <input type="radio" name="order" value="newest" checked /> Newest
+                </label>
+                <label>
+                  <input type="radio" name="order" value="oldest" /> Oldest
+                </label>
+              </fieldset>
             </Popover.Popup>
           </Popover.Root>
           <button type="button" class="lu-button">

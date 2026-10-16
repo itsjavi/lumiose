@@ -73,3 +73,39 @@ test.describe("one Escape closes one layer (TASK-427)", () => {
     await expect(dialog(page, "Settings")).toBeHidden();
   });
 });
+
+test.describe("closing a layer closes the layers inside it (TASK-436 M1)", () => {
+  test("a popover closed by script closes the modal dialog opened from it", async ({ page }) => {
+    await page.goto("/layers");
+    await page.getByRole("button", { name: "Outer", exact: true }).click();
+    const outer = dialog(page, "Outer");
+    await expect(outer).toBeVisible();
+    await outer.getByRole("button", { name: "Open dialog" }).click();
+    const inner = dialog(page, "Inner dialog");
+    await expect(inner).toBeVisible();
+    // Any close by script, a bound `open` set to false say.
+    await page
+      .locator("[popover]", { has: page.getByText("Open dialog") })
+      .evaluate((el) => (el as HTMLElement).hidePopover());
+    await expect(outer).toBeHidden();
+    await expect(inner).toBeHidden();
+    expect(await page.evaluate(() => document.querySelector("dialog[open]"))).toBeNull();
+    // The page takes presses again.
+    await page.getByRole("button", { name: "Elsewhere" }).click();
+    await expect(page.getByRole("button", { name: "Elsewhere" })).toBeFocused();
+  });
+
+  test("a dialog closed by script closes the menu open in it", async ({ page }) => {
+    await page.goto("/layers");
+    await page.getByRole("button", { name: "Settings…" }).click();
+    const settings = dialog(page, "Settings");
+    await expect(settings).toBeVisible();
+    await settings.getByRole("button", { name: "Options" }).click();
+    const menu = page.getByRole("menu");
+    await expect(menu).toBeVisible();
+    await settings.evaluate((el) => (el as HTMLDialogElement).close());
+    await expect(settings).toBeHidden();
+    await expect(menu).toBeHidden();
+    expect(await page.evaluate(() => document.querySelectorAll(":popover-open").length)).toBe(0);
+  });
+});
