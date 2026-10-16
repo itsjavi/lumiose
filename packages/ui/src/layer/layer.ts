@@ -9,8 +9,11 @@
 //   cancelled: that is why the scripts make their popups manual instead of leaving dismissal to
 //   `popover="auto"`.
 // - On a close request: an Escape that no handler took (`preventDefault`), or the Android back
-//   gesture, through a `CloseWatcher` per layer where the browser has one, else an Escape listener.
-//   One request closes the topmost layer only.
+//   gesture. One request closes the topmost layer only. Escape is handled on `keydown` in every
+//   browser (and cancelled, so no native close request follows): a `CloseWatcher` created without
+//   user activation joins the previous one's group, and one close request would close the whole
+//   group, a hover-opened popover and the dialog it is in, say (TASK-427). A layer opened with user
+//   activation also gets a `CloseWatcher`, for the Android back gesture.
 // - When another layer opens outside it, as the auto popover stack does: opening a layer closes the
 //   open layers it is not inside of. Layers nest through the DOM (a submenu inside its menu's
 //   popup, a combobox inside a popover).
@@ -113,8 +116,14 @@ if (typeof document !== "undefined") {
   document.addEventListener("pointerup", onPointerUp, true);
   // Before the close request an Escape makes, so a removed layer's watcher does not take it.
   document.addEventListener("keydown", prune, true);
-  if (typeof CloseWatcher !== "function") document.addEventListener("keydown", onKeyDown);
+  // In the bubble phase, after a layer's own handlers (Menu's, Tooltip's), which cancel the key.
+  document.addEventListener("keydown", onKeyDown);
 }
+
+/** Whether the page has transient user activation (a click, a key) to give a CloseWatcher. */
+const activated = () =>
+  (navigator as Navigator & { userActivation?: { isActive: boolean } }).userActivation?.isActive ===
+  true;
 
 /**
  * Starts dismissing `layer`, whose popup opens, and closes the open layers it is not inside of.
@@ -126,7 +135,8 @@ export function openLayer(layer: Layer): () => void {
     if (stack.includes(entry) && !entry.layer.contains(layer.popup)) entry.layer.dismiss();
   }
   const entry: Entry = { layer };
-  if (typeof CloseWatcher === "function") {
+  // Without activation, a watcher would join the group of the one before (see above).
+  if (typeof CloseWatcher === "function" && activated()) {
     const watcher = new CloseWatcher();
     watcher.addEventListener("close", () => layer.dismiss());
     entry.watcher = watcher;

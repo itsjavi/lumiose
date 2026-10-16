@@ -13,6 +13,11 @@
 //   trigger is gone), focus goes to the opener, else to a trigger of the dialog, without scrolling.
 // - Scroll lock (dialog.css locks <html> and keeps its scrollbar's gutter): a <body> that scrolls is
 //   locked too, and a page without a scrollbar gets no empty gutter.
+// - One Escape closes one layer (TASK-427): an Escape that nothing above took closes the topmost
+//   modal dialog through `requestClose()` (not one with `closedby="none"`), and is cancelled, so
+//   the browser's own close request does not follow. A dialog opened without user activation
+//   (by a timer) shares a close-watcher group with the dialog or popover before it, and that
+//   request would close the whole group.
 //
 // It must not import `lumiose`: server-rendered pages load it without the runtime.
 
@@ -23,6 +28,8 @@ let touched: HTMLDialogElement | undefined;
 const openers = new WeakMap<HTMLDialogElement, HTMLElement>();
 /** Undoes the scroll lock's inline styles once no modal dialog is open. */
 let unlock: (() => void) | undefined;
+/** The open modal dialogs, in the order they opened: the last is on top. */
+const modals: HTMLDialogElement[] = [];
 
 function on<K extends keyof DocumentEventMap>(
   type: K,
@@ -136,10 +143,41 @@ on("focusin", (event) => {
   dialog.focus({ preventScroll: true });
 });
 
+/**
+ * Whether a native popup is open above `dialog`: a select's picker, or a popover that no layer
+ * script runs (the toast viewport, always open, aside). The browser's close request is its.
+ */
+function popupAbove(dialog: HTMLDialogElement): boolean {
+  const popovers = [...document.querySelectorAll(":popover-open")].filter(
+    (popover) => popover.localName !== "lu-toast-viewport" && !popover.contains(dialog),
+  );
+  if (popovers.length > 0) return true;
+  try {
+    return dialog.querySelector("select:open") !== null;
+  } catch {
+    // No `:open` (Firefox): no customizable select picker either.
+    return false;
+  }
+}
+
+// On `window`, after the layers' listeners on `document`: an open layer takes the Escape first.
+window.addEventListener("keydown", (event) => {
+  if (event.key !== "Escape" || event.defaultPrevented || event.isComposing) return;
+  const dialog = modals.filter((each) => each.isConnected && each.matches(":modal")).at(-1);
+  if (!dialog || popupAbove(dialog)) return;
+  event.preventDefault();
+  if (dialog.getAttribute("closedby") === "none") return;
+  if (dialog.requestClose) dialog.requestClose();
+  else if (dialog.dispatchEvent(new Event("cancel", { cancelable: true }))) dialog.close();
+});
+
 on("toggle", (event) => {
   const dialog = event.target;
   if (!isDialog(dialog)) return;
   touched = undefined;
+  const at = modals.indexOf(dialog);
+  if (at !== -1) modals.splice(at, 1);
+  if (event.newState === "open" && dialog.matches(":modal")) modals.push(dialog);
   if (!document.querySelector("dialog:modal")) unlock?.();
   for (const each of document.querySelectorAll("dialog")) {
     const nested = each.querySelectorAll("dialog[open]").length;

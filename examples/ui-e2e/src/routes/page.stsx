@@ -22,6 +22,9 @@ export default function Home() {
           <a href="/tabs">Tabs</a> (<a href="/tabs/island">in an island</a>)
         </li>
         <li>
+          <a href="/layers">Layers</a>: popovers, cards and dialogs inside each other
+        </li>
+        <li>
           <a href="/menu">Menu</a> (<a href="/menu/island">in an island</a>)
         </li>
         <li>

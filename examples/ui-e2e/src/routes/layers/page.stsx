@@ -1,0 +1,70 @@
+import { Dialog, Popover, PreviewCard } from "@lumiose/ui";
+import { Title } from "lumiose";
+
+// Server-rendered, no island: layers inside layers, for the shared dismissal model (layer.ts and
+// Dialog's script, TASK-427). The popovers open on hover, which gives the page no user
+// activation: their close watchers would join one group, and one Escape close them all.
+export default function LayersPage() {
+  return (
+    <>
+      <Title>Layers</Title>
+      <h1>Layers</h1>
+      <div class="grid">
+        <section aria-labelledby="hover-heading">
+          <h2 id="hover-heading">Hover in hover</h2>
+          <Popover.Root>
+            <Popover.Trigger class="lu-button" openOnHover delay={100}>
+              Account
+            </Popover.Trigger>
+            <Popover.Popup class="lu-popover" side="bottom" align="start" sideOffset={8}>
+              <Popover.Title>Account</Popover.Title>
+              <Popover.Root>
+                <Popover.Trigger class="lu-button" openOnHover delay={100}>
+                  Plan details
+                </Popover.Trigger>
+                <Popover.Popup class="lu-popover" side="right" align="start" sideOffset={8}>
+                  <Popover.Title>Plan details</Popover.Title>
+                  <Popover.Description>Renews every month.</Popover.Description>
+                </Popover.Popup>
+              </Popover.Root>
+            </Popover.Popup>
+          </Popover.Root>
+        </section>
+
+        <section aria-labelledby="dialog-heading">
+          <h2 id="dialog-heading">Hover in a dialog</h2>
+          <Dialog.Root>
+            <Dialog.Trigger class="lu-button">Settings…</Dialog.Trigger>
+            <Dialog.Popup class="lu-dialog">
+              <Dialog.Title>Settings</Dialog.Title>
+              <Popover.Root>
+                <Popover.Trigger class="lu-button" openOnHover delay={100}>
+                  What is this?
+                </Popover.Trigger>
+                <Popover.Popup class="lu-popover" side="bottom" align="start" sideOffset={8}>
+                  <Popover.Description>Settings for this page only.</Popover.Description>
+                </Popover.Popup>
+              </Popover.Root>
+              <PreviewCard.Root>
+                <p>
+                  Built with{" "}
+                  <PreviewCard.Trigger href="#lumiose" delay={100}>
+                    Lumiose
+                  </PreviewCard.Trigger>
+                  .
+                </p>
+                <PreviewCard.Popup class="lu-preview-card">
+                  <strong>Lumiose</strong>
+                  <p>A web framework.</p>
+                </PreviewCard.Popup>
+              </PreviewCard.Root>
+              <footer>
+                <Dialog.Close class="lu-button">Done</Dialog.Close>
+              </footer>
+            </Dialog.Popup>
+          </Dialog.Root>
+        </section>
+      </div>
+    </>
+  );
+}

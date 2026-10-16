@@ -328,8 +328,8 @@ The element is also an API of its own, for scripts and other frameworks:
   27 fully). Elsewhere the script places it with the same sides, alignment, offsets and flips.
 - **Invoker commands**: Chrome 135, Firefox 144, Safari 26.2; elsewhere the element handles the
   buttons' clicks.
-- **`CloseWatcher`**, for the Android back gesture: Chrome 126, Firefox 149. Elsewhere Escape still
-  closes the popup.
+- **`CloseWatcher`**, for the Android back gesture on a popup opened by a click, a tap or a key:
+  Chrome 126, Firefox 149. Escape is handled on its own in every browser, one layer at a time.
 
 ## Related
 
