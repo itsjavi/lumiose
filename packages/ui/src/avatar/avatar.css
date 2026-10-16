@@ -2,7 +2,7 @@
  * Avatar: `<lu-avatar>` stacks its image over its fallback in one grid cell, so showing one never
  * moves the other. Where scripting is enabled the image stays hidden while it loads (server HTML
  * marks it `data-loading`) and after it fails, and the fallback hides once it has loaded; without
- * JavaScript the image simply covers the fallback when it loads. `visibility`, not `display`, so a
+ * JavaScript an avatar with an image shows the image alone. `visibility`, not `display`, so a
  * `loading="lazy"` image still loads. The fallback's `delay` is a zero-length animation that keeps
  * it hidden that long.
  */
@@ -31,6 +31,16 @@
   }
   lu-avatar[data-loaded] > [data-fallback] {
     visibility: hidden;
+  }
+  /*
+   * Without JavaScript nothing tells a failed image from a loaded one: the image is the avatar,
+   * and the fallback behind it stays out of sight and out of the accessibility tree, which would
+   * name the avatar twice (TASK-445 L8).
+   */
+  @media (scripting: none) {
+    lu-avatar:has(> img) > [data-fallback] {
+      visibility: hidden;
+    }
   }
   lu-avatar > [data-fallback] {
     animation: lu-avatar-delay 0s var(--lu-avatar-delay, 0s) backwards;

@@ -725,7 +725,7 @@ As [Combobox](combobox.md#browser-support): popover, and CSS anchor positioning 
 
 # Avatar
 
-> A person's picture with a fallback, such as their initials, after Base UI's Avatar: the image loads in the server HTML and shows once it has loaded, the fallback shows until then, after an optional delay, and when the image fails. Both sit in one cell, so neither moves the other. A 0.5 kB script follows the image's loading status; without JavaScript the image covers the fallback when it loads.
+> A person's picture with a fallback, such as their initials, after Base UI's Avatar: the image loads in the server HTML and shows once it has loaded, the fallback shows until then, after an optional delay, and when the image fails. Both sit in one cell, so neither moves the other. A 0.5 kB script follows the image's loading status; without JavaScript an avatar with an image shows the image alone.
 
 ```ts
 import { Avatar } from "@lumiose/ui"; // or "@lumiose/ui/avatar"
@@ -899,8 +899,10 @@ An avatar takes no focus and has no keys. Name it once:
 
 ## Without JavaScript, and the client script
 
-The image and the fallback are in the server HTML. Without JavaScript both show, the image above:
-it covers the fallback once it loads, and the browser's broken-image box replaces it when it fails.
+The image and the fallback are in the server HTML. Without JavaScript nothing tells a failed image
+from a loaded one, so an avatar with an image shows the image alone (the browser's broken-image box
+when it fails) and hides its fallback, from sight and from assistive technology, which would name
+the avatar twice; an avatar without an image shows its fallback.
 `onLoadingStatusChange` needs the component to run in an island.
 
 A page that renders an `Avatar` loads a 0.5 kB (brotli) script, without the Lumiose runtime;
