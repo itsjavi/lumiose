@@ -5,6 +5,7 @@
 import { effect, signal, untrack } from "lumiose";
 import checkboxScript from "../checkbox/checkbox.script.ts?client";
 import { CheckboxGroupContext } from "../checkbox/context.ts";
+import { useFormValues } from "../field/context.ts";
 
 /** The fieldset props CheckboxGroup passes through, without the brand of intrinsic elements' props. */
 type FieldsetProps = Omit<JSX.IntrinsicElements["fieldset"], symbol>;
@@ -47,7 +48,12 @@ export function CheckboxGroup({
   ...rest
 }: CheckboxGroupProps) {
   checkboxScript();
-  const values = signal<readonly string[]>(untrack(() => value ?? defaultValue ?? []));
+  // A failed submission's values (a Form's `values`) replace the default (TASK-430).
+  const sent = useFormValues(
+    untrack(() => name),
+    untrack(() => rest.disabled),
+  );
+  const values = signal<readonly string[]>(untrack(() => value ?? sent ?? defaultValue ?? []));
   // The `value` prop drives the checkboxes when it changes.
   effect(() => {
     const next = value;

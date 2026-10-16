@@ -65,7 +65,7 @@ pages, render on the `server` and send `cache-control` headers to a CDN.
 | Server components, `async` components                    | Every component on `static` and `server` routes. Async components also work in islands and `spa` routes, in the browser.                           |
 | `"use client"`                                           | A `client:*` directive at the usage site: `client:load`, `client:idle`, `client:visible`, `client:media`; or an `spa` route.                       |
 | `dynamic(() => import(…), { ssr: false })`               | `client:only`: rendered in the browser only.                                                                                                       |
-| Serializable props of client components                  | The same rule for island props, which also accept `Date`, `Map`, `Set`, `URL` and `BigInt` ([LUM4002](../errors/LUM4002.md)).                      |
+| Serializable props of client components                  | The same rule for island props, which also accept `Date`, `Map`, `Set`, `URL`, `BigInt` and `FormData` ([LUM4002](../errors/LUM4002.md)).          |
 | `import "server-only"`                                   | `*.server.ts` modules or `src/server/`: importing them from browser code is [LUM4003](../errors/LUM4003.md).                                       |
 | `fetch()` in a server component, `React.cache()`         | `await fetchJSON(url)` or `await query(key, fn)` in the component: one request per URL or key per request; same-origin URLs are served in-process. |
 | `"use cache"`, `cacheLife`, `cacheTag`, `unstable_cache` | No cross-request data cache: the request cache above, `cache-control` headers for a CDN, or a cache of your own in a server module.                |

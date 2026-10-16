@@ -57,6 +57,49 @@ async function fillValid(page: Page, name = "ada") {
   await page.getByRole("checkbox", { name: "I accept the terms" }).check();
 }
 
+/** Fills every control with values other than the defaults, and "taken" as the username. */
+async function fillTaken(page: Page) {
+  await fillValid(page, "taken");
+  await page.getByRole("combobox", { name: "Plan" }).selectOption("free");
+  await page.getByRole("checkbox", { name: "olives" }).check();
+  await page.getByRole("checkbox", { name: "cheese" }).uncheck();
+  await page.getByRole("radio", { name: "Extra large" }).check();
+  await page.getByRole("switch", { name: "Newsletter" }).uncheck();
+}
+
+/** After the failed submission: the error, and every control as the user left it (TASK-430). */
+async function expectRefilled(page: Page) {
+  await expect(page.getByText("That username is taken.")).toBeVisible();
+  await expect(username(page)).toHaveValue("taken");
+  await expect(email(page)).toHaveValue("ada@example.com");
+  await expect(page.getByRole("combobox", { name: "Plan" })).toHaveValue("free");
+  await expect(page.getByRole("checkbox", { name: "olives" })).toBeChecked();
+  await expect(page.getByRole("checkbox", { name: "cheese" })).not.toBeChecked();
+  await expect(page.getByRole("radio", { name: "Extra large" })).toBeChecked();
+  await expect(page.getByRole("switch", { name: "Newsletter" })).not.toBeChecked();
+  await expect(page.getByRole("checkbox", { name: "I accept the terms" })).toBeChecked();
+}
+
+test.describe("a failed action keeps what the user entered (TASK-430)", () => {
+  test("with JavaScript", async ({ page }) => {
+    await ready(page);
+    await fillTaken(page);
+    await submitButton(page).click();
+    await expectRefilled(page);
+  });
+
+  test.describe("without JavaScript", () => {
+    test.use({ javaScriptEnabled: false });
+
+    test("the page renders back filled in", async ({ page }) => {
+      await page.goto("/form");
+      await fillTaken(page);
+      await submitButton(page).click();
+      await expectRefilled(page);
+    });
+  });
+});
+
 test.describe("without JavaScript", () => {
   test.use({ javaScriptEnabled: false });
 

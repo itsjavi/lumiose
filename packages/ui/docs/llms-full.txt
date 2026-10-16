@@ -2809,13 +2809,22 @@ import { Form } from "@lumiose/ui"; // or "@lumiose/ui/form"
 
 ### Form
 
-| Prop             | Type                                   | Default      |                                                                                                                                |
-| ---------------- | -------------------------------------- | ------------ | ------------------------------------------------------------------------------------------------------------------------------ |
-| `errors`         | `object`                               |              | The server's errors by field name: a message or several for each `Field.Root` `name`, such as `actionData()` after a `fail()`. |
-| `validationMode` | `"onSubmit" \| "onBlur" \| "onChange"` | `"onSubmit"` | When the fields show their errors, unless a field sets its own.                                                                |
+| Prop             | Type                                                              | Default      |                                                                                                                                      |
+| ---------------- | ----------------------------------------------------------------- | ------------ | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `errors`         | `object`                                                          |              | The server's errors by field name: a message or several for each `Field.Root` `name`, such as `actionData()` after a `fail()`.       |
+| `validationMode` | `"onSubmit" \| "onBlur" \| "onChange"`                            | `"onSubmit"` | When the fields show their errors, unless a field sets its own.                                                                      |
+| `values`         | `FormData`, `URLSearchParams` or `{ [name]: string \| string[] }` |              | The values to fill the controls with after a failed submission, by name, such as the `FormData` an action passes back with `fail()`. |
 
 Every other `<form>` prop passes through: `method`, `action`, `onSubmit` (Lumiose's `submit`),
 `novalidate`, `class`.
+
+**`values`** replace the controls' defaults, by `name` (the control's, or its Field's): the text of
+an Input (Field.Control), an Autocomplete, a Select, a Number Field or a Slider, the checked state of
+a Checkbox or Switch (a name the submission left out means unchecked), and a Checkbox Group's,
+Radio Group's or Combobox's selection. Controls with a `value` (or `bind:`) keep theirs, and
+passwords, files, hidden inputs, OTP Fields and disabled controls (also in a disabled
+`Fieldset.Root`) are never filled. So after a failed action the page renders the form as the user
+left it, with JavaScript or without (WCAG 3.3.7, redundant entry).
 
 **Differences from Base UI's Form.** No `onFormSubmit` or `actionsRef`: the form is native and
 Lumiose's form actions post it (`action="?/name"`, `onSubmit={submit}`). Base UI sets
@@ -2834,7 +2843,8 @@ export const actions = {
   async signup(ctx: ActionContext) {
     const form = await ctx.formData();
     if (form.get("username") === "admin") {
-      return fail(400, { username: "That username is taken." });
+      // The errors, and what the user typed: the form renders back filled in.
+      return fail(400, { errors: { username: "That username is taken." }, values: form });
     }
     return { welcome: String(form.get("username")) };
   },
@@ -2842,8 +2852,9 @@ export const actions = {
 
 export function SignupForm() {
   const result = actionData<typeof actions>();
+  const failed = result && "errors" in result ? result : undefined;
   return (
-    <Form method="post" action="?/signup" errors={result}>
+    <Form method="post" action="?/signup" errors={failed?.errors} values={failed?.values}>
       <Field.Root name="username" class="lu-field">
         <Field.Label>Username</Field.Label>
         <Field.Control required minlength={3} autocomplete="username" class="lu-input" />
@@ -2857,9 +2868,11 @@ export function SignupForm() {
 }
 ```
 
-`errors={result}` works whatever else the action returns: only the keys that name a field and hold
-a string or an array of strings become errors. In an island, add `onSubmit={submit}` and the
-errors arrive without a page load.
+Only the keys of `errors` that name a field and hold a string or an array of strings become
+errors, so `errors={result}` also works for an action that fails with the errors alone. The
+submitted `FormData` reaches the browser with the page (its text entries; files are left out):
+delete secrets such as a password from it before `fail()`. In an island, add `onSubmit={submit}`
+and the errors arrive without a page load; the controls keep what the user typed anyway.
 
 ## Styling
 
@@ -2876,7 +2889,8 @@ script; without it, the browser focuses it and shows its bubble).
 ## Without JavaScript
 
 A native form posts to its action and the page renders back with `actionData()`, so the server's
-errors show in their fields with no script. The browser validates the fields before it posts.
+errors show in their fields with no script, and with `values` the controls show what was
+submitted. The browser validates the fields before it posts.
 
 ## Browser support
 

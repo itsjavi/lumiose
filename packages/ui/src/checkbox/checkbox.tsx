@@ -5,7 +5,7 @@
 // name. checkbox.script.ts (decision-63) adds the indeterminate state of server HTML, the parent
 // checkbox of a group and read-only.
 import { effect, isServer, ref, untrack, useContext } from "lumiose";
-import { fieldProps, useField } from "../field/context.ts";
+import { fieldProps, useField, useFormValues } from "../field/context.ts";
 import checkboxScript from "./checkbox.script.ts?client";
 import { CheckboxGroupContext } from "./context.ts";
 
@@ -69,7 +69,15 @@ function Root({
   checkboxScript();
   const field = useField();
   const group = useContext(CheckboxGroupContext);
-  const initial = untrack(() => defaultChecked);
+  // A failed submission's values (a Form's `values`): checked when they hold its value (TASK-430).
+  const sent =
+    group || parent
+      ? undefined
+      : useFormValues(
+          untrack(() => rest.name ?? field?.name()),
+          untrack(() => rest.disabled),
+        );
+  const initial = untrack(() => (sent ? sent.includes(value ?? "on") : defaultChecked));
   /** A parent's state from the group: checked when every value is, mixed when some are. */
   const parentState = () => {
     const all = group?.allValues() ?? [];

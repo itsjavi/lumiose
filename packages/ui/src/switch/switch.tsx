@@ -5,7 +5,7 @@
 // checkbox.script.ts adds read-only.
 import { untrack } from "lumiose";
 import checkboxScript from "../checkbox/checkbox.script.ts?client";
-import { fieldProps, useField } from "../field/context.ts";
+import { fieldProps, useField, useFormValues } from "../field/context.ts";
 
 /**
  * The native checkbox props Root passes through, without the brand of intrinsic elements' props,
@@ -49,7 +49,12 @@ function Root({
 }: SwitchRootProps) {
   checkboxScript();
   const field = useField();
-  const initial = untrack(() => defaultChecked);
+  // A failed submission's values (a Form's `values`): on when they hold its value (TASK-430).
+  const sent = useFormValues(
+    untrack(() => rest.name ?? field?.name()),
+    untrack(() => rest.disabled),
+  );
+  const initial = untrack(() => (sent ? sent.includes(value ?? "on") : defaultChecked));
   return (
     <input
       {...rest}

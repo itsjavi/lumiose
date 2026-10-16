@@ -9,6 +9,7 @@
 //   { $: "U", v: "https://…" }        URL
 //   { $: "M", v: [[key, value], …] }  Map
 //   { $: "S", v: [value, …] }         Set
+//   { $: "F", v: [[name, value], …] } FormData: its text entries (files are left out, TASK-430)
 //   { $: "O", v: { … } }              a plain object that has its own "$" key (escaped)
 // Object properties whose value is undefined are omitted, as in JSON. Anything else (functions,
 // symbols, class instances, promises, cycles) is rejected with the path of the offending value.
@@ -68,6 +69,12 @@ export function encodeData(input: unknown, fail: Fail): unknown {
         }
         return { $: "M", v: entries };
       }
+      // A form action's submitted values, sent back to re-fill the form (TASK-430).
+      if (typeof FormData !== "undefined" && value instanceof FormData) {
+        const entries: [string, string][] = [];
+        for (const [name, item] of value) if (typeof item === "string") entries.push([name, item]);
+        return { $: "F", v: entries };
+      }
       if (value instanceof Set) {
         let i = 0;
         const items: unknown[] = [];
@@ -110,6 +117,11 @@ export function decodeData(value: unknown): unknown {
       return new Map((v as [unknown, unknown][]).map(([k, x]) => [decodeData(k), decodeData(x)]));
     case "S":
       return new Set((v as unknown[]).map(decodeData));
+    case "F": {
+      const form = new FormData();
+      for (const [name, item] of v as [string, string][]) form.append(name, item);
+      return form;
+    }
     case "O":
       return decodeObject(v as Record<string, unknown>);
     default:

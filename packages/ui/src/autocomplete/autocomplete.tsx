@@ -22,7 +22,7 @@ import {
 import type { ComboboxElement, ComboboxOpenChangeDetail } from "../combobox/combobox.script.ts";
 import comboboxScript from "../combobox/combobox.script.ts?client";
 import { ComboboxContext, type ComboboxContextValue } from "../combobox/context.ts";
-import { controlId, useField } from "../field/context.ts";
+import { controlId, useField, useFormValues } from "../field/context.ts";
 
 /**
  * How the suggestions complete the text, as in Base UI: `"list"` filters them by the text,
@@ -134,6 +134,10 @@ function Root({
   const field = useField();
   const host = ref<ComboboxElement>();
   const completion = untrack(() => mode ?? "list");
+  const sent = useFormValues(
+    untrack(() => name ?? field?.name()),
+    untrack(() => disabled),
+  );
   const context: ComboboxContextValue = {
     id,
     inputId: field ? controlId(field) : `${id}-input`,
@@ -145,7 +149,8 @@ function Root({
     text: {
       name: () => name ?? field?.name(),
       required: () => required,
-      initial: untrack(() => value ?? defaultValue),
+      // A failed submission's text (a Form's `values`) replaces the default (TASK-430).
+      initial: untrack(() => value ?? sent?.[0] ?? defaultValue),
       autocomplete: completion,
     },
   };

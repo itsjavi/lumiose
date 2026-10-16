@@ -35,6 +35,13 @@ parameter that starts with `/`, wherever it is, so `?status=open&/close` runs `c
 | plain data                     | The page re-renders (200) and `actionData()` returns the data.                                  |
 | `fail(status, data)`           | The page re-renders with `status`; `actionData()` returns `data`. Use it for validation errors. |
 
+**Keeping what the user entered.** After a failed submission, send the submitted values back with
+the errors, so the page renders the form filled in and nobody types everything again (WCAG 3.3.7):
+`return fail(400, { errors, values: form })`. `actionData()` data may hold a `FormData`: its text
+entries reach the browser (files are left out), so delete secrets first (`form.delete("password")`).
+@lumiose/ui's [Form](https://itsjavi.com/lumiose/ui/form/) takes them as `values` and fills its
+controls by name; with your own inputs, use them as `defaultValue`s.
+
 An Origin check protects page POSTs and form-encoded endpoint requests by default (403 for
 cross-site requests).
 

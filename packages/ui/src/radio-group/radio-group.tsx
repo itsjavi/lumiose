@@ -5,7 +5,7 @@
 // names the group. checkbox.script.ts adds read-only.
 import { createContext, effect, signal, untrack, useContext, useId } from "lumiose";
 import checkboxScript from "../checkbox/checkbox.script.ts?client";
-import { describedBy, useField } from "../field/context.ts";
+import { describedBy, useField, useFormValues } from "../field/context.ts";
 
 interface RadioGroupContextValue {
   name: () => string;
@@ -70,7 +70,14 @@ export function RadioGroup({
   checkboxScript();
   const field = useField();
   const id = useId();
-  const selected = signal<string | undefined>(untrack(() => value ?? defaultValue));
+  // A failed submission's values (a Form's `values`) replace the default (TASK-430).
+  const sent = useFormValues(
+    untrack(() => name ?? field?.name()),
+    untrack(() => rest.disabled),
+  );
+  const selected = signal<string | undefined>(
+    untrack(() => value ?? (sent ? sent[0] : defaultValue)),
+  );
   // The `value` prop drives the radios when it changes.
   effect(() => {
     const next = value;

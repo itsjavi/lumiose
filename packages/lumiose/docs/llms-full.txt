@@ -753,7 +753,7 @@ pages, render on the `server` and send `cache-control` headers to a CDN.
 | Server components, `async` components                    | Every component on `static` and `server` routes. Async components also work in islands and `spa` routes, in the browser.                           |
 | `"use client"`                                           | A `client:*` directive at the usage site: `client:load`, `client:idle`, `client:visible`, `client:media`; or an `spa` route.                       |
 | `dynamic(() => import(…), { ssr: false })`               | `client:only`: rendered in the browser only.                                                                                                       |
-| Serializable props of client components                  | The same rule for island props, which also accept `Date`, `Map`, `Set`, `URL` and `BigInt` ([LUM4002](../errors/LUM4002.md)).                      |
+| Serializable props of client components                  | The same rule for island props, which also accept `Date`, `Map`, `Set`, `URL`, `BigInt` and `FormData` ([LUM4002](../errors/LUM4002.md)).          |
 | `import "server-only"`                                   | `*.server.ts` modules or `src/server/`: importing them from browser code is [LUM4003](../errors/LUM4003.md).                                       |
 | `fetch()` in a server component, `React.cache()`         | `await fetchJSON(url)` or `await query(key, fn)` in the component: one request per URL or key per request; same-origin URLs are served in-process. |
 | `"use cache"`, `cacheLife`, `cacheTag`, `unstable_cache` | No cross-request data cache: the request cache above, `cache-control` headers for a CDN, or a cache of your own in a server module.                |
@@ -3433,7 +3433,7 @@ gets per-reader parts through an island in
 | `client:only`                               | Client-rendered only: no server HTML.               |
 
 **Props must be serializable**: JSON values plus `undefined`, `NaN`/`Infinity`, `BigInt`, `Date`,
-`URL`, `Map` and `Set`. Functions, symbols, class instances (a `Response` too), promises and cycles
+`URL`, `Map`, `Set` and `FormData` (its text entries; files are left out). Functions, symbols, class instances (a `Response` too), promises and cycles
 are `LUM4002`.
 
 **Children and JSX props are slots.** They are rendered on the server and stay server components:
@@ -4286,6 +4286,13 @@ parameter that starts with `/`, wherever it is, so `?status=open&/close` runs `c
 | `redirect(to)` or a `Response` | Sent as is (303 after a POST).                                                                  |
 | plain data                     | The page re-renders (200) and `actionData()` returns the data.                                  |
 | `fail(status, data)`           | The page re-renders with `status`; `actionData()` returns `data`. Use it for validation errors. |
+
+**Keeping what the user entered.** After a failed submission, send the submitted values back with
+the errors, so the page renders the form filled in and nobody types everything again (WCAG 3.3.7):
+`return fail(400, { errors, values: form })`. `actionData()` data may hold a `FormData`: its text
+entries reach the browser (files are left out), so delete secrets first (`form.delete("password")`).
+@lumiose/ui's [Form](https://itsjavi.com/lumiose/ui/form/) takes them as `values` and fills its
+controls by name; with your own inputs, use them as `defaultValue`s.
 
 An Origin check protects page POSTs and form-encoded endpoint requests by default (403 for
 cross-site requests).
@@ -15682,7 +15689,8 @@ be serialized; otherwise the server runtime, with the path of the offending valu
 ## What it means
 
 Island props travel from the server to the browser as data-only JSON. Supported: JSON values plus
-`undefined`, `NaN`/`Infinity`, `BigInt`, `Date`, `URL`, `Map` and `Set`. Functions, symbols, class
+`undefined`, `NaN`/`Infinity`, `BigInt`, `Date`, `URL`, `Map`, `Set` and `FormData` (its text
+entries; files are left out). Functions, symbols, class
 instances, promises and cycles cannot be serialized. SPA routes get the same rule for their data,
 so `request`, `cookies` and `locals` are not passed in.
 

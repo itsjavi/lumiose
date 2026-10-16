@@ -211,8 +211,20 @@ type MathMLElements = { [K in MathMLTag]: JSX.MathMLProps<MathMLElementTagNameMa
 
 // ---- island props -----------------------------------------------------------------------------------
 
-/** Serialized as is (spec §7.2): JSON values plus `undefined`, `BigInt`, `Date` and `URL`. */
-type SerializableLeaf = string | number | boolean | bigint | null | undefined | Date | URL;
+/**
+ * Serialized as is (spec §7.2): JSON values plus `undefined`, `BigInt`, `Date`, `URL` and
+ * `FormData` (its text entries; files are left out).
+ */
+type SerializableLeaf =
+  | string
+  | number
+  | boolean
+  | bigint
+  | null
+  | undefined
+  | Date
+  | URL
+  | FormData;
 
 /**
  * The type an island prop is checked against. Not distributive at the top, so a slot type such as

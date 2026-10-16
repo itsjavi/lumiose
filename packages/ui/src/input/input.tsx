@@ -2,7 +2,7 @@
 // references from the Field around it, after Base UI's Input (Field.Control). Everything else is
 // the platform's: types, constraints, autofill, forms.
 import { untrack } from "lumiose";
-import { fieldProps, useField } from "../field/context.ts";
+import { fieldProps, useField, useFormValues } from "../field/context.ts";
 
 /**
  * An element's props without the brand of intrinsic elements' props, so that the component's
@@ -33,13 +33,23 @@ export type InputProps = BindableProps<"input", "value" | "bind:value"> & {
  * @example
  * <Input name="q" type="search" aria-label="Search" bind:value={query} />
  */
+/** Types a Form's `values` never fill: secrets, files, buttons, and toggles, which have `checked`. */
+const UNFILLED = /^(password|file|hidden|submit|reset|button|image|checkbox|radio)$/;
+
 export function Input({ value, defaultValue, onValueChange, ...rest }: InputProps) {
   const field = useField();
+  // The value a failed submission sent back (a Form's `values`) replaces the default (TASK-430).
+  const sent = UNFILLED.test(String(untrack(() => rest.type) ?? ""))
+    ? undefined
+    : useFormValues(
+        untrack(() => rest.name ?? field?.name()),
+        untrack(() => rest.disabled),
+      );
   return (
     <input
       {...rest}
       {...fieldProps(field, rest)}
-      value={value !== undefined ? value : untrack(() => defaultValue)}
+      value={value !== undefined ? value : untrack(() => sent?.[0] ?? defaultValue)}
       on:input={(event: Event) => onValueChange?.((event.currentTarget as HTMLInputElement).value)}
     />
   );
