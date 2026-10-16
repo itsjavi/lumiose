@@ -41,6 +41,9 @@ export default function Root(props: LayoutProps<"/">) {
         <a href="/context-menu/island">Context Menu in an island</a>
         <a href="/drawer">Drawer</a>
         <a href="/drawer/island">Drawer in an island</a>
+        <a href="/separator">Separator</a>
+        <a href="/avatar">Avatar</a>
+        <a href="/avatar/island">Avatar in an island</a>
       </nav>
       <main>{props.children}</main>
     </div>

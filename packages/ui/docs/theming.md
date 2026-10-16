@@ -49,6 +49,8 @@ through their `class` prop:
 | `lu-meter`          | `Meter.Root`                                   | The label and value above a bar                                                             |
 | `lu-slider`         | `Slider.Root`                                  | The label and value above the track, the indicator and 24px thumbs                          |
 | `lu-drawer`         | `Drawer.Popup`                                 | A surface against its edge (a handle on a bottom sheet), title, description, footer; slides |
+| `lu-separator`      | `Separator`                                    | A 1px line in `--lu-border`, horizontal or vertical                                         |
+| `lu-avatar`         | `Avatar.Root`                                  | A 40px circle on a muted surface, the image covering it, the initials centred               |
 
 Its colours and radius are custom properties with shadcn/ui's names and a `--lu-` prefix, so a
 shadcn palette carries over:

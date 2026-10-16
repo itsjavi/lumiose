@@ -61,6 +61,10 @@
     "./context-menu.css": "./src/context-menu/context-menu.css",
     "./drawer": "./src/drawer/drawer.tsx",
     "./drawer.css": "./src/drawer/drawer.css",
+    "./separator": "./src/separator/separator.tsx",
+    "./separator.css": "./src/separator/separator.css",
+    "./avatar": "./src/avatar/avatar.tsx",
+    "./avatar.css": "./src/avatar/avatar.css",
     "./themes/default.css": "./src/themes/default.css",
     "./package.json": "./package.json"
   },
@@ -108,6 +112,10 @@
       "./context-menu.css": "./dist/context-menu/context-menu.css",
       "./drawer": "./dist/drawer/drawer.tsx",
       "./drawer.css": "./dist/drawer/drawer.css",
+      "./separator": "./dist/separator/separator.tsx",
+      "./separator.css": "./dist/separator/separator.css",
+      "./avatar": "./dist/avatar/avatar.tsx",
+      "./avatar.css": "./dist/avatar/avatar.css",
       "./themes/default.css": "./dist/themes/default.css",
       "./package.json": "./package.json"
     }

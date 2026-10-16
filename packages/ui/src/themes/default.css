@@ -45,6 +45,9 @@
  *   .lu-slider                          a Slider.Root: label, value, track, indicator, thumbs
  *   .lu-drawer                          a Drawer.Popup: a surface against its edge (a handle on
  *                                       a bottom sheet), title, description, footer; slides
+ *   .lu-separator                       a Separator: a 1px line, horizontal or vertical
+ *   .lu-avatar                          an Avatar.Root: a 40px circle, the image covering it,
+ *                                       the fallback's initials centred on a muted surface
  */
 @layer lu.core, lu.theme;
 
@@ -1468,5 +1471,40 @@
         translate: 100% 0;
       }
     }
+  }
+
+  /* Separator and Avatar (TASK-374) ----------------------------------------------------------- */
+
+  /* A decorative line in --lu-border: a separator groups content, it is not needed to read it. */
+  .lu-separator {
+    flex: none;
+    block-size: 1px;
+    margin: 0.75rem 0;
+    border: 0;
+    background: var(--lu-border);
+  }
+  .lu-separator[data-orientation="vertical"] {
+    inline-size: 1px;
+    block-size: auto;
+    margin: 0;
+  }
+  .lu-avatar {
+    place-items: center;
+    inline-size: 2.5rem;
+    block-size: 2.5rem;
+    overflow: hidden;
+    border-radius: 50%;
+    background: var(--lu-muted);
+    color: var(--lu-muted-foreground);
+    font-size: 0.875rem;
+    font-weight: 500;
+    line-height: 1;
+    vertical-align: middle;
+    user-select: none;
+  }
+  .lu-avatar > img {
+    inline-size: 100%;
+    block-size: 100%;
+    object-fit: cover;
   }
 }

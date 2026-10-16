@@ -1,0 +1,44 @@
+/*
+ * Avatar: `<lu-avatar>` stacks its image over its fallback in one grid cell, so showing one never
+ * moves the other. Where scripting is enabled the image stays hidden while it loads (server HTML
+ * marks it `data-loading`) and after it fails, and the fallback hides once it has loaded; without
+ * JavaScript the image simply covers the fallback when it loads. `visibility`, not `display`, so a
+ * `loading="lazy"` image still loads. The fallback's `delay` is a zero-length animation that keeps
+ * it hidden that long.
+ */
+@layer lu.core, lu.theme;
+
+@layer lu.core {
+  lu-avatar {
+    display: inline-grid;
+    /* One cell, never wider or taller than the root: a broken or loading image's alt text would
+       widen it otherwise. */
+    grid-template: minmax(0, 1fr) / minmax(0, 1fr);
+  }
+  lu-avatar > * {
+    grid-area: 1 / 1;
+  }
+  lu-avatar > img {
+    z-index: 1;
+  }
+  lu-avatar > img[data-error] {
+    visibility: hidden;
+  }
+  @media (scripting: enabled) {
+    lu-avatar > img[data-loading] {
+      visibility: hidden;
+    }
+  }
+  lu-avatar[data-loaded] > [data-fallback] {
+    visibility: hidden;
+  }
+  lu-avatar > [data-fallback] {
+    animation: lu-avatar-delay 0s var(--lu-avatar-delay, 0s) backwards;
+  }
+}
+
+@keyframes lu-avatar-delay {
+  from {
+    visibility: hidden;
+  }
+}

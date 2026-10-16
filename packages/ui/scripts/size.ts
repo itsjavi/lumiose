@@ -144,6 +144,18 @@ const COMPONENTS: Component[] = [
     scripts: ["dialog/dialog.script.ts", "drawer/drawer.script.ts"],
     css: "drawer/drawer.css",
   },
+  {
+    name: "separator",
+    module: "separator/separator.tsx",
+    scripts: [],
+    css: "separator/separator.css",
+  },
+  {
+    name: "avatar",
+    module: "avatar/avatar.tsx",
+    scripts: ["avatar/avatar.script.ts"],
+    css: "avatar/avatar.css",
+  },
 ];
 
 const CLIENT_SCRIPT = /\?client$/;

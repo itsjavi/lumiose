@@ -1,0 +1,12 @@
+/*
+ * A vertical Separator is an `<hr>` between the items of a row: without the browser's auto margins,
+ * which would push the row's items apart, and as tall as the row, even one that centres its items.
+ */
+@layer lu.core, lu.theme;
+
+@layer lu.core {
+  hr[data-orientation="vertical"] {
+    margin: 0;
+    align-self: stretch;
+  }
+}

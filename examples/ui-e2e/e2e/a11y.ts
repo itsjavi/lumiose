@@ -50,14 +50,16 @@ p { margin-block-end: 2em !important; }`;
 
 /**
  * Elements under `scope` whose content no longer fits their box (text cut off or overflowing),
- * as `tag "text"`; a test expects `[]`. Scrollable boxes are fine: their content stays reachable.
+ * as `tag "text"`; a test expects `[]`. Scrollable boxes are fine: their content stays reachable,
+ * and so are hidden ones (`visibility: hidden`, such as an avatar's failed image), which show nothing.
  */
 export function clipped(scope: Locator): Promise<string[]> {
   return scope.evaluate((root) => {
     const found: string[] = [];
     for (const element of [root, ...root.querySelectorAll<HTMLElement>("*")]) {
       const style = getComputedStyle(element);
-      if (style.display === "none" || /auto|scroll/.test(style.overflow)) continue;
+      if (style.display === "none" || style.visibility === "hidden") continue;
+      if (/auto|scroll/.test(style.overflow)) continue;
       const over =
         element.scrollWidth > element.clientWidth + 1 ||
         element.scrollHeight > element.clientHeight + 1;

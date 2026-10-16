@@ -172,3 +172,12 @@ export type {
   DrawerTitleProps,
   DrawerTriggerProps,
 } from "./drawer/drawer.tsx";
+export { Separator } from "./separator/separator.tsx";
+export type { SeparatorOrientation, SeparatorProps } from "./separator/separator.tsx";
+export { Avatar } from "./avatar/avatar.tsx";
+export type {
+  AvatarFallbackProps,
+  AvatarImageProps,
+  AvatarLoadingStatus,
+  AvatarRootProps,
+} from "./avatar/avatar.tsx";
