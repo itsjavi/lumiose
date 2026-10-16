@@ -1,0 +1,49 @@
+import { PreviewCard } from "@lumiose/ui";
+import { Title } from "lumiose";
+
+// Server-rendered, no island: the links are plain links; Preview Card's script opens their cards
+// on hover and keyboard focus. A card is a <div>, so it goes after the paragraph, not inside it:
+// the Roots wrap the paragraph. Styled with the default theme.
+export default function PreviewCardPage() {
+  return (
+    <>
+      <Title>Preview Card</Title>
+      <h1>Preview Card</h1>
+      <PreviewCard.Root>
+        <p class="prose">
+          Lumiose renders on the server and wakes up{" "}
+          <PreviewCard.Trigger href="#islands" delay={200} closeDelay={200}>
+            islands
+          </PreviewCard.Trigger>{" "}
+          where a page needs them. Read the <a href="#guide">guide</a> next.
+        </p>
+        <PreviewCard.Popup class="lu-preview-card">
+          <strong>Islands</strong>
+          <p>Interactive components hydrated on their own, in a server-rendered page.</p>
+          <a href="#islands-docs">Read about islands</a>
+        </PreviewCard.Popup>
+      </PreviewCard.Root>
+      <PreviewCard.Root>
+        <p>
+          Driven by{" "}
+          <PreviewCard.Trigger href="#signals" delay={200}>
+            signals
+          </PreviewCard.Trigger>
+          .
+        </p>
+        <PreviewCard.Popup class="lu-preview-card" side="top">
+          <strong>Signals</strong>
+          <p>Values that update what reads them.</p>
+        </PreviewCard.Popup>
+      </PreviewCard.Root>
+    </>
+  );
+}
+
+<style>
+  .prose {
+    max-inline-size: 36rem;
+    margin-block-start: 6rem;
+    line-height: 1.7;
+  }
+</style>

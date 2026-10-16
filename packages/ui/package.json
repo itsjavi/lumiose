@@ -71,6 +71,8 @@
     "./avatar.css": "./src/avatar/avatar.css",
     "./otp-field": "./src/otp-field/otp-field.tsx",
     "./otp-field.css": "./src/otp-field/otp-field.css",
+    "./preview-card": "./src/preview-card/preview-card.tsx",
+    "./preview-card.css": "./src/preview-card/preview-card.css",
     "./themes/default.css": "./src/themes/default.css",
     "./package.json": "./package.json"
   },
@@ -128,6 +130,8 @@
       "./avatar.css": "./dist/avatar/avatar.css",
       "./otp-field": "./dist/otp-field/otp-field.tsx",
       "./otp-field.css": "./dist/otp-field/otp-field.css",
+      "./preview-card": "./dist/preview-card/preview-card.tsx",
+      "./preview-card.css": "./dist/preview-card/preview-card.css",
       "./themes/default.css": "./dist/themes/default.css",
       "./package.json": "./package.json"
     }

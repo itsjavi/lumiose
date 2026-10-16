@@ -174,6 +174,12 @@ const COMPONENTS: Component[] = [
     scripts: ["otp-field/otp-field.script.ts"],
     css: "otp-field/otp-field.css",
   },
+  {
+    name: "preview-card",
+    module: "preview-card/preview-card.tsx",
+    scripts: ["preview-card/preview-card.script.ts"],
+    css: "preview-card/preview-card.css",
+  },
 ];
 
 const CLIENT_SCRIPT = /\?client$/;

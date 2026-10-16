@@ -1,0 +1,12 @@
+import { Title } from "lumiose";
+import { PreviewCardSignals } from "../../../islands/PreviewCardSignals.tsx";
+
+export default function PreviewCardIslandPage() {
+  return (
+    <>
+      <Title>Preview Card in an island, bound to a signal</Title>
+      <h1>Preview Card in an island, bound to a signal</h1>
+      <PreviewCardSignals client:load />
+    </>
+  );
+}

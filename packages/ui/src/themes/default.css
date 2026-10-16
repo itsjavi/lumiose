@@ -52,6 +52,7 @@
  *                                       input between its buttons
  *   .lu-otp-field                       an OTPField.Root: a box per character, the caret's box
  *                                       ringed while focused, a dash for a separator
+ *   .lu-preview-card                    a PreviewCard.Popup: a surface like a popover's, with a fade
  */
 @layer lu.core, lu.theme;
 
@@ -1654,5 +1655,52 @@
     color: var(--lu-foreground);
     font: inherit;
     letter-spacing: 0.5em;
+  }
+
+  /* Preview Card (TASK-381) ------------------------------------------------------------------- */
+
+  .lu-preview-card {
+    --lu-side-offset: 8px;
+    box-sizing: border-box;
+    inline-size: max-content;
+    max-inline-size: min(20rem, 100vw - 1rem);
+    padding: 1rem;
+    border: 1px solid var(--lu-border);
+    border-radius: var(--lu-radius);
+    background: var(--lu-popover);
+    color: var(--lu-popover-foreground);
+    font-size: 0.875rem;
+    line-height: 1.5;
+    box-shadow:
+      0 10px 15px -3px rgb(0 0 0 / 0.1),
+      0 4px 6px -4px rgb(0 0 0 / 0.1);
+  }
+  .lu-preview-card :where(img) {
+    display: block;
+    max-inline-size: 100%;
+    border-radius: calc(var(--lu-radius) - 2px);
+  }
+  .lu-preview-card :where(p) {
+    margin: 0.25rem 0 0;
+    color: var(--lu-muted-foreground);
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .lu-preview-card {
+      transition:
+        opacity 150ms ease-out,
+        scale 150ms ease-out,
+        overlay 150ms allow-discrete,
+        display 150ms allow-discrete;
+    }
+    .lu-preview-card:not(:popover-open) {
+      opacity: 0;
+      scale: 0.96;
+    }
+    @starting-style {
+      .lu-preview-card:popover-open {
+        opacity: 0;
+        scale: 0.96;
+      }
+    }
   }
 }

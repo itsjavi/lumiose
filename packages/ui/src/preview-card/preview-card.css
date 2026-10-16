@@ -1,0 +1,7 @@
+/*
+ * Preview Card needs no CSS to open or close: the native popover does it. What it needs is its
+ * placement next to the link, shared with Popover and Tooltip (placement.css).
+ */
+@layer lu.core, lu.theme;
+
+@import "../placement/placement.css";

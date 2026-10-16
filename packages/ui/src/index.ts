@@ -214,3 +214,9 @@ export type {
   OTPFieldSlotProps,
   OTPFieldValidationType,
 } from "./otp-field/otp-field.tsx";
+export { PreviewCard } from "./preview-card/preview-card.tsx";
+export type {
+  PreviewCardPopupProps,
+  PreviewCardRootProps,
+  PreviewCardTriggerProps,
+} from "./preview-card/preview-card.tsx";
