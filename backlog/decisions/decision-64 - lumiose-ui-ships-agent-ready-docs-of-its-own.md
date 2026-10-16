@@ -35,7 +35,7 @@ Orchestrator decision (Lux, 2026-10-15), from the user's request. The public nam
   - the MCP lists the components with their parts, props, events and styling hooks;
   - `lumiose agents init` adds a UI section and a UI skill when the project depends on @lumiose/ui;
   - create-lumiose offers @lumiose/ui as an option, which installs the package, its styles and these agent files.
-- The site's UI section (TASK-387) renders the same pages, so the agent docs and the site come from one source.
+- The site's UI section (TASK-387) renders the same pages, so the agent docs and the site come from one source. It lives at `/ui` and `/ui/<page>`, and `/docs/ui/*` redirects there. The header links to it as "UI" and the footer as "UI components" (user, 2026-10-16, TASK-400).
 
 ## Consequences
 

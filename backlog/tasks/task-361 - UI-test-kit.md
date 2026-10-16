@@ -5,7 +5,7 @@ status: To Do
 assignee:
   - '@Beacon'
 created_date: '2026-10-15 16:46'
-updated_date: '2026-10-16 03:36'
+updated_date: '2026-10-16 09:19'
 labels:
   - ui
 milestone: m-12
@@ -128,4 +128,6 @@ For every component, check three things. It is announced with its role, its name
 - Avatar / Separator:
   - Avatar: read once (the image's alt, or the fallback's label alone), never twice.
   - Separator: read as a separator, or skipped.
+
+2026-10-16 (user, TASK-400 review): the ui-browsers workflow runs on UI path changes, as built, and its script and variable names are approved. The screen reader pass is the user's, after Prism's TASK-386 review.
 <!-- SECTION:NOTES:END -->

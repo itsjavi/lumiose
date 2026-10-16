@@ -19,10 +19,32 @@ User decision, 2026-10-15.
 - **Verification** (user, 2026-10-15): every primitive is checked against Base UI's and Zag/Ark's behaviour through the "UI primitives pitfall checklist" backlog doc before it is Done, and Prism reviews @lumiose/ui against both before each release.
 - **Custom element tags** use the `lu-` prefix (`lu-menu`, `lu-combobox`).
 - **DOM events** are lowercase like native ones: `openchange`, `checkedchange` and `change` (the combobox fires `change` like a native control). Components expose them as `onOpenChange`, `onCheckedChange` and `onValueChange`. `lu-tabs` fires `valuechange` (user, 2026-10-15, TASK-359): it follows the same pattern and does not collide with `change` events bubbling from form controls in a panel.
+  - **The rule** (user, 2026-10-16, TASK-400): an element's event is Base UI's callback name without `on`, in lowercase (`onLoadingStatusChange` → `loadingstatuschange`). Native-like form controls (Combobox, Autocomplete) fire the native `change` and `input` instead.
+  - This approves the current events: `pressedchange`, `loadingstatuschange`, `valuecomplete`, `valueinvalid`, `validitychange`, and the Toast's `close`.
 - **Part anatomy** follows Base UI where the platform allows: Dialog `Root`, `Trigger`, `Popup`, `Title`, `Description`, `Close`; Menu `Root`, `Trigger`, `Popup`, `Item`, `CheckboxItem`, `Separator`; Combobox `Root`, `Label`, `Input`, `List`, `Item`. No `Portal`, `Positioner` or `Backdrop`: the top layer, anchor positioning and `::backdrop` replace them; placement props go on `Popup`.
 - **An alert dialog** is `role="alertdialog"` on `Dialog.Root`, not a separate component.
 - **Native gaps are closed by small scripts** (user, 2026-10-15): where native elements differ from Base UI's behaviour (for Dialog: secondary-button dismissal, nested state, touch focus, focus return with `preventScroll`, Safari light dismiss, invoker commands in older browsers), the component keeps working without JavaScript and a small script shipped through `?client` (decision-63) when it renders closes the gap.
 - **No part attribute:** parts are styled through class props and native or ARIA state (`dialog[open]`, `:popover-open`, `[aria-expanded]`, `[aria-checked]`, `[aria-selected]`), plus `data-highlighted` on the active option.
+  - **Amended** (user, 2026-10-16, TASK-400). The public styling API is:
+    - class props;
+    - native and ARIA state;
+    - Base UI's state `data-*` attributes, for state with no native or ARIA equivalent (`data-side`, `data-orientation`, `data-swiping`, `data-starting-style`/`data-ending-style`, `data-loading`, `data-indeterminate`, `data-popup-open`, …), documented on each component's page.
+  - Part markers the scripts find parts by (`data-thumb`, `data-slot`, `data-indicator`, `data-viewport`, …) and config attributes passed from the server HTML to scripts (`data-delay`, `data-limit`, …) are internal. They are undocumented and may change. Style a part through its class prop instead.
+- **Names** (user, 2026-10-16, TASK-400): every name that copies Base UI 1.9 is approved. That covers component parts, their props and types, the package entries (`@lumiose/ui/<component>` and `/<component>.css`), the `lu-<component>` element tags and the `lu-<component>` theme classes.
+- **CSS custom properties** (user, 2026-10-16, TASK-400): every property a component exposes carries the `--lu-` prefix, like the theme's tokens: `--lu-collapsible-panel-height`, `--lu-toast-index`, `--lu-scroll-area-thumb-height`. A docs note maps Base UI's `--x` to `--lu-x`.
+- **Deliberate differences from Base UI** (user, 2026-10-16, TASK-400). Each keeps the component working without JavaScript, follows the platform, or drops a feature with no native basis; the reasons are in each task.
+  - Menu isn't modal (no scroll lock), and its LinkItem closes the menu.
+  - Tab values are strings, and every panel stays in the page.
+  - A standalone Toggle needs an island to change state.
+  - A `focusableWhenDisabled` Button acts without its script.
+  - Number Field with `format` submits the typed text without JavaScript.
+  - OTP Field is one input under visual slots.
+  - Navigation Menu has no shared Viewport.
+  - Preview Card is keyboard-reachable.
+  - Drawer has no snap points, swipe area, indent, keyboard provider, detached triggers or non-modal mode.
+  - Accordion.Header's heading sits inside `<summary>`.
+  - A server-rendered Toast without JavaScript stays until the next page.
+  - Dropped: CheckboxGroup `required`, `ScrubAreaCursor`, Popover Backdrop, and Preview Card's Arrow, Backdrop and detached triggers.
 - **`bind:` on components and custom elements** (a syntax decision): `bind:x` works on any component with an `x` prop and an `onXChange` callback, and on a custom element with an `x` property and a change event, like `bind:value` on inputs.
 - Rejected: depending on Timeless, merging it, the `lumiose-` and `l-` prefixes, `lu-`-prefixed events, a separate `AlertDialog`, a `data-part` attribute, explicit props without `bind:`.
 

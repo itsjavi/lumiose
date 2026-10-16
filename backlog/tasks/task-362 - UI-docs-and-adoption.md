@@ -5,7 +5,7 @@ status: Done
 assignee:
   - '@Beacon'
 created_date: '2026-10-15 16:46'
-updated_date: '2026-10-16 03:36'
+updated_date: '2026-10-16 09:19'
 labels:
   - ui
 milestone: m-12
@@ -66,6 +66,8 @@ Kept, with the reason:
 - **DocsSearch** (a hand-written combobox). Its results are navigation links with the site's own ranking and descriptions, not text values for Autocomplete to fill in. Follow-up proposed (TASK-421).
 
 Checks: apps/web 179 passed, the site-kit showcase 14 passed (8 skipped), and pnpm check.
+
+2026-10-16 (user, TASK-400 review): ThemeToggle and CopyButton keep the native title; no ui Tooltip on the site for now.
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary

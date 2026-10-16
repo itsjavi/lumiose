@@ -1,11 +1,11 @@
 ---
 id: TASK-400
 title: Review @lumiose/ui's M12 changes with the user
-status: To Do
+status: Done
 assignee:
   - '@Lux'
 created_date: '2026-10-15 19:52'
-updated_date: '2026-10-16 06:27'
+updated_date: '2026-10-16 09:19'
 labels:
   - ui
   - review
@@ -23,8 +23,8 @@ User request, 2026-10-15: start M12 worker batches autonomously, and review the 
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Every proposed public name from the later batches is listed with its task
-- [ ] #2 The user reviewed the list and the showcase, and the approved names are recorded in the decisions
+- [x] #1 Every proposed public name from the later batches is listed with its task
+- [x] #2 The user reviewed the list and the showcase, and the approved names are recorded in the decisions
 <!-- AC:END -->
 
 ## Implementation Notes
@@ -240,4 +240,21 @@ User request, 2026-10-15: start M12 worker batches autonomously, and review the 
 **Proposed names:** `outputTemplate`, a new `lumiose/dom` export. Only compiled code imports it: the compiler uses it for templates that contain an `<output>`.
 
 **Worth the user's look:** Firefox and WebKit replace an `<output>`'s children on every form reset. The runtime now skips outputs whose text the reset would not change, as Chromium does, so live text in islands survives a reset. This applies to every Lumiose app, not only @lumiose/ui. Bundle cost: the typical bundle is unchanged, and the whole runtime grows by 0.13 kB.
+
+## Review with the user (2026-10-16)
+
+One question at a time, with a recommendation each; the user took every recommendation.
+
+1. **Names that copy Base UI 1.9:** approved in bulk. This covers parts, props, types, the `/x` and `/x.css` entries, `lu-x` tags and `lu-x` theme classes. Recorded in decision-62.
+2. **CSS custom properties:** every property a component exposes gets the `--lu-` prefix. The unprefixed ones are renamed: `--collapsible-panel-height`, `--accordion-panel-height`, `--toast-index`, `--toast-swipe-movement-x/y`, `--drawer-swipe-movement-x/y`, `--drawer-swipe-progress` and `--nested-dialogs`. Recorded in decision-62.
+3. **`data-*` attributes:** Base UI's state attributes are public and documented. Part markers and config attributes are internal. Decision-62 is amended.
+4. **Events:** the rule is Base UI's callback name without `on`, in lowercase, and the current events are approved. Recorded in decision-62.
+5. **Deliberate differences from Base UI:** all accepted, listed in decision-62.
+6. **Site:** `/ui` and `/ui/<page>` with redirects from `/docs/ui/*`, the "UI" and "UI components" links, site-kit's `Tabs.Root/List/Tab/Panel`, and DocsSearch's "Search the docs" list. All approved; recorded in decision-64.
+7. **CI:** the `ui-browsers` workflow runs on UI path changes, as built. `test:e2e:browsers`, `UI_E2E_BROWSERS`, `UI_E2E_WS` and `UI_E2E_PORT` are approved.
+8. **Tooltips:** ThemeToggle and CopyButton keep the native `title`, with no ui Tooltip on the site for now.
+9. **Two small items:** the `progress:indeterminate` exemption from the site's 5-second motion limit and the `outputTemplate` export are both approved.
+10. **Release path:** Prism runs TASK-386 (the review against Base UI and Zag) now, then the user does the screen reader pass (TASK-361), then the user decides on publishing (TASK-389).
+
+Also approved earlier in this conversation: \`--ui\`, \`lumiose-ui\`, \`ui_components\` and \`/ui/llms.txt\` (decision-64); the batch 1 and 2 names (decisions 62 and 65).
 <!-- SECTION:NOTES:END -->
