@@ -2,11 +2,14 @@
 id: TASK-420
 title: 'Scroll Area: no scrollbar without JavaScript in Firefox'
 status: To Do
-assignee: []
+assignee:
+  - '@Halo'
 created_date: '2026-10-16 03:06'
+updated_date: '2026-10-16 03:39'
 labels:
   - ui
   - browsers
+milestone: m-12
 dependencies: []
 ordinal: 418000
 ---
@@ -21,3 +24,9 @@ Found by Beacon in TASK-361 (2026-10-16), in Linux Firefox (Playwright 1.63, Jav
 <!-- AC:BEGIN -->
 - [ ] #1 Without JavaScript, Scroll Area shows the native scrollbar in Firefox, and the test runs there
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+2026-10-16 (Lux, orchestrator): assigned at the batch 8 merge. Found by Beacon's Firefox/WebKit runs (TASK-361); the test is skipped in that browser with this id.
+<!-- SECTION:NOTES:END -->

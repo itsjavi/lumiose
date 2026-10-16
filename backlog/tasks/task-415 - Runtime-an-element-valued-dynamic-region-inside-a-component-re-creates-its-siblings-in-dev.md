@@ -4,8 +4,10 @@ title: >-
   Runtime: an element-valued dynamic region inside a component re-creates its
   siblings in dev
 status: To Do
-assignee: []
+assignee:
+  - '@Spark'
 created_date: '2026-10-16 02:28'
+updated_date: '2026-10-16 03:39'
 labels:
   - runtime
   - bug
@@ -26,3 +28,9 @@ Found by Halo in TASK-405 (2026-10-16). In `lumiose dev` (not in a build), a com
 - [ ] #1 An element-valued dynamic region returned by a component hydrates onto its own server node in dev as in a build, and updating it leaves its siblings in place
 - [ ] #2 A runtime test covers it, and the Field.Validity docs drop the 'text inside an element' advice if it no longer applies
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+2026-10-16 (Lux, orchestrator): assigned at the batch 8 merge. Runtime bug (dev-only hydration), Spark's area.
+<!-- SECTION:NOTES:END -->

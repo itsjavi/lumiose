@@ -2,11 +2,14 @@
 id: TASK-416
 title: 'Number Field: no commit on blur in Firefox and WebKit'
 status: To Do
-assignee: []
+assignee:
+  - '@Halo'
 created_date: '2026-10-16 03:06'
+updated_date: '2026-10-16 03:39'
 labels:
   - ui
   - browsers
+milestone: m-12
 dependencies: []
 ordinal: 414000
 ---
@@ -21,3 +24,9 @@ Found by Beacon in TASK-361 (2026-10-16), running examples/ui-e2e in Linux Firef
 <!-- AC:BEGIN -->
 - [ ] #1 onValueCommitted reports a typed value when the input is left, in Chromium, Firefox and WebKit, and the test runs in all three
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+2026-10-16 (Lux, orchestrator): assigned at the batch 8 merge. Found by Beacon's Firefox/WebKit runs (TASK-361); the test is skipped in that browser with this id.
+<!-- SECTION:NOTES:END -->

@@ -2,11 +2,14 @@
 id: TASK-419
 title: 'Select: the trigger button has no name in Firefox''s classic select'
 status: To Do
-assignee: []
+assignee:
+  - '@Halo'
 created_date: '2026-10-16 03:06'
+updated_date: '2026-10-16 03:39'
 labels:
   - ui
   - browsers
+milestone: m-12
 dependencies: []
 ordinal: 417000
 ---
@@ -21,3 +24,9 @@ Found by Beacon in TASK-361 (2026-10-16), in Linux Firefox (Playwright 1.63). ax
 <!-- AC:BEGIN -->
 - [ ] #1 axe passes on /select in Firefox, and the test runs there
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+2026-10-16 (Lux, orchestrator): assigned at the batch 8 merge. Found by Beacon's Firefox/WebKit runs (TASK-361); the test is skipped in that browser with this id.
+<!-- SECTION:NOTES:END -->

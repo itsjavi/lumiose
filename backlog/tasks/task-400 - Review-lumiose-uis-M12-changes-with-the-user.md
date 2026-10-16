@@ -5,7 +5,7 @@ status: To Do
 assignee:
   - '@Lux'
 created_date: '2026-10-15 19:52'
-updated_date: '2026-10-16 01:31'
+updated_date: '2026-10-16 03:39'
 labels:
   - ui
   - review
@@ -196,4 +196,32 @@ User request, 2026-10-15: start M12 worker batches autonomously, and review the 
 - TASK-413: gaps against Base UI;
 - TASK-414: the ui-e2e nav;
 - TASK-412 (`useId` inside `Dynamic`): assigned to Spark.
+
+## Batch 8 (2026-10-16): hardening (Halo: TASK-414, 385, 395, 405, 408, 410, 413; Beacon: TASK-412, 388, 409, 397, 399, 398, 362, 361)
+
+**Proposed public names (for the user's review; most are Base UI's own names):**
+- Tabs: `Tabs.Indicator`, with `data-indicator` and the `--lu-tabs-anchor` variable.
+- Field: `validationDebounceTime` and `Field.Validity`; `validate` may be async.
+- Checkbox and Switch: `uncheckedValue` (`data-unchecked-value`).
+- Slider: `thumbCollisionBehavior="swap"`, `thumbAlignment` (`"edge" | "center"`, `data-thumb-alignment`), `--lu-slider-thumb-size`.
+- Number Field: `smallStep`, `snapOnStep`.
+- Autocomplete: `autoHighlight`, `keepHighlight`, `submitOnItemClick`, `limit`.
+- Popover: `modal="trap-focus"` (`data-trap-focus`).
+- OTP Field: `normalizeValue`.
+- Test kit: the `test:e2e:browsers` script, the `UI_E2E_BROWSERS` and `UI_E2E_WS` variables, and the `ui-browsers` CI workflow, which runs Firefox and WebKit on Linux when UI paths change.
+- site-kit: its `Tabs` API changes to `Tabs.Root/List/Tab/Panel`, since it now uses @lumiose/ui.
+
+**Dropped, with reasons in the tasks:** CheckboxGroup `required` (Base UI has none, and HTML has no "at least one" constraint); Number Field `ScrubAreaCursor`; Popover Backdrop (`::backdrop` covers it); Preview Card Arrow, Backdrop and detached triggers.
+
+**Decisions for the user:**
+- **Screen reader pass (TASK-361):** VoiceOver and NVDA need a person. The checklist is in TASK-361's notes. TASK-361 stays open until then.
+- **Tooltips on ThemeToggle and CopyButton (site-kit):** keep the native `title`, or switch to the ui Tooltip at about 1.5 kB per page.
+
+**Worth the user's look:** RTL across every component (TASK-385, no `:dir()` left in @lumiose/ui's CSS); the Firefox and WebKit runs found real bugs and fixed them (Menu and Combobox resting-pointer detection, Toast swipes).
+
+**Filed or assigned:**
+- Halo: TASK-416 to TASK-420 (Firefox and WebKit issues).
+- Spark: TASK-415 (dev-only hydration).
+- Beacon: TASK-421 (DocsSearch), TASK-423 (docs demos with function props).
+- Photon: TASK-422 (`:dir()` in production CSS).
 <!-- SECTION:NOTES:END -->
