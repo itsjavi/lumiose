@@ -95,6 +95,21 @@ export default function PopoverPage() {
         </div>
       </section>
 
+      {/* A trigger that scrolls out of its box: its popup hides until it is back (TASK-453 L28). */}
+      <section aria-labelledby="scroller-heading">
+        <h2 id="scroller-heading">In a scroller</h2>
+        <div class="scroller" data-testid="scroller">
+          <Popover.Root>
+            <Popover.Trigger class="lu-button">Status</Popover.Trigger>
+            <Popover.Popup class="lu-popover" side="right">
+              <Popover.Title>Status</Popover.Title>
+              <Popover.Description>All systems normal.</Popover.Description>
+            </Popover.Popup>
+          </Popover.Root>
+          <p class="filler">More below.</p>
+        </div>
+      </section>
+
       {/* Last on the page: Tab from its popup must not loop back into it. */}
       <footer class="last">
         <Popover.Root>
@@ -119,6 +134,15 @@ export default function PopoverPage() {
   }
   .placements {
     margin-block: 6rem;
+  }
+  .scroller {
+    max-block-size: 6rem;
+    overflow: auto;
+    padding: 0.5rem;
+    border: 1px solid;
+  }
+  .filler {
+    block-size: 20rem;
   }
   .sides {
     display: flex;

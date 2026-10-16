@@ -162,7 +162,10 @@ browser's centred box; a swiped drawer selects no text.
 | Escape         | Closes the drawer on top.                                                    |
 
 - **Focus** moves into the drawer on open and returns to the trigger on close, a swipe included, as
-  with [Dialog](dialog.md#keyboard-and-focus).
+  with [Dialog](dialog.md#keyboard-and-focus): on open, to the element with `autofocus`, or else the
+  first tab stop, or else the drawer. Base UI's Drawer focuses the drawer itself; give the drawer
+  `autofocus` (`<Drawer.Popup autofocus>`) for that, where the script runs. Opened by touch, it
+  focuses itself already.
 - **A swipe** is a dragging movement: the close buttons, Escape and a click on the backdrop close
   the drawer without one (WCAG 2.5.7). Give a drawer a visible close button.
 - **The swipe** needs to travel 40% of the drawer's size toward its edge, or to be a quick flick;

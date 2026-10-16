@@ -451,3 +451,38 @@ test.describe("WCAG 2.2 AA with the default theme (doc-9 section 17)", () => {
     );
   });
 });
+
+test.describe("a trigger scrolled out of view (TASK-453 L28)", () => {
+  test("its popup hides while the page has scrolled it away, and comes back", async ({ page }) => {
+    await page.setViewportSize({ width: 1024, height: 400 });
+    await page.goto("/popover");
+    await page.getByRole("button", { name: "Notifications", exact: true }).click();
+    // By id: hidden, it leaves the accessibility tree that role queries read.
+    const id = await popup(page, "Notifications").getAttribute("id");
+    const notifications = page.locator(`[id="${id}"]`);
+    await expect(notifications).toBeVisible();
+    // The pointer off the popup, the wheel scrolls the page.
+    await page.mouse.move(1000, 380);
+    await page.mouse.wheel(0, 600);
+    await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(300);
+    await expect(notifications).toHaveAttribute("data-anchor-hidden", "");
+    await expect(notifications).toBeHidden();
+    await page.mouse.wheel(0, -600);
+    await expect(notifications).toBeVisible();
+    expect(await isOpen(notifications)).toBe(true);
+  });
+
+  test("its popup hides while a scroller around it has scrolled it away", async ({ page }) => {
+    await page.goto("/popover");
+    await page.getByRole("button", { name: "Status", exact: true }).click();
+    const id = await popup(page, "Status").getAttribute("id");
+    const status = page.locator(`[id="${id}"]`);
+    await expect(status).toBeVisible();
+    const scroller = page.getByTestId("scroller");
+    await scroller.evaluate((element) => (element.scrollTop = element.scrollHeight));
+    await expect(status).toHaveCount(1);
+    await expect(status).toBeHidden();
+    await scroller.evaluate((element) => (element.scrollTop = 0));
+    await expect(status).toBeVisible();
+  });
+});

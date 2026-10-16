@@ -413,3 +413,19 @@ test.describe("WCAG 2.2 AA with the default theme (doc-9 section 17)", () => {
     }
   });
 });
+
+test("a dialog's first tab stop takes focus, not a scroller or a title (TASK-453 L29)", async ({
+  page,
+}) => {
+  await page.goto("/dialog");
+  await page.getByRole("button", { name: "Terms" }).click();
+  const dialog = page.getByRole("dialog", { name: "Terms of use" });
+  await expect(dialog).toBeVisible();
+  await expect(dialog.getByRole("button", { name: "Agree" })).toBeFocused();
+});
+
+test("a dialog with autofocus takes focus itself (TASK-453 L31)", async ({ page }) => {
+  await page.goto("/dialog");
+  await page.getByRole("button", { name: "Notice" }).click();
+  await expect(page.getByRole("dialog", { name: "Maintenance tonight" })).toBeFocused();
+});

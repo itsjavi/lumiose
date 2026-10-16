@@ -61,7 +61,9 @@ handlers, `ref`) and passes them through. Your props override the defaults (`typ
   `"closerequest"` for an alert dialog (Escape only); pass `closedby="none"` to allow neither. Native
   events work as on a `<dialog>`: `on:close` runs after any close, and
   `event.currentTarget.returnValue` holds the value of the `Close` that closed it (it is unchanged
-  after Escape).
+  after Escape). To keep a dialog open (unsaved changes, say), use `closedby="none"` while it must
+  stay, not `preventDefault()` on its `cancel` event: browsers let a page cancel only the first of
+  repeated close requests, so a second Escape closes it anyway.
 - **`Title`** and **`Description`**: the popup's `aria-labelledby` and `aria-describedby` point at
   the ones it renders, and only those; in an island they follow parts that appear or go away. A
   dialog without a `Title` needs an `aria-label` on `Popup`.
@@ -192,9 +194,10 @@ The browser's modal dialog provides the
 | Tab, Shift+Tab | Move between the focusable elements of the dialog. The page behind is inert: focus never reaches it. |
 | Escape         | Closes the dialog on top, alert dialogs included. With nested dialogs, one Escape closes one dialog. |
 
-- **On open**, focus moves to the element with `autofocus`, or else the first focusable element
-  inside, or else the dialog. Opened by touch, the dialog focuses itself instead, so no virtual
-  keyboard opens over it (an `autofocus` element still gets focus).
+- **On open**, focus moves to the element with `autofocus`, or else the first tab stop inside,
+  or else the dialog, as in Base UI and the same in every browser: not a scroller before it, nor a
+  `tabindex="-1"` title (where the script runs). Opened by touch, the dialog focuses itself
+  instead, so no virtual keyboard opens over it (an `autofocus` element still gets focus).
 - **On close**, focus returns to the element that had it before: the trigger, or the button that
   set the signal. If that element is gone, focus goes to another trigger of the dialog, without
   scrolling the page. The popovers, menus and dialogs open inside it close with it.
@@ -216,7 +219,8 @@ islands bundle it. It covers every `<dialog>` on the page:
 
 - a right-click or a second finger outside does not close the dialog;
 - `data-nested-dialog-open` and `--lu-nested-dialogs` on a dialog with open dialogs inside;
-- a dialog opened by touch focuses itself;
+- the first tab stop takes focus on open, in every browser, and a dialog opened by touch focuses
+  itself;
 - focus returns without scrolling, to the opener or, if it is gone, another trigger (WebKit, which
   does not focus a clicked button, would otherwise leave focus on the page);
 - the click outside where the browser lacks `closedby` (Safari), and the invoker commands where it

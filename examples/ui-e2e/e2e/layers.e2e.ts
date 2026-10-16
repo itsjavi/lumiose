@@ -31,6 +31,9 @@ test.describe("one Escape closes one layer (TASK-427)", () => {
     await rest(page, account);
     await expect(dialog(page, "Account")).toBeVisible();
     const plan = await centre(page, "Plan details");
+    // Off the trigger first: a pointer resting on it through the reload would hover it before the
+    // script runs, and never again.
+    await page.mouse.move(0, 0);
     await page.reload();
     await page.waitForTimeout(500);
 

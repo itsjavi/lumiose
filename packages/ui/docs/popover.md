@@ -76,7 +76,8 @@ The popup flips to the opposite side when it does not fit, and goes below (or ab
 when a `left` or `right` popup fits on neither side. A popup too tall for the room on both sides shrinks to the room beside its trigger
 (below, or above when below has less than 8rem), and scrolls; without anchor positioning the
 script writes that room as `--lu-available-height`, which the default theme's caps use. It hides while its trigger is
-scrolled out of view.
+scrolled out of view, of the page or of a scroller around it (`data-anchor-hidden` on the popup,
+where the script runs), and comes back with it.
 
 ### The other parts
 
