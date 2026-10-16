@@ -415,9 +415,12 @@ export function DocArticle(props: DocArticleProps) {
   .chunk :deep(code) {
     font-family: $font.mono;
   }
-  /* A long path or expression in a sentence breaks rather than widening a phone's page, also with
-     WCAG's text-spacing overrides (1.4.10, 1.4.12). Table cells keep theirs on one line. */
+  /* A long path or expression in a sentence or a heading (`Toast.createToastManager`) breaks rather
+     than widening a phone's page, also with WCAG's text-spacing overrides (1.4.10, 1.4.12). Table
+     cells keep theirs on one line. */
   .chunk :deep(code),
+  .chunk :deep(h2),
+  .chunk :deep(h3),
   .lead :deep(code) {
     overflow-wrap: anywhere;
   }
