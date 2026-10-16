@@ -98,6 +98,58 @@ describe("Popover on the server", () => {
     expect(anchors[0]).not.toBe(anchors[1]);
   });
 
+  it("marks a trigger that opens on hover, with its delays (TASK-394)", async () => {
+    const html = await renderToString(() => (
+      <Popover.Root>
+        <Popover.Trigger openOnHover delay={200} closeDelay={100}>
+          Profile
+        </Popover.Trigger>
+        <Popover.Popup aria-label="Profile" />
+      </Popover.Root>
+    ));
+    const popup = attrs(html, "div");
+    expect(attrs(html, "button")).toMatchObject({
+      "data-open-on-hover": "",
+      "data-delay": "200",
+      "data-close-delay": "100",
+      popovertarget: popup.id,
+    });
+  });
+
+  it("renders a modal popover as a modal dialog opened by an invoker command (TASK-394)", async () => {
+    const html = await renderToString(() => (
+      <Popover.Root modal>
+        <Popover.Trigger openOnHover>Rename</Popover.Trigger>
+        <Popover.Popup side="top" align="start">
+          <Popover.Title>Rename</Popover.Title>
+          <Popover.Close>Cancel</Popover.Close>
+        </Popover.Popup>
+      </Popover.Root>
+    ));
+    const dialog = attrs(html, "dialog");
+    expect(dialog).toMatchObject({
+      "aria-labelledby": expect.stringMatching(/-title$/),
+      "data-side": "top",
+      "data-align": "start",
+      closedby: "any",
+    });
+    expect(dialog).not.toHaveProperty("popover");
+    const [trigger, close] = [
+      attrs(html, "button"),
+      attrs(html, "button", (a) => a.command === "close"),
+    ];
+    // A modal popover does not open on hover.
+    expect(trigger).toEqual({
+      type: "button",
+      "aria-haspopup": "dialog",
+      style: expect.stringContaining("anchor-name"),
+      command: "show-modal",
+      commandfor: dialog.id,
+      "aria-expanded": "false",
+    });
+    expect(close).toEqual({ type: "button", command: "close", commandfor: dialog.id });
+  });
+
   it("throws when a part is outside Popover.Root", async () => {
     await expect(renderToString(() => <Popover.Title>Lost</Popover.Title>)).rejects.toThrow(
       "Popover parts must be inside <Popover.Root>.",

@@ -1,0 +1,12 @@
+import { Title } from "lumiose";
+import { PopoverModalSignals } from "../../../../islands/PopoverModalSignals.tsx";
+
+export default function PopoverHoverModalIslandPage() {
+  return (
+    <>
+      <Title>Popover: hover and modal in an island</Title>
+      <h1>Popover: hover and modal in an island</h1>
+      <PopoverModalSignals client:load />
+    </>
+  );
+}

@@ -253,13 +253,14 @@
         overlay 120ms allow-discrete,
         display 120ms allow-discrete;
     }
-    .lu-popover:not(:popover-open),
+    /* A modal popover is an open <dialog>, not an open popover (TASK-394). */
+    .lu-popover:not(:popover-open, [open]),
     .lu-tooltip:not(:popover-open) {
       opacity: 0;
       scale: 0.96;
     }
     @starting-style {
-      .lu-popover:popover-open,
+      .lu-popover:is(:popover-open, [open]),
       .lu-tooltip:popover-open {
         opacity: 0;
         scale: 0.96;

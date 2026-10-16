@@ -16,6 +16,13 @@
 //   browser light-dismisses it until the script runs.
 // - `aria-expanded` on the triggers, following the popover.
 // - Placement where CSS anchor positioning is missing (placement/place.ts).
+// - Open on hover (TASK-394): a trigger with `data-open-on-hover` opens its popover after
+//   `data-delay` (300 ms) of hover by a mouse or a pen, never by touch or focus, without moving
+//   focus. It stays open while the pointer is on the trigger or the popup (WCAG 1.4.13: hoverable)
+//   and closes `data-close-delay` (0 ms, at least a 100 ms grace to cross the gap) after it left
+//   both. A click on the trigger keeps it open until it is dismissed (an outside press, Escape).
+// - A modal popover is a modal `<dialog data-side>` opened by `command="show-modal"`: placement,
+//   focus and `aria-expanded` as above; Dialog's script and the native dialog do the rest.
 //
 // It must not import `lumiose`: server-rendered pages load it without the runtime.
 import { openLayer } from "../layer/layer.ts";
@@ -38,13 +45,16 @@ function on<K extends keyof DocumentEventMap>(
 }
 
 const isPopover = (node: unknown): node is HTMLElement =>
-  node instanceof HTMLElement && node.matches("[popover][data-side][role=dialog]");
+  node instanceof HTMLElement &&
+  node.matches("[popover][data-side][role=dialog], dialog[data-side]");
 
 /** The buttons that open or toggle the popover. */
-const triggers = (popup: HTMLElement) =>
-  document.querySelectorAll<HTMLElement>(
-    `[popovertarget="${CSS.escape(popup.id)}"]:not([popovertargetaction=hide])`,
+const triggers = (popup: HTMLElement) => {
+  const id = CSS.escape(popup.id);
+  return document.querySelectorAll<HTMLElement>(
+    `[popovertarget="${id}"]:not([popovertargetaction=hide]), [commandfor="${id}"][command=show-modal]`,
   );
+};
 
 function anchor(popup: HTMLElement): HTMLElement | undefined {
   const opener = openers.get(popup);
@@ -65,12 +75,99 @@ on("keydown", () => (press = undefined));
 const layers = new Map<HTMLElement, () => void>();
 
 // Before `popovertarget` acts: a closed popup becomes a manual popover, which the layer model
-// dismisses. A key press on the trigger clicks it too.
+// dismisses. A key press on the trigger clicks it too. A click on the trigger of a popover its
+// hover opened keeps it open instead of closing it.
 on("click", (event) => {
   const trigger = (event.target as Element).closest?.<HTMLElement>("[popovertarget]");
   const popup = trigger && document.getElementById(trigger.getAttribute("popovertarget")!);
-  if (isPopover(popup) && !popup.matches(":popover-open")) popup.popover = "manual";
+  if (!isPopover(popup) || trigger!.matches("[popovertargetaction=hide]")) return;
+  if (!popup.matches(":popover-open")) popup.popover = "manual";
+  else if (hovered.has(popup)) {
+    event.preventDefault();
+    stay(popup);
+    hovered.delete(popup);
+  }
 });
+
+// Open on hover --------------------------------------------------------------------------------
+
+/** How long a hover-opened popover waits for the pointer to cross the gap from its trigger. */
+const GRACE = 100;
+/** The open popovers a hover opened, with their trigger, until a click keeps one open. */
+const hovered = new Map<HTMLElement, HTMLElement>();
+/** A hover waiting for its delay to open a popover. */
+let opening: { trigger: HTMLElement; timer: ReturnType<typeof setTimeout> } | undefined;
+/** Hover-opened popovers the pointer left, closing after their close delay. */
+const closing = new Map<HTMLElement, ReturnType<typeof setTimeout>>();
+
+const ms = (trigger: HTMLElement, name: string, fallback: number) => {
+  const value = Number(trigger.getAttribute(name) ?? Number.NaN);
+  return Number.isFinite(value) ? value : fallback;
+};
+
+function stay(popup: HTMLElement) {
+  clearTimeout(closing.get(popup));
+  closing.delete(popup);
+}
+
+function cancelOpening() {
+  clearTimeout(opening?.timer);
+  opening = undefined;
+}
+
+on("pointerover", (event) => {
+  if (event.pointerType === "touch") return;
+  const target = event.target as Node;
+  // Back on a hover-opened popover or its trigger: it stays open.
+  for (const [popup, trigger] of hovered) {
+    if (popup.contains(target) || trigger.contains(target)) stay(popup);
+  }
+  const trigger = (target as Element).closest?.<HTMLButtonElement>(
+    "button[data-open-on-hover][popovertarget]",
+  );
+  if (!trigger || trigger.disabled || opening?.trigger === trigger) return;
+  const popup = document.getElementById(trigger.getAttribute("popovertarget")!);
+  if (!isPopover(popup) || popup.matches(":popover-open")) return;
+  cancelOpening();
+  opening = {
+    trigger,
+    timer: setTimeout(
+      () => {
+        opening = undefined;
+        if (popup.matches(":popover-open")) return;
+        // Before it opens: a hover-opened popover leaves focus where it is (see `toggle`).
+        hovered.set(popup, trigger);
+        popup.popover = "manual";
+        (popup.showPopover as (options?: { source?: HTMLElement }) => void)({ source: trigger });
+      },
+      ms(trigger, "data-delay", 300),
+    ),
+  };
+});
+
+on("pointerout", (event) => {
+  if (event.pointerType === "touch") return;
+  const from = event.target as Node;
+  const to = event.relatedTarget as Node | null;
+  if (opening?.trigger.contains(from) && !opening.trigger.contains(to)) cancelOpening();
+  for (const [popup, trigger] of hovered) {
+    const inside = (node: Node | null) =>
+      !!node && (popup.contains(node) || trigger.contains(node));
+    if (!inside(from) || inside(to)) continue;
+    stay(popup);
+    const delay = Math.max(ms(trigger, "data-close-delay", 0), GRACE);
+    closing.set(
+      popup,
+      setTimeout(() => {
+        closing.delete(popup);
+        if (hovered.has(popup) && popup.matches(":popover-open")) popup.hidePopover();
+      }, delay),
+    );
+  }
+});
+
+// A press before the delay cancels the opening (the click opens it, as without hover).
+on("pointerdown", cancelOpening);
 
 /** Stops dismissing `popup`: as it closes, so the next close request goes to the layer below. */
 function release(popup: HTMLElement) {
@@ -116,7 +213,8 @@ on("toggle", (event) => {
   for (const trigger of triggers(popup)) trigger.setAttribute("aria-expanded", String(open));
 
   if (open) {
-    if (popup.contains(document.activeElement)) return;
+    // A hover opens it without taking focus from where it is.
+    if (hovered.has(popup) || popup.contains(document.activeElement)) return;
     const touch = press?.pointerType === "touch" && event.timeStamp - press.timeStamp < 1000;
     const first = touch
       ? undefined
@@ -132,6 +230,8 @@ on("toggle", (event) => {
   }
 
   placed.delete(popup);
+  hovered.delete(popup);
+  stay(popup);
   const active = document.activeElement;
   if (active && active !== document.body && !popup.contains(active)) return;
   anchor(popup)?.focus({ preventScroll: true });

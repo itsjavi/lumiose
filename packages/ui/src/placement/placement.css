@@ -1,17 +1,18 @@
 /*
- * Anchored popups (Popover, Tooltip): a `[popover]` with `data-side` and `data-align` is placed
- * next to the trigger its inline `position-anchor` names, with CSS anchor positioning, from the
- * server HTML on. It flips to the opposite side when it does not fit, and hides while its trigger
- * is scrolled out of view; one beside the trigger that fits on neither side goes below or above
- * it. `--lu-side-offset` is the gap to the trigger and `--lu-align-offset` a
- * shift along the side (the `sideOffset` and `alignOffset` props set them; a theme may too).
- * Without anchor positioning the popup's client script places it instead (placement/place.ts).
+ * Anchored popups (Popover, Tooltip): a `[popover]`, or a modal popover's `<dialog>`, with
+ * `data-side` and `data-align` is placed next to the trigger its inline `position-anchor` names,
+ * with CSS anchor positioning, from the server HTML on. It flips to the opposite side when it does
+ * not fit, and hides while its trigger is scrolled out of view; one beside the trigger that fits
+ * on neither side goes below or above it. `--lu-side-offset` is the gap to the trigger and
+ * `--lu-align-offset` a shift along the side (the `sideOffset` and `alignOffset` props set them; a
+ * theme may too). Without anchor positioning the popup's client script places it instead
+ * (placement/place.ts).
  */
 @layer lu.core, lu.theme;
 
 @layer lu.core {
   @supports (anchor-name: --a) {
-    [popover][data-side] {
+    :is([popover], dialog)[data-side] {
       inset: auto;
       margin: 0;
       position-try-fallbacks:
@@ -24,9 +25,9 @@
      * A popup beside the trigger that does not fit tries the other side, then the other block-axis
      * alignment, then below the trigger, then above it.
      */
-    [popover][data-side="left"],
-    [popover][data-side="right"],
-    [popover][data-side^="inline-"] {
+    :is([popover], dialog)[data-side="left"],
+    :is([popover], dialog)[data-side="right"],
+    :is([popover], dialog)[data-side^="inline-"] {
       position-try-fallbacks:
         flip-inline,
         flip-block,
@@ -36,46 +37,46 @@
     }
 
     /* The side. */
-    [popover][data-side="bottom"] {
+    :is([popover], dialog)[data-side="bottom"] {
       top: calc(anchor(bottom) + var(--lu-side-offset, 0px));
     }
-    [popover][data-side="top"] {
+    :is([popover], dialog)[data-side="top"] {
       bottom: calc(anchor(top) + var(--lu-side-offset, 0px));
     }
-    [popover][data-side="right"] {
+    :is([popover], dialog)[data-side="right"] {
       left: calc(anchor(right) + var(--lu-side-offset, 0px));
     }
-    [popover][data-side="left"] {
+    :is([popover], dialog)[data-side="left"] {
       right: calc(anchor(left) + var(--lu-side-offset, 0px));
     }
-    [popover][data-side="inline-end"] {
+    :is([popover], dialog)[data-side="inline-end"] {
       inset-inline-start: calc(anchor(self-end) + var(--lu-side-offset, 0px));
     }
-    [popover][data-side="inline-start"] {
+    :is([popover], dialog)[data-side="inline-start"] {
       inset-inline-end: calc(anchor(self-start) + var(--lu-side-offset, 0px));
     }
 
     /* The alignment along a top or bottom side: the inline axis, which follows the direction. */
-    [popover]:is([data-side="top"], [data-side="bottom"])[data-align="center"] {
+    :is([popover], dialog):is([data-side="top"], [data-side="bottom"])[data-align="center"] {
       justify-self: anchor-center;
       translate: var(--lu-align-offset, 0px);
     }
-    [popover]:is([data-side="top"], [data-side="bottom"])[data-align="start"] {
+    :is([popover], dialog):is([data-side="top"], [data-side="bottom"])[data-align="start"] {
       inset-inline-start: calc(anchor(self-start) + var(--lu-align-offset, 0px));
     }
-    [popover]:is([data-side="top"], [data-side="bottom"])[data-align="end"] {
+    :is([popover], dialog):is([data-side="top"], [data-side="bottom"])[data-align="end"] {
       inset-inline-end: calc(anchor(self-end) + var(--lu-align-offset, 0px));
     }
 
     /* The alignment along a left, right or inline side: the block axis. */
-    [popover]:not([data-side="top"], [data-side="bottom"])[data-align="center"] {
+    :is([popover], dialog):not([data-side="top"], [data-side="bottom"])[data-align="center"] {
       align-self: anchor-center;
       translate: 0 var(--lu-align-offset, 0px);
     }
-    [popover]:not([data-side="top"], [data-side="bottom"])[data-align="start"] {
+    :is([popover], dialog):not([data-side="top"], [data-side="bottom"])[data-align="start"] {
       top: calc(anchor(top) + var(--lu-align-offset, 0px));
     }
-    [popover]:not([data-side="top"], [data-side="bottom"])[data-align="end"] {
+    :is([popover], dialog):not([data-side="top"], [data-side="bottom"])[data-align="end"] {
       bottom: calc(anchor(bottom) + var(--lu-align-offset, 0px));
     }
   }

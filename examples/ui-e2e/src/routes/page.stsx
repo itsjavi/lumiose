@@ -63,6 +63,10 @@ export default function Home() {
         <li>
           <a href="/autocomplete">Autocomplete</a> (<a href="/autocomplete/island">in an island</a>)
         </li>
+        <li>
+          <a href="/popover/hover-modal">Popover: hover and modal</a> (
+          <a href="/popover/hover-modal/island">in an island</a>)
+        </li>
       </ul>
     </article>
   );

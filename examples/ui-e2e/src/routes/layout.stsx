@@ -45,6 +45,8 @@ export default function Root(props: LayoutProps<"/">) {
         <a href="/number-field/island">Number Field in an island</a>
         <a href="/autocomplete">Autocomplete</a>
         <a href="/autocomplete/island">Autocomplete in an island</a>
+        <a href="/popover/hover-modal">Popover: hover and modal</a>
+        <a href="/popover/hover-modal/island">Popover: hover and modal in an island</a>
       </nav>
       <main>{props.children}</main>
     </div>

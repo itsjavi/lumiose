@@ -1,7 +1,20 @@
 /*
  * Popover needs no CSS to open, close or stack: the native popover does it. What it needs is its
- * placement next to the trigger, shared with Tooltip (placement.css).
+ * placement next to the trigger, shared with Tooltip (placement.css). A modal popover is a modal
+ * <dialog>: the page behind it does not scroll, as behind a Dialog (without shifting the layout
+ * where the page had a classic scrollbar), and it blocks the page without dimming it, as Base UI's
+ * does (style its `::backdrop` to dim the page).
  */
 @layer lu.core, lu.theme;
 
 @import "../placement/placement.css";
+
+@layer lu.core {
+  :root:has(dialog[data-side]:modal) {
+    overflow: hidden;
+    scrollbar-gutter: stable;
+  }
+  dialog[data-side]::backdrop {
+    background: none;
+  }
+}

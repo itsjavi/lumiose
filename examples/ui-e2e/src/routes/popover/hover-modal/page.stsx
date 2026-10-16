@@ -1,0 +1,67 @@
+import { Popover } from "@lumiose/ui";
+import { Title } from "lumiose";
+
+// Server-rendered, no island (TASK-394): popovers that open on hover (Popover's script) and a
+// modal popover, a modal <dialog> opened by an invoker command. The page is long enough to scroll,
+// to show the scroll lock. Styled with the default theme.
+export default function PopoverHoverModalPage() {
+  return (
+    <>
+      <Title>Popover: hover and modal</Title>
+      <h1>Popover: hover and modal</h1>
+      <div class="grid">
+        <section aria-labelledby="hover-heading">
+          <h2 id="hover-heading">Open on hover</h2>
+          <Popover.Root>
+            <Popover.Trigger class="lu-button" openOnHover delay={200}>
+              Ada Lovelace
+            </Popover.Trigger>
+            <Popover.Popup class="lu-popover" sideOffset={8}>
+              <Popover.Title>Ada Lovelace</Popover.Title>
+              <Popover.Description>Wrote the first published program.</Popover.Description>
+              <a href="#ada">Profile</a>
+            </Popover.Popup>
+          </Popover.Root>
+          <Popover.Root>
+            <Popover.Trigger class="lu-button" openOnHover delay={200} closeDelay={300}>
+              Grace Hopper
+            </Popover.Trigger>
+            <Popover.Popup class="lu-popover" sideOffset={8}>
+              <Popover.Title>Grace Hopper</Popover.Title>
+              <Popover.Description>Built the first compiler.</Popover.Description>
+            </Popover.Popup>
+          </Popover.Root>
+        </section>
+
+        <section aria-labelledby="modal-heading">
+          <h2 id="modal-heading">Modal</h2>
+          <Popover.Root modal>
+            <Popover.Trigger class="lu-button">Rename</Popover.Trigger>
+            <Popover.Popup class="lu-popover" align="start" sideOffset={8}>
+              <Popover.Title>Rename the file</Popover.Title>
+              <label>
+                Name <input class="lu-input" value="report.pdf" />
+              </label>
+              <footer>
+                <Popover.Close class="lu-button">Cancel</Popover.Close>
+                <Popover.Close class="lu-button" data-variant="primary">
+                  Save
+                </Popover.Close>
+              </footer>
+            </Popover.Popup>
+          </Popover.Root>
+          <button type="button" class="lu-button">
+            Behind
+          </button>
+        </section>
+      </div>
+      <p class="filler">The end of a long page.</p>
+    </>
+  );
+}
+
+<style>
+  .filler {
+    margin-block-start: 150vh;
+  }
+</style>

@@ -21,6 +21,11 @@ export function Typed() {
       {/* @ts-expect-error: offsets are numbers of CSS pixels */}
       <Popover.Popup sideOffset="8px" />
       <Popover.Close class="button" on:click={() => {}} />
+      <Popover.Root modal>
+        <Popover.Trigger openOnHover delay={100} closeDelay={200} />
+      </Popover.Root>
+      {/* @ts-expect-error: delay is a number of milliseconds */}
+      <Popover.Trigger openOnHover delay="slow" />
 
       <Tooltip.Root bind:open={open} disableHoverablePopup>
         <Tooltip.Trigger delay={200} closeDelay={0} closeOnClick={false} />
