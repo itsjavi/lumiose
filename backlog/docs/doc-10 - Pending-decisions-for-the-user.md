@@ -111,4 +111,13 @@ Merged as bug fixes; listed here because they change what code means. Each can b
 - **Option:** add a native `win32-arm64-msvc` build, which removes that step on Windows on Arm, for one more CI job per release.
 - **Recommendation:** keep decision-67, and add the Windows on Arm build only if someone asks.
 
+### P13. Security defaults from the pre-release review (Prism, 2026-10-17)
+
+The review found 1 High, 3 Medium and 14 Low, now TASK-468 to TASK-475. Their fixes are underway. Publishing (P3) waits for the High (TASK-468) and the Mediums. Two items need the user:
+- **A default `X-Frame-Options: SAMEORIGIN` header (L6).** `frame-ancestors 'self'` goes into the opt-in strict CSP either way (TASK-472). A default header would also protect apps without strict CSP, but it breaks apps that are meant to be embedded until they opt out.
+  - **Recommendation:** add it as a default, with an option to turn it off.
+  - **Meanwhile:** strict CSP only.
+- **A `pick(form, names)` helper for echoing form values (M3).** The docs will teach an explicit record, which needs no new API: `values: { username: form.get("username") }`.
+  - **Recommendation:** no helper for now; revisit if the record form proves verbose in practice.
+
 ## Answered
