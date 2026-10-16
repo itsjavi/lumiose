@@ -4,8 +4,10 @@
 // Layers that open on hover give the page no user activation, so their close watchers join one
 // group. Playwright's own calls can grant activation in Chromium (an `evaluate`, a locator), which
 // would hide that: the tests find the controls first, reload, and then drive the page with the
-// mouse and the keyboard only, checking nothing until the Escape.
+// mouse and the keyboard only, checking nothing until the Escape. A probe records the page's
+// activation at each Escape, so a test proves it ran without (TASK-462).
 import { expect, test, type Page } from "@playwright/test";
+import { axe, SCHEMES } from "./a11y.ts";
 
 type Point = { x: number; y: number };
 
@@ -22,10 +24,37 @@ async function rest(page: Page, point: Point) {
 
 const dialog = (page: Page, name: string) => page.getByRole("dialog", { name, exact: true });
 
+interface Activation {
+  active: boolean;
+  been: boolean;
+}
+
+/** Records `navigator.userActivation` at every Escape, before any handler, in every document. */
+const probe = (page: Page) =>
+  page.addInitScript(() => {
+    const seen: Activation[] = ((window as unknown as { escapes: Activation[] }).escapes = []);
+    addEventListener(
+      "keydown",
+      (event) => {
+        // Chrome 72, Firefox 120, Safari 16.4.
+        const { isActive, hasBeenActive } = (
+          navigator as Navigator & { userActivation: { isActive: boolean; hasBeenActive: boolean } }
+        ).userActivation;
+        if (event.key === "Escape") seen.push({ active: isActive, been: hasBeenActive });
+      },
+      true,
+    );
+  });
+
+/** What the probe recorded. Read it last: in Chromium, an `evaluate` gives the page activation. */
+const escapes = (page: Page) =>
+  page.evaluate(() => (window as unknown as { escapes: Activation[] }).escapes);
+
 test.describe("one Escape closes one layer (TASK-427)", () => {
   test("a hover popover in a hover popover: the inner one, then the outer one", async ({
     page,
   }) => {
+    await probe(page);
     await page.goto("/layers");
     const account = await centre(page, "Account");
     await rest(page, account);
@@ -44,6 +73,31 @@ test.describe("one Escape closes one layer (TASK-427)", () => {
     await expect(dialog(page, "Account")).toBeVisible();
     await page.keyboard.press("Escape");
     await expect(dialog(page, "Account")).toBeHidden();
+    // The first Escape came from a page that never had activation.
+    expect((await escapes(page))[0]).toEqual({ active: false, been: false });
+  });
+
+  test("a hover popover in a dialog, once the dialog's activation has expired", async ({
+    page,
+  }) => {
+    await probe(page);
+    await page.goto("/layers");
+    const settings = await centre(page, "Settings…");
+    await page.mouse.click(settings.x, settings.y);
+    await expect(dialog(page, "Settings")).toBeVisible();
+    const help = await centre(page, "What is this?");
+    await page.reload();
+    await page.waitForTimeout(500);
+
+    await page.mouse.click(settings.x, settings.y);
+    // Transient activation lasts 5 seconds in every engine: the popover then opens without it, and
+    // gets no close watcher of its own to share the dialog's group.
+    await page.waitForTimeout(5500);
+    await rest(page, help);
+    await page.keyboard.press("Escape");
+    await expect(page.getByText("Settings for this page only.")).toBeHidden();
+    await expect(dialog(page, "Settings")).toBeVisible();
+    expect((await escapes(page))[0]).toEqual({ active: false, been: true });
   });
 
   test("a hover popover and a preview card in a dialog: each Escape closes one", async ({
@@ -119,4 +173,24 @@ test.describe("closing a layer closes the layers inside it (TASK-436 M1)", () =>
       .poll(() => page.evaluate(() => document.querySelectorAll(":popover-open").length))
       .toBe(0);
   });
+});
+
+test.describe("WCAG 2.2 AA with the default theme (doc-9 section 17)", () => {
+  for (const scheme of SCHEMES) {
+    test(`axe passes with layers open in layers (${scheme})`, async ({ page }) => {
+      await page.emulateMedia({ colorScheme: scheme });
+      await page.goto("/layers");
+      await rest(page, await centre(page, "Account"));
+      await rest(page, await centre(page, "Plan details"));
+      await expect(dialog(page, "Plan details")).toBeVisible();
+      expect(await axe(page)).toEqual([]);
+      await page.keyboard.press("Escape");
+      await page.keyboard.press("Escape");
+      await page.mouse.move(0, 0);
+      await page.getByRole("button", { name: "Settings…" }).click();
+      await rest(page, await centre(page, "What is this?"));
+      await expect(page.getByText("Settings for this page only.")).toBeVisible();
+      expect(await axe(page)).toEqual([]);
+    });
+  }
 });

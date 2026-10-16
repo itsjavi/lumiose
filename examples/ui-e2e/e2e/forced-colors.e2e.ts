@@ -4,6 +4,7 @@
 // meter values, a slider's range, a scroll thumb and a highlighted menu item. Engines without the
 // emulation skip.
 import { expect, test, type Locator, type Page } from "@playwright/test";
+import { focusRing, forcedColorsIssues } from "./a11y.ts";
 import { chromatic } from "./pixels.ts";
 
 /** Loads `path` with forced colours, or skips where the engine cannot emulate them. */
@@ -95,5 +96,37 @@ test.describe("forced colours (TASK-441 M38)", () => {
     const rename = menu.getByRole("menuitem", { name: "Rename" });
     await expect(rename).toHaveAttribute("data-highlighted", "");
     expect(await css(rename, "background-color")).not.toBe(await css(menu, "background-color"));
+  });
+
+  test("every themed control keeps a boundary, and focus a visible ring (TASK-462)", async ({
+    page,
+  }) => {
+    test.slow();
+    await forced(page, "/");
+    const paths = await page
+      .locator("main a[href^='/']")
+      .evaluateAll((links) => [...new Set(links.map((link) => link.getAttribute("href")!))]);
+    const found: string[] = [];
+    for (const path of paths) {
+      await page.goto(path);
+      for (const each of await forcedColorsIssues(page.locator("main"))) {
+        found.push(`${path}: ${each}`);
+      }
+      // The first tab stop in main, after the layout's link: its ring is drawn in a system
+      // colour, against Canvas. Inputs whose component draws the ring around them (a slider's
+      // thumb, a number field's group, OTP slots) have their own suites' checks.
+      await page.keyboard.press("Tab");
+      await page.keyboard.press("Tab");
+      const own = await page.evaluate(
+        () =>
+          document.activeElement?.closest("main")?.matches("*") === true &&
+          document.activeElement.matches("button, a[href], [role=tab], summary"),
+      );
+      const ring = await focusRing(page);
+      if (own && (ring === "none" || ring.includes("contrast"))) {
+        found.push(`${path}: focus ring ${ring}`);
+      }
+    }
+    expect(found).toEqual([]);
   });
 });

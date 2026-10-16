@@ -212,6 +212,11 @@ test.describe("WCAG 2.2 AA with the default theme (doc-9 section 17)", () => {
       await button(page, "Filters").click();
       await expect(drawer(page, "Filters")).toBeVisible();
       expect(await axe(page)).toEqual([]);
+      await page.keyboard.press("Escape");
+      // The side drawer too, with its navigation (TASK-462).
+      await button(page, "Menu").click();
+      await expect(drawer(page, "Menu")).toBeVisible();
+      expect(await axe(page)).toEqual([]);
     });
   }
 

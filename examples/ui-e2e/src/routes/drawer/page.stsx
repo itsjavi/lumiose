@@ -51,4 +51,10 @@ export default function DrawerPage() {
     max-block-size: 12rem;
     overflow: auto;
   }
+  /* A link on its own is a 24px target (WCAG 2.5.8, TASK-462). */
+  :global(.lu-drawer nav a) {
+    display: inline-block;
+    min-block-size: 24px;
+    padding-block: 3px;
+  }
 </style>

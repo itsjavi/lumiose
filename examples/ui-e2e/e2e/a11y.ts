@@ -75,30 +75,130 @@ export function clipped(scope: Locator): Promise<string[]> {
 }
 
 /**
- * WCAG 2.5.8 Target Size (Minimum): the buttons and links under `scope` smaller than 24 by 24.
- * Links inside a sentence (`display: inline`) are the criterion's inline exception.
+ * WCAG 2.5.8 Target Size (Minimum): the controls under `scope` smaller than 24 by 24: buttons,
+ * links, tabs, inputs, `summary`, options, menu items and scroll thumbs. A link inside a sentence
+ * (inline, with text of its own line around it) is the criterion's inline exception; a link that
+ * stands alone is a target like any other (TASK-462).
  */
 export function smallTargets(scope: Locator): Promise<string[]> {
-  return scope.evaluate((root) =>
-    [...root.querySelectorAll<HTMLElement>("button, a[href], [role=tab], input")]
+  return scope.evaluate((root) => {
+    const inSentence = (element: HTMLElement) => {
+      if (getComputedStyle(element).display !== "inline") return false;
+      const block = element.parentElement;
+      const own = (block?.textContent ?? "").replace(element.textContent ?? "", "");
+      return /\S/.test(own);
+    };
+    return [
+      ...root.querySelectorAll<HTMLElement>(
+        "button, a[href], [role=tab], input, summary, [role=option], [role^=menuitem], [data-thumb]",
+      ),
+    ]
       .filter((element) => element.getClientRects().length > 0)
-      .filter(
-        (element) => !(element.localName === "a" && getComputedStyle(element).display === "inline"),
-      )
+      .filter((element) => getComputedStyle(element).visibility !== "hidden")
+      .filter((element) => !(element.localName === "a" && inSentence(element)))
       .map((element) => ({ element, box: element.getBoundingClientRect() }))
       .filter(({ box }) => box.width < 24 || box.height < 24)
-      .map(({ element, box }) => `${element.textContent?.trim()}: ${box.width}x${box.height}`),
-  );
+      .map(
+        ({ element, box }) =>
+          `${element.textContent?.trim() || element.localName}: ${box.width}x${box.height}`,
+      );
+  });
 }
 
-/** WCAG 2.4.7 Focus Visible: the focused element's outline, `"<width> <style>"`, or "none". */
+/**
+ * WCAG 2.4.7 Focus Visible and 1.4.11 Non-text Contrast: the focused element's outline,
+ * `"<width> <style>"`, or "none"; a ring under 3:1 against what is behind it adds
+ * `", contrast <ratio>:1"`, so a test that expects `"2px solid"` checks its contrast too (TASK-462).
+ */
 export function focusRing(page: Page): Promise<string> {
   return page.evaluate(() => {
     const active = document.activeElement;
     if (!active) return "none";
     const style = getComputedStyle(active);
-    return style.outlineStyle === "none" ? "none" : `${style.outlineWidth} ${style.outlineStyle}`;
+    if (style.outlineStyle === "none") return "none";
+    const ring = `${style.outlineWidth} ${style.outlineStyle}`;
+    // Any CSS colour as sRGB, through a canvas.
+    const canvas = document.createElement("canvas");
+    canvas.width = canvas.height = 1;
+    const context = canvas.getContext("2d", { willReadFrequently: true })!;
+    const rgba = (color: string): [number, number, number, number] => {
+      context.clearRect(0, 0, 1, 1);
+      context.fillStyle = "#000";
+      context.fillStyle = color;
+      context.fillRect(0, 0, 1, 1);
+      const [r, g, b, a] = context.getImageData(0, 0, 1, 1).data;
+      return [r!, g!, b!, a! / 255];
+    };
+    // What the ring is drawn on: the element's box when the outline is inside it, else its parent's.
+    let node: Element | null =
+      Number.parseFloat(style.outlineOffset) < 0 ? active : active.parentElement;
+    const layers: [number, number, number, number][] = [];
+    while (node) {
+      const layer = rgba(getComputedStyle(node).backgroundColor);
+      if (layer[3] > 0) layers.push(layer);
+      if (layer[3] >= 1) break;
+      node = node.parentElement;
+    }
+    let behind: [number, number, number] = matchMedia("(prefers-color-scheme: dark)").matches
+      ? [0, 0, 0]
+      : [255, 255, 255];
+    for (const [r, g, b, a] of layers.reverse()) {
+      behind = [
+        r * a + behind[0] * (1 - a),
+        g * a + behind[1] * (1 - a),
+        b * a + behind[2] * (1 - a),
+      ];
+    }
+    const [r, g, b, a] = rgba(style.outlineColor);
+    const front = [
+      r * a + behind[0] * (1 - a),
+      g * a + behind[1] * (1 - a),
+      b * a + behind[2] * (1 - a),
+    ];
+    const luminance = (channels: number[]) => {
+      const [x, y, z] = channels.map((value) => {
+        const c = value / 255;
+        return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+      });
+      return 0.2126 * x! + 0.7152 * y! + 0.0722 * z!;
+    };
+    const [light, dark] = [luminance(front), luminance(behind)].sort((p, q) => q - p);
+    const contrast = (light! + 0.05) / (dark! + 0.05);
+    return contrast >= 3 ? ring : `${ring}, contrast ${contrast.toFixed(2)}:1`;
   });
+}
+
+/**
+ * Forced colors (Windows High Contrast): the controls under `scope` whose boundary disappears,
+ * as `tag "text"` (TASK-462). The browser paints every background as Canvas there, keeping its
+ * alpha, and keeps borders and outlines in system colours: a control drawn by its background alone
+ * loses its edge. A transparent control (a ghost button in a bordered frame, a range input under
+ * its track) had no edge of its own to lose.
+ */
+export function forcedColorsIssues(scope: Locator): Promise<string[]> {
+  return scope.evaluate((root) =>
+    [
+      ...root.querySelectorAll<HTMLElement>(
+        "button, input:not([type=hidden]), select, textarea, [role=tab], [role=switch]",
+      ),
+    ]
+      .filter((element) => element.getClientRects().length > 0)
+      .filter((element) => getComputedStyle(element).visibility !== "hidden")
+      .filter((element) => {
+        const style = getComputedStyle(element);
+        const borders = ["Top", "Right", "Bottom", "Left"].some(
+          (side) =>
+            style.getPropertyValue(`border-${side.toLowerCase()}-style`) !== "none" &&
+            Number.parseFloat(style.getPropertyValue(`border-${side.toLowerCase()}-width`)) > 0,
+        );
+        // A native control draws its own boundary in forced colors.
+        const native =
+          style.appearance !== "none" && /^(input|select|textarea)$/.test(element.localName);
+        const background = !/rgba\(.*,\s*0\)$|transparent/.test(style.backgroundColor);
+        return background && !borders && !native && style.forcedColorAdjust !== "none";
+      })
+      .map((element) => `${element.localName} "${element.textContent?.trim().slice(0, 30)}"`),
+  );
 }
 
 /**
