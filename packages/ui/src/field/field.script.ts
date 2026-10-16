@@ -16,7 +16,8 @@
 //   problem, always, or only for its `match` (a `ValidityState` key, read from its id).
 // - Server errors (rendered visible from the Form's `errors`) go away once the value changes.
 // - A `validitychange` event on a control (Field.Root fires it when an async `validate` settles)
-//   shows its new verdict, if the field shows its errors by then.
+//   shows its new verdict, if the field shows its errors by then. On the field itself, with the
+//   messages, it brings a form action's errors back, also the same ones after an edit hid them.
 // - The control gets `aria-invalid` and `aria-describedby` for the errors shown and the field's
 //   descriptions.
 //
@@ -199,6 +200,17 @@ function onEdit(event: Event) {
   render(field);
 }
 
+/** A form action's errors for the field (an island's Field.Root): shown as the server's again. */
+function showServerErrors(field: HTMLElement, messages: string[]): void {
+  server.set(field, true);
+  for (const error of errors(field)) {
+    const match = matchOf(field, error);
+    if (match !== "" && match !== "invalid") continue;
+    error.hidden = false;
+    if (error.hasAttribute("for")) write(error, messages.join(" "));
+  }
+}
+
 // Not bubbling: a capturing listener sees it.
 document.addEventListener(
   "validitychange",
@@ -206,6 +218,8 @@ document.addEventListener(
     const field = fieldOf(event.target);
     if (!field) return;
     meet(field);
+    const detail = (event as CustomEvent<{ errors?: string[] } | null>).detail;
+    if (event.target === field && detail?.errors) showServerErrors(field, detail.errors);
     render(field);
   },
   true,

@@ -357,6 +357,30 @@ test.describe("a form reset in an island (TASK-424)", () => {
   });
 });
 
+test.describe("a form action's error that repeats (TASK-429)", () => {
+  test("shows again after an edit hid it, with aria-invalid and the description", async ({
+    page,
+  }) => {
+    await page.goto("/form/island");
+    const handle = page.getByRole("textbox", { name: "Handle" });
+    const error = page.getByText("That handle is reserved.");
+    await hydrated(page);
+    await handle.fill("admin");
+    await page.getByRole("button", { name: "Save" }).click();
+    await expect(error).toBeVisible();
+    // An edit hides the server's error; the same value fails the same way again.
+    await handle.fill("admin2");
+    await expect(error).toBeHidden();
+    await expect(handle).not.toHaveAttribute("aria-invalid");
+    await handle.fill("admin");
+    await page.getByRole("button", { name: "Save" }).click();
+    await expect(error).toBeVisible();
+    await expect(handle).toHaveAttribute("aria-invalid", "true");
+    const id = await error.getAttribute("id");
+    await expect(handle).toHaveAttribute("aria-describedby", new RegExp(`\\b${id}\\b`));
+  });
+});
+
 test.describe("live <output> text through a form reset (TASK-425)", () => {
   // Firefox and WebKit replace an output's children on a reset, even with the same text; the
   // runtime keeps such outputs out of it, so the text node it updates stays in place.

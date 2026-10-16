@@ -276,6 +276,16 @@ function Root({
     const element = document.getElementById(controlId(field));
     if (element) untrack(() => run(element, 0, true));
   });
+  // A form action's errors for this field, each time they arrive: the script shows them again
+  // even when they repeat, which no binding would apply again once an edit hid them (TASK-429).
+  effect(() => {
+    const errors = form?.errors();
+    const list = messages();
+    const element = untrack(host);
+    if (errors && list.length > 0 && element) {
+      element.dispatchEvent(new CustomEvent("validitychange", { detail: { errors: list } }));
+    }
+  });
   // A submit attempt checks every control (`invalid` does not bubble); a reset clears the checks.
   const onInvalid = (event: Event) => snapshot(event.target);
   const onReset = () => {

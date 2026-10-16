@@ -2648,7 +2648,8 @@ reader reads it there.
   in a field the user has not edited yet (Base UI's rule). **`"onChange"`** shows it as the user
   types.
 - **Once shown**, an error follows the value: it updates as the problem changes and goes away when
-  the value is valid. A server error goes away as soon as the value changes.
+  the value is valid. A server error goes away as soon as the value changes, and shows again
+  each time an action fails with it, the same message included.
 - **A form reset** hides every error.
 
 ## Without JavaScript, and the field's script
@@ -2664,7 +2665,9 @@ shows the problem there instead (the browser's message, or one your `validate` s
 timing above, focuses the first invalid control on a submit attempt, keeps `aria-invalid` and
 `aria-describedby` current (a description rendered after the control is linked once the script
 runs), and hides server errors once the value changes. When an async `validate` settles, Field.Root
-fires `validitychange` (not bubbling) on the control, and the script shows the new verdict.
+fires `validitychange` (not bubbling) on the control, and the script shows the new verdict. When a
+form action's errors arrive in an island, Field.Root fires it on `<lu-field>` with the messages
+(`detail.errors`), and the script shows them as the server's, even when they repeat.
 
 ## Browser support
 
