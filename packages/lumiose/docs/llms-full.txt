@@ -2712,12 +2712,24 @@ import `.css` files or CSS modules: see "Stylesheets, CSS Modules and Tailwind" 
 > `style` prop that no stylesheet reads) needs the whole project: `lumiose build`, `lumiose check` and
 > the language server report it.
 
-**In builds**, a page needs few render-blocking stylesheets. `lumiose build` merges the stylesheets
-every page starts with (the document's, the root layouts', shared components') into one file that
-all pages link and browsers cache, then puts each page's own stylesheets after it: inline in one
-`<style>` when they total 4 kB or less, else merged into one file for that page. The cascade
-order is the same as in dev, where each file's CSS stays a separate stylesheet for HMR. In the
-sample apps a first view went from 6–8 stylesheet requests to one, with about 30% fewer CSS bytes (brotli).
+**In builds**, a page needs few render-blocking stylesheets. `lumiose build` groups each page's
+stylesheets into at most three tags, in the page's cascade order:
+
+1. A file with the stylesheets every page starts with (the document's, the root layouts', shared
+   components'), linked by all pages and cached across them.
+2. A file with the stylesheets a group of pages goes on with, such as a route group's layout and
+   the components it renders, linked by those pages only. A group gets its file when three routes
+   or more continue with the same stylesheets (routes with identical stylesheets count once) and
+   they total more than 4 kB; a smaller run stays in each page's own CSS. So a page without the
+   site chrome, such as a fullscreen editor outside the `(site)` group, no longer moves the
+   chrome's CSS into every other page's file.
+3. The page's own stylesheets: inline in one `<style>` when they total 4 kB or less, else merged
+   into one file for that page.
+
+The cascade order is the same as in dev, where each file's CSS stays a separate stylesheet for
+HMR. In the sample apps a first view went from 6–8 stylesheet requests to one, with about 30%
+fewer CSS bytes (brotli). On a 39-page site with one page outside its route group, a visit to
+every page went from 12 requests and 29 kB to 8 requests and 15 kB.
 A page that links a stylesheet also gets `<script>/* waits for the stylesheets above */</script>`
 after its stylesheet tags (54 bytes, in dev too). The browser parses the body only once the
 stylesheets before that script have loaded, so the body's first layout is styled. Without it,

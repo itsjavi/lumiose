@@ -552,6 +552,61 @@ export default function Layout(props: { children?: JSX.Element }) {
     expect(page).toContain(pageLink![0] + STYLESHEETS_LOADED);
   });
 
+  it("shares a route group's stylesheets with its pages only, after every page's (TASK-285)", async () => {
+    const chrome = Array.from({ length: 150 }, (_, i) => `.chrome-${i} { padding-left: ${i}px; }`);
+    const page = (name: string): string => `export default function Page() {
+  return <main class="${name}">${name}<style>.${name} { color: teal; }</style></main>;
+}
+`;
+    const root = project({
+      "src/app.css": "body { margin: 0; }\n",
+      "src/routes/layout.stsx": `import "../app.css";
+export default function Layout(props: { children?: JSX.Element }) {
+  return <div class="layout">{props.children}<style>.layout { color: navy; }</style></div>;
+}
+`,
+      "src/site.css": ".site { color: crimson; }\n",
+      // The site chrome, over 4 kB: three routes have it, the editor does not.
+      "src/routes/(site)/layout.stsx": `import "../../site.css";
+export default function Site(props: { children?: JSX.Element }) {
+  return <div class="chrome">{props.children}<style>${chrome.join("\n")}</style></div>;
+}
+`,
+      "src/routes/(site)/page.stsx": page("home"),
+      "src/routes/(site)/about/page.stsx": page("about"),
+      "src/routes/(site)/blog/page.stsx": page("blog"),
+      "src/routes/editor/page.stsx": page("editor"),
+    });
+    await build({ root, ...quiet() });
+    const tags = (file: string): string[] =>
+      [...read(root, file).matchAll(/<link rel="stylesheet"[^>]*>|<style[^>]*>/g)].map(
+        (match) => match[0],
+      );
+    const home = tags("index.html");
+    const about = tags("about/index.html");
+    const blog = tags("blog/index.html");
+    const editor = tags("editor/index.html");
+    const hrefOf = (tag: string): string => /href="\/([^"]+)"/.exec(tag)![1]!;
+    // The root layout's file, the (site) group's file, then the page's own CSS inline.
+    for (const page of [home, about, blog]) expect(page).toHaveLength(3);
+    expect(about.slice(0, 2)).toEqual(home.slice(0, 2));
+    expect(blog.slice(0, 2)).toEqual(home.slice(0, 2));
+    expect(home[0]).toMatch(/href="\/assets\/styles-[\w-]+\.css" data-l-css="[^" ]+ [^" ]+"/);
+    expect(home[1]).toMatch(/href="\/assets\/styles-[\w-]+\.css" data-l-css="[^" ]+ [^" ]+"/);
+    expect(home[2]).toMatch(/^<style data-l-css=/);
+    expect(read(root, hrefOf(home[0]!))).toMatch(
+      /margin:0[^]*\.layout\[data-l-\w+\]\{color:navy\}/,
+    );
+    // The group's file holds site.css, then the layout's style block, in cascade order.
+    const group = read(root, hrefOf(home[1]!));
+    expect(group).toMatch(/^\.site\{color:#dc143c\}[^]*\.chrome-0\[data-l-\w+\]/);
+    expect(group).not.toContain("navy");
+    // The editor links the every-page file only: no chrome.
+    expect(editor).toHaveLength(2);
+    expect(editor[0]).toBe(home[0]);
+    expect(editor[1]).toMatch(/^<style data-l-css=/);
+  });
+
   it("links the stylesheets a plugin renamed after Lumiose, as StyleX does (TASK-342)", async () => {
     const big = Array.from({ length: 120 }, (_, i) => `.rule-${i} { margin-left: ${i}px; }`);
     const files = (plugin: string): Record<string, string> => ({

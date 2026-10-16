@@ -240,7 +240,7 @@ function lumioseBuildEnvironments(state: BuildState): Plugin {
       },
     },
 
-    // Each page's stylesheets, grouped into a shared file and the page's own (./stylesheets.ts),
+    // Each page's stylesheets, grouped into shared files and the page's own (./stylesheets.ts),
     // once the server graph (the CSS manifest) is complete.
     renderChunk: {
       async handler(code, chunk) {

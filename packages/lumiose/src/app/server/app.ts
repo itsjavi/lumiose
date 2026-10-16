@@ -68,7 +68,10 @@ export interface BuiltApp extends BuiltAppConfig {
    * (`stylesheets` of `virtual:lumiose/css-manifest`).
    */
   stylesheets?: (files: readonly string[]) => readonly string[];
-  /** How `lumiose build` grouped the stylesheets: a shared file, then each page's own (TASK-121). */
+  /**
+   * How `lumiose build` grouped the stylesheets: shared files, then each page's own (TASK-121,
+   * TASK-285).
+   */
   styleTags?: StyleTags;
   /**
    * Stylesheet URL of the CSS manifest → the file a plugin renamed it to after Lumiose recorded it
