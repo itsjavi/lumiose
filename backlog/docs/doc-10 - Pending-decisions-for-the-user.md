@@ -96,4 +96,19 @@ These are syntax, DX or API proposals. Each task holds the proposal; nothing is 
 - **TASK-64:** waits for a Lightning CSS release after 1.33.0 that includes PR #1329. It was still 1.33.0 on 2026-10-17.
 - **TASK-264:** waits for the arm64 musl compiler package on npm, which comes with the next lumiose release.
 
+### P11. Compiler behaviour changes from TASK-347, 348 and 349 (Photon, 2026-10-17)
+
+Merged as bug fixes; listed here because they change what code means. Each can be revisited.
+- **Destructuring props in a component body is reactive.** `const { children, ...rest } = props` used to read once at setup. It is now rewritten like destructured parameters, so the values stay live and the line no longer warns LUM2001.
+- **A spread with no content of its own renders the props' `children`.** An element such as `<button {...props} />` now renders `props.children` when the props object has that key, and otherwise leaves the content alone. `children` is never written as an attribute.
+- **No LUM2001 for constants.** `useId()`, `ref()`, `signal()`, `createContext()` and `getAbortSignal()` no longer count as reactive reads.
+- **Recommendation:** keep all three, since they match React and Solid.
+
+### P12. Installing on platforms without a native compiler binary (decision-67, TASK-289)
+
+- **What changed:** the WebAssembly compiler package now declares `cpu: ["wasm32"]`, as napi-rs prescribes and oxc, Tailwind's oxide and Astro do. Darwin-arm64, Linux and the other native platforms no longer download it (11.4 MB).
+- **The cost:** platforms with no native binary (Windows on Arm, FreeBSD, WebContainers) must enable wasm32 before installing: pnpm `supportedArchitectures` or npm `cpu=wasm32`. The docs say so.
+- **Option:** add a native `win32-arm64-msvc` build, which removes that step on Windows on Arm, for one more CI job per release.
+- **Recommendation:** keep decision-67, and add the Windows on Arm build only if someone asks.
+
 ## Answered
