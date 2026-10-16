@@ -10,6 +10,8 @@
 //   island call sites, stylesheets and client scripts before the server graph exists;
 // - they are bundled with the app's server code (`resolve.noExternal`) and kept out of Vite's
 //   dependency optimizer, which would compile their `.tsx` as React JSX: one `lumiose` instance.
+//   The optimizer then never meets their CommonJS dependencies, so the browser's optimizer
+//   includes those by name (`@acme/ui > cjs-dep`, TASK-399).
 //
 // Island refs end up in server-rendered HTML and scope tokens hash a module's path, so neither may
 // depend on where a module sits on the build machine, or on the package manager's layout. Inside
@@ -25,6 +27,11 @@ import { normalizePath } from "vite";
 
 interface PackageJson {
   name?: string;
+  type?: string;
+  main?: string;
+  module?: string;
+  exports?: unknown;
+  types?: string;
   dependencies?: Record<string, string>;
   devDependencies?: Record<string, string>;
   peerDependencies?: Record<string, string>;
@@ -107,6 +114,27 @@ export class Packages {
     return this.#lumiose;
   }
 
+  /**
+   * The CommonJS dependencies of the Lumiose packages, as Vite's `optimizeDeps.include` names a
+   * nested dependency (`@acme/ui > cjs-dep`): the browser cannot import CommonJS, and an excluded
+   * package's imports are not pre-bundled otherwise. ES modules are served as they are.
+   */
+  commonJsDependencies(): string[] {
+    const lumiose = new Set(this.lumiose().map((p) => p.name));
+    return this.lumiose().flatMap((pkg) => {
+      const manifest = readManifest(pkg.dir);
+      const names = Object.keys({ ...manifest?.dependencies, ...manifest?.optionalDependencies });
+      return names
+        .filter((name) => !lumiose.has(name) && !LUMIOSE_OWN_PACKAGES.has(name))
+        .filter((name) => {
+          const dir = resolvePackage(pkg.dir, name);
+          const dependency = dir === null ? null : readManifest(dir);
+          return dependency !== null && isCommonJs(dependency);
+        })
+        .map((name) => `${pkg.name} > ${name}`);
+    });
+  }
+
   /** The Lumiose packages installed in `node_modules`. */
   installed(): PackageRoot[] {
     return (this.#installed ??= this.lumiose().filter((p) => isInstalled(p.dir)));
@@ -156,6 +184,17 @@ function isInside(file: string, dir: string): boolean {
 /** A package directory under `node_modules` (installed, not linked). */
 function isInstalled(dir: string): boolean {
   return NODE_MODULES.test(`${dir}/`);
+}
+
+/** Whether a package is CommonJS only: no `type: "module"`, no `module` field, no `import` export. */
+function isCommonJs(manifest: PackageJson): boolean {
+  if (manifest.type === "module" || manifest.module !== undefined) return false;
+  if (manifest.exports !== undefined && JSON.stringify(manifest.exports).includes('"import"')) {
+    return false;
+  }
+  if (manifest.main?.endsWith(".mjs")) return false;
+  // A types-only package has nothing to bundle.
+  return manifest.main !== undefined || manifest.exports !== undefined || manifest.types === undefined;
 }
 
 function dependencyNames(manifest: PackageJson): string[] {

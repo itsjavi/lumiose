@@ -290,7 +290,11 @@ export default function lumiose(options: LumioseOptions = {}): Plugin<LumiosePlu
               ...(server ? defaultServerConditions : defaultClientConditions),
             ],
           },
-          optimizeDeps: { exclude: [...LUMIOSE_ENTRIES, ...lumiosePackages] },
+          optimizeDeps: {
+            exclude: [...LUMIOSE_ENTRIES, ...lumiosePackages],
+            // The browser cannot import CommonJS: their CommonJS dependencies are pre-bundled.
+            ...(server ? {} : { include: packages.commonJsDependencies() }),
+          },
         };
         if (server) out.resolve!.noExternal = ["lumiose", ...lumiosePackages];
         return out;
