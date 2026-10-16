@@ -26,7 +26,7 @@ import "@lumiose/ui/themes/default.css"; // optional: the default theme
 | `Root`      | `<lu-number-field>` with the range and format as attributes, and an `<input type="hidden">` that submits the number with `format` |
 | `ScrubArea` | `<span data-scrub>`: dragging across it steps the number (usually around the label)                                               |
 | `Group`     | `<div>` around the input and the buttons                                                                                          |
-| `Input`     | `<input type="number" inputmode="decimal" min max step>`, or with `format` `<input type="text" role="spinbutton" aria-value…>`    |
+| `Input`     | `<input type="number" inputmode min max step>`, or with `format` `<input type="text" role="spinbutton" aria-value…>`              |
 | `Increment` | `<button type="button" tabindex="-1" aria-label="Increase" aria-controls="…">`, disabled at `max`                                 |
 | `Decrement` | `<button type="button" tabindex="-1" aria-label="Decrease" aria-controls="…">`, disabled at `min`                                 |
 
@@ -78,7 +78,13 @@ because it needs no JavaScript: typing, the arrow keys, `min`, `max` and `step` 
 form value are the browser's.
 
 With `snapOnStep`, each kind of step snaps to its own size: Shift steps 37 up to 40, Alt steps
-1.37 up to 1.4. A native field (no `format`) still validates the value against `step`.
+1.37 up to 1.4. A native field (no `format`) validates the value against `step` without
+JavaScript; the script sets its `step` to `any`, so the values Alt's small step, Home, End and
+clamping give always submit.
+
+The keyboard: `inputmode="decimal"` when `min` is 0 or more, `"text"` otherwise, since iOS's
+decimal keyboard has no minus sign. Digits of other scripts (full-width `１`, Arabic-Indic `٤`) are
+read as numbers.
 
 **Differences from Base UI's NumberField.** No `ScrubAreaCursor`: Base UI draws a cursor because
 its scrub area locks the pointer (which hides the real one); this scrub area keeps the real cursor

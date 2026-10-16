@@ -313,7 +313,8 @@ function Input(props: NumberFieldInputProps) {
       {...props}
       {...spin}
       type={formatted ? "text" : "number"}
-      inputmode="decimal"
+      // A minus key where negative numbers are allowed: iOS's decimal keyboard has none (M36).
+      inputmode={(field.min() ?? -1) >= 0 ? "decimal" : "text"}
       id={field.inputId}
       name={field.name()}
       form={field.form()}

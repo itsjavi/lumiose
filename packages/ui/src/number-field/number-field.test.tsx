@@ -13,6 +13,18 @@ const inputs = (html: string) =>
 const buttons = (html: string) =>
   [...html.matchAll(/<button\b([^>]*)>/g)].map((m) => attrs(`<button${m[1]}>`, "button"));
 
+/** The native input of a Number Field with `min`. */
+const minInput = async (min?: number) =>
+  attrs(
+    await renderToString(() => (
+      <NumberField.Root min={min}>
+        <NumberField.Input aria-label="Value" />
+      </NumberField.Root>
+    )),
+    "input",
+    (a) => a.type === "number",
+  );
+
 describe("NumberField on the server", () => {
   it("renders a native number input with its range, and buttons disabled at the ends", async () => {
     const html = await renderToString(() => (
@@ -35,6 +47,7 @@ describe("NumberField on the server", () => {
       min: "1",
       max: "99",
       type: "number",
+      // No negative number: the decimal keyboard (M36).
       inputmode: "decimal",
       id: `${root.id}-input`,
       name: "quantity",
@@ -93,6 +106,12 @@ describe("NumberField on the server", () => {
     });
   });
 
+  it("shows a keyboard with a minus sign where negative numbers are allowed (TASK-440, M36)", async () => {
+    expect((await minInput()).inputmode).toBe("text");
+    expect((await minInput(-10)).inputmode).toBe("text");
+    expect((await minInput(0)).inputmode).toBe("decimal");
+  });
+
   it("takes the field's id, name, description and state", async () => {
     const html = await renderToString(() => (
       <Field.Root name="age" invalid>
@@ -132,6 +151,12 @@ describe("parseNumber", () => {
     expect(parseNumber("50 %", percent)).toBe(0.5);
     expect(parseNumber(formatNumber(42.5, arabic), arabic)).toBe(42.5);
     expect(parseNumber("(3)", en)).toBe(-3);
+  });
+
+  it("reads digits of any script: full-width, Arabic-Indic, Devanagari (TASK-440, M34)", () => {
+    expect(parseNumber("１２３４.５", en)).toBe(1234.5);
+    expect(parseNumber("١٢٣", en)).toBe(123);
+    expect(parseNumber("४२", de)).toBe(42);
   });
 
   it("reads nothing as null and no digits as NaN", () => {

@@ -29,7 +29,8 @@
     background: transparent;
     color: transparent;
     caret-color: transparent;
-    font-size: 1px;
+    /* 16px at least: iOS Safari zooms into a smaller focused field (TASK-440, M35). */
+    font-size: 16px;
     letter-spacing: 0;
     -webkit-text-fill-color: transparent;
     appearance: none;

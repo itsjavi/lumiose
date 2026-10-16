@@ -1,11 +1,11 @@
 ---
 id: TASK-440
 title: 'Release review, Medium: Number Field, OTP Field'
-status: To Do
+status: Done
 assignee:
   - '@Beacon'
 created_date: '2026-10-16 10:07'
-updated_date: '2026-10-16 12:34'
+updated_date: '2026-10-16 13:14'
 labels:
   - ui
   - review
@@ -42,7 +42,7 @@ Found by Prism's release review of @lumiose/ui (TASK-386, 2026-10-16) on main 94
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 M32: Number Field: keys and clamping stay on the native step grid
+- [x] #1 M32: Number Field: keys and clamping stay on the native step grid
 - [ ] #2 M33: OTP Field: a masked code is a password input
 - [ ] #3 M34: Normalize non-ASCII digits in OTP Field and Number Field
 - [ ] #4 M35: OTP Field: no iOS focus zoom
@@ -53,4 +53,6 @@ Found by Prism's release review of @lumiose/ui (TASK-386, 2026-10-16) on main 94
 
 <!-- SECTION:NOTES:BEGIN -->
 2026-10-16 (Lux, orchestrator): assigned to Beacon for release-review fix batch 2 (it fixed the related Highs in batch 1).
+
+2026-10-16 (Beacon): Fixed all five. M32: the Number Field script sets the native input's step to "any" once it runs (Alt's small step, Home, End and clamping leave the grid on purpose); without the script the input keeps its step for validation. M33: a masked OTP Field renders type="password" (autocomplete one-time-code kept). M34: OTP validation types are ASCII as in Base UI ([0-9], [A-Za-z], [A-Za-z0-9]; the pattern attribute too), after NFKC and mapping every \\p{Nd} digit to ASCII (a copy of locale/digits.ts in the script, since a shared module would be a chunk of its own); parseNumber reads digits of any script (locale/digits.ts digitValue). M35: the OTP overlay input is 16px (was 1px). M36: inputmode decimal when min >= 0, else text. Tests: number-field.test.tsx (digits of other scripts, inputmode by min), otp-field.test.tsx (password, ASCII pattern), otp-field.script.dom.test.ts (digits as ASCII, letters ASCII only), ui-e2e number-otp-review.e2e.ts (M32 Alt+ArrowUp 1.1 with no stepMismatch and a valid form; M33 password input typed; M34 full-width digits in the PIN and the formatted price; M35 computed font-size >= 16): all fail without the fixes in Chromium (build), Firefox and WebKit. The TASK-432 IME test commits full-width letters now (typed as ASCII). Docs: otp-field.md, number-field.md.
 <!-- SECTION:NOTES:END -->

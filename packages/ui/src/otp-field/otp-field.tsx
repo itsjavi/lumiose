@@ -150,10 +150,11 @@ function useOTPField(part: string): OTPFieldContextValue {
 
 /** The `pattern` that matches a whole code of `length` characters of `type`. */
 function pattern(type: OTPFieldValidationType, length: number): string {
+  // ASCII, as the script keeps (TASK-440, M34).
   const char = {
-    numeric: "\\p{Nd}",
-    alpha: "\\p{L}",
-    alphanumeric: "[\\p{L}\\p{Nd}]",
+    numeric: "[0-9]",
+    alpha: "[A-Za-z]",
+    alphanumeric: "[A-Za-z0-9]",
     none: "\\S",
   }[type];
   return `${char}{${length}}`;
@@ -263,7 +264,8 @@ function Input(props: OTPFieldInputProps) {
       aria-describedby={field ? describedBy(field) : undefined}
       aria-invalid={field?.invalid() ? "true" : undefined}
       {...props}
-      type="text"
+      // Masked, a password: assistive technology does not speak the code (TASK-440, M33).
+      type={otp.mask() ? "password" : "text"}
       id={otp.inputId}
       name={otp.name()}
       form={otp.form()}

@@ -119,6 +119,10 @@ export class NumberFieldElement extends HTMLElement {
     const settle = () => {
       const hidden = this.hiddenInput;
       const input = this.input;
+      // The keys (Alt's small step), Home, End and clamping leave the step grid on purpose: the
+      // native input must not refuse to submit those values (`stepMismatch`). Without the script
+      // it keeps its step (TASK-440, M32).
+      if (input && !this.formatted) input.step = "any";
       // The number submits from the hidden input, once the script can keep it current.
       if (hidden && input?.name && this.formatted) {
         hidden.name = input.name;

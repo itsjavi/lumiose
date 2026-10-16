@@ -1,6 +1,7 @@
 // A number field's values as text and back, shared by the component (server HTML, islands) and its
 // script: `Intl.NumberFormat` writes them, and `parseNumber` reads what a person typed in the same
 // locale and format (grouping, the decimal sign, the locale's digits, a currency, a percent sign).
+import { digitValue } from "../locale/digits.ts";
 
 /** The formatter for `format` (`Intl.NumberFormat` options) and `locale`. */
 export function formatter(
@@ -44,6 +45,8 @@ export function parseNumber(text: string, numbers: Intl.NumberFormat): number | 
   for (const char of trimmed) {
     if (/\d/.test(char)) normalized += char;
     else if (digits.has(char)) normalized += digits.get(char);
+    // Digits of another script (full-width `１`, `٤`): what a keyboard or an IME may type (M34).
+    else if (digitValue(char) !== undefined) normalized += String(digitValue(char));
     else if ((char === decimal || (char === "." && decimal !== ",")) && !fraction) {
       normalized += ".";
       fraction = true;
