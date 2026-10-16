@@ -345,6 +345,38 @@ test.describe("multiple values", () => {
   });
 });
 
+// A page restored from the back-forward cache keeps its scripts' state as it was; none of the
+// engines restores one under Playwright, so this is the reloaded page, whose form state the browser
+// restores through `formStateRestoreCallback`.
+test.describe("back navigation (TASK-460)", () => {
+  test("the user's choice comes back, and a reset goes to the server's", async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 1000 });
+    await page.goto("/combobox");
+    const { input, list } = await city(page);
+    await input.click();
+    await list.getByRole("option", { name: "Berlin" }).click();
+    await expect(input).toHaveValue("Berlin");
+    const tags = page.getByRole("combobox", { name: "Tags" });
+    const chips = page.locator("lu-combobox[name=tags] [role=list]");
+    await tags.click();
+    await page.getByRole("listbox", { name: "Tags" }).getByRole("option", { name: "docs" }).click();
+    await expect(chips.getByRole("listitem")).toHaveText([/^ui/, /^docs/]);
+    await page.goto("/button");
+    await page.goBack();
+    const value = (name: string) =>
+      page.locator(`lu-combobox[name=${name}]`).evaluate((el) => (el as any).value);
+    await expect.poll(() => value("city")).toBe("ber");
+    await expect(input).toHaveValue("Berlin");
+    await expect.poll(() => value("tags")).toEqual(["ui", "docs"]);
+    await expect(chips.getByRole("listitem")).toHaveText([/^ui/, /^docs/]);
+    // A reset goes back to the server's default, not to what the browser restored.
+    await page.getByRole("button", { name: "Reset" }).click();
+    await expect.poll(() => value("city")).toBe("lis");
+    await expect(input).toHaveValue("Lisbon");
+    await expect.poll(() => value("tags")).toEqual(["ui"]);
+  });
+});
+
 test.describe("forms", () => {
   test("the values submit under their names, each tag its own entry", async ({ page }) => {
     await page.goto("/combobox");

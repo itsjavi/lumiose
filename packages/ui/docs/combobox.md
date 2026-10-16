@@ -325,8 +325,9 @@ The element is also an API of its own, for scripts and other frameworks:
 - `open`: a property; setting it opens or closes the popup.
 - `name`, `required`, `disabled`, `multiple`: reflect their attributes; `filter` is an attribute.
 - `form`, `validity`, `validationMessage`, `willValidate`, `checkValidity()`, `reportValidity()`:
-  as on native controls. It submits under `name`, resets with its form and follows a disabled
-  `<fieldset>`.
+  as on native controls. It submits under `name`, resets with its form (to the server's selection)
+  and follows a disabled `<fieldset>`. After a back navigation the browser restores the user's
+  choice, and a reset still goes to the server's selection.
 - `change`: a bubbling event after the user chooses, removes or clears a value. The inner input's
   own `change` stays inside.
 - `openchange`: an event (not bubbling, like `toggle`) with `detail.open`, after the popup opens or

@@ -233,12 +233,7 @@ export class ComboboxElement extends HTMLElement {
       const input = this.input;
       const typed = input && input.value !== input.defaultValue ? input.value : undefined;
       if (this.#free) this.#typed = this.input?.value ?? "";
-      const selected = this.#options().filter((o) => o.getAttribute("aria-selected") === "true");
-      for (const option of selected)
-        this.#labels.set(option.dataset.value ?? "", optionLabel(option));
-      const values = selected.map((option) => option.dataset.value ?? "");
-      this.#defaults = this.multiple ? values : values.slice(0, 1);
-      this.#set(this.#defaults, false);
+      this.#set(this.#serverDefaults(), false);
       if (typed !== undefined && input && !this.#free) {
         input.value = typed;
         this.#filter(typed);
@@ -283,8 +278,27 @@ export class ComboboxElement extends HTMLElement {
     if (off) this.#close();
   }
 
+  /**
+   * The server's selection, from the options it rendered selected: the reset default. Read once,
+   * before a restored state changes the options (TASK-460).
+   */
+  #serverDefaults(): string[] {
+    if (!this.#defaults) {
+      const selected = this.#options().filter((o) => o.getAttribute("aria-selected") === "true");
+      for (const option of selected) {
+        this.#labels.set(option.dataset.value ?? "", optionLabel(option));
+      }
+      const values = selected.map((option) => option.dataset.value ?? "");
+      this.#defaults = this.multiple ? values : values.slice(0, 1);
+    }
+    return this.#defaults;
+  }
+
   formStateRestoreCallback(state: string | FormData | null): void {
     if (this.#free) return;
+    // A back navigation restores the user's choice, which must not become the reset default: the
+    // server's selection is read first, and the element's start then leaves the choice as it is.
+    this.#serverDefaults();
     const values =
       state instanceof FormData
         ? state.getAll(this.name).map(String)
