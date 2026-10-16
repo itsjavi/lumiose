@@ -363,17 +363,17 @@ test.describe("back navigation (TASK-460)", () => {
     await expect(chips.getByRole("listitem")).toHaveText([/^ui/, /^docs/]);
     await page.goto("/button");
     await page.goBack();
-    const value = (name: string) =>
+    const valueOf = (name: string) =>
       page.locator(`lu-combobox[name=${name}]`).evaluate((el) => (el as any).value);
-    await expect.poll(() => value("city")).toBe("ber");
+    await expect.poll(() => valueOf("city")).toBe("ber");
     await expect(input).toHaveValue("Berlin");
-    await expect.poll(() => value("tags")).toEqual(["ui", "docs"]);
+    await expect.poll(() => valueOf("tags")).toEqual(["ui", "docs"]);
     await expect(chips.getByRole("listitem")).toHaveText([/^ui/, /^docs/]);
     // A reset goes back to the server's default, not to what the browser restored.
     await page.getByRole("button", { name: "Reset" }).click();
-    await expect.poll(() => value("city")).toBe("lis");
+    await expect.poll(() => valueOf("city")).toBe("lis");
     await expect(input).toHaveValue("Lisbon");
-    await expect.poll(() => value("tags")).toEqual(["ui"]);
+    await expect.poll(() => valueOf("tags")).toEqual(["ui"]);
   });
 });
 
