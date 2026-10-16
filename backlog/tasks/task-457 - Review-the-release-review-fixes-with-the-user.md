@@ -5,7 +5,7 @@ status: To Do
 assignee:
   - '@Lux'
 created_date: '2026-10-16 12:33'
-updated_date: '2026-10-16 13:07'
+updated_date: '2026-10-16 13:13'
 labels:
   - ui
   - review
@@ -48,4 +48,14 @@ Items so far (fix batch 1):
 2026-10-16 (user): don't push yet; push once the release-review fixes are merged and green, and ask then.
 
 2026-10-16 (Lux), for the user's information, not a question: the Safari CSS target goes from 17.4 to 17.5 (decision-66 amended, TASK-441 M37). At 17.4 the minifier lowered light-dark() so that a subtree's color-scheme could never flip the default theme. Safari 17.4 is listed without the theme's light and dark colours.
+
+2026-10-16 (Lux): item 7, an API proposal from TASK-441 M39 (Halo): a caller's `id` on Root, used as a later part's id.
+
+Server rendering is one pass. A Trigger or Tab writes `popovertarget`, `commandfor` or `aria-controls` before its Popup or Panel renders, so a caller's `id` on the later part can't reach the server HTML.
+
+What ships now (option b):
+- Parts that nothing earlier points at honour a caller's `id`: triggers, tabs, items and thumbs.
+- Popups and panels keep generated ids, documented on each component's page.
+
+The proposal (option a): let Root take `id` as that part's id, the way NumberField.Root's `id` names its input, which the server knows in time. Covered parts: the Dialog, Popover, Tooltip, Preview Card and Menu popups, and the Tabs, Accordion and Collapsible panels. A part's own `id` there would then work in islands only. Not built until the user decides.
 <!-- SECTION:NOTES:END -->
