@@ -107,6 +107,7 @@ export type FieldDescriptionProps = JSX.IntrinsicElements["p"];
  * the server) `validity.valid` is `null`.
  */
 export type FieldValidityProps = {
+  /** Renders from the field's validity: text, or elements inside an element of yours. */
   children: (state: FieldValidityState) => JSX.Element;
 };
 
