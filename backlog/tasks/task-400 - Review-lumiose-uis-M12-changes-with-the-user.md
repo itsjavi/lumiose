@@ -5,7 +5,7 @@ status: To Do
 assignee:
   - '@Lux'
 created_date: '2026-10-15 19:52'
-updated_date: '2026-10-16 05:22'
+updated_date: '2026-10-16 06:27'
 labels:
   - ui
   - review
@@ -234,4 +234,10 @@ User request, 2026-10-15: start M12 worker batches autonomously, and review the 
 - **TASK-415:** turned out to be a compiler bug that affected builds too. A fragment with a single dynamic item now compiles to an `insertValue` range.
 - **Site search:** DocsSearch runs on @lumiose/ui's Autocomplete. Its results list is named "Search the docs".
 - **Radio Group and Slider:** both now handle their own arrow keys, so right-to-left works the same in every browser.
+
+## Batch 10 (2026-10-16): TASK-425 (Beacon)
+
+**Proposed names:** `outputTemplate`, a new `lumiose/dom` export. Only compiled code imports it: the compiler uses it for templates that contain an `<output>`.
+
+**Worth the user's look:** Firefox and WebKit replace an `<output>`'s children on every form reset. The runtime now skips outputs whose text the reset would not change, as Chromium does, so live text in islands survives a reset. This applies to every Lumiose app, not only @lumiose/ui. Bundle cost: the typical bundle is unchanged, and the whole runtime grows by 0.13 kB.
 <!-- SECTION:NOTES:END -->
