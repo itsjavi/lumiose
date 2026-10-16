@@ -135,6 +135,20 @@ The theme avoids `:dir()`, so it also mirrors in a project whose own `build.cssT
 selectors that misses a `dir` attribute. It uses `[dir="rtl"]` around the component instead, or
 logical properties.
 
+## Localisation
+
+Labels and messages come from your markup, with four English defaults to override for another
+language (TASK-456):
+
+| Default                | Where                                                     | Override                          |
+| ---------------------- | --------------------------------------------------------- | --------------------------------- |
+| "Notifications (F6)"   | [Toast](toast.md)`.Viewport`, the landmark's name         | `aria-label` on `Toast.Viewport`  |
+| "Remove"               | [Combobox](combobox.md)`.Chips`, before each chip's label | `removeLabel` on `Combobox.Chips` |
+| "Increase", "Decrease" | [Number Field](number-field.md)'s step buttons            | `aria-label` on each button       |
+
+Validation messages are the browser's, in its language; a Field's `validate` and a form action's
+errors are yours.
+
 ## Size
 
 `@lumiose/ui` is opt-in, so its size is reported apart from the runtime's caps:
@@ -614,7 +628,7 @@ same.
 | `openOnInputClick`                  | `boolean`                                | `false`      | A click on the input opens the suggestions; otherwise typing and Arrow Down do. |
 | `autoHighlight`                     | `boolean`                                | `false`      | The first suggestion is highlighted as you type, so Enter fills it in.          |
 | `keepHighlight`                     | `boolean`                                | `false`      | A suggestion the pointer highlighted stays highlighted when it leaves the list. |
-| `submitOnItemClick`                 | `boolean`                                | `false`      | A click on a suggestion fills it in and submits the form, as a search box does. |
+| `submitOnItemClick`                 | `boolean`                                | `false`      | Choosing a suggestion (a click, or Enter on it) fills it in and submits the form, as a search box does. |
 | `limit`                             | `number`                                 | no limit     | Shows at most this many suggestions; a narrower text shows the others.          |
 | `name`                              | `string`                                 |              | The name the text is submitted under (the input's).                             |
 | `required`, `disabled`              | `boolean`                                | `false`      | As on a native input.                                                           |
@@ -1540,9 +1554,11 @@ own, since they connect the parts.
   Its `type` and `value` are the combobox's. Inside a [Field](field.md), it takes the field's id
   (so `Field.Label` labels it), its description and error references and `aria-invalid`, and Root
   takes the field's `name` and disabled state; the field shows the combobox's validation.
-- **`Trigger`** and **`Clear`**: out of the tab order, as in the APG examples; the input does
+- **`Trigger`** and **`Clear`**: out of the tab order, as in the APG examples; the Trigger has
+  `aria-haspopup`, `aria-controls` and `aria-expanded`, and the input does
   everything from the keyboard. Name them with `aria-label` (or content).
 - **`Group`**: `aria-labelledby` points at its `GroupLabel` while one renders.
+- **`List`**: named by the `Label`, or inside a [Field](field.md) by the field's label.
 
 **Differences from Base UI's Combobox.** No `Portal`, `Positioner`, `Backdrop`, `Arrow`, `Value`,
 `Icon`, `ItemIndicator`, `Row`, `Collection` or `Separator`: the top layer and anchor positioning

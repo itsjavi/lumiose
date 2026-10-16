@@ -124,6 +124,20 @@ The theme avoids `:dir()`, so it also mirrors in a project whose own `build.cssT
 selectors that misses a `dir` attribute. It uses `[dir="rtl"]` around the component instead, or
 logical properties.
 
+## Localisation
+
+Labels and messages come from your markup, with four English defaults to override for another
+language (TASK-456):
+
+| Default                | Where                                                     | Override                          |
+| ---------------------- | --------------------------------------------------------- | --------------------------------- |
+| "Notifications (F6)"   | [Toast](toast.md)`.Viewport`, the landmark's name         | `aria-label` on `Toast.Viewport`  |
+| "Remove"               | [Combobox](combobox.md)`.Chips`, before each chip's label | `removeLabel` on `Combobox.Chips` |
+| "Increase", "Decrease" | [Number Field](number-field.md)'s step buttons            | `aria-label` on each button       |
+
+Validation messages are the browser's, in its language; a Field's `validate` and a form action's
+errors are yours.
+
 ## Size
 
 `@lumiose/ui` is opt-in, so its size is reported apart from the runtime's caps:
