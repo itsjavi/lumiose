@@ -154,6 +154,21 @@ designed API; where this version does not implement something yet, the page says
 - Node.js 24 or later.
 - TypeScript (`typescript@^7`). Lumiose uses stock `tsc`, with no TypeScript plugins.
 - Vite 8.
+- macOS (arm64, x64), Linux (x64, arm64; glibc or musl) or Windows x64, where the compiler runs
+  natively. Elsewhere (Windows on Arm, FreeBSD, other CPUs) it runs as WebAssembly, which package
+  managers install only when you enable the `wasm32` architecture (see below).
+
+On a platform without a native compiler, enable `wasm32` before you install:
+
+```yaml
+# pnpm-workspace.yaml (pnpm), or .yarnrc.yml (Yarn 4)
+supportedArchitectures:
+  cpu:
+    - current
+    - wasm32
+```
+
+With npm, add `cpu=wasm32` to the project's `.npmrc` (or run `npm install --cpu=wasm32`).
 
 ## Create a project
 

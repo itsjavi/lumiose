@@ -8,6 +8,12 @@ binary for your platform comes as an optional dependency (`@lumiose/compiler-<pl
 compiles `.stsx` and `.tsx`, and its `LUMxxxx` diagnostics:
 [Compiler and diagnostics](https://itsjavi.com/lumiose/docs/concepts/compiler/).
 
+Native binaries cover macOS (arm64, x64), Linux (x64, arm64; glibc and musl) and Windows x64.
+Elsewhere the compiler loads `@lumiose/compiler-wasm32-wasi`, which declares `cpu: ["wasm32"]` so
+that installs with a native binary skip it. Enable `wasm32` to install it: `supportedArchitectures:
+{ cpu: [current, wasm32] }` in `pnpm-workspace.yaml` (pnpm) or `.yarnrc.yml` (Yarn 4), or
+`cpu=wasm32` in `.npmrc` (npm).
+
 ## License
 
 [MIT](https://github.com/itsjavi/lumiose/blob/main/LICENSE)
