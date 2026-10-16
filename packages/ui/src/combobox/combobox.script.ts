@@ -29,7 +29,12 @@
 // typing never has to match an option, and choosing one puts its value in the input (firing
 // `input` and `change` on it). The popup opens as one types (on a click only with
 // `open-on-input-click`) and closes when the text is emptied. With `inline`, the arrow keys show
-// the highlighted option's text in the input until Escape puts the typed text back.
+// the highlighted option's text in the input until Escape puts the typed text back. More of Base
+// UI's Autocomplete (TASK-410): `auto-highlight` highlights the first match as one types (Enter
+// then chooses it); without `keep-highlight`, the pointer leaving the list takes the highlight it
+// gave away; `submit-on-item-click` submits the form when a click chooses an option.
+//
+// `limit` shows at most that many matching options (any mode).
 //
 // Listeners are delegated and options are queried when an event needs them, so Lumiose may add,
 // remove or rerender options at any time; a mutation observer gives new options the selection and
@@ -59,6 +64,7 @@ const EVENTS = [
   "click",
   "pointerdown",
   "pointermove",
+  "pointerout",
   "focusout",
   "change",
   "command",
@@ -97,6 +103,8 @@ export class ComboboxElement extends HTMLElement {
   #observer: MutationObserver | undefined;
   /** With `free`: the text as typed, which inline completion and Escape go back to. */
   #typed = "";
+  /** The highlight came from the pointer (it goes when the pointer leaves the list). */
+  #pointed = false;
   /** With `free`: an `input` event the element fires itself, which is no typing. */
   #echo = false;
 
@@ -284,6 +292,17 @@ export class ComboboxElement extends HTMLElement {
         return this.#onPress(event as PointerEvent);
       case "pointermove":
         return this.#onPointerMove(event as PointerEvent);
+      case "pointerout": {
+        // With `free`, the pointer leaving the list takes away the highlight it gave.
+        const list = this.listbox;
+        const to = (event as PointerEvent).relatedTarget as Node | null;
+        if (!this.#free || !this.#pointed || this.hasAttribute("keep-highlight")) return;
+        if (list?.contains(event.target as Node) && !list.contains(to)) {
+          this.#pointed = false;
+          this.#highlight(undefined);
+        }
+        return;
+      }
       case "focusout": {
         // With `free`, leaving the input accepts an inline completion.
         const input = this.input;
@@ -448,6 +467,8 @@ export class ComboboxElement extends HTMLElement {
   #filter(query: string): void {
     const mode = (this.getAttribute("filter") ?? "contains") as ComboboxFilter;
     const folded = fold(query.trim());
+    const limit = Number.parseInt(this.getAttribute("limit") ?? "", 10);
+    let shown = 0;
     for (const option of this.#options()) {
       if (mode === "none" || folded === "") option.hidden = false;
       else {
@@ -456,6 +477,8 @@ export class ComboboxElement extends HTMLElement {
           ? label.startsWith(folded)
           : label.includes(folded));
       }
+      // Past the limit, a match waits for a narrower search.
+      if (!option.hidden && limit >= 0 && ++shown > limit) option.hidden = true;
     }
     // A group with nothing left to show goes too.
     for (const group of this.listbox?.querySelectorAll<HTMLElement>("[role=group]") ?? []) {
@@ -630,8 +653,10 @@ export class ComboboxElement extends HTMLElement {
       this.#highlight(undefined);
       this.#showClear();
       // An empty input closes the popup (the arrow keys open it with every option).
-      if (input.value !== "" && this.#showable()) this.#open();
-      else this.#close(false);
+      if (input.value !== "" && this.#showable()) {
+        this.#open();
+        this.#autoHighlight();
+      } else this.#close(false);
       return;
     }
     // Clearing the text clears a single selection.
@@ -659,6 +684,14 @@ export class ComboboxElement extends HTMLElement {
     else if (!this.open && search && document.activeElement === input && this.#showable()) {
       this.#open();
     }
+    if (this.open && search) this.#autoHighlight();
+  }
+
+  /** With `auto-highlight` (free): the first match, while the text is not empty. */
+  #autoHighlight(): void {
+    if (!this.#free || !this.hasAttribute("auto-highlight") || this.#highlighted()) return;
+    this.#pointed = false;
+    this.#highlight(this.#reachable()[0]);
   }
 
   #onKeyDown(event: KeyboardEvent): void {
@@ -684,6 +717,7 @@ export class ComboboxElement extends HTMLElement {
         const reachable = this.#reachable();
         const index = reachable.indexOf(this.#highlighted()!);
         const next = index === -1 ? (down ? 0 : reachable.length - 1) : index + (down ? 1 : -1);
+        this.#pointed = false;
         this.#highlight(reachable[next]);
         if (this.#free && this.hasAttribute("inline")) this.#inline(reachable[next]);
         return;
@@ -723,6 +757,9 @@ export class ComboboxElement extends HTMLElement {
     const option = target.closest<HTMLElement>(OPTION);
     if (option && this.listbox?.contains(option)) {
       this.#choose(option);
+      if (this.hasAttribute("submit-on-item-click") && !disabled(option)) {
+        this.input?.form?.requestSubmit();
+      }
       return;
     }
     const chip = target.closest<HTMLButtonElement>("button");
@@ -774,6 +811,7 @@ export class ComboboxElement extends HTMLElement {
     if (event.pointerType === "touch" || (event.movementX === 0 && event.movementY === 0)) return;
     const option = (event.target as Element).closest?.<HTMLElement>(OPTION);
     if (option && this.listbox?.contains(option) && !disabled(option) && !option.hidden) {
+      this.#pointed = true;
       this.#highlight(option);
     }
   }

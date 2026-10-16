@@ -5,7 +5,7 @@
 // too. Combobox and Autocomplete inside a Field (TASK-404): labelled, described and marked invalid
 // by the field. The sync with a signal in an island, and WCAG 2.2 AA with the default theme
 // (doc-9 sections 1, 6, 15 and 17).
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Locator, type Page } from "@playwright/test";
 import {
   axDescription,
   axe,
@@ -43,6 +43,12 @@ async function parts(page: Page, name: string) {
         .evaluateAll((options) => options.map((option) => option.textContent?.trim())),
     highlighted: list.locator("[data-highlighted]"),
   };
+}
+
+/** Moves the mouse onto `target` in steps: the element ignores moves that do not move. */
+async function pointTo(page: Page, target: Locator) {
+  const box = (await target.boundingBox())!;
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2, { steps: 4 });
 }
 
 /** /autocomplete with its script running: the free element is defined. */
@@ -150,6 +156,59 @@ test.describe("Autocomplete", () => {
   });
 });
 
+test.describe("autoHighlight, limit, submitOnItemClick and keepHighlight (TASK-410)", () => {
+  test("the first match is highlighted as one types, at most three show, Enter fills it in", async ({
+    page,
+  }) => {
+    await ready(page);
+    const search = await parts(page, "Search");
+    await search.input.fill("a");
+    await expect(search.list).toBeVisible();
+    expect(await search.shown()).toEqual(["accessibility", "animation", "api"]);
+    await expect(search.highlighted).toHaveText("accessibility");
+    await expect(search.input).toHaveAttribute(
+      "aria-activedescendant",
+      (await search.highlighted.getAttribute("id"))!,
+    );
+    await search.input.press("ArrowDown");
+    await expect(search.highlighted).toHaveText("animation");
+    await search.input.press("Enter");
+    await expect(search.input).toHaveValue("animation");
+    await expect(page).toHaveURL(/\/autocomplete$/);
+    // A narrower text shows the matches past the limit.
+    await search.input.fill("perf");
+    expect(await search.shown()).toEqual(["performance"]);
+  });
+
+  test("a click on a suggestion submits the search", async ({ page }) => {
+    await ready(page);
+    const search = await parts(page, "Search");
+    await search.input.fill("do");
+    await search.list.getByRole("option", { name: "docs" }).click();
+    await expect(page).toHaveURL(/\/autocomplete\?q=docs$/);
+  });
+
+  test("the pointer's highlight goes when it leaves the list, unless keepHighlight", async ({
+    page,
+  }) => {
+    await ready(page);
+    const tag = await parts(page, "Tag");
+    await tag.input.fill("a");
+    await pointTo(page, tag.list.getByRole("option", { name: "api" }));
+    await expect(tag.highlighted).toHaveText("api");
+    await page.mouse.move(5, 5);
+    await expect(tag.highlighted).toHaveCount(0);
+    await expect(tag.input).not.toHaveAttribute("aria-activedescendant");
+    await tag.input.press("Escape");
+    const country = await parts(page, "Country");
+    await country.input.fill("s");
+    await pointTo(page, country.list.getByRole("option", { name: "Sweden" }));
+    await expect(country.highlighted).toHaveText("Sweden");
+    await page.mouse.move(5, 5);
+    await expect(country.highlighted).toHaveText("Sweden");
+  });
+});
+
 test.describe("Combobox and Autocomplete in a Field (TASK-404)", () => {
   test("the field labels and describes them, and marks them invalid on a submit attempt", async ({
     page,
@@ -228,7 +287,7 @@ test.describe("WCAG 2.2 AA with the default theme (doc-9 section 17)", () => {
     expect(await focusRing(page)).toBe("2px solid");
     const tag = await parts(page, "Tag");
     await tag.input.pressSequentially("a");
-    expect(await smallTargets(page.locator("form"))).toEqual([]);
+    expect(await smallTargets(page.locator("main"))).toEqual([]);
   });
 
   test("the form reflows at 320 CSS pixels with text spacing (1.4.10, 1.4.12)", async ({
@@ -237,10 +296,10 @@ test.describe("WCAG 2.2 AA with the default theme (doc-9 section 17)", () => {
     await page.setViewportSize({ width: 320, height: 640 });
     await ready(page);
     await page.addStyleTag({ content: TEXT_SPACING });
-    const form = page.locator("form");
-    const box = (await form.boundingBox())!;
+    const main = page.locator("main");
+    const box = (await main.boundingBox())!;
     expect(box.x + box.width).toBeLessThanOrEqual(320);
-    expect(await clipped(form)).toEqual([]);
+    expect(await clipped(main)).toEqual([]);
   });
 
   test("a server-rendered page loads Combobox's and Field's scripts only", async ({

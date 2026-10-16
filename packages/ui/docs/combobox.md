@@ -1,6 +1,6 @@
 # Combobox
 
-> A text input that filters a list of options, for picking one value or several from many: the WAI-ARIA combobox pattern with list autocomplete, after Base UI's Combobox. The input shows the option's label and the form gets its value. `<lu-combobox>`, a 4.1 kB form-associated light-DOM element, runs it on server-rendered pages and in islands; `bind:value` and `bind:open` keep signals in sync. Groups, an empty state, a status, a clear button, multiple values with chips, validation and async options.
+> A text input that filters a list of options, for picking one value or several from many: the WAI-ARIA combobox pattern with list autocomplete, after Base UI's Combobox. The input shows the option's label and the form gets its value. `<lu-combobox>`, a 4.3 kB form-associated light-DOM element, runs it on server-rendered pages and in islands; `bind:value` and `bind:open` keep signals in sync. Groups, an empty state, a status, a clear button, multiple values with chips, validation and async options.
 
 ```ts
 import { Combobox } from "@lumiose/ui"; // or "@lumiose/ui/combobox"
@@ -293,7 +293,7 @@ cannot be styled or grouped, and customizable select cannot filter). Without Jav
 HTML shows a labelled text field and nothing opens, and the form gets no value. For a choice that
 must work without JavaScript, use [Select](select.md).
 
-A page that renders a `Combobox` loads the script once, as a 4.1 kB (brotli) module without the
+A page that renders a `Combobox` loads the script once, as a 4.3 kB (brotli) module without the
 Lumiose runtime, and islands bundle it. It defines `lu-combobox`, which upgrades every combobox on
 the page in place: it reads the selection the server rendered (`aria-selected="true"`), puts its
 label in the input, renders the chips, and from then on owns the value, the filtering, the popup,

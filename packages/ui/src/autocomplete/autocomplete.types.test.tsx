@@ -31,6 +31,9 @@ export function Typed() {
       <Autocomplete.Root mode="always" />
       {/* @ts-expect-error: "none" is a mode, not a filter */}
       <Autocomplete.Root filter="none" />
+      <Autocomplete.Root autoHighlight keepHighlight submitOnItemClick limit={5} />
+      {/* @ts-expect-error: limit is a number */}
+      <Autocomplete.Root limit="5" />
     </>
   );
 }

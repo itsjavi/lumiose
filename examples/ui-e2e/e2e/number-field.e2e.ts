@@ -85,6 +85,26 @@ test.describe("Number Field", () => {
     await expect(field(page, "Price")).toBeFocused();
   });
 
+  test("Alt steps by smallStep; snapOnStep lands on the step's multiples", async ({ page }) => {
+    await ready(page);
+    const weight = field(page, "Weight");
+    await expect(weight).toHaveValue("70.5 kg");
+    await weight.focus();
+    await page.keyboard.press("Alt+ArrowUp");
+    await expect(weight).toHaveValue("70.6 kg");
+    await page.keyboard.press("ArrowUp");
+    await expect(weight).toHaveValue("71 kg");
+    await page.keyboard.press("Shift+ArrowUp");
+    await expect(weight).toHaveValue("80 kg");
+    await page.keyboard.press("Alt+ArrowDown");
+    await expect(weight).toHaveValue("79.9 kg");
+    // Shift with a button takes the large step, onto a multiple of it.
+    await page.keyboard.down("Shift");
+    await button(page, "Weight", "Decrease").click();
+    await page.keyboard.up("Shift");
+    await expect(weight).toHaveValue("70 kg");
+  });
+
   test("a typed number is kept in range when committed", async ({ page }) => {
     await ready(page);
     const quantity = field(page, "Quantity");

@@ -28,15 +28,17 @@ declare module "lumiose/jsx-runtime" {
   namespace JSX {
     interface IntrinsicElements {
       /**
-       * Number Field's element. Attributes `min`, `max`, `step`, `large-step`, `format`
-       * (`Intl.NumberFormat` options as JSON), `locale`, `allow-wheel-scrub`,
-       * `allow-out-of-range`; property `value`.
+       * Number Field's element. Attributes `min`, `max`, `step`, `large-step`, `small-step`,
+       * `snap-on-step`, `format` (`Intl.NumberFormat` options as JSON), `locale`,
+       * `allow-wheel-scrub`, `allow-out-of-range`; property `value`.
        */
       "lu-number-field": JSX.HTMLProps<NumberFieldElement> & {
         min?: number;
         max?: number;
         step?: number;
         "large-step"?: number;
+        "small-step"?: number;
+        "snap-on-step"?: boolean;
         format?: string;
         locale?: string;
         "allow-wheel-scrub"?: boolean;
@@ -78,8 +80,14 @@ export interface NumberFieldRootProps extends Omit<
   max?: number;
   /** The step of the arrow keys, the buttons, the wheel and a drag. Default `1`. */
   step?: number;
-  /** The step of Page Up, Page Down and Shift with an arrow key. Default `10`. */
+  /** The step of Page Up, Page Down, and Shift with an arrow key or a button. Default `10`. */
   largeStep?: number;
+  /** The step of Alt with an arrow key or a button. Default `0.1`. */
+  smallStep?: number;
+  /**
+   * A step lands on the next multiple of its size (from `min`, or 0): 1.3 steps up to 2, not 2.3.
+   */
+  snapOnStep?: boolean;
   /**
    * How the number is shown: `Intl.NumberFormat` options (a currency, a percentage, grouping).
    * With it the input is a text field and a hidden input submits the number.
@@ -168,6 +176,8 @@ function Root({
   max,
   step,
   largeStep,
+  smallStep,
+  snapOnStep,
   format,
   locale,
   allowWheelScrub,
@@ -226,6 +236,8 @@ function Root({
         max={max}
         step={step}
         large-step={largeStep}
+        small-step={smallStep}
+        snap-on-step={snapOnStep}
         format={format ? JSON.stringify(format) : undefined}
         locale={locale}
         allow-wheel-scrub={allowWheelScrub}

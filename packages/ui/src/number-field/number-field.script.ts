@@ -13,10 +13,12 @@
 // The element adds, after Base UI's NumberField and the APG spinbutton:
 //
 // - The keys: Arrow Up and Arrow Down step by `step`, Shift with them and Page Up and Page Down by
-//   `large-step` (default 10), Home and End go to `min` and `max`.
-// - The `[data-action=increment]` and `[data-action=decrement]` buttons: a press steps once, and
-//   holding it steps again and again; a click from the keyboard or assistive technology steps once.
-//   They are disabled at the ends of the range.
+//   `large-step` (default 10), Alt with them by `small-step` (default 0.1), Home and End go to
+//   `min` and `max`. With `snap-on-step`, a step lands on a multiple of its size (from `min`, or
+//   0) instead of adding it to a value between them.
+// - The `[data-action=increment]` and `[data-action=decrement]` buttons: a press steps once (Shift
+//   by `large-step`, Alt by `small-step`), and holding it steps again and again; a click from the
+//   keyboard or assistive technology steps once. They are disabled at the ends of the range.
 // - A `[data-scrub]` area: dragging across it steps the value (`data-direction`, horizontal or
 //   vertical, and `data-pixel-sensitivity`, pixels per step); right to left, leftward goes up.
 // - The wheel steps the value only while the input has focus and the pointer is over it, with
@@ -80,6 +82,15 @@ export class NumberFieldElement extends HTMLElement {
 
   get #largeStep(): number {
     return finite(this.getAttribute("large-step")) ?? 10;
+  }
+
+  get #smallStep(): number {
+    return finite(this.getAttribute("small-step")) ?? 0.1;
+  }
+
+  /** The step a key or a press with these modifiers takes: Shift large, Alt small. */
+  #stepFor(event: { shiftKey: boolean; altKey: boolean }): number {
+    return event.shiftKey ? this.#largeStep : event.altKey ? this.#smallStep : this.#step;
   }
 
   /** The number, `null` when the field is empty. Setting it shows it, without events. */
@@ -217,20 +228,27 @@ export class NumberFieldElement extends HTMLElement {
     const current = this.value;
     const start = current ?? (amount > 0 ? (this.#min ?? 0) - amount : (this.#max ?? 0) - amount);
     const places = Math.max(decimals(start), decimals(amount));
-    const next = this.#clamp(Number((start + amount).toFixed(places)));
-    this.#set(next, commit);
+    let next = start + amount;
+    if (current !== null && this.hasAttribute("snap-on-step")) {
+      // The next multiple of the step from the base, up or down (1.3 + 1 is 2).
+      const base = this.#min ?? 0;
+      const size = Math.abs(amount);
+      const at = Number(((current - base) / size).toFixed(9));
+      next = base + (amount > 0 ? Math.floor(at) + 1 : Math.ceil(at) - 1) * size;
+    }
+    this.#set(this.#clamp(Number(next.toFixed(places))), commit);
   }
 
   #onKeyDown = (event: KeyboardEvent) => {
     if (event.target !== this.input || event.isComposing || !this.#usable()) return;
-    const [step, largeStep, min, max] = [this.#step, this.#largeStep, this.#min, this.#max];
+    const [largeStep, min, max] = [this.#largeStep, this.#min, this.#max];
     let handled = true;
     switch (event.key) {
       case "ArrowUp":
-        this.#stepBy(event.shiftKey ? largeStep : step, true);
+        this.#stepBy(this.#stepFor(event), true);
         break;
       case "ArrowDown":
-        this.#stepBy(-(event.shiftKey ? largeStep : step), true);
+        this.#stepBy(-this.#stepFor(event), true);
         break;
       case "PageUp":
         this.#stepBy(largeStep, true);
@@ -359,7 +377,8 @@ export class NumberFieldElement extends HTMLElement {
       // Focus stays where it is: no virtual keyboard opens, and the input keeps its caret.
       event.preventDefault();
       this.#pressed = true;
-      const amount = button.dataset.action === "increment" ? this.#step : -this.#step;
+      const size = this.#stepFor(event);
+      const amount = button.dataset.action === "increment" ? size : -size;
       this.#hold(
         button,
         event,
@@ -397,7 +416,8 @@ export class NumberFieldElement extends HTMLElement {
       this.#pressed = false;
       return;
     }
-    this.#stepBy(button.dataset.action === "increment" ? this.#step : -this.#step, true);
+    const size = this.#stepFor(event);
+    this.#stepBy(button.dataset.action === "increment" ? size : -size, true);
   };
 
   /** Dragging across a scrub area steps the value, one step per `data-pixel-sensitivity` px. */

@@ -29,6 +29,9 @@ export function Typed() {
       </NumberField.Root>
       {/* @ts-expect-error: bind:value takes a number | null signal */}
       <NumberField.Root bind:value={signal("1")} />
+      <NumberField.Root smallStep={0.5} snapOnStep />
+      {/* @ts-expect-error: smallStep is a number */}
+      <NumberField.Root smallStep="0.5" />
       {/* @ts-expect-error: the range belongs to the Root */}
       <NumberField.Input max={3} />
       {/* @ts-expect-error: the input's type follows `format` */}

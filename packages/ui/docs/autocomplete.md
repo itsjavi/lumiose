@@ -1,6 +1,6 @@
 # Autocomplete
 
-> A text input with suggestions, for text that may be anything (a search, a tag, an address): the WAI-ARIA combobox pattern with list autocomplete, after Base UI's Autocomplete. Unlike a [Combobox](combobox.md), the text is the value: the input has the name and submits what is typed, and choosing a suggestion only fills it in. It runs on the Combobox's element (`<lu-combobox free>`, 4.1 kB) and parts, on server-rendered pages and in islands; `bind:value` keeps a signal in sync. Filtering, inline completion, groups, an empty state and a status.
+> A text input with suggestions, for text that may be anything (a search, a tag, an address): the WAI-ARIA combobox pattern with list autocomplete, after Base UI's Autocomplete. Unlike a [Combobox](combobox.md), the text is the value: the input has the name and submits what is typed, and choosing a suggestion only fills it in. It runs on the Combobox's element (`<lu-combobox free>`, 4.3 kB) and parts, on server-rendered pages and in islands; `bind:value` keeps a signal in sync. Filtering, inline completion, groups, an empty state and a status.
 
 ```ts
 import { Autocomplete } from "@lumiose/ui"; // or "@lumiose/ui/autocomplete"
@@ -58,6 +58,10 @@ same.
 | `mode`                              | `"list" \| "both" \| "inline" \| "none"` | `"list"`     | How the suggestions complete the text (below).                                  |
 | `filter`                            | `"contains" \| "startsWith"`             | `"contains"` | How `"list"` and `"both"` filter the suggestions, ignoring case and accents.    |
 | `openOnInputClick`                  | `boolean`                                | `false`      | A click on the input opens the suggestions; otherwise typing and Arrow Down do. |
+| `autoHighlight`                     | `boolean`                                | `false`      | The first suggestion is highlighted as you type, so Enter fills it in.          |
+| `keepHighlight`                     | `boolean`                                | `false`      | A suggestion the pointer highlighted stays highlighted when it leaves the list. |
+| `submitOnItemClick`                 | `boolean`                                | `false`      | A click on a suggestion fills it in and submits the form, as a search box does. |
+| `limit`                             | `number`                                 | no limit     | Shows at most this many suggestions; a narrower text shows the others.          |
 | `name`                              | `string`                                 |              | The name the text is submitted under (the input's).                             |
 | `required`, `disabled`              | `boolean`                                | `false`      | As on a native input.                                                           |
 
@@ -77,9 +81,9 @@ As in [Combobox](combobox.md#the-other-parts). An `Item`'s `value` is the text i
 takes the field's id, name, description and error, and the field shows its validation.
 
 **Differences from Base UI's Autocomplete.** The suggestions are markup, not an `items` array, and
-filtering compares their text (`mode="none"` hands it to you, as Base UI's `filter={null}`). No
-`autoHighlight`, `keepHighlight`, `submitOnItemClick` or `limit`: Enter on a highlighted suggestion
-fills it in, and Enter with none highlighted submits the form. No `Portal`, `Positioner`,
+filtering compares their text (`mode="none"` hands it to you, as Base UI's `filter={null}`).
+`limit` hides the matches past it, as filtering does, so it applies to the server's suggestions
+too. No `Portal`, `Positioner`,
 `Backdrop`, `Arrow`, `Value`, `Icon`, `Row`, `Collection` or `Separator`.
 
 ## Example
@@ -132,7 +136,7 @@ keeps filtered suggestions hidden.
 | --------------------- | ------------------------------------------------------------------------------------------------ |
 | Typing                | Filters the suggestions (with `"list"` and `"both"`) and opens them; an empty input closes them. |
 | Arrow Down / Arrow Up | Opens the suggestions, then moves the highlight (with `"both"` and `"inline"`, into the input).  |
-| Enter                 | Fills in the highlighted suggestion; with none highlighted, submits the form.                    |
+| Enter                 | Fills in the highlighted suggestion (the first, with `autoHighlight`); with none, submits.       |
 | Escape                | Closes the suggestions and keeps the typed text (taking back an inline completion).              |
 | Tab                   | Closes the suggestions and moves on, keeping the text.                                           |
 
@@ -141,7 +145,7 @@ Focus stays in the input: the highlight moves through `aria-activedescendant`.
 ## Without JavaScript, and the element's script
 
 The input is a native text field with the name: typing, `required`, submission and reset work with
-no script; the suggestions need it. `<lu-combobox>`'s script (4.1 kB brotli, shared with Combobox)
+no script; the suggestions need it. `<lu-combobox>`'s script (4.3 kB brotli, shared with Combobox)
 filters and opens them, moves the highlight, fills in a choice (firing `input` and `change` on the
 input) and runs inline completion.
 

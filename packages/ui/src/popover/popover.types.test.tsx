@@ -16,6 +16,9 @@ export function Typed() {
       <Popover.Root open={open()} onOpenChange={(next: boolean) => open.set(next)} />
       {/* @ts-expect-error: bind:open takes a boolean signal */}
       <Popover.Root bind:open={name} />
+      <Popover.Root modal="trap-focus" />
+      {/* @ts-expect-error: modal is a boolean or "trap-focus" */}
+      <Popover.Root modal="trap" />
       {/* @ts-expect-error: side is a side of the trigger */}
       <Popover.Popup side="middle" />
       {/* @ts-expect-error: offsets are numbers of CSS pixels */}

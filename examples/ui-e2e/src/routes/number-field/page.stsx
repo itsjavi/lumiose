@@ -82,6 +82,24 @@ export default function NumberFieldPage() {
               <NumberField.Increment>+</NumberField.Increment>
             </NumberField.Group>
           </NumberField.Root>
+          <NumberField.Root
+            id="weight"
+            defaultValue={70.5}
+            min={0}
+            max={300}
+            smallStep={0.1}
+            snapOnStep
+            format={{ style: "unit", unit: "kilogram", maximumFractionDigits: 1 }}
+            locale="en-US"
+            class="lu-number-field"
+          >
+            <label for="weight">Weight</label>
+            <NumberField.Group>
+              <NumberField.Decrement>−</NumberField.Decrement>
+              <NumberField.Input />
+              <NumberField.Increment>+</NumberField.Increment>
+            </NumberField.Group>
+          </NumberField.Root>
         </section>
 
         <footer>

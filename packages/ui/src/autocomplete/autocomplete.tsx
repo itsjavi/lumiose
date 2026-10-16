@@ -68,6 +68,14 @@ export interface AutocompleteRootProps extends Omit<
   filter?: "contains" | "startsWith";
   /** A click on the input opens the suggestions too; otherwise typing and Arrow Down do. */
   openOnInputClick?: boolean;
+  /** The first suggestion is highlighted as you type, so Enter chooses it. */
+  autoHighlight?: boolean;
+  /** A suggestion the pointer highlighted stays highlighted when the pointer leaves the list. */
+  keepHighlight?: boolean;
+  /** A click on a suggestion submits the form, as a search box does. */
+  submitOnItemClick?: boolean;
+  /** Shows at most this many suggestions; a narrower text shows the others. */
+  limit?: number;
   /** The name the text is submitted under (the input's). */
   name?: string;
   /** The form needs a text. */
@@ -110,6 +118,10 @@ function Root({
   mode,
   filter,
   openOnInputClick,
+  autoHighlight,
+  keepHighlight,
+  submitOnItemClick,
+  limit,
   name,
   required,
   disabled,
@@ -160,6 +172,10 @@ function Root({
         inline={completion === "both" || completion === "inline"}
         filter={completion === "inline" || completion === "none" ? "none" : filter}
         open-on-input-click={openOnInputClick}
+        auto-highlight={autoHighlight}
+        keep-highlight={keepHighlight}
+        submit-on-item-click={submitOnItemClick}
+        limit={limit}
         disabled={context.disabled()}
         on:input={(event: Event) => {
           const input = host()?.input;

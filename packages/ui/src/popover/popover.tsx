@@ -40,9 +40,11 @@ export interface PopoverRootProps {
   onOpenChange?: (open: boolean) => void;
   /**
    * A modal popover: the rest of the page is inert and does not scroll, focus stays in the popup,
-   * and a press outside or Escape closes it. The popup is then a modal `<dialog>`.
+   * and a press outside or Escape closes it. The popup is then a modal `<dialog>`. With
+   * `"trap-focus"`, only Tab and Shift+Tab stay in the popup: the page still scrolls and takes
+   * presses (one outside closes it).
    */
-  modal?: boolean;
+  modal?: boolean | "trap-focus";
   /** The other parts: a `Popover.Trigger` and the `Popover.Popup`, anywhere inside. */
   children?: JSX.Element;
 }
@@ -75,6 +77,7 @@ export type PopoverCloseProps = JSX.IntrinsicElements["button"];
 interface PopoverContextValue {
   id: string;
   modal: boolean;
+  trapFocus: boolean;
   trigger: JSX.Ref<HTMLButtonElement>;
   popup: JSX.Ref<HTMLElement>;
   onToggle: (open: boolean) => void;
@@ -108,6 +111,7 @@ function Root(props: PopoverRootProps) {
   const context: PopoverContextValue = {
     id,
     modal,
+    trapFocus: untrack(() => props.modal === "trap-focus"),
     trigger,
     popup,
     onToggle: (next) => props.onOpenChange?.(next),
@@ -232,6 +236,7 @@ function Popup({
       ref={attach}
       id={popover.popupId}
       popover="auto"
+      data-trap-focus={popover.trapFocus ? "" : undefined}
       on:toggle={toggle}
     >
       {isServer ? content : children}

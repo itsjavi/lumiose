@@ -29,7 +29,13 @@ export default function AutocompletePage() {
               <Autocomplete.Empty>No suggestions: any tag works.</Autocomplete.Empty>
             </Autocomplete.Popup>
           </Autocomplete.Root>
-          <Autocomplete.Root name="country" mode="both" filter="startsWith" class="lu-combobox">
+          <Autocomplete.Root
+            name="country"
+            mode="both"
+            filter="startsWith"
+            keepHighlight
+            class="lu-combobox"
+          >
             <Autocomplete.Label>Country</Autocomplete.Label>
             <Autocomplete.Input />
             <Autocomplete.List>
@@ -78,6 +84,19 @@ export default function AutocompletePage() {
             Reset
           </button>
         </footer>
+      </form>
+
+      <form method="get" action="/autocomplete" role="search" aria-label="Tags">
+        {/* The first match highlighted as you type, three at most, and a click searches. */}
+        <Autocomplete.Root name="q" autoHighlight limit={3} submitOnItemClick class="lu-combobox">
+          <Autocomplete.Label>Search</Autocomplete.Label>
+          <Autocomplete.Input />
+          <Autocomplete.List>
+            {TAGS.map((tag) => (
+              <Autocomplete.Item value={tag}>{tag}</Autocomplete.Item>
+            ))}
+          </Autocomplete.List>
+        </Autocomplete.Root>
       </form>
     </>
   );

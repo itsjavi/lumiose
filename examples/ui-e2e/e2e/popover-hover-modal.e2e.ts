@@ -134,6 +134,58 @@ test.describe("open on hover", () => {
   });
 });
 
+test.describe("the safe triangle and trap-focus (TASK-410)", () => {
+  test("a slow path toward the popup keeps it open; one away from it lets it close", async ({
+    page,
+  }) => {
+    await ready(page);
+    const turing = card(page, "Alan Turing");
+    await hover(page, "Alan Turing");
+    await expect(turing).toBeVisible();
+    const from = (await trigger(page, "Alan Turing").boundingBox())!;
+    const to = (await turing.boundingBox())!;
+    const start = { x: from.x + from.width / 2, y: from.y + from.height / 2 };
+    const end = { x: to.x + to.width * 0.8, y: to.y + to.height / 2 };
+    // Ten small moves, 40 ms apart: far longer than the 100 ms grace in all.
+    for (let i = 1; i <= 10; i++) {
+      await page.mouse.move(
+        start.x + ((end.x - start.x) * i) / 10,
+        start.y + ((end.y - start.y) * i) / 10,
+      );
+      await page.waitForTimeout(40);
+      await expect(turing).toBeVisible();
+    }
+    await page.waitForTimeout(300);
+    await expect(turing).toBeVisible();
+    // Back on the trigger, then off the other way: the triangle does not hold it.
+    await page.mouse.move(start.x, start.y, { steps: 4 });
+    await page.mouse.move(start.x, start.y - 120, { steps: 6 });
+    await expect(turing).toBeHidden();
+  });
+
+  test('modal="trap-focus" keeps Tab in the popup, and the page usable', async ({ page }) => {
+    await ready(page);
+    const filters = card(page, "Filters");
+    await trigger(page, "Filters").click();
+    await expect(filters).toBeVisible();
+    const from = filters.getByRole("textbox", { name: "From" });
+    const done = filters.getByRole("button", { name: "Done" });
+    await expect(from).toBeFocused();
+    await page.keyboard.press("Tab");
+    await page.keyboard.press("Tab");
+    await expect(done).toBeFocused();
+    await page.keyboard.press("Tab");
+    await expect(from).toBeFocused();
+    await page.keyboard.press("Shift+Tab");
+    await expect(done).toBeFocused();
+    // Not modal otherwise: the page scrolls, and a press outside lands (and closes it).
+    expect(await page.evaluate(() => document.documentElement.style.overflow)).toBe("");
+    await page.getByRole("button", { name: "Behind" }).click();
+    await expect(filters).toBeHidden();
+    await expect(page.getByRole("button", { name: "Behind" })).toBeFocused();
+  });
+});
+
 test.describe("open on hover, by touch", () => {
   test.use({ hasTouch: true });
 

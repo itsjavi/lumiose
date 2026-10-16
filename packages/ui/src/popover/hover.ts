@@ -2,8 +2,12 @@
 // a mouse or a pen resting on a trigger opens its popup after the trigger's `data-delay`, never
 // touch; the popup stays open while the pointer is on the trigger or on it (WCAG 1.4.13:
 // hoverable), and closes `data-close-delay` after the pointer left both, with at least a short
-// grace to cross the gap between them. A press before the delay cancels the opening. Each
-// client script calls `hoverIntent` once with how its triggers and popups are found and shown.
+// grace to cross the gap between them. While the pointer moves from the trigger toward the popup,
+// inside the triangle from where it left the trigger to the popup's near side (Base UI's safe
+// polygon, TASK-410), the grace starts over at each move, so a slow or diagonal path gets there; a
+// stop or a move out of the triangle lets it run out. A press before the delay cancels the
+// opening. Each client script calls `hoverIntent` once with how its triggers and popups are found
+// and shown.
 // It must not import `lumiose`: server-rendered pages load it without the runtime.
 
 /** How long a hover-opened popup waits for the pointer to cross the gap from its trigger. */
@@ -44,6 +48,27 @@ const ms = (trigger: HTMLElement, name: string, fallback: number) => {
   return Number.isFinite(value) ? value : fallback;
 };
 
+/**
+ * Whether (px, py) is inside the triangle from (x, y) to the side of `box` that faces (x, y), or in
+ * the box.
+ */
+export function toward(box: DOMRect, x: number, y: number, px: number, py: number): boolean {
+  if (px >= box.left && px <= box.right && py >= box.top && py <= box.bottom) return true;
+  // The corners of the side that faces (x, y).
+  const [ax, ay, bx, by] =
+    y <= box.top
+      ? [box.left, box.top, box.right, box.top]
+      : y >= box.bottom
+        ? [box.left, box.bottom, box.right, box.bottom]
+        : x <= box.left
+          ? [box.left, box.top, box.left, box.bottom]
+          : [box.right, box.top, box.right, box.bottom];
+  const cross = (x1: number, y1: number, x2: number, y2: number) =>
+    (x2 - x1) * (py - y1) - (y2 - y1) * (px - x1);
+  const signs = [cross(x, y, ax, ay), cross(ax, ay, bx, by), cross(bx, by, x, y)];
+  return !(signs.some((d) => d < 0) && signs.some((d) => d > 0));
+}
+
 const on = <K extends keyof DocumentEventMap>(
   type: K,
   listener: (event: DocumentEventMap[K]) => void,
@@ -53,6 +78,8 @@ export function hoverIntent(source: HoverSource): HoverIntent {
   const hovered = new Map<HTMLElement, HTMLElement>();
   let opening: { trigger: HTMLElement; timer: ReturnType<typeof setTimeout> } | undefined;
   const closing = new Map<HTMLElement, ReturnType<typeof setTimeout>>();
+  /** Where the pointer left a hover-opened popup's trigger, while it heads for the popup. */
+  let corridor: { popup: HTMLElement; x: number; y: number } | undefined;
 
   const stay = (popup: HTMLElement) => {
     clearTimeout(closing.get(popup));
@@ -118,8 +145,20 @@ export function hoverIntent(source: HoverSource): HoverIntent {
     for (const [popup, trigger] of hovered) {
       const inside = (node: Node | null) =>
         !!node && (popup.contains(node) || trigger.contains(node));
-      if (inside(from) && !inside(to)) close(popup);
+      if (!inside(from) || inside(to)) continue;
+      close(popup);
+      if (trigger.contains(from)) corridor = { popup, x: event.clientX, y: event.clientY };
     }
+  });
+
+  // On the way to the popup: each move inside the triangle starts the grace over.
+  on("pointermove", (event) => {
+    if (!corridor || event.pointerType === "touch") return;
+    const { popup, x, y } = corridor;
+    // Arrived (the popup's `pointerover` cancelled the close), or closed already.
+    if (!closing.has(popup)) corridor = undefined;
+    else if (toward(popup.getBoundingClientRect(), x, y, event.clientX, event.clientY)) close(popup);
+    else corridor = undefined;
   });
 
   // A press before the delay cancels the opening (a click acts as it would without hover).

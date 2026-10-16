@@ -23,6 +23,8 @@
 //   both. A click on the trigger keeps it open until it is dismissed (an outside press, Escape).
 // - A modal popover is a modal `<dialog data-side>` opened by `command="show-modal"`: placement,
 //   focus and `aria-expanded` as above; Dialog's script and the native dialog do the rest.
+// - `data-trap-focus` (`modal="trap-focus"`, TASK-410): Tab and Shift+Tab go around inside the
+//   open popup, which stays non-modal otherwise (the page scrolls and takes presses).
 //
 // It must not import `lumiose`: server-rendered pages load it without the runtime.
 import { openLayer } from "../layer/layer.ts";
@@ -71,6 +73,30 @@ function follow() {
 
 on("pointerdown", (event) => (press = event));
 on("keydown", () => (press = undefined));
+
+on("keydown", (event) => {
+  if (event.key !== "Tab" || event.defaultPrevented || event.altKey || event.ctrlKey) return;
+  const popup = (event.target as Element).closest?.<HTMLElement>("[data-trap-focus]");
+  if (!isPopover(popup) || !popup.matches(":popover-open")) return;
+  const focusables = [...popup.querySelectorAll<HTMLElement>(FOCUSABLE)].filter((element) =>
+    element.checkVisibility(),
+  );
+  const first = focusables[0];
+  const last = focusables.at(-1);
+  const at = event.target as HTMLElement;
+  const wrap = !first
+    ? popup
+    : event.shiftKey
+      ? at === first || at === popup
+        ? last
+        : undefined
+      : at === last
+        ? first
+        : undefined;
+  if (!wrap) return;
+  event.preventDefault();
+  wrap.focus();
+});
 
 /** Stops dismissing each open popover (layer/layer.ts). */
 const layers = new Map<HTMLElement, () => void>();

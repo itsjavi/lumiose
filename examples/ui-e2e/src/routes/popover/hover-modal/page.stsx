@@ -1,8 +1,9 @@
 import { Popover } from "@lumiose/ui";
 import { Title } from "lumiose";
 
-// Server-rendered, no island (TASK-394): popovers that open on hover (Popover's script) and a
-// modal popover, a modal <dialog> opened by an invoker command. The page is long enough to scroll,
+// Server-rendered, no island (TASK-394): popovers that open on hover (Popover's script), one far
+// from its trigger (the safe triangle, TASK-410), a modal popover, a modal <dialog> opened by an
+// invoker command, and one that only traps focus (`modal="trap-focus"`, TASK-410). The page is long enough to scroll,
 // to show the scroll lock. Styled with the default theme.
 export default function PopoverHoverModalPage() {
   return (
@@ -31,6 +32,16 @@ export default function PopoverHoverModalPage() {
               <Popover.Description>Built the first compiler.</Popover.Description>
             </Popover.Popup>
           </Popover.Root>
+          {/* Far from its trigger: the pointer gets there through the safe triangle. */}
+          <Popover.Root>
+            <Popover.Trigger class="lu-button" openOnHover delay={200}>
+              Alan Turing
+            </Popover.Trigger>
+            <Popover.Popup class="lu-popover" align="start" sideOffset={64}>
+              <Popover.Title>Alan Turing</Popover.Title>
+              <Popover.Description>Asked whether machines can think.</Popover.Description>
+            </Popover.Popup>
+          </Popover.Root>
         </section>
 
         <section aria-labelledby="modal-heading">
@@ -48,6 +59,19 @@ export default function PopoverHoverModalPage() {
                   Save
                 </Popover.Close>
               </footer>
+            </Popover.Popup>
+          </Popover.Root>
+          <Popover.Root modal="trap-focus">
+            <Popover.Trigger class="lu-button">Filters</Popover.Trigger>
+            <Popover.Popup class="lu-popover" align="start" sideOffset={8}>
+              <Popover.Title>Filters</Popover.Title>
+              <label>
+                From <input class="lu-input" value="2024" />
+              </label>
+              <label>
+                To <input class="lu-input" value="2026" />
+              </label>
+              <Popover.Close class="lu-button">Done</Popover.Close>
             </Popover.Popup>
           </Popover.Root>
           <button type="button" class="lu-button">

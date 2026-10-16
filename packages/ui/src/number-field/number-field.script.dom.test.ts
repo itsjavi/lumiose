@@ -52,6 +52,37 @@ it("steps with the arrows, Shift, Page Up and Page Down, and goes to the ends wi
   expect(events.mock.calls.filter(([type]) => type === "change")).toHaveLength(7);
 });
 
+const alt = (name: string) =>
+  input().dispatchEvent(
+    new KeyboardEvent("keydown", { key: name, altKey: true, bubbles: true, cancelable: true }),
+  );
+
+it("steps by small-step with Alt, and snaps to the step's multiples with snap-on-step", async () => {
+  const field = mount({ attributes: 'min="0" max="20" small-step="0.5"' });
+  await settle();
+  alt("ArrowUp");
+  expect(field.value).toBe(5.5);
+  key("ArrowUp");
+  expect(field.value).toBe(6.5);
+  field.setAttribute("snap-on-step", "");
+  key("ArrowUp");
+  expect(field.value).toBe(7);
+  field.value = 7.2;
+  key("ArrowDown");
+  expect(field.value).toBe(7);
+  // A large step lands on its own multiples: tens.
+  key("ArrowUp", true);
+  expect(field.value).toBe(10);
+  field.value = 13;
+  key("PageDown");
+  expect(field.value).toBe(10);
+  // A Shift press on a button takes the large step too.
+  button("decrement").dispatchEvent(
+    new MouseEvent("click", { bubbles: true, shiftKey: true }),
+  );
+  expect(field.value).toBe(0);
+});
+
 it("disables a button at its end of the range", async () => {
   const field = mount();
   await settle();

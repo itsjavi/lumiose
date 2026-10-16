@@ -46,6 +46,10 @@ declare module "lumiose/jsx-runtime" {
         free?: boolean;
         inline?: boolean;
         "open-on-input-click"?: boolean;
+        "auto-highlight"?: boolean;
+        "keep-highlight"?: boolean;
+        "submit-on-item-click"?: boolean;
+        limit?: number;
       };
     }
   }
