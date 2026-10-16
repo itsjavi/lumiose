@@ -51,8 +51,9 @@ Without `open`, `onOpenChange` or `bind:open` the dialog keeps its own state.
 
 Each part takes the props of the element it renders (`class`, `style`, `aria-*`, `data-*`, event
 handlers, `ref`) and passes them through. Your props override the defaults (`type`,
-`aria-haspopup`, `aria-expanded`, `closedby`, `aria-labelledby`, `aria-describedby`); `id`,
-`command` and `commandfor` stay the parts' own, since they connect the parts.
+`aria-haspopup`, `aria-expanded`, `closedby`, `aria-labelledby`, `aria-describedby`). A `Title`'s or
+a `Description`'s `id` names it, and the popup points at it; the `Popup` keeps its own `id`, which
+its triggers point at (see [Ids](README.md#ids)), and `command` and `commandfor` stay the parts' own.
 
 - **`Trigger`**: `aria-expanded` follows the dialog in the browser. In server HTML it stays
   `"false"`, which is never wrong where assistive technology can reach it: while the modal dialog

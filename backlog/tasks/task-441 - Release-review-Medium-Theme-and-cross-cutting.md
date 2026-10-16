@@ -1,11 +1,11 @@
 ---
 id: TASK-441
 title: 'Release review, Medium: Theme and cross-cutting'
-status: In Progress
+status: Done
 assignee:
   - '@Halo'
 created_date: '2026-10-16 10:07'
-updated_date: '2026-10-16 14:51'
+updated_date: '2026-10-16 15:08'
 labels:
   - ui
   - review
@@ -47,9 +47,9 @@ Found by Prism's release review of @lumiose/ui (TASK-386, 2026-10-16) on main 94
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
 - [x] #1 M37: Forced color-scheme works in builds (light-dark lowering)
-- [ ] #2 M38: Forced-colors styles for the theme's state indicators
-- [ ] #3 M39: Parts honour a caller's id
-- [ ] #4 M40: Collapsible/Accordion report no open change on mount
+- [x] #2 M38: Forced-colors styles for the theme's state indicators
+- [x] #3 M39: Parts honour a caller's id
+- [x] #4 M40: Collapsible/Accordion report no open change on mount
 <!-- AC:END -->
 
 ## Implementation Notes
@@ -65,4 +65,12 @@ Found by Prism's release review of @lumiose/ui (TASK-386, 2026-10-16) on main 94
 - M37 and M39 wait on decisions, asked of Lux: M37 needs @lumiose/vite's cssTarget (Safari 17.5) or excluding light-dark from Lightning CSS lowering (Photon's area, decision-66): lowering puts var(--lightningcss-light/dark) into the theme's custom properties, which resolve on :root, so no subtree, inline or JS color-scheme can flip them and nothing in the theme can fix it. M39 is API shape: one-pass SSR writes a trigger's popovertarget/aria-controls before its popup or panel renders, so a caller id on the later part cannot reach it; proposed (b) honour id on parts nothing earlier points at and record the rest, with a Root id for the rest as a proposal.
 
 2026-10-16 (Halo): M37 done with Lux's decision (option a; Lux amends decision-66). @lumiose/vite's CSS_TARGET has Safari/iOS 17.5 (was 17.4), the first Safari with light-dark(), so Lightning CSS keeps light-dark() as written. plugin.test.ts's target guard now also checks that light-dark() stays and that a 17.4 target would lower it (--lightningcss-light). New ui-e2e color-scheme.e2e.ts: with the system light or dark, a subtree's color-scheme and an inline root color-scheme set from script flip the default theme's button background; it fails with the old target in build, Firefox and WebKit (all production builds) and passes in dev. Docs: stability.md (supported Safari 17.5), concepts/styles.md (what lowering light-dark() does), ui theming.md.
+
+2026-10-16 (Halo): M39 done with Lux's decision (option b; Root ids are TASK-457's proposal, not built). A part takes a caller's id wherever nothing earlier in the server HTML points at it, and the parts after it point at that id: the triggers of Accordion, Collapsible, Menu (and SubmenuTrigger) and Navigation Menu; Tabs' Tab (a value→id map the Panel reads); Combobox's Label (the list's aria-labelledby follows) and Item (the option; the script reads option.id for aria-activedescendant); Dialog's and Popover's Title and Description (the Popup renders its children before its own attributes on the server and follows them in the browser); Toast.Root (its Close's commandfor follows); Slider.Root's element and Slider.Label (Control and thumbs follow); Progress.Label and Meter.Label. Kept generated, because an earlier part points at them: the popups of Dialog, Drawer, Popover, Tooltip, Preview Card and Menu; Navigation Menu's Content; Tabs', Accordion's and Collapsible's panels; Combobox's Input, List, Popup, Empty, Chips and group labels (and its Root, whose id the script uses to find its parts); Slider thumbs (Label and Value point at them; slider.md wrongly listed id among a Thumb's props); Progress/Meter tracks; Field's Root (script) and control (Field.Label). Unchanged and already honoured: Tabs, Accordion, Toolbar and other Roots that spread props, Tooltip's trigger; Number Field and OTP Field take the input's id on Root. New src/ids.test.tsx (server HTML, 7 tests) fails without the change; menu.test.tsx's prop test asserted the old override and was updated. Docs: README 'Ids' section, and accordion, collapsible, dialog, menu, popover, tabs, toast, slider, combobox, navigation-menu, progress, meter pages.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+M37: production CSS targets Safari 17.5, so light-dark() follows a forced color-scheme (subtree, inline, script), with a vite guard and a production e2e test. M38: forced-colours styles for the theme's state indicators. M39: parts take a caller's id wherever nothing earlier points at them; the rest keep generated ids, documented per component and in the README. M40: Collapsible and Accordion report no change on mount. Regression tests fail without each fix.
+<!-- SECTION:FINAL_SUMMARY:END -->

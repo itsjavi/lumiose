@@ -244,6 +244,8 @@ function Header({ children, ...rest }: AccordionHeaderProps) {
 function Trigger({ children, ...rest }: AccordionTriggerProps) {
   const item = useItem();
   const header = useContext(HeaderContext);
+  // A caller's `id` names it; the parts after it point at that (TASK-441 M39).
+  if (rest.id) item.triggerId = rest.id;
   return (
     <summary
       {...rest}

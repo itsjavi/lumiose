@@ -113,6 +113,28 @@ custom properties, named as in shadcn/ui, are listed in [Theming](theming.md#the
 | [Menubar](menubar.md)                 | Available: Menus in a `role="menubar"`, `<lu-menubar>` moves between them                 |
 | [Navigation Menu](navigation-menu.md) | Available: a `<nav>` whose triggers open panels of links, works without JavaScript        |
 
+## Ids
+
+The parts connect themselves by id (`for`, `aria-labelledby`, `aria-controls`, `popovertarget`,
+`commandfor`), which they generate. A server renders a page once, in order: a part can take an
+`id` of yours only where nothing before it in the page points at it, and the parts after it then
+point at yours.
+
+- **Your `id` names it**: the triggers of Accordion, Collapsible, Menu (and submenus) and Navigation
+  Menu; Tabs' tabs; Combobox's `Label` and `Item`s; the `Title` and `Description` of a Dialog,
+  Drawer or Popover (the popup renders them before its own attributes); a Toast's `Root`; the
+  `Label` of a Slider, Progress or Meter; and the elements that nothing points at (a Slider's
+  `Root`, a Tabs or Accordion `Root`, a Toolbar, a Tooltip's trigger).
+- **It keeps its generated id**, because a part before it points at it: the popups of Dialog,
+  Drawer, Popover, Tooltip, Preview Card and Menu; Navigation Menu's `Content`; the panels of Tabs,
+  Accordion and Collapsible; Combobox's `Input`, `List` and `Popup`; a Slider's thumbs and the
+  tracks of Progress and Meter (their `Label` points at them); a Field's control (`Field.Label`).
+  Combobox's and Field's `Root` keep theirs too: their scripts find the parts by it. A Number
+  Field or an OTP Field takes the input's `id` on its `Root`.
+
+To reach a popup or a panel from elsewhere (a `commandfor`, a `#hash` link), point at a part that
+takes your `id`, such as a tab, or read the generated id from the rendered page.
+
 ## Right to left
 
 There is no direction provider: every component reads the direction from the page, the `dir`
@@ -415,8 +437,9 @@ Without `value`, `onValueChange` or `bind:value` the items keep their own state.
 ### The other parts
 
 Each part takes the props of the element it renders (`class`, `style`, `aria-*`, `data-*`, event
-handlers, `ref`) and passes them through. `id`, `name`, `aria-controls` and `aria-labelledby` stay
-the parts' own, since they connect the parts.
+handlers, `ref`) and passes them through. A `Trigger`'s `id` names it, and its `Panel` points at
+it; a `Panel` keeps its own `id`, which its trigger points at (see [Ids](README.md#ids)). `name`,
+`aria-controls` and `aria-labelledby` stay the parts' own, since they connect the parts.
 
 - **`Trigger`**: a disabled trigger gets `aria-disabled="true"` and `tabindex="-1"`.
 - **`Panel`**: the client script sets `--lu-accordion-panel-height` and `--lu-accordion-panel-width` on
@@ -1323,8 +1346,9 @@ opening one closes the others.
 ### The other parts
 
 Each part takes the props of the element it renders (`class`, `style`, `aria-*`, `data-*`, event
-handlers, `ref`) and passes them through. `id` and `aria-controls` stay the parts' own, since
-they connect the trigger and the panel.
+handlers, `ref`) and passes them through. The `Trigger`'s `id` names it, and the `Panel` points at
+it; the `Panel` keeps its own `id`, which the trigger points at (see [Ids](README.md#ids)), and
+`aria-controls` stays the trigger's own.
 
 - **`Trigger`**: a disabled trigger gets `aria-disabled="true"` and `tabindex="-1"`.
 - **`Panel`**: the client script sets `--lu-collapsible-panel-height` and `--lu-collapsible-panel-width`
@@ -1546,8 +1570,11 @@ The placement props go on the part that is the popover: the `Popup` when there i
 
 Each part takes the props of the element it renders (`class`, `style`, `aria-*`, `data-*`, event
 handlers, `ref`) and passes them through. Your props override the defaults (`tabindex`,
-`autocomplete`, `hidden`); the roles, ids, ARIA references, commands and the anchor stay the parts'
-own, since they connect the parts.
+`autocomplete`, `hidden`). A `Label`'s `id` names it, and the list points at it, and an `Item`'s
+`id` names the option (the input points at it only once the script highlights it). The `Root`,
+`Input`, `List`, `Popup`, `Empty`, `Chips` and group labels keep their own ids, which other parts
+or the element's script find them by (see [Ids](README.md#ids)); the roles, ARIA references,
+commands and the anchor stay the parts' own, since they connect the parts.
 
 - **`Input`**: `placeholder`, `onInput` (for async options) and `aria-describedby` pass through.
   Its `type` and `value` are the combobox's. Inside a [Field](field.md), it takes the field's id
@@ -2054,8 +2081,9 @@ Without `open`, `onOpenChange` or `bind:open` the dialog keeps its own state.
 
 Each part takes the props of the element it renders (`class`, `style`, `aria-*`, `data-*`, event
 handlers, `ref`) and passes them through. Your props override the defaults (`type`,
-`aria-haspopup`, `aria-expanded`, `closedby`, `aria-labelledby`, `aria-describedby`); `id`,
-`command` and `commandfor` stay the parts' own, since they connect the parts.
+`aria-haspopup`, `aria-expanded`, `closedby`, `aria-labelledby`, `aria-describedby`). A `Title`'s or
+a `Description`'s `id` names it, and the popup points at it; the `Popup` keeps its own `id`, which
+its triggers point at (see [Ids](README.md#ids)), and `command` and `commandfor` stay the parts' own.
 
 - **`Trigger`**: `aria-expanded` follows the dialog in the browser. In server HTML it stays
   `"false"`, which is never wrong where assistive technology can reach it: while the modal dialog
@@ -3180,8 +3208,9 @@ server HTML before its island hydrated stays open, and `onOpenChange(true)` tell
 
 Each part takes the props of the element it renders (`class`, `style`, `aria-*`, `data-*`, event
 handlers, `ref`) and passes them through. Your props override the defaults (`type`, `tabindex`,
-`aria-labelledby`, `data-side`, `data-align`); the roles, `id`, `popovertarget` and the anchor
-stay the parts' own, since they connect the parts. Your `style` is kept, after the anchor's.
+`aria-labelledby`, `data-side`, `data-align`). A `Trigger`'s (or `SubmenuTrigger`'s) `id` names it,
+and the popup points at it; the `Popup` keeps its own `id`, which the trigger points at (see
+[Ids](README.md#ids)); the roles, `popovertarget` and the anchor stay the parts' own. Your `style` is kept, after the anchor's.
 
 - **`Trigger`**: `aria-expanded` is left to the browser in server HTML, where `popovertarget`
   implies it, and set by the script once it runs. Disable it with the native `disabled`.
@@ -3642,7 +3671,8 @@ Every other prop passes through to the `<div>`: `id`, `class`, `style`.
 
 ### Meter.Label, Meter.Track and Meter.Value
 
-`Label` takes `<label>` props. `Track` takes `<meter>` props, among them the native `low`, `high`
+`Label` takes `<label>` props, its `id` among them; the `Track` keeps its own `id`, which the
+`Label` before it points at (see [Ids](README.md#ids)). `Track` takes `<meter>` props, among them the native `low`, `high`
 and `optimum`, which tell browsers which band a value is in (`aria-label` when there is no
 `Label`). `Value` takes `<span>` props, and its `children` may be a function
 `(formattedValue, value) => JSX.Element`.
@@ -3789,7 +3819,8 @@ Server HTML always starts closed: a popover only opens from its trigger or scrip
 ### The other parts
 
 Each part takes the props of the element it renders (`class`, `style`, `aria-*`, `data-*`, event
-handlers) and passes them through: `href` and `target` on a `Link`, `disabled` on a `Trigger`.
+handlers) and passes them through: `href` and `target` on a `Link`, `disabled` and `id` on a
+`Trigger`. A `Content` keeps its own `id`, which its trigger points at (see [Ids](README.md#ids)).
 
 **Differences from Base UI's NavigationMenu.** Each `Content` is its own popover in the top layer,
 anchored to its trigger: there is no shared `Viewport`, `Popup`, `Positioner`, `Portal`,
@@ -4386,8 +4417,9 @@ where the script runs), and comes back with it.
 
 Each part takes the props of the element it renders (`class`, `style`, `aria-*`, `data-*`, event
 handlers, `ref`) and passes them through. Your props override the defaults (`type`,
-`aria-haspopup`, `role`, `aria-labelledby`, `aria-describedby`); `id`, `popover` and
-`popovertarget` stay the parts' own. A `style` you pass keeps the anchor name.
+`aria-haspopup`, `role`, `aria-labelledby`, `aria-describedby`). A `Title`'s or a `Description`'s
+`id` names it, and the popup points at it; the `Popup` keeps its own `id`, which its trigger points
+at (see [Ids](README.md#ids)), and `popover` and `popovertarget` stay the parts' own. A `style` you pass keeps the anchor name.
 
 - **`Trigger`**: `aria-expanded` comes from the browser for `popovertarget`, and from the client
   script once it runs.
@@ -4750,7 +4782,8 @@ Every other prop passes through to the `<div>`: `id`, `class`, `style`.
 
 ### Progress.Label, Progress.Track and Progress.Value
 
-`Label` takes `<label>` props. `Track` takes `<progress>` props (`aria-label` when there is no
+`Label` takes `<label>` props, its `id` among them; the `Track` keeps its own `id`, which the
+`Label` before it points at (see [Ids](README.md#ids)). `Track` takes `<progress>` props (`aria-label` when there is no
 `Label`). `Value` takes `<span>` props, and its `children` may be a function
 `(formattedValue, value) => JSX.Element` that writes the value your way.
 
@@ -5524,10 +5557,12 @@ The value's type follows `value`, `defaultValue` or `bind:value`: a number for o
 
 ### The other parts
 
-`Label` takes `<label>` props. `Value` takes `<output>` props, and its `children` may be a function
+`Label` takes `<label>` props, its `id` among them, which the `Control` and the thumbs point at. `Value` takes `<output>` props, and its `children` may be a function
 `(formattedValues, values) => JSX.Element` (then it has no `for`, and you render its text). `Control`,
 `Track` and `Indicator` take `<div>` props. `Thumb` takes `<input>` props except the range's own
-(`aria-label`, `aria-valuetext`, `disabled`, `id`, `class`). Give each thumb of a range an
+(`aria-label`, `aria-valuetext`, `disabled`, `class`). A thumb keeps its own `id`, which the
+`Label` and the `Value` before it point at (in a Field, the first thumb's is the field's control;
+see [Ids](README.md#ids)). Give each thumb of a range an
 `aria-label` with the label's text in it ("Minimum price" under "Price"), so speech users can say
 what they see (WCAG 2.5.3); the Label names the range's group (`Control`), so screen readers
 announce "Price, group" before the thumbs. Inside a Field, the first thumb takes the field's id,
@@ -5810,8 +5845,10 @@ The element reads them from the list's attributes: `data-activate-on-focus` and
 | `value`    | both  | `string`  | Pairs a tab with its panel. Required.                         |
 | `disabled` | `Tab` | `boolean` | The tab takes focus but cannot be selected (`aria-disabled`). |
 
-Each takes the props of the element it renders. `role`, `id`, `value`, `aria-selected`,
-`aria-controls`, `aria-labelledby`, `tabindex` on tabs and `hidden` stay the parts' own.
+Each takes the props of the element it renders. A `Tab`'s `id` names it, and its `Panel` points at
+it; a `Panel` keeps its own `id`, which its tab points at (see [Ids](README.md#ids)). `role`,
+`value`, `aria-selected`, `aria-controls`, `aria-labelledby`, `tabindex` on tabs and `hidden` stay
+the parts' own.
 
 - **Disabled tabs.** A selected tab that becomes disabled gives its selection to the first enabled
   tab. With every tab disabled, none is selected and the first tab is the tab stop. There is one
@@ -6094,7 +6131,8 @@ others `type: "success"` or `"error"` and the default timeout.
 
 Each part takes the props of the element it renders (`class`, `style`, `aria-*`, `data-*`, event
 handlers, `ref`) and passes them through. Your props override the defaults (`role`, `aria-label`,
-`type`); `id`, `command` and `commandfor` stay the parts' own, since they connect them.
+`type`). A `Root`'s `id` names the toast's element, and its `Close` points at it (see
+[Ids](README.md#ids)); `command` and `commandfor` stay the parts' own, since they connect them.
 
 - **`Viewport`**: rename the region with `aria-label`; keep the hotkey in it.
 - **`Root`**: the script fires a cancelable `close` event on it when a toast should close (a close

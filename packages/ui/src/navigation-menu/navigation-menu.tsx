@@ -185,7 +185,8 @@ function Trigger({ children, style, ...rest }: NavigationMenuTriggerProps) {
     <button
       type="button"
       {...rest}
-      id={`${item.id}-trigger`}
+      // Nothing points at the trigger: a caller's `id` names it (TASK-441 M39).
+      id={rest.id ?? `${item.id}-trigger`}
       popovertarget={`${item.id}-content`}
       style={withStyle(style, { "anchor-name": anchorName(item.id) })}
     >

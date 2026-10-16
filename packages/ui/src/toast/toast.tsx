@@ -293,7 +293,9 @@ function Viewport({ children, ...rest }: ToastViewportProps) {
 function Root({ toast, swipeDirection, children, ref: forwarded, ...rest }: ToastRootProps) {
   toastScript();
   const provider = useContext(ToastContext);
-  const elementId = useId();
+  // Its Close points at it: a caller's `id` names it (TASK-441 M39).
+  const generated = useId();
+  const elementId = untrack(() => rest.id) ?? generated;
   const element = ref<HTMLDivElement>();
   const owner = owners.get(toast);
   const ending = () => (toast as ToastObject).transitionStatus === "ending";

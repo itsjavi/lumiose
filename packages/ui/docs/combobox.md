@@ -102,8 +102,11 @@ The placement props go on the part that is the popover: the `Popup` when there i
 
 Each part takes the props of the element it renders (`class`, `style`, `aria-*`, `data-*`, event
 handlers, `ref`) and passes them through. Your props override the defaults (`tabindex`,
-`autocomplete`, `hidden`); the roles, ids, ARIA references, commands and the anchor stay the parts'
-own, since they connect the parts.
+`autocomplete`, `hidden`). A `Label`'s `id` names it, and the list points at it, and an `Item`'s
+`id` names the option (the input points at it only once the script highlights it). The `Root`,
+`Input`, `List`, `Popup`, `Empty`, `Chips` and group labels keep their own ids, which other parts
+or the element's script find them by (see [Ids](README.md#ids)); the roles, ARIA references,
+commands and the anchor stay the parts' own, since they connect the parts.
 
 - **`Input`**: `placeholder`, `onInput` (for async options) and `aria-describedby` pass through.
   Its `type` and `value` are the combobox's. Inside a [Field](field.md), it takes the field's id

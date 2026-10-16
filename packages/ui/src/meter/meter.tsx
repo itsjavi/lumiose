@@ -94,7 +94,8 @@ function Root({
 function Label({ children, ...rest }: MeterLabelProps) {
   const meter = useMeter("Label");
   return (
-    <label {...rest} id={`${meter.id}-label`} for={`${meter.id}-track`}>
+    // Nothing points at the label: a caller's `id` names it (TASK-441 M39).
+    <label {...rest} id={rest.id ?? `${meter.id}-label`} for={`${meter.id}-track`}>
       {children}
     </label>
   );

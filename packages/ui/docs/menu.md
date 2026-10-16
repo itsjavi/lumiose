@@ -135,8 +135,9 @@ server HTML before its island hydrated stays open, and `onOpenChange(true)` tell
 
 Each part takes the props of the element it renders (`class`, `style`, `aria-*`, `data-*`, event
 handlers, `ref`) and passes them through. Your props override the defaults (`type`, `tabindex`,
-`aria-labelledby`, `data-side`, `data-align`); the roles, `id`, `popovertarget` and the anchor
-stay the parts' own, since they connect the parts. Your `style` is kept, after the anchor's.
+`aria-labelledby`, `data-side`, `data-align`). A `Trigger`'s (or `SubmenuTrigger`'s) `id` names it,
+and the popup points at it; the `Popup` keeps its own `id`, which the trigger points at (see
+[Ids](README.md#ids)); the roles, `popovertarget` and the anchor stay the parts' own. Your `style` is kept, after the anchor's.
 
 - **`Trigger`**: `aria-expanded` is left to the browser in server HTML, where `popovertarget`
   implies it, and set by the script once it runs. Disable it with the native `disabled`.

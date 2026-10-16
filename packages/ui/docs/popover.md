@@ -83,8 +83,9 @@ where the script runs), and comes back with it.
 
 Each part takes the props of the element it renders (`class`, `style`, `aria-*`, `data-*`, event
 handlers, `ref`) and passes them through. Your props override the defaults (`type`,
-`aria-haspopup`, `role`, `aria-labelledby`, `aria-describedby`); `id`, `popover` and
-`popovertarget` stay the parts' own. A `style` you pass keeps the anchor name.
+`aria-haspopup`, `role`, `aria-labelledby`, `aria-describedby`). A `Title`'s or a `Description`'s
+`id` names it, and the popup points at it; the `Popup` keeps its own `id`, which its trigger points
+at (see [Ids](README.md#ids)), and `popover` and `popovertarget` stay the parts' own. A `style` you pass keeps the anchor name.
 
 - **`Trigger`**: `aria-expanded` comes from the browser for `popovertarget`, and from the client
   script once it runs.

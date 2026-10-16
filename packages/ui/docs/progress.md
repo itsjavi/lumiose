@@ -41,7 +41,8 @@ Every other prop passes through to the `<div>`: `id`, `class`, `style`.
 
 ### Progress.Label, Progress.Track and Progress.Value
 
-`Label` takes `<label>` props. `Track` takes `<progress>` props (`aria-label` when there is no
+`Label` takes `<label>` props, its `id` among them; the `Track` keeps its own `id`, which the
+`Label` before it points at (see [Ids](README.md#ids)). `Track` takes `<progress>` props (`aria-label` when there is no
 `Label`). `Value` takes `<span>` props, and its `children` may be a function
 `(formattedValue, value) => JSX.Element` that writes the value your way.
 

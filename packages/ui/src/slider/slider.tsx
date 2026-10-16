@@ -132,6 +132,8 @@ export type SliderThumbProps = Omit<
 
 interface SliderContextValue {
   id: string;
+  /** The Label's id: its own `id`, which the Control and thumbs after it point at (M39). */
+  labelId: string;
   /** A thumb's id: in a Field the first one is the field's control (TASK-449 L22). */
   thumbId: (index: number) => string;
   values: () => number[];
@@ -209,6 +211,7 @@ function Root<V extends SliderValue = number>({
   });
   const context: SliderContextValue = {
     id,
+    labelId: `${id}-label`,
     thumbId: (index) => (index === 0 && field ? controlId(field) : `${id}-thumb-${index}`),
     values,
     min: low,
@@ -241,12 +244,13 @@ function Root<V extends SliderValue = number>({
       "--lu-slider-end": `${percent(list.at(-1)!, low(), high())}%`,
     };
   };
+  // Nothing points at the element: a caller's `id` names it (TASK-441 M39).
   return (
     <SliderContext value={context}>
       <lu-slider
         {...rest}
         ref={element}
-        id={id}
+        id={rest.id ?? id}
         data-orientation={orientation ?? "horizontal"}
         data-thumb-alignment={thumbAlignment}
         large-step={largeStep}
@@ -270,9 +274,11 @@ function Root<V extends SliderValue = number>({
 
 function Label({ children, ...rest }: SliderLabelProps) {
   const slider = useSlider("Label");
+  // A caller's `id` names it; the Control and the thumbs after it point at that (TASK-441 M39).
+  if (rest.id) slider.labelId = rest.id;
   slider.labels.count++;
   return (
-    <label {...rest} id={`${slider.id}-label`} for={slider.thumbId(0)}>
+    <label {...rest} id={slider.labelId} for={slider.thumbId(0)}>
       {children}
     </label>
   );
@@ -303,7 +309,7 @@ function Control({ children, ...rest }: SliderControlProps) {
     <div
       role={range ? "group" : undefined}
       aria-labelledby={
-        range && labelled && rest["aria-label"] === undefined ? `${slider.id}-label` : undefined
+        range && labelled && rest["aria-label"] === undefined ? slider.labelId : undefined
       }
       {...rest}
     >
@@ -330,9 +336,7 @@ function Thumb(props: SliderThumbProps) {
   const labelled = untrack(() => slider.labels.count > 0);
   return (
     <input
-      aria-labelledby={
-        labelled && props["aria-label"] === undefined ? `${slider.id}-label` : undefined
-      }
+      aria-labelledby={labelled && props["aria-label"] === undefined ? slider.labelId : undefined}
       aria-describedby={field ? describedBy(field) : undefined}
       aria-invalid={field?.invalid() ? "true" : undefined}
       {...props}

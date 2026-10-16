@@ -94,7 +94,8 @@ others `type: "success"` or `"error"` and the default timeout.
 
 Each part takes the props of the element it renders (`class`, `style`, `aria-*`, `data-*`, event
 handlers, `ref`) and passes them through. Your props override the defaults (`role`, `aria-label`,
-`type`); `id`, `command` and `commandfor` stay the parts' own, since they connect them.
+`type`). A `Root`'s `id` names the toast's element, and its `Close` points at it (see
+[Ids](README.md#ids)); `command` and `commandfor` stay the parts' own, since they connect them.
 
 - **`Viewport`**: rename the region with `aria-label`; keep the hotkey in it.
 - **`Root`**: the script fires a cancelable `close` event on it when a toast should close (a close

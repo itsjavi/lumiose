@@ -62,8 +62,9 @@ Without `value`, `onValueChange` or `bind:value` the items keep their own state.
 ### The other parts
 
 Each part takes the props of the element it renders (`class`, `style`, `aria-*`, `data-*`, event
-handlers, `ref`) and passes them through. `id`, `name`, `aria-controls` and `aria-labelledby` stay
-the parts' own, since they connect the parts.
+handlers, `ref`) and passes them through. A `Trigger`'s `id` names it, and its `Panel` points at
+it; a `Panel` keeps its own `id`, which its trigger points at (see [Ids](README.md#ids)). `name`,
+`aria-controls` and `aria-labelledby` stay the parts' own, since they connect the parts.
 
 - **`Trigger`**: a disabled trigger gets `aria-disabled="true"` and `tabindex="-1"`.
 - **`Panel`**: the client script sets `--lu-accordion-panel-height` and `--lu-accordion-panel-width` on

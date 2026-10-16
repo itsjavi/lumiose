@@ -41,7 +41,8 @@ Every other prop passes through to the `<div>`: `id`, `class`, `style`.
 
 ### Meter.Label, Meter.Track and Meter.Value
 
-`Label` takes `<label>` props. `Track` takes `<meter>` props, among them the native `low`, `high`
+`Label` takes `<label>` props, its `id` among them; the `Track` keeps its own `id`, which the
+`Label` before it points at (see [Ids](README.md#ids)). `Track` takes `<meter>` props, among them the native `low`, `high`
 and `optimum`, which tell browsers which band a value is in (`aria-label` when there is no
 `Label`). `Value` takes `<span>` props, and its `children` may be a function
 `(formattedValue, value) => JSX.Element`.

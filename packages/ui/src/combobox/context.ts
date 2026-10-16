@@ -15,6 +15,8 @@ export interface ComboboxContextValue {
   required?: () => boolean;
   /** How many Labels are rendered: the listbox is named by the label only when there is one. */
   labels: Signal<number>;
+  /** A Label's own `id`, which the listbox points at (TASK-441 M39). */
+  labelId?: string;
   /** Whether the parts are inside a `Popup`: the `List` is then not the popover. */
   popup: boolean;
   /**

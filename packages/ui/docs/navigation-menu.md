@@ -83,7 +83,8 @@ Server HTML always starts closed: a popover only opens from its trigger or scrip
 ### The other parts
 
 Each part takes the props of the element it renders (`class`, `style`, `aria-*`, `data-*`, event
-handlers) and passes them through: `href` and `target` on a `Link`, `disabled` on a `Trigger`.
+handlers) and passes them through: `href` and `target` on a `Link`, `disabled` and `id` on a
+`Trigger`. A `Content` keeps its own `id`, which its trigger points at (see [Ids](README.md#ids)).
 
 **Differences from Base UI's NavigationMenu.** Each `Content` is its own popover in the top layer,
 anchored to its trigger: there is no shared `Viewport`, `Popup`, `Positioner`, `Portal`,

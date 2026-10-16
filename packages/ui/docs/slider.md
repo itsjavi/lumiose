@@ -63,10 +63,12 @@ The value's type follows `value`, `defaultValue` or `bind:value`: a number for o
 
 ### The other parts
 
-`Label` takes `<label>` props. `Value` takes `<output>` props, and its `children` may be a function
+`Label` takes `<label>` props, its `id` among them, which the `Control` and the thumbs point at. `Value` takes `<output>` props, and its `children` may be a function
 `(formattedValues, values) => JSX.Element` (then it has no `for`, and you render its text). `Control`,
 `Track` and `Indicator` take `<div>` props. `Thumb` takes `<input>` props except the range's own
-(`aria-label`, `aria-valuetext`, `disabled`, `id`, `class`). Give each thumb of a range an
+(`aria-label`, `aria-valuetext`, `disabled`, `class`). A thumb keeps its own `id`, which the
+`Label` and the `Value` before it point at (in a Field, the first thumb's is the field's control;
+see [Ids](README.md#ids)). Give each thumb of a range an
 `aria-label` with the label's text in it ("Minimum price" under "Price"), so speech users can say
 what they see (WCAG 2.5.3); the Label names the range's group (`Control`), so screen readers
 announce "Price, group" before the thumbs. Inside a Field, the first thumb takes the field's id,

@@ -286,9 +286,11 @@ function Root<Multiple extends boolean | undefined = false>({
 
 function Label({ children, ...rest }: ComboboxLabelProps) {
   const combobox = useCombobox();
+  // A caller's `id` names it; the listbox, after it, points at that (TASK-441 M39).
+  if (rest.id) combobox.labelId = rest.id;
   register(combobox.labels);
   return (
-    <label {...rest} id={`${combobox.id}-label`} for={combobox.inputId}>
+    <label {...rest} id={combobox.labelId ?? `${combobox.id}-label`} for={combobox.inputId}>
       {children}
     </label>
   );
@@ -415,7 +417,9 @@ function List({
       };
   return (
     <div
-      aria-labelledby={combobox.labels() > 0 ? `${combobox.id}-label` : undefined}
+      aria-labelledby={
+        combobox.labels() > 0 ? (combobox.labelId ?? `${combobox.id}-label`) : undefined
+      }
       {...rest}
       {...popover}
       id={`${combobox.id}-list`}
@@ -432,7 +436,8 @@ function Item({ children, value, label, disabled, ...rest }: ComboboxItemProps) 
   return (
     <div
       {...rest}
-      id={`${combobox.id}-option-${fragment(value)}`}
+      // Nothing points at an option before the script highlights it: a caller's `id` names it.
+      id={rest.id ?? `${combobox.id}-option-${fragment(value)}`}
       role="option"
       data-value={value}
       data-label={label}

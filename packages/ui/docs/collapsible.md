@@ -46,8 +46,9 @@ opening one closes the others.
 ### The other parts
 
 Each part takes the props of the element it renders (`class`, `style`, `aria-*`, `data-*`, event
-handlers, `ref`) and passes them through. `id` and `aria-controls` stay the parts' own, since
-they connect the trigger and the panel.
+handlers, `ref`) and passes them through. The `Trigger`'s `id` names it, and the `Panel` points at
+it; the `Panel` keeps its own `id`, which the trigger points at (see [Ids](README.md#ids)), and
+`aria-controls` stays the trigger's own.
 
 - **`Trigger`**: a disabled trigger gets `aria-disabled="true"` and `tabindex="-1"`.
 - **`Panel`**: the client script sets `--lu-collapsible-panel-height` and `--lu-collapsible-panel-width`
