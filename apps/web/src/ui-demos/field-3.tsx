@@ -1,7 +1,6 @@
 // Generated from packages/ui/docs/field.md by apps/web/scripts/ui-demos.ts: do not edit.
 // Change the example there and run `pnpm --filter @lumiose/web ui:demos`.
 import { Field } from "@lumiose/ui";
-import { signal } from "lumiose";
 
 const TAKEN = ["admin", "lumiose"];
 
@@ -12,7 +11,6 @@ async function available(value: string | boolean) {
 }
 
 export function HandleField() {
-  const handle = signal("");
   return (
     <Field.Root
       name="handle"
@@ -22,15 +20,15 @@ export function HandleField() {
       class="lu-field"
     >
       <Field.Label>Handle</Field.Label>
-      <Field.Control required bind:value={handle} class="lu-input" />
+      <Field.Control required class="lu-input" />
       <Field.Error />
-      <p>
-        <Field.Validity>
-          {(state) =>
-            state.validating ? "Checking…" : state.validity.valid ? `${handle()} is free.` : ""
-          }
-        </Field.Validity>
-      </p>
+      <Field.Validity>
+        {(state) => (
+          <p>
+            {state.validating ? "Checking…" : state.validity.valid ? `${state.value} is free.` : ""}
+          </p>
+        )}
+      </Field.Validity>
     </Field.Root>
   );
 }

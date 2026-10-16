@@ -26,6 +26,34 @@ describe("UI demos", () => {
     ]);
   });
 
+  it("hydrate an example whose only client need is a function prop (TASK-423)", () => {
+    const island = (code: string) => uiDemos("field", page(code))[0]!.island;
+    const field = (validate: string) =>
+      `import { Field } from "@lumiose/ui";\n\n${validate}\nexport function Demo() {\n  return <Field.Root validate={check} />;\n}`;
+    expect(
+      island(
+        field('async function check(value: string) {\n  return value ? null : "Required";\n}'),
+      ),
+    ).toBe(true);
+    expect(island(field("const check = (value: string) => (value ? null : 'Required');"))).toBe(
+      true,
+    );
+    expect(
+      island("export function Inline() {\n  return <Field.Root validate={(value) => null} />;\n}"),
+    ).toBe(true);
+    // A formatter also runs on the server, and a component renders there.
+    expect(
+      island(
+        "export function Meter() {\n  return <M getAriaValueText={(_, v) => `${v} GB`} />;\n}",
+      ),
+    ).toBe(false);
+    expect(
+      island(
+        "function Row() {\n  return <li />;\n}\nexport function List() {\n  return <L render={Row} />;\n}",
+      ),
+    ).toBe(false);
+  });
+
   it("renders islands with client:visible and refuses two demos with one name", () => {
     const index = uiDemoFiles({
       a: page("export function One() {\n  return <p on:click={() => {}} />;\n}"),
