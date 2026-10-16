@@ -947,11 +947,11 @@ import "@lumiose/ui/themes/default.css"; // optional: the default theme
 
 ### Button
 
-| Prop                    | Type      | Default    |                                                                                                            |
-| ----------------------- | --------- | ---------- | ---------------------------------------------------------------------------------------------------------- |
-| `type`                  | `string`  | `"button"` | `"submit"` or `"reset"` to act on its form.                                                                |
-| `disabled`              | `boolean` | `false`    | Natively disabled: out of the tab order, its clicks ignored.                                               |
-| `focusableWhenDisabled` | `boolean` | `false`    | With `disabled`: it stays focusable as `aria-disabled="true"`, and its clicks, Enter and Space do nothing. |
+| Prop                    | Type      | Default    |                                                                                                                     |
+| ----------------------- | --------- | ---------- | ------------------------------------------------------------------------------------------------------------------- |
+| `type`                  | `string`  | `"button"` | `"submit"` or `"reset"` to act on its form.                                                                         |
+| `disabled`              | `boolean` | `false`    | Natively disabled: out of the tab order, its clicks ignored.                                                        |
+| `focusableWhenDisabled` | `boolean` | `false`    | With `disabled`: it stays focusable as `aria-disabled="true"`, and its clicks, presses, Enter and Space do nothing. |
 
 Every other native prop passes through: `name`, `value`, `form`, `command`, `commandfor`,
 `popovertarget`, `id`, `class`, `aria-*`, `onClick`.
@@ -1006,10 +1006,12 @@ Button ships no stylesheet: it needs none to work.
 
 ## Without JavaScript, and the client script
 
-A native button: it works, submits and resets with no script. The client script (0.1 kB brotli)
+A native button: it works, submits and resets with no script. The client script (0.2 kB brotli)
 only cancels the clicks, Enter and Space of an `aria-disabled` button (one without a `role` of its
-own); without it such a button still acts, so a server page that disables a button until
-something happens should use `disabled` alone.
+own), and keeps its presses (`pointerdown`, `mousedown`) and Enter and Space keys from its
+handlers and its ancestors' bubbling ones, as Base UI does; listeners that capture still see them,
+and the other keys (Tab, a toolbar's arrows) go on. Without it such a button still acts, so a
+server page that disables a button until something happens should use `disabled` alone.
 
 ## Browser support
 
