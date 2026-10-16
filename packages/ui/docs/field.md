@@ -74,7 +74,9 @@ is taken.
 - **A submit that comes first is not blocked**, as in Base UI: validate on the server too (a
   Form action's `fail()`). A check that rejects (the network) counts as no error.
 - **One check per value.** The `change` a blur fires after an edit does not check the same value
-  again; `validationDebounceTime` waits for a pause in typing before it checks.
+  again; `validationDebounceTime` waits for a pause in typing before it checks. A submit attempt
+  inside that pause runs the waiting check first: a synchronous `validate` that fails stops the
+  submission and shows its message (an async one, as above, does not block it).
 - The check runs once, quietly, when the island starts and after a form reset (`Field.Validity`
   stays unchecked).
 

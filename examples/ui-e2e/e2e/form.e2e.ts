@@ -550,6 +550,30 @@ test.describe("async validate and Field.Validity (TASK-405)", () => {
   });
 });
 
+test.describe("a synchronous validate inside the debounce window (TASK-459)", () => {
+  test("a submit within the window runs the check, and a failing one blocks it", async ({
+    page,
+  }) => {
+    await page.goto("/form/island");
+    await hydrated(page);
+    const promo = page.getByRole("textbox", { name: "Promo code" });
+    const submits = page.getByTestId("promo-submits");
+    // The check waits a second after the last key; a script submits the form at once (an
+    // auto-submit), with focus still in the field, so no `change` runs it first.
+    await promo.pressSequentially("ab1");
+    await promo.evaluate((input: HTMLInputElement) => input.form!.requestSubmit());
+    await expect(page.getByText("Letters only.", { exact: true })).toBeVisible();
+    await expect(promo).toHaveAttribute("aria-invalid", "true");
+    await expect(promo).toBeFocused();
+    await page.waitForTimeout(200);
+    await expect(submits).toHaveText("submits: 0");
+    // Valid, it submits.
+    await promo.fill("abc");
+    await promo.evaluate((input: HTMLInputElement) => input.form!.requestSubmit());
+    await expect(submits).toHaveText("submits: 1");
+  });
+});
+
 test.describe("uncheckedValue (TASK-405)", () => {
   test("a switch that is off submits its uncheckedValue; a disabled one submits nothing", async ({
     page,
