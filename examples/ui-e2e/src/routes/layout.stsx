@@ -50,6 +50,14 @@ export default function Root(props: LayoutProps<"/">) {
         <a href="/separator">Separator</a>
         <a href="/avatar">Avatar</a>
         <a href="/avatar/island">Avatar in an island</a>
+        <a href="/otp-field">OTP Field</a>
+        <a href="/otp-field/island">OTP Field in an island</a>
+        <a href="/preview-card">Preview Card</a>
+        <a href="/preview-card/island">Preview Card in an island</a>
+        <a href="/toolbar">Toolbar</a>
+        <a href="/toolbar/island">Toolbar in an island</a>
+        <a href="/scroll-area">Scroll Area</a>
+        <a href="/scroll-area/island">Scroll Area in an island</a>
       </nav>
       <main>{props.children}</main>
     </div>

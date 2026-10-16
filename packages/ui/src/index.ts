@@ -229,3 +229,12 @@ export type {
   ToolbarRootProps,
   ToolbarSeparatorProps,
 } from "./toolbar/toolbar.tsx";
+export { ScrollArea } from "./scroll-area/scroll-area.tsx";
+export type {
+  ScrollAreaContentProps,
+  ScrollAreaCornerProps,
+  ScrollAreaRootProps,
+  ScrollAreaScrollbarProps,
+  ScrollAreaThumbProps,
+  ScrollAreaViewportProps,
+} from "./scroll-area/scroll-area.tsx";

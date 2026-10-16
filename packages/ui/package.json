@@ -75,6 +75,8 @@
     "./preview-card.css": "./src/preview-card/preview-card.css",
     "./toolbar": "./src/toolbar/toolbar.tsx",
     "./toolbar.css": "./src/toolbar/toolbar.css",
+    "./scroll-area": "./src/scroll-area/scroll-area.tsx",
+    "./scroll-area.css": "./src/scroll-area/scroll-area.css",
     "./themes/default.css": "./src/themes/default.css",
     "./package.json": "./package.json"
   },
@@ -136,6 +138,8 @@
       "./preview-card.css": "./dist/preview-card/preview-card.css",
       "./toolbar": "./dist/toolbar/toolbar.tsx",
       "./toolbar.css": "./dist/toolbar/toolbar.css",
+      "./scroll-area": "./dist/scroll-area/scroll-area.tsx",
+      "./scroll-area.css": "./dist/scroll-area/scroll-area.css",
       "./themes/default.css": "./dist/themes/default.css",
       "./package.json": "./package.json"
     }

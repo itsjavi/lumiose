@@ -55,6 +55,8 @@
  *   .lu-preview-card                    a PreviewCard.Popup: a surface like a popover's, with a fade
  *   .lu-toolbar                         a Toolbar.Root: a bordered row (or column) of its items,
  *                                       separators across it
+ *   .lu-scroll-area                     a ScrollArea.Root: a bordered box, 10px scrollbars that
+ *                                       show while hovered, scrolled or focused
  */
 @layer lu.core, lu.theme;
 
@@ -1762,5 +1764,47 @@
   .lu-toolbar :where(a):focus-visible {
     outline: 2px solid var(--lu-ring);
     outline-offset: 2px;
+  }
+
+  /* Scroll Area (TASK-384) -------------------------------------------------------------------- */
+
+  .lu-scroll-area {
+    box-sizing: border-box;
+    border: 1px solid var(--lu-border);
+    border-radius: var(--lu-radius);
+    background: var(--lu-background);
+  }
+  /* Inside the box, which clips: the ring is drawn inward. */
+  .lu-scroll-area :where([data-viewport]):focus-visible {
+    outline: 2px solid var(--lu-ring);
+    outline-offset: -2px;
+  }
+  .lu-scroll-area :where([data-viewport]) > :where(div) {
+    padding: 0.75rem 1rem;
+  }
+  .lu-scroll-area :where([data-scrollbar]) {
+    padding: 2px;
+    opacity: 0;
+  }
+  .lu-scroll-area :where([data-scrollbar][data-orientation="vertical"]) {
+    inline-size: 10px;
+  }
+  .lu-scroll-area :where([data-scrollbar][data-orientation="horizontal"]) {
+    block-size: 10px;
+  }
+  /* Shown while the pointer is over the area, while it scrolls, and while it has focus. */
+  .lu-scroll-area :where([data-scrollbar]):is([data-hovering], [data-scrolling]),
+  .lu-scroll-area:focus-within :where([data-scrollbar]) {
+    opacity: 1;
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .lu-scroll-area :where([data-scrollbar]) {
+      transition: opacity 150ms ease-out;
+    }
+  }
+  /* The thumb: --lu-muted-foreground, 3:1 against the area, rounded. */
+  .lu-scroll-area :where([data-thumb]) {
+    border-radius: 999px;
+    background: var(--lu-muted-foreground);
   }
 }

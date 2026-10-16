@@ -1,0 +1,12 @@
+import { Title } from "lumiose";
+import { ScrollAreaSignals } from "../../../islands/ScrollAreaSignals.tsx";
+
+export default function ScrollAreaIslandPage() {
+  return (
+    <>
+      <Title>Scroll Area in an island</Title>
+      <h1>Scroll Area in an island</h1>
+      <ScrollAreaSignals client:load />
+    </>
+  );
+}

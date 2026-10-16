@@ -186,6 +186,12 @@ const COMPONENTS: Component[] = [
     scripts: ["toolbar/toolbar.script.ts", "button/button.script.ts"],
     css: "toolbar/toolbar.css",
   },
+  {
+    name: "scroll-area",
+    module: "scroll-area/scroll-area.tsx",
+    scripts: ["scroll-area/scroll-area.script.ts"],
+    css: "scroll-area/scroll-area.css",
+  },
 ];
 
 const CLIENT_SCRIPT = /\?client$/;

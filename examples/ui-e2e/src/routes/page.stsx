@@ -67,6 +67,18 @@ export default function Home() {
           <a href="/popover/hover-modal">Popover: hover and modal</a> (
           <a href="/popover/hover-modal/island">in an island</a>)
         </li>
+        <li>
+          <a href="/otp-field">OTP Field</a> (<a href="/otp-field/island">in an island</a>)
+        </li>
+        <li>
+          <a href="/preview-card">Preview Card</a> (<a href="/preview-card/island">in an island</a>)
+        </li>
+        <li>
+          <a href="/toolbar">Toolbar</a> (<a href="/toolbar/island">in an island</a>)
+        </li>
+        <li>
+          <a href="/scroll-area">Scroll Area</a> (<a href="/scroll-area/island">in an island</a>)
+        </li>
       </ul>
     </article>
   );

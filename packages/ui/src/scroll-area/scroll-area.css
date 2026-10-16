@@ -1,0 +1,72 @@
+/*
+ * The CSS Scroll Area needs to work, and nothing else (decision-62). The Viewport fills the Root
+ * and scrolls natively. Once the script runs (`:defined`), the native scrollbar is hidden and the
+ * custom scrollbars lie over the viewport's edges, their thumbs sized by `--lu-scroll-area-thumb-*`
+ * and leaving room for the corner; until then (or without JavaScript) the native scrollbars show
+ * and the custom ones stay hidden. It sits in the `lu.core` layer, so any app CSS wins.
+ */
+@layer lu.core, lu.theme;
+
+@layer lu.core {
+  lu-scroll-area {
+    display: block;
+    position: relative;
+    overflow: hidden;
+  }
+  lu-scroll-area [data-viewport] {
+    box-sizing: border-box;
+    block-size: 100%;
+    max-block-size: inherit;
+    inline-size: 100%;
+    overflow: auto;
+  }
+  /* The Content grows with what it holds, so wide content scrolls sideways instead of spilling. */
+  lu-scroll-area [data-viewport] > * {
+    min-inline-size: fit-content;
+  }
+  lu-scroll-area:defined [data-viewport] {
+    scrollbar-width: none;
+  }
+  lu-scroll-area:defined [data-viewport]::-webkit-scrollbar {
+    display: none;
+  }
+  /* Important: a theme's display for the scrollbars must not show them without the script. */
+  lu-scroll-area:not(:defined) [data-scrollbar],
+  lu-scroll-area:not(:defined) [data-corner] {
+    display: none !important;
+  }
+  lu-scroll-area [data-scrollbar] {
+    display: flex;
+    position: absolute;
+    box-sizing: border-box;
+    touch-action: none;
+    user-select: none;
+  }
+  lu-scroll-area [data-scrollbar][hidden],
+  lu-scroll-area [data-corner][hidden] {
+    display: none;
+  }
+  lu-scroll-area [data-scrollbar][data-orientation="vertical"] {
+    inset-block: 0 var(--lu-scroll-area-corner-height, 0px);
+    inset-inline-end: 0;
+  }
+  lu-scroll-area [data-scrollbar][data-orientation="horizontal"] {
+    inset-inline: 0 var(--lu-scroll-area-corner-width, 0px);
+    inset-block-end: 0;
+  }
+  lu-scroll-area [data-scrollbar][data-orientation="vertical"] [data-thumb] {
+    inline-size: 100%;
+    block-size: var(--lu-scroll-area-thumb-height);
+  }
+  lu-scroll-area [data-scrollbar][data-orientation="horizontal"] [data-thumb] {
+    block-size: 100%;
+    inline-size: var(--lu-scroll-area-thumb-width);
+  }
+  lu-scroll-area [data-corner] {
+    position: absolute;
+    inset-block-end: 0;
+    inset-inline-end: 0;
+    inline-size: var(--lu-scroll-area-corner-width);
+    block-size: var(--lu-scroll-area-corner-height);
+  }
+}

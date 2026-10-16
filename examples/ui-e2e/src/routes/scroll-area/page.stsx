@@ -1,0 +1,100 @@
+import { ScrollArea } from "@lumiose/ui";
+import { Title } from "lumiose";
+
+const TAGS = Array.from({ length: 40 }, (_, i) => `v1.${40 - i}.0`);
+const COLUMNS = Array.from({ length: 12 }, (_, i) => `Column ${i + 1}`);
+
+// Server-rendered, no island: the viewports scroll natively (with their native scrollbars without
+// JavaScript); `<lu-scroll-area>`'s script draws the custom scrollbars. Styled with the default
+// theme.
+export default function ScrollAreaPage() {
+  return (
+    <>
+      <Title>Scroll Area</Title>
+      <h1>Scroll Area</h1>
+      <div class="grid">
+        <section aria-labelledby="releases-heading">
+          <h2 id="releases-heading">Vertical</h2>
+          <ScrollArea.Root class="lu-scroll-area releases">
+            <ScrollArea.Viewport role="region" aria-label="Releases">
+              <ScrollArea.Content>
+                <ul>
+                  {TAGS.map((tag) => (
+                    <li>{tag}</li>
+                  ))}
+                </ul>
+              </ScrollArea.Content>
+            </ScrollArea.Viewport>
+            <ScrollArea.Scrollbar>
+              <ScrollArea.Thumb />
+            </ScrollArea.Scrollbar>
+          </ScrollArea.Root>
+          <button type="button" class="lu-button">
+            After the list
+          </button>
+        </section>
+
+        <section aria-labelledby="table-heading">
+          <h2 id="table-heading">Both ways</h2>
+          <ScrollArea.Root class="lu-scroll-area table">
+            <ScrollArea.Viewport role="region" aria-label="Table cells">
+              <ScrollArea.Content>
+                <table>
+                  <tbody>
+                    {Array.from({ length: 20 }, (_, row) => (
+                      <tr>
+                        {COLUMNS.map((column) => (
+                          <td>
+                            {column}, row {row + 1}
+                          </td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </ScrollArea.Content>
+            </ScrollArea.Viewport>
+            <ScrollArea.Scrollbar>
+              <ScrollArea.Thumb />
+            </ScrollArea.Scrollbar>
+            <ScrollArea.Scrollbar orientation="horizontal">
+              <ScrollArea.Thumb />
+            </ScrollArea.Scrollbar>
+            <ScrollArea.Corner />
+          </ScrollArea.Root>
+        </section>
+
+        <section aria-labelledby="short-heading">
+          <h2 id="short-heading">Nothing to scroll</h2>
+          <ScrollArea.Root class="lu-scroll-area short">
+            <ScrollArea.Viewport>
+              <ScrollArea.Content>Two lines of text fit.</ScrollArea.Content>
+            </ScrollArea.Viewport>
+            <ScrollArea.Scrollbar>
+              <ScrollArea.Thumb />
+            </ScrollArea.Scrollbar>
+          </ScrollArea.Root>
+        </section>
+      </div>
+    </>
+  );
+}
+
+<style>
+  :global(.releases) {
+    block-size: 12rem;
+    inline-size: 14rem;
+  }
+  :global(.table) {
+    block-size: 14rem;
+    inline-size: min(22rem, 100%);
+  }
+  :global(.table td) {
+    padding: 0.25rem 0.75rem;
+    white-space: nowrap;
+  }
+  :global(.short) {
+    max-block-size: 10rem;
+    inline-size: 14rem;
+  }
+</style>
