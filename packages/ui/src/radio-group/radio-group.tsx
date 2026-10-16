@@ -5,7 +5,7 @@
 // names the group. checkbox.script.ts adds read-only.
 import { createContext, effect, ref, signal, untrack, useContext, useId } from "lumiose";
 import checkboxScript from "../checkbox/checkbox.script.ts?client";
-import { describedBy, useField, useFormValues } from "../field/context.ts";
+import { describedBy, labelledBy, useField, useFormValues } from "../field/context.ts";
 import { onFormReset } from "../form/reset.ts";
 
 interface RadioGroupContextValue {
@@ -112,6 +112,10 @@ export function RadioGroup({
           rest.ref?.(element);
         }}
         disabled={rest.disabled || field?.disabled() || undefined}
+        // In a field the Label names the group: its `for` has no single radio to point at.
+        aria-labelledby={
+          rest["aria-labelledby"] ?? (rest["aria-label"] ? undefined : labelledBy(field))
+        }
         aria-describedby={rest["aria-describedby"] ?? (field ? describedBy(field) : undefined)}
         aria-invalid={rest["aria-invalid"] ?? (field?.invalid() ? "true" : undefined)}
         role="radiogroup"

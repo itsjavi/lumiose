@@ -108,7 +108,8 @@ function Root({
   return (
     <input
       {...rest}
-      {...fieldProps(field, rest)}
+      // In a group the group takes the field's id and ARIA references (TASK-439, M25).
+      {...(group ? {} : fieldProps(field, rest))}
       ref={(element: HTMLInputElement) => {
         input(element);
         rest.ref?.(element);

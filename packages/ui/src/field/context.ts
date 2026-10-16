@@ -73,6 +73,8 @@ export interface FieldContextValue {
   messages: () => string[];
   /** How many Description parts are rendered. */
   descriptions: Signal<number>;
+  /** How many Label parts are rendered: a group control is named by the label (TASK-439). */
+  labels: Signal<number>;
   /** The control's validity from its last check, in the browser (`Field.Validity`). */
   validity: () => FieldValidityState;
 }
@@ -96,6 +98,13 @@ export function describedBy(field: FieldContextValue): string | undefined {
   ].filter(Boolean);
   return ids.length > 0 ? ids.join(" ") : undefined;
 }
+
+/**
+ * The id that names a group control (a Radio Group or Checkbox Group) in a field: the Label's, as
+ * a group has no single element for the Label's `for` (TASK-439). `undefined` without a Label.
+ */
+export const labelledBy = (field: FieldContextValue | undefined) =>
+  field && field.labels() > 0 ? `${field.id}-label` : undefined;
 
 export const useField = () => useContext(FieldContext);
 

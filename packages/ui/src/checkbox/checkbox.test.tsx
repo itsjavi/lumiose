@@ -91,7 +91,7 @@ const group = (value: string[]) =>
 describe("CheckboxGroup on the server", () => {
   it("shares its name, checks its value, and gives the parent its state and no name", async () => {
     const some = await group(["a"]);
-    expect(attrs(some, "fieldset")).toEqual({ disabled: "" });
+    expect(attrs(some, "fieldset")).toEqual({ disabled: "", role: "group" });
     const [parent, a, b] = inputs(some);
     expect(parent).toEqual({ type: "checkbox", "data-indeterminate": "", "data-parent": "" });
     expect(a).toEqual({ type: "checkbox", name: "toppings", value: "a", checked: "" });

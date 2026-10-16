@@ -204,6 +204,7 @@ function Root({
     invalid: () => invalid === true || messages().length > 0,
     messages,
     descriptions: signal(0),
+    labels: signal(0),
     validity,
   };
 
@@ -345,6 +346,17 @@ function useFieldPart(part: string): FieldContextValue {
 
 function Label({ children, ...rest }: FieldLabelProps) {
   const field = useFieldPart("Label");
+  // Counted as Description is, for the group controls it names (TASK-439).
+  let counted = false;
+  const register = () => {
+    counted = true;
+    field.labels.update((n) => n + 1);
+  };
+  onCleanup(() => {
+    if (counted) field.labels.update((n) => n - 1);
+  });
+  if (isServer) register();
+  else onMount(register);
   return (
     <label {...rest} id={`${field.id}-label`} for={controlId(field)}>
       {children}

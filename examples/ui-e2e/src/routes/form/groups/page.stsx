@@ -1,0 +1,44 @@
+import { Checkbox, CheckboxGroup, Field, Form, Radio, RadioGroup } from "@lumiose/ui";
+import { Title } from "lumiose";
+
+// Group controls inside fields with a Field.Label (TASK-439, M25 and M26): the Label names the
+// group, and the group, not each checkbox or radio, takes the field's wiring.
+export default function FormGroupsPage() {
+  return (
+    <>
+      <Title>Groups in fields</Title>
+      <h1>Groups in fields</h1>
+      <Form method="get" action="/form/groups" class="lu-fieldset">
+        <Field.Root name="toppings" class="lu-field">
+          <Field.Label>Toppings</Field.Label>
+          <CheckboxGroup allValues={["cheese", "olives"]} class="lu-fieldset">
+            <label>
+              <Checkbox.Root parent class="lu-checkbox" /> All toppings
+            </label>
+            <label>
+              <Checkbox.Root value="cheese" class="lu-checkbox" /> Cheese
+            </label>
+            <label>
+              <Checkbox.Root value="olives" class="lu-checkbox" /> Olives
+            </label>
+          </CheckboxGroup>
+        </Field.Root>
+        <Field.Root name="size" class="lu-field">
+          <Field.Label>Size</Field.Label>
+          <RadioGroup required class="lu-fieldset">
+            <label>
+              <Radio.Root value="s" class="lu-radio" /> Small
+            </label>
+            <label>
+              <Radio.Root value="m" class="lu-radio" /> Medium
+            </label>
+          </RadioGroup>
+          <Field.Error>Choose a size.</Field.Error>
+        </Field.Root>
+        <button type="submit" class="lu-button">
+          Order
+        </button>
+      </Form>
+    </>
+  );
+}

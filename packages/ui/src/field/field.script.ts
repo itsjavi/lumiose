@@ -115,11 +115,14 @@ function render(field: HTMLElement): void {
   const done = new Set<Element>();
   for (const control of all) {
     const bad = (invalid !== undefined && !control.validity.valid) || fromServer;
-    // A radio group is described and marked as one; lu-combobox through its input.
+    // A radio or checkbox group is described and marked as one; lu-combobox through its input.
+    const group = control.closest<HTMLElement>("[role=radiogroup], [role=group]");
     const target =
       control.localName === "lu-combobox"
         ? (control.querySelector<HTMLElement>("input[role=combobox]") ?? control)
-        : (control.closest<HTMLElement>("[role=radiogroup]") ?? control);
+        : group && fieldOf(group) === field
+          ? group
+          : control;
     if (done.has(target)) continue;
     done.add(target);
     if (bad) target.setAttribute("aria-invalid", "true");

@@ -4,7 +4,10 @@
 // timing, focus, axe) is checked by examples/ui-e2e.
 import { renderToString } from "lumiose";
 import { describe, expect, it } from "vitest";
+import { Checkbox } from "../checkbox/checkbox.tsx";
+import { CheckboxGroup } from "../checkbox-group/checkbox-group.tsx";
 import { Fieldset } from "../fieldset/fieldset.tsx";
+import { Radio, RadioGroup } from "../radio-group/radio-group.tsx";
 import { Form } from "../form/form.tsx";
 import { Input } from "../input/input.tsx";
 import { attrs } from "../test/html.ts";
@@ -134,5 +137,65 @@ describe("Input, Fieldset and Form", () => {
     expect(attrs(html, "fieldset")).toEqual({ disabled: "", class: "set" });
     expect(html).toContain("<legend>Address</legend>");
     expect(attrs(html, "input")).toEqual({ name: "street", placeholder: "Street", value: "Main" });
+  });
+});
+
+// A group control in a field (TASK-439, M25 and M26): the group takes the field's wiring and the
+// Label names it, since the Label's `for` has no single checkbox or radio to point at.
+describe("Field around a Checkbox Group or Radio Group", () => {
+  it("names and marks the checkbox group, not each checkbox", async () => {
+    const html = await renderToString(() => (
+      <Form errors={{ toppings: "Choose one." }}>
+        <Field.Root name="toppings">
+          <Field.Label>Toppings</Field.Label>
+          <CheckboxGroup>
+            <Checkbox.Root parent />
+            <Checkbox.Root value="cheese" />
+            <Checkbox.Root value="olives" />
+          </CheckboxGroup>
+          <Field.Error />
+        </Field.Root>
+      </Form>
+    ));
+    const root = attrs(html, "lu-field");
+    expect(attrs(html, "fieldset")).toMatchObject({
+      role: "group",
+      "aria-labelledby": `${root.id}-label`,
+      "aria-describedby": `${root.id}-error`,
+      "aria-invalid": "true",
+    });
+    const boxes = [...html.matchAll(/<input\b([^>]*)>/g)].map((m) =>
+      attrs(`<input${m[1]}>`, "input"),
+    );
+    for (const box of boxes) {
+      expect(box).not.toHaveProperty("id");
+      expect(box).not.toHaveProperty("aria-invalid");
+      expect(box).not.toHaveProperty("aria-describedby");
+    }
+    expect(boxes.filter((box) => box.name === "toppings")).toHaveLength(2);
+  });
+
+  it("names the radio group by the Label, and by its legend without one", async () => {
+    const html = await renderToString(() => (
+      <Field.Root name="size">
+        <Field.Label>Size</Field.Label>
+        <RadioGroup>
+          <Radio.Root value="s" />
+        </RadioGroup>
+      </Field.Root>
+    ));
+    const root = attrs(html, "lu-field");
+    expect(attrs(html, "fieldset")).toMatchObject({
+      role: "radiogroup",
+      "aria-labelledby": `${root.id}-label`,
+    });
+    const legend = await renderToString(() => (
+      <Field.Root name="size">
+        <RadioGroup>
+          <Radio.Root value="s" />
+        </RadioGroup>
+      </Field.Root>
+    ));
+    expect(attrs(legend, "fieldset")).not.toHaveProperty("aria-labelledby");
   });
 });

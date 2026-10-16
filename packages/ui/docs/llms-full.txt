@@ -2449,9 +2449,12 @@ import "@lumiose/ui/themes/default.css"; // optional: the default theme
 | `Validity`    | No element: what its function child returns for the field's validity, in an island.                                                          |
 
 Instead of `Field.Control`, a field can hold a [Checkbox](checkbox.md), a [Switch](switch.md), a
-[Select](select.md), a [Radio Group](radio-group.md), a [Combobox](combobox.md), an
-[Autocomplete](autocomplete.md), a [Number Field](number-field.md) or a [Slider](slider.md): they
-take the field's wiring the same way (a Combobox and an Autocomplete through their input).
+[Select](select.md), a [Radio Group](radio-group.md), a [Checkbox Group](checkbox-group.md), a
+[Combobox](combobox.md), an [Autocomplete](autocomplete.md), a [Number Field](number-field.md) or a
+[Slider](slider.md): they take the field's wiring the same way (a Combobox and an Autocomplete
+through their input). A Radio Group or Checkbox Group takes it as a group: `Field.Label` names the
+group (`aria-labelledby`, as there is no single radio or checkbox for its `for`), and the group,
+not each control, gets `aria-describedby` and `aria-invalid`.
 
 ## API
 

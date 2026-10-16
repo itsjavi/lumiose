@@ -5,7 +5,7 @@
 import { effect, ref, signal, untrack } from "lumiose";
 import checkboxScript from "../checkbox/checkbox.script.ts?client";
 import { CheckboxGroupContext } from "../checkbox/context.ts";
-import { useFormValues } from "../field/context.ts";
+import { describedBy, labelledBy, useField, useFormValues } from "../field/context.ts";
 import { onFormReset } from "../form/reset.ts";
 
 /** The fieldset props CheckboxGroup passes through, without the brand of intrinsic elements' props. */
@@ -55,9 +55,11 @@ export function CheckboxGroup({
   ...rest
 }: CheckboxGroupProps) {
   checkboxScript();
+  // In a field, the group takes the field's wiring, not each checkbox (TASK-439, M25).
+  const field = useField();
   // A failed submission's values (a Form's `values`) replace the default (TASK-430).
   const sent = useFormValues(
-    untrack(() => name),
+    untrack(() => name ?? field?.name()),
     untrack(() => rest.disabled),
   );
   const values = signal<readonly string[]>(untrack(() => value ?? sent ?? defaultValue ?? []));
@@ -66,7 +68,7 @@ export function CheckboxGroup({
     const next = value;
     if (next !== undefined) values.set(next);
   });
-  const context = { values, allValues: () => allValues, name: () => name };
+  const context = { values, allValues: () => allValues, name: () => name ?? field?.name() };
   const report = (next: string[]) => {
     values.set(next);
     onValueChange?.(next);
@@ -82,6 +84,14 @@ export function CheckboxGroup({
           group(element);
           rest.ref?.(element);
         }}
+        // Explicit, so Field's script describes and marks the group as one, as a radiogroup.
+        role="group"
+        disabled={rest.disabled || field?.disabled() || undefined}
+        aria-labelledby={
+          rest["aria-labelledby"] ?? (rest["aria-label"] ? undefined : labelledBy(field))
+        }
+        aria-describedby={rest["aria-describedby"] ?? (field ? describedBy(field) : undefined)}
+        aria-invalid={rest["aria-invalid"] ?? (field?.invalid() ? "true" : undefined)}
         on:change={(event: Event) => {
           if (!(event.target as Element).matches("input[type=checkbox]")) return;
           // checkbox.script.ts ran first, for a parent's toggle.
