@@ -243,10 +243,16 @@ reports the first problem in its own bubble, and the form submits when everythin
 errors from a Form render in the HTML, visible and linked with `aria-describedby` and
 `aria-invalid`.
 
+Two limits of the server HTML, which the script corrects once it runs (decision-62): the server
+writes the control's attributes before it renders the parts after it, so a Description below the
+control is linked only by the script, and an invalid field's control points `aria-describedby` at
+the message Error's id (`Field.Error` without children or `match`) even when the field only has
+Errors with children or a `match`. Give a field that must read well without JavaScript a message
+Error, and its Descriptions before the control.
+
 A page that renders a `Field` loads a 1.5 kB (brotli) script once, without the Lumiose runtime;
 islands bundle it. On a submit attempt (a submit button, Enter in a field, `requestSubmit()` or
-the form's `reportValidity()`, which it wraps to tell them from a silent `checkValidity()`, which
-changes nothing) it cancels the browser's
+the form's `reportValidity()`; a silent `checkValidity()` changes nothing) it cancels the browser's
 `invalid` bubble for fields that have an Error part and shows the problem there instead (the
 browser's message, or one your `validate` set), with the timing above, and focuses the first
 invalid control, with no bubble on a later control outside a field. A form action's errors move
@@ -257,6 +263,14 @@ runs), and hides server errors once the value changes. When an async `validate` 
 fires `validitychange` (not bubbling) on the control, and the script shows the new verdict. When a
 form action's errors arrive in an island, Field.Root fires it on `<lu-field>` with the messages
 (`detail.errors`), and the script shows them as the server's, even when they repeat.
+
+**`requestSubmit()` and `reportValidity()`.** The browser fires the same `invalid` events for a
+silent `checkValidity()` as for a submit attempt, and only a submit attempt should show errors and
+move focus. A submit button's click and Enter are seen as they happen; the two methods are not, so
+the script wraps `HTMLFormElement.prototype.requestSubmit` and `reportValidity` once, when it
+loads. The wrappers only mark the form as attempting a submit for the duration of the call, and
+then call the browser's own method with the same `this`, arguments and return value, throwing what
+it throws (decision-62).
 
 ## Browser support
 

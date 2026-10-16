@@ -306,6 +306,10 @@ cannot be styled or grouped, and customizable select cannot filter). Without Jav
 HTML shows a labelled text field and nothing opens, and the form gets no value. For a choice that
 must work without JavaScript, use [Select](select.md).
 
+In the server HTML the input is empty even with a selected value: the input renders before the
+options, so the server does not know the selected option's label when it writes the input. The
+script puts the label in as it upgrades the element (decision-62).
+
 A page that renders a `Combobox` loads the script once, as a 5.0 kB (brotli) module without the
 Lumiose runtime, and islands bundle it. It defines `lu-combobox`, which upgrades every combobox on
 the page in place: it reads the selection the server rendered (`aria-selected="true"`), puts its

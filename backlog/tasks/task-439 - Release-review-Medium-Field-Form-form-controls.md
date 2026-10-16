@@ -1,11 +1,11 @@
 ---
 id: TASK-439
 title: 'Release review, Medium: Field, Form, form controls'
-status: In Progress
+status: Done
 assignee:
   - '@Beacon'
 created_date: '2026-10-16 10:06'
-updated_date: '2026-10-16 21:19'
+updated_date: '2026-10-16 21:29'
 labels:
   - ui
   - review
@@ -71,4 +71,6 @@ Found by Prism's release review of @lumiose/ui (TASK-386, 2026-10-16) on main 94
 2026-10-16 (Beacon): Fixed M25, M26 (label), M27, M28, M29, M30, M31; tests fail without the fixes in Chromium (build), Firefox and WebKit. M25/M26: Field.Label registers (labels count, like descriptions); a Radio Group or Checkbox Group in a field is aria-labelledby the label, takes aria-describedby / aria-invalid (CheckboxGroup now uses the field: name, disabled, role=group), grouped checkboxes skip the field's id and ARIA; field.script marks [role=radiogroup], [role=group] as one; server tests in field.test.tsx, browser test field-groups.e2e.ts (fixture /form/groups). M27/M28/M29 in field.script.ts: `invalid` acts only during a submit attempt (submit button click or Enter, flagged until the next task; requestSubmit() and the form's reportValidity() are wrapped on HTMLFormElement.prototype to flag theirs); a later field-less invalid control's invalid is cancelled when the first invalid control is a field's; server errors move focus to the first field showing one (on load unless something has focus, and when an island's errors arrive via the TASK-429 validitychange); field-attempt.e2e.ts (fixture /form/attempt). Field's script is now 1.5 kB brotli (docs updated). M30: slider and number-field scripts check :disabled (disabled-fieldset.e2e.ts, fixture /form/disabled). M31: aria-live=off on Field.Error and Slider.Value (server tests). Left for a decision: M26's dangling aria-describedby without JavaScript: on the server the control renders before its Errors, so it references the message Error's id when invalid even if the field only has Errors with children or match; with JavaScript the script corrects it on load. Proposal: keep, recommend a message Error. Status stays In Progress until the user agrees.
 
 2026-10-16 (user, TASK-457): M26 and M24 are kept and documented, and M23 moves to the screen reader pass (TASK-361). Beacon writes the docs lines and then marks this task Done.
+
+2026-10-16 (Beacon): The user's answers (TASK-457, decision-62): the requestSubmit/reportValidity wrapper stays and M26 stays. field.md now documents both limits of the server HTML (a Description after the control linked only by the script; aria-describedby pointing at the message Error's id) with the advice to give such fields a message Error and Descriptions before the control, and the wrapper (what it wraps, why, and that it only marks the attempt and calls the browser's method with the same this, arguments, return value and exceptions). Test: ui-e2e field-attempt.e2e.ts 'the wrapped requestSubmit() and reportValidity() behave as the browser's' (return values false and true, NotFoundError and TypeError, requestSubmit(submitter) submits the submitter's name and value) in Chromium, Firefox and WebKit.
 <!-- SECTION:NOTES:END -->
