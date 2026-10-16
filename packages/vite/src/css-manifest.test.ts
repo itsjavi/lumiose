@@ -144,7 +144,7 @@ beforeAll(async () => {
 }, 60_000);
 
 afterAll(() => {
-  if (root) rmSync(root, { recursive: true, force: true });
+  if (root) rmSync(root, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
 });
 
 describe.skipIf(!binding)("the CSS manifest", () => {

@@ -232,7 +232,7 @@ const STYLE = "?lumiose&type=style&lang.css";
 
 afterAll(async () => {
   await server?.close();
-  if (base) rmSync(base, { recursive: true, force: true });
+  if (base) rmSync(base, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
 });
 
 describe.skipIf(!binding)("@lumiose/vite", () => {

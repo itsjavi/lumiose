@@ -42,7 +42,7 @@ beforeAll(() => {
 });
 
 afterAll(() => {
-  if (base) rmSync(base, { recursive: true, force: true });
+  if (base) rmSync(base, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
 });
 
 describe("Packages", () => {

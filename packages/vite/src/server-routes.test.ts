@@ -65,7 +65,7 @@ beforeAll(async () => {
 
 afterAll(async () => {
   await server?.close();
-  if (root) rmSync(root, { recursive: true, force: true });
+  if (root) rmSync(root, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
 });
 
 describe.skipIf(!binding)("server routes", () => {

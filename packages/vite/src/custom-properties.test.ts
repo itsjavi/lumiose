@@ -41,7 +41,7 @@ export function Bar(props: { pct: number }) {
 let root: string | undefined;
 
 afterAll(() => {
-  if (root) rmSync(root, { recursive: true, force: true });
+  if (root) rmSync(root, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
 });
 
 describe.skipIf(!binding)("LUM3012 in lumiose build", () => {
