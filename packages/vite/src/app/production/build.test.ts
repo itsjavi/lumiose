@@ -944,6 +944,47 @@ export default function Island() { return <main><Counter client:load /></main>; 
     expect(read(root, "island/index.html")).toContain(loader);
   });
 
+  it("warns when a page renders a component whose client script the build did not build (TASK-463)", async () => {
+    // The app in app/, and a module outside its root, which the one-time scan does not reach: its
+    // `?client` import is not built.
+    const base = project({
+      "vendor/keys.ts": `export const key = "Enter";
+`,
+      "vendor/x-badge.element.ts": element("x-badge"),
+      "vendor/badge.ts": `import define from "./x-badge.element.ts?client";
+export function badge(): string {
+  define();
+  return "plain badge";
+}
+`,
+      "app/package.json": `{ "name": "fixture", "type": "module" }`,
+      "app/src/routes/page.stsx": `import { badge } from "../../../vendor/badge.ts";
+export default function Home() { return <main>{badge()}</main>; }
+`,
+      "app/src/routes/other/page.stsx": `export default function Other() { return <main>No badge</main>; }
+`,
+    });
+    const root = join(base, "app");
+    const logger = createLogger("silent");
+    const buildWarn = vi.spyOn(logger, "warn");
+    const consoleWarn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    try {
+      await build({ root, customLogger: logger, logLevel: "silent" });
+      // The server build, once per script; then the page that renders it, once per script.
+      expect(buildWarn.mock.calls.map(([message]) => String(message))).toContainEqual(
+        expect.stringContaining("x-badge.element.ts is a client script (?client)"),
+      );
+      const rendered = consoleWarn.mock.calls
+        .map(([message]) => String(message))
+        .filter((message) => message.includes("x-badge.element.ts"));
+      expect(rendered).toEqual([expect.stringContaining('"/" renders a component that needs it')]);
+      expect(read(root, "index.html")).toContain("plain badge");
+      expect(moduleScripts(read(root, "index.html"))).toEqual([]);
+    } finally {
+      consoleWarn.mockRestore();
+    }
+  });
+
   it("loads the client scripts of server-rendered components on the pages that render them (TASK-354)", async () => {
     const root = project({
       "package.json": `{ "name": "fixture", "type": "module", "sideEffects": false }`,
