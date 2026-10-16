@@ -75,7 +75,7 @@ export interface ToastPromiseOptions<T> {
 export interface ToastManager {
   /** The open toasts, newest first: map them to `Toast.Root`s inside `Toast.Viewport`. */
   toasts(): readonly ToastObject[];
-  /** Adds a toast and returns its id. A toast with the id of an open one replaces it. */
+  /** Adds a toast and returns its id. With the id of an open toast, it updates that one in place. */
   add(options: ToastOptions): string;
   /** Changes an open toast in place. */
   update(id: string, options: Partial<ToastOptions>): void;
@@ -191,6 +191,12 @@ function createToastManager(): ToastManager {
     toasts: () => list().map((each) => each.record),
     add(options) {
       const id = options.id ?? `${prefix}${(count += 1)}`;
+      // An open toast with that id changes in place, as `update` would (TASK-442 L4).
+      const open = find(id);
+      if (open && open.record.transitionStatus !== "ending") {
+        open.set(options);
+        return id;
+      }
       const toast = managed(id, options);
       owners.set(toast.record, owner);
       list.set([toast, ...list().filter((each) => each.record.id !== id)]);

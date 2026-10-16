@@ -3,6 +3,7 @@ import { Dialog, Drawer, Popover, Toast } from "@lumiose/ui";
 /** The island's toast manager: its buttons add toasts, its viewport shows them (TASK-371). */
 const toasts = Toast.createToastManager();
 let count = 0;
+let syncs = 0;
 
 export function ToastSignals() {
   return (
@@ -46,6 +47,14 @@ export function ToastSignals() {
         </button>
         <button type="button" class="lu-button" onClick={() => toasts.close()}>
           Close all
+        </button>
+        {/* The same id each time: the open toast changes in place (TASK-442 L4). */}
+        <button
+          type="button"
+          class="lu-button"
+          onClick={() => toasts.add({ id: "sync", title: `Synced ${(syncs += 1)}`, timeout: 0 })}
+        >
+          Sync
         </button>
         <Dialog.Root>
           <Dialog.Trigger class="lu-button">Open a dialog</Dialog.Trigger>

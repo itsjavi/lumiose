@@ -91,12 +91,43 @@ test.describe("toasts from an island's manager", () => {
     await saved.hover();
     await page.waitForTimeout(2200);
     await expect(saved).toBeVisible();
-    await saved.getByRole("button", { name: "Close" }).focus();
+    // Keyboard focus: F6 moves it to the region.
+    await page.keyboard.press("F6");
+    await expect(viewport(page)).toBeFocused();
     await page.mouse.move(0, 0);
     await page.waitForTimeout(2200);
     await expect(saved).toBeVisible();
     await button(page, "Add a toast").focus();
     await expect(saved).toHaveCount(0, { timeout: 4000 });
+  });
+
+  test("a press on a toast pauses it only while the pointer stays (TASK-442 L1)", async ({
+    page,
+  }) => {
+    await page.goto("/toast/island");
+    await button(page, "Add a toast").click();
+    const saved = toast(page, "Saved 1");
+    // The press focuses the region (`tabindex="-1"`), not visibly: the timer runs once the pointer
+    // leaves.
+    await saved.getByText("Done.").click();
+    await page.mouse.move(0, 0);
+    await expect(saved).toHaveCount(0, { timeout: 4000 });
+  });
+
+  test("add() with an open toast's id changes it in place (TASK-442 L4)", async ({ page }) => {
+    await page.goto("/toast/island");
+    await expect(async () => {
+      await button(page, "Sync").click({ timeout: 250 });
+      await expect(toast(page, "Synced")).toHaveCount(1, { timeout: 250 });
+    }).toPass();
+    const synced = toast(page, "Synced");
+    await synced.evaluate((element) => element.setAttribute("data-mark", ""));
+    const before = await synced.locator("h2").textContent();
+    await button(page, "Sync").click();
+    await expect(synced.locator("h2")).not.toHaveText(before!);
+    await expect(toast(page, "Synced")).toHaveCount(1);
+    // The same element: the toast was not removed and added again.
+    await expect(synced).toHaveAttribute("data-mark", "");
   });
 
   test("F6 focuses the region; Escape and Shift+Tab return focus", async ({ page }) => {
@@ -163,6 +194,35 @@ test.describe("toasts from an island's manager", () => {
     await expect(error).toBeVisible();
     await drag(page, error.getByText("Check your card."), 80, 0);
     await expect(error).toHaveCount(0);
+  });
+
+  test("a swipe pulled back from its farthest point stays (TASK-442 L2)", async ({ page }) => {
+    await page.goto("/toast/island");
+    await button(page, "Add an error").click();
+    const error = toast(page, "Payment failed");
+    const box = (await error.getByText("Check your card.").boundingBox())!;
+    const { x, y, dx } = dragPath(page, box, 120, 0, { x: 1 / 3, y: 0.5 });
+    await page.mouse.move(x, y);
+    await page.mouse.down();
+    await page.mouse.move(x + dx, y, { steps: 6 });
+    // Back to 50px: still past 40px, but 10px and more back from the farthest point.
+    await page.mouse.move(x + 50, y, { steps: 6 });
+    await page.mouse.up();
+    await expect(error).not.toHaveAttribute("data-swiping");
+    // Not closing either: a closing toast stays a moment, for its exit animation.
+    await page.waitForTimeout(600);
+    await expect(error).toHaveCount(1);
+    await expect(error).not.toHaveAttribute("data-ending-style");
+  });
+
+  test("a swipeable toast keeps pinch-zoom (TASK-442 L3)", async ({ page }) => {
+    await page.goto("/toast/island");
+    const known = await page.evaluate(() => CSS.supports("touch-action", "pinch-zoom"));
+    test.skip(!known, "`touch-action` does not know pinch-zoom here (Safari)");
+    await button(page, "Add an error").click();
+    const error = toast(page, "Payment failed");
+    await expect(error).toHaveAttribute("data-swipe-directions", /\S/);
+    await expect(error).toHaveCSS("touch-action", /pinch-zoom/);
   });
 
   test("over a modal dialog, toasts move into it and stay usable", async ({ page }) => {

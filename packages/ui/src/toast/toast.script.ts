@@ -14,8 +14,9 @@
 //   page's `scroll-padding-block-end`, so a control that takes focus is scrolled clear of the
 //   stack (M10).
 // - Timers: a toast closes after its `data-timeout` milliseconds (`0` keeps it). Timers pause
-//   while the pointer is over the viewport, while focus is in it, while the window is in the
-//   background or the page is hidden, and resume with the time that was left.
+//   while the pointer is over the viewport, while keyboard focus (`:focus-visible`) is in it, while
+//   the window is in the background or the page is hidden, and resume with the time that was
+//   left. A press that focuses a toast pauses it only while the pointer stays (TASK-442 L1).
 // - Limit: past `data-limit` toasts (on the viewport), the older ones are hidden and paused until
 //   a newer one closes. Each shown toast gets `--lu-toast-index` (0 for the first child).
 // - Closing: a close button (`command="--close-toast"`), Escape in a toast, a swipe or its timer
@@ -26,7 +27,8 @@
 // - Keyboard: F6 focuses the viewport; Escape there, or Shift+Tab from it, returns focus.
 // - Swipe: a pointer drag in one of the toast's `data-swipe-directions` (up, down, left, right)
 //   past 40px closes it. It locks to one axis, never starts on a control, and springs back when
-//   it falls short or reverses. While it runs the toast has `data-swiping`, `data-swipe-direction`
+//   it falls short or reverses: pulled back 10px or more from its farthest point, it stays
+//   (TASK-442 L2). While it runs the toast has `data-swiping`, `data-swipe-direction`
 //   and `--lu-toast-swipe-movement-x` or `-y`. The close button and Escape do the same without a
 //   gesture (WCAG 2.5.1, 2.5.7).
 // - Announcements: each toast is a live region (`role="status"`, or `role="alert"`). Safari's
@@ -41,6 +43,8 @@ import { afterAnimations, startFrom } from "../animation/animation.ts";
 import { CLOSE_COMMAND } from "./command.ts";
 
 const SWIPE_THRESHOLD = 40;
+/** A swipe pulled back this far (px) from its farthest point is cancelled, as in Base UI. */
+const SWIPE_REVERSAL = 10;
 /** U+2060, invisible: the change that makes VoiceOver read a new toast. */
 const WORD_JOINER = String.fromCodePoint(0x2060);
 const CONTROLS = "button, a[href], input, select, textarea, [contenteditable]";
@@ -58,6 +62,8 @@ interface Swipe {
   y: number;
   axis?: "x" | "y";
   directions: string[];
+  /** The longest distance from the press along the axis so far (px). */
+  farthest: number;
 }
 
 const viewports = new Set<LuToastViewport>();
@@ -242,7 +248,8 @@ export class LuToastViewport extends HTMLElement {
     if (target?.isConnected) target.focus({ preventScroll: true });
     else if (this.active) this.focus({ preventScroll: true });
     // Removing the focused element fires no `focusout` in every browser.
-    this.#focused = this.contains(document.activeElement);
+    const active = document.activeElement;
+    this.#focused = this.contains(active) && active!.matches(":focus-visible");
   }
 
   /** Starts the toast's timer again, from its `data-timeout`. */
@@ -324,7 +331,7 @@ export class LuToastViewport extends HTMLElement {
     // Where focus came from, to return to when the toasts it went to are gone.
     const from = event.relatedTarget;
     if (from instanceof HTMLElement && !this.contains(from)) this.#previous = from;
-    this.#focused = true;
+    this.#focused = (event.target as Element).matches(":focus-visible");
     this.#focusedToast = this.#toastOf(event.target) ?? null;
     this.syncTimers();
   };
@@ -378,6 +385,7 @@ export class LuToastViewport extends HTMLElement {
       x: event.clientX,
       y: event.clientY,
       directions,
+      farthest: 0,
     };
     this.#follow(true);
   };
@@ -423,6 +431,7 @@ export class LuToastViewport extends HTMLElement {
       swipe.axis === "x" ? (delta > 0 ? "right" : "left") : delta > 0 ? "down" : "up";
     // Against an allowed direction it moves a little, as a hint that it does not go that way.
     const movement = swipe.directions.includes(direction) ? delta : delta / 8;
+    swipe.farthest = Math.max(swipe.farthest, Math.abs(delta));
     swipe.toast.style.setProperty(`--lu-toast-swipe-movement-${swipe.axis}`, `${movement}px`);
     swipe.toast.setAttribute("data-swipe-direction", direction);
   };
@@ -437,7 +446,8 @@ export class LuToastViewport extends HTMLElement {
     const direction =
       swipe.axis === "x" ? (delta > 0 ? "right" : "left") : delta > 0 ? "down" : "up";
     swipe.toast.removeAttribute("data-swiping");
-    if (swipe.directions.includes(direction) && Math.abs(delta) >= SWIPE_THRESHOLD) {
+    const reversed = swipe.farthest - Math.abs(delta) >= SWIPE_REVERSAL;
+    if (swipe.directions.includes(direction) && Math.abs(delta) >= SWIPE_THRESHOLD && !reversed) {
       this.close(swipe.toast);
     } else this.#reset(swipe.toast);
   };
