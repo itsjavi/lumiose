@@ -1,6 +1,6 @@
 # Field
 
-> A form field: a label, a native control, a description and its errors, wired with `for`, `aria-describedby` and `aria-invalid`, after Base UI's Field. Validation is the browser's constraint validation (`required`, `type`, `pattern`, `minlength`…); a 1.0 kB script shows it in the field's Error parts at the right time, instead of the browser's bubble, and focuses the first invalid field on submit. A Form's server errors render in the HTML, so they work without JavaScript.
+> A form field: a label, a native control, a description and its errors, wired with `for`, `aria-describedby` and `aria-invalid`, after Base UI's Field. Validation is the browser's constraint validation (`required`, `type`, `pattern`, `minlength`…); a 1.1 kB script shows it in the field's Error parts at the right time, instead of the browser's bubble, and focuses the first invalid field on submit. A Form's server errors render in the HTML, so they work without JavaScript. In an island, `validate` adds checks of your own, async ones included, and `Field.Validity` renders from the field's validity.
 
 ```ts
 import { Field } from "@lumiose/ui"; // or "@lumiose/ui/field"
@@ -16,6 +16,7 @@ import "@lumiose/ui/themes/default.css"; // optional: the default theme
   <Field.Control />
   <Field.Description />
   <Field.Error />
+  <Field.Validity />
 </Field.Root>
 ```
 
@@ -26,6 +27,7 @@ import "@lumiose/ui/themes/default.css"; // optional: the default theme
 | `Control`     | `<input>`: [Input](input.md), with the field's `id`, `name`, `aria-describedby` and `aria-invalid`.                                          |
 | `Description` | `<p>` that describes the control.                                                                                                            |
 | `Error`       | `<output hidden>`: without children, the field's message (`for` the control); with children, your message. Shown while the field is invalid. |
+| `Validity`    | No element: what its function child returns for the field's validity, in an island.                                                          |
 
 Instead of `Field.Control`, a field can hold a [Checkbox](checkbox.md), a [Switch](switch.md), a
 [Select](select.md), a [Radio Group](radio-group.md), a [Combobox](combobox.md), an
@@ -36,13 +38,14 @@ take the field's wiring the same way (a Combobox and an Autocomplete through the
 
 ### Field.Root
 
-| Prop             | Type                                           | Default      |                                                                                                                                             |
-| ---------------- | ---------------------------------------------- | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| `name`           | `string`                                       |              | The control's `name` (unless it has its own), and the key of the field's errors in the Form's `errors`.                                     |
-| `disabled`       | `boolean`                                      | `false`      | Disables the control.                                                                                                                       |
-| `invalid`        | `boolean`                                      | `false`      | Marks the field invalid, as a server error does: its Error shows and the control gets `aria-invalid`, until the value changes.              |
-| `validationMode` | `"onSubmit" \| "onBlur" \| "onChange"`         | `"onSubmit"` | When errors show: after a submit attempt, also when the control loses focus, or as soon as it is edited. Once shown, they follow the value. |
-| `validate`       | `(value: string \| boolean) => string \| null` |              | Your own check, run on every edit in an island: return a message when the value is invalid. It becomes the control's custom validity.       |
+| Prop                     | Type                                           | Default      |                                                                                                                                                                |
+| ------------------------ | ---------------------------------------------- | ------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `name`                   | `string`                                       |              | The control's `name` (unless it has its own), and the key of the field's errors in the Form's `errors`.                                                        |
+| `disabled`               | `boolean`                                      | `false`      | Disables the control.                                                                                                                                          |
+| `invalid`                | `boolean`                                      | `false`      | Marks the field invalid, as a server error does: its Error shows and the control gets `aria-invalid`, until the value changes.                                 |
+| `validationMode`         | `"onSubmit" \| "onBlur" \| "onChange"`         | `"onSubmit"` | When errors show: after a submit attempt, also when the control loses focus, or as soon as it is edited. Once shown, they follow the value.                    |
+| `validate`               | `(value: string \| boolean) => string \| null` |              | Your own check, run on every edit in an island: return a message when the value is invalid. It becomes the control's custom validity. It may return a promise. |
+| `validationDebounceTime` | `number`                                       | `0`          | How long typing must pause before `validate` runs, in ms: fewer server checks while the user types.                                                            |
 
 `Root` passes `class`, `style` and other element props to `<lu-field>`. A Form's `validationMode`
 applies to the fields that set none.
@@ -54,6 +57,40 @@ applies to the fields that set none.
 | `match`    | `keyof ValidityState \| true` |         | Shows only for that problem (`"valueMissing"`, `"typeMismatch"`, `"tooShort"`, …), or always (`true`). |
 | `children` | `JSX.Element`                 |         | Your message. Without children, the Error shows the server's message or the browser's.                 |
 
+### Async validate
+
+`validate` may return a promise of the message: a check on the server, such as whether a username
+is taken.
+
+- **The latest edit wins.** Each edit starts a new check; an older check that settles later is
+  dropped, so a slow answer never overwrites a newer one.
+- **While it runs**, the control has no custom error (the last verdict was about another value),
+  `<lu-field>` has `data-validating`, and `Field.Validity` reports `validating: true`. When it
+  settles, its message becomes the control's custom validity, and the field shows it if it shows
+  its errors by then (with `validationMode="onChange"`, at once).
+- **A submit that comes first is not blocked**, as in Base UI: validate on the server too (a
+  Form action's `fail()`). A check that rejects (the network) counts as no error.
+- **One check per value.** The `change` a blur fires after an edit does not check the same value
+  again; `validationDebounceTime` waits for a pause in typing before it checks.
+- The check runs once, quietly, when the island starts and after a form reset (`Field.Validity`
+  stays unchecked).
+
+### Field.Validity
+
+| Prop       | Type                                         |                                                    |
+| ---------- | -------------------------------------------- | -------------------------------------------------- |
+| `children` | `(state: FieldValidityState) => JSX.Element` | Renders from the state, again whenever it changes. |
+
+`FieldValidityState` holds `validity` (the control's `ValidityState` keys, with `valid` `null`
+until the first check, or `false` from a server error), `error` (the first problem's message, or
+`""`), `errors` (every message: the server's, or `error`), `value` (the control's value, or
+`checked`) and `validating` (an async `validate` is running). It updates on every edit, blur and
+submit attempt, whatever the `validationMode`, and when a `validate` result or a server error
+arrives; a form reset makes it unchecked again. On the server, and without JavaScript, it renders
+the unchecked state (or the server's error) once.
+
+Render text inside an element of your own, as in `<p><Field.Validity>…</Field.Validity></p>`.
+
 ### Field.Control
 
 [Input](input.md)'s props: every native `<input>` prop, plus `value`, `defaultValue`,
@@ -64,8 +101,8 @@ applies to the fields that set none.
 `Label` and `Description` take the props of the element they render (`class`, `style`, `aria-*`)
 and pass them through; their `id` and `for` stay the field's.
 
-**Differences from Base UI's Field.** The control is native and so is validation: there is no
-`Field.Validity`, no async `validate` or `validationDebounceTime`, and no `dirty`, `touched`,
+**Differences from Base UI's Field.** The control is native and so is validation: `validate`
+returns one message (not a list) and gets no other form values, and there is no `dirty`, `touched`,
 `actionsRef` or `Field.Item`. State is exposed the platform's way, `aria-invalid` on the control
 and `:user-invalid`, `:invalid`, `:focus-within` in CSS, rather than Base UI's `data-dirty`,
 `data-touched` and friends. `Field.Error` renders an `<output>`, not a `<div>`.
@@ -113,6 +150,46 @@ export function UsernameField(props: { errors?: { username?: string } }) {
 }
 ```
 
+In an island, an async `validate` asks the server while the user types, and `Field.Validity`
+shows its state:
+
+```tsx check
+import { Field } from "@lumiose/ui";
+import { signal } from "lumiose";
+
+const TAKEN = ["admin", "lumiose"];
+
+/** A server check, here a delay and a list: a `fetch` in a real form. */
+async function available(value: string | boolean) {
+  await new Promise((resolve) => setTimeout(resolve, 300));
+  return TAKEN.includes(String(value)) ? "That handle is taken." : null;
+}
+
+export function HandleField() {
+  const handle = signal("");
+  return (
+    <Field.Root
+      name="handle"
+      validationMode="onChange"
+      validationDebounceTime={300}
+      validate={available}
+      class="lu-field"
+    >
+      <Field.Label>Handle</Field.Label>
+      <Field.Control required bind:value={handle} class="lu-input" />
+      <Field.Error />
+      <p>
+        <Field.Validity>
+          {(state) =>
+            state.validating ? "Checking…" : state.validity.valid ? `${handle()} is free.` : ""
+          }
+        </Field.Validity>
+      </p>
+    </Field.Root>
+  );
+}
+```
+
 ## Styling
 
 **With the default theme**, put `lu-field` on `Root` and `lu-input` on the control: the parts
@@ -123,7 +200,8 @@ lighter red in dark, to keep 4.5:1), and an invalid control gets a red border.
 
 - the control: `[aria-invalid="true"]` while an error shows, `:user-invalid` (invalid after the
   user interacted), `:invalid`, `:focus-visible`, `:disabled`;
-- the field: `lu-field:has([aria-invalid="true"])`, `lu-field:focus-within`;
+- the field: `lu-field:has([aria-invalid="true"])`, `lu-field:focus-within`, and
+  `lu-field[data-validating]` while an async `validate` runs;
 - the errors: `output` in the field (`[hidden]` while they do not apply).
 
 ```css
@@ -165,12 +243,13 @@ reports the first problem in its own bubble, and the form submits when everythin
 errors from a Form render in the HTML, visible and linked with `aria-describedby` and
 `aria-invalid`.
 
-A page that renders a `Field` loads a 1.0 kB (brotli) script once, without the Lumiose runtime;
+A page that renders a `Field` loads a 1.1 kB (brotli) script once, without the Lumiose runtime;
 islands bundle it. It cancels the browser's `invalid` bubble for fields that have an Error part and
 shows the problem there instead (the browser's message, or one your `validate` set), with the
 timing above, focuses the first invalid control on a submit attempt, keeps `aria-invalid` and
 `aria-describedby` current (a description rendered after the control is linked once the script
-runs), and hides server errors once the value changes.
+runs), and hides server errors once the value changes. When an async `validate` settles, Field.Root
+fires `validitychange` (not bubbling) on the control, and the script shows the new verdict.
 
 ## Browser support
 

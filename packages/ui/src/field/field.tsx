@@ -3,14 +3,27 @@
 // constraint validation, `:invalid` and blocking a submission are the browser's; Field.Root
 // renders `<lu-field>`, and field.script.ts (decision-63) shows the browser's verdict in the
 // field's Error parts at the right time instead of the browser's bubble. Server errors, from a
-// Form's `errors`, render in the HTML: they work without JavaScript.
-import { effect, isServer, onCleanup, onMount, signal, untrack, useContext, useId } from "lumiose";
+// Form's `errors`, render in the HTML: they work without JavaScript. A `validate` function (an
+// island) sets the control's custom validity; when it is async, the latest edit's verdict wins and
+// a `validitychange` event on the control asks the script to show it.
+import {
+  effect,
+  isServer,
+  onCleanup,
+  onMount,
+  ref,
+  signal,
+  untrack,
+  useContext,
+  useId,
+} from "lumiose";
 import {
   controlId,
   errorId,
   FieldContext,
   FormContext,
   type FieldContextValue,
+  type FieldValidityState,
   type ValidationMode,
 } from "./context.ts";
 import fieldScript from "./field.script.ts?client";
@@ -28,8 +41,15 @@ declare module "lumiose/jsx-runtime" {
   }
 }
 
-/** A validity check of the field's own: the message when the value is invalid, else nothing. */
-export type FieldValidate = (value: string | boolean) => string | null | undefined;
+/**
+ * A validity check of the field's own: the message when the value is invalid, else nothing, or a
+ * promise of it (a server check). Only the latest edit's result applies.
+ */
+export type FieldValidate = (
+  value: string | boolean,
+) => string | null | undefined | Promise<string | null | undefined>;
+
+export type { FieldValidityState };
 
 /** The `ValidityState` keys a `Field.Error` can match. */
 export type FieldErrorMatch = Exclude<keyof ValidityState, "valid">;
@@ -61,8 +81,15 @@ export type FieldRootProps = JSX.HTMLProps<HTMLElement> & {
    * A check of your own, run on every edit in the browser (an island): return the message when
    * the value is invalid. It becomes the control's custom validity, so a submit is blocked and the
    * Error shows the message. The value is the control's, or `checked` for a checkbox or switch.
+   * An async check clears the message until it settles (`data-validating` on the field meanwhile)
+   * and does not block a submission that comes first; a newer edit discards an older result.
    */
   validate?: FieldValidate;
+  /**
+   * How long typing must pause before `validate` runs, in ms: fewer server checks while the
+   * user types. Default `0`.
+   */
+  validationDebounceTime?: number;
 };
 
 /** The `<label>` of the field's control. */
@@ -73,6 +100,15 @@ export type FieldControlProps = InputProps;
 
 /** A `<p>` that describes the control; the control's `aria-describedby` names it. */
 export type FieldDescriptionProps = JSX.IntrinsicElements["p"];
+
+/**
+ * Renders what `children` returns for the field's validity, again whenever it changes: an edit, a
+ * blur, a submit attempt, a `validate` result or a server error. Before the first check (and on
+ * the server) `validity.valid` is `null`.
+ */
+export type FieldValidityProps = {
+  children: (state: FieldValidityState) => JSX.Element;
+};
 
 /**
  * An `<output>` with an error message of the field. Without children it shows the field's
@@ -87,12 +123,49 @@ export type FieldErrorProps = JSX.HTMLProps<HTMLElement> & {
   match?: FieldErrorMatch | true;
 };
 
+/** The `ValidityState` keys, `valid` included. */
+const KEYS = [
+  "badInput",
+  "customError",
+  "patternMismatch",
+  "rangeOverflow",
+  "rangeUnderflow",
+  "stepMismatch",
+  "tooLong",
+  "tooShort",
+  "typeMismatch",
+  "valueMissing",
+  "valid",
+] as const;
+
+const VALID: FieldValidityState["validity"] = {
+  ...(Object.fromEntries(KEYS.map((key) => [key, false])) as FieldValidityState["validity"]),
+  valid: true,
+};
+
+const UNCHECKED: FieldValidityState = {
+  validity: { ...VALID, valid: null },
+  error: "",
+  errors: [],
+  value: null,
+  validating: false,
+};
+
+const toggles = (control: Partial<HTMLInputElement>) =>
+  control.type === "checkbox" || control.type === "radio";
+
+const fieldOf = (node: Element) => node.closest?.("lu-field") ?? null;
+
+const isPromise = <T,>(value: T | Promise<T>): value is Promise<T> =>
+  typeof (value as { then?: unknown } | null)?.then === "function";
+
 function Root({
   name,
   disabled,
   invalid,
   validationMode,
   validate,
+  validationDebounceTime,
   children,
   ...rest
 }: FieldRootProps) {
@@ -106,6 +179,23 @@ function Root({
     if (typeof value === "string") return value ? [value] : [];
     return Array.isArray(value) ? value.filter((m): m is string => typeof m === "string") : [];
   };
+  /** The last check of the control, and the Form's errors it saw. */
+  const checked = signal<{ state: FieldValidityState; errors: unknown } | undefined>(undefined);
+  const validity = (): FieldValidityState => {
+    const last = checked();
+    const server = messages();
+    // A server error newer than the last check is the verdict, until the next edit.
+    if (server.length > 0 && (!last || last.errors !== form?.errors())) {
+      return {
+        validity: { ...VALID, valid: false },
+        error: server.join(" "),
+        errors: server,
+        value: last?.state.value ?? null,
+        validating: false,
+      };
+    }
+    return last?.state ?? UNCHECKED;
+  };
   const field: FieldContextValue = {
     id,
     name: () => name,
@@ -113,35 +203,127 @@ function Root({
     invalid: () => invalid === true || messages().length > 0,
     messages,
     descriptions: signal(0),
+    validity,
   };
 
-  // `validate` sets the control's custom validity on every edit, and once at the start.
-  const run = (target: EventTarget | null) => {
+  const host = ref<HTMLElement>();
+  const snapshot = (target: EventTarget | null) => {
+    const control = target as Partial<HTMLInputElement> | null;
+    if (!control?.validity || fieldOf(control as Element) !== host()) return;
+    const state = control.validity;
+    const error = control.validationMessage ?? "";
+    checked.set({
+      state: {
+        validity: Object.fromEntries(
+          KEYS.map((key) => [key, state[key]]),
+        ) as FieldValidityState["validity"],
+        error,
+        errors: error ? [error] : [],
+        value: toggles(control) ? control.checked! : (control.value ?? null),
+        validating: host()?.hasAttribute("data-validating") === true,
+      },
+      errors: untrack(() => form?.errors()),
+    });
+  };
+
+  // `validate` sets the control's custom validity on every edit, and quietly (no check for
+  // `Field.Validity`) at the start and after a reset. A newer run makes an older one's pending
+  // result stale.
+  let latest = 0;
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  /** The value of the last async check, whose verdict (pending or not) stands for that value. */
+  let checking: { value: string | boolean } | undefined;
+  onCleanup(() => clearTimeout(timer));
+  const pending = (on: boolean) => host()?.toggleAttribute("data-validating", on);
+  const run = (target: EventTarget | null, wait = 0, quiet = false) => {
     if (!validate || !(target instanceof HTMLElement)) return;
     const control = target as HTMLInputElement;
     if (typeof control.setCustomValidity !== "function") return;
-    const value = /^(checkbox|radio)$/.test(control.type) ? control.checked : control.value;
-    control.setCustomValidity(untrack(() => validate(value)) ?? "");
+    const value = toggles(control) ? control.checked : control.value;
+    // The blur's `change` after an edit: that value's server check stands, no second request.
+    if (checking?.value === value) return;
+    const mine = ++latest;
+    clearTimeout(timer);
+    const apply = (message: string | null | undefined, later: boolean) => {
+      if (mine !== latest || !control.isConnected) return;
+      control.setCustomValidity(message ?? "");
+      pending(false);
+      // The script showed the edit already: a later verdict asks it to show this one.
+      if (later) control.dispatchEvent(new Event("validitychange"));
+      if (!quiet) snapshot(control);
+    };
+    const check = (later: boolean) => {
+      const result = untrack(() => validate(value));
+      checking = isPromise(result) ? { value } : undefined;
+      if (!isPromise(result)) return apply(result, later);
+      // The last verdict was about another value: none until this one settles.
+      control.setCustomValidity("");
+      pending(true);
+      // A check that fails (the network) blocks nothing: the server validates again.
+      result.then(
+        (message) => apply(message, true),
+        () => apply(null, true),
+      );
+    };
+    if (wait <= 0) return check(false);
+    control.setCustomValidity("");
+    pending(true);
+    timer = setTimeout(() => check(true), wait);
   };
   effect(() => {
     if (!validate) return;
     const element = document.getElementById(controlId(field));
-    if (element) run(element);
+    if (element) untrack(() => run(element, 0, true));
+  });
+  // A submit attempt checks every control (`invalid` does not bubble); a reset clears the checks.
+  const onInvalid = (event: Event) => snapshot(event.target);
+  const onReset = () => {
+    checked.set(undefined);
+    checking = undefined;
+    // The controls take their default values after the event.
+    setTimeout(() => run(document.getElementById(controlId(field)), 0, true));
+  };
+  onMount(() => {
+    const element = host();
+    if (!element) return;
+    const owner = element.closest("form");
+    element.addEventListener("invalid", onInvalid, true);
+    owner?.addEventListener("reset", onReset);
+    onCleanup(() => {
+      element.removeEventListener("invalid", onInvalid, true);
+      owner?.removeEventListener("reset", onReset);
+    });
   });
 
   return (
     <FieldContext value={field}>
       <lu-field
         {...rest}
+        ref={(element: HTMLElement) => {
+          host(element);
+          rest.ref?.(element);
+        }}
         id={id}
         validation-mode={validationMode ?? form?.validationMode()}
-        on:input={(event: Event) => run(event.target)}
-        on:change={(event: Event) => run(event.target)}
+        on:input={(event: Event) => {
+          run(event.target, validationDebounceTime);
+          snapshot(event.target);
+        }}
+        on:change={(event: Event) => {
+          run(event.target);
+          snapshot(event.target);
+        }}
+        on:focusout={(event: Event) => snapshot(event.target)}
       >
         {children}
       </lu-field>
     </FieldContext>
   );
+}
+
+function Validity({ children }: FieldValidityProps) {
+  const field = useFieldPart("Validity");
+  return <>{children(field.validity())}</>;
 }
 
 function useFieldPart(part: string): FieldContextValue {
@@ -213,4 +395,4 @@ function ErrorPart({ match, children, ...rest }: FieldErrorProps) {
  *   <Field.Error />
  * </Field.Root>
  */
-export const Field = { Root, Label, Control: Input, Description, Error: ErrorPart };
+export const Field = { Root, Label, Control: Input, Description, Error: ErrorPart, Validity };

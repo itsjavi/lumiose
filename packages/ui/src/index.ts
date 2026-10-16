@@ -84,6 +84,8 @@ export type {
   FieldLabelProps,
   FieldRootProps,
   FieldValidate,
+  FieldValidityProps,
+  FieldValidityState,
 } from "./field/field.tsx";
 export type { ValidationMode } from "./field/context.ts";
 export { Fieldset } from "./fieldset/fieldset.tsx";

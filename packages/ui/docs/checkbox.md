@@ -1,6 +1,6 @@
 # Checkbox
 
-> A native `<input type="checkbox">`, after Base UI's Checkbox: Space and a label click toggle it, the form submits its value when checked, reset and `required` work, in server HTML and without JavaScript. `indeterminate`, `readOnly`, the parent checkbox of a [Checkbox Group](checkbox-group.md) and `bind:checked` come on top, with a 0.5 kB script shared with Radio Group and Switch.
+> A native `<input type="checkbox">`, after Base UI's Checkbox: Space and a label click toggle it, the form submits its value when checked, reset and `required` work, in server HTML and without JavaScript. `indeterminate`, `readOnly`, the parent checkbox of a [Checkbox Group](checkbox-group.md) and `bind:checked` come on top, with a 0.6 kB script shared with Radio Group and Switch.
 
 ```ts
 import { Checkbox } from "@lumiose/ui"; // or "@lumiose/ui/checkbox"
@@ -35,6 +35,7 @@ Name it with a wrapping `<label>`, a `<label for>`, a `Field.Label`, or `aria-la
 | `value`           | `string`                     | `"on"`  | What it submits when checked, and its identity in a Checkbox Group.                                  |
 | `parent`          | `boolean`                    | `false` | The "select all" checkbox of a Checkbox Group: it checks them all and follows them. Never submitted. |
 | `readOnly`        | `boolean`                    | `false` | It cannot be toggled, but stays focusable and is submitted.                                          |
+| `uncheckedValue`  | `string`                     |         | What it submits when unchecked (by the script); by default an unchecked box submits nothing.         |
 
 Every other native prop passes through: `name`, `required`, `disabled`, `form`, `id`, `class`,
 `aria-*`. Inside a Field it takes the field's `id`, `name`, `aria-describedby` and
@@ -42,8 +43,8 @@ Every other native prop passes through: `name`, `required`, `disabled`, `form`, 
 
 **Differences from Base UI's Checkbox.** The box is the native input, so there is no
 `Checkbox.Indicator`: draw the box and its mark with `appearance: none` and `::before` (as the
-default theme does). There is no `nativeButton`, `inputRef` or `uncheckedValue`: an unchecked box
-submits nothing, as a native one does.
+default theme does). There is no `nativeButton` or `inputRef`. `uncheckedValue` needs the client
+script: without it an unchecked box submits nothing, as a native one does.
 
 ## Example
 
@@ -110,11 +111,14 @@ Enter does not toggle it. A click on its label toggles it too.
 A native checkbox: toggling, submission, `required`, reset and `disabled` (its own or a fieldset's)
 work with no script.
 
-A page that renders a Checkbox, Checkbox Group, Radio Group or Switch loads one 0.5 kB (brotli)
+A page that renders a Checkbox, Checkbox Group, Radio Group or Switch loads one 0.6 kB (brotli)
 script once, without the Lumiose runtime; islands bundle it. It turns server HTML's
 `data-indeterminate` into the `indeterminate` property (which has no attribute), makes read-only
-inputs ignore clicks, Space and the label, and runs the parent checkbox of a group. Without it, an
-indeterminate box shows unchecked (the theme still draws it mixed) and a read-only one toggles.
+inputs ignore clicks, Space and the label, runs the parent checkbox of a group, and adds an
+unchecked box's `uncheckedValue` (`data-unchecked-value`) to its form's data (the `formdata`
+event, so it comes after the form's other values; a disabled box submits nothing). Without it, an
+indeterminate box shows unchecked (the theme still draws it mixed), a read-only one toggles, and
+an unchecked one submits nothing: treat a missing value as unchecked on the server too.
 
 ## Browser support
 

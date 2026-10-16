@@ -329,6 +329,76 @@ test.describe("in an island", () => {
   });
 });
 
+const login = (page: Page) => page.getByRole("textbox", { name: "Login" });
+const validity = (page: Page) => page.getByTestId("login-validity");
+const checks = (page: Page) => page.getByTestId("login-checks");
+
+test.describe("async validate and Field.Validity (TASK-405)", () => {
+  test("the latest edit's verdict wins: a slower, older check is dropped", async ({ page }) => {
+    const warnings = lumioseWarnings(page);
+    await page.goto("/form/island");
+    await expect(validity(page)).toHaveText("unchecked");
+    await hydrated(page);
+    // The check of the empty value at the start: quiet, the field is not checked yet.
+    await expect(checks(page)).toHaveText("checks: 1");
+    await expect(validity(page)).toHaveText("unchecked");
+    await login(page).fill("slowpoke");
+    await expect(validity(page)).toHaveText("checking");
+    await expect(page.locator("lu-field").filter({ has: login(page) })).toHaveAttribute(
+      "data-validating",
+      "",
+    );
+    // The slow check started; a newer edit answers first.
+    await expect(checks(page)).toHaveText("checks: 2");
+    await login(page).fill("ada");
+    await expect(validity(page)).toHaveText("valid");
+    await page.waitForTimeout(500);
+    await expect(validity(page)).toHaveText("valid");
+    await expect(page.getByText("slowpoke is taken.", { exact: true })).toBeHidden();
+    await expect(login(page)).not.toHaveAttribute("aria-invalid");
+    expect(warnings).toEqual([]);
+  });
+
+  test("typing waits for the debounce; a taken login shows and blocks the submit", async ({
+    page,
+  }) => {
+    await page.goto("/form/island");
+    await hydrated(page);
+    await expect(checks(page)).toHaveText("checks: 1");
+    await login(page).pressSequentially("taken", { delay: 30 });
+    await expect(page.getByText("taken is taken.", { exact: true })).toBeVisible();
+    // One check for five keystrokes.
+    await expect(checks(page)).toHaveText("checks: 2");
+    await expect(validity(page)).toHaveText("invalid: taken is taken.");
+    await expect(login(page)).toHaveAttribute("aria-invalid", "true");
+    // Playwright's accessible description leaves `<output>` out: ask Chromium's tree.
+    await expect.poll(() => axDescription(login(page))).toMatch(/taken is taken\./);
+    await page.getByRole("button", { name: "Check login" }).click();
+    await expect(login(page)).toBeFocused();
+    await expect(page.getByText("taken is taken.", { exact: true })).toBeVisible();
+    // A reset clears the check, and checks the default value again, quietly.
+    await login(page).evaluate((el) => (el as HTMLInputElement).form!.reset());
+    await expect(validity(page)).toHaveText("unchecked");
+    await expect(checks(page)).toHaveText("checks: 3");
+    expect(await login(page).evaluate((el) => (el as HTMLInputElement).validationMessage)).toBe("");
+    await expect(validity(page)).toHaveText("unchecked");
+  });
+});
+
+test.describe("uncheckedValue (TASK-405)", () => {
+  test("a switch that is off submits its uncheckedValue; a disabled one submits nothing", async ({
+    page,
+  }) => {
+    await ready(page);
+    await fillValid(page);
+    await page.getByRole("switch", { name: "Newsletter" }).uncheck();
+    await submitButton(page).click();
+    const saved = page.getByTestId("saved");
+    await expect(saved).toContainText("newsletter=off");
+    await expect(saved).not.toContainText("disabled-switch");
+  });
+});
+
 test.describe("WCAG 2.2 AA with the default theme (doc-9 section 17)", () => {
   for (const scheme of SCHEMES) {
     test(`axe passes, with and without errors (${scheme})`, async ({ page }) => {

@@ -31,6 +31,11 @@ export type SwitchRootProps = InputProps & {
   value?: string;
   /** It cannot be toggled, but stays focusable and is submitted (`aria-readonly`). */
   readOnly?: boolean;
+  /**
+   * The value it submits when off; by default a switch that is off submits nothing. Needs the
+   * client script (`data-unchecked-value`).
+   */
+  uncheckedValue?: string;
 };
 
 function Root({
@@ -39,6 +44,7 @@ function Root({
   onCheckedChange,
   value,
   readOnly,
+  uncheckedValue,
   ...rest
 }: SwitchRootProps) {
   checkboxScript();
@@ -53,6 +59,7 @@ function Root({
       value={value}
       checked={checked ?? initial}
       aria-readonly={readOnly ? "true" : undefined}
+      data-unchecked-value={uncheckedValue}
       on:change={(event: Event) =>
         onCheckedChange?.((event.currentTarget as HTMLInputElement).checked)
       }

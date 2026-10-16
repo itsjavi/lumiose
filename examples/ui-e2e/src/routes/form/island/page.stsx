@@ -13,6 +13,8 @@ import { actionData, fail, signal, submit, Title, type ActionContext } from "lum
 
 const COLOURS = ["red", "green", "blue"];
 
+const TAKEN = ["taken", "slowpoke"];
+
 export const actions = {
   async save(ctx: ActionContext<"/form/island">) {
     const form = await ctx.formData();
@@ -24,9 +26,18 @@ export const actions = {
 /**
  * The form controls bound to signals in an island: `bind:value` on Input, CheckboxGroup and
  * RadioGroup, `bind:checked` on Checkbox and Switch, a Field `validate` function, and a Form
- * posted with `submit()` whose `fail()` errors show in the field.
+ * posted with `submit()` whose `fail()` errors show in the field. A second form checks a login
+ * with an async, debounced `validate` and shows it with Field.Validity (TASK-405).
  */
 export function FormSignals() {
+  const checks = signal(0);
+  /** A server check of the login: "slow…" names answer after 400ms, the others after 20ms. */
+  const available = async (value: string | boolean) => {
+    checks.update((n) => n + 1);
+    const login = String(value);
+    await new Promise((resolve) => setTimeout(resolve, login.startsWith("slow") ? 400 : 20));
+    return TAKEN.includes(login) ? `${login} is taken.` : null;
+  };
   const handle = signal("ada");
   const agree = signal(false);
   const dark = signal(true);
@@ -83,6 +94,37 @@ export function FormSignals() {
           Save
         </button>
       </Form>
+      <form class="lu-fieldset" data-testid="login-form" onSubmit={(event) => event.preventDefault()}>
+        <Field.Root
+          name="login"
+          class="lu-field"
+          validationMode="onChange"
+          validationDebounceTime={150}
+          validate={available}
+        >
+          <Field.Label>Login</Field.Label>
+          <Field.Control class="lu-input" />
+          <Field.Description>An async check: "taken" and "slowpoke" are taken.</Field.Description>
+          <Field.Error />
+          <p data-testid="login-validity">
+            <Field.Validity>
+              {(state) =>
+                state.validating
+                  ? "checking"
+                  : state.validity.valid === null
+                    ? "unchecked"
+                    : state.validity.valid
+                      ? "valid"
+                      : `invalid: ${state.error}`
+              }
+            </Field.Validity>
+          </p>
+        </Field.Root>
+        <output data-testid="login-checks">checks: {checks()}</output>
+        <button type="submit" class="lu-button">
+          Check login
+        </button>
+      </form>
       <div>
         <button
           type="button"

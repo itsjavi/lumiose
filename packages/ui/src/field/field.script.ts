@@ -15,6 +15,8 @@
 //   one a `validate` function set); an Error with children shows them. Either shows for any
 //   problem, always, or only for its `match` (a `ValidityState` key, read from its id).
 // - Server errors (rendered visible from the Form's `errors`) go away once the value changes.
+// - A `validitychange` event on a control (Field.Root fires it when an async `validate` settles)
+//   shows its new verdict, if the field shows its errors by then.
 // - The control gets `aria-invalid` and `aria-describedby` for the errors shown and the field's
 //   descriptions.
 //
@@ -196,6 +198,18 @@ function onEdit(event: Event) {
   if (field.getAttribute("validation-mode") === "onChange") shown.add(field);
   render(field);
 }
+
+// Not bubbling: a capturing listener sees it.
+document.addEventListener(
+  "validitychange",
+  (event) => {
+    const field = fieldOf(event.target);
+    if (!field) return;
+    meet(field);
+    render(field);
+  },
+  true,
+);
 
 // After the component's own listeners, which run a `validate` function first.
 on("input", onEdit, false);

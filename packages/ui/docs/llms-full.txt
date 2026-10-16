@@ -1000,7 +1000,7 @@ Native `<button>`: every browser.
 
 # Checkbox
 
-> A native `<input type="checkbox">`, after Base UI's Checkbox: Space and a label click toggle it, the form submits its value when checked, reset and `required` work, in server HTML and without JavaScript. `indeterminate`, `readOnly`, the parent checkbox of a [Checkbox Group](checkbox-group.md) and `bind:checked` come on top, with a 0.5 kB script shared with Radio Group and Switch.
+> A native `<input type="checkbox">`, after Base UI's Checkbox: Space and a label click toggle it, the form submits its value when checked, reset and `required` work, in server HTML and without JavaScript. `indeterminate`, `readOnly`, the parent checkbox of a [Checkbox Group](checkbox-group.md) and `bind:checked` come on top, with a 0.6 kB script shared with Radio Group and Switch.
 
 ```ts
 import { Checkbox } from "@lumiose/ui"; // or "@lumiose/ui/checkbox"
@@ -1035,6 +1035,7 @@ Name it with a wrapping `<label>`, a `<label for>`, a `Field.Label`, or `aria-la
 | `value`           | `string`                     | `"on"`  | What it submits when checked, and its identity in a Checkbox Group.                                  |
 | `parent`          | `boolean`                    | `false` | The "select all" checkbox of a Checkbox Group: it checks them all and follows them. Never submitted. |
 | `readOnly`        | `boolean`                    | `false` | It cannot be toggled, but stays focusable and is submitted.                                          |
+| `uncheckedValue`  | `string`                     |         | What it submits when unchecked (by the script); by default an unchecked box submits nothing.         |
 
 Every other native prop passes through: `name`, `required`, `disabled`, `form`, `id`, `class`,
 `aria-*`. Inside a Field it takes the field's `id`, `name`, `aria-describedby` and
@@ -1042,8 +1043,8 @@ Every other native prop passes through: `name`, `required`, `disabled`, `form`, 
 
 **Differences from Base UI's Checkbox.** The box is the native input, so there is no
 `Checkbox.Indicator`: draw the box and its mark with `appearance: none` and `::before` (as the
-default theme does). There is no `nativeButton`, `inputRef` or `uncheckedValue`: an unchecked box
-submits nothing, as a native one does.
+default theme does). There is no `nativeButton` or `inputRef`. `uncheckedValue` needs the client
+script: without it an unchecked box submits nothing, as a native one does.
 
 ## Example
 
@@ -1110,11 +1111,14 @@ Enter does not toggle it. A click on its label toggles it too.
 A native checkbox: toggling, submission, `required`, reset and `disabled` (its own or a fieldset's)
 work with no script.
 
-A page that renders a Checkbox, Checkbox Group, Radio Group or Switch loads one 0.5 kB (brotli)
+A page that renders a Checkbox, Checkbox Group, Radio Group or Switch loads one 0.6 kB (brotli)
 script once, without the Lumiose runtime; islands bundle it. It turns server HTML's
 `data-indeterminate` into the `indeterminate` property (which has no attribute), makes read-only
-inputs ignore clicks, Space and the label, and runs the parent checkbox of a group. Without it, an
-indeterminate box shows unchecked (the theme still draws it mixed) and a read-only one toggles.
+inputs ignore clicks, Space and the label, runs the parent checkbox of a group, and adds an
+unchecked box's `uncheckedValue` (`data-unchecked-value`) to its form's data (the `formdata`
+event, so it comes after the form's other values; a disabled box submits nothing). Without it, an
+indeterminate box shows unchecked (the theme still draws it mixed), a read-only one toggles, and
+an unchecked one submits nothing: treat a missing value as unchecked on the server too.
 
 ## Browser support
 
@@ -1171,8 +1175,11 @@ Every other `<fieldset>` prop passes through.
 
 **Differences from Base UI's CheckboxGroup.** It renders a `<fieldset>`, so a legend names it and
 `disabled` is native. `name` is added: Base UI gives each checkbox its own. A parent checkbox
-needs only `parent` here, not a controlled group, since the script runs it from the DOM. A
-`required` group (one checked at least) is not offered yet.
+needs only `parent` here, not a controlled group, since the script runs it from the DOM. There is
+no `required` (one box checked at least), as in Base UI: HTML has no such constraint for a group,
+so it would work only with a script and an unlocalized message of ours. Check it in the form
+action instead and return the message with `fail()`: it renders with the page, without JavaScript
+too.
 
 ## Example
 
@@ -1223,7 +1230,7 @@ unchecked).
 
 The checkboxes are native: they toggle, submit under the group's name and reset with no script.
 The parent checkbox shows its server state and is never submitted, but checks nothing until the
-shared checkbox script (0.5 kB brotli, [Checkbox](checkbox.md#without-javascript-and-the-client-script))
+shared checkbox script (0.6 kB brotli, [Checkbox](checkbox.md#without-javascript-and-the-client-script))
 runs.
 
 ## Browser support
@@ -2395,7 +2402,7 @@ non-modal drawers.
 
 # Field
 
-> A form field: a label, a native control, a description and its errors, wired with `for`, `aria-describedby` and `aria-invalid`, after Base UI's Field. Validation is the browser's constraint validation (`required`, `type`, `pattern`, `minlength`…); a 1.0 kB script shows it in the field's Error parts at the right time, instead of the browser's bubble, and focuses the first invalid field on submit. A Form's server errors render in the HTML, so they work without JavaScript.
+> A form field: a label, a native control, a description and its errors, wired with `for`, `aria-describedby` and `aria-invalid`, after Base UI's Field. Validation is the browser's constraint validation (`required`, `type`, `pattern`, `minlength`…); a 1.1 kB script shows it in the field's Error parts at the right time, instead of the browser's bubble, and focuses the first invalid field on submit. A Form's server errors render in the HTML, so they work without JavaScript. In an island, `validate` adds checks of your own, async ones included, and `Field.Validity` renders from the field's validity.
 
 ```ts
 import { Field } from "@lumiose/ui"; // or "@lumiose/ui/field"
@@ -2411,6 +2418,7 @@ import "@lumiose/ui/themes/default.css"; // optional: the default theme
   <Field.Control />
   <Field.Description />
   <Field.Error />
+  <Field.Validity />
 </Field.Root>
 ```
 
@@ -2421,6 +2429,7 @@ import "@lumiose/ui/themes/default.css"; // optional: the default theme
 | `Control`     | `<input>`: [Input](input.md), with the field's `id`, `name`, `aria-describedby` and `aria-invalid`.                                          |
 | `Description` | `<p>` that describes the control.                                                                                                            |
 | `Error`       | `<output hidden>`: without children, the field's message (`for` the control); with children, your message. Shown while the field is invalid. |
+| `Validity`    | No element: what its function child returns for the field's validity, in an island.                                                          |
 
 Instead of `Field.Control`, a field can hold a [Checkbox](checkbox.md), a [Switch](switch.md), a
 [Select](select.md), a [Radio Group](radio-group.md), a [Combobox](combobox.md), an
@@ -2431,13 +2440,14 @@ take the field's wiring the same way (a Combobox and an Autocomplete through the
 
 ### Field.Root
 
-| Prop             | Type                                           | Default      |                                                                                                                                             |
-| ---------------- | ---------------------------------------------- | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| `name`           | `string`                                       |              | The control's `name` (unless it has its own), and the key of the field's errors in the Form's `errors`.                                     |
-| `disabled`       | `boolean`                                      | `false`      | Disables the control.                                                                                                                       |
-| `invalid`        | `boolean`                                      | `false`      | Marks the field invalid, as a server error does: its Error shows and the control gets `aria-invalid`, until the value changes.              |
-| `validationMode` | `"onSubmit" \| "onBlur" \| "onChange"`         | `"onSubmit"` | When errors show: after a submit attempt, also when the control loses focus, or as soon as it is edited. Once shown, they follow the value. |
-| `validate`       | `(value: string \| boolean) => string \| null` |              | Your own check, run on every edit in an island: return a message when the value is invalid. It becomes the control's custom validity.       |
+| Prop                     | Type                                           | Default      |                                                                                                                                                                |
+| ------------------------ | ---------------------------------------------- | ------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `name`                   | `string`                                       |              | The control's `name` (unless it has its own), and the key of the field's errors in the Form's `errors`.                                                        |
+| `disabled`               | `boolean`                                      | `false`      | Disables the control.                                                                                                                                          |
+| `invalid`                | `boolean`                                      | `false`      | Marks the field invalid, as a server error does: its Error shows and the control gets `aria-invalid`, until the value changes.                                 |
+| `validationMode`         | `"onSubmit" \| "onBlur" \| "onChange"`         | `"onSubmit"` | When errors show: after a submit attempt, also when the control loses focus, or as soon as it is edited. Once shown, they follow the value.                    |
+| `validate`               | `(value: string \| boolean) => string \| null` |              | Your own check, run on every edit in an island: return a message when the value is invalid. It becomes the control's custom validity. It may return a promise. |
+| `validationDebounceTime` | `number`                                       | `0`          | How long typing must pause before `validate` runs, in ms: fewer server checks while the user types.                                                            |
 
 `Root` passes `class`, `style` and other element props to `<lu-field>`. A Form's `validationMode`
 applies to the fields that set none.
@@ -2449,6 +2459,40 @@ applies to the fields that set none.
 | `match`    | `keyof ValidityState \| true` |         | Shows only for that problem (`"valueMissing"`, `"typeMismatch"`, `"tooShort"`, …), or always (`true`). |
 | `children` | `JSX.Element`                 |         | Your message. Without children, the Error shows the server's message or the browser's.                 |
 
+### Async validate
+
+`validate` may return a promise of the message: a check on the server, such as whether a username
+is taken.
+
+- **The latest edit wins.** Each edit starts a new check; an older check that settles later is
+  dropped, so a slow answer never overwrites a newer one.
+- **While it runs**, the control has no custom error (the last verdict was about another value),
+  `<lu-field>` has `data-validating`, and `Field.Validity` reports `validating: true`. When it
+  settles, its message becomes the control's custom validity, and the field shows it if it shows
+  its errors by then (with `validationMode="onChange"`, at once).
+- **A submit that comes first is not blocked**, as in Base UI: validate on the server too (a
+  Form action's `fail()`). A check that rejects (the network) counts as no error.
+- **One check per value.** The `change` a blur fires after an edit does not check the same value
+  again; `validationDebounceTime` waits for a pause in typing before it checks.
+- The check runs once, quietly, when the island starts and after a form reset (`Field.Validity`
+  stays unchecked).
+
+### Field.Validity
+
+| Prop       | Type                                         |                                                    |
+| ---------- | -------------------------------------------- | -------------------------------------------------- |
+| `children` | `(state: FieldValidityState) => JSX.Element` | Renders from the state, again whenever it changes. |
+
+`FieldValidityState` holds `validity` (the control's `ValidityState` keys, with `valid` `null`
+until the first check, or `false` from a server error), `error` (the first problem's message, or
+`""`), `errors` (every message: the server's, or `error`), `value` (the control's value, or
+`checked`) and `validating` (an async `validate` is running). It updates on every edit, blur and
+submit attempt, whatever the `validationMode`, and when a `validate` result or a server error
+arrives; a form reset makes it unchecked again. On the server, and without JavaScript, it renders
+the unchecked state (or the server's error) once.
+
+Render text inside an element of your own, as in `<p><Field.Validity>…</Field.Validity></p>`.
+
 ### Field.Control
 
 [Input](input.md)'s props: every native `<input>` prop, plus `value`, `defaultValue`,
@@ -2459,8 +2503,8 @@ applies to the fields that set none.
 `Label` and `Description` take the props of the element they render (`class`, `style`, `aria-*`)
 and pass them through; their `id` and `for` stay the field's.
 
-**Differences from Base UI's Field.** The control is native and so is validation: there is no
-`Field.Validity`, no async `validate` or `validationDebounceTime`, and no `dirty`, `touched`,
+**Differences from Base UI's Field.** The control is native and so is validation: `validate`
+returns one message (not a list) and gets no other form values, and there is no `dirty`, `touched`,
 `actionsRef` or `Field.Item`. State is exposed the platform's way, `aria-invalid` on the control
 and `:user-invalid`, `:invalid`, `:focus-within` in CSS, rather than Base UI's `data-dirty`,
 `data-touched` and friends. `Field.Error` renders an `<output>`, not a `<div>`.
@@ -2508,6 +2552,46 @@ export function UsernameField(props: { errors?: { username?: string } }) {
 }
 ```
 
+In an island, an async `validate` asks the server while the user types, and `Field.Validity`
+shows its state:
+
+```tsx check
+import { Field } from "@lumiose/ui";
+import { signal } from "lumiose";
+
+const TAKEN = ["admin", "lumiose"];
+
+/** A server check, here a delay and a list: a `fetch` in a real form. */
+async function available(value: string | boolean) {
+  await new Promise((resolve) => setTimeout(resolve, 300));
+  return TAKEN.includes(String(value)) ? "That handle is taken." : null;
+}
+
+export function HandleField() {
+  const handle = signal("");
+  return (
+    <Field.Root
+      name="handle"
+      validationMode="onChange"
+      validationDebounceTime={300}
+      validate={available}
+      class="lu-field"
+    >
+      <Field.Label>Handle</Field.Label>
+      <Field.Control required bind:value={handle} class="lu-input" />
+      <Field.Error />
+      <p>
+        <Field.Validity>
+          {(state) =>
+            state.validating ? "Checking…" : state.validity.valid ? `${handle()} is free.` : ""
+          }
+        </Field.Validity>
+      </p>
+    </Field.Root>
+  );
+}
+```
+
 ## Styling
 
 **With the default theme**, put `lu-field` on `Root` and `lu-input` on the control: the parts
@@ -2518,7 +2602,8 @@ lighter red in dark, to keep 4.5:1), and an invalid control gets a red border.
 
 - the control: `[aria-invalid="true"]` while an error shows, `:user-invalid` (invalid after the
   user interacted), `:invalid`, `:focus-visible`, `:disabled`;
-- the field: `lu-field:has([aria-invalid="true"])`, `lu-field:focus-within`;
+- the field: `lu-field:has([aria-invalid="true"])`, `lu-field:focus-within`, and
+  `lu-field[data-validating]` while an async `validate` runs;
 - the errors: `output` in the field (`[hidden]` while they do not apply).
 
 ```css
@@ -2560,12 +2645,13 @@ reports the first problem in its own bubble, and the form submits when everythin
 errors from a Form render in the HTML, visible and linked with `aria-describedby` and
 `aria-invalid`.
 
-A page that renders a `Field` loads a 1.0 kB (brotli) script once, without the Lumiose runtime;
+A page that renders a `Field` loads a 1.1 kB (brotli) script once, without the Lumiose runtime;
 islands bundle it. It cancels the browser's `invalid` bubble for fields that have an Error part and
 shows the problem there instead (the browser's message, or one your `validate` set), with the
 timing above, focuses the first invalid control on a submit attempt, keeps `aria-invalid` and
 `aria-describedby` current (a description rendered after the control is linked once the script
-runs), and hides server errors once the value changes.
+runs), and hides server errors once the value changes. When an async `validate` settles, Field.Root
+fires `validitychange` (not bubbling) on the control, and the script shows the new verdict.
 
 ## Browser support
 
@@ -5429,21 +5515,22 @@ import "@lumiose/ui/themes/default.css"; // optional: the default theme
 
 ### Switch.Root
 
-| Prop              | Type                         | Default |                                                                     |
-| ----------------- | ---------------------------- | ------- | ------------------------------------------------------------------- |
-| `checked`         | `boolean`                    |         | Turns it on or off when it changes. Pair it with `onCheckedChange`. |
-| `defaultChecked`  | `boolean`                    | `false` | Whether it starts on; a form reset goes back to it.                 |
-| `onCheckedChange` | `(checked: boolean) => void` |         | Called after the user turns it on or off.                           |
-| `bind:checked`    | `Signal<boolean>`            |         | Stands in for `checked` and `onCheckedChange`.                      |
-| `value`           | `string`                     | `"on"`  | What it submits when on.                                            |
-| `readOnly`        | `boolean`                    | `false` | It cannot be toggled, but stays focusable and is submitted.         |
+| Prop              | Type                         | Default |                                                                                     |
+| ----------------- | ---------------------------- | ------- | ----------------------------------------------------------------------------------- |
+| `checked`         | `boolean`                    |         | Turns it on or off when it changes. Pair it with `onCheckedChange`.                 |
+| `defaultChecked`  | `boolean`                    | `false` | Whether it starts on; a form reset goes back to it.                                 |
+| `onCheckedChange` | `(checked: boolean) => void` |         | Called after the user turns it on or off.                                           |
+| `bind:checked`    | `Signal<boolean>`            |         | Stands in for `checked` and `onCheckedChange`.                                      |
+| `value`           | `string`                     | `"on"`  | What it submits when on.                                                            |
+| `readOnly`        | `boolean`                    | `false` | It cannot be toggled, but stays focusable and is submitted.                         |
+| `uncheckedValue`  | `string`                     |         | What it submits when off (by the script); by default an off switch submits nothing. |
 
 Every other native prop passes through: `name`, `required`, `disabled`, `form`, `id`, `class`,
 `aria-*`. Inside a Field it takes the field's wiring.
 
 **Differences from Base UI's Switch.** The switch is the native input, so there is no
-`Switch.Thumb`: draw the track and thumb with `appearance: none` and `::before`. No `nativeButton`,
-`inputRef` or `uncheckedValue` (an off switch submits nothing). `<input switch>` exists only in
+`Switch.Thumb`: draw the track and thumb with `appearance: none` and `::before`. No `nativeButton` or
+`inputRef`; `uncheckedValue` needs the client script (without it an off switch submits nothing). `<input switch>` exists only in
 Safari, so `role="switch"` stays on a checkbox everywhere.
 
 ## Example
@@ -5490,7 +5577,8 @@ Enter does not toggle it. A click on its label does.
 
 A native checkbox with the switch role: toggling, submission, `required`, reset and `disabled`
 work with no script. The shared checkbox script (0.5 kB brotli,
-[Checkbox](checkbox.md#without-javascript-and-the-client-script)) adds read-only.
+[Checkbox](checkbox.md#without-javascript-and-the-client-script)) adds read-only and
+`uncheckedValue`.
 
 ## Browser support
 

@@ -101,7 +101,8 @@ export default function FormPage() {
           <Fieldset.Root class="lu-fieldset">
             <Fieldset.Legend>Preferences</Fieldset.Legend>
             <label>
-              <Switch.Root name="newsletter" defaultChecked class="lu-switch" /> Newsletter
+              <Switch.Root name="newsletter" defaultChecked uncheckedValue="off" class="lu-switch" />{" "}
+              Newsletter
             </label>
             <label>
               <Checkbox.Root name="beta" indeterminate class="lu-checkbox" /> Beta features
@@ -130,7 +131,8 @@ export default function FormPage() {
           <Fieldset.Root disabled class="lu-fieldset">
             <Fieldset.Legend>Disabled group</Fieldset.Legend>
             <label>
-              <Switch.Root name="disabled-switch" class="lu-switch" /> Off for now
+              <Switch.Root name="disabled-switch" uncheckedValue="off" class="lu-switch" /> Off for
+              now
             </label>
           </Fieldset.Root>
         </section>

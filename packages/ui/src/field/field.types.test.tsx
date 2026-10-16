@@ -37,11 +37,22 @@ export function Typed(props: { errors?: Errors }) {
           <Field.Error match="tooShort">Longer, please.</Field.Error>
           <Field.Error match>Always.</Field.Error>
         </Field.Root>
+        <Field.Root
+          name="handle"
+          validationDebounceTime={300}
+          validate={async (value) => (value === "admin" ? "Taken." : null)}
+        >
+          <Field.Control />
+          <Field.Validity>
+            {(state) => (state.validating ? "…" : String(state.validity.valid ?? state.error))}
+          </Field.Validity>
+        </Field.Root>
         <Input value={text()} onValueChange={(next: string) => text.set(next)} type="search" />
         <Fieldset.Root disabled>
           <Fieldset.Legend>Options</Fieldset.Legend>
           <Checkbox.Root bind:checked={on} indeterminate readOnly value="x" />
-          <Switch.Root bind:checked={on} name="wifi" />
+          <Switch.Root bind:checked={on} name="wifi" uncheckedValue="off" />
+          <Checkbox.Root name="terms" uncheckedValue="no" />
         </Fieldset.Root>
         <CheckboxGroup bind:value={many} allValues={["a", "b"]} name="letters">
           <Checkbox.Root parent />
@@ -63,6 +74,8 @@ export function Typed(props: { errors?: Errors }) {
       <Field.Error match="tooLoud" />
       {/* @ts-expect-error: validationMode is one of Base UI's */}
       <Field.Root validationMode="onType" />
+      {/* @ts-expect-error: Validity's child is a function of the state */}
+      <Field.Validity>Valid</Field.Validity>
       {/* @ts-expect-error: a switch's role is its own */}
       <Switch.Root role="checkbox" />
     </>

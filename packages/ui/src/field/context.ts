@@ -16,6 +16,23 @@ export interface FormContextValue {
 
 export const FormContext = createContext<FormContextValue>();
 
+/** The field's validity, for `Field.Validity`: the control's, from its last check. */
+export interface FieldValidityState {
+  /**
+   * The control's `ValidityState`, with `valid` `null` until the field is first checked (an edit,
+   * a blur or a submit attempt), or `false` from a server error.
+   */
+  validity: { [K in keyof ValidityState]: K extends "valid" ? boolean | null : boolean };
+  /** The first problem's message (the browser's, `validate`'s or the server's); `""` when none. */
+  error: string;
+  /** Every message: the server's, or the one above. */
+  errors: string[];
+  /** The control's value, `checked` for a checkbox or switch; `null` until the first check. */
+  value: string | boolean | null;
+  /** An async `validate` is running. */
+  validating: boolean;
+}
+
 export interface FieldContextValue {
   /** The `lu-field`'s id; the parts' ids derive from it. */
   id: string;
@@ -27,6 +44,8 @@ export interface FieldContextValue {
   messages: () => string[];
   /** How many Description parts are rendered. */
   descriptions: Signal<number>;
+  /** The control's validity from its last check, in the browser (`Field.Validity`). */
+  validity: () => FieldValidityState;
 }
 
 export const FieldContext = createContext<FieldContextValue>();

@@ -20,6 +20,7 @@ import { EditProfile } from "./dialog-2.tsx";
 import { FiltersSheet } from "./drawer-1.tsx";
 import { NavigationDrawer } from "./drawer-2.tsx";
 import { EmailField } from "./field-1.tsx";
+import { HandleField } from "./field-3.tsx";
 import { AddressFields } from "./fieldset-1.tsx";
 import { SignupForm } from "./form-1.tsx";
 import { BookSearch } from "./input-1.tsx";
@@ -97,6 +98,8 @@ export function UiDemo(props: { id: string }) {
       return <NavigationDrawer client:visible />;
     case "field-1":
       return <EmailField />;
+    case "field-3":
+      return <HandleField client:visible />;
     case "fieldset-1":
       return <AddressFields />;
     case "form-1":

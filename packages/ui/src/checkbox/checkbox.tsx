@@ -47,6 +47,11 @@ export type CheckboxRootProps = InputProps & {
   parent?: boolean;
   /** It cannot be toggled, but stays focusable and is submitted (`aria-readonly`). */
   readOnly?: boolean;
+  /**
+   * The value it submits when unchecked; by default an unchecked checkbox submits nothing. Needs
+   * the client script (`data-unchecked-value`).
+   */
+  uncheckedValue?: string;
 };
 
 function Root({
@@ -57,6 +62,7 @@ function Root({
   value,
   parent,
   readOnly,
+  uncheckedValue,
   ...rest
 }: CheckboxRootProps) {
   // Indeterminate in server HTML, parent checkboxes and read-only; the page loads it once.
@@ -101,6 +107,7 @@ function Root({
       data-indeterminate={isServer && isMixed() ? "" : undefined}
       data-parent={parent ? "" : undefined}
       aria-readonly={readOnly ? "true" : undefined}
+      data-unchecked-value={uncheckedValue}
       on:change={(event: Event) =>
         onCheckedChange?.((event.currentTarget as HTMLInputElement).checked)
       }

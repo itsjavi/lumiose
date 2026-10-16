@@ -23,21 +23,22 @@ import "@lumiose/ui/themes/default.css"; // optional: the default theme
 
 ### Switch.Root
 
-| Prop              | Type                         | Default |                                                                     |
-| ----------------- | ---------------------------- | ------- | ------------------------------------------------------------------- |
-| `checked`         | `boolean`                    |         | Turns it on or off when it changes. Pair it with `onCheckedChange`. |
-| `defaultChecked`  | `boolean`                    | `false` | Whether it starts on; a form reset goes back to it.                 |
-| `onCheckedChange` | `(checked: boolean) => void` |         | Called after the user turns it on or off.                           |
-| `bind:checked`    | `Signal<boolean>`            |         | Stands in for `checked` and `onCheckedChange`.                      |
-| `value`           | `string`                     | `"on"`  | What it submits when on.                                            |
-| `readOnly`        | `boolean`                    | `false` | It cannot be toggled, but stays focusable and is submitted.         |
+| Prop              | Type                         | Default |                                                                                     |
+| ----------------- | ---------------------------- | ------- | ----------------------------------------------------------------------------------- |
+| `checked`         | `boolean`                    |         | Turns it on or off when it changes. Pair it with `onCheckedChange`.                 |
+| `defaultChecked`  | `boolean`                    | `false` | Whether it starts on; a form reset goes back to it.                                 |
+| `onCheckedChange` | `(checked: boolean) => void` |         | Called after the user turns it on or off.                                           |
+| `bind:checked`    | `Signal<boolean>`            |         | Stands in for `checked` and `onCheckedChange`.                                      |
+| `value`           | `string`                     | `"on"`  | What it submits when on.                                                            |
+| `readOnly`        | `boolean`                    | `false` | It cannot be toggled, but stays focusable and is submitted.                         |
+| `uncheckedValue`  | `string`                     |         | What it submits when off (by the script); by default an off switch submits nothing. |
 
 Every other native prop passes through: `name`, `required`, `disabled`, `form`, `id`, `class`,
 `aria-*`. Inside a Field it takes the field's wiring.
 
 **Differences from Base UI's Switch.** The switch is the native input, so there is no
-`Switch.Thumb`: draw the track and thumb with `appearance: none` and `::before`. No `nativeButton`,
-`inputRef` or `uncheckedValue` (an off switch submits nothing). `<input switch>` exists only in
+`Switch.Thumb`: draw the track and thumb with `appearance: none` and `::before`. No `nativeButton` or
+`inputRef`; `uncheckedValue` needs the client script (without it an off switch submits nothing). `<input switch>` exists only in
 Safari, so `role="switch"` stays on a checkbox everywhere.
 
 ## Example
@@ -84,7 +85,8 @@ Enter does not toggle it. A click on its label does.
 
 A native checkbox with the switch role: toggling, submission, `required`, reset and `disabled`
 work with no script. The shared checkbox script (0.5 kB brotli,
-[Checkbox](checkbox.md#without-javascript-and-the-client-script)) adds read-only.
+[Checkbox](checkbox.md#without-javascript-and-the-client-script)) adds read-only and
+`uncheckedValue`.
 
 ## Browser support
 

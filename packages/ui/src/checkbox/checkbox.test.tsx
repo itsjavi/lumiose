@@ -37,6 +37,18 @@ describe("Checkbox and Switch on the server", () => {
     expect(locked).toMatchObject({ checked: "", "aria-readonly": "true" });
   });
 
+  it("writes uncheckedValue for the script, on a checkbox and a switch", async () => {
+    const html = await renderToString(() => (
+      <>
+        <Checkbox.Root name="terms" uncheckedValue="no" />
+        <Switch.Root name="wifi" uncheckedValue="off" />
+      </>
+    ));
+    const [terms, wifi] = inputs(html);
+    expect(terms).toMatchObject({ name: "terms", "data-unchecked-value": "no" });
+    expect(wifi).toMatchObject({ name: "wifi", role: "switch", "data-unchecked-value": "off" });
+  });
+
   it("renders a switch as a checkbox with the switch role", async () => {
     const html = await renderToString(() => <Switch.Root name="wifi" defaultChecked readOnly />);
     expect(attrs(html, "input")).toEqual({

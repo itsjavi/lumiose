@@ -40,8 +40,11 @@ Every other `<fieldset>` prop passes through.
 
 **Differences from Base UI's CheckboxGroup.** It renders a `<fieldset>`, so a legend names it and
 `disabled` is native. `name` is added: Base UI gives each checkbox its own. A parent checkbox
-needs only `parent` here, not a controlled group, since the script runs it from the DOM. A
-`required` group (one checked at least) is not offered yet.
+needs only `parent` here, not a controlled group, since the script runs it from the DOM. There is
+no `required` (one box checked at least), as in Base UI: HTML has no such constraint for a group,
+so it would work only with a script and an unlocalized message of ours. Check it in the form
+action instead and return the message with `fail()`: it renders with the page, without JavaScript
+too.
 
 ## Example
 
@@ -92,7 +95,7 @@ unchecked).
 
 The checkboxes are native: they toggle, submit under the group's name and reset with no script.
 The parent checkbox shows its server state and is never submitted, but checks nothing until the
-shared checkbox script (0.5 kB brotli, [Checkbox](checkbox.md#without-javascript-and-the-client-script))
+shared checkbox script (0.6 kB brotli, [Checkbox](checkbox.md#without-javascript-and-the-client-script))
 runs.
 
 ## Browser support

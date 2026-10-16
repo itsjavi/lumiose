@@ -25,6 +25,24 @@ function Email(props: { errors?: object; invalid?: boolean }) {
   );
 }
 
+function Checked(props: { errors?: object }) {
+  return (
+    <Form method="post" errors={props.errors}>
+      <Field.Root name="email">
+        <Field.Control type="email" />
+        <Field.Validity>
+          {(state) => (
+            <p>
+              valid: {String(state.validity.valid)}, error: {state.error || "none"}, errors:{" "}
+              {state.errors.length}
+            </p>
+          )}
+        </Field.Validity>
+      </Field.Root>
+    </Form>
+  );
+}
+
 describe("Field on the server", () => {
   it("wires the label to the control, names it, and keeps the errors hidden", async () => {
     const html = await renderToString(() => <Email />);
@@ -61,6 +79,18 @@ describe("Field on the server", () => {
     // A message for another field changes nothing here.
     const other = await renderToString(() => <Email errors={{ name: ["Required."] }} />);
     expect(attrs(other, "input")).not.toHaveProperty("aria-invalid");
+  });
+
+  it("renders Field.Validity unchecked, or with the server's error", async () => {
+    expect(await renderToString(() => <Checked />)).toMatch(
+      /valid: (<!--[^>]*-->)?null(<!--[^>]*-->)?, error: (<!--[^>]*-->)?none/,
+    );
+    const html = await renderToString(() => (
+      <Checked errors={{ email: ["Taken.", "Too long."] }} />
+    ));
+    expect(html.replace(/<!--[^>]*-->/g, "")).toContain(
+      "valid: false, error: Taken. Too long., errors: 2",
+    );
   });
 
   it("takes `invalid` like a server error, and several messages", async () => {

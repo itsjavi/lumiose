@@ -10,6 +10,9 @@
 //   `name`, so it is never submitted.
 // - Read-only (`aria-readonly="true"` on the input, or on a radio group): a click, Space or an arrow
 //   key does not change it. Native `readonly` does not apply to checkboxes and radios.
+// - `data-unchecked-value` (a Checkbox's or Switch's `uncheckedValue`): an unchecked, enabled box
+//   with a name submits that value, appended to the form's data (the `formdata` event), so it
+//   comes after the form's other values. Without the script it submits nothing, as natively.
 //
 // It must not import `lumiose`: server-rendered pages load it without the runtime.
 
@@ -65,6 +68,27 @@ document.addEventListener(
     }
     // Before the group's own `change` listener, which reads the checkboxes.
     follow(group);
+  },
+  true,
+);
+
+// `formdata` does not bubble: a capturing listener sees it.
+document.addEventListener(
+  "formdata",
+  (event) => {
+    const form = event.target as HTMLFormElement;
+    for (const input of form.elements) {
+      if (
+        input instanceof HTMLInputElement &&
+        input.type === "checkbox" &&
+        input.hasAttribute("data-unchecked-value") &&
+        input.name &&
+        !input.checked &&
+        !input.matches(":disabled")
+      ) {
+        event.formData.append(input.name, input.getAttribute("data-unchecked-value")!);
+      }
+    }
   },
   true,
 );
