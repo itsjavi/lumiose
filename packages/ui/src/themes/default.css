@@ -19,7 +19,8 @@
  *                                       footer, a 4px gap to the trigger
  *   .lu-tooltip                         a Tooltip.Popup: inverted colours, a 6px gap
  *   .lu-tabs                            a Tabs.Root: the list, its tabs (the selected one
- *                                       underlined) and the panels
+ *                                       underlined, by a sliding Tabs.Indicator when there is one)
+ *                                       and the panels
  *   .lu-menu                            a Menu.Popup (submenus too): surface, items, checkbox
  *                                       and radio marks, separators, group labels
  *   .lu-combobox                        a Combobox.Root: the field (label, chips, input, trigger
@@ -335,6 +336,30 @@
   .lu-tabs [aria-orientation="vertical"] [role="tab"][aria-selected="true"] {
     border-inline-end-color: var(--lu-foreground);
     box-shadow: none;
+  }
+  /*
+   * A Tabs.Indicator (TASK-395) draws the same bar over the selected tab's from the server HTML
+   * on; once the script runs, the tab's own bar goes and the indicator slides to the next tab.
+   */
+  .lu-tabs [data-indicator] {
+    border-block-end: 2px solid var(--lu-foreground);
+  }
+  .lu-tabs [aria-orientation="vertical"] > [data-indicator] {
+    border-block-end: 0;
+    border-inline-end: 2px solid var(--lu-foreground);
+  }
+  .lu-tabs:defined [role="tablist"]:has(> [data-indicator]) [role="tab"][aria-selected="true"] {
+    border-inline-end-color: transparent;
+    box-shadow: none;
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .lu-tabs [data-indicator] {
+      transition:
+        left 0.2s ease,
+        top 0.2s ease,
+        width 0.2s ease,
+        height 0.2s ease;
+    }
   }
   /* Dimmed by its text, not `opacity`, which would dim its focus ring too (disabled tabs take focus). */
   .lu-tabs [role="tab"][aria-disabled="true"] {

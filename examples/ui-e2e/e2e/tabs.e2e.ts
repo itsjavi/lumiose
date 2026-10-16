@@ -191,6 +191,134 @@ test.describe("in an island", () => {
   });
 });
 
+/**
+ * How far the indicator's box is from the selected tab's: left, top, width and height, in whole
+ * pixels. `[0, 0, 0, 0]` when it covers the tab.
+ */
+async function offset(scope: Locator) {
+  return scope.evaluate((el) => {
+    const box = (selector: string) => el.querySelector(selector)!.getBoundingClientRect();
+    const indicator = box("[data-indicator]");
+    const selected = box('[role="tab"][aria-selected="true"]');
+    return [
+      indicator.left - selected.left,
+      indicator.top - selected.top,
+      indicator.width - selected.width,
+      indicator.height - selected.height,
+    ].map((each) => Math.round(each) || 0);
+  });
+}
+
+/** Waits until the indicator covers the selected tab: it slides there in 0.2s. */
+const covers = (scope: Locator) => expect.poll(() => offset(scope)).toEqual([0, 0, 0, 0]);
+
+test.describe("Tabs.Indicator (TASK-395, doc-9 section 8)", () => {
+  test.describe("without JavaScript", () => {
+    test.use({ javaScriptEnabled: false });
+
+    test("CSS anchor positioning puts it on the selected tab from the server HTML", async ({
+      page,
+    }) => {
+      await page.goto("/tabs");
+      for (const id of ["indicator", "indicator-vertical"]) {
+        expect(await offset(root(page, id))).toEqual([0, 0, 0, 0]);
+      }
+      const bar = await root(page, "indicator")
+        .locator("[data-indicator]")
+        .evaluate((el) => getComputedStyle(el).borderBottomWidth);
+      expect(bar).toBe("2px");
+    });
+  });
+
+  test("it is in place on load: no layout shift when the script takes over", async ({ page }) => {
+    await page.addInitScript(() => {
+      const shifts: number[] = [];
+      Object.assign(window, { shifts });
+      new PerformanceObserver((list) => {
+        for (const entry of list.getEntries() as unknown as {
+          value: number;
+          sources: { node?: Node }[];
+        }[]) {
+          if (
+            entry.sources.some((source) => (source.node as Element)?.matches?.("[data-indicator]"))
+          )
+            shifts.push(entry.value);
+        }
+      }).observe({ type: "layout-shift", buffered: true });
+    });
+    await page.goto("/tabs");
+    const scope = root(page, "indicator");
+    await expect(scope).toHaveJSProperty("value", "changelog");
+    await expect(scope).toHaveCSS("--lu-tabs-indicator-width", /px$/);
+    expect(await offset(scope)).toEqual([0, 0, 0, 0]);
+    // The tab's own bar gives way to the indicator once the script runs.
+    await expect(tab(scope, "Full changelog")).toHaveCSS("box-shadow", "none");
+    await page.evaluate(() => new Promise(requestAnimationFrame));
+    expect(await page.evaluate(() => (window as unknown as { shifts: number[] }).shifts)).toEqual(
+      [],
+    );
+  });
+
+  test("it follows a click, the keys and a resize, in both orientations", async ({ page }) => {
+    await page.goto("/tabs");
+    const scope = root(page, "indicator");
+    await expect(scope).toHaveJSProperty("value", "changelog");
+    await tab(scope, "Docs").click();
+    await covers(scope);
+    await page.keyboard.press("ArrowLeft");
+    await page.keyboard.press("ArrowLeft");
+    await page.keyboard.press("Enter");
+    await expect(tab(scope, "Notes")).toHaveAttribute("aria-selected", "true");
+    await covers(scope);
+    await tab(scope, "Notes").evaluate((el) => (el.textContent = "Release notes"));
+    await covers(scope);
+    const vertical = root(page, "indicator-vertical");
+    await tab(vertical, "Step one").click();
+    await covers(vertical);
+    const side = await vertical
+      .locator("[data-indicator]")
+      .evaluate((el) => [
+        getComputedStyle(el).borderRightWidth,
+        getComputedStyle(el).borderBottomWidth,
+      ]);
+    expect(side).toEqual(["2px", "0px"]);
+  });
+
+  test("it follows a selection an island renders", async ({ page }) => {
+    await page.goto("/tabs/island");
+    const island = page.locator("lu-tabs");
+    await expect(page.getByTestId("tab-state")).toHaveText("tab: overview");
+    await covers(island);
+    await page.getByTestId("show-settings").click();
+    await expect(tab(island, "Settings")).toHaveAttribute("aria-selected", "true");
+    await covers(island);
+  });
+
+  test("right to left, the tabs and the indicator mirror", async ({ page }) => {
+    await page.goto("/tabs");
+    const scope = root(page, "indicator");
+    await expect(scope).toHaveJSProperty("value", "changelog");
+    await page.evaluate(() => (document.documentElement.dir = "rtl"));
+    // The tabs move: the indicator follows them.
+    await covers(scope);
+    await tab(scope, "Notes").click();
+    await covers(scope);
+    const notes = (await tab(scope, "Notes").boundingBox())!;
+    const docs = (await tab(scope, "Docs").boundingBox())!;
+    expect(notes.x).toBeGreaterThan(docs.x);
+    const vertical = root(page, "indicator-vertical");
+    await tab(vertical, "Step one").click();
+    await covers(vertical);
+    const side = await vertical
+      .locator("[data-indicator]")
+      .evaluate((el) => [
+        getComputedStyle(el).borderLeftWidth,
+        getComputedStyle(el).borderRightWidth,
+      ]);
+    expect(side).toEqual(["2px", "0px"]);
+  });
+});
+
 test("a server-rendered page with tabs loads only the element's script", async ({
   page,
 }, testInfo) => {
@@ -246,7 +374,7 @@ test.describe("WCAG 2.2 AA with the default theme (doc-9 section 17)", () => {
     await page.setViewportSize({ width: 320, height: 640 });
     await page.goto("/tabs");
     await page.addStyleTag({ content: TEXT_SPACING });
-    for (const id of ["manual", "automatic", "vertical"]) {
+    for (const id of ["manual", "automatic", "vertical", "indicator"]) {
       const scope = root(page, id);
       expect(await clipped(scope)).toEqual([]);
       const box = (await scope.boundingBox())!;

@@ -48,6 +48,7 @@ import { PriceRange } from "./slider-1.tsx";
 import { AirplaneMode } from "./switch-1.tsx";
 import { AccountSettings } from "./tabs-1.tsx";
 import { Project } from "./tabs-2.tsx";
+import { Release } from "./tabs-3.tsx";
 import { SaveButton } from "./toast-1.tsx";
 import { UploadButton } from "./toast-2.tsx";
 import { PinToggle } from "./toggle-1.tsx";
@@ -152,6 +153,8 @@ export function UiDemo(props: { id: string }) {
       return <AccountSettings />;
     case "tabs-2":
       return <Project client:visible />;
+    case "tabs-3":
+      return <Release />;
     case "toast-1":
       return <SaveButton client:visible />;
     case "toast-2":

@@ -65,6 +65,35 @@ export default function TabsPage() {
         </Tabs.Root>
       </section>
 
+      <section aria-labelledby="indicator-heading">
+        <h2 id="indicator-heading">With an indicator</h2>
+        <Tabs.Root class="lu-tabs" defaultValue="changelog" data-testid="indicator">
+          <Tabs.List aria-label="Release">
+            <Tabs.Tab value="notes">Notes</Tabs.Tab>
+            <Tabs.Tab value="changelog">Full changelog</Tabs.Tab>
+            <Tabs.Tab value="docs">Docs</Tabs.Tab>
+            <Tabs.Indicator />
+          </Tabs.List>
+          <Tabs.Panel value="notes">The highlights.</Tabs.Panel>
+          <Tabs.Panel value="changelog">Every change.</Tabs.Panel>
+          <Tabs.Panel value="docs">The updated pages.</Tabs.Panel>
+        </Tabs.Root>
+        <Tabs.Root
+          class="lu-tabs vertical"
+          orientation="vertical"
+          defaultValue="two"
+          data-testid="indicator-vertical"
+        >
+          <Tabs.List aria-label="Steps">
+            <Tabs.Tab value="one">Step one</Tabs.Tab>
+            <Tabs.Tab value="two">Step two</Tabs.Tab>
+            <Tabs.Indicator />
+          </Tabs.List>
+          <Tabs.Panel value="one">Plan.</Tabs.Panel>
+          <Tabs.Panel value="two">Build.</Tabs.Panel>
+        </Tabs.Root>
+      </section>
+
       <section aria-labelledby="disabled-heading">
         <h2 id="disabled-heading">Every tab disabled</h2>
         <Tabs.Root class="lu-tabs" data-testid="none">

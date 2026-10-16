@@ -15,6 +15,7 @@ import {
   useId,
   type Signal,
 } from "lumiose";
+import { withStyle } from "../placement/placement.ts";
 import defineTabs from "./tabs.script.ts?client";
 import type { LuTabs } from "./tabs.script.ts";
 
@@ -82,6 +83,13 @@ export type TabsPanelProps = JSX.IntrinsicElements["div"] & {
   value: string;
 };
 
+/**
+ * A `<span aria-hidden="true" data-indicator>` inside `Tabs.List` that covers the selected tab's
+ * box, placed from the server HTML on: style it as an underline or a highlight that slides from
+ * tab to tab.
+ */
+export type TabsIndicatorProps = Omit<JSX.IntrinsicElements["span"], "children">;
+
 interface TabRecord {
   value: string;
   disabled: () => boolean;
@@ -147,6 +155,8 @@ function Root({
       <lu-tabs
         {...rest}
         ref={element}
+        // The anchor the selected tab carries for a Tabs.Indicator (tabs.css).
+        style={withStyle(rest.style, { "--lu-tabs-anchor": `--lu-tabs-${id}` })}
         on:valuechange={() => {
           const next = element()?.value;
           if (next == null) return;
@@ -200,6 +210,13 @@ function Tab({ children, value, disabled, ...rest }: TabsTabProps) {
   );
 }
 
+function Indicator(props: TabsIndicatorProps) {
+  const tabs = useTabs();
+  return (
+    <span {...props} aria-hidden="true" data-indicator="" hidden={tabs.current() === undefined} />
+  );
+}
+
 function Panel({ children, value, ...rest }: TabsPanelProps) {
   const tabs = useTabs();
   return (
@@ -220,7 +237,7 @@ function Panel({ children, value, ...rest }: TabsPanelProps) {
  * Tabs: a tab list and the panel of the selected tab, after the APG tabs pattern. The server HTML
  * holds the whole state; `<lu-tabs>`'s small script adds the arrow keys and the selection.
  * Unstyled: style the parts through `class`, `[aria-selected]`, `[aria-disabled]` and
- * `[aria-orientation]`.
+ * `[aria-orientation]`. An optional `Tabs.Indicator` in the list follows the selected tab.
  *
  * @example
  * <Tabs.Root defaultValue="account">
@@ -232,4 +249,4 @@ function Panel({ children, value, ...rest }: TabsPanelProps) {
  *   <Tabs.Panel value="password">…</Tabs.Panel>
  * </Tabs.Root>
  */
-export const Tabs = { Root, List, Tab, Panel };
+export const Tabs = { Root, List, Tab, Indicator, Panel };

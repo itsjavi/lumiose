@@ -12,12 +12,25 @@
 //   gives its selection to the first enabled tab, and with every tab disabled none is selected.
 // - `value` reads and sets the selection; a change by the user fires `valuechange` (not
 //   bubbling), so `bind:value` works on the element too.
+// - With a `[data-indicator]` in the list (Tabs.Indicator, TASK-395): the selected tab's box, from
+//   the list's padding edge, as `--lu-tabs-indicator-left`, `-top`, `-width` and `-height` on the
+//   element, kept current as the selection changes (by this script or by an island re-rendering
+//   `aria-selected`), as the list or a tab resizes, and as a `dir` attribute changes in the page. CSS anchor positioning (tabs.css) places the
+//   indicator before this script runs; the variables take over then, so a theme can transition
+//   them, and they place it where anchor positioning is missing.
 //
 // It must not import `lumiose`: server-rendered pages load it without the runtime.
 
 const enabled = (tab: HTMLElement) => tab.getAttribute("aria-disabled") !== "true";
 
 export class LuTabs extends HTMLElement {
+  /** The elements with an indicator, and one observer of `dir` for them all: it moves the tabs. */
+  static #measured = new Set<LuTabs>();
+  static #direction: MutationObserver | undefined;
+
+  #resize: ResizeObserver | undefined;
+  #mutation: MutationObserver | undefined;
+
   /** Its own tab list: nested tabs belong to their own element. */
   get list(): HTMLElement | null {
     for (const list of this.querySelectorAll<HTMLElement>("[role=tablist]")) {
@@ -62,12 +75,75 @@ export class LuTabs extends HTMLElement {
     this.removeEventListener("keydown", this.#onKeyDown);
     this.removeEventListener("click", this.#onClick);
     this.removeEventListener("focusin", this.#onFocusIn);
+    this.#resize?.disconnect();
+    this.#mutation?.disconnect();
+    this.#resize = this.#mutation = undefined;
+    LuTabs.#measured.delete(this);
+    if (LuTabs.#measured.size === 0) {
+      LuTabs.#direction?.disconnect();
+      LuTabs.#direction = undefined;
+    }
   }
 
   #settle() {
     const tabs = this.tabs;
     const selected = tabs.find((tab) => tab.getAttribute("aria-selected") === "true");
     if (!selected || !enabled(selected)) this.#select(tabs.find(enabled), true);
+    const list = this.list;
+    if (list && this.#indicator() && !this.#resize) {
+      // The tabs' sizes change with fonts, text and the viewport, and an island may select a tab
+      // or add one by rendering: the indicator follows.
+      const resize = new ResizeObserver(() => this.#measure());
+      const observe = () => {
+        resize.observe(list);
+        for (const tab of this.tabs) resize.observe(tab);
+      };
+      observe();
+      this.#resize = resize;
+      this.#mutation = new MutationObserver(() => {
+        observe();
+        this.#measure();
+      });
+      this.#mutation.observe(list, {
+        subtree: true,
+        childList: true,
+        attributeFilter: ["aria-selected"],
+      });
+      LuTabs.#measured.add(this);
+      if (!LuTabs.#direction) {
+        LuTabs.#direction = new MutationObserver(() => {
+          for (const each of LuTabs.#measured) each.#measure();
+        });
+        LuTabs.#direction.observe(document.documentElement, {
+          subtree: true,
+          attributeFilter: ["dir"],
+        });
+      }
+    }
+    this.#measure();
+  }
+
+  #indicator(): HTMLElement | null {
+    const indicator = this.list?.querySelector<HTMLElement>(":scope > [data-indicator]");
+    return indicator ?? null;
+  }
+
+  /** Writes the selected tab's box, from the list's padding edge, for the indicator. */
+  #measure() {
+    const list = this.list;
+    const indicator = this.#indicator();
+    if (!list || !indicator) return;
+    const tab = this.tabs.find((each) => each.getAttribute("aria-selected") === "true");
+    indicator.hidden = !tab;
+    if (!tab) return;
+    const outer = list.getBoundingClientRect();
+    const inner = tab.getBoundingClientRect();
+    const left = inner.left - outer.left - list.clientLeft + list.scrollLeft;
+    const top = inner.top - outer.top - list.clientTop + list.scrollTop;
+    this.style.setProperty("--lu-tabs-indicator-left", `${left}px`);
+    this.style.setProperty("--lu-tabs-indicator-top", `${top}px`);
+    this.style.setProperty("--lu-tabs-indicator-width", `${inner.width}px`);
+    this.style.setProperty("--lu-tabs-indicator-height", `${inner.height}px`);
   }
 
   /** Selects `tab` (nothing when it is missing or disabled), and reports a change if asked. */
@@ -82,6 +158,7 @@ export class LuTabs extends HTMLElement {
       const panel = document.getElementById(each.getAttribute("aria-controls") ?? "");
       if (panel) panel.hidden = !on;
     }
+    this.#measure();
     if (report && this.value !== before) this.dispatchEvent(new Event("valuechange"));
   }
 

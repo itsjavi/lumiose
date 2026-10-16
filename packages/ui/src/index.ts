@@ -26,7 +26,13 @@ export type {
 } from "./tooltip/tooltip.tsx";
 export type { Align, PlacementProps, Side } from "./placement/placement.ts";
 export { Tabs } from "./tabs/tabs.tsx";
-export type { TabsListProps, TabsPanelProps, TabsRootProps, TabsTabProps } from "./tabs/tabs.tsx";
+export type {
+  TabsIndicatorProps,
+  TabsListProps,
+  TabsPanelProps,
+  TabsRootProps,
+  TabsTabProps,
+} from "./tabs/tabs.tsx";
 export { Menu } from "./menu/menu.tsx";
 export type {
   MenuCheckboxItemProps,

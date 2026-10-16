@@ -12,7 +12,9 @@ afterEach(() => {
   document.body.innerHTML = "";
 });
 
-function mount(options: { list?: string; selected?: string; disabled?: string[] } = {}): LuTabs {
+function mount(
+  options: { list?: string; selected?: string; disabled?: string[]; indicator?: boolean } = {},
+): LuTabs {
   const values = ["a", "b", "c"];
   const selected = options.selected ?? "a";
   document.body.innerHTML = `<lu-tabs><div role="tablist" ${options.list ?? ""}>${values
@@ -20,7 +22,9 @@ function mount(options: { list?: string; selected?: string; disabled?: string[] 
       (v) =>
         `<button role="tab" value="${v}" id="t-${v}" aria-controls="p-${v}" aria-selected="${v === selected}" tabindex="${v === selected ? 0 : -1}"${options.disabled?.includes(v) ? ' aria-disabled="true"' : ""}>${v}</button>`,
     )
-    .join("")}</div>${values
+    .join(
+      "",
+    )}${options.indicator ? "<span aria-hidden=true data-indicator></span>" : ""}</div>${values
     .map((v) => `<div role="tabpanel" id="p-${v}"${v === selected ? "" : " hidden"}>${v}</div>`)
     .join("")}</lu-tabs>`;
   return document.querySelector("lu-tabs") as LuTabs;
@@ -92,4 +96,34 @@ it("gives a disabled selected tab's place to the first enabled tab", async () =>
   const tabs = mount({ selected: "a", disabled: ["a"] });
   await Promise.resolve();
   expect(tabs.value).toBe("b");
+});
+
+const box = (left: number, top: number, width: number, height: number) =>
+  ({ left, top, width, height, right: left + width, bottom: top + height }) as DOMRect;
+
+it("writes the selected tab's box for an indicator, on load and on selection", async () => {
+  const tabs = mount({ selected: "a", indicator: true });
+  const list = tabs.querySelector<HTMLElement>("[role=tablist]")!;
+  list.getBoundingClientRect = () => box(10, 20, 300, 40);
+  tab("a").getBoundingClientRect = () => box(10, 20, 80, 36);
+  tab("b").getBoundingClientRect = () => box(90, 20, 100, 36);
+  await Promise.resolve();
+  const at = (name: string) => tabs.style.getPropertyValue(`--lu-tabs-indicator-${name}`);
+  expect([at("left"), at("top"), at("width"), at("height")]).toEqual([
+    "0px",
+    "0px",
+    "80px",
+    "36px",
+  ]);
+  tab("b").click();
+  expect([at("left"), at("width")]).toEqual(["80px", "100px"]);
+  tabs.value = "a";
+  expect(at("left")).toBe("0px");
+});
+
+it("leaves the element's style alone without an indicator", async () => {
+  const tabs = mount();
+  await Promise.resolve();
+  tab("b").click();
+  expect(tabs.style.getPropertyValue("--lu-tabs-indicator-left")).toBe("");
 });

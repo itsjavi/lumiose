@@ -1,11 +1,54 @@
 /*
  * Tabs need almost no CSS: `hidden` hides the other panels. `<lu-tabs>`, a custom element, is
  * inline until styled: it is a block, like the `<div>` it stands for.
+ *
+ * Tabs.Indicator (TASK-395) covers the selected tab's box. CSS anchor positioning places it from
+ * the server HTML on (the selected tab is the anchor `--lu-tabs-anchor` names), with no script and
+ * no shift on load; once the script runs, its `--lu-tabs-indicator-*` variables take over (a theme
+ * may transition them), and they place it where anchor positioning is missing. It lies behind the
+ * tabs' text (the list isolates it), so a highlight does not cover the text, and contrast checkers
+ * see the tab on top.
  */
 @layer lu.core, lu.theme;
 
 @layer lu.core {
   lu-tabs {
     display: block;
+  }
+  lu-tabs [role="tablist"]:has(> [data-indicator]) {
+    position: relative;
+    isolation: isolate;
+  }
+  /* Positioned, so axe's stacking order puts the tabs over the indicator too, as browsers do. */
+  lu-tabs [role="tablist"]:has(> [data-indicator]) > [role="tab"] {
+    position: relative;
+  }
+  lu-tabs [data-indicator] {
+    position: absolute;
+    box-sizing: border-box;
+    z-index: -1;
+    pointer-events: none;
+    left: var(--lu-tabs-indicator-left);
+    top: var(--lu-tabs-indicator-top);
+    width: var(--lu-tabs-indicator-width);
+    height: var(--lu-tabs-indicator-height);
+  }
+  /* No anchor positioning and no script yet: nothing places it. */
+  @supports not (anchor-name: --a) {
+    lu-tabs:not(:defined) [data-indicator] {
+      visibility: hidden;
+    }
+  }
+  @supports (anchor-name: --a) {
+    lu-tabs [role="tab"][aria-selected="true"] {
+      anchor-name: var(--lu-tabs-anchor);
+    }
+    lu-tabs [data-indicator] {
+      position-anchor: var(--lu-tabs-anchor);
+      left: var(--lu-tabs-indicator-left, anchor(left));
+      top: var(--lu-tabs-indicator-top, anchor(top));
+      width: var(--lu-tabs-indicator-width, anchor-size(width));
+      height: var(--lu-tabs-indicator-height, anchor-size(height));
+    }
   }
 }

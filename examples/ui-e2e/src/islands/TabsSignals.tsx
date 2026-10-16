@@ -1,7 +1,7 @@
 import { Tabs } from "@lumiose/ui";
 import { signal } from "lumiose";
 
-/** Tabs bound to a signal with bind:value (decision-62, TASK-360). */
+/** Tabs bound to a signal with bind:value (decision-62, TASK-360), with an indicator (TASK-395). */
 export function TabsSignals() {
   const tab = signal("overview");
   const locked = signal(false);
@@ -14,6 +14,7 @@ export function TabsSignals() {
             Activity
           </Tabs.Tab>
           <Tabs.Tab value="settings">Settings</Tabs.Tab>
+          <Tabs.Indicator />
         </Tabs.List>
         <Tabs.Panel value="overview">The project at a glance.</Tabs.Panel>
         <Tabs.Panel value="activity">What happened lately.</Tabs.Panel>

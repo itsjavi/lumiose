@@ -80,6 +80,42 @@ describe("Tabs on the server", () => {
     });
   });
 
+  it("renders an Indicator in the list and the anchor the selected tab carries", async () => {
+    const html = await renderToString(() => (
+      <Tabs.Root class="tabs" style={{ color: "red" }}>
+        <Tabs.List>
+          <Tabs.Tab value="a">A</Tabs.Tab>
+          <Tabs.Indicator class="bar" />
+        </Tabs.List>
+        <Tabs.Panel value="a">A</Tabs.Panel>
+      </Tabs.Root>
+    ));
+    expect(attrs(html, "span")).toMatchObject({
+      class: "bar",
+      "aria-hidden": "true",
+      "data-indicator": "",
+    });
+    expect(attrs(html, "span")).not.toHaveProperty("hidden");
+    expect(html).toMatch(/<div role="?tablist"?[^>]*>.*<span[^>]*data-indicator/);
+    const style = attrs(html, "lu-tabs").style!;
+    expect(style).toMatch(/--lu-tabs-anchor: ?--lu-tabs-[\w-]+/);
+    expect(style).toMatch(/color: ?red/);
+  });
+
+  it("hides the Indicator while no tab can be selected", async () => {
+    const html = await renderToString(() => (
+      <Tabs.Root>
+        <Tabs.List>
+          <Tabs.Tab value="a" disabled>
+            A
+          </Tabs.Tab>
+          <Tabs.Indicator />
+        </Tabs.List>
+      </Tabs.Root>
+    ));
+    expect(attrs(html, "span")).toHaveProperty("hidden");
+  });
+
   it("throws when a part is outside Tabs.Root", async () => {
     await expect(renderToString(() => <Tabs.Tab value="a">A</Tabs.Tab>)).rejects.toThrow(
       "Tabs parts must be inside <Tabs.Root>.",
