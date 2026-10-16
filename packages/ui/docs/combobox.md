@@ -281,6 +281,9 @@ Focus stays in the input; the active option is `aria-activedescendant`.
 | Escape               | Closes the popup without choosing and puts the selection's label back. Closed, it goes on to the page, so a dialog closes.                                                                          |
 | Tab                  | Closes the popup without choosing and moves on.                                                                                                                                                     |
 | Backspace            | With `multiple`, in an empty input: removes the last value.                                                                                                                                         |
+| Arrow Left           | With `multiple`, at the start of the input: moves to the last chip (Arrow Right right to left).                                                                                                     |
+| Arrow Left, Right    | On a chip: the previous or next chip; past the last, back to the input.                                                                                                                             |
+| Backspace, Delete    | On a chip: removes its value; focus goes to the chip before it, else the one in its place, else the input.                                                                                          |
 | Home, End            | Move the text cursor, as in any text field.                                                                                                                                                         |
 
 - **Choosing** an option puts its label in the input and closes the popup, or, with `multiple`,

@@ -300,6 +300,49 @@ test.describe("multiple values", () => {
     await expect(chips.getByRole("listitem")).toHaveCount(0);
     await expect(input).toBeFocused();
   });
+
+  test("the arrows reach the chips from the input; Backspace and Delete remove one (TASK-461)", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1280, height: 1000 });
+    await page.goto("/combobox");
+    await city(page);
+    const input = page.getByRole("combobox", { name: "Tags" });
+    const list = page.getByRole("listbox", { name: "Tags" });
+    const chips = page.locator("lu-combobox[name=tags] [role=list]");
+    const chip = (name: string) => chips.getByRole("listitem").filter({ hasText: name });
+    await input.click();
+    for (const tag of ["bug", "docs", "performance"]) {
+      await list.getByRole("option", { name: tag }).click();
+    }
+    await expect(chips.getByRole("listitem")).toHaveText([/^ui/, /^bug/, /^docs/, /^performance/]);
+    await page.keyboard.press("Escape");
+    // Text in the input: Left moves its caret until its start, then into the last chip.
+    await input.pressSequentially("ab");
+    await page.keyboard.press("ArrowLeft");
+    await page.keyboard.press("ArrowLeft");
+    await expect(input).toBeFocused();
+    await page.keyboard.press("ArrowLeft");
+    await expect(chip("performance")).toBeFocused();
+    await page.keyboard.press("ArrowLeft");
+    await expect(chip("docs")).toBeFocused();
+    await page.keyboard.press("ArrowRight");
+    await page.keyboard.press("ArrowRight");
+    await expect(input).toBeFocused();
+    // Backspace on a chip removes it; the chip before it takes focus.
+    await page.keyboard.press("ArrowLeft");
+    await page.keyboard.press("ArrowLeft");
+    await expect(chip("docs")).toBeFocused();
+    await page.keyboard.press("Backspace");
+    await expect(chips.getByRole("listitem")).toHaveText([/^ui/, /^bug/, /^performance/]);
+    await expect(chip("bug")).toBeFocused();
+    // Delete on the first chip: the one in its place takes focus.
+    await page.keyboard.press("ArrowLeft");
+    await expect(chip("ui")).toBeFocused();
+    await page.keyboard.press("Delete");
+    await expect(chips.getByRole("listitem")).toHaveText([/^bug/, /^performance/]);
+    await expect(chip("bug")).toBeFocused();
+  });
 });
 
 test.describe("forms", () => {
