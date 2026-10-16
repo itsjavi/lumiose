@@ -5,6 +5,12 @@
  * see-through. With two thumbs, only the thumbs take the pointer, so a press on the track reaches
  * the control and moves the nearest thumb. A vertical slider writes its thumbs bottom to top. It
  * sits in the `lu.core` layer, so any app CSS wins.
+ *
+ * `--lu-slider-thumb-size` (the thumbs' size, from your CSS or the theme; 0px by default) lines the
+ * track up with the thumbs' centres: by default (`"edge"`) the thumbs stay inside the control, as
+ * native ones do, and the track runs between their centres at the ends, so the Indicator ends at a
+ * thumb's centre; with `data-thumb-alignment="center"` the thumbs overhang the control by half
+ * their size, and their centres reach its ends.
  */
 @layer lu.core, lu.theme;
 
@@ -26,14 +32,23 @@
     grid-area: 1 / 1;
     margin: 0;
   }
-  /* The thumbs over the (positioned) track, for the pointer too. */
+  /*
+   * The thumbs over the (positioned) track, for the pointer too, spanning the control (in their own
+   * writing mode: a vertical thumb's inline size is its height).
+   */
   lu-slider div:has(> input[type="range"]) > input[type="range"] {
     position: relative;
+    inline-size: 100%;
+  }
+  lu-slider[data-thumb-alignment="center"] div:has(> input[type="range"]) > input[type="range"] {
+    inline-size: calc(100% + var(--lu-slider-thumb-size, 0px));
+    margin-inline: calc(var(--lu-slider-thumb-size, 0px) / -2);
   }
   /* The Track and its Indicator. */
   lu-slider div:has(> input[type="range"]) > div {
     position: relative;
     align-self: center;
+    margin-inline: calc(var(--lu-slider-thumb-size, 0px) / 2);
   }
   lu-slider div:has(> input[type="range"]) > div > div {
     position: absolute;
@@ -44,6 +59,11 @@
   lu-slider[data-orientation="vertical"] div:has(> input[type="range"]) > div {
     align-self: stretch;
     justify-self: center;
+    margin-inline: 0;
+    margin-block: calc(var(--lu-slider-thumb-size, 0px) / 2);
+  }
+  lu-slider[data-thumb-alignment="center"] div:has(> input[type="range"]) > div {
+    margin: 0;
   }
   lu-slider[data-orientation="vertical"] div:has(> input[type="range"]) > div > div {
     inset-inline: 0;

@@ -8,7 +8,11 @@
 //   the start to the thumb, or between two thumbs), which the Indicator part spans.
 // - Two thumbs or more: the values stay in order, `min-steps-between-values` steps apart, and a
 //   thumb pushes its neighbour (`thumb-collision-behavior="push"`, the default) or stops at it
-//   (`"none"`). Presses on the track move the nearest thumb, and a drag goes on from there.
+//   (`"none"`). With `"swap"`, a thumb dragged past another trades places with it: the drag goes
+//   on with the thumb that holds the dragged value, which takes focus (the keys stop at the other
+//   thumb, as with `"none"`). A native drag keeps its own thumb, so that thumb stays put and hands
+//   its value to the other one. Presses on the track move the nearest thumb, and a drag goes on
+//   from there.
 // - Page Up and Page Down, and Shift with an arrow key, move by `large-step` (default 10).
 // - The values as text: `aria-valuetext` on the thumbs when the element has a `format`
 //   (`Intl.NumberFormat` options, JSON), and the Value part (an `<output for>` the thumbs) unless
@@ -30,6 +34,10 @@ const number = (value: string | null, fallback: number) => {
 export class SliderElement extends HTMLElement {
   /** The thumb a press on the track is dragging, until the press ends. */
   #dragging: HTMLInputElement | undefined;
+  /** A thumb the pointer drags itself (the native drag), until the press ends. */
+  #pressed: HTMLInputElement | undefined;
+  /** After a swap, the thumb `#pressed`'s drag moves instead, and the value `#pressed` keeps. */
+  #proxy: { target: HTMLInputElement; value: string } | undefined;
 
   /** The element's own thumbs, in order. */
   get thumbs(): HTMLInputElement[] {
@@ -81,10 +89,12 @@ export class SliderElement extends HTMLElement {
   #constrain(moved: HTMLInputElement): void {
     const thumbs = this.thumbs;
     if (thumbs.length < 2) return;
+    const mode = this.getAttribute("thumb-collision-behavior");
+    if (mode === "swap" && (this.#pressed || this.#dragging)) return this.#swap(moved);
     const i = thumbs.indexOf(moved);
     const { step } = this.#range(moved);
     const gap = number(this.getAttribute("min-steps-between-values"), 0) * step;
-    const push = this.getAttribute("thumb-collision-behavior") !== "none";
+    const push = mode !== "none" && mode !== "swap";
     // Toward the end: each next thumb at least `gap` above the one before.
     for (let j = i + 1; j < thumbs.length; j++) {
       const floor = thumbs[j - 1]!.valueAsNumber + gap;
@@ -106,6 +116,33 @@ export class SliderElement extends HTMLElement {
         break;
       }
     }
+  }
+
+  /**
+   * Swap: `moved`, dragged past other thumbs, trades places with them, so the values stay in order
+   * and the dragged value moves on with another thumb. The drag and focus follow it.
+   */
+  #swap(moved: HTMLInputElement): void {
+    const thumbs = this.thumbs;
+    const value = moved.value;
+    const dragged = moved.valueAsNumber;
+    let i = thumbs.indexOf(moved);
+    while (i < thumbs.length - 1 && dragged > thumbs[i + 1]!.valueAsNumber) {
+      thumbs[i]!.value = thumbs[i + 1]!.value;
+      thumbs[++i]!.value = value;
+    }
+    while (i > 0 && dragged < thumbs[i - 1]!.valueAsNumber) {
+      thumbs[i]!.value = thumbs[i - 1]!.value;
+      thumbs[--i]!.value = value;
+    }
+    const active = thumbs[i]!;
+    if (active === moved) return;
+    if (this.#dragging) this.#dragging = active;
+    if (this.#pressed) {
+      this.#proxy =
+        active === this.#pressed ? undefined : { target: active, value: this.#pressed.value };
+    }
+    active.focus({ preventScroll: true });
   }
 
   /** Writes the selected part of the track, the values' text and the Value part. */
@@ -136,8 +173,15 @@ export class SliderElement extends HTMLElement {
   };
 
   #onInput = (event: Event) => {
-    const thumb = event.target as HTMLInputElement;
+    let thumb = event.target as HTMLInputElement;
     if (!thumb.matches?.(THUMB) || thumb.closest("lu-slider") !== this) return;
+    if (this.#proxy && thumb === this.#pressed) {
+      // The dragged thumb swapped places: it stays put, and its drag moves the other thumb.
+      const value = thumb.value;
+      thumb.value = this.#proxy.value;
+      thumb = this.#proxy.target;
+      thumb.value = value;
+    }
     this.#constrain(thumb);
     this.#sync();
   };
@@ -195,7 +239,19 @@ export class SliderElement extends HTMLElement {
     const thumbs = this.thumbs.filter((thumb) => !thumb.disabled);
     // One thumb: the native input takes presses on its whole track.
     if (thumbs.length < 2 || event.button !== 0 || !event.isPrimary) return;
-    if ((event.target as Element).matches?.(THUMB)) return;
+    if ((event.target as Element).matches?.(THUMB)) {
+      // The thumb's own drag; a swap hands it to another thumb until the press ends.
+      this.#pressed = event.target as HTMLInputElement;
+      const end = (next: PointerEvent) => {
+        if (next.pointerId !== event.pointerId) return;
+        document.removeEventListener("pointerup", end, true);
+        document.removeEventListener("pointercancel", end, true);
+        this.#pressed = this.#proxy = undefined;
+      };
+      document.addEventListener("pointerup", end, true);
+      document.addEventListener("pointercancel", end, true);
+      return;
+    }
     const control = (event.target as Element).closest?.<HTMLElement>(`div:has(> ${THUMB})`);
     if (!control || !this.contains(control)) return;
     const value = this.#valueAt(event, thumbs[0]!);

@@ -23,6 +23,16 @@ export default function SliderPage() {
               <Slider.Thumb />
             </Slider.Control>
           </Slider.Root>
+          <Slider.Root name="zoom" defaultValue={50} thumbAlignment="center" class="lu-slider">
+            <Slider.Label>Zoom</Slider.Label>
+            <Slider.Value />
+            <Slider.Control>
+              <Slider.Track>
+                <Slider.Indicator />
+              </Slider.Track>
+              <Slider.Thumb />
+            </Slider.Control>
+          </Slider.Root>
           <Slider.Root name="opacity" defaultValue={60} step={10} disabled class="lu-slider">
             <Slider.Label>Opacity</Slider.Label>
             <Slider.Value />
@@ -70,6 +80,22 @@ export default function SliderPage() {
               </Slider.Track>
               <Slider.Thumb aria-label="Opening hours, start" />
               <Slider.Thumb aria-label="Opening hours, end" />
+            </Slider.Control>
+          </Slider.Root>
+          <Slider.Root
+            name="ages"
+            defaultValue={[20, 60]}
+            thumbCollisionBehavior="swap"
+            class="lu-slider"
+          >
+            <Slider.Label>Ages</Slider.Label>
+            <Slider.Value />
+            <Slider.Control>
+              <Slider.Track>
+                <Slider.Indicator />
+              </Slider.Track>
+              <Slider.Thumb aria-label="Youngest age" />
+              <Slider.Thumb aria-label="Oldest age" />
             </Slider.Control>
           </Slider.Root>
         </section>

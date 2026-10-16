@@ -1333,6 +1333,8 @@
     inline-size: min(20rem, 100%);
     font-size: 0.875rem;
     --lu-bar: light-dark(var(--lu-primary), #60a5fa);
+    /* The thumbs' size: slider.css lines the track up with their centres. */
+    --lu-slider-thumb-size: 1.5rem;
   }
   .lu-slider > :where(label) {
     font-weight: 500;
@@ -1346,6 +1348,10 @@
     grid-column: 1 / -1;
     block-size: 1.5rem;
   }
+  /* Center alignment: the thumbs overhang the control, inside the slider's box. */
+  .lu-slider[data-thumb-alignment="center"] > :where(div) {
+    margin-inline: calc(var(--lu-slider-thumb-size) / 2);
+  }
   .lu-slider[data-orientation="vertical"] > :where(div) {
     grid-column: auto;
     inline-size: 1.5rem;
@@ -1354,7 +1360,6 @@
   /* The track: --lu-input at its edge (3:1), the selected part in the primary colour. */
   .lu-slider > div > :where(div) {
     box-sizing: border-box;
-    inline-size: 100%;
     block-size: 0.5rem;
     border: 1px solid var(--lu-input);
     border-radius: 999px;
@@ -1362,25 +1367,23 @@
   }
   .lu-slider[data-orientation="vertical"] > div > :where(div) {
     inline-size: 0.5rem;
-    block-size: 100%;
+    block-size: auto;
   }
   .lu-slider > div > div > :where(div) {
     border-radius: inherit;
     background: var(--lu-bar);
   }
-  /* In the thumb's own writing mode: a vertical thumb's inline size is its height. */
+  /* In the thumb's own writing mode: a vertical thumb's block size is its width. */
   .lu-slider :where(input[type="range"]) {
-    inline-size: 100%;
-    block-size: 1.5rem;
-    margin: 0;
+    block-size: var(--lu-slider-thumb-size);
     cursor: pointer;
   }
   /* The thumb: a 24px circle with a primary edge; focus adds a ring around it. */
   .lu-slider input[type="range"]::-webkit-slider-thumb {
     appearance: none;
     box-sizing: border-box;
-    inline-size: 1.5rem;
-    block-size: 1.5rem;
+    inline-size: var(--lu-slider-thumb-size);
+    block-size: var(--lu-slider-thumb-size);
     border: 2px solid var(--lu-bar);
     border-radius: 50%;
     background: var(--lu-background);
@@ -1388,8 +1391,8 @@
   }
   .lu-slider input[type="range"]::-moz-range-thumb {
     box-sizing: border-box;
-    inline-size: 1.5rem;
-    block-size: 1.5rem;
+    inline-size: var(--lu-slider-thumb-size);
+    block-size: var(--lu-slider-thumb-size);
     border: 2px solid var(--lu-bar);
     border-radius: 50%;
     background: var(--lu-background);

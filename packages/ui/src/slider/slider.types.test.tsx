@@ -54,8 +54,9 @@ export function Typed() {
       <ToggleGroup value="a" />
       {/* @ts-expect-error: a Meter needs its value */}
       <Meter.Root />
-      {/* @ts-expect-error: swap is not supported */}
-      <Slider.Root thumbCollisionBehavior="swap" />
+      <Slider.Root thumbCollisionBehavior="swap" thumbAlignment="center" defaultValue={[1, 2]} />
+      {/* @ts-expect-error: Base UI's edge-client-only is not offered */}
+      <Slider.Root thumbAlignment="edge-client-only" />
       {/* @ts-expect-error: a thumb's range is the Root's */}
       <Slider.Thumb max={5} />
     </>

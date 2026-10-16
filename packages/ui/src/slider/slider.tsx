@@ -18,13 +18,13 @@ declare module "lumiose/jsx-runtime" {
     interface IntrinsicElements {
       /**
        * Slider's element. Attributes `large-step`, `min-steps-between-values`,
-       * `thumb-collision-behavior` (`push`, `none`), `format` (`Intl.NumberFormat` options as
-       * JSON) and `locale`; property `value`.
+       * `thumb-collision-behavior` (`push`, `swap`, `none`), `format` (`Intl.NumberFormat` options
+       * as JSON) and `locale`; property `value`.
        */
       "lu-slider": JSX.HTMLProps<SliderElement> & {
         "large-step"?: number;
         "min-steps-between-values"?: number;
-        "thumb-collision-behavior"?: "push" | "none";
+        "thumb-collision-behavior"?: "push" | "swap" | "none";
         format?: string;
         locale?: string;
       };
@@ -72,10 +72,17 @@ export interface SliderRootProps<V extends SliderValue = number> extends Omit<
   /** With several thumbs: how many steps apart they stay. Default `0`. */
   minStepsBetweenValues?: number;
   /**
-   * With several thumbs: a thumb moved into another pushes it along (`"push"`, default) or stops
-   * at it (`"none"`).
+   * With several thumbs: a thumb moved into another pushes it along (`"push"`, default), stops at
+   * it (`"none"`), or, dragged past it, swaps places with it (`"swap"`: the drag goes on with the
+   * other thumb; the keys stop at it).
    */
-  thumbCollisionBehavior?: "push" | "none";
+  thumbCollisionBehavior?: "push" | "swap" | "none";
+  /**
+   * Where the thumbs stop at the ends: inside the control (`"edge"`, default, as native range
+   * inputs do) or with their centre on its ends (`"center"`, overhanging it by half a thumb).
+   * Both need `--lu-slider-thumb-size`, the thumbs' size, in your CSS (the default theme sets it).
+   */
+  thumbAlignment?: "edge" | "center";
   /** Left to right (and the other way right to left), or bottom to top. Default `"horizontal"`. */
   orientation?: "horizontal" | "vertical";
   /** Disables every thumb. */
@@ -104,7 +111,10 @@ export type SliderValueProps = Omit<JSX.IntrinsicElements["output"], "children">
   children?: (formattedValues: string[], values: number[]) => JSX.Element;
 };
 
-/** The `<div>` that holds the track and the thumbs, stacked; presses on it move a thumb. */
+/**
+ * The `<div>` that holds the track and the thumbs, stacked; presses on it move a thumb. With two
+ * thumbs or more it is a `role="group"` the Label names.
+ */
 export type SliderControlProps = JSX.IntrinsicElements["div"];
 
 /** The `<div>` rail of the track. */
@@ -158,6 +168,7 @@ function Root<V extends SliderValue = number>({
   largeStep,
   minStepsBetweenValues,
   thumbCollisionBehavior,
+  thumbAlignment,
   orientation,
   disabled,
   name,
@@ -215,6 +226,7 @@ function Root<V extends SliderValue = number>({
         ref={element}
         id={id}
         data-orientation={orientation ?? "horizontal"}
+        data-thumb-alignment={thumbAlignment}
         large-step={largeStep}
         min-steps-between-values={minStepsBetweenValues}
         thumb-collision-behavior={thumbCollisionBehavior}
@@ -260,8 +272,21 @@ function Value({ children, ...rest }: SliderValueProps) {
 }
 
 function Control({ children, ...rest }: SliderControlProps) {
-  useSlider("Control");
-  return <div {...rest}>{children}</div>;
+  const slider = useSlider("Control");
+  // A range's thumbs, as one group the Label names; each thumb takes a name of its own.
+  const range = untrack(() => slider.values().length > 1);
+  const labelled = untrack(() => slider.labels.count > 0);
+  return (
+    <div
+      role={range ? "group" : undefined}
+      aria-labelledby={
+        range && labelled && rest["aria-label"] === undefined ? `${slider.id}-label` : undefined
+      }
+      {...rest}
+    >
+      {children}
+    </div>
+  );
 }
 
 function Track({ children, ...rest }: SliderTrackProps) {

@@ -52,7 +52,7 @@ test.describe("without JavaScript", () => {
     await page.keyboard.press("ArrowUp");
     await page.getByRole("button", { name: "Apply" }).click();
     await expect(page).toHaveURL(
-      /\/slider\?volume=1&price=20&price=80&hours=9&hours=17&level=3&balance=30$/,
+      /\/slider\?volume=1&zoom=50&price=20&price=80&hours=9&hours=17&ages=20&ages=60&level=3&balance=30$/,
     );
   });
 });
@@ -87,6 +87,8 @@ test.describe("Slider", () => {
       .evaluate((el) => el.style.cssText);
     expect(start).toContain("--lu-slider-end: 100%");
     // The disabled slider is out of the tab order.
+    await page.keyboard.press("Tab");
+    await expect(thumb(page, "Zoom")).toBeFocused();
     await page.keyboard.press("Tab");
     await expect(thumb(page, "Minimum price")).toBeFocused();
   });
@@ -161,6 +163,77 @@ test.describe("Slider", () => {
     await page.mouse.up();
     expect(await valueOf(high)).toBeLessThanOrEqual(12);
     expect(await valueOf(low)).toBe((await valueOf(high)) - 5);
+  });
+
+  test('thumbCollisionBehavior="swap": a thumb dragged past the other trades places with it', async ({
+    page,
+  }) => {
+    await page.goto("/slider");
+    const youngest = thumb(page, "Youngest age");
+    const oldest = thumb(page, "Oldest age");
+    const from = await pointAt(youngest, 20);
+    const past = await pointAt(youngest, 75);
+    const further = await pointAt(youngest, 90);
+    await page.mouse.move(from.x, from.y);
+    await page.mouse.down();
+    await page.mouse.move(past.x, past.y, { steps: 8 });
+    // The thumbs traded places: the oldest one holds the dragged value and takes focus.
+    await expect.poll(() => valueOf(youngest)).toBe(60);
+    expect(Math.abs((await valueOf(oldest)) - 75)).toBeLessThanOrEqual(2);
+    await expect(oldest).toBeFocused();
+    // The drag goes on with it.
+    await page.mouse.move(further.x, further.y, { steps: 4 });
+    await page.mouse.up();
+    expect(await valueOf(youngest)).toBe(60);
+    expect(Math.abs((await valueOf(oldest)) - 90)).toBeLessThanOrEqual(2);
+    // The keys stop at the other thumb.
+    await page.keyboard.press("Home");
+    await expect(oldest).toHaveValue("60");
+    await expect(youngest).toHaveValue("60");
+  });
+
+  test("the filled track ends at the thumb's centre; center alignment reaches the ends", async ({
+    page,
+  }) => {
+    await page.goto("/slider");
+    /** The Indicator's end and the thumb's centre, in CSS pixels from the left. */
+    const ends = (name: string) =>
+      page.locator("lu-slider", { has: thumb(page, name) }).evaluate((slider) => {
+        const input = slider.querySelector("input")!;
+        const box = input.getBoundingClientRect();
+        const size = box.height;
+        const ratio =
+          (input.valueAsNumber - Number(input.min)) / (Number(input.max) - Number(input.min));
+        const indicator = slider.querySelector("div > div > div")!.getBoundingClientRect();
+        const control = input.parentElement!.getBoundingClientRect();
+        return {
+          indicator: Math.round(indicator.right),
+          centre: Math.round(box.left + size / 2 + (box.width - size) * ratio),
+          control: [Math.round(control.left), Math.round(control.right)],
+          input: [Math.round(box.left), Math.round(box.right)],
+        };
+      });
+    const volume = await ends("Volume");
+    expect(Math.abs(volume.indicator - volume.centre)).toBeLessThanOrEqual(1);
+    await thumb(page, "Volume").focus();
+    await page.keyboard.press("End");
+    const full = await ends("Volume");
+    expect(Math.abs(full.indicator - full.centre)).toBeLessThanOrEqual(1);
+    // Edge (the default): the thumb stays inside the control.
+    expect(full.input).toEqual(full.control);
+    // Center: the thumb's centre reaches the control's ends, half a thumb outside it.
+    await thumb(page, "Zoom").focus();
+    await page.keyboard.press("End");
+    const zoom = await ends("Zoom");
+    expect(Math.abs(zoom.centre - zoom.control[1]!)).toBeLessThanOrEqual(1);
+    expect(Math.abs(zoom.indicator - zoom.centre)).toBeLessThanOrEqual(1);
+  });
+
+  test("a range's thumbs are a group the Label names", async ({ page }) => {
+    await page.goto("/slider");
+    const group = page.getByRole("group", { name: "Price", exact: true });
+    await expect(group.getByRole("slider")).toHaveCount(2);
+    await expect(page.getByRole("group", { name: "Volume" })).toHaveCount(0);
   });
 
   test("vertical: up raises it; right to left: left raises it", async ({ page }) => {
@@ -259,7 +332,10 @@ test.describe("WCAG 2.2 AA with the default theme (doc-9 section 17)", () => {
     const form = page.locator("form");
     const box = (await form.boundingBox())!;
     expect(box.x + box.width).toBeLessThanOrEqual(320);
-    expect(await clipped(form)).toEqual([]);
+    // A center-aligned control's thumbs overhang it on purpose (visible, inside the slider).
+    expect((await clipped(form)).filter((each) => each !== 'div ""')).toEqual([]);
+    const zoom = page.locator("lu-slider", { has: thumb(page, "Zoom") });
+    expect(await clipped(zoom)).toEqual(['div ""']);
   });
 
   test("a server-rendered page loads Slider's script only", async ({ page }, testInfo) => {

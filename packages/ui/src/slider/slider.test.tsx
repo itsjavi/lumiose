@@ -84,6 +84,34 @@ describe("Slider on the server", () => {
     expect(output(html)).toBe("€20 – €60");
   });
 
+  it("groups a range's thumbs under the Label, and writes the thumb alignment", async () => {
+    const range = await renderToString(() => (
+      <Slider.Root defaultValue={[20, 60]} thumbAlignment="center" thumbCollisionBehavior="swap">
+        <Slider.Label>Price</Slider.Label>
+        <Slider.Control>
+          <Slider.Thumb aria-label="Minimum price" />
+          <Slider.Thumb aria-label="Maximum price" />
+        </Slider.Control>
+      </Slider.Root>
+    ));
+    const root = attrs(range, "lu-slider");
+    expect(root).toMatchObject({
+      "data-thumb-alignment": "center",
+      "thumb-collision-behavior": "swap",
+    });
+    expect(attrs(range, "div")).toEqual({ role: "group", "aria-labelledby": `${root.id}-label` });
+    // One thumb: no group.
+    const single = await renderToString(() => (
+      <Slider.Root>
+        <Slider.Label>Volume</Slider.Label>
+        <Slider.Control>
+          <Slider.Thumb />
+        </Slider.Control>
+      </Slider.Root>
+    ));
+    expect(attrs(single, "div")).toEqual({});
+  });
+
   it("renders a vertical, disabled slider, and Value content of your own without for", async () => {
     const html = await renderToString(() => (
       <Slider.Root defaultValue={3} max={10} orientation="vertical" disabled>

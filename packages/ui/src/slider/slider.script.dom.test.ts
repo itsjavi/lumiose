@@ -58,6 +58,25 @@ it("stops a thumb at its neighbour with thumb-collision-behavior none", () => {
   expect(slider.value).toEqual([68, 70]);
 });
 
+it("swaps thumbs dragged past each other with swap, and stops them with the keys", () => {
+  const slider = mount([20, 60], 'thumb-collision-behavior="swap"');
+  // The pointer drags thumb 0 natively past thumb 1.
+  thumb(0).dispatchEvent(new PointerEvent("pointerdown", { bubbles: true, isPrimary: true }));
+  drag(0, 70);
+  expect(slider.value).toEqual([60, 70]);
+  expect(document.activeElement).toBe(thumb(1));
+  // Its drag goes on: thumb 0 stays put, thumb 1 follows the pointer, past the start too.
+  drag(0, 80);
+  expect(slider.value).toEqual([60, 80]);
+  drag(0, 10);
+  expect(slider.value).toEqual([10, 60]);
+  expect(document.activeElement).toBe(thumb(0));
+  document.dispatchEvent(new PointerEvent("pointerup", { isPrimary: true }));
+  // No pointer: the keys and other moves stop at the neighbour.
+  drag(0, 90);
+  expect(slider.value).toEqual([60, 60]);
+});
+
 it("stops a pushed thumb at the end of the range, and the moved one before it", () => {
   const slider = mount([20, 95], 'min-steps-between-values="10"');
   drag(0, 99);
