@@ -4,13 +4,16 @@ title: >-
   Field: a sync validate with validationDebounceTime and a submit inside the
   window
 status: To Do
-assignee: []
+assignee:
+  - '@Halo'
 created_date: '2026-10-16 13:20'
+updated_date: '2026-10-16 15:39'
 labels:
   - ui
   - forms
 milestone: m-12
 dependencies: []
+priority: low
 ordinal: 457000
 ---
 
@@ -25,3 +28,9 @@ From the 0.1.0 release review, TASK-446 L16 (Prism, SUSPECTED). Field.Root's run
 - [ ] #1 A repro confirms or rules it out
 - [ ] #2 If confirmed, a submit within the debounce window is blocked by a failing synchronous validate, with a test
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+2026-10-16 (Lux, orchestrator): assigned at the fix batch 2 merge. A follow-up from the release review, not needed for 0.1.0.
+<!-- SECTION:NOTES:END -->

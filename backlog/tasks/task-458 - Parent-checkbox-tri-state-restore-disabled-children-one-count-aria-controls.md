@@ -4,13 +4,16 @@ title: >-
   Parent checkbox: tri-state restore, disabled children, one count,
   aria-controls
 status: To Do
-assignee: []
+assignee:
+  - '@Halo'
 created_date: '2026-10-16 13:20'
+updated_date: '2026-10-16 15:39'
 labels:
   - ui
   - a11y
 milestone: m-12
 dependencies: []
+priority: low
 ordinal: 456000
 ---
 
@@ -26,3 +29,9 @@ From the 0.1.0 release review, TASK-446 L12 (Prism). A Checkbox Group's parent c
 - [ ] #2 Disabled children keep their state, and the server and the script count the same boxes
 - [ ] #3 The parent has aria-controls with its children's ids, with tests in every engine
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+2026-10-16 (Lux, orchestrator): assigned at the fix batch 2 merge. A follow-up from the release review, not needed for 0.1.0.
+<!-- SECTION:NOTES:END -->

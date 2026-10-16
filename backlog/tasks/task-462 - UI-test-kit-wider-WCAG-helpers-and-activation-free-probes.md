@@ -2,14 +2,17 @@
 id: TASK-462
 title: 'UI test kit: wider WCAG helpers and activation-free probes'
 status: To Do
-assignee: []
+assignee:
+  - '@Beacon'
 created_date: '2026-10-16 13:45'
+updated_date: '2026-10-16 15:39'
 labels:
   - ui
   - test
   - a11y
 milestone: m-12
 dependencies: []
+priority: low
 ordinal: 460000
 ---
 
@@ -25,3 +28,9 @@ From the 0.1.0 release review, TASK-455 L35 (Prism). examples/ui-e2e's helpers m
 - [ ] #2 Every drawer and popup state the suites open is axe-checked; reflow at more than one size; forced-colors checks for the themed components
 - [ ] #3 A probe without user activation covers CloseWatcher-dependent dismissal
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+2026-10-16 (Lux, orchestrator): assigned at the fix batch 2 merge. A follow-up from the release review, not needed for 0.1.0.
+<!-- SECTION:NOTES:END -->
