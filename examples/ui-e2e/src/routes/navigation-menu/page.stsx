@@ -44,6 +44,28 @@ export default function NavigationMenuPage() {
                   </NavigationMenu.Link>
                 </li>
               </ul>
+              {/* A nested menu: it keeps its parent open, and a closeOnClick link closes both. */}
+              <NavigationMenu.Root aria-label="More to learn" class="lu-navigation-menu">
+                <NavigationMenu.List>
+                  <NavigationMenu.Item value="more">
+                    <NavigationMenu.Trigger>
+                      More <NavigationMenu.Icon>▸</NavigationMenu.Icon>
+                    </NavigationMenu.Trigger>
+                    <NavigationMenu.Content>
+                      <ul>
+                        <li>
+                          <NavigationMenu.Link href="#courses">Courses</NavigationMenu.Link>
+                        </li>
+                        <li>
+                          <NavigationMenu.Link href="#api" closeOnClick>
+                            API
+                          </NavigationMenu.Link>
+                        </li>
+                      </ul>
+                    </NavigationMenu.Content>
+                  </NavigationMenu.Item>
+                </NavigationMenu.List>
+              </NavigationMenu.Root>
             </NavigationMenu.Content>
           </NavigationMenu.Item>
           <NavigationMenu.Item>

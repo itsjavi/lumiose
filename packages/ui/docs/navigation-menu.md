@@ -39,7 +39,8 @@ import "@lumiose/ui/themes/default.css"; // optional: the default theme
 | `Link`    | `<a>`; `aria-current="page"` and `data-active` when `active`.                                              |
 
 Give `Root` an `aria-label` ("Main") when the page has more than one `<nav>`. A `Root` inside a
-`Content` is a nested menu: a `<div>`, inside its parent's landmark.
+`Content` is a nested menu: a `<div>`, inside its parent's landmark. Focus, the pointer or a click
+in it keep its parent's content open.
 
 ## API
 
@@ -74,10 +75,10 @@ Server HTML always starts closed: a popover only opens from its trigger or scrip
 
 ### NavigationMenu.Link
 
-| Prop           | Type      | Default |                                                      |
-| -------------- | --------- | ------- | ---------------------------------------------------- |
-| `active`       | `boolean` | `false` | The link to the current page: `aria-current="page"`. |
-| `closeOnClick` | `boolean` | `false` | Whether following it closes the open content.        |
+| Prop           | Type      | Default |                                                                               |
+| -------------- | --------- | ------- | ----------------------------------------------------------------------------- |
+| `active`       | `boolean` | `false` | The link to the current page: `aria-current="page"`.                          |
+| `closeOnClick` | `boolean` | `false` | Whether following it closes the open content (every level, in a nested menu). |
 
 ### The other parts
 

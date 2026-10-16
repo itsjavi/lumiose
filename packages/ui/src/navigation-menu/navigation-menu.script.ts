@@ -11,7 +11,9 @@
 //   top-level triggers and links, with Home and End; Arrow Down (Right when vertical) on a trigger
 //   opens its content on its first link; in a content, Arrow Down and Up move between its links;
 //   Escape closes it and returns to its trigger. Every trigger and link stays a tab stop.
-// - Focus leaving an item for elsewhere on the page closes its content.
+// - Focus leaving an item for elsewhere on the page closes its content. "Inside" is the item's DOM,
+//   a Navigation Menu nested in its content included (TASK-433); a `closeOnClick` link closes
+//   every level it is in.
 // - `aria-expanded` on the triggers; `data-activation-direction` (`left`, `right`, `up`, `down`) on a
 //   content opened while another was, toward where its trigger is; `value` and `valuechange`.
 // - Placement: where CSS anchor positioning is missing, the shared ../placement/place.ts places an
@@ -99,6 +101,11 @@ export class NavigationMenuElement extends HTMLElement {
   #itemOf(node: Node | null): HTMLElement | undefined {
     const item = node instanceof Element ? node.closest<HTMLElement>("li[data-value]") : null;
     return item && item.closest("lu-navigation-menu") === this ? item : undefined;
+  }
+
+  /** This menu's item around `node`, a node in a menu nested in its content included. */
+  #itemAround(node: Node | null): HTMLElement | undefined {
+    return node ? this.#items().find((item) => item.contains(node)) : undefined;
   }
 
   #trigger(item: HTMLElement): HTMLElement | null {
@@ -194,15 +201,16 @@ export class NavigationMenuElement extends HTMLElement {
 
   #onPointerOut(event: PointerEvent): void {
     if (event.pointerType === "touch") return;
-    const item = this.#itemOf(event.target as Node);
+    const item = this.#itemAround(event.target as Node);
     if (!item) return;
     const to = event.relatedTarget as Node | null;
     const trigger = this.#trigger(item);
     if (trigger?.contains(event.target as Node) && !trigger.contains(to)) {
       clearTimeout(this.#openTimer);
     }
-    // Still inside the item (its trigger or content), or a content kept open by a click.
-    if (this.#itemOf(to) === item || this.#hovered !== item) return;
+    // Still inside the item (its trigger, its content, a menu nested in it), or a content kept
+    // open by a click.
+    if ((to && item.contains(to)) || this.#hovered !== item) return;
     const content = this.#content(item)!;
     const toward = trigger?.contains(event.target as Node) && heading(trigger, content, event);
     clearTimeout(this.#closeTimer);
@@ -216,6 +224,12 @@ export class NavigationMenuElement extends HTMLElement {
 
   #onClick(event: MouseEvent): void {
     const target = event.target as Element;
+    // A `closeOnClick` link closes the content it is in, at every level of nested menus.
+    const link = target.closest<HTMLElement>("a[data-close-on-click=true]");
+    if (link && this.contains(link) && this.#openItem()?.contains(link)) {
+      this.#close();
+      return;
+    }
     const item = this.#itemOf(target);
     if (!item) return;
     const trigger = this.#trigger(item);
@@ -225,10 +239,7 @@ export class NavigationMenuElement extends HTMLElement {
       if (this.#hovered === item) this.#hovered = undefined;
       else if (this.#openItem() === item) this.#close();
       else this.#open(item, false);
-      return;
     }
-    const link = target.closest<HTMLElement>("a[data-close-on-click=true]");
-    if (link && this.#itemOf(link) === item) this.#close();
   }
 
   #onKeyDown(event: KeyboardEvent): void {
@@ -297,10 +308,10 @@ export class NavigationMenuElement extends HTMLElement {
   }
 
   #onFocusOut(event: FocusEvent): void {
-    const item = this.#itemOf(event.target as Node);
+    const item = this.#itemAround(event.target as Node);
     const to = event.relatedTarget as Node | null;
     // Focus leaving the open item for another element of the page closes its content.
-    if (!item || to === null || this.#openItem() !== item || this.#itemOf(to) === item) return;
+    if (!item || to === null || this.#openItem() !== item || item.contains(to)) return;
     this.#close();
   }
 }

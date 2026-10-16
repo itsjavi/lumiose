@@ -198,6 +198,57 @@ test.describe("keyboard", () => {
   });
 });
 
+test.describe("a nested menu (TASK-433)", () => {
+  test("Tab into it keeps the parent open", async ({ page }) => {
+    await page.goto("/navigation-menu");
+    await ready(page);
+    await trigger(page, "Learn").focus();
+    await page.keyboard.press("Enter");
+    const learn = await panelOf(page, "Learn");
+    await expect(learn).toBeVisible();
+    await learn.getByRole("link", { name: "Blog" }).focus();
+    await page.keyboard.press("Tab");
+    await expect(trigger(page, "More")).toBeFocused();
+    await expect(learn).toBeVisible();
+    await page.keyboard.press("Enter");
+    const more = await panelOf(page, "More");
+    await expect(more).toBeVisible();
+    await page.keyboard.press("Tab");
+    await expect(more.getByRole("link", { name: "Courses" })).toBeFocused();
+    await expect(learn).toBeVisible();
+  });
+
+  test("a click on its trigger opens it inside the open parent", async ({ page }) => {
+    await page.goto("/navigation-menu");
+    await ready(page);
+    await trigger(page, "Learn").click();
+    const learn = await panelOf(page, "Learn");
+    await expect(learn).toBeVisible();
+    await trigger(page, "More").click();
+    await expect(await panelOf(page, "More")).toBeVisible();
+    await expect(learn).toBeVisible();
+  });
+
+  test("hover onto it keeps the parent open; a closeOnClick link closes every level", async ({
+    page,
+  }) => {
+    await page.goto("/navigation-menu");
+    await ready(page);
+    await trigger(page, "Learn").hover();
+    const learn = await panelOf(page, "Learn");
+    await expect(learn).toBeVisible();
+    await trigger(page, "More").hover();
+    const more = await panelOf(page, "More");
+    await expect(more).toBeVisible();
+    await page.waitForTimeout(400);
+    await expect(learn).toBeVisible();
+    await more.getByRole("link", { name: "API" }).click();
+    await expect(more).toBeHidden();
+    await expect(learn).toBeHidden();
+    await expect(page).toHaveURL(/#api$/);
+  });
+});
+
 test.describe("in an island", () => {
   test("the open item follows a signal both ways", async ({ page }) => {
     const warnings = lumioseWarnings(page);

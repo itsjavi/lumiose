@@ -3,10 +3,11 @@ id: TASK-433
 title: >-
   Navigation Menu: nested Root keeps its parent open; closeOnClick closes every
   level
-status: To Do
+status: Done
 assignee:
   - '@Halo'
 created_date: '2026-10-16 10:06'
+updated_date: '2026-10-16 11:03'
 labels:
   - ui
   - review
@@ -34,5 +35,19 @@ Found by Prism's release review of @lumiose/ui (TASK-386, 2026-10-16) on main 94
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Navigation Menu: nested Root keeps its parent open; closeOnClick closes every level, with a regression test that fails without the fix (in every engine the finding names)
+- [x] #1 Navigation Menu: nested Root keeps its parent open; closeOnClick closes every level, with a regression test that fails without the fix (in every engine the finding names)
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+2026-10-16 (Halo): claimed (release-review fix batch 1; branch claude/halo-m12c-4d6b9f).
+
+2026-10-16 (Halo): fixed as proposed. navigation-menu.script.ts: #onPointerOut and #onFocusOut find this menu's item around the target by DOM containment (#itemAround) and treat the destination as inside when item.contains(to), so a nested Root in the content keeps the parent open on focus, click and hover. A closeOnClick link closes the open content of every menu it is inside (checked before the item lookup). Fixture: a nested Root ('More to learn', theme class, a closeOnClick 'API' link) in the Learn panel (Products kept as it was for the arrow tests). Three tests (Tab into it, click its trigger, hover onto it then click API) fail without the fix in dev, build, Firefox and WebKit (12 of 12) and pass with it; the whole suite passes in the four projects. Docs: nested Root and closeOnClick.
+<!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+A nested Navigation Menu keeps its parent open on focus, click and hover, and a closeOnClick link in it closes every level. Regression tests on a nested fixture fail without the fix in Chromium, Firefox and WebKit.
+<!-- SECTION:FINAL_SUMMARY:END -->
