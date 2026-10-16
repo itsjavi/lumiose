@@ -43,4 +43,57 @@ Nothing here is decided until the user answers. Answered items move to the Answe
 - **Not a question:** listed so that the user sees it.
 - AGENTS.md asks for an app-security-review before each lumiose minor release. TASK-430 changed form actions (lumiose's action data now carries `FormData`), so Lux runs that review unattended before P3 and records its findings as tasks.
 
+### P5. The spa template: what it renders (TASK-276)
+
+- **Waiting:** the spa template sets `mode: "spa"` with the defaults ssr = true and prerender = false. So it renders on the server per request, yet it ships no server and its descriptions say "client-rendered".
+- **Options:**
+  - (a) prerender the pages: a static deploy, a prerendered first paint, client routing;
+  - (b) `ssr = false`: a shell only;
+  - (c) keep server rendering and add the Node server.
+- **Recommendation:** (a), as the TASK-275 audit suggested.
+- **Meanwhile:** the template is unchanged.
+
+### P6. Diagnostics print the online docs URL (TASK-265)
+
+- **Waiting:** the message shape, a DX question. Compiler and CLI diagnostics would also print `https://itsjavi.com/lumiose/docs/errors/LUMxxxx`; the browser runtime would not, to keep its size.
+- **Recommendation:** yes, as one extra line after the existing `lumiose explain <code>` hint.
+- **Meanwhile:** unchanged.
+
+### P7. LUM2001 in server-only components (TASK-290)
+
+- **Waiting:** a diagnostics and DX call. The compiler can't know whether a component ever runs in the browser.
+- **Options:**
+  - keep the warning as it is;
+  - lower it to a hint for values derived from props;
+  - add a per-file or per-component opt-out.
+- **Recommendation:** keep it, and document the lazy-derivation idiom. Most such values are real reactivity bugs once the component is used in an island.
+- **Meanwhile:** unchanged.
+
+### P8. Proposals waiting for review
+
+These are syntax, DX or API proposals. Each task holds the proposal; nothing is built until the user approves.
+- TASK-279: first-party responsive images.
+- TASK-280: frontmatter-only Markdown imports for listings.
+- TASK-281: a Markdown transform hook and typographic quotes.
+- TASK-282: warn on scoped descendant selectors that match other files' elements.
+- TASK-283: small client scripts without the island runtime.
+- TASK-286: an option to skip precompressed copies in static builds.
+- TASK-287: sitemap and redirects options for static sites.
+
+### P9. Agent eval runs (TASK-185, 207, 208, 209, 243)
+
+- **Waiting:** evals cost money, so they never run without the user's permission (AGENTS.md).
+- **Recommendation:** TASK-207 (three repeats per frontier model) first. TASK-243's /evals page depends on its results.
+- **Meanwhile:** eval files can be edited, but nothing runs.
+
+### P10. External security review before 1.0 (TASK-310)
+
+- **Waiting:** the user, to choose and engage an external reviewer.
+- **Meanwhile:** the internal pre-release review (P4) still runs.
+
+### Blocked upstream (no decision needed)
+
+- **TASK-64:** waits for a Lightning CSS release after 1.33.0 that includes PR #1329. It was still 1.33.0 on 2026-10-17.
+- **TASK-264:** waits for the arm64 musl compiler package on npm, which comes with the next lumiose release.
+
 ## Answered
