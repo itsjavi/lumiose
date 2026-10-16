@@ -7,6 +7,12 @@ import { GENERATE, uiDemoFiles, uiDemos } from "./ui-demos.ts";
 const page = (...blocks: string[]) =>
   `# Page\n\n${blocks.map((code) => `\`\`\`tsx check\n${code}\n\`\`\``).join("\n\nText.\n\n")}\n`;
 
+/** Whether the single example `code` becomes an island demo. */
+const isIsland = (code: string) => uiDemos("field", page(code))[0]!.island;
+/** A Field example that passes `check`, declared by `validate`, as its `validate` prop. */
+const field = (validate: string) =>
+  `import { Field } from "@lumiose/ui";\n\n${validate}\nexport function Demo() {\n  return <Field.Root validate={check} />;\n}`;
+
 describe("UI demos", () => {
   it("are the tsx check examples that export one component without props", () => {
     const demos = uiDemos(
@@ -27,28 +33,27 @@ describe("UI demos", () => {
   });
 
   it("hydrate an example whose only client need is a function prop (TASK-423)", () => {
-    const island = (code: string) => uiDemos("field", page(code))[0]!.island;
-    const field = (validate: string) =>
-      `import { Field } from "@lumiose/ui";\n\n${validate}\nexport function Demo() {\n  return <Field.Root validate={check} />;\n}`;
     expect(
-      island(
+      isIsland(
         field('async function check(value: string) {\n  return value ? null : "Required";\n}'),
       ),
     ).toBe(true);
-    expect(island(field("const check = (value: string) => (value ? null : 'Required');"))).toBe(
+    expect(isIsland(field("const check = (value: string) => (value ? null : 'Required');"))).toBe(
       true,
     );
     expect(
-      island("export function Inline() {\n  return <Field.Root validate={(value) => null} />;\n}"),
+      isIsland(
+        "export function Inline() {\n  return <Field.Root validate={(value) => null} />;\n}",
+      ),
     ).toBe(true);
     // A formatter also runs on the server, and a component renders there.
     expect(
-      island(
+      isIsland(
         "export function Meter() {\n  return <M getAriaValueText={(_, v) => `${v} GB`} />;\n}",
       ),
     ).toBe(false);
     expect(
-      island(
+      isIsland(
         "function Row() {\n  return <li />;\n}\nexport function List() {\n  return <L render={Row} />;\n}",
       ),
     ).toBe(false);
