@@ -119,6 +119,19 @@ export function Badge() {
   return <i class="star">*<style>.star { color: gold; }</style></i>;
 }
 `,
+  // Two LUM2006 warnings: the package's to fix, not its users' (TASK-397).
+  "dist/Rows.tsx": `export function Rows(props: { items: string[] }) {
+  return (
+    <ol>
+      {props.items.map((item, i) => {
+        const position = i;
+        const again = i;
+        return <li>{item}{position}{again}</li>;
+      })}
+    </ol>
+  );
+}
+`,
 };
 
 /** A linked workspace package (`../kit`), whose island call site only the server graph reaches. */
@@ -132,6 +145,18 @@ export function Header() {
 `,
   "src/Nav.stsx": `export function Nav() {
   return <nav>Docs</nav>;
+}
+`,
+  "src/Rows.tsx": `export function Rows(props: { items: string[] }) {
+  return (
+    <ol>
+      {props.items.map((item, i) => {
+        const position = i;
+        const again = i;
+        return <li>{item}{position}{again}</li>;
+      })}
+    </ol>
+  );
 }
 `,
   // A nested project (its own tsconfig), not part of the package: never scanned (TASK-99).
@@ -299,6 +324,45 @@ describe.skipIf(!binding)("@lumiose/vite", () => {
   it("reports warnings", async () => {
     await server.environments.client.transformRequest("/Warning.tsx");
     expect(warnings.some((w) => w.includes("LUM2006") && w.includes("Warning.tsx"))).toBe(true);
+  });
+
+  it("summarizes the warnings of installed Lumiose packages; a linked one's show (TASK-397)", async () => {
+    const before = warnings.length;
+    await server.environments.client.transformRequest(`/${UI_DIR}/dist/Rows.tsx`);
+    await server.environments.ssr.transformRequest(`/${UI_DIR}/dist/Rows.tsx`);
+    const installed = warnings.slice(before);
+    expect(installed).toHaveLength(1);
+    expect(installed[0]).toContain("@acme/ui (installed) has compiler warnings in its files");
+    expect(installed[0]).toContain("LUM2006");
+    const after = warnings.length;
+    const fs = `/@fs${kit.startsWith("/") ? "" : "/"}${kit}`;
+    await server.environments.ssr.transformRequest(`${fs}/src/Rows.tsx`);
+    const linked = warnings.slice(after);
+    expect(linked.filter((w) => w.includes("LUM2006") && w.includes("Rows.tsx"))).toHaveLength(2);
+  });
+
+  it("ends a build with one line per installed package that had warnings (TASK-397)", async () => {
+    const logged: string[] = [];
+    const logger = createLogger("warn", { allowClearScreen: false });
+    logger.warn = (message) => void logged.push(message);
+    await build({
+      root,
+      configFile: false,
+      customLogger: logger,
+      plugins: [lumiose()],
+      build: {
+        write: false,
+        rolldownOptions: {
+          input: { rows: `${root}/${UI_DIR}/dist/Rows.tsx` },
+          preserveEntrySignatures: "strict",
+        },
+      },
+    });
+    expect(logged.filter((w) => w.includes("LUM2006"))).toEqual([
+      expect.stringContaining(
+        "@acme/ui (installed): 2 compiler warnings in its files (LUM2006 ×2), not shown",
+      ),
+    ]);
   });
 
   it("compiles island call sites with root-relative refs and serves the island manifest", async () => {

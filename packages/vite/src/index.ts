@@ -173,6 +173,9 @@ export default function lumiose(options: LumioseOptions = {}): Plugin<LumiosePlu
   const cssManifest = new CssManifest();
   const customProperties = new CustomPropertyCheck();
   let packages = new Packages(root, options.exclude);
+  // Compiler warnings from installed Lumiose packages are theirs to fix: counted per package, not
+  // shown one by one (TASK-397). Linked packages are being worked on, so theirs show as the app's.
+  const hidden = new PackageWarnings();
   let scanned: ScannedModule[] | undefined;
   const project = (): ScannedModule[] =>
     (scanned ??= scanProject(root, include, isExcluded, packages, content));
@@ -344,7 +347,10 @@ export default function lumiose(options: LumioseOptions = {}): Plugin<LumiosePlu
           if (!entry.reported) {
             // Compiled here (not by the module's transform): a style-only edit.
             entry.reported = true;
-            reportFromLoad(this, file, source, entry.result.diagnostics);
+            const installed = packages.installedOf(file);
+            reportFromLoad(this, file, source, entry.result.diagnostics, (diagnostic, warn) =>
+              installed ? hidden.add(this, installed.name, file, diagnostic, serve) : warn(),
+            );
           }
           return { code: entry.css ?? "", map: entry.cssMap };
         },
@@ -369,6 +375,7 @@ export default function lumiose(options: LumioseOptions = {}): Plugin<LumiosePlu
           const { file, line, column } = unread;
           this.warn({ message: unreadMessage(unread.name), id: file, loc: { file, line, column } });
         }
+        for (const summary of hidden.summaries()) this.warn(summary);
       },
 
       generateBundle(_, bundle) {
@@ -457,9 +464,11 @@ export default function lumiose(options: LumioseOptions = {}): Plugin<LumiosePlu
             const manifest = graph.getModuleById(ISLANDS_ID);
             if (manifest) graph.invalidateModule(manifest);
           }
+          const installed = packages.installedOf(cleanId(id));
           for (const diagnostic of result.diagnostics) {
             if (diagnostic.severity !== "error") {
-              this.warn(message(diagnostic), diagnostic.span.start);
+              if (installed) hidden.add(this, installed.name, cleanId(id), diagnostic, serve);
+              else this.warn(message(diagnostic), diagnostic.span.start);
             }
           }
           if (errors.length > 0) {
@@ -555,6 +564,7 @@ function reportFromLoad(
   file: string,
   source: string,
   all: readonly Diagnostic[],
+  route: (diagnostic: Diagnostic, warn: () => void) => void,
 ): void {
   const diagnostics = all.filter((d) => d.code.startsWith("LUM3"));
   const loc = (offset: number) => {
@@ -564,7 +574,9 @@ function reportFromLoad(
   };
   for (const diagnostic of diagnostics) {
     if (diagnostic.severity !== "error") {
-      context.warn({ message: message(diagnostic), loc: loc(diagnostic.span.start) });
+      route(diagnostic, () =>
+        context.warn({ message: message(diagnostic), loc: loc(diagnostic.span.start) }),
+      );
     }
   }
   const errors = diagnostics.filter((d) => d.severity === "error");
@@ -576,6 +588,52 @@ function reportFromLoad(
     context.error(
       diagnosticError(message(errors[0]!) + more, { id: file, loc: loc(errors[0]!.span.start) }),
     );
+  }
+}
+
+/**
+ * The compiler warnings of installed Lumiose packages (TASK-397), which their users cannot fix:
+ * each is counted once per package (a build compiles a module for the client and the server) and
+ * not shown. In dev, the first one of a package says that its warnings are hidden; a build ends
+ * with one line per package, its codes and counts. Errors are never hidden.
+ */
+class PackageWarnings {
+  readonly #seen = new Set<string>();
+  readonly #codes = new Map<string, Map<string, number>>();
+
+  add(
+    context: Rollup.PluginContext,
+    pkg: string,
+    file: string,
+    diagnostic: Diagnostic,
+    serve: boolean,
+  ): void {
+    const key = `${file}:${diagnostic.span.start}:${diagnostic.code}`;
+    if (this.#seen.has(key)) return;
+    this.#seen.add(key);
+    let codes = this.#codes.get(pkg);
+    if (codes === undefined) {
+      codes = new Map();
+      this.#codes.set(pkg, codes);
+      if (serve) {
+        context.warn(
+          `${pkg} (installed) has compiler warnings in its files (${diagnostic.code} first); they are the package's to fix, so @lumiose/vite does not show them.`,
+        );
+      }
+    }
+    codes.set(diagnostic.code, (codes.get(diagnostic.code) ?? 0) + 1);
+  }
+
+  /** One line per package that had warnings, for the end of a build. */
+  summaries(): string[] {
+    return [...this.#codes].map(([pkg, codes]) => {
+      const total = [...codes.values()].reduce((sum, n) => sum + n, 0);
+      const list = [...codes]
+        .toSorted(([a], [b]) => (a < b ? -1 : 1))
+        .map(([code, n]) => (n > 1 ? `${code} ×${n}` : code))
+        .join(", ");
+      return `${pkg} (installed): ${total} compiler warning${total > 1 ? "s" : ""} in its files (${list}), not shown; they are the package's to fix.`;
+    });
   }
 }
 

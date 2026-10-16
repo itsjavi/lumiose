@@ -12746,6 +12746,10 @@ not. The plugin treats their modules like the app's own, whether the package is 
 - **Stable names.** Island refs and scope tokens name their modules package-relatively
   (`@acme/ui/dist/Nav.tsx#Nav`), wherever the package manager put them (`node_modules/.pnpm/…`
   included).
+- **Their warnings stay theirs.** Compiler warnings in an installed package's files (`LUM2001`, …)
+  are the package's to fix, not the app's: `lumiose dev` says once per package that it has some,
+  and a build ends with one line per package, its codes and their counts, instead of each warning.
+  A linked package is being worked on, so its warnings show like the app's. Errors always show.
 
 **Publishing a component library.** Ship the sources (`.tsx`, `.stsx`, `.ts`, `.css`) and point
 `exports` at them, with `lumiose` as a peer dependency: no build step, and the app's compiler

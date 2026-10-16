@@ -114,7 +114,12 @@ export class Packages {
 
   /** Whether `file` is a module of an installed Lumiose package (not of a package nested in it). */
   installs(file: string): boolean {
-    return this.installed().some(
+    return this.installedOf(file) !== undefined;
+  }
+
+  /** The installed Lumiose package `file` is a module of (not of a package nested in it). */
+  installedOf(file: string): PackageRoot | undefined {
+    return this.installed().find(
       (p) => isInside(file, p.dir) && !NODE_MODULES.test(file.slice(p.dir.length)),
     );
   }
