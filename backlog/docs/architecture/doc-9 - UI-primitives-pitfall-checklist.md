@@ -3,7 +3,7 @@ id: doc-9
 title: UI primitives pitfall checklist
 type: specification
 created_date: '2026-10-15 17:11'
-updated_date: '2026-10-15 18:00'
+updated_date: '2026-10-16 10:08'
 ---
 # UI primitives pitfall checklist
 
@@ -368,3 +368,109 @@ Every primitive meets WCAG 2.2 AA (decision-62), as the website does (decision-3
 - [ ] 2.5.8 Target Size (Minimum): pointer targets are at least 24 by 24 CSS pixels, or spaced so that 24px circles do not overlap.
 - [ ] 1.4.4 Resize Text, 1.4.10 Reflow and 1.4.12 Text Spacing: components work at 200% zoom, at 320 CSS pixels wide and with the WCAG text-spacing overrides, without lost content.
 - [ ] 1.4.1 Use of Color: selection, error and checked states are not conveyed by color alone.
+
+## 18. Added by the 0.1.0 release review (TASK-386, 2026-10-16)
+
+**§1 Cross-cutting**
+- A watcher created without user activation joins the previous group. Test a second hover-open inside a dialog, nested hover layers, and a dialog opened by script. Cancel Escape on keydown for JS layers. Playwright's Chromium evaluations grant activation: use input-only steps.
+- Closing a layer closes the layers and modal dialogs inside it; a modal inside a hidden ancestor leaves the page inert.
+- Islands: a form reset fires no input or change, so bound signals must resync.
+- IME:
+  - never rewrite a value, complete or submit while composing;
+  - treat `keyCode` 229 as composing (Safari's committing Enter);
+  - filter after compositionend.
+- Roving tab stops survive removal, native disabling or hiding of the stop item. A roving container skips keys a child already handled (`defaultPrevented`).
+- Decide how roving widgets behave in no-JS server HTML (Toolbar and Menubar disagree).
+- Nested instances of one component: containment is DOM containment; outer instances ignore events an inner one handled.
+- Fieldset-disabled checks use `:disabled`.
+- `<output>` is an implicit live region: use it only where announcements are wanted.
+- Caller ids on parts (decide, record).
+- Persistent regions moved into a modal survive its removal and are excluded from its gestures (Drawer swipe).
+- Forced colors: every state drawn with background or box-shadow has a fallback.
+- Theme switching behaves the same in dev and build.
+- Popups fit at 640x400 and 320x256, sized to the space beside the anchor.
+
+**§2 Dialog**
+- Chromium's focusable scrollers and `tabindex=-1` titles take initial focus (verified).
+- `cancel` vetoes only the first close request.
+
+**§3 Popover**
+- A non-modal popover closes when focus leaves it.
+- A hover-opened popup never moves focus on close unless focus was inside.
+- Trap-focus and focus-on-open use tab stops.
+- `position-visibility` misses viewport scroll everywhere, and inner scrollers in Firefox and WebKit.
+
+**§5 Menu**
+- Space runs link items.
+- Handle Escape on keydown.
+- Navigation menus need hover intent across adjacent triggers; native auto light dismiss bypasses the press filters.
+
+**§6 Combobox**
+- Expose required on the input.
+- Autofill-like input never opens or filters.
+- Restore the label on blur after a self-close.
+- Live regions stay rendered.
+- A Status in the popup needs the popup open.
+- Outside invokers belong to the layer.
+- A restored state is not the reset default.
+- Reset clears `aria-invalid`.
+- Server-render the label; don't overwrite pre-upgrade text.
+
+**§7 Select**
+- Rich options need `label` for typeahead.
+- Test customizable select in WebKit 26.6 and later.
+
+**§8 Tabs**
+- Exactly one tab stop in server HTML, even with disabled leading tabs.
+
+**§9 Accordion and Collapsible**
+- The native `toggle` fires on insertion: it is not a change.
+
+**§10 Checkbox**
+- Indeterminate survives reset.
+- Parent tri-state restore, disabled children counted, `aria-controls`.
+
+**§11 Radio Group**
+- Shift+Tab into an unchecked group lands on the first enabled radio.
+- Native radios click ancestors on arrow selection: record it as platform behaviour.
+
+**§14 Slider**
+- Value is not a live region.
+- With `"none"`, a blocked move fires nothing.
+
+**§15 Field**
+- A repeated server error shows again after an edit.
+- A failed action keeps the entered values (3.3.7).
+- A silent `checkValidity()` changes nothing.
+- The first invalid control wins, even when a later control has no Error part.
+- Disabling a control clears its error.
+- Unique Description and Error ids.
+- "Dirty" means edited, for every control kind.
+
+**§16 Toast**
+- The focused toast is exempt from the limit.
+- Pause on visible focus only.
+- Cancel a swipe on a 10px reversal.
+- `touch-action` keeps pinch-zoom.
+- Reserve scroll padding for persistent toasts.
+
+**New Number Field section**
+- Native step grid vs smallStep, Home/End and clamping.
+- The wheel never traps scroll or zoom.
+- iOS `inputmode` for negatives.
+- Full-width and Arabic-Indic digits.
+- A stepper press focuses the input.
+
+**New OTP section**
+- Mask → password.
+- ASCII digits.
+- The overlaid input is at least 16px (iOS).
+- Typing replaces the ringed slot.
+- autoSubmit vs IME.
+
+**New Scroll Area, Avatar and Drawer items**
+- Wheel over overlay scrollbars.
+- Scroll-snap off while dragging the thumb.
+- 24px scrollbar targets.
+- No-JS double naming (Avatar).
+- Swipes start inside the popup only; no mouse swipe from Content (Drawer).
