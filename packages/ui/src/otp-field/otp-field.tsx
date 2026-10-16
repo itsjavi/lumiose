@@ -9,6 +9,7 @@
 // `valuecomplete` and `valueinvalid` report back.
 import { createContext, effect, ref, untrack, useContext, useId } from "lumiose";
 import { controlId, describedBy, useField } from "../field/context.ts";
+import { onFormReset } from "../form/reset.ts";
 import type { OTPFieldElement, OTPFieldValueDetail } from "./otp-field.script.ts";
 import otpFieldScript from "./otp-field.script.ts?client";
 
@@ -196,6 +197,15 @@ function Root({
     const host = element();
     if (host) host.normalizeValue = normalizeValue;
   });
+  // A form reset puts the code back without an `input` event: it goes to `onValueChange`
+  // (TASK-435).
+  if (onValueChange) {
+    onFormReset(
+      () => element()?.input ?? undefined,
+      () => element()!.value,
+      onValueChange,
+    );
+  }
   const context: OTPFieldContextValue = {
     inputId: untrack(() => id ?? (field ? controlId(field) : `${generated}-input`)),
     length: () => length,
@@ -225,7 +235,10 @@ function Root({
         auto-submit={autoSubmit}
         on:input={(event: Event) => {
           const input = element()?.input;
-          if (input && event.target === input) onValueChange?.(input.value);
+          // A composition reports once committed (the element fires `input` then, TASK-432).
+          if (input && event.target === input && !(event as InputEvent).isComposing) {
+            onValueChange?.(input.value);
+          }
         }}
         on:valuecomplete={(event: CustomEvent<OTPFieldValueDetail>) =>
           onValueComplete?.(event.detail.value)

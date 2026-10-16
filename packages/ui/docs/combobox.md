@@ -65,7 +65,7 @@ parts go next to it in a `Popup`, never inside the listbox.
 | `bind:open`     | `Signal<boolean>`                      |              | Stands in for `open` and `onOpenChange`.                                                                                    |
 | `multiple`      | `boolean`                              | `false`      | Several values: choosing an option toggles it and the popup stays open. `value` is then an array.                           |
 | `name`          | `string`                               |              | The name the value is submitted under; with `multiple`, each value is its own entry.                                        |
-| `required`      | `boolean`                              | `false`      | The form needs a value: the browser reports an empty combobox at its input on submit.                                       |
+| `required`      | `boolean`                              | `false`      | The form needs a value: the browser reports an empty combobox at its input on submit, and the input has `aria-required`.    |
 | `disabled`      | `boolean`                              | `false`      | The input and the buttons are disabled. A disabled `<fieldset>` around it does the same.                                    |
 | `filter`        | `"contains" \| "startsWith" \| "none"` | `"contains"` | How typing filters the options by their label, ignoring case and accents. `"none"` leaves filtering to you (async options). |
 
@@ -281,11 +281,18 @@ Focus stays in the input; the active option is `aria-activedescendant`.
 - **Choosing** an option puts its label in the input and closes the popup, or, with `multiple`,
   toggles it, clears the text and keeps the popup open. It fires `change` once per change.
 - **Emptying the input** clears a single selection. Closing the popup without choosing (Escape,
-  Tab, a click outside) puts the label back.
+  Tab, a click outside) puts the label back, and so does focus leaving the input after typing that
+  matched nothing.
 - **The pointer**: a click on the input opens the popup, hovering highlights an option, a click
   chooses it; presses in the popup and on the buttons keep focus in the input. A click outside
   closes the popup; a right-click or a second finger outside leaves it open, as in Base UI.
-- **IME**: while composing, Enter and the arrows belong to the input method.
+- **IME**: while composing, Enter and the arrows belong to the input method, and the options are
+  filtered by the committed text only (Safari's committing Enter, which comes after the
+  composition as key 229, chooses nothing).
+- **Autofill**: text the browser fills in (an unfocused field, or a picked suggestion) never opens
+  the popup; a text that is an option's label or value exactly chooses it.
+- **A Status** with a message counts as something to show: inside a `Popup`, it opens with
+  "Searching…" while async options load.
 
 ## Without JavaScript, and the element's script
 
@@ -297,7 +304,8 @@ must work without JavaScript, use [Select](select.md).
 A page that renders a `Combobox` loads the script once, as a 4.5 kB (brotli) module without the
 Lumiose runtime, and islands bundle it. It defines `lu-combobox`, which upgrades every combobox on
 the page in place: it reads the selection the server rendered (`aria-selected="true"`), puts its
-label in the input, renders the chips, and from then on owns the value, the filtering, the popup,
+label in the input (text typed before it ran is kept, as a search), renders the chips, and from
+then on owns the value, the filtering, the popup,
 the keyboard and the form value. Its popup is a manual popover, dismissed by the model Menu and
 Popover share: an outside press with the main button, a close request (Escape, the Android back
 gesture), Tab, or focus moving elsewhere.
@@ -315,6 +323,7 @@ The element is also an API of its own, for scripts and other frameworks:
   own `change` stays inside.
 - `openchange`: an event (not bubbling, like `toggle`) with `detail.open`, after the popup opens or
   closes.
+- The buttons are hidden until the element is defined: before, they would do nothing.
 - The buttons are invoker commands: a `<button commandfor="<the element's id>" command="--toggle">`
   (or `"--clear"`) works anywhere on the page; where the browser lacks invoker commands, the
   element handles the clicks of those inside it.

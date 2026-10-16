@@ -5,9 +5,10 @@
 // name. checkbox.script.ts (decision-63) adds the indeterminate state of server HTML, the parent
 // checkbox of a group and read-only.
 import { effect, isServer, ref, untrack, useContext } from "lumiose";
-import { fieldProps, useField } from "../field/context.ts";
+import { fieldProps, useField, useFormValues } from "../field/context.ts";
 import checkboxScript from "./checkbox.script.ts?client";
 import { CheckboxGroupContext } from "./context.ts";
+import { onFormReset } from "../form/reset.ts";
 
 /**
  * The native checkbox props Root passes through (`name`, `required`, `disabled`, `form`, `id`,
@@ -69,7 +70,15 @@ function Root({
   checkboxScript();
   const field = useField();
   const group = useContext(CheckboxGroupContext);
-  const initial = untrack(() => defaultChecked);
+  // A failed submission's values (a Form's `values`): checked when they hold its value (TASK-430).
+  const sent =
+    group || parent
+      ? undefined
+      : useFormValues(
+          untrack(() => rest.name ?? field?.name()),
+          untrack(() => rest.disabled),
+        );
+  const initial = untrack(() => (sent ? sent.includes(value ?? "on") : defaultChecked));
   /** A parent's state from the group: checked when every value is, mixed when some are. */
   const parentState = () => {
     const all = group?.allValues() ?? [];
@@ -87,6 +96,11 @@ function Root({
   // `indeterminate` is a property only: the server writes `data-indeterminate`, which the script
   // turns into the property; in the browser the component sets it.
   const input = ref<HTMLInputElement>();
+  // A form reset fires no `change`: the reset state goes to `onCheckedChange` (TASK-435). In a
+  // group, the group reports it.
+  if (onCheckedChange && !group && !parent) {
+    onFormReset(input, () => input()!.checked, onCheckedChange);
+  }
   effect(() => {
     const element = input();
     if (element) element.indeterminate = isMixed();
@@ -94,7 +108,8 @@ function Root({
   return (
     <input
       {...rest}
-      {...fieldProps(field, rest)}
+      // In a group the group takes the field's id and ARIA references (TASK-439, M25).
+      {...(group ? {} : fieldProps(field, rest))}
       ref={(element: HTMLInputElement) => {
         input(element);
         rest.ref?.(element);

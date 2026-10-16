@@ -159,7 +159,8 @@ export class NumberFieldElement extends HTMLElement {
 
   #usable(): boolean {
     const input = this.input;
-    return !!input && !input.disabled && !input.readOnly;
+    // `:disabled`: a disabled fieldset around the field disables it too (TASK-439, M30).
+    return !!input && !input.matches(":disabled") && !input.readOnly;
   }
 
   /** `value` within `min` and `max`. */

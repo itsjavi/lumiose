@@ -1,11 +1,11 @@
 ---
 id: TASK-435
 title: 'Islands: bound values follow a form reset'
-status: To Do
+status: Done
 assignee:
   - '@Beacon'
 created_date: '2026-10-16 10:06'
-updated_date: '2026-10-16 10:08'
+updated_date: '2026-10-16 10:30'
 labels:
   - ui
   - review
@@ -30,11 +30,13 @@ Found by Prism's release review of @lumiose/ui (TASK-386, 2026-10-16) on main 94
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Islands: bound values follow a form reset, with a regression test that fails without the fix (in every engine the finding names)
+- [x] #1 Islands: bound values follow a form reset, with a regression test that fails without the fix (in every engine the finding names)
 <!-- AC:END -->
 
 ## Implementation Notes
 
 <!-- SECTION:NOTES:BEGIN -->
 2026-10-16 (Lux, orchestrator): assigned to Beacon for fix batch 1 of the release review (the idle Beacon session; it may edit packages/ui and, for TASK-430, the form-action runtime in packages/lumiose/src/app).
+
+2026-10-16 (Beacon): Fixed. packages/ui/src/form/reset.ts `onFormReset(element, read, report)`: on mount, finds the control's form (`.form`, else the closest form) and listens for `reset`; it reads the value at the event and again a task later (after the controls and the elements' own reset handlers), and reports when it differs. Wired into Input (onValueChange), Checkbox and Switch (onCheckedChange; a grouped checkbox leaves it to its group), CheckboxGroup and RadioGroup (their internal signal and onValueChange; "" when no radio is checked), Select, Number Field, Slider, Combobox (internal selection too), Autocomplete (input text) and OTP Field (code). Groups always follow (their children's checked state derives from the group's signal); the others register only with a callback. New fixture /form/reset (island, every control bound to a signal in one form with a Reset button; new files, no overlap) and test 'bound values follow a form reset (TASK-435)': change every signal, type in Name, Reset → every signal back to its initial value. Fails without the listener in Chromium (build), Firefox and WebKit; passes in all three. form.md: a paragraph on resets. The OTP docs example (disabled={code().length < 6}) now follows a reset.
 <!-- SECTION:NOTES:END -->

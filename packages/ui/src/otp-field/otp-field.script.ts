@@ -79,6 +79,7 @@ export class OTPFieldElement extends HTMLElement {
     this.addEventListener("input", this.#onInput, true);
     this.addEventListener("keydown", this.#onKey);
     this.addEventListener("beforeinput", this.#onBeforeInput);
+    this.addEventListener("compositionend", this.#onCompositionEnd);
     this.addEventListener("paste", this.#onPaste);
     this.addEventListener("pointerdown", this.#onPress);
     this.addEventListener("focusin", this.#onFocus);
@@ -98,6 +99,7 @@ export class OTPFieldElement extends HTMLElement {
     this.removeEventListener("input", this.#onInput, true);
     this.removeEventListener("keydown", this.#onKey);
     this.removeEventListener("beforeinput", this.#onBeforeInput);
+    this.removeEventListener("compositionend", this.#onCompositionEnd);
     this.removeEventListener("paste", this.#onPaste);
     this.removeEventListener("pointerdown", this.#onPress);
     this.removeEventListener("focusin", this.#onFocus);
@@ -149,6 +151,13 @@ export class OTPFieldElement extends HTMLElement {
   #onInput = (event: Event) => {
     const input = this.input;
     if (!input || event.target !== input) return;
+    // An IME composition is not text yet: cleaning it would lose the commit, and completing it
+    // would submit what the user has not chosen. The slots show it; `compositionend` goes on
+    // (TASK-432).
+    if ((event as InputEvent).isComposing) {
+      this.#sync();
+      return;
+    }
     const raw = input.value;
     const clean = this.#clean(raw);
     if (this.#rejects(raw)) {
@@ -174,6 +183,17 @@ export class OTPFieldElement extends HTMLElement {
         if (this.hasAttribute("auto-submit")) input.form?.requestSubmit();
       });
     } else if (clean.length < this.#length) this.#completed = "";
+  };
+
+  /**
+   * The committed text: cleaned, completed and submitted as typing would. Chromium fires no
+   * `input` after `compositionend`, so this one tells every listener; where the browser fires one
+   * too, the second finds the value clean and the completion done.
+   */
+  #onCompositionEnd = (event: CompositionEvent) => {
+    const input = this.input;
+    if (!input || event.target !== input) return;
+    input.dispatchEvent(new Event("input", { bubbles: true }));
   };
 
   #onKey = (event: KeyboardEvent) => {

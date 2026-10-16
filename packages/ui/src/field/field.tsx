@@ -204,6 +204,7 @@ function Root({
     invalid: () => invalid === true || messages().length > 0,
     messages,
     descriptions: signal(0),
+    labels: signal(0),
     validity,
   };
 
@@ -276,6 +277,16 @@ function Root({
     const element = document.getElementById(controlId(field));
     if (element) untrack(() => run(element, 0, true));
   });
+  // A form action's errors for this field, each time they arrive: the script shows them again
+  // even when they repeat, which no binding would apply again once an edit hid them (TASK-429).
+  effect(() => {
+    const errors = form?.errors();
+    const list = messages();
+    const element = untrack(host);
+    if (errors && list.length > 0 && element) {
+      element.dispatchEvent(new CustomEvent("validitychange", { detail: { errors: list } }));
+    }
+  });
   // A submit attempt checks every control (`invalid` does not bubble); a reset clears the checks.
   const onInvalid = (event: Event) => snapshot(event.target);
   const onReset = () => {
@@ -335,6 +346,17 @@ function useFieldPart(part: string): FieldContextValue {
 
 function Label({ children, ...rest }: FieldLabelProps) {
   const field = useFieldPart("Label");
+  // Counted as Description is, for the group controls it names (TASK-439).
+  let counted = false;
+  const register = () => {
+    counted = true;
+    field.labels.update((n) => n + 1);
+  };
+  onCleanup(() => {
+    if (counted) field.labels.update((n) => n - 1);
+  });
+  if (isServer) register();
+  else onMount(register);
   return (
     <label {...rest} id={`${field.id}-label`} for={controlId(field)}>
       {children}
@@ -376,7 +398,15 @@ function ErrorPart({ match, children, ...rest }: FieldErrorProps) {
       match === undefined ? (message() ? "" : "-invalid") : match === true ? "-always" : `-${match}`
     }`;
   return (
-    <output {...rest} id={id()} for={message() ? controlId(field) : undefined} hidden={!visible()}>
+    // Not a live region: the control's description says it, without re-announcing each keystroke
+    // (TASK-439, M31).
+    <output
+      aria-live="off"
+      {...rest}
+      id={id()}
+      for={message() ? controlId(field) : undefined}
+      hidden={!visible()}
+    >
       {message() ? field.messages().join(" ") : children}
     </output>
   );

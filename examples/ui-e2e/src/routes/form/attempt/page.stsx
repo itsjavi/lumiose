@@ -1,0 +1,24 @@
+import { Field, Form } from "@lumiose/ui";
+import { Title } from "lumiose";
+
+// Submit attempts (TASK-439, M28 and M29): a field with an Error, then a required input without
+// a field. Only a submit attempt shows the field's error; a silent checkValidity() shows nothing.
+export default function FormAttemptPage() {
+  return (
+    <>
+      <Title>Submit attempts</Title>
+      <h1>Submit attempts</h1>
+      <Form method="get" action="/form/attempt" class="lu-fieldset">
+        <Field.Root name="email" class="lu-field">
+          <Field.Label>Email</Field.Label>
+          <Field.Control type="email" required class="lu-input" />
+          <Field.Error />
+        </Field.Root>
+        <input name="nickname" aria-label="Nickname" required class="lu-input" />
+        <button type="submit" class="lu-button">
+          Send
+        </button>
+      </Form>
+    </>
+  );
+}

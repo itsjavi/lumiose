@@ -57,6 +57,49 @@ async function fillValid(page: Page, name = "ada") {
   await page.getByRole("checkbox", { name: "I accept the terms" }).check();
 }
 
+/** Fills every control with values other than the defaults, and "taken" as the username. */
+async function fillTaken(page: Page) {
+  await fillValid(page, "taken");
+  await page.getByRole("combobox", { name: "Plan" }).selectOption("free");
+  await page.getByRole("checkbox", { name: "olives" }).check();
+  await page.getByRole("checkbox", { name: "cheese" }).uncheck();
+  await page.getByRole("radio", { name: "Extra large" }).check();
+  await page.getByRole("switch", { name: "Newsletter" }).uncheck();
+}
+
+/** After the failed submission: the error, and every control as the user left it (TASK-430). */
+async function expectRefilled(page: Page) {
+  await expect(page.getByText("That username is taken.")).toBeVisible();
+  await expect(username(page)).toHaveValue("taken");
+  await expect(email(page)).toHaveValue("ada@example.com");
+  await expect(page.getByRole("combobox", { name: "Plan" })).toHaveValue("free");
+  await expect(page.getByRole("checkbox", { name: "olives" })).toBeChecked();
+  await expect(page.getByRole("checkbox", { name: "cheese" })).not.toBeChecked();
+  await expect(page.getByRole("radio", { name: "Extra large" })).toBeChecked();
+  await expect(page.getByRole("switch", { name: "Newsletter" })).not.toBeChecked();
+  await expect(page.getByRole("checkbox", { name: "I accept the terms" })).toBeChecked();
+}
+
+test.describe("a failed action keeps what the user entered (TASK-430)", () => {
+  test("with JavaScript", async ({ page }) => {
+    await ready(page);
+    await fillTaken(page);
+    await submitButton(page).click();
+    await expectRefilled(page);
+  });
+
+  test.describe("without JavaScript", () => {
+    test.use({ javaScriptEnabled: false });
+
+    test("the page renders back filled in", async ({ page }) => {
+      await page.goto("/form");
+      await fillTaken(page);
+      await submitButton(page).click();
+      await expectRefilled(page);
+    });
+  });
+});
+
 test.describe("without JavaScript", () => {
   test.use({ javaScriptEnabled: false });
 
@@ -354,6 +397,54 @@ test.describe("a form reset in an island (TASK-424)", () => {
     await handle.fill("admin");
     await page.getByRole("button", { name: "Save" }).click();
     await expect(page.getByText("That handle is reserved.")).toBeVisible();
+  });
+});
+
+test.describe("a form action's error that repeats (TASK-429)", () => {
+  test("shows again after an edit hid it, with aria-invalid and the description", async ({
+    page,
+  }) => {
+    await page.goto("/form/island");
+    const handle = page.getByRole("textbox", { name: "Handle" });
+    const error = page.getByText("That handle is reserved.");
+    await hydrated(page);
+    await handle.fill("admin");
+    await page.getByRole("button", { name: "Save" }).click();
+    await expect(error).toBeVisible();
+    // An edit hides the server's error; the same value fails the same way again.
+    await handle.fill("admin2");
+    await expect(error).toBeHidden();
+    await expect(handle).not.toHaveAttribute("aria-invalid");
+    await handle.fill("admin");
+    await page.getByRole("button", { name: "Save" }).click();
+    await expect(error).toBeVisible();
+    await expect(handle).toHaveAttribute("aria-invalid", "true");
+    const id = await error.getAttribute("id");
+    await expect(handle).toHaveAttribute("aria-describedby", new RegExp(`\\b${id}\\b`));
+  });
+});
+
+test.describe("bound values follow a form reset (TASK-435)", () => {
+  const INITIAL =
+    "name: ada, agree: false, dark: true, colours: red, size: m, plan: free, seats: 2, volume: 40, fruit: apple, topic: signals, code: none";
+  test("every control's signal takes its reset value", async ({ page }) => {
+    await page.goto("/form/reset");
+    const state = page.getByTestId("reset-state");
+    await expect(state).toHaveText(INITIAL);
+    // Signals changed while the island runs (the controls follow them), then a native reset.
+    await expect(async () => {
+      await page.getByTestId("change-signals").click();
+      await expect(state).toContainText("name: grace", { timeout: 250 });
+    }).toPass();
+    await expect(state).toHaveText(
+      "name: grace, agree: true, dark: false, colours: green blue, size: s, plan: pro, seats: 5, volume: 80, fruit: pear, topic: routing, code: 1234",
+    );
+    await page.getByRole("textbox", { name: "Name" }).fill("linus");
+    await expect(state).toContainText("name: linus");
+    await page.getByRole("button", { name: "Reset" }).click();
+    await expect(state).toHaveText(INITIAL);
+    await expect(page.getByRole("textbox", { name: "Name" })).toHaveValue("ada");
+    await expect(page.getByRole("combobox", { name: "Fruit" })).toHaveValue("Apple");
   });
 });
 

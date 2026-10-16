@@ -18,7 +18,8 @@ export const actions = {
   async signup(ctx: ActionContext<"/form">) {
     const form = await ctx.formData();
     if (form.get("username") === "taken") {
-      return fail(400, { username: "That username is taken." });
+      // The submitted values come back, so the form re-renders filled in (TASK-430).
+      return fail(400, { errors: { username: "That username is taken." }, values: form });
     }
     return { saved: new URLSearchParams(form as unknown as Record<string, string>).toString() };
   },
@@ -35,7 +36,8 @@ export default function FormPage() {
       <Form
         method="post"
         action="?/signup"
-        errors={result && "username" in result ? result : undefined}
+        errors={result && "errors" in result ? result.errors : undefined}
+        values={result && "values" in result ? result.values : undefined}
         class="grid"
       >
         <section aria-labelledby="account-heading">

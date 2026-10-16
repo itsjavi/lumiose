@@ -1,11 +1,11 @@
 ---
 id: TASK-439
 title: 'Release review, Medium: Field, Form, form controls'
-status: To Do
+status: In Progress
 assignee:
   - '@Beacon'
 created_date: '2026-10-16 10:06'
-updated_date: '2026-10-16 10:08'
+updated_date: '2026-10-16 10:59'
 labels:
   - ui
   - review
@@ -67,4 +67,6 @@ Found by Prism's release review of @lumiose/ui (TASK-386, 2026-10-16) on main 94
 
 <!-- SECTION:NOTES:BEGIN -->
 2026-10-16 (Lux, orchestrator): assigned to Beacon for fix batch 1 of the release review (the idle Beacon session; it may edit packages/ui and, for TASK-430, the form-action runtime in packages/lumiose/src/app).
+
+2026-10-16 (Beacon): Fixed M25, M26 (label), M27, M28, M29, M30, M31; tests fail without the fixes in Chromium (build), Firefox and WebKit. M25/M26: Field.Label registers (labels count, like descriptions); a Radio Group or Checkbox Group in a field is aria-labelledby the label, takes aria-describedby / aria-invalid (CheckboxGroup now uses the field: name, disabled, role=group), grouped checkboxes skip the field's id and ARIA; field.script marks [role=radiogroup], [role=group] as one; server tests in field.test.tsx, browser test field-groups.e2e.ts (fixture /form/groups). M27/M28/M29 in field.script.ts: `invalid` acts only during a submit attempt (submit button click or Enter, flagged until the next task; requestSubmit() and the form's reportValidity() are wrapped on HTMLFormElement.prototype to flag theirs); a later field-less invalid control's invalid is cancelled when the first invalid control is a field's; server errors move focus to the first field showing one (on load unless something has focus, and when an island's errors arrive via the TASK-429 validitychange); field-attempt.e2e.ts (fixture /form/attempt). Field's script is now 1.5 kB brotli (docs updated). M30: slider and number-field scripts check :disabled (disabled-fieldset.e2e.ts, fixture /form/disabled). M31: aria-live=off on Field.Error and Slider.Value (server tests). Left for a decision: M26's dangling aria-describedby without JavaScript: on the server the control renders before its Errors, so it references the message Error's id when invalid even if the field only has Errors with children or match; with JavaScript the script corrects it on load. Proposal: keep, recommend a message Error. Status stays In Progress until the user agrees.
 <!-- SECTION:NOTES:END -->

@@ -32,6 +32,28 @@ describe("data-only serialization", () => {
     expect(decoded.numbers).toHaveLength(5);
   });
 
+  it("round-trips a FormData's text entries, leaving files out (TASK-430)", () => {
+    const form = new FormData();
+    form.append("email", "ada@example.com");
+    form.append("colours", "red");
+    form.append("colours", "blue");
+    form.append("avatar", new Blob(["x"]), "a.png");
+    expect(encodeData({ values: form }, fail)).toEqual({
+      values: {
+        $: "F",
+        v: [
+          ["email", "ada@example.com"],
+          ["colours", "red"],
+          ["colours", "blue"],
+        ],
+      },
+    });
+    const decoded = (roundTrip({ values: form }) as { values: FormData }).values;
+    expect(decoded).toBeInstanceOf(FormData);
+    expect(decoded.getAll("colours")).toEqual(["red", "blue"]);
+    expect(decoded.has("avatar")).toBe(false);
+  });
+
   it("omits undefined properties like JSON", () => {
     expect(encodeData({ a: undefined, b: 1 }, fail)).toEqual({ b: 1 });
   });

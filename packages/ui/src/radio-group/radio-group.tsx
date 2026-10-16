@@ -3,9 +3,10 @@
 // radio, or the first), arrow keys that move and select (skipping disabled radios, following the
 // direction), `required`, submission and reset, in server HTML and without JavaScript; the legend
 // names the group. checkbox.script.ts adds read-only.
-import { createContext, effect, signal, untrack, useContext, useId } from "lumiose";
+import { createContext, effect, ref, signal, untrack, useContext, useId } from "lumiose";
 import checkboxScript from "../checkbox/checkbox.script.ts?client";
-import { describedBy, useField } from "../field/context.ts";
+import { describedBy, labelledBy, useField, useFormValues } from "../field/context.ts";
+import { onFormReset } from "../form/reset.ts";
 
 interface RadioGroupContextValue {
   name: () => string;
@@ -70,7 +71,14 @@ export function RadioGroup({
   checkboxScript();
   const field = useField();
   const id = useId();
-  const selected = signal<string | undefined>(untrack(() => value ?? defaultValue));
+  // A failed submission's values (a Form's `values`) replace the default (TASK-430).
+  const sent = useFormValues(
+    untrack(() => name ?? field?.name()),
+    untrack(() => rest.disabled),
+  );
+  const selected = signal<string | undefined>(
+    untrack(() => value ?? (sent ? sent[0] : defaultValue)),
+  );
   // The `value` prop drives the radios when it changes.
   effect(() => {
     const next = value;
@@ -81,11 +89,33 @@ export function RadioGroup({
     value: selected,
     required: () => required === true,
   };
+  // A form reset checks the default radio without a `change`: the group follows it, and
+  // `onValueChange` gets it ("" for none) (TASK-435).
+  const group = ref<HTMLFieldSetElement>();
+  onFormReset(
+    group,
+    () =>
+      [...group()!.querySelectorAll<HTMLInputElement>("input[type=radio]")].find(
+        (radio) => radio.checked && radio.closest("fieldset") === group(),
+      )?.value ?? "",
+    (next) => {
+      selected.set(next || undefined);
+      onValueChange?.(next);
+    },
+  );
   return (
     <RadioGroupContext value={context}>
       <fieldset
         {...rest}
+        ref={(element: HTMLFieldSetElement) => {
+          group(element);
+          rest.ref?.(element);
+        }}
         disabled={rest.disabled || field?.disabled() || undefined}
+        // In a field the Label names the group: its `for` has no single radio to point at.
+        aria-labelledby={
+          rest["aria-labelledby"] ?? (rest["aria-label"] ? undefined : labelledBy(field))
+        }
         aria-describedby={rest["aria-describedby"] ?? (field ? describedBy(field) : undefined)}
         aria-invalid={rest["aria-invalid"] ?? (field?.invalid() ? "true" : undefined)}
         role="radiogroup"

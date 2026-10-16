@@ -47,6 +47,8 @@ describe("Combobox on the server", () => {
       "aria-autocomplete": "list",
       "aria-expanded": "false",
       "aria-controls": list.id,
+      // The element has no role: the input carries `required` for assistive technology.
+      "aria-required": "true",
     });
     expect(list).toMatchObject({
       class: "list",

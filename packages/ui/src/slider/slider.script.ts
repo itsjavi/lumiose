@@ -203,7 +203,7 @@ export class SliderElement extends HTMLElement {
 
   #onKeyDown = (event: KeyboardEvent) => {
     const thumb = event.target as HTMLInputElement;
-    if (!thumb.matches?.(THUMB) || thumb.disabled || event.isComposing) return;
+    if (!thumb.matches?.(THUMB) || thumb.matches(":disabled") || event.isComposing) return;
     if (event.altKey || event.ctrlKey || event.metaKey) return;
     const large = number(this.getAttribute("large-step"), 10);
     let delta = 0;
@@ -241,7 +241,8 @@ export class SliderElement extends HTMLElement {
   }
 
   #onPress = (event: PointerEvent) => {
-    const thumbs = this.thumbs.filter((thumb) => !thumb.disabled);
+    // `:disabled`: a disabled fieldset around the slider disables its thumbs too (TASK-439, M30).
+    const thumbs = this.thumbs.filter((thumb) => !thumb.matches(":disabled"));
     // One thumb: the native input takes presses on its whole track.
     if (thumbs.length < 2 || event.button !== 0 || !event.isPrimary) return;
     if ((event.target as Element).matches?.(THUMB)) {

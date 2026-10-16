@@ -1,6 +1,6 @@
 # Field
 
-> A form field: a label, a native control, a description and its errors, wired with `for`, `aria-describedby` and `aria-invalid`, after Base UI's Field. Validation is the browser's constraint validation (`required`, `type`, `pattern`, `minlength`…); a 1.1 kB script shows it in the field's Error parts at the right time, instead of the browser's bubble, and focuses the first invalid field on submit. A Form's server errors render in the HTML, so they work without JavaScript. In an island, `validate` adds checks of your own, async ones included, and `Field.Validity` renders from the field's validity.
+> A form field: a label, a native control, a description and its errors, wired with `for`, `aria-describedby` and `aria-invalid`, after Base UI's Field. Validation is the browser's constraint validation (`required`, `type`, `pattern`, `minlength`…); a 1.5 kB script shows it in the field's Error parts at the right time, instead of the browser's bubble, and focuses the first invalid field on submit. A Form's server errors render in the HTML, so they work without JavaScript. In an island, `validate` adds checks of your own, async ones included, and `Field.Validity` renders from the field's validity.
 
 ```ts
 import { Field } from "@lumiose/ui"; // or "@lumiose/ui/field"
@@ -30,9 +30,12 @@ import "@lumiose/ui/themes/default.css"; // optional: the default theme
 | `Validity`    | No element: what its function child returns for the field's validity, in an island.                                                          |
 
 Instead of `Field.Control`, a field can hold a [Checkbox](checkbox.md), a [Switch](switch.md), a
-[Select](select.md), a [Radio Group](radio-group.md), a [Combobox](combobox.md), an
-[Autocomplete](autocomplete.md), a [Number Field](number-field.md) or a [Slider](slider.md): they
-take the field's wiring the same way (a Combobox and an Autocomplete through their input).
+[Select](select.md), a [Radio Group](radio-group.md), a [Checkbox Group](checkbox-group.md), a
+[Combobox](combobox.md), an [Autocomplete](autocomplete.md), a [Number Field](number-field.md) or a
+[Slider](slider.md): they take the field's wiring the same way (a Combobox and an Autocomplete
+through their input). A Radio Group or Checkbox Group takes it as a group: `Field.Label` names the
+group (`aria-labelledby`, as there is no single radio or checkbox for its `for`), and the group,
+not each control, gets `aria-describedby` and `aria-invalid`.
 
 ## API
 
@@ -229,7 +232,8 @@ reader reads it there.
   in a field the user has not edited yet (Base UI's rule). **`"onChange"`** shows it as the user
   types.
 - **Once shown**, an error follows the value: it updates as the problem changes and goes away when
-  the value is valid. A server error goes away as soon as the value changes.
+  the value is valid. A server error goes away as soon as the value changes, and shows again
+  each time an action fails with it, the same message included.
 - **A form reset** hides every error.
 
 ## Without JavaScript, and the field's script
@@ -239,13 +243,20 @@ reports the first problem in its own bubble, and the form submits when everythin
 errors from a Form render in the HTML, visible and linked with `aria-describedby` and
 `aria-invalid`.
 
-A page that renders a `Field` loads a 1.1 kB (brotli) script once, without the Lumiose runtime;
-islands bundle it. It cancels the browser's `invalid` bubble for fields that have an Error part and
-shows the problem there instead (the browser's message, or one your `validate` set), with the
-timing above, focuses the first invalid control on a submit attempt, keeps `aria-invalid` and
+A page that renders a `Field` loads a 1.5 kB (brotli) script once, without the Lumiose runtime;
+islands bundle it. On a submit attempt (a submit button, Enter in a field, `requestSubmit()` or
+the form's `reportValidity()`, which it wraps to tell them from a silent `checkValidity()`, which
+changes nothing) it cancels the browser's
+`invalid` bubble for fields that have an Error part and shows the problem there instead (the
+browser's message, or one your `validate` set), with the timing above, and focuses the first
+invalid control, with no bubble on a later control outside a field. A form action's errors move
+focus to the first field that shows one, when the page renders back (unless an `autofocus` element
+has it) and when an island's errors arrive. It also keeps `aria-invalid` and
 `aria-describedby` current (a description rendered after the control is linked once the script
 runs), and hides server errors once the value changes. When an async `validate` settles, Field.Root
-fires `validitychange` (not bubbling) on the control, and the script shows the new verdict.
+fires `validitychange` (not bubbling) on the control, and the script shows the new verdict. When a
+form action's errors arrive in an island, Field.Root fires it on `<lu-field>` with the messages
+(`detail.errors`), and the script shows them as the server's, even when they repeat.
 
 ## Browser support
 

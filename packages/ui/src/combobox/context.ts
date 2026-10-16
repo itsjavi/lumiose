@@ -11,6 +11,8 @@ export interface ComboboxContextValue {
   selected: () => string[];
   multiple: () => boolean;
   disabled: () => boolean;
+  /** The combobox needs a value: its input says so with `aria-required` (TASK-431). */
+  required?: () => boolean;
   /** How many Labels are rendered: the listbox is named by the label only when there is one. */
   labels: Signal<number>;
   /** Whether the parts are inside a `Popup`: the `List` is then not the popover. */

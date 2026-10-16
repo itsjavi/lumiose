@@ -1,11 +1,11 @@
 ---
 id: TASK-431
 title: 'Combobox: aria-required on the input'
-status: To Do
+status: Done
 assignee:
   - '@Beacon'
 created_date: '2026-10-16 10:06'
-updated_date: '2026-10-16 10:08'
+updated_date: '2026-10-16 10:33'
 labels:
   - ui
   - review
@@ -29,11 +29,13 @@ Found by Prism's release review of @lumiose/ui (TASK-386, 2026-10-16) on main 94
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Combobox: aria-required on the input, with a regression test that fails without the fix (in every engine the finding names)
+- [x] #1 Combobox: aria-required on the input, with a regression test that fails without the fix (in every engine the finding names)
 <!-- AC:END -->
 
 ## Implementation Notes
 
 <!-- SECTION:NOTES:BEGIN -->
 2026-10-16 (Lux, orchestrator): assigned to Beacon for fix batch 1 of the release review (the idle Beacon session; it may edit packages/ui and, for TASK-430, the form-action runtime in packages/lumiose/src/app).
+
+2026-10-16 (Beacon): Fixed. Combobox.Input renders aria-required="true" from Root's `required` (new optional `required` in the combobox context; an Autocomplete's input has the native `required` instead), and the element's #sync sets or removes it on the input as the element's `required` attribute changes. Tests: combobox.test.tsx (server HTML: aria-required on the input); ui-e2e combobox.e2e.ts 'required shows on the input, which has the role (TASK-431)': the attribute, Chromium's AX tree `required: true` (new a11y.ts axProperty helper, CDP; the attribute elsewhere), and the input following the element's attribute removed and set again. Fails without the fix in Chromium (build), Firefox and WebKit, and the server test; passes in all. combobox.md: the required row.
 <!-- SECTION:NOTES:END -->

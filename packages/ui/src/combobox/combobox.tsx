@@ -23,7 +23,8 @@ import type {
   ComboboxOpenChangeDetail,
 } from "./combobox.script.ts";
 import comboboxScript from "./combobox.script.ts?client";
-import { controlId, describedBy, useField } from "../field/context.ts";
+import { controlId, describedBy, useField, useFormValues } from "../field/context.ts";
+import { onFormReset } from "../form/reset.ts";
 import { anchorName, placement, withStyle, type PlacementProps } from "../placement/placement.ts";
 import { ComboboxContext, register, useCombobox, type ComboboxContextValue } from "./context.ts";
 
@@ -211,13 +212,21 @@ function Root<Multiple extends boolean | undefined = false>({
   // Inside a Field: the field's id, name, state and ARIA references (TASK-404).
   const field = useField();
   const host = ref<ComboboxElement>();
-  const selected = signal<string[]>(untrack(() => list(value ?? defaultValue)));
+  // A failed submission's values (a Form's `values`) replace the default (TASK-430).
+  const sent = useFormValues(
+    untrack(() => name ?? field?.name()),
+    untrack(() => disabled),
+  );
+  const selected = signal<string[]>(
+    untrack(() => (value === undefined && sent?.length ? sent : list(value ?? defaultValue))),
+  );
   const context: ComboboxContextValue = {
     id,
     inputId: field ? controlId(field) : `${id}-input`,
     selected,
     multiple: () => multiple === true,
     disabled: () => disabled === true || field?.disabled() === true,
+    required: () => required === true,
     labels: signal(0),
     popup: false,
   };
@@ -236,6 +245,15 @@ function Root<Multiple extends boolean | undefined = false>({
     const wanted = open;
     if (element?.isConnected && wanted !== undefined) element.open = wanted;
   });
+  // A form reset puts the selection back without a `change`: it is reported (TASK-435).
+  onFormReset(
+    host,
+    () => host()!.value,
+    (next) => {
+      selected.set(list(next));
+      onValueChange?.(next as ComboboxValue<Multiple>);
+    },
+  );
 
   return (
     <ComboboxContext value={context}>
@@ -297,6 +315,8 @@ function Input({ style, ...rest }: ComboboxInputProps) {
       id={combobox.inputId}
       role="combobox"
       aria-autocomplete={combobox.text?.autocomplete ?? "list"}
+      // The element holds `required`, but has no role: the input tells assistive technology.
+      aria-required={combobox.required?.() ? "true" : undefined}
       aria-expanded="false"
       aria-controls={`${combobox.id}-list`}
       disabled={combobox.disabled() || rest.disabled}

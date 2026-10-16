@@ -7,7 +7,11 @@
 //
 // - A submit attempt fires `invalid` on each invalid control: a field with an Error part cancels
 //   it (no bubble) and shows the problem there, and focus goes to the first invalid control of
-//   the form, in DOM order.
+//   the form, in DOM order; a later invalid control without a field shows no bubble meanwhile.
+//   Only a submit attempt does: a submit button's click, Enter in a field, `requestSubmit()` or
+//   the form's `reportValidity()`. A silent `checkValidity()` shows nothing (TASK-439).
+// - A form action's errors move focus to the first field that shows one: on load, or when an
+//   island's errors arrive (TASK-439).
 // - Timing, from the field's `validation-mode`: `onSubmit` (default) shows errors after a submit
 //   attempt, `onBlur` also when the control loses focus (a missing value only once it was
 //   edited), `onChange` as soon as it is edited. Once shown, the field revalidates as you type.
@@ -16,7 +20,8 @@
 //   problem, always, or only for its `match` (a `ValidityState` key, read from its id).
 // - Server errors (rendered visible from the Form's `errors`) go away once the value changes.
 // - A `validitychange` event on a control (Field.Root fires it when an async `validate` settles)
-//   shows its new verdict, if the field shows its errors by then.
+//   shows its new verdict, if the field shows its errors by then. On the field itself, with the
+//   messages, it brings a form action's errors back, also the same ones after an edit hid them.
 // - The control gets `aria-invalid` and `aria-describedby` for the errors shown and the field's
 //   descriptions.
 //
@@ -38,6 +43,12 @@ const server = new WeakMap<HTMLElement, boolean>();
 const touched = new WeakSet<Element>();
 /** A pending focus move to the first invalid control of a form. */
 let focusing = false;
+/**
+ * The form whose submission is being attempted: set by a submit button's click or Enter in a
+ * field until the next task (the browser validates within it), and during `requestSubmit()` and
+ * `reportValidity()`. `invalid` events outside an attempt (`checkValidity()`) change nothing.
+ */
+let attempt: HTMLFormElement | null = null;
 
 const fieldOf = (node: EventTarget | null) =>
   node instanceof Element ? node.closest<HTMLElement>("lu-field") : null;
@@ -114,11 +125,14 @@ function render(field: HTMLElement): void {
   const done = new Set<Element>();
   for (const control of all) {
     const bad = (invalid !== undefined && !control.validity.valid) || fromServer;
-    // A radio group is described and marked as one; lu-combobox through its input.
+    // A radio or checkbox group is described and marked as one; lu-combobox through its input.
+    const group = control.closest<HTMLElement>("[role=radiogroup], [role=group]");
     const target =
       control.localName === "lu-combobox"
         ? (control.querySelector<HTMLElement>("input[role=combobox]") ?? control)
-        : (control.closest<HTMLElement>("[role=radiogroup]") ?? control);
+        : group && fieldOf(group) === field
+          ? group
+          : control;
     if (done.has(target)) continue;
     done.add(target);
     if (bad) target.setAttribute("aria-invalid", "true");
@@ -147,33 +161,109 @@ function on<K extends keyof DocumentEventMap>(
   document.addEventListener(type, listener, capture);
 }
 
+function attempting(form: HTMLFormElement | null | undefined): void {
+  if (!form) return;
+  attempt = form;
+  setTimeout(() => {
+    if (attempt === form) attempt = null;
+  });
+}
+
+on("click", (event) => {
+  const button = (event.target as Element).closest?.<HTMLButtonElement | HTMLInputElement>(
+    "button, input[type=submit], input[type=image]",
+  );
+  if (button && /^(submit|image)$/.test(button.type)) attempting(button.form);
+});
+
+on("keydown", (event) => {
+  const target = event.target as HTMLInputElement;
+  // Implicit submission: Enter in a text field submits its form.
+  if (event.key === "Enter" && target instanceof HTMLInputElement) attempting(target.form);
+});
+
+/** Runs `call` as a submit attempt of `form`. */
+function during<T>(form: HTMLFormElement, call: () => T): T {
+  const outer = attempt;
+  attempt = form;
+  try {
+    return call();
+  } finally {
+    attempt = outer;
+  }
+}
+
+for (const name of ["requestSubmit", "reportValidity"] as const) {
+  const native = HTMLFormElement.prototype[name] as (
+    this: HTMLFormElement,
+    ...args: never[]
+  ) => never;
+  Object.defineProperty(HTMLFormElement.prototype, name, {
+    configurable: true,
+    writable: true,
+    value(this: HTMLFormElement, ...args: never[]) {
+      return during(this, () => native.apply(this, args));
+    },
+  });
+}
+
+/** Whether a field with an Error part shows `control`'s problems. */
+const handled = (control: Element) => {
+  const field = fieldOf(control);
+  return field !== null && errors(field).length > 0;
+};
+
+/** The control focus goes to: lu-combobox's input, or the control. */
+const focusTarget = (control: Element) =>
+  control.localName === "lu-combobox"
+    ? (control.querySelector<HTMLElement>("input[role=combobox]") ?? (control as HTMLElement))
+    : (control as HTMLElement);
+
+const firstInvalid = (form: HTMLFormElement) =>
+  [...(form.elements as unknown as Control[])].find(
+    (element) => element.willValidate && !element.validity.valid,
+  );
+
 // `invalid` does not bubble: a capturing listener sees it.
 on("invalid", (event) => {
   const control = event.target as Control;
+  const form = control.form;
+  if (!form || attempt !== form) return;
   const field = fieldOf(control);
-  if (!field || errors(field).length === 0) return;
+  if (!field || errors(field).length === 0) {
+    // A later control without a field: no bubble while focus goes to the first, a field's.
+    const first = firstInvalid(form);
+    if (first && first !== control && handled(first)) event.preventDefault();
+    return;
+  }
   meet(field);
   // The field shows the problem: no bubble from the browser.
   event.preventDefault();
   shown.add(field);
   render(field);
-  if (focusing || !control.form) return;
+  if (focusing) return;
   focusing = true;
-  const form = control.form;
   queueMicrotask(() => {
     focusing = false;
-    const first = [...(form.elements as unknown as Control[])].find(
-      (element) => element.willValidate && !element.validity.valid,
-    );
-    if (first && document.activeElement !== first) {
-      const target =
-        first.localName === "lu-combobox"
-          ? (first.querySelector<HTMLElement>("input[role=combobox]") ?? first)
-          : first;
-      target.focus();
+    const first = firstInvalid(form);
+    if (first && handled(first) && document.activeElement !== focusTarget(first)) {
+      focusTarget(first).focus();
     }
   });
 });
+
+/** Fields that just got a form action's errors, for one focus move after them. */
+const arrived = new Set<HTMLElement>();
+
+/** Focuses the first control, in document order, of `fields`. */
+function focusFirst(fields: Iterable<HTMLElement>): void {
+  const first = [...fields]
+    .flatMap((field) => controls(field).slice(0, 1))
+    .toSorted((a, b) =>
+      a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1,
+    )[0];
+  if (first) focusTarget(first).focus();
+}
 
 on("focusout", (event) => {
   const control = event.target as Control;
@@ -199,6 +289,17 @@ function onEdit(event: Event) {
   render(field);
 }
 
+/** A form action's errors for the field (an island's Field.Root): shown as the server's again. */
+function showServerErrors(field: HTMLElement, messages: string[]): void {
+  server.set(field, true);
+  for (const error of errors(field)) {
+    const match = matchOf(field, error);
+    if (match !== "" && match !== "invalid") continue;
+    error.hidden = false;
+    if (error.hasAttribute("for")) write(error, messages.join(" "));
+  }
+}
+
 // Not bubbling: a capturing listener sees it.
 document.addEventListener(
   "validitychange",
@@ -206,6 +307,17 @@ document.addEventListener(
     const field = fieldOf(event.target);
     if (!field) return;
     meet(field);
+    const detail = (event as CustomEvent<{ errors?: string[] } | null>).detail;
+    if (event.target === field && detail?.errors) {
+      showServerErrors(field, detail.errors);
+      if (arrived.size === 0) {
+        queueMicrotask(() => {
+          focusFirst(arrived);
+          arrived.clear();
+        });
+      }
+      arrived.add(field);
+    }
     render(field);
   },
   true,
@@ -227,7 +339,13 @@ on("reset", (event) => {
 });
 
 function meetAll() {
-  for (const field of document.querySelectorAll<HTMLElement>("lu-field")) meet(field);
+  const fields = [...document.querySelectorAll<HTMLElement>("lu-field")];
+  for (const field of fields) meet(field);
+  // A page rendered back with a form action's errors: focus goes to the first, unless something
+  // else (`autofocus`) has it.
+  if (document.activeElement === document.body || document.activeElement === null) {
+    focusFirst(fields.filter((field) => server.get(field) === true));
+  }
 }
 if (document.readyState === "loading") {
   document.addEventListener("DOMContentLoaded", meetAll, { once: true });

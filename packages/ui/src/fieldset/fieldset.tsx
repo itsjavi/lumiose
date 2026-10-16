@@ -2,6 +2,9 @@
 // Fieldset. The platform groups the controls, names the group by its legend and disables every
 // control inside a disabled fieldset, in server HTML and without JavaScript; no script, no CSS.
 
+import { untrack, useContext } from "lumiose";
+import { FormContext } from "../field/context.ts";
+
 /** `Fieldset.Root` renders a `<fieldset>`; `disabled` disables every control inside it. */
 export type FieldsetRootProps = JSX.IntrinsicElements["fieldset"];
 
@@ -9,7 +12,15 @@ export type FieldsetRootProps = JSX.IntrinsicElements["fieldset"];
 export type FieldsetLegendProps = JSX.IntrinsicElements["legend"];
 
 function Root({ children, ...rest }: FieldsetRootProps) {
-  return <fieldset {...rest}>{children}</fieldset>;
+  const form = useContext(FormContext);
+  // Its controls submit nothing while it is disabled: a Form's `values` do not fill them.
+  const context =
+    form && untrack(() => rest.disabled) ? { ...form, values: () => undefined } : form;
+  return (
+    <FormContext value={context}>
+      <fieldset {...rest}>{children}</fieldset>
+    </FormContext>
+  );
 }
 
 function Legend({ children, ...rest }: FieldsetLegendProps) {

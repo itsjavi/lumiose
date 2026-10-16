@@ -35,7 +35,7 @@ gets per-reader parts through an island in
 | `client:only`                               | Client-rendered only: no server HTML.               |
 
 **Props must be serializable**: JSON values plus `undefined`, `NaN`/`Infinity`, `BigInt`, `Date`,
-`URL`, `Map` and `Set`. Functions, symbols, class instances (a `Response` too), promises and cycles
+`URL`, `Map`, `Set` and `FormData` (its text entries; files are left out). Functions, symbols, class instances (a `Response` too), promises and cycles
 are `LUM4002`.
 
 **Children and JSX props are slots.** They are rendered on the server and stay server components:

@@ -19,7 +19,8 @@ import {
   useId,
   type Signal,
 } from "lumiose";
-import { controlId, describedBy, useField } from "../field/context.ts";
+import { controlId, describedBy, useField, useFormValues } from "../field/context.ts";
+import { onFormReset } from "../form/reset.ts";
 import { formatNumber, formatter } from "./format.ts";
 import type { NumberFieldElement } from "./number-field.script.ts";
 import numberFieldScript from "./number-field.script.ts?client";
@@ -196,7 +197,15 @@ function Root({
   const generated = useId();
   const field = useField();
   const element = ref<NumberFieldElement>();
-  const current = signal<number | null>(untrack(() => value ?? defaultValue ?? null));
+  // A failed submission's value (a Form's `values`) replaces the default (TASK-430).
+  const sent = useFormValues(
+    untrack(() => name ?? field?.name()),
+    untrack(() => disabled),
+  )?.[0];
+  const echoed = sent ? Number(sent) : Number.NaN;
+  const current = signal<number | null>(
+    untrack(() => value ?? (Number.isFinite(echoed) ? echoed : (defaultValue ?? null))),
+  );
   // The `value` prop drives the input when it changes.
   effect(() => {
     const next = value;
@@ -229,6 +238,12 @@ function Root({
     current.set(next);
     onValueChange?.(next);
   };
+  // A form reset puts the number back without an `input` event: it is reported (TASK-435).
+  onFormReset(
+    () => element()?.input ?? undefined,
+    () => element()?.value ?? null,
+    report,
+  );
   return (
     <NumberFieldContext value={context}>
       <lu-number-field

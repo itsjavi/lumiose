@@ -1,7 +1,7 @@
 // The context a Field gives the control inside it (Input, Checkbox, Switch, Radio, Select): the
 // control takes the field's id, name, disabled state and ARIA references unless its own props set
 // them. The Form's context gives the fields its server errors and default validation mode.
-import { createContext, useContext, type Signal } from "lumiose";
+import { createContext, untrack, useContext, type Signal } from "lumiose";
 
 /** When a field shows its validation errors (Base UI's modes). */
 export type ValidationMode = "onSubmit" | "onBlur" | "onChange";
@@ -9,12 +9,41 @@ export type ValidationMode = "onSubmit" | "onBlur" | "onChange";
 /** Server errors by field name: a message or several. */
 export type FormErrors = object;
 
+/**
+ * The values a form action sends back after a failed submission (TASK-430): the submitted
+ * `FormData`, or values by field name.
+ */
+export type FormValues =
+  | FormData
+  | URLSearchParams
+  | Readonly<Record<string, string | readonly string[] | null | undefined>>;
+
 export interface FormContextValue {
   errors: () => FormErrors | null | undefined;
   validationMode: () => ValidationMode | undefined;
+  values: () => FormValues | null | undefined;
 }
 
 export const FormContext = createContext<FormContextValue>();
+
+/**
+ * What the Form's `values` hold for a control's `name`, read once as the control's default: every
+ * value under the name (`[]` when the submission left it out, as for an unchecked checkbox), or
+ * `undefined` without `values` or a name, and for a disabled control, which submits nothing
+ * (`disabled` here, a Field's, or a disabled `Fieldset.Root`'s).
+ */
+export function useFormValues(name: string | undefined, disabled?: unknown): string[] | undefined {
+  const values = untrack(() => useContext(FormContext)?.values());
+  if (values == null || !name || disabled || untrack(() => useField()?.disabled())) {
+    return undefined;
+  }
+  if (values instanceof FormData || values instanceof URLSearchParams) {
+    return values.getAll(name).filter((value): value is string => typeof value === "string");
+  }
+  const value = (values as Record<string, unknown>)[name];
+  if (typeof value === "string") return [value];
+  return Array.isArray(value) ? value.filter((v): v is string => typeof v === "string") : [];
+}
 
 /** The field's validity, for `Field.Validity`: the control's, from its last check. */
 export interface FieldValidityState {
@@ -44,6 +73,8 @@ export interface FieldContextValue {
   messages: () => string[];
   /** How many Description parts are rendered. */
   descriptions: Signal<number>;
+  /** How many Label parts are rendered: a group control is named by the label (TASK-439). */
+  labels: Signal<number>;
   /** The control's validity from its last check, in the browser (`Field.Validity`). */
   validity: () => FieldValidityState;
 }
@@ -67,6 +98,13 @@ export function describedBy(field: FieldContextValue): string | undefined {
   ].filter(Boolean);
   return ids.length > 0 ? ids.join(" ") : undefined;
 }
+
+/**
+ * The id that names a group control (a Radio Group or Checkbox Group) in a field: the Label's, as
+ * a group has no single element for the Label's `for` (TASK-439). `undefined` without a Label.
+ */
+export const labelledBy = (field: FieldContextValue | undefined) =>
+  field && field.labels() > 0 ? `${field.id}-label` : undefined;
 
 export const useField = () => useContext(FieldContext);
 

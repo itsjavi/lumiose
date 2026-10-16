@@ -6,7 +6,8 @@
 // `--lu-slider-end` and the value text current. The `value` prop drives the thumbs when it changes;
 // their `input` and `change` events report back through `onValueChange` and `onValueCommitted`.
 import { createContext, effect, onCleanup, ref, signal, untrack, useContext, useId } from "lumiose";
-import { controlId, describedBy, useField } from "../field/context.ts";
+import { controlId, describedBy, useField, useFormValues } from "../field/context.ts";
+import { onFormReset } from "../form/reset.ts";
 import { withStyle } from "../placement/placement.ts";
 import { percent } from "../progress/value.ts";
 import { formatValues } from "./format.ts";
@@ -186,7 +187,16 @@ function Root<V extends SliderValue = number>({
   const element = ref<SliderElement>();
   const low = () => min ?? 0;
   const high = () => max ?? 100;
-  const values = signal<number[]>(untrack(() => asList(value ?? defaultValue, min ?? 0)));
+  // A failed submission's values (a Form's `values`), one per thumb, replace the default (TASK-430).
+  const sent = useFormValues(
+    untrack(() => name ?? field?.name()),
+    untrack(() => disabled),
+  )
+    ?.map(Number)
+    .filter(Number.isFinite);
+  const values = signal<number[]>(
+    untrack(() => asList(value ?? (sent?.length ? sent : defaultValue), min ?? 0)),
+  );
   // The `value` prop drives the thumbs when it changes.
   effect(() => {
     const next = value;
@@ -211,6 +221,15 @@ function Root<V extends SliderValue = number>({
     labels: { count: 0 },
   };
   const current = () => (element()?.value ?? values()) as V;
+  // A form reset puts the thumbs back without an `input` event: it is reported (TASK-435).
+  onFormReset(
+    () => element()?.thumbs[0],
+    current,
+    (next) => {
+      values.set(asList(next, low()));
+      onValueChange?.(next);
+    },
+  );
   // The selected part of the track, in the server HTML too; the script keeps it from then on.
   const range = () => {
     const list = values();
@@ -265,7 +284,8 @@ function Value({ children, ...rest }: SliderValueProps) {
       .map((_, i) => `${slider.id}-thumb-${i}`)
       .join(" ");
   return (
-    <output {...rest} for={children ? undefined : thumbs()}>
+    // Not a live region: the thumbs announce their values (TASK-439, M31).
+    <output aria-live="off" {...rest} for={children ? undefined : thumbs()}>
       {children ? children(slider.texts(), slider.values()) : slider.texts().join(" – ")}
     </output>
   );

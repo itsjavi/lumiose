@@ -1496,7 +1496,7 @@ parts go next to it in a `Popup`, never inside the listbox.
 | `bind:open`     | `Signal<boolean>`                      |              | Stands in for `open` and `onOpenChange`.                                                                                    |
 | `multiple`      | `boolean`                              | `false`      | Several values: choosing an option toggles it and the popup stays open. `value` is then an array.                           |
 | `name`          | `string`                               |              | The name the value is submitted under; with `multiple`, each value is its own entry.                                        |
-| `required`      | `boolean`                              | `false`      | The form needs a value: the browser reports an empty combobox at its input on submit.                                       |
+| `required`      | `boolean`                              | `false`      | The form needs a value: the browser reports an empty combobox at its input on submit, and the input has `aria-required`.    |
 | `disabled`      | `boolean`                              | `false`      | The input and the buttons are disabled. A disabled `<fieldset>` around it does the same.                                    |
 | `filter`        | `"contains" \| "startsWith" \| "none"` | `"contains"` | How typing filters the options by their label, ignoring case and accents. `"none"` leaves filtering to you (async options). |
 
@@ -1712,11 +1712,18 @@ Focus stays in the input; the active option is `aria-activedescendant`.
 - **Choosing** an option puts its label in the input and closes the popup, or, with `multiple`,
   toggles it, clears the text and keeps the popup open. It fires `change` once per change.
 - **Emptying the input** clears a single selection. Closing the popup without choosing (Escape,
-  Tab, a click outside) puts the label back.
+  Tab, a click outside) puts the label back, and so does focus leaving the input after typing that
+  matched nothing.
 - **The pointer**: a click on the input opens the popup, hovering highlights an option, a click
   chooses it; presses in the popup and on the buttons keep focus in the input. A click outside
   closes the popup; a right-click or a second finger outside leaves it open, as in Base UI.
-- **IME**: while composing, Enter and the arrows belong to the input method.
+- **IME**: while composing, Enter and the arrows belong to the input method, and the options are
+  filtered by the committed text only (Safari's committing Enter, which comes after the
+  composition as key 229, chooses nothing).
+- **Autofill**: text the browser fills in (an unfocused field, or a picked suggestion) never opens
+  the popup; a text that is an option's label or value exactly chooses it.
+- **A Status** with a message counts as something to show: inside a `Popup`, it opens with
+  "Searching…" while async options load.
 
 ## Without JavaScript, and the element's script
 
@@ -1728,7 +1735,8 @@ must work without JavaScript, use [Select](select.md).
 A page that renders a `Combobox` loads the script once, as a 4.5 kB (brotli) module without the
 Lumiose runtime, and islands bundle it. It defines `lu-combobox`, which upgrades every combobox on
 the page in place: it reads the selection the server rendered (`aria-selected="true"`), puts its
-label in the input, renders the chips, and from then on owns the value, the filtering, the popup,
+label in the input (text typed before it ran is kept, as a search), renders the chips, and from
+then on owns the value, the filtering, the popup,
 the keyboard and the form value. Its popup is a manual popover, dismissed by the model Menu and
 Popover share: an outside press with the main button, a close request (Escape, the Android back
 gesture), Tab, or focus moving elsewhere.
@@ -1746,6 +1754,7 @@ The element is also an API of its own, for scripts and other frameworks:
   own `change` stays inside.
 - `openchange`: an event (not bubbling, like `toggle`) with `detail.open`, after the popup opens or
   closes.
+- The buttons are hidden until the element is defined: before, they would do nothing.
 - The buttons are invoker commands: a `<button commandfor="<the element's id>" command="--toggle">`
   (or `"--clear"`) works anywhere on the page; where the browser lacks invoker commands, the
   element handles the clicks of those inside it.
@@ -2424,7 +2433,7 @@ non-modal drawers.
 
 # Field
 
-> A form field: a label, a native control, a description and its errors, wired with `for`, `aria-describedby` and `aria-invalid`, after Base UI's Field. Validation is the browser's constraint validation (`required`, `type`, `pattern`, `minlength`…); a 1.1 kB script shows it in the field's Error parts at the right time, instead of the browser's bubble, and focuses the first invalid field on submit. A Form's server errors render in the HTML, so they work without JavaScript. In an island, `validate` adds checks of your own, async ones included, and `Field.Validity` renders from the field's validity.
+> A form field: a label, a native control, a description and its errors, wired with `for`, `aria-describedby` and `aria-invalid`, after Base UI's Field. Validation is the browser's constraint validation (`required`, `type`, `pattern`, `minlength`…); a 1.5 kB script shows it in the field's Error parts at the right time, instead of the browser's bubble, and focuses the first invalid field on submit. A Form's server errors render in the HTML, so they work without JavaScript. In an island, `validate` adds checks of your own, async ones included, and `Field.Validity` renders from the field's validity.
 
 ```ts
 import { Field } from "@lumiose/ui"; // or "@lumiose/ui/field"
@@ -2454,9 +2463,12 @@ import "@lumiose/ui/themes/default.css"; // optional: the default theme
 | `Validity`    | No element: what its function child returns for the field's validity, in an island.                                                          |
 
 Instead of `Field.Control`, a field can hold a [Checkbox](checkbox.md), a [Switch](switch.md), a
-[Select](select.md), a [Radio Group](radio-group.md), a [Combobox](combobox.md), an
-[Autocomplete](autocomplete.md), a [Number Field](number-field.md) or a [Slider](slider.md): they
-take the field's wiring the same way (a Combobox and an Autocomplete through their input).
+[Select](select.md), a [Radio Group](radio-group.md), a [Checkbox Group](checkbox-group.md), a
+[Combobox](combobox.md), an [Autocomplete](autocomplete.md), a [Number Field](number-field.md) or a
+[Slider](slider.md): they take the field's wiring the same way (a Combobox and an Autocomplete
+through their input). A Radio Group or Checkbox Group takes it as a group: `Field.Label` names the
+group (`aria-labelledby`, as there is no single radio or checkbox for its `for`), and the group,
+not each control, gets `aria-describedby` and `aria-invalid`.
 
 ## API
 
@@ -2653,7 +2665,8 @@ reader reads it there.
   in a field the user has not edited yet (Base UI's rule). **`"onChange"`** shows it as the user
   types.
 - **Once shown**, an error follows the value: it updates as the problem changes and goes away when
-  the value is valid. A server error goes away as soon as the value changes.
+  the value is valid. A server error goes away as soon as the value changes, and shows again
+  each time an action fails with it, the same message included.
 - **A form reset** hides every error.
 
 ## Without JavaScript, and the field's script
@@ -2663,13 +2676,20 @@ reports the first problem in its own bubble, and the form submits when everythin
 errors from a Form render in the HTML, visible and linked with `aria-describedby` and
 `aria-invalid`.
 
-A page that renders a `Field` loads a 1.1 kB (brotli) script once, without the Lumiose runtime;
-islands bundle it. It cancels the browser's `invalid` bubble for fields that have an Error part and
-shows the problem there instead (the browser's message, or one your `validate` set), with the
-timing above, focuses the first invalid control on a submit attempt, keeps `aria-invalid` and
+A page that renders a `Field` loads a 1.5 kB (brotli) script once, without the Lumiose runtime;
+islands bundle it. On a submit attempt (a submit button, Enter in a field, `requestSubmit()` or
+the form's `reportValidity()`, which it wraps to tell them from a silent `checkValidity()`, which
+changes nothing) it cancels the browser's
+`invalid` bubble for fields that have an Error part and shows the problem there instead (the
+browser's message, or one your `validate` set), with the timing above, and focuses the first
+invalid control, with no bubble on a later control outside a field. A form action's errors move
+focus to the first field that shows one, when the page renders back (unless an `autofocus` element
+has it) and when an island's errors arrive. It also keeps `aria-invalid` and
 `aria-describedby` current (a description rendered after the control is linked once the script
 runs), and hides server errors once the value changes. When an async `validate` settles, Field.Root
-fires `validitychange` (not bubbling) on the control, and the script shows the new verdict.
+fires `validitychange` (not bubbling) on the control, and the script shows the new verdict. When a
+form action's errors arrive in an island, Field.Root fires it on `<lu-field>` with the messages
+(`detail.errors`), and the script shows them as the server's, even when they repeat.
 
 ## Browser support
 
@@ -2811,13 +2831,22 @@ import { Form } from "@lumiose/ui"; // or "@lumiose/ui/form"
 
 ### Form
 
-| Prop             | Type                                   | Default      |                                                                                                                                |
-| ---------------- | -------------------------------------- | ------------ | ------------------------------------------------------------------------------------------------------------------------------ |
-| `errors`         | `object`                               |              | The server's errors by field name: a message or several for each `Field.Root` `name`, such as `actionData()` after a `fail()`. |
-| `validationMode` | `"onSubmit" \| "onBlur" \| "onChange"` | `"onSubmit"` | When the fields show their errors, unless a field sets its own.                                                                |
+| Prop             | Type                                                              | Default      |                                                                                                                                      |
+| ---------------- | ----------------------------------------------------------------- | ------------ | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `errors`         | `object`                                                          |              | The server's errors by field name: a message or several for each `Field.Root` `name`, such as `actionData()` after a `fail()`.       |
+| `validationMode` | `"onSubmit" \| "onBlur" \| "onChange"`                            | `"onSubmit"` | When the fields show their errors, unless a field sets its own.                                                                      |
+| `values`         | `FormData`, `URLSearchParams` or `{ [name]: string \| string[] }` |              | The values to fill the controls with after a failed submission, by name, such as the `FormData` an action passes back with `fail()`. |
 
 Every other `<form>` prop passes through: `method`, `action`, `onSubmit` (Lumiose's `submit`),
 `novalidate`, `class`.
+
+**`values`** replace the controls' defaults, by `name` (the control's, or its Field's): the text of
+an Input (Field.Control), an Autocomplete, a Select, a Number Field or a Slider, the checked state of
+a Checkbox or Switch (a name the submission left out means unchecked), and a Checkbox Group's,
+Radio Group's or Combobox's selection. Controls with a `value` (or `bind:`) keep theirs, and
+passwords, files, hidden inputs, OTP Fields and disabled controls (also in a disabled
+`Fieldset.Root`) are never filled. So after a failed action the page renders the form as the user
+left it, with JavaScript or without (WCAG 3.3.7, redundant entry).
 
 **Differences from Base UI's Form.** No `onFormSubmit` or `actionsRef`: the form is native and
 Lumiose's form actions post it (`action="?/name"`, `onSubmit={submit}`). Base UI sets
@@ -2836,7 +2865,8 @@ export const actions = {
   async signup(ctx: ActionContext) {
     const form = await ctx.formData();
     if (form.get("username") === "admin") {
-      return fail(400, { username: "That username is taken." });
+      // The errors, and what the user typed: the form renders back filled in.
+      return fail(400, { errors: { username: "That username is taken." }, values: form });
     }
     return { welcome: String(form.get("username")) };
   },
@@ -2844,8 +2874,9 @@ export const actions = {
 
 export function SignupForm() {
   const result = actionData<typeof actions>();
+  const failed = result && "errors" in result ? result : undefined;
   return (
-    <Form method="post" action="?/signup" errors={result}>
+    <Form method="post" action="?/signup" errors={failed?.errors} values={failed?.values}>
       <Field.Root name="username" class="lu-field">
         <Field.Label>Username</Field.Label>
         <Field.Control required minlength={3} autocomplete="username" class="lu-input" />
@@ -2859,15 +2890,22 @@ export function SignupForm() {
 }
 ```
 
-`errors={result}` works whatever else the action returns: only the keys that name a field and hold
-a string or an array of strings become errors. In an island, add `onSubmit={submit}` and the
-errors arrive without a page load.
+Only the keys of `errors` that name a field and hold a string or an array of strings become
+errors, so `errors={result}` also works for an action that fails with the errors alone. The
+submitted `FormData` reaches the browser with the page (its text entries; files are left out):
+delete secrets such as a password from it before `fail()`. In an island, add `onSubmit={submit}`
+and the errors arrive without a page load; the controls keep what the user typed anyway.
 
 ## Styling
 
 Form adds nothing to style: style the `form` and its state, `form:invalid` (a field is invalid)
 and `form:has(:user-invalid)` (one the user touched is), and its fields
 ([Field](field.md#styling)). Form ships no stylesheet.
+
+**A form reset** (a `type="reset"` button, `form.reset()`) puts every control back to its default
+and reports it: `onValueChange` / `onCheckedChange` get the reset value a moment later, when it
+differs, so `bind:` signals in an island follow the form (the platform fires no `input` or
+`change` for a reset).
 
 ## Keyboard and focus
 
@@ -2878,7 +2916,8 @@ script; without it, the browser focuses it and shows its bubble).
 ## Without JavaScript
 
 A native form posts to its action and the page renders back with `actionData()`, so the server's
-errors show in their fields with no script. The browser validates the fields before it posts.
+errors show in their fields with no script, and with `values` the controls show what was
+submitted. The browser validates the fields before it posts.
 
 ## Browser support
 
@@ -4207,7 +4246,9 @@ field and hides the slots.
 | Tab                | Moves on: one tab stop.                                                                |
 
 A paste fills every slot from the caret, its spaces and dashes dropped, even past what
-`maxlength` would cut.
+`maxlength` would cut. An IME composition (Chinese, Japanese, full-width digits) shows in the
+slots as it is; only the committed text is kept to the allowed characters, completes the field and
+auto-submits.
 
 ## Without JavaScript, and the element's script
 

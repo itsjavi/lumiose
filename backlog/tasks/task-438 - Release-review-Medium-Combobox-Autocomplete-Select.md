@@ -1,11 +1,11 @@
 ---
 id: TASK-438
 title: 'Release review, Medium: Combobox, Autocomplete, Select'
-status: To Do
+status: In Progress
 assignee:
   - '@Beacon'
 created_date: '2026-10-16 10:06'
-updated_date: '2026-10-16 10:08'
+updated_date: '2026-10-16 10:59'
 labels:
   - ui
   - review
@@ -61,4 +61,6 @@ Found by Prism's release review of @lumiose/ui (TASK-386, 2026-10-16) on main 94
 
 <!-- SECTION:NOTES:BEGIN -->
 2026-10-16 (Lux, orchestrator): assigned to Beacon for fix batch 1 of the release review (the idle Beacon session; it may edit packages/ui and, for TASK-430, the form-action runtime in packages/lumiose/src/app).
+
+2026-10-16 (Beacon): Fixed M19, M20, M21 (Combobox part), M22, M24 (buttons, pre-upgrade text) in combobox.script.ts / combobox.css; tests in ui-e2e combobox-review.e2e.ts (new; fixture /combobox/status with a Status inside the Popup), each failing without the fix in Chromium (build), Firefox and WebKit and passing in all three. M19: focus leaving to nowhere with the popup closed puts the selection's label back (non-free). M20: an input event on an unfocused input, or with inputType insertReplacementText, is autofill: no popup, no filter; an exact (folded) label or value match chooses the option, else the label comes back; free mode keeps the text. M21: input events with isComposing do not filter; compositionend filters the committed text; Enter with keyCode 229 (Safari's committing Enter after compositionend) chooses nothing. M22: #showable counts a Status in the popup with text. M24: text typed before the upgrade (input.value !== defaultValue) is kept and filtered; `lu-combobox:not(:defined) [command]` is hidden. combobox.md updated. Left for decisions: (1) M24's server-rendered label: the Input renders before the Items, so the server cannot know the selected option's label when it writes the input; the script fills it on upgrade (proposal: keep, documented; an option would be a `label` prop on Root for the server). (2) M23 (SUSPECTED, no screen reader run): Empty and Status mounted hidden until shown, without VoiceOver's delay mitigation: belongs to the parked screen reader pass (TASK-361's checklist). (3) M21's layer.ts part (Enter key 229 in Menu-like layers) is Halo's area (layers), not touched. Status stays In Progress until the user agrees on (1) and (2).
 <!-- SECTION:NOTES:END -->

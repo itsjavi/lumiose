@@ -9,7 +9,8 @@
 // the selected option's content, and options may hold more than text. TASK-358 records why it is
 // native rather than the listbox pattern.
 import { createContext, effect, ref, untrack, useContext } from "lumiose";
-import { fieldProps, useField } from "../field/context.ts";
+import { fieldProps, useField, useFormValues } from "../field/context.ts";
+import { onFormReset } from "../form/reset.ts";
 
 declare module "lumiose/jsx-runtime" {
   namespace JSX {
@@ -83,7 +84,12 @@ const SelectContext = createContext<{ initial: string | undefined }>();
 
 function Root({ value, defaultValue, onValueChange, children, ...rest }: SelectRootProps) {
   const select = ref<HTMLSelectElement>();
-  const context = { initial: untrack(() => value ?? defaultValue) };
+  // A failed submission's values (a Form's `values`) replace the default (TASK-430).
+  const sent = useFormValues(
+    untrack(() => rest.name ?? useField()?.name()),
+    untrack(() => rest.disabled),
+  );
+  const context = { initial: untrack(() => value ?? sent?.[0] ?? defaultValue) };
   // The prop drives the control when it changes, once its options are in; `change` reports back,
   // so a signal written by `onValueChange` sees the same value again and nothing loops.
   effect(() => {
@@ -93,6 +99,8 @@ function Root({ value, defaultValue, onValueChange, children, ...rest }: SelectR
       element.value = wanted;
     }
   });
+  // A form reset fires no `change`: the reset value goes to `onValueChange` (TASK-435).
+  if (onValueChange) onFormReset(select, () => select()!.value, onValueChange);
   // Inside a Field: the field's id, name and ARIA references (TASK-365).
   const field = useField();
   return (
