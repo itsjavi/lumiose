@@ -13,4 +13,13 @@
   select:has(> button:first-child)::picker(select) {
     appearance: base-select;
   }
+  /*
+   * Without customizable select the trigger is not drawn, but Firefox keeps it in the select:
+   * hidden, it is no nameless button for assistive technology and checkers (TASK-419).
+   */
+  @supports not (appearance: base-select) {
+    select > button {
+      display: none !important;
+    }
+  }
 }

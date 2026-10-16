@@ -178,8 +178,10 @@ A starting point:
 
 `@lumiose/ui/select.css` holds what Select needs to work, in the `lu.core` layer: a select whose
 first child is a `Trigger` gets `appearance: base-select` (and so does its picker), since only a
-customizable select renders the trigger, `Value` and options with more than text. A select with no
-`Trigger` keeps the browser's look until your CSS or the theme opts in.
+customizable select renders the trigger, `Value` and options with more than text. Where
+customizable select is missing, it hides the `Trigger` (Firefox keeps it in the select, a nameless
+button for assistive technology otherwise). A select with no `Trigger` keeps the browser's look
+until your CSS or the theme opts in.
 
 ## Keyboard and focus
 

@@ -165,11 +165,7 @@ test.describe("in an island", () => {
 
 test.describe("WCAG 2.2 AA with the default theme (doc-9 section 17)", () => {
   for (const scheme of SCHEMES) {
-    test(`axe passes closed and open (${scheme})`, async ({ page, browserName }) => {
-      test.skip(
-        browserName === "firefox",
-        "TASK-419: the trigger button inside Firefox's classic select has no name",
-      );
+    test(`axe passes closed and open (${scheme})`, async ({ page }) => {
       await page.emulateMedia({ colorScheme: scheme });
       await page.goto("/select");
       expect(await axe(page)).toEqual([]);
