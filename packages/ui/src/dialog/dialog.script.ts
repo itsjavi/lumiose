@@ -7,8 +7,12 @@
 //   `closedby="any"` works where the browser lacks it (Safari).
 // - Invoker commands (`show-modal`, `close`, `request-close`) where the browser lacks them.
 // - Nesting: a dialog with open dialogs inside gets `data-nested-dialog-open` and `--lu-nested-dialogs`.
-// - Touch: a dialog opened by touch focuses itself rather than its first field, so no virtual
-//   keyboard opens (an `autofocus` element still gets focus).
+// - Initial focus: the `autofocus` element (the dialog itself when it has `autofocus`), or else the
+//   first tab stop inside, or else the dialog,
+//   as in Base UI, the same in every browser: Chromium would focus a scroller before the first
+//   control, Chromium and WebKit a `tabindex="-1"` title (TASK-453 L29). A dialog opened by touch
+//   focuses itself rather than its first field, so no virtual keyboard opens (an `autofocus`
+//   element still gets focus).
 // - Focus return: when closing leaves focus nowhere (WebKit does not focus a clicked trigger, or the
 //   trigger is gone), focus goes to the opener, else to a trigger of the dialog, without scrolling.
 // - Scroll lock (dialog.css locks <html> and keeps its scrollbar's gutter): a <body> that scrolls is
@@ -27,6 +31,8 @@
 let press: PointerEvent | undefined;
 /** A dialog opening after a touch: its first focus moves to the dialog itself. */
 let touched: HTMLDialogElement | undefined;
+/** A dialog opening: its first focus moves to its first tab stop. */
+let opening: HTMLDialogElement | undefined;
 const openers = new WeakMap<HTMLDialogElement, HTMLElement>();
 /** Undoes the scroll lock's inline styles once no modal dialog is open. */
 let unlock: (() => void) | undefined;
@@ -131,18 +137,58 @@ on("beforetoggle", (event) => {
     openers.set(dialog, active);
   }
   if (recent(event) && press!.pointerType === "touch") touched = dialog;
+  else opening = dialog;
   lockScroll();
 });
 
-// Opening focuses the first focusable element synchronously, between `beforetoggle` and `toggle`.
-on("focusin", (event) => {
-  const dialog = touched;
-  const target = event.target as Element;
-  if (!dialog?.contains(target) || target === dialog) return;
-  touched = undefined;
-  if (target.hasAttribute("autofocus")) return;
+const TABBABLE =
+  "a[href], button, input:not([type=hidden]), select, textarea, summary, iframe, [tabindex], [contenteditable]";
+
+/** The dialog's first tab stop: not a scroller, a `tabindex="-1"` element or a hidden one. */
+function firstTabStop(dialog: HTMLDialogElement): HTMLElement | undefined {
+  for (const element of dialog.querySelectorAll<HTMLElement>(TABBABLE)) {
+    if (element.tabIndex < 0 || element.matches(":disabled")) continue;
+    if (!(element.checkVisibility?.() ?? true)) continue;
+    // A radio group's tab stop is its checked radio.
+    if (element instanceof HTMLInputElement && element.type === "radio" && !element.checked) {
+      const group = element.form?.elements.namedItem(element.name);
+      if (group instanceof RadioNodeList && group.value !== "") continue;
+    }
+    return element;
+  }
+  return undefined;
+}
+
+/** Focuses the dialog itself, which takes focus without being a tab stop. */
+function focusItself(dialog: HTMLDialogElement) {
   if (!dialog.hasAttribute("tabindex")) dialog.tabIndex = -1;
   dialog.focus({ preventScroll: true });
+}
+
+// Opening focuses an element synchronously, between `beforetoggle` and `toggle`.
+on("focusin", (event) => {
+  const target = event.target as Element;
+  if (touched) {
+    const dialog = touched;
+    if (!dialog.contains(target) || target === dialog) return;
+    touched = undefined;
+    if (!target.hasAttribute("autofocus")) focusItself(dialog);
+    return;
+  }
+  const dialog = opening;
+  if (!dialog?.contains(target)) return;
+  opening = undefined;
+  // `autofocus` on the dialog itself: the dialog takes focus (Chromium would focus its first
+  // control).
+  if (dialog.hasAttribute("autofocus")) {
+    if (target !== dialog) focusItself(dialog);
+    return;
+  }
+  if (target.hasAttribute("autofocus")) return;
+  const first = firstTabStop(dialog);
+  if (first) {
+    if (first !== target) first.focus();
+  } else if (target !== dialog) focusItself(dialog);
 });
 
 /**
@@ -164,7 +210,9 @@ function popupAbove(dialog: HTMLDialogElement): boolean {
 
 // On `window`, after the layers' listeners on `document`: an open layer takes the Escape first.
 window.addEventListener("keydown", (event) => {
+  // `keyCode` 229: Safari's key that ends an input method's composition (TASK-438 M21).
   if (event.key !== "Escape" || event.defaultPrevented || event.isComposing) return;
+  if (event.keyCode === 229) return;
   const dialog = modals.filter((each) => each.isConnected && each.matches(":modal")).at(-1);
   if (!dialog || popupAbove(dialog)) return;
   event.preventDefault();
@@ -176,7 +224,7 @@ window.addEventListener("keydown", (event) => {
 on("toggle", (event) => {
   const dialog = event.target;
   if (!isDialog(dialog)) return;
-  touched = undefined;
+  touched = opening = undefined;
   const at = modals.indexOf(dialog);
   if (at !== -1) modals.splice(at, 1);
   if (event.newState === "open" && dialog.matches(":modal")) modals.push(dialog);

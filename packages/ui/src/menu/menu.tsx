@@ -267,6 +267,8 @@ function SubmenuRoot(props: MenuSubmenuRootProps) {
 
 function Trigger({ children, style, ...rest }: MenuTriggerProps) {
   const menu = useMenu();
+  // A caller's `id` names it; the parts after it point at that (TASK-441 M39).
+  if (rest.id) menu.triggerId = rest.id;
   register(menu.triggers);
   // A disabled Toolbar disables it: focusable, it opens nothing (TASK-437 M13).
   const toolbar = useContext(ToolbarContext);
@@ -289,6 +291,8 @@ function Trigger({ children, style, ...rest }: MenuTriggerProps) {
 
 function SubmenuTrigger({ children, disabled, label, style, ...rest }: MenuSubmenuTriggerProps) {
   const menu = useMenu();
+  // A caller's `id` names it; the parts after it point at that (TASK-441 M39).
+  if (rest.id) menu.triggerId = rest.id;
   register(menu.triggers);
   return (
     <button

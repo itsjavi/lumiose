@@ -105,7 +105,8 @@ function Root({
 function Label({ children, ...rest }: ProgressLabelProps) {
   const progress = useProgress("Label");
   return (
-    <label {...rest} id={`${progress.id}-label`} for={`${progress.id}-track`}>
+    // Nothing points at the label: a caller's `id` names it (TASK-441 M39).
+    <label {...rest} id={rest.id ?? `${progress.id}-label`} for={`${progress.id}-track`}>
       {children}
     </label>
   );

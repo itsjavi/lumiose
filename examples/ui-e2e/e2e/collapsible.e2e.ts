@@ -101,7 +101,7 @@ test.describe("in an island", () => {
   test("bind:open keeps a signal in sync both ways", async ({ page }) => {
     await page.goto("/collapsible/island");
     const state = page.getByTestId("open-state");
-    const details = page.locator("details");
+    const details = page.locator("details").first();
     await expect(state).toHaveText("open: false");
     await page.getByTestId("toggle").click();
     await expect(state).toHaveText("open: true");
@@ -109,6 +109,22 @@ test.describe("in an island", () => {
     await details.locator("summary").click();
     await expect(state).toHaveText("open: false");
     expect(await isOpen(details)).toBe(false);
+  });
+
+  test("one rendered open reports no change until it changes (TASK-441 M40)", async ({ page }) => {
+    await page.goto("/collapsible/island");
+    const reports = page.getByTestId("reports");
+    await expect(async () => {
+      await page.getByTestId("mount").click({ timeout: 250 });
+      await expect(page.getByTestId("mounted")).toBeVisible({ timeout: 250 });
+    }).toPass();
+    const mounted = page.getByTestId("mounted");
+    expect(await isOpen(mounted)).toBe(true);
+    // The browser's `toggle` for a `<details>` created open comes a task later.
+    await page.waitForTimeout(200);
+    await expect(reports).toHaveText("reports: 0");
+    await mounted.locator("summary").click();
+    await expect(reports).toHaveText("reports: 1");
   });
 });
 

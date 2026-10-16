@@ -35,6 +35,7 @@
   lu-toast-viewport > [data-swiping] {
     user-select: none;
   }
+  /* The swipe's axis is the toast's: the other one scrolls the page. */
   lu-toast-viewport > :is([data-swipe-directions~="up"], [data-swipe-directions~="down"]) {
     touch-action: pan-x;
   }
@@ -47,5 +48,21 @@
       [data-swipe-directions~="right"]
     ) {
     touch-action: none;
+  }
+  /* And pinch-zoom stays, where `touch-action` knows it (not Safari) (TASK-442 L3). */
+  @supports (touch-action: pinch-zoom) {
+    lu-toast-viewport > :is([data-swipe-directions~="up"], [data-swipe-directions~="down"]) {
+      touch-action: pan-x pinch-zoom;
+    }
+    lu-toast-viewport > :is([data-swipe-directions~="left"], [data-swipe-directions~="right"]) {
+      touch-action: pan-y pinch-zoom;
+    }
+    lu-toast-viewport
+      > :is([data-swipe-directions~="up"], [data-swipe-directions~="down"]):is(
+        [data-swipe-directions~="left"],
+        [data-swipe-directions~="right"]
+      ) {
+      touch-action: pinch-zoom;
+    }
   }
 }

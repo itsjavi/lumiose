@@ -76,6 +76,38 @@ export default function DialogPage() {
             </Dialog.Popup>
           </Dialog.Root>
         </section>
+        <section aria-labelledby="terms-heading">
+          <h2 id="terms-heading">A dialog that starts with text</h2>
+          {/* Its first tab stop takes focus: not the scroller, not the title (TASK-453 L29). */}
+          <Dialog.Root>
+            <Dialog.Trigger class="lu-button">Terms</Dialog.Trigger>
+            <Dialog.Popup class="lu-dialog">
+              <Dialog.Title tabindex={-1}>Terms of use</Dialog.Title>
+              <div class="terms">
+                {Array.from({ length: 8 }, (_, i) => (
+                  <p>Clause {i + 1}: the service is provided as it is, without warranty.</p>
+                ))}
+              </div>
+              <footer>
+                <Dialog.Close class="lu-button" data-variant="primary">
+                  Agree
+                </Dialog.Close>
+              </footer>
+            </Dialog.Popup>
+          </Dialog.Root>
+        </section>
+        <section aria-labelledby="notice-heading">
+          <h2 id="notice-heading">A dialog that takes focus itself</h2>
+          <Dialog.Root>
+            <Dialog.Trigger class="lu-button">Notice</Dialog.Trigger>
+            <Dialog.Popup class="lu-dialog" autofocus>
+              <Dialog.Title>Maintenance tonight</Dialog.Title>
+              <footer>
+                <Dialog.Close class="lu-button">OK</Dialog.Close>
+              </footer>
+            </Dialog.Popup>
+          </Dialog.Root>
+        </section>
       </div>
       {/* Makes the page scroll, to check that a modal dialog locks it. */}
       <div class="tall" />
@@ -86,5 +118,9 @@ export default function DialogPage() {
 <style>
   .tall {
     block-size: 150vh;
+  }
+  .terms {
+    max-block-size: 6rem;
+    overflow: auto;
   }
 </style>

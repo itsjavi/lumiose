@@ -37,3 +37,38 @@ it("lets enabled buttons and buttons with a role through", () => {
   b!.click();
   expect(handler).toHaveBeenCalledTimes(2);
 });
+
+it("keeps presses, Enter and Space from the handlers, not from capturing listeners (TASK-450 L23)", () => {
+  document.body.innerHTML = `<div><button aria-disabled="true">Save</button></div>`;
+  const button = document.querySelector("button")!;
+  const own = vi.fn();
+  const around = vi.fn();
+  const capturing = vi.fn();
+  for (const type of ["pointerdown", "mousedown", "keydown", "keyup"]) {
+    button.addEventListener(type, own);
+    button.parentElement!.addEventListener(type, around);
+    window.addEventListener(type, capturing, true);
+  }
+  button.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true }));
+  button.dispatchEvent(new MouseEvent("mousedown", { bubbles: true }));
+  const enter = new KeyboardEvent("keydown", { key: "Enter", bubbles: true, cancelable: true });
+  button.dispatchEvent(enter);
+  button.dispatchEvent(new KeyboardEvent("keyup", { key: " ", bubbles: true, cancelable: true }));
+  expect(own).not.toHaveBeenCalled();
+  expect(around).not.toHaveBeenCalled();
+  expect(capturing).toHaveBeenCalledTimes(4);
+  expect(enter.defaultPrevented).toBe(true);
+  // The other keys go on: Tab, a toolbar's arrows.
+  const arrow = new KeyboardEvent("keydown", {
+    key: "ArrowRight",
+    bubbles: true,
+    cancelable: true,
+  });
+  button.dispatchEvent(arrow);
+  expect(own).toHaveBeenCalledTimes(1);
+  expect(around).toHaveBeenCalledTimes(1);
+  expect(arrow.defaultPrevented).toBe(false);
+  for (const type of ["pointerdown", "mousedown", "keydown", "keyup"]) {
+    window.removeEventListener(type, capturing, true);
+  }
+});

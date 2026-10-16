@@ -10,8 +10,9 @@
 // - The arrow keys along `data-orientation` (Left and Right swapped right to left) move focus to
 //   the next or previous item, looping unless `data-loop-focus="false"`; Home and End to the first
 //   and last. A control keeps the keys it needs: a text field its caret's Left and Right (focus
-//   moves on at its start or end) and Home and End, a number field or a slider its arrows, a
-//   select its Up and Down. A key an item already handled (a Menu trigger's) is left alone.
+//   moves on at its start or end; with Shift they always select) and Home and End, a number field
+//   or a slider its arrows, a select its Up and Down. A text field the keys move into has its text
+//   selected, as in Base UI (TASK-452 L26). A key an item already handled (a Menu trigger's) is left alone.
 // - A ToggleGroup inside a toolbar leaves its keys and tab stop to the toolbar (toggle-group's
 //   script checks for an `lu-toolbar` around it).
 //
@@ -71,14 +72,16 @@ export class ToolbarElement extends HTMLElement {
     if (item) this.#rove(item);
   };
 
-  /** Whether `item` keeps `key` for itself. */
-  #owns(item: HTMLElement, key: string): boolean {
+  /** Whether `item` keeps the key for itself. */
+  #owns(item: HTMLElement, { key, shiftKey }: KeyboardEvent): boolean {
     if (item instanceof HTMLTextAreaElement) return true;
     if (item instanceof HTMLSelectElement) return key === "ArrowUp" || key === "ArrowDown";
     if (!(item instanceof HTMLInputElement)) return false;
     if (item.type === "number" || item.type === "range") return key.startsWith("Arrow");
     if (!TEXT.test(item.type)) return false;
     if (key === "Home" || key === "End") return true;
+    // Shift selects: it never leaves the field.
+    if (shiftKey && (key === "ArrowLeft" || key === "ArrowRight")) return true;
     // A text field keeps Left and Right until its caret is at the edge it moves toward.
     const { selectionStart: start, selectionEnd: end, value } = item;
     if (start === null || start !== end) return key === "ArrowLeft" || key === "ArrowRight";
@@ -93,7 +96,7 @@ export class ToolbarElement extends HTMLElement {
     if (defaultPrevented || isComposing || altKey || ctrlKey || metaKey) return;
     const items = this.items;
     const item = items.find((each) => each === event.target);
-    if (!item || this.#owns(item, event.key)) return;
+    if (!item || this.#owns(item, event)) return;
     const vertical = this.dataset.orientation === "vertical";
     const rtl = !vertical && getComputedStyle(this).direction === "rtl";
     const steps: Record<string, number> = vertical
@@ -111,7 +114,9 @@ export class ToolbarElement extends HTMLElement {
     }
     if (next === undefined) return;
     event.preventDefault();
-    items[next]?.focus();
+    const to = items[next];
+    to?.focus();
+    if (to instanceof HTMLInputElement && TEXT.test(to.type)) to.select();
   };
 }
 

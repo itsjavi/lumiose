@@ -1,6 +1,6 @@
 # Tooltip
 
-> A short tip next to its trigger, on hover or keyboard focus: a native `popover="hint"` with `role="tooltip"`, placed with CSS anchor positioning. The trigger is described by the tip in server HTML, so screen readers announce it without hovering; a 1.6 kB script opens and closes it as Base UI's tooltip does. `bind:open` (or `open` and `onOpenChange`) keeps a signal in sync in islands.
+> A short tip next to its trigger, on hover or keyboard focus: a native `popover="hint"` with `role="tooltip"`, placed with CSS anchor positioning. The trigger is described by the tip in server HTML, so screen readers announce it without hovering; a 1.9 kB script opens and closes it as Base UI's tooltip does. `bind:open` (or `open` and `onOpenChange`) keeps a signal in sync in islands.
 
 ```ts
 import { Tooltip } from "@lumiose/ui"; // or "@lumiose/ui/tooltip"
@@ -111,7 +111,7 @@ A tooltip inside a popover keeps the popover open, and one inside a dialog belon
 ## Without JavaScript, and the client script
 
 Without JavaScript the tip never shows, but the trigger keeps its description: screen readers
-announce it. A page that renders a `Tooltip` loads a 1.6 kB (brotli) module once, without the
+announce it. A page that renders a `Tooltip` loads a 1.9 kB (brotli) module once, without the
 Lumiose runtime; islands bundle it. It opens and closes every tooltip on the page, and places them
 in browsers without CSS anchor positioning.
 

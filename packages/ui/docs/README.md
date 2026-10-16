@@ -102,6 +102,28 @@ custom properties, named as in shadcn/ui, are listed in [Theming](theming.md#the
 | [Menubar](menubar.md)                 | Available: Menus in a `role="menubar"`, `<lu-menubar>` moves between them                 |
 | [Navigation Menu](navigation-menu.md) | Available: a `<nav>` whose triggers open panels of links, works without JavaScript        |
 
+## Ids
+
+The parts connect themselves by id (`for`, `aria-labelledby`, `aria-controls`, `popovertarget`,
+`commandfor`), which they generate. A server renders a page once, in order: a part can take an
+`id` of yours only where nothing before it in the page points at it, and the parts after it then
+point at yours.
+
+- **Your `id` names it**: the triggers of Accordion, Collapsible, Menu (and submenus) and Navigation
+  Menu; Tabs' tabs; Combobox's `Label` and `Item`s; the `Title` and `Description` of a Dialog,
+  Drawer or Popover (the popup renders them before its own attributes); a Toast's `Root`; the
+  `Label` of a Slider, Progress or Meter; and the elements that nothing points at (a Slider's
+  `Root`, a Tabs or Accordion `Root`, a Toolbar, a Tooltip's trigger).
+- **It keeps its generated id**, because a part before it points at it: the popups of Dialog,
+  Drawer, Popover, Tooltip, Preview Card and Menu; Navigation Menu's `Content`; the panels of Tabs,
+  Accordion and Collapsible; Combobox's `Input`, `List` and `Popup`; a Slider's thumbs and the
+  tracks of Progress and Meter (their `Label` points at them); a Field's control (`Field.Label`).
+  Combobox's and Field's `Root` keep theirs too: their scripts find the parts by it. A Number
+  Field or an OTP Field takes the input's `id` on its `Root`.
+
+To reach a popup or a panel from elsewhere (a `commandfor`, a `#hash` link), point at a part that
+takes your `id`, such as a tab, or read the generated id from the rendered page.
+
 ## Right to left
 
 There is no direction provider: every component reads the direction from the page, the `dir`

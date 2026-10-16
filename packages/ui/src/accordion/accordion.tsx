@@ -206,6 +206,8 @@ function Item({
   const record: ItemRecord = { value: key, details };
   accordion.items.update((list) => [...list, record]);
   onCleanup(() => accordion.items.update((list) => list.filter((each) => each !== record)));
+  /** The state last reported: a `<details>` created open fires `toggle` too (TASK-441 M40). */
+  let shown = accordion.initiallyOpen(key);
   const item: ItemContextValue = {
     triggerId: `${id}-trigger`,
     panelId: `${id}-panel`,
@@ -220,10 +222,12 @@ function Item({
           forwarded?.(element);
         }}
         name={accordion.multiple ? undefined : accordion.id}
-        open={accordion.initiallyOpen(key)}
+        open={shown}
         on:toggle={(event: ToggleEvent) => {
           const now = event.newState === "open";
           accordion.onToggle(key, now);
+          if (now === shown) return;
+          shown = now;
           onOpenChange?.(now);
         }}
       >
@@ -240,6 +244,8 @@ function Header({ children, ...rest }: AccordionHeaderProps) {
 function Trigger({ children, ...rest }: AccordionTriggerProps) {
   const item = useItem();
   const header = useContext(HeaderContext);
+  // A caller's `id` names it; the parts after it point at that (TASK-441 M39).
+  if (rest.id) item.triggerId = rest.id;
   return (
     <summary
       {...rest}

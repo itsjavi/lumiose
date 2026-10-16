@@ -49,7 +49,7 @@ export function Counter() {
   "Arrow.stsx": `export function Arrow() {
   return (
     <span class="arrow">
-      →<style>.arrow:dir(rtl) { scale: -1 1; }</style>
+      →<style>.arrow:dir(rtl) { scale: -1 1; } .arrow { color: light-dark(#111, #eee); }</style>
     </span>
   );
 }
@@ -500,12 +500,17 @@ describe.skipIf(!binding)("@lumiose/vite", () => {
     expect(manifest.code).not.toContain(base);
   });
 
-  it("keeps :dir() in production CSS, unless the project sets its own target (TASK-422)", async () => {
-    // A `:lang()` rewrite would miss `<html dir="rtl">` and any other `dir` attribute.
+  it("keeps :dir() and light-dark() in production CSS, unless the project sets its own target", async () => {
+    // A `:lang()` rewrite would miss `<html dir="rtl">` and any other `dir` attribute (TASK-422).
     const own = await arrowCss();
     expect(own).toMatch(/\.arrow:dir\(rtl\)\[data-l-\w+\]\{/);
     expect(own).not.toContain(":lang(");
     expect(await arrowCss(["chrome111"])).toContain(":lang(");
+    // Lowered for Safari 17.4, light-dark() would follow only the system's scheme, not a
+    // `color-scheme` set on an element (TASK-441 M37).
+    expect(own).toContain("light-dark(");
+    expect(own).not.toContain("--lightningcss-light");
+    expect(await arrowCss(["safari17.4"])).toContain("--lightningcss-light");
   });
 
   it("serves the scoped CSS of a file through Vite's CSS pipeline", async () => {

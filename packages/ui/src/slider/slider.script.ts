@@ -17,7 +17,10 @@
 // - Page Up and Page Down, and Shift with an arrow key, move by `large-step` (default 10). The
 //   arrow keys are the element's too: Up and Right step up (Left right to left), Down and Left
 //   down, the same in every browser (WebKit's native range does not mirror them right to left,
-//   TASK-418).
+//   TASK-418). Home and End go to the ends, or to the neighbouring thumb in a range, which they
+//   never push (as Base UI and the APG, TASK-449 L21).
+// - A move that changes no value (a thumb blocked by its neighbour with `"none"`) reports nothing:
+//   its `input` and `change` events stop at the element (TASK-449 L21).
 // - The values as text: `aria-valuetext` on the thumbs when the element has a `format`
 //   (`Intl.NumberFormat` options, JSON), and the Value part (an `<output for>` the thumbs) unless
 //   it renders content of its own (then it has no `for`).
@@ -29,6 +32,9 @@
 import { formatValues } from "./format.ts";
 
 const THUMB = "input[type=range]";
+
+const same = (a: readonly string[], b: readonly string[]) =>
+  a.length === b.length && a.every((value, i) => value === b[i]);
 
 const number = (value: string | null, fallback: number) => {
   const parsed = Number.parseFloat(value ?? "");
@@ -42,6 +48,10 @@ export class SliderElement extends HTMLElement {
   #pressed: HTMLInputElement | undefined;
   /** After a swap, the thumb `#pressed`'s drag moves instead, and the value `#pressed` keeps. */
   #proxy: { target: HTMLInputElement; value: string } | undefined;
+  /** The values `input` last reported (or the script set). */
+  #reported: string[] = [];
+  /** The values when the thumb the pointer drags natively was pressed, for its `change`. */
+  #pressedAt: string[] | undefined;
 
   /** The element's own thumbs, in order. */
   get thumbs(): HTMLInputElement[] {
@@ -66,7 +76,10 @@ export class SliderElement extends HTMLElement {
   }
 
   connectedCallback(): void {
-    this.addEventListener("input", this.#onInput);
+    // Capturing: the values are in order, and a move that changed nothing stopped, before any
+    // listener on the element or a thumb sees the event.
+    this.addEventListener("input", this.#onInput, true);
+    this.addEventListener("change", this.#onChange, true);
     this.addEventListener("keydown", this.#onKeyDown);
     this.addEventListener("pointerdown", this.#onPress);
     document.addEventListener("reset", this.#onReset, true);
@@ -76,7 +89,8 @@ export class SliderElement extends HTMLElement {
   }
 
   disconnectedCallback(): void {
-    this.removeEventListener("input", this.#onInput);
+    this.removeEventListener("input", this.#onInput, true);
+    this.removeEventListener("change", this.#onChange, true);
     this.removeEventListener("keydown", this.#onKeyDown);
     this.removeEventListener("pointerdown", this.#onPress);
     document.removeEventListener("reset", this.#onReset, true);
@@ -151,9 +165,14 @@ export class SliderElement extends HTMLElement {
     active.focus({ preventScroll: true });
   }
 
+  #values(): string[] {
+    return this.thumbs.map((thumb) => thumb.value);
+  }
+
   /** Writes the selected part of the track, the values' text and the Value part. */
   #sync(): void {
     const thumbs = this.thumbs;
+    this.#reported = this.#values();
     if (thumbs.length === 0) return;
     const { min, max } = this.#range(thumbs[0]!);
     const at = (value: number) => (max > min ? ((value - min) / (max - min)) * 100 : 0);
@@ -188,15 +207,30 @@ export class SliderElement extends HTMLElement {
       thumb = this.#proxy.target;
       thumb.value = value;
     }
+    const before = this.#reported;
     this.#constrain(thumb);
     this.#sync();
+    // Blocked: nothing moved, so nothing is reported.
+    if (same(before, this.#reported)) event.stopPropagation();
+  };
+
+  /** A native drag's `change`: nothing to commit when it ends where it began. */
+  #onChange = (event: Event) => {
+    const thumb = event.target as HTMLInputElement;
+    if (!thumb.matches?.(THUMB) || thumb.closest("lu-slider") !== this) return;
+    const start = this.#pressedAt;
+    this.#pressedAt = undefined;
+    if (start && same(start, this.#values())) event.stopPropagation();
   };
 
   /** Sets `thumb` to `value`, as the user would: clamped, on the step, with input and change. */
   #move(thumb: HTMLInputElement, value: number, change: boolean): void {
-    const before = thumb.value;
+    const before = this.#values();
     thumb.value = String(value);
-    if (thumb.value === before) return;
+    // Blocked by a neighbour (or already there): no move, no events (TASK-449 L21).
+    this.#constrain(thumb);
+    if (same(before, this.#values())) return;
+    this.#pressedAt = undefined;
     thumb.dispatchEvent(new Event("input", { bubbles: true }));
     if (change) thumb.dispatchEvent(new Event("change", { bubbles: true }));
   }
@@ -207,6 +241,26 @@ export class SliderElement extends HTMLElement {
     if (event.altKey || event.ctrlKey || event.metaKey) return;
     const large = number(this.getAttribute("large-step"), 10);
     let delta = 0;
+    if (event.key === "Home" || event.key === "End") {
+      // To the end of the range, or to the neighbouring thumb, never past or pushing it.
+      const thumbs = this.thumbs;
+      const i = thumbs.indexOf(thumb);
+      const { min, max, step } = this.#range(thumb);
+      const gap = number(this.getAttribute("min-steps-between-values"), 0) * step;
+      const previous = thumbs[i - 1];
+      const next = thumbs[i + 1];
+      const to =
+        event.key === "Home"
+          ? previous
+            ? previous.valueAsNumber + gap
+            : min
+          : next
+            ? next.valueAsNumber - gap
+            : max;
+      event.preventDefault();
+      this.#move(thumb, to, true);
+      return;
+    }
     if (event.key === "PageUp") delta = large;
     else if (event.key === "PageDown") delta = -large;
     else if (event.key.startsWith("Arrow")) {
@@ -248,6 +302,7 @@ export class SliderElement extends HTMLElement {
     if ((event.target as Element).matches?.(THUMB)) {
       // The thumb's own drag; a swap hands it to another thumb until the press ends.
       this.#pressed = event.target as HTMLInputElement;
+      this.#pressedAt = this.#values();
       const end = (next: PointerEvent) => {
         if (next.pointerId !== event.pointerId) return;
         document.removeEventListener("pointerup", end, true);
@@ -274,6 +329,7 @@ export class SliderElement extends HTMLElement {
     event.preventDefault();
     nearest.focus();
     this.#dragging = nearest;
+    const start = this.#values();
     this.#move(nearest, value, false);
     control.setPointerCapture(event.pointerId);
     const move = (next: PointerEvent) => {
@@ -285,7 +341,9 @@ export class SliderElement extends HTMLElement {
       control.removeEventListener("pointermove", move);
       control.removeEventListener("pointerup", up);
       control.removeEventListener("pointercancel", up);
-      this.#dragging?.dispatchEvent(new Event("change", { bubbles: true }));
+      if (!same(start, this.#values())) {
+        this.#dragging?.dispatchEvent(new Event("change", { bubbles: true }));
+      }
       this.#dragging = undefined;
     };
     control.addEventListener("pointermove", move);

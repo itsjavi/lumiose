@@ -6,7 +6,14 @@
 // - Hover intent (mouse and pen): resting on a trigger for `data-delay` (50ms) opens its content,
 //   at once while another is open; leaving the item closes it `data-close-delay` (50ms) later,
 //   300ms when the pointer leaves toward the content. A click keeps a content opened by hover open
-//   and makes it stay when the pointer leaves; another click closes it.
+//   and makes it stay when the pointer leaves; another click closes it. On its way from a trigger
+//   to its open content, the pointer may cross another trigger: inside the triangle between where
+//   it left and the content's near edge, that trigger waits 300ms before it takes over, so a path
+//   that reaches the content keeps it (TASK-451 L25).
+// - Dismissal: where the element runs, a content is a manual popover that the layer model Menu and
+//   Popover share closes (../layer/layer.ts): a main-button press outside (not a right-click, and
+//   not a press in a toast), an Escape nothing else took, another layer opening outside it
+//   (TASK-451 L24). Server HTML keeps `popover="auto"`, which needs no script.
 // - Keys: Arrow Right and Left (Down and Up when vertical, swapped right to left) move between the
 //   top-level triggers and links, with Home and End; Arrow Down (Right when vertical) on a trigger
 //   opens its content on its first link; in a content, Arrow Down and Up move between its links;
@@ -20,6 +27,7 @@
 //   open content next to its trigger, and again on scroll and resize.
 // It must not import `lumiose`: server-rendered pages load it without the runtime.
 
+import { openLayer } from "../layer/layer.ts";
 import { anchoring, place } from "../placement/place.ts";
 
 /** How long (ms) the content stays while the pointer travels from its trigger toward it. */
@@ -37,6 +45,12 @@ export class NavigationMenuElement extends HTMLElement {
   #hovered: HTMLElement | undefined;
   /** The value last reported in `valuechange`. */
   #reported: string | null = null;
+  /** The item whose content is the open layer, and the release of that layer. */
+  #layer: { item: HTMLElement; release: () => void } | undefined;
+  /** The pointer's last position over a trigger. */
+  #last: Point | undefined;
+  /** Where (its last position over it) and when the pointer left the open item's trigger. */
+  #exit: { x: number; y: number; at: number } | undefined;
 
   /** The `value` of the item whose content is open, or `null`. Setting it opens or closes them. */
   get value(): string | null {
@@ -51,7 +65,7 @@ export class NavigationMenuElement extends HTMLElement {
   }
 
   connectedCallback(): void {
-    for (const type of ["pointerover", "pointerout", "keydown", "focusout"]) {
+    for (const type of ["pointerover", "pointerout", "pointermove", "keydown", "focusout"]) {
       this.addEventListener(type, this);
     }
     // Before the trigger's `popovertarget` acts, and before Lumiose's delegated handlers.
@@ -61,7 +75,7 @@ export class NavigationMenuElement extends HTMLElement {
   }
 
   disconnectedCallback(): void {
-    for (const type of ["pointerover", "pointerout", "keydown", "focusout"]) {
+    for (const type of ["pointerover", "pointerout", "pointermove", "keydown", "focusout"]) {
       this.removeEventListener(type, this);
     }
     this.removeEventListener("click", this, true);
@@ -69,6 +83,7 @@ export class NavigationMenuElement extends HTMLElement {
     clearTimeout(this.#openTimer);
     clearTimeout(this.#closeTimer);
     this.#listen(false);
+    this.#release();
   }
 
   handleEvent(event: Event): void {
@@ -80,6 +95,13 @@ export class NavigationMenuElement extends HTMLElement {
         return this.#onPointerOver(event as PointerEvent);
       case "pointerout":
         return this.#onPointerOut(event as PointerEvent);
+      case "pointermove": {
+        const item = this.#itemOf(event.target as Node);
+        if (item && this.#trigger(item)?.contains(event.target as Node)) {
+          this.#last = { x: (event as PointerEvent).clientX, y: (event as PointerEvent).clientY };
+        }
+        return;
+      }
       case "click":
         return this.#onClick(event as MouseEvent);
       case "keydown":
@@ -137,7 +159,40 @@ export class NavigationMenuElement extends HTMLElement {
     } else {
       delete content.dataset.activationDirection;
     }
+    // Manual: the layer model dismisses it, not native light dismiss, which also closes on a
+    // right-click; and a manual popover closes no other, so the open one closes here.
+    content.setAttribute("popover", "manual");
+    if (previous) this.#hide(previous);
     (content.showPopover as (options?: { source?: HTMLElement }) => void)({ source: trigger });
+    this.#layer = {
+      item,
+      release: openLayer({
+        popup: content,
+        contains: (node) => item.contains(node),
+        dismiss: (press) => {
+          const focused = content.contains(document.activeElement);
+          if (this.#hovered === item) this.#hovered = undefined;
+          this.#hide(item);
+          // A close request from inside returns focus to the trigger; a press keeps it there.
+          if (!press && focused) trigger.focus({ preventScroll: true });
+        },
+      }),
+    };
+  }
+
+  /** Stops dismissing the open content (it closed). */
+  #release(item?: HTMLElement): void {
+    if (!this.#layer || (item && this.#layer.item !== item)) return;
+    const { release } = this.#layer;
+    this.#layer = undefined;
+    release();
+  }
+
+  /** Closes `item`'s content. */
+  #hide(item: HTMLElement): void {
+    this.#release(item);
+    const content = this.#content(item);
+    if (content?.matches(":popover-open")) content.hidePopover();
   }
 
   #close(): void {
@@ -145,7 +200,7 @@ export class NavigationMenuElement extends HTMLElement {
     clearTimeout(this.#closeTimer);
     this.#hovered = undefined;
     const item = this.#openItem();
-    if (item) this.#content(item)!.hidePopover();
+    if (item) this.#hide(item);
   }
 
   #onToggle(event: ToggleEvent): void {
@@ -154,7 +209,11 @@ export class NavigationMenuElement extends HTMLElement {
     this.#trigger(item)?.setAttribute("aria-expanded", String(event.newState === "open"));
     this.#place();
     this.#listen(this.#openItem() !== undefined);
-    if (event.newState === "closed" && this.#hovered === item) this.#hovered = undefined;
+    if (event.newState === "closed") {
+      if (this.#hovered === item) this.#hovered = undefined;
+      // Whatever closed it (a parent closing the content it is in, say).
+      this.#release(item);
+    }
     // Switching items closes one and opens another: report the open one once.
     const value = this.value;
     if (value === this.#reported) return;
@@ -189,14 +248,33 @@ export class NavigationMenuElement extends HTMLElement {
     if (!item) return;
     const open = this.#openItem();
     if (open === item) {
+      // Back in the open item, its content reached: a trigger crossed on the way does not open.
       clearTimeout(this.#closeTimer);
+      clearTimeout(this.#openTimer);
       return;
     }
     const trigger = this.#trigger(item);
     if (!trigger?.contains(event.target as Node)) return;
     clearTimeout(this.#openTimer);
-    if (open) this.#open(item, true);
+    if (open && this.#travelling(open, event)) {
+      this.#openTimer = setTimeout(() => this.#open(item, true), TRAVEL_DELAY);
+    } else if (open) this.#open(item, true);
     else this.#openTimer = setTimeout(() => this.#open(item, true), this.#delay("delay"));
+  }
+
+  /** Whether the pointer, over another trigger, is on its way to `open`'s content (L25). */
+  #travelling(open: HTMLElement, event: PointerEvent): boolean {
+    const exit = this.#exit;
+    if (!exit || event.timeStamp - exit.at > TRAVEL_DELAY) return false;
+    return this.#safe(open, exit, event);
+  }
+
+  /** Whether `event` is in the triangle between `from` and `item`'s content's near edge. */
+  #safe(item: HTMLElement, from: Point, event: PointerEvent): boolean {
+    const content = this.#content(item);
+    if (!content?.matches(":popover-open")) return false;
+    const [a, b] = nearEdge(this.#trigger(item)!, content);
+    return inside({ x: event.clientX, y: event.clientY }, from, a, b);
   }
 
   #onPointerOut(event: PointerEvent): void {
@@ -207,16 +285,27 @@ export class NavigationMenuElement extends HTMLElement {
     const trigger = this.#trigger(item);
     if (trigger?.contains(event.target as Node) && !trigger.contains(to)) {
       clearTimeout(this.#openTimer);
+      if (this.#openItem() === item) {
+        const from = this.#last ?? { x: event.clientX, y: event.clientY };
+        this.#exit = { ...from, at: event.timeStamp };
+      }
     }
     // Still inside the item (its trigger, its content, a menu nested in it), or a content kept
     // open by a click.
     if ((to && item.contains(to)) || this.#hovered !== item) return;
     const content = this.#content(item)!;
-    const toward = trigger?.contains(event.target as Node) && heading(trigger, content, event);
+    const leaving = trigger?.contains(event.target as Node) === true;
+    const toward =
+      leaving &&
+      (heading(trigger!, content, event) ||
+        (this.#exit !== undefined && this.#safe(item, this.#exit, event)));
     clearTimeout(this.#closeTimer);
     this.#closeTimer = setTimeout(
       () => {
-        if (this.#hovered === item) this.#close();
+        // Not `#close()`: a trigger crossed on the way may still be about to open its content.
+        if (this.#hovered !== item) return;
+        this.#hovered = undefined;
+        this.#hide(item);
       },
       toward ? TRAVEL_DELAY : this.#delay("closeDelay"),
     );
@@ -323,6 +412,43 @@ function direction(from: HTMLElement, to: HTMLElement): string {
   if (Math.abs(b.left - a.left) >= Math.abs(b.top - a.top))
     return b.left > a.left ? "right" : "left";
   return b.top > a.top ? "down" : "up";
+}
+
+interface Point {
+  x: number;
+  y: number;
+}
+
+/** The two ends of `content`'s edge that faces `trigger`. */
+function nearEdge(trigger: HTMLElement, content: HTMLElement): [Point, Point] {
+  const t = trigger.getBoundingClientRect();
+  const c = content.getBoundingClientRect();
+  if (c.top >= t.bottom - 1)
+    return [
+      { x: c.left, y: c.top },
+      { x: c.right, y: c.top },
+    ];
+  if (c.bottom <= t.top + 1)
+    return [
+      { x: c.left, y: c.bottom },
+      { x: c.right, y: c.bottom },
+    ];
+  if (c.left >= t.right - 1)
+    return [
+      { x: c.left, y: c.top },
+      { x: c.left, y: c.bottom },
+    ];
+  return [
+    { x: c.right, y: c.top },
+    { x: c.right, y: c.bottom },
+  ];
+}
+
+/** Whether `p` is inside the triangle `a`, `b`, `c`. */
+function inside(p: Point, a: Point, b: Point, c: Point): boolean {
+  const side = (u: Point, v: Point) => (p.x - v.x) * (u.y - v.y) - (u.x - v.x) * (p.y - v.y);
+  const [d1, d2, d3] = [side(a, b), side(b, c), side(c, a)];
+  return !((d1 < 0 || d2 < 0 || d3 < 0) && (d1 > 0 || d2 > 0 || d3 > 0));
 }
 
 /** Whether the pointer left `trigger` through the edge that faces `content`. */

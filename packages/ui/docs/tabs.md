@@ -63,8 +63,10 @@ The element reads them from the list's attributes: `data-activate-on-focus` and
 | `value`    | both  | `string`  | Pairs a tab with its panel. Required.                         |
 | `disabled` | `Tab` | `boolean` | The tab takes focus but cannot be selected (`aria-disabled`). |
 
-Each takes the props of the element it renders. `role`, `id`, `value`, `aria-selected`,
-`aria-controls`, `aria-labelledby`, `tabindex` on tabs and `hidden` stay the parts' own.
+Each takes the props of the element it renders. A `Tab`'s `id` names it, and its `Panel` points at
+it; a `Panel` keeps its own `id`, which its tab points at (see [Ids](README.md#ids)). `role`,
+`value`, `aria-selected`, `aria-controls`, `aria-labelledby`, `tabindex` on tabs and `hidden` stay
+the parts' own.
 
 - **Disabled tabs.** A selected tab that becomes disabled gives its selection to the first enabled
   tab. With every tab disabled, none is selected and the first tab is the tab stop. There is one

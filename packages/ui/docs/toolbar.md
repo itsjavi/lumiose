@@ -1,6 +1,6 @@
 # Toolbar
 
-> A set of controls with one tab stop, after Base UI's Toolbar and the APG toolbar pattern: `<lu-toolbar role="toolbar">` moves focus between its items with the arrow keys, Home and End, following the orientation and the text direction. Its items are native: buttons that stay focusable when disabled, links, inputs, and the toggles of a [Toggle Group](toggle-group.md) inside it. In the server HTML every item is a tab stop, so each is reachable without JavaScript; a 1.0 kB script makes them one tab stop and moves it.
+> A set of controls with one tab stop, after Base UI's Toolbar and the APG toolbar pattern: `<lu-toolbar role="toolbar">` moves focus between its items with the arrow keys, Home and End, following the orientation and the text direction. Its items are native: buttons that stay focusable when disabled, links, inputs, and the toggles of a [Toggle Group](toggle-group.md) inside it. In the server HTML every item is a tab stop, so each is reachable without JavaScript; a 1.1 kB script makes them one tab stop and moves it.
 
 ```ts
 import { Toolbar } from "@lumiose/ui"; // or "@lumiose/ui/toolbar"
@@ -115,13 +115,14 @@ the buttons. Style the items with their own classes (`lu-button`, `lu-toggle`, `
 Natively disabled controls are skipped. When the item with the tab stop is removed, disabled or
 hidden, the first item takes it. A key an item handles itself (a Menu trigger's) moves nothing. A
 control keeps the keys it needs: a text field its
-caret's Left and Right (focus moves on at its start or end) and Home and End, a number field or a
-slider its arrows, a select Up and Down. Base UI advises at most one input, last.
+caret's Left and Right (focus moves on at its start or end; with Shift they select) and Home and
+End, a number field or a slider its arrows, a select Up and Down. A text field the arrows reach has
+its text selected, as in Base UI. Base UI advises at most one input, last.
 
 ## Without JavaScript, and the element's script
 
 The server HTML is a labelled toolbar whose items are all tab stops, so Tab reaches each one
-without JavaScript or before the script runs. `<lu-toolbar>`'s script (1.0 kB brotli with Button's)
+without JavaScript or before the script runs. `<lu-toolbar>`'s script (1.1 kB brotli with Button's)
 makes the toolbar one tab stop, moves focus with the keys and keeps the tab stop on the last focused
 item.
 

@@ -1,6 +1,6 @@
 # Menubar
 
-> A bar of menus, such as an app's File, Edit and View, after Base UI's Menubar and the WAI-ARIA menubar pattern: `Menu.Root`s inside `<lu-menubar role="menubar">`, whose triggers are the bar's items. Menu's popups, items, submenus and dismissal; the bar is one tab stop, the arrow keys move between its items and between open menus, and once a menu is open, hovering another item opens its menu instead. A 0.7 kB script on top of Menu's (4.4 kB together); without JavaScript each trigger opens its menu.
+> A bar of menus, such as an app's File, Edit and View, after Base UI's Menubar and the WAI-ARIA menubar pattern: `Menu.Root`s inside `<lu-menubar role="menubar">`, whose triggers are the bar's items. Menu's popups, items, submenus and dismissal; the bar is one tab stop, the arrow keys move between its items and between open menus, and once a menu is open, hovering another item opens its menu instead. A 0.7 kB script on top of Menu's (4.7 kB together); without JavaScript each trigger opens its menu.
 
 ```ts
 import { Menu, Menubar } from "@lumiose/ui"; // or "@lumiose/ui/menu" and "@lumiose/ui/menubar"
@@ -169,7 +169,7 @@ flex row (a column when vertical); each `<lu-menu>` adds no box.
 Each trigger opens its menu through `popovertarget`, and the browser light-dismisses it: without
 JavaScript every trigger is a tab stop, and the menus open with Enter, Space or a click.
 
-A page that renders a `Menubar` loads Menu's script and a 0.7 kB (brotli) one of its own, 4.4 kB
+A page that renders a `Menubar` loads Menu's script and a 0.7 kB (brotli) one of its own, 4.7 kB
 together, without the Lumiose runtime; islands bundle them. The menubar's script makes the bar one
 tab stop once the page has loaded, and adds the arrow keys between items and menus and the hover
 switching. Each menu stays Menu's: its keys, items, submenus and dismissal.

@@ -1,6 +1,6 @@
 # Autocomplete
 
-> A text input with suggestions, for text that may be anything (a search, a tag, an address): the WAI-ARIA combobox pattern with list autocomplete, after Base UI's Autocomplete. Unlike a [Combobox](combobox.md), the text is the value: the input has the name and submits what is typed, and choosing a suggestion only fills it in. It runs on the Combobox's element (`<lu-combobox free>`, 4.5 kB) and parts, on server-rendered pages and in islands; `bind:value` keeps a signal in sync. Filtering, inline completion, groups, an empty state and a status.
+> A text input with suggestions, for text that may be anything (a search, a tag, an address): the WAI-ARIA combobox pattern with list autocomplete, after Base UI's Autocomplete. Unlike a [Combobox](combobox.md), the text is the value: the input has the name and submits what is typed, and choosing a suggestion only fills it in. It runs on the Combobox's element (`<lu-combobox free>`, 5.0 kB) and parts, on server-rendered pages and in islands; `bind:value` keeps a signal in sync. Filtering, inline completion, groups, an empty state and a status.
 
 ```ts
 import { Autocomplete } from "@lumiose/ui"; // or "@lumiose/ui/autocomplete"
@@ -145,7 +145,7 @@ Focus stays in the input: the highlight moves through `aria-activedescendant`.
 ## Without JavaScript, and the element's script
 
 The input is a native text field with the name: typing, `required`, submission and reset work with
-no script; the suggestions need it. `<lu-combobox>`'s script (4.5 kB brotli, shared with Combobox)
+no script; the suggestions need it. `<lu-combobox>`'s script (5.0 kB brotli, shared with Combobox)
 filters and opens them, moves the highlight, fills in a choice (firing `input` and `change` on the
 input) and runs inline completion.
 

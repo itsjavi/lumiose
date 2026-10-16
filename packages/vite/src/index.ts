@@ -125,11 +125,14 @@ const VITE_FS_DENY = [
 ];
 /**
  * The browsers production CSS is minified for (docs/stability.md): Baseline widely available on
- * 2026-10-01, re-checked at each release. Vite's default (Baseline on 2025-05-01, Chrome 111)
- * makes Lightning CSS rewrite `:dir()` into `:lang()` selectors, which miss a `dir` attribute;
- * these browsers all have `:dir()`, so it stays as written (TASK-422).
+ * 2026-10-01, re-checked at each release, with Safari 17.5. Vite's default (Baseline on
+ * 2025-05-01, Chrome 111) makes Lightning CSS rewrite `:dir()` into `:lang()` selectors, which miss
+ * a `dir` attribute; these browsers all have `:dir()`, so it stays as written (TASK-422). Safari
+ * 17.5 is the first with `light-dark()`: lowered for 17.4, it becomes variables that follow
+ * `prefers-color-scheme` only and resolve where a custom property is declared, so a `color-scheme`
+ * set on an element, inline or from script would not change the colours (TASK-441 M37).
  */
-const CSS_TARGET = ["chrome123", "edge123", "firefox124", "safari17.4", "ios17.4"];
+const CSS_TARGET = ["chrome123", "edge123", "firefox124", "safari17.5", "ios17.5"];
 /** Resets scoped state before each test (./vitest-setup.ts, `.js` once built). */
 const VITEST_SETUP = fileURLToPath(
   new URL(`./vitest-setup${extname(fileURLToPath(import.meta.url))}`, import.meta.url),

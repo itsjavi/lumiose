@@ -1,6 +1,6 @@
 // Avatar (TASK-374): `<lu-avatar>` stacks the image over the fallback and follows the image's
 // loading status (`data-loading`, `data-error`, `data-loaded`); the fallback shows until the image
-// has loaded, after its delay, with no layout shift; without JavaScript the image covers it. In an
+// has loaded, after its delay, with no layout shift; without JavaScript the image alone shows. In an
 // island the status follows a signal. WCAG 2.2 AA with the default theme (doc-9 sections 1, 17).
 import { expect, test, type Page } from "@playwright/test";
 import { axe, clipped, SCHEMES, TEXT_SPACING } from "./a11y.ts";
@@ -50,6 +50,15 @@ test.describe("without JavaScript", () => {
       return document.elementFromPoint(box.x + box.width / 2, box.y + box.height / 2)?.tagName;
     });
     expect(top).toBe("IMG");
+  });
+
+  test("each avatar with an image is named once (TASK-445 L8)", async ({ page }) => {
+    await page.goto("/avatar");
+    // Three avatars with an image and a fallback named like it: three images, not six.
+    await expect(page.getByRole("list", { name: "Reviewers" }).getByRole("img")).toHaveCount(3);
+    await expect(avatar(page, "loaded").locator("[data-fallback]")).toBeHidden();
+    // An avatar without an image still shows its fallback.
+    await expect(avatar(page, "none").getByText("KJ")).toBeVisible();
   });
 });
 

@@ -1839,11 +1839,14 @@
     padding: 2px;
     opacity: 0;
   }
+  /* 4px at the track's ends, where the thumb's larger target (below) reaches. */
   .lu-scroll-area :where([data-scrollbar][data-orientation="vertical"]) {
     inline-size: 10px;
+    padding-block: 4px;
   }
   .lu-scroll-area :where([data-scrollbar][data-orientation="horizontal"]) {
     block-size: 10px;
+    padding-inline: 4px;
   }
   /* Shown while the pointer is over the area, while it scrolls, and while it has focus. */
   .lu-scroll-area :where([data-scrollbar]):is([data-hovering], [data-scrolling]),
@@ -1857,8 +1860,23 @@
   }
   /* The thumb: --lu-muted-foreground, 3:1 against the area, rounded. */
   .lu-scroll-area :where([data-thumb]) {
+    position: relative;
     border-radius: 999px;
     background: var(--lu-muted-foreground);
+  }
+  /*
+   * A 24px target for the pointer (WCAG 2.5.8, TASK-444 L7): the 6px thumb takes presses 16px
+   * inward and over the scrollbar's padding, and 4px past its ends (its least length is 16px).
+   */
+  .lu-scroll-area :where([data-thumb])::before {
+    content: "";
+    position: absolute;
+    inset-block: -4px;
+    inset-inline: -16px -2px;
+  }
+  .lu-scroll-area :where([data-orientation="horizontal"] > [data-thumb])::before {
+    inset-block: -16px -2px;
+    inset-inline: -4px;
   }
 
   /* Menubar (TASK-379) ------------------------------------------------------------------------ */
@@ -2001,6 +2019,82 @@
       .lu-navigation-menu [popover][data-activation-direction="left"]:popover-open {
         translate: -1rem 0;
       }
+    }
+  }
+
+  /* Forced colours (TASK-441 M38) ------------------------------------------------------------- */
+
+  /*
+   * A forced palette drops shadows and gradients and paints author backgrounds as Canvas, so the
+   * state indicators drawn with them vanish; system colours, which it keeps, draw them again. A
+   * transparent border shows there: a border that must stay hidden is Canvas.
+   */
+  @media (forced-colors: active) {
+    .lu-switch::before {
+      background: ButtonText;
+    }
+    .lu-switch:checked {
+      border-color: Highlight;
+      background: Highlight;
+    }
+    .lu-switch:checked::before {
+      background: HighlightText;
+    }
+    .lu-toggle[aria-pressed="true"] {
+      border-color: Highlight;
+      background: Highlight;
+      color: HighlightText;
+    }
+    .lu-tabs [role="tab"] {
+      border-block-end: 2px solid Canvas;
+    }
+    .lu-tabs [aria-orientation="vertical"] [role="tab"] {
+      border-block-end: 0;
+      border-inline-end-color: Canvas;
+    }
+    .lu-tabs [role="tab"][aria-selected="true"] {
+      border-block-end-color: Highlight;
+    }
+    .lu-tabs [aria-orientation="vertical"] [role="tab"][aria-selected="true"] {
+      border-inline-end-color: Highlight;
+    }
+    .lu-tabs [data-indicator] {
+      border-color: Highlight;
+    }
+    .lu-tabs:defined [role="tablist"]:has(> [data-indicator]) [role="tab"][aria-selected="true"] {
+      border-color: Canvas;
+    }
+    .lu-progress > progress::-webkit-progress-value,
+    .lu-meter > meter::-webkit-meter-optimum-value,
+    .lu-meter > meter::-webkit-meter-suboptimum-value,
+    .lu-meter > meter::-webkit-meter-even-less-good-value {
+      background: Highlight;
+    }
+    .lu-progress > progress::-moz-progress-bar,
+    .lu-meter > meter::-moz-meter-bar {
+      background: Highlight;
+    }
+    /* The sliding segment is a gradient: kept, in system colours. */
+    .lu-progress > progress:indeterminate {
+      forced-color-adjust: none;
+      border-color: CanvasText;
+      background-color: Canvas;
+      background-image: linear-gradient(
+        to right,
+        transparent 0 35%,
+        Highlight 35% 65%,
+        transparent 65%
+      );
+    }
+    .lu-slider > div > div > :where(div) {
+      background: Highlight;
+    }
+    .lu-scroll-area :where([data-thumb]) {
+      background: CanvasText;
+    }
+    .lu-menu :where([role^="menuitem"][data-highlighted], [aria-expanded="true"]) {
+      background: Highlight;
+      color: HighlightText;
     }
   }
 }

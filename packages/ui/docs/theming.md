@@ -76,8 +76,10 @@ shadcn palette carries over:
 | `--lu-radius`                                     | Corner radius                       |
 
 The theme sets `color-scheme: light dark` on `:root` and every colour with `light-dark()`, so it
-follows the system. Set `color-scheme: light` (or `dark`) on `:root` or on any element to force
-one, and redefine a property outside layers to change it:
+follows the system. Set `color-scheme: light` (or `dark`) on `:root` or on any element, in CSS,
+inline or from a script, to force one, in development and in production builds alike (Lumiose's
+CSS target keeps `light-dark()` as written; an older `build.cssTarget` would lower it to colours
+that follow the system only). Redefine a property outside layers to change it:
 
 ```css
 :root {
@@ -90,6 +92,13 @@ The theme meets WCAG 2.2 AA in light and dark: each `-foreground` colour reaches
 surface, and `--lu-input` (the borders of fields and controls) and `--lu-ring` (the focus ring)
 reach 3:1 on the surfaces they sit on. `--lu-border` is for decoration, such as a dialog's edge:
 it is too light to outline a control. Keep those ratios when you change the colours.
+
+In forced colours (Windows' contrast themes), the browser drops shadows and gradients and paints
+backgrounds in its own palette, which would erase the state a colour shows. The theme draws those
+states again in system colours (`Highlight`, `HighlightText`, `ButtonText`, `Canvas`): a switch's
+thumb and its on state, a pressed toggle, the selected tab's bar, progress and meter values, a
+slider's range, the scroll thumb and the highlighted menu item. Do the same for the states your
+own CSS draws with a colour, in a `@media (forced-colors: active)` block.
 
 ## Your own CSS
 

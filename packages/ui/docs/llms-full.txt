@@ -113,6 +113,28 @@ custom properties, named as in shadcn/ui, are listed in [Theming](theming.md#the
 | [Menubar](menubar.md)                 | Available: Menus in a `role="menubar"`, `<lu-menubar>` moves between them                 |
 | [Navigation Menu](navigation-menu.md) | Available: a `<nav>` whose triggers open panels of links, works without JavaScript        |
 
+## Ids
+
+The parts connect themselves by id (`for`, `aria-labelledby`, `aria-controls`, `popovertarget`,
+`commandfor`), which they generate. A server renders a page once, in order: a part can take an
+`id` of yours only where nothing before it in the page points at it, and the parts after it then
+point at yours.
+
+- **Your `id` names it**: the triggers of Accordion, Collapsible, Menu (and submenus) and Navigation
+  Menu; Tabs' tabs; Combobox's `Label` and `Item`s; the `Title` and `Description` of a Dialog,
+  Drawer or Popover (the popup renders them before its own attributes); a Toast's `Root`; the
+  `Label` of a Slider, Progress or Meter; and the elements that nothing points at (a Slider's
+  `Root`, a Tabs or Accordion `Root`, a Toolbar, a Tooltip's trigger).
+- **It keeps its generated id**, because a part before it points at it: the popups of Dialog,
+  Drawer, Popover, Tooltip, Preview Card and Menu; Navigation Menu's `Content`; the panels of Tabs,
+  Accordion and Collapsible; Combobox's `Input`, `List` and `Popup`; a Slider's thumbs and the
+  tracks of Progress and Meter (their `Label` points at them); a Field's control (`Field.Label`).
+  Combobox's and Field's `Root` keep theirs too: their scripts find the parts by it. A Number
+  Field or an OTP Field takes the input's `id` on its `Root`.
+
+To reach a popup or a panel from elsewhere (a `commandfor`, a `#hash` link), point at a part that
+takes your `id`, such as a tab, or read the generated id from the rendered page.
+
 ## Right to left
 
 There is no direction provider: every component reads the direction from the page, the `dir`
@@ -296,8 +318,10 @@ shadcn palette carries over:
 | `--lu-radius`                                     | Corner radius                       |
 
 The theme sets `color-scheme: light dark` on `:root` and every colour with `light-dark()`, so it
-follows the system. Set `color-scheme: light` (or `dark`) on `:root` or on any element to force
-one, and redefine a property outside layers to change it:
+follows the system. Set `color-scheme: light` (or `dark`) on `:root` or on any element, in CSS,
+inline or from a script, to force one, in development and in production builds alike (Lumiose's
+CSS target keeps `light-dark()` as written; an older `build.cssTarget` would lower it to colours
+that follow the system only). Redefine a property outside layers to change it:
 
 ```css
 :root {
@@ -310,6 +334,13 @@ The theme meets WCAG 2.2 AA in light and dark: each `-foreground` colour reaches
 surface, and `--lu-input` (the borders of fields and controls) and `--lu-ring` (the focus ring)
 reach 3:1 on the surfaces they sit on. `--lu-border` is for decoration, such as a dialog's edge:
 it is too light to outline a control. Keep those ratios when you change the colours.
+
+In forced colours (Windows' contrast themes), the browser drops shadows and gradients and paints
+backgrounds in its own palette, which would erase the state a colour shows. The theme draws those
+states again in system colours (`Highlight`, `HighlightText`, `ButtonText`, `Canvas`): a switch's
+thumb and its on state, a pressed toggle, the selected tab's bar, progress and meter values, a
+slider's range, the scroll thumb and the highlighted menu item. Do the same for the states your
+own CSS draws with a colour, in a `@media (forced-colors: active)` block.
 
 ## Your own CSS
 
@@ -397,17 +428,18 @@ Without `value`, `onValueChange` or `bind:value` the items keep their own state.
 
 ### Accordion.Item
 
-| Prop           | Type                      | Default          |                                                           |
-| -------------- | ------------------------- | ---------------- | --------------------------------------------------------- |
-| `value`        | `string`                  | an id of its own | Identifies the item in the root's `value`.                |
-| `disabled`     | `boolean`                 | `false`          | Its trigger takes no focus and does not toggle the panel. |
-| `onOpenChange` | `(open: boolean) => void` |                  | Called after the item opens or closes.                    |
+| Prop           | Type                      | Default          |                                                                  |
+| -------------- | ------------------------- | ---------------- | ---------------------------------------------------------------- |
+| `value`        | `string`                  | an id of its own | Identifies the item in the root's `value`.                       |
+| `disabled`     | `boolean`                 | `false`          | Its trigger takes no focus and does not toggle the panel.        |
+| `onOpenChange` | `(open: boolean) => void` |                  | Called after the item opens or closes; not when it renders open. |
 
 ### The other parts
 
 Each part takes the props of the element it renders (`class`, `style`, `aria-*`, `data-*`, event
-handlers, `ref`) and passes them through. `id`, `name`, `aria-controls` and `aria-labelledby` stay
-the parts' own, since they connect the parts.
+handlers, `ref`) and passes them through. A `Trigger`'s `id` names it, and its `Panel` points at
+it; a `Panel` keeps its own `id`, which its trigger points at (see [Ids](README.md#ids)). `name`,
+`aria-controls` and `aria-labelledby` stay the parts' own, since they connect the parts.
 
 - **`Trigger`**: a disabled trigger gets `aria-disabled="true"` and `tabindex="-1"`.
 - **`Panel`**: the client script sets `--lu-accordion-panel-height` and `--lu-accordion-panel-width` on
@@ -554,7 +586,7 @@ not toggle, also from the keyboard.
 
 # Autocomplete
 
-> A text input with suggestions, for text that may be anything (a search, a tag, an address): the WAI-ARIA combobox pattern with list autocomplete, after Base UI's Autocomplete. Unlike a [Combobox](combobox.md), the text is the value: the input has the name and submits what is typed, and choosing a suggestion only fills it in. It runs on the Combobox's element (`<lu-combobox free>`, 4.5 kB) and parts, on server-rendered pages and in islands; `bind:value` keeps a signal in sync. Filtering, inline completion, groups, an empty state and a status.
+> A text input with suggestions, for text that may be anything (a search, a tag, an address): the WAI-ARIA combobox pattern with list autocomplete, after Base UI's Autocomplete. Unlike a [Combobox](combobox.md), the text is the value: the input has the name and submits what is typed, and choosing a suggestion only fills it in. It runs on the Combobox's element (`<lu-combobox free>`, 5.0 kB) and parts, on server-rendered pages and in islands; `bind:value` keeps a signal in sync. Filtering, inline completion, groups, an empty state and a status.
 
 ```ts
 import { Autocomplete } from "@lumiose/ui"; // or "@lumiose/ui/autocomplete"
@@ -699,7 +731,7 @@ Focus stays in the input: the highlight moves through `aria-activedescendant`.
 ## Without JavaScript, and the element's script
 
 The input is a native text field with the name: typing, `required`, submission and reset work with
-no script; the suggestions need it. `<lu-combobox>`'s script (4.5 kB brotli, shared with Combobox)
+no script; the suggestions need it. `<lu-combobox>`'s script (5.0 kB brotli, shared with Combobox)
 filters and opens them, moves the highlight, fills in a choice (firing `input` and `change` on the
 input) and runs inline completion.
 
@@ -718,7 +750,7 @@ As [Combobox](combobox.md#browser-support): popover, and CSS anchor positioning 
 
 # Avatar
 
-> A person's picture with a fallback, such as their initials, after Base UI's Avatar: the image loads in the server HTML and shows once it has loaded, the fallback shows until then, after an optional delay, and when the image fails. Both sit in one cell, so neither moves the other. A 0.5 kB script follows the image's loading status; without JavaScript the image covers the fallback when it loads.
+> A person's picture with a fallback, such as their initials, after Base UI's Avatar: the image loads in the server HTML and shows once it has loaded, the fallback shows until then, after an optional delay, and when the image fails. Both sit in one cell, so neither moves the other. A 0.5 kB script follows the image's loading status; without JavaScript an avatar with an image shows the image alone.
 
 ```ts
 import { Avatar } from "@lumiose/ui"; // or "@lumiose/ui/avatar"
@@ -892,8 +924,10 @@ An avatar takes no focus and has no keys. Name it once:
 
 ## Without JavaScript, and the client script
 
-The image and the fallback are in the server HTML. Without JavaScript both show, the image above:
-it covers the fallback once it loads, and the browser's broken-image box replaces it when it fails.
+The image and the fallback are in the server HTML. Without JavaScript nothing tells a failed image
+from a loaded one, so an avatar with an image shows the image alone (the browser's broken-image box
+when it fails) and hides its fallback, from sight and from assistive technology, which would name
+the avatar twice; an avatar without an image shows its fallback.
 `onLoadingStatusChange` needs the component to run in an island.
 
 A page that renders an `Avatar` loads a 0.5 kB (brotli) script, without the Lumiose runtime;
@@ -938,11 +972,11 @@ import "@lumiose/ui/themes/default.css"; // optional: the default theme
 
 ### Button
 
-| Prop                    | Type      | Default    |                                                                                                            |
-| ----------------------- | --------- | ---------- | ---------------------------------------------------------------------------------------------------------- |
-| `type`                  | `string`  | `"button"` | `"submit"` or `"reset"` to act on its form.                                                                |
-| `disabled`              | `boolean` | `false`    | Natively disabled: out of the tab order, its clicks ignored.                                               |
-| `focusableWhenDisabled` | `boolean` | `false`    | With `disabled`: it stays focusable as `aria-disabled="true"`, and its clicks, Enter and Space do nothing. |
+| Prop                    | Type      | Default    |                                                                                                                     |
+| ----------------------- | --------- | ---------- | ------------------------------------------------------------------------------------------------------------------- |
+| `type`                  | `string`  | `"button"` | `"submit"` or `"reset"` to act on its form.                                                                         |
+| `disabled`              | `boolean` | `false`    | Natively disabled: out of the tab order, its clicks ignored.                                                        |
+| `focusableWhenDisabled` | `boolean` | `false`    | With `disabled`: it stays focusable as `aria-disabled="true"`, and its clicks, presses, Enter and Space do nothing. |
 
 Every other native prop passes through: `name`, `value`, `form`, `command`, `commandfor`,
 `popovertarget`, `id`, `class`, `aria-*`, `onClick`.
@@ -997,10 +1031,12 @@ Button ships no stylesheet: it needs none to work.
 
 ## Without JavaScript, and the client script
 
-A native button: it works, submits and resets with no script. The client script (0.1 kB brotli)
+A native button: it works, submits and resets with no script. The client script (0.2 kB brotli)
 only cancels the clicks, Enter and Space of an `aria-disabled` button (one without a `role` of its
-own); without it such a button still acts, so a server page that disables a button until
-something happens should use `disabled` alone.
+own), and keeps its presses (`pointerdown`, `mousedown`) and Enter and Space keys from its
+handlers and its ancestors' bubbling ones, as Base UI does; listeners that capture still see them,
+and the other keys (Tab, a toolbar's arrows) go on. Without it such a button still acts, so a
+server page that disables a button until something happens should use `disabled` alone.
 
 ## Browser support
 
@@ -1295,13 +1331,13 @@ titles a section (Accordion renders its headings that way).
 
 ### Collapsible.Root
 
-| Prop           | Type                      | Default |                                                                                                                         |
-| -------------- | ------------------------- | ------- | ----------------------------------------------------------------------------------------------------------------------- |
-| `open`         | `boolean`                 |         | Opens or closes the panel when it changes. Server HTML starts as it says.                                               |
-| `defaultOpen`  | `boolean`                 | `false` | Whether the panel starts open, when there is no `open`.                                                                 |
-| `onOpenChange` | `(open: boolean) => void` |         | Called after the panel opens or closes, whatever did it: the trigger, find-in-page, a link, another item of its `name`. |
-| `bind:open`    | `Signal<boolean>`         |         | Stands in for `open` and `onOpenChange`.                                                                                |
-| `disabled`     | `boolean`                 | `false` | The trigger takes no focus and does not toggle the panel.                                                               |
+| Prop           | Type                      | Default |                                                                                                                                                   |
+| -------------- | ------------------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `open`         | `boolean`                 |         | Opens or closes the panel when it changes. Server HTML starts as it says.                                                                         |
+| `defaultOpen`  | `boolean`                 | `false` | Whether the panel starts open, when there is no `open`.                                                                                           |
+| `onOpenChange` | `(open: boolean) => void` |         | Called after the panel opens or closes, whatever did it: the trigger, find-in-page, a link, another item of its `name`; not when it renders open. |
+| `bind:open`    | `Signal<boolean>`         |         | Stands in for `open` and `onOpenChange`.                                                                                                          |
+| `disabled`     | `boolean`                 | `false` | The trigger takes no focus and does not toggle the panel.                                                                                         |
 
 Without `open`, `onOpenChange` or `bind:open` the element keeps its own state. `Root` takes the
 props of a `<details>` too: `name` makes collapsibles with the same name an exclusive group, where
@@ -1310,8 +1346,9 @@ opening one closes the others.
 ### The other parts
 
 Each part takes the props of the element it renders (`class`, `style`, `aria-*`, `data-*`, event
-handlers, `ref`) and passes them through. `id` and `aria-controls` stay the parts' own, since
-they connect the trigger and the panel.
+handlers, `ref`) and passes them through. The `Trigger`'s `id` names it, and the `Panel` points at
+it; the `Panel` keeps its own `id`, which the trigger points at (see [Ids](README.md#ids)), and
+`aria-controls` stays the trigger's own.
 
 - **`Trigger`**: a disabled trigger gets `aria-disabled="true"` and `tabindex="-1"`.
 - **`Panel`**: the client script sets `--lu-collapsible-panel-height` and `--lu-collapsible-panel-width`
@@ -1431,7 +1468,7 @@ page:
 
 # Combobox
 
-> A text input that filters a list of options, for picking one value or several from many: the WAI-ARIA combobox pattern with list autocomplete, after Base UI's Combobox. The input shows the option's label and the form gets its value. `<lu-combobox>`, a 4.5 kB form-associated light-DOM element, runs it on server-rendered pages and in islands; `bind:value` and `bind:open` keep signals in sync. Groups, an empty state, a status, a clear button, multiple values with chips, validation and async options.
+> A text input that filters a list of options, for picking one value or several from many: the WAI-ARIA combobox pattern with list autocomplete, after Base UI's Combobox. The input shows the option's label and the form gets its value. `<lu-combobox>`, a 5.0 kB form-associated light-DOM element, runs it on server-rendered pages and in islands; `bind:value` and `bind:open` keep signals in sync. Groups, an empty state, a status, a clear button, multiple values with chips, validation and async options.
 
 ```ts
 import { Combobox } from "@lumiose/ui"; // or "@lumiose/ui/combobox"
@@ -1533,8 +1570,11 @@ The placement props go on the part that is the popover: the `Popup` when there i
 
 Each part takes the props of the element it renders (`class`, `style`, `aria-*`, `data-*`, event
 handlers, `ref`) and passes them through. Your props override the defaults (`tabindex`,
-`autocomplete`, `hidden`); the roles, ids, ARIA references, commands and the anchor stay the parts'
-own, since they connect the parts.
+`autocomplete`, `hidden`). A `Label`'s `id` names it, and the list points at it, and an `Item`'s
+`id` names the option (the input points at it only once the script highlights it). The `Root`,
+`Input`, `List`, `Popup`, `Empty`, `Chips` and group labels keep their own ids, which other parts
+or the element's script find them by (see [Ids](README.md#ids)); the roles, ARIA references,
+commands and the anchor stay the parts' own, since they connect the parts.
 
 - **`Input`**: `placeholder`, `onInput` (for async options) and `aria-describedby` pass through.
   Its `type` and `value` are the combobox's. Inside a [Field](field.md), it takes the field's id
@@ -1732,7 +1772,7 @@ cannot be styled or grouped, and customizable select cannot filter). Without Jav
 HTML shows a labelled text field and nothing opens, and the form gets no value. For a choice that
 must work without JavaScript, use [Select](select.md).
 
-A page that renders a `Combobox` loads the script once, as a 4.5 kB (brotli) module without the
+A page that renders a `Combobox` loads the script once, as a 5.0 kB (brotli) module without the
 Lumiose runtime, and islands bundle it. It defines `lu-combobox`, which upgrades every combobox on
 the page in place: it reads the selection the server rendered (`aria-selected="true"`), puts its
 label in the input (text typed before it ran is kept, as a search), renders the chips, and from
@@ -1790,7 +1830,7 @@ The element is also an API of its own, for scripts and other frameworks:
 
 # Context Menu
 
-> A menu opened at the pointer by a right-click in its trigger area, a long press on a touch screen, or Shift+F10 and the ContextMenu key: Menu's popup and items, with Menu's keys, typeahead, submenus and dismissal. A 0.6 kB script on top of Menu's (4.2 kB together) opens it; without JavaScript the browser shows its own menu. `bind:open` (or `open` and `onOpenChange`) keeps a signal in sync in islands.
+> A menu opened at the pointer by a right-click in its trigger area, a long press on a touch screen, or Shift+F10 and the ContextMenu key: Menu's popup and items, with Menu's keys, typeahead, submenus and dismissal. A 0.6 kB script on top of Menu's (4.5 kB together) opens it; without JavaScript the browser shows its own menu. `bind:open` (or `open` and `onOpenChange`) keeps a signal in sync in islands.
 
 ```ts
 import { ContextMenu } from "@lumiose/ui"; // or "@lumiose/ui/context-menu"
@@ -1966,7 +2006,7 @@ browser's own menu, and the popup stays hidden. `open`, `onOpenChange` and `bind
 component to run in an island.
 
 A page that renders a `ContextMenu` loads Menu's script and a 0.6 kB (brotli) one of its own,
-4.2 kB together, without the Lumiose runtime; islands bundle them. The element opens the menu on a
+4.5 kB together, without the Lumiose runtime; islands bundle them. The element opens the menu on a
 right-click, a long press or the keys, at the pointer, through a zero-size anchor that it moves
 there (CSS anchor positioning places the popup, with Menu's flips; without it, the shared
 placement script does). Menu's script does the rest: keys, items, submenus, and dismissal shared
@@ -1990,7 +2030,7 @@ with [Popover](popover.md) and [Combobox](combobox.md).
 
 # Dialog
 
-> A modal dialog, or an alert dialog that needs an answer: a native `<dialog>` opened and closed by invoker commands, so it works in server HTML with no JavaScript, and a 1.3 kB script closes the native element's gaps where JavaScript runs. `bind:open` (or `open` and `onOpenChange`) keeps a signal in sync in islands.
+> A modal dialog, or an alert dialog that needs an answer: a native `<dialog>` opened and closed by invoker commands, so it works in server HTML with no JavaScript, and a 1.5 kB script closes the native element's gaps where JavaScript runs. `bind:open` (or `open` and `onOpenChange`) keeps a signal in sync in islands.
 
 ```ts
 import { Dialog } from "@lumiose/ui"; // or "@lumiose/ui/dialog"
@@ -2041,8 +2081,9 @@ Without `open`, `onOpenChange` or `bind:open` the dialog keeps its own state.
 
 Each part takes the props of the element it renders (`class`, `style`, `aria-*`, `data-*`, event
 handlers, `ref`) and passes them through. Your props override the defaults (`type`,
-`aria-haspopup`, `aria-expanded`, `closedby`, `aria-labelledby`, `aria-describedby`); `id`,
-`command` and `commandfor` stay the parts' own, since they connect the parts.
+`aria-haspopup`, `aria-expanded`, `closedby`, `aria-labelledby`, `aria-describedby`). A `Title`'s or
+a `Description`'s `id` names it, and the popup points at it; the `Popup` keeps its own `id`, which
+its triggers point at (see [Ids](README.md#ids)), and `command` and `commandfor` stay the parts' own.
 
 - **`Trigger`**: `aria-expanded` follows the dialog in the browser. In server HTML it stays
   `"false"`, which is never wrong where assistive technology can reach it: while the modal dialog
@@ -2051,7 +2092,9 @@ handlers, `ref`) and passes them through. Your props override the defaults (`typ
   `"closerequest"` for an alert dialog (Escape only); pass `closedby="none"` to allow neither. Native
   events work as on a `<dialog>`: `on:close` runs after any close, and
   `event.currentTarget.returnValue` holds the value of the `Close` that closed it (it is unchanged
-  after Escape).
+  after Escape). To keep a dialog open (unsaved changes, say), use `closedby="none"` while it must
+  stay, not `preventDefault()` on its `cancel` event: browsers let a page cancel only the first of
+  repeated close requests, so a second Escape closes it anyway.
 - **`Title`** and **`Description`**: the popup's `aria-labelledby` and `aria-describedby` point at
   the ones it renders, and only those; in an island they follow parts that appear or go away. A
   dialog without a `Title` needs an `aria-label` on `Popup`.
@@ -2176,15 +2219,16 @@ or override the rule, to let the page scroll.
 The browser's modal dialog provides the
 [WAI-ARIA dialog pattern](https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/):
 
-| Key            | Does                                                                                                 |
-| -------------- | ---------------------------------------------------------------------------------------------------- |
-| Enter, Space   | On the trigger: opens the dialog.                                                                    |
-| Tab, Shift+Tab | Move between the focusable elements of the dialog. The page behind is inert: focus never reaches it. |
-| Escape         | Closes the dialog on top, alert dialogs included. With nested dialogs, one Escape closes one dialog. |
+| Key            | Does                                                                                                                                                                   |
+| -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Enter, Space   | On the trigger: opens the dialog.                                                                                                                                      |
+| Tab, Shift+Tab | Move between the focusable elements of the dialog. The page behind is inert: focus never reaches it.                                                                   |
+| Escape         | Closes the dialog on top, alert dialogs included. With nested dialogs, one Escape closes one dialog. An Escape that ends an input method's composition closes nothing. |
 
-- **On open**, focus moves to the element with `autofocus`, or else the first focusable element
-  inside, or else the dialog. Opened by touch, the dialog focuses itself instead, so no virtual
-  keyboard opens over it (an `autofocus` element still gets focus).
+- **On open**, focus moves to the element with `autofocus`, or else the first tab stop inside,
+  or else the dialog, as in Base UI and the same in every browser: not a scroller before it, nor a
+  `tabindex="-1"` title (where the script runs). Opened by touch, the dialog focuses itself
+  instead, so no virtual keyboard opens over it (an `autofocus` element still gets focus).
 - **On close**, focus returns to the element that had it before: the trigger, or the button that
   set the signal. If that element is gone, focus goes to another trigger of the dialog, without
   scrolling the page. The popovers, menus and dialogs open inside it close with it.
@@ -2201,12 +2245,13 @@ server-rendered page works before any script loads, and with none. `open`, `onOp
 `bind:open` and a live `aria-expanded` need the component to run in the browser, in an island.
 
 Where the native element falls short of Base UI's dialog, a small script closes the gap: a page
-that renders a `Dialog` loads it once, as a 1.3 kB (brotli) module without the Lumiose runtime, and
+that renders a `Dialog` loads it once, as a 1.5 kB (brotli) module without the Lumiose runtime, and
 islands bundle it. It covers every `<dialog>` on the page:
 
 - a right-click or a second finger outside does not close the dialog;
 - `data-nested-dialog-open` and `--lu-nested-dialogs` on a dialog with open dialogs inside;
-- a dialog opened by touch focuses itself;
+- the first tab stop takes focus on open, in every browser, and a dialog opened by touch focuses
+  itself;
 - focus returns without scrolling, to the opener or, if it is gone, another trigger (WebKit, which
   does not focus a clicked button, would otherwise leave focus on the page);
 - the click outside where the browser lacks `closedby` (Safari), and the invoker commands where it
@@ -2397,7 +2442,10 @@ browser's centred box; a swiped drawer selects no text.
 | Escape         | Closes the drawer on top.                                                    |
 
 - **Focus** moves into the drawer on open and returns to the trigger on close, a swipe included, as
-  with [Dialog](dialog.md#keyboard-and-focus).
+  with [Dialog](dialog.md#keyboard-and-focus): on open, to the element with `autofocus`, or else the
+  first tab stop, or else the drawer. Base UI's Drawer focuses the drawer itself; give the drawer
+  `autofocus` (`<Drawer.Popup autofocus>`) for that, where the script runs. Opened by touch, it
+  focuses itself already.
 - **A swipe** is a dragging movement: the close buttons, Escape and a click on the backdrop close
   the drawer without one (WCAG 2.5.7). Give a drawer a visible close button.
 - **The swipe** needs to travel 40% of the drawer's size toward its edge, or to be a quick flick;
@@ -2409,7 +2457,7 @@ The trigger, the close buttons, Escape and the click outside are HTML features, 
 drawer in a server-rendered page works before any script loads, and with none, against its edge.
 `open`, `onOpenChange` and `bind:open` need the component to run in an island.
 
-A page that renders a `Drawer` loads Dialog's script and a 1 kB (brotli) one of its own (2.2 kB
+A page that renders a `Drawer` loads Dialog's script and a 1 kB (brotli) one of its own (2.5 kB
 together), without the Lumiose runtime; islands bundle them. The drawer's script handles the
 swipe, with the mouse and pen through pointer events and on touch screens through touch events,
 taking the gesture from scrolling only once it is a swipe.
@@ -3025,7 +3073,7 @@ Every browser; input types and constraints as the browser supports them.
 
 # Menu
 
-> A menu of commands, links, checkbox and radio items and submenus, opened by a button: the trigger's `popovertarget` opens it and CSS anchor positioning places it, so it works in server HTML with no JavaScript, and a 3.7 kB script adds the APG Menu Button keyboard contract where JavaScript runs. `bind:open`, `bind:checked` and `bind:value` keep signals in sync in islands.
+> A menu of commands, links, checkbox and radio items and submenus, opened by a button: the trigger's `popovertarget` opens it and CSS anchor positioning places it, so it works in server HTML with no JavaScript, and a 4.0 kB script adds the APG Menu Button keyboard contract where JavaScript runs. `bind:open`, `bind:checked` and `bind:value` keep signals in sync in islands.
 
 ```ts
 import { Menu } from "@lumiose/ui"; // or "@lumiose/ui/menu"
@@ -3160,8 +3208,9 @@ server HTML before its island hydrated stays open, and `onOpenChange(true)` tell
 
 Each part takes the props of the element it renders (`class`, `style`, `aria-*`, `data-*`, event
 handlers, `ref`) and passes them through. Your props override the defaults (`type`, `tabindex`,
-`aria-labelledby`, `data-side`, `data-align`); the roles, `id`, `popovertarget` and the anchor
-stay the parts' own, since they connect the parts. Your `style` is kept, after the anchor's.
+`aria-labelledby`, `data-side`, `data-align`). A `Trigger`'s (or `SubmenuTrigger`'s) `id` names it,
+and the popup points at it; the `Popup` keeps its own `id`, which the trigger points at (see
+[Ids](README.md#ids)); the roles, `popovertarget` and the anchor stay the parts' own. Your `style` is kept, after the anchor's.
 
 - **`Trigger`**: `aria-expanded` is left to the browser in server HTML, where `popovertarget`
   implies it, and set by the script once it runs. Disable it with the native `disabled`.
@@ -3298,7 +3347,7 @@ anchor positioning, a popup sits on its `data-side` and `data-align`, keeps the 
 `--lu-side-offset` and `--lu-align-offset`, flips when it does not fit (a submenu tries the other
 side, then the other alignment, then below and above its trigger), shrinks to the room beside its
 trigger and scrolls when it fits nowhere (the focused item stays in view), and hides while its
-trigger is scrolled out of view. The `sideOffset` and `alignOffset` props set those two properties on the
+trigger is scrolled out of view (`data-anchor-hidden`, where the script runs). The `sideOffset` and `alignOffset` props set those two properties on the
 popup.
 
 ## Keyboard and focus
@@ -3340,11 +3389,13 @@ Base UI's behaviour where the pattern leaves a choice:
 
 The trigger opens the popup with `popovertarget`, and Escape or a click outside closes it: a menu
 in a server-rendered page opens before any script loads, and with none. Tab then moves through the
-items in order, and links work; commands, which run JavaScript, need it anyway. `open`,
-`onOpenChange` and the `bind:` props need the component to run in the browser, in an island.
+items in order, and links work; commands, which run JavaScript, need it anyway. Escape in a
+submenu closes it, but the browser leaves focus on the page rather than on the submenu's trigger:
+Tab starts over from the top (the script returns focus to the trigger). `open`, `onOpenChange` and
+the `bind:` props need the component to run in the browser, in an island.
 
 The keyboard contract comes from a small script: a page that renders a `Menu` loads it once, as a
-3.7 kB (brotli) module without the Lumiose runtime, and islands bundle it. It defines `lu-menu`,
+4.0 kB (brotli) module without the Lumiose runtime, and islands bundle it. It defines `lu-menu`,
 which upgrades every menu on the page in place, and adds what the native popover lacks: focus on
 open and its return on close, the arrows, Home, End and typeahead, Escape one level at a time, Tab,
 submenus, checkbox and radio items, disabled items, `data-highlighted`, and the pointer behaviour
@@ -3390,7 +3441,7 @@ The element is also an API of its own, for scripts and other frameworks:
 
 # Menubar
 
-> A bar of menus, such as an app's File, Edit and View, after Base UI's Menubar and the WAI-ARIA menubar pattern: `Menu.Root`s inside `<lu-menubar role="menubar">`, whose triggers are the bar's items. Menu's popups, items, submenus and dismissal; the bar is one tab stop, the arrow keys move between its items and between open menus, and once a menu is open, hovering another item opens its menu instead. A 0.7 kB script on top of Menu's (4.4 kB together); without JavaScript each trigger opens its menu.
+> A bar of menus, such as an app's File, Edit and View, after Base UI's Menubar and the WAI-ARIA menubar pattern: `Menu.Root`s inside `<lu-menubar role="menubar">`, whose triggers are the bar's items. Menu's popups, items, submenus and dismissal; the bar is one tab stop, the arrow keys move between its items and between open menus, and once a menu is open, hovering another item opens its menu instead. A 0.7 kB script on top of Menu's (4.7 kB together); without JavaScript each trigger opens its menu.
 
 ```ts
 import { Menu, Menubar } from "@lumiose/ui"; // or "@lumiose/ui/menu" and "@lumiose/ui/menubar"
@@ -3559,7 +3610,7 @@ flex row (a column when vertical); each `<lu-menu>` adds no box.
 Each trigger opens its menu through `popovertarget`, and the browser light-dismisses it: without
 JavaScript every trigger is a tab stop, and the menus open with Enter, Space or a click.
 
-A page that renders a `Menubar` loads Menu's script and a 0.7 kB (brotli) one of its own, 4.4 kB
+A page that renders a `Menubar` loads Menu's script and a 0.7 kB (brotli) one of its own, 4.7 kB
 together, without the Lumiose runtime; islands bundle them. The menubar's script makes the bar one
 tab stop once the page has loaded, and adds the arrow keys between items and menus and the hover
 switching. Each menu stays Menu's: its keys, items, submenus and dismissal.
@@ -3620,7 +3671,8 @@ Every other prop passes through to the `<div>`: `id`, `class`, `style`.
 
 ### Meter.Label, Meter.Track and Meter.Value
 
-`Label` takes `<label>` props. `Track` takes `<meter>` props, among them the native `low`, `high`
+`Label` takes `<label>` props, its `id` among them; the `Track` keeps its own `id`, which the
+`Label` before it points at (see [Ids](README.md#ids)). `Track` takes `<meter>` props, among them the native `low`, `high`
 and `optimum`, which tell browsers which band a value is in (`aria-label` when there is no
 `Label`). `Value` takes `<span>` props, and its `children` may be a function
 `(formattedValue, value) => JSX.Element`.
@@ -3684,7 +3736,7 @@ above. `role="meter"` reaches screen readers in recent versions; older ones read
 
 # Navigation Menu
 
-> A site's navigation whose items open panels of links, after Base UI's NavigationMenu and the WAI-ARIA disclosure navigation pattern: a `<nav>` landmark around a list, each trigger opening its content through `popovertarget` (a native popover placed under it by CSS anchor positioning), so the links work and the panels open on a click, one at a time, in server HTML with no JavaScript. A 2.2 kB script adds hover intent, the arrow keys, closing when focus leaves and the direction a panel comes in from. `bind:value` (or `value` and `onValueChange`) keeps the open item in a signal.
+> A site's navigation whose items open panels of links, after Base UI's NavigationMenu and the WAI-ARIA disclosure navigation pattern: a `<nav>` landmark around a list, each trigger opening its content through `popovertarget` (a native popover placed under it by CSS anchor positioning), so the links work and the panels open on a click, one at a time, in server HTML with no JavaScript. A 3.5 kB script adds hover intent, the arrow keys, closing when focus leaves and the direction a panel comes in from. `bind:value` (or `value` and `onValueChange`) keeps the open item in a signal.
 
 ```ts
 import { NavigationMenu } from "@lumiose/ui"; // or "@lumiose/ui/navigation-menu"
@@ -3767,7 +3819,8 @@ Server HTML always starts closed: a popover only opens from its trigger or scrip
 ### The other parts
 
 Each part takes the props of the element it renders (`class`, `style`, `aria-*`, `data-*`, event
-handlers) and passes them through: `href` and `target` on a `Link`, `disabled` on a `Trigger`.
+handlers) and passes them through: `href` and `target` on a `Link`, `disabled` and `id` on a
+`Trigger`. A `Content` keeps its own `id`, which its trigger points at (see [Ids](README.md#ids)).
 
 **Differences from Base UI's NavigationMenu.** Each `Content` is its own popover in the top layer,
 anchored to its trigger: there is no shared `Viewport`, `Popup`, `Positioner`, `Portal`,
@@ -3905,8 +3958,10 @@ each content next to its trigger, with the same flips as Popover and Menu, and g
 | Escape                  | Closes the open content and returns to its trigger.                                                         |
 
 - **The pointer**: resting on a trigger opens its content after `delay`, at once while another one
-  is open; leaving the item closes it after `closeDelay`, unless a click kept it open. A click
-  toggles a content; a click outside closes it.
+  is open; leaving the item closes it after `closeDelay`, unless a click kept it open. On the way
+  from a trigger to its open content, another trigger the pointer crosses waits 300ms before it
+  takes over, so a diagonal path into a wide panel keeps it. A click toggles a content; a click
+  outside closes it, but not a right-click or a press in a toast.
 - **Focus** leaving an open item for elsewhere on the page closes its content. It is a navigation
   landmark, not a menu: links keep their roles and the browser's link behaviour.
 
@@ -3916,11 +3971,13 @@ The `<nav>`, its links and the triggers are HTML: each trigger opens its content
 `popovertarget`, one at a time (an auto popover closes the others), and Escape or a click outside
 closes it. `value`, `onValueChange` and `bind:value` need the component to run in an island.
 
-A page that renders a `NavigationMenu` loads a 2.2 kB (brotli) script, without the Lumiose runtime;
-islands bundle it. `<lu-navigation-menu>` takes over the trigger's click (so a click keeps a content
-opened by hover open), opens contents on hover, adds the arrow keys, closes a content when focus
-leaves its item, keeps `aria-expanded` and `data-activation-direction` current, and places the
-contents where CSS anchor positioning is missing.
+A page that renders a `NavigationMenu` loads a 3.5 kB (brotli) script (its dismissal module is
+Menu's and Popover's too), without the Lumiose runtime; islands bundle it. `<lu-navigation-menu>`
+takes over the trigger's click (so a click keeps a content opened by hover open), opens contents on
+hover, adds the arrow keys, closes a content when focus leaves its item, dismisses contents as Menu
+and Popover do (a press of the main button outside, an Escape, another layer opening), keeps
+`aria-expanded` and `data-activation-direction` current, and places the contents where CSS anchor
+positioning is missing.
 
 ## Browser support
 
@@ -4277,7 +4334,7 @@ current browser uses for `pattern`.
 
 # Popover
 
-> A popup anchored to its trigger: a native `popover` opened and closed by the trigger's `popovertarget`, placed with CSS anchor positioning, so it works in server HTML with no JavaScript. A 2.9 kB script moves focus into it and back, dismisses it as Base UI does (not on a right-click), keeps `aria-expanded` current and places it in browsers without anchor positioning. `bind:open` (or `open` and `onOpenChange`) keeps a signal in sync in islands. A trigger can open it on hover (`openOnHover`), and a `modal` popover is a modal `<dialog>` that makes the page behind it inert.
+> A popup anchored to its trigger: a native `popover` opened and closed by the trigger's `popovertarget`, placed with CSS anchor positioning, so it works in server HTML with no JavaScript. A 3.2 kB script moves focus into it and back, dismisses it as Base UI does (not on a right-click), keeps `aria-expanded` current and places it in browsers without anchor positioning. `bind:open` (or `open` and `onOpenChange`) keeps a signal in sync in islands. A trigger can open it on hover (`openOnHover`), and a `modal` popover is a modal `<dialog>` that makes the page behind it inert.
 
 ```ts
 import { Popover } from "@lumiose/ui"; // or "@lumiose/ui/popover"
@@ -4353,14 +4410,16 @@ The popup flips to the opposite side when it does not fit, and goes below (or ab
 when a `left` or `right` popup fits on neither side. A popup too tall for the room on both sides shrinks to the room beside its trigger
 (below, or above when below has less than 8rem), and scrolls; without anchor positioning the
 script writes that room as `--lu-available-height`, which the default theme's caps use. It hides while its trigger is
-scrolled out of view.
+scrolled out of view, of the page or of a scroller around it (`data-anchor-hidden` on the popup,
+where the script runs), and comes back with it.
 
 ### The other parts
 
 Each part takes the props of the element it renders (`class`, `style`, `aria-*`, `data-*`, event
 handlers, `ref`) and passes them through. Your props override the defaults (`type`,
-`aria-haspopup`, `role`, `aria-labelledby`, `aria-describedby`); `id`, `popover` and
-`popovertarget` stay the parts' own. A `style` you pass keeps the anchor name.
+`aria-haspopup`, `role`, `aria-labelledby`, `aria-describedby`). A `Title`'s or a `Description`'s
+`id` names it, and the popup points at it; the `Popup` keeps its own `id`, which its trigger points
+at (see [Ids](README.md#ids)), and `popover` and `popovertarget` stay the parts' own. A `style` you pass keeps the anchor name.
 
 - **`Trigger`**: `aria-expanded` comes from the browser for `popovertarget`, and from the client
   script once it runs.
@@ -4474,12 +4533,12 @@ them: `--lu-side-offset` and `--lu-align-offset`.
 
 ## Keyboard and focus
 
-| Key          | Does                                                                                                                             |
-| ------------ | -------------------------------------------------------------------------------------------------------------------------------- |
-| Enter, Space | On the trigger: opens or closes the popover.                                                                                     |
-| Tab          | Moves through the popup, then on to the element after the trigger. When the trigger is the last element, focus leaves the popup. |
-| Shift+Tab    | From the start of the popup, back to the trigger. The popover stays open.                                                        |
-| Escape       | Closes the popover on top. With nested popovers, or a popover in a dialog, one Escape closes one layer.                          |
+| Key          | Does                                                                                                                                                                      |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Enter, Space | On the trigger: opens or closes the popover.                                                                                                                              |
+| Tab          | Moves through the popup, then on to the element after the trigger. When the trigger is the last element, focus leaves the popup.                                          |
+| Shift+Tab    | From the start of the popup, back to the trigger. The popover stays open.                                                                                                 |
+| Escape       | Closes the popover on top. With nested popovers, or a popover in a dialog, one Escape closes one layer. An Escape that ends an input method's composition closes nothing. |
 
 - **On open**, focus moves to the popup's first tab stop (the checked radio of a group, not an
   item a roving widget takes out of the order), or to the popup itself when it has none. Opened by touch, the popup focuses itself, so no virtual keyboard opens.
@@ -4511,7 +4570,7 @@ does a modal popover, through invoker commands and `closedby` (where a browser l
 script.
 `open`, `onOpenChange` and `bind:open` need the component to run in an island.
 
-A page that renders a `Popover` loads a 2.9 kB (brotli) module once, without the Lumiose runtime;
+A page that renders a `Popover` loads a 3.2 kB (brotli) module once, without the Lumiose runtime;
 islands bundle it. It covers every Popover on the page:
 
 - focus on open (the first focusable element, or the popup) and its return on close;
@@ -4549,7 +4608,7 @@ popover's `dialog::backdrop`) styles the layer under it, without an element of i
 
 # Preview Card
 
-> A card that previews a link's destination while the pointer or keyboard focus rests on the link, after Base UI's PreviewCard. The trigger is the link itself, which works as a link without JavaScript; the card is a manual popover placed with [Popover](popover.md)'s placement and opened with its hover timing by a 2.4 kB script. It is hoverable, persistent and dismissible (WCAG 1.4.13). `bind:open` keeps a signal in sync.
+> A card that previews a link's destination while the pointer or keyboard focus rests on the link, after Base UI's PreviewCard. The trigger is the link itself, which works as a link without JavaScript; the card is a manual popover placed with [Popover](popover.md)'s placement and opened with its hover timing by a 2.7 kB script. It is hoverable, persistent and dismissible (WCAG 1.4.13). `bind:open` keeps a signal in sync.
 
 ```ts
 import { PreviewCard } from "@lumiose/ui"; // or "@lumiose/ui/preview-card"
@@ -4664,7 +4723,7 @@ the link, with a fade (none where motion is reduced).
 ## Without JavaScript, and the client script
 
 The link is a plain link and the card never opens. A page that renders a `PreviewCard` loads a
-2.4 kB (brotli) module once (with the hover timing it shares with Popover): hover and focus with
+2.7 kB (brotli) module once (with the hover timing it shares with Popover): hover and focus with
 their delays, dismissal, `data-popup-open`, and the placement in browsers without CSS anchor
 positioning.
 
@@ -4723,7 +4782,8 @@ Every other prop passes through to the `<div>`: `id`, `class`, `style`.
 
 ### Progress.Label, Progress.Track and Progress.Value
 
-`Label` takes `<label>` props. `Track` takes `<progress>` props (`aria-label` when there is no
+`Label` takes `<label>` props, its `id` among them; the `Track` keeps its own `id`, which the
+`Label` before it points at (see [Ids](README.md#ids)). `Track` takes `<progress>` props (`aria-label` when there is no
 `Label`). `Value` takes `<span>` props, and its `children` may be a function
 `(formattedValue, value) => JSX.Element` that writes the value your way.
 
@@ -4980,9 +5040,10 @@ import "@lumiose/ui/themes/default.css"; // optional: the default theme
 
 ### The other parts
 
-Each part passes the props of its element through. Give the `Viewport` an `aria-label` and
-`role="region"` when it holds a section people should find; the scrollbars are `aria-hidden`
-pointer conveniences, since the viewport itself scrolls from the keyboard.
+Each part passes the props of its element through. Give the `Viewport` an `aria-label`, and
+`role="region"` when it holds a section people should find: it is a tab stop while it overflows
+(and in server HTML before the script, which cannot know whether it will). The scrollbars are
+`aria-hidden` pointer conveniences, since the viewport itself scrolls from the keyboard.
 
 **Data attributes and CSS variables.** On Root and Viewport: `data-has-overflow-x`,
 `data-has-overflow-y`, `data-overflow-x-start`, `-x-end`, `-y-start`, `-y-end`, `data-scrolling`
@@ -5030,7 +5091,9 @@ export function ReleaseList() {
 
 **With the default theme**, put `lu-scroll-area` on `Root`: a bordered box, padded content, 10px
 scrollbars whose rounded thumbs (`--lu-muted-foreground`, 3:1) show while the pointer is over the
-area, while it scrolls and while it has focus, and an inward focus ring on the viewport.
+area, while it scrolls and while it has focus, and an inward focus ring on the viewport. Each
+thumb takes presses over 24 by 24 px at least (WCAG 2.5.8), reaching 16px into the content; the
+track stays 10px, which the wheel, the keyboard and the thumb stand in for.
 
 **With your own CSS**, style the parts through `class`, `[data-scrollbar]`, `[data-thumb]`,
 `[data-orientation]`, `[data-hovering]`, `[data-scrolling]` and the overflow attributes and
@@ -5054,7 +5117,9 @@ focus first, and the viewport scrolls it into view.
 
 ## Without JavaScript, and the element's script
 
-The viewport scrolls with its native scrollbars, from the keyboard too. `<lu-scroll-area>`'s script
+The viewport scrolls with its native scrollbars, from the keyboard too. It keeps its
+`tabindex="0"` then, so an area that does not overflow is a tab stop with nothing to scroll: one
+reason to name it. `<lu-scroll-area>`'s script
 (1.6 kB brotli) hides them and runs the custom ones: thumbs sized and moved on every scroll and
 resize (a ResizeObserver follows content that grows), dragging and track presses, the wheel over
 a scrollbar (which scrolls the viewport, and the page once the viewport is at its end), hover and
@@ -5492,10 +5557,12 @@ The value's type follows `value`, `defaultValue` or `bind:value`: a number for o
 
 ### The other parts
 
-`Label` takes `<label>` props. `Value` takes `<output>` props, and its `children` may be a function
+`Label` takes `<label>` props, its `id` among them, which the `Control` and the thumbs point at. `Value` takes `<output>` props, and its `children` may be a function
 `(formattedValues, values) => JSX.Element` (then it has no `for`, and you render its text). `Control`,
 `Track` and `Indicator` take `<div>` props. `Thumb` takes `<input>` props except the range's own
-(`aria-label`, `aria-valuetext`, `disabled`, `id`, `class`). Give each thumb of a range an
+(`aria-label`, `aria-valuetext`, `disabled`, `class`). A thumb keeps its own `id`, which the
+`Label` and the `Value` before it point at (in a Field, the first thumb's is the field's control;
+see [Ids](README.md#ids)). Give each thumb of a range an
 `aria-label` with the label's text in it ("Minimum price" under "Price"), so speech users can say
 what they see (WCAG 2.5.3); the Label names the range's group (`Control`), so screen readers
 announce "Price, group" before the thumbs. Inside a Field, the first thumb takes the field's id,
@@ -5506,6 +5573,9 @@ name, description and error.
   dragged value and focus, and the drag goes on with it. A native drag keeps its own thumb, so
   that thumb stays put and hands its value on. The keys stop at the other thumb, as with
   `"none"`, and `minStepsBetweenValues` applies to keys only.
+- **Blocked moves.** A move that changes no value, such as a thumb pushed against its neighbour
+  with `"none"`, fires no `input` or `change`, so `onValueChange` and `onValueCommitted` do not
+  run.
 - **`thumbAlignment` and `--lu-slider-thumb-size`.** A native thumb stays inside its input. With
   the thumbs' size in `--lu-slider-thumb-size` (the default theme sets it), slider.css runs the
   track between the thumbs' centres at the ends, so the Indicator ends at a thumb's centre
@@ -5572,14 +5642,14 @@ only the thumbs of a range take the pointer.
 
 ## Keyboard and focus
 
-| Key                     | Does                                                                         |
-| ----------------------- | ---------------------------------------------------------------------------- |
-| Tab                     | Moves between the thumbs, then on: one tab stop per thumb.                   |
-| Arrow Right / Arrow Up  | One step up (Arrow Left goes up right to left).                              |
-| Arrow Left / Arrow Down | One step down (Arrow Right goes down right to left).                         |
-| Page Up / Page Down     | `largeStep` up or down.                                                      |
-| Shift + an arrow        | `largeStep` in that direction.                                               |
-| Home / End              | The minimum or the maximum (a range's thumb stops at, or pushes, the other). |
+| Key                     | Does                                                                                           |
+| ----------------------- | ---------------------------------------------------------------------------------------------- |
+| Tab                     | Moves between the thumbs, then on: one tab stop per thumb.                                     |
+| Arrow Right / Arrow Up  | One step up (Arrow Left goes up right to left).                                                |
+| Arrow Left / Arrow Down | One step down (Arrow Right goes down right to left).                                           |
+| Page Up / Page Down     | `largeStep` up or down.                                                                        |
+| Shift + an arrow        | `largeStep` in that direction.                                                                 |
+| Home / End              | The minimum or the maximum; in a range, at most the neighbouring thumb, which they never push. |
 
 Every drag has these keys as its alternative (WCAG 2.5.7). A press on a range's track moves the
 nearest thumb there and focuses it; a press on a single slider's track moves its thumb.
@@ -5588,9 +5658,9 @@ nearest thumb there and focuses it; a press on a single slider's track moves its
 
 The thumbs are native range inputs: dragging, the arrows, Home, End, right to left, vertical,
 submission, `disabled` and reset work with no script, and the server HTML has the Indicator's
-custom properties and the value text. `<lu-slider>`'s script (1.8 kB brotli) adds Page Up and Page
+custom properties and the value text. `<lu-slider>`'s script (2.0 kB brotli) adds Page Up and Page
 Down, runs the arrow keys the same in every browser (WebKit's native range does not mirror them
-right to left), keeps a range's thumbs in order and apart (or swaps them), moves the nearest thumb
+right to left), stops Home and End at a range's neighbouring thumb, keeps a range's thumbs in order and apart (or swaps them), moves the nearest thumb
 on a press on its track, and keeps the Indicator, `aria-valuetext` and the Value text current (also
 after a form reset).
 Without it, a range's thumbs can cross, and the Value text and the Indicator stay where the server
@@ -5775,8 +5845,10 @@ The element reads them from the list's attributes: `data-activate-on-focus` and
 | `value`    | both  | `string`  | Pairs a tab with its panel. Required.                         |
 | `disabled` | `Tab` | `boolean` | The tab takes focus but cannot be selected (`aria-disabled`). |
 
-Each takes the props of the element it renders. `role`, `id`, `value`, `aria-selected`,
-`aria-controls`, `aria-labelledby`, `tabindex` on tabs and `hidden` stay the parts' own.
+Each takes the props of the element it renders. A `Tab`'s `id` names it, and its `Panel` points at
+it; a `Panel` keeps its own `id`, which its tab points at (see [Ids](README.md#ids)). `role`,
+`value`, `aria-selected`, `aria-controls`, `aria-labelledby`, `tabindex` on tabs and `hidden` stay
+the parts' own.
 
 - **Disabled tabs.** A selected tab that becomes disabled gives its selection to the first enabled
   tab. With every tab disabled, none is selected and the first tab is the tab stop. There is one
@@ -6015,7 +6087,7 @@ are added and where they are shown: islands of a page share a module, so they sh
 | Method                      | Does                                                                                                                                |
 | --------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
 | `toasts()`                  | The open toasts, newest first, read reactively: map them to `Toast.Root`s.                                                          |
-| `add(options)`              | Adds a toast and returns its id. A toast with the `id` of an open one replaces it.                                                  |
+| `add(options)`              | Adds a toast and returns its id. With the `id` of an open toast, it updates that one in place.                                      |
 | `update(id, options)`       | Changes an open toast in place: the same object, its fields read reactively, so its parts update without a new element.             |
 | `close(id?)`                | Closes a toast, or every toast: it gets `transitionStatus: "ending"` and `data-ending-style`, then leaves after its exit animation. |
 | `promise(promise, options)` | Shows a loading toast while `promise` runs (it stays), then turns it into a success or an error toast; returns `promise`.           |
@@ -6059,7 +6131,8 @@ others `type: "success"` or `"error"` and the default timeout.
 
 Each part takes the props of the element it renders (`class`, `style`, `aria-*`, `data-*`, event
 handlers, `ref`) and passes them through. Your props override the defaults (`role`, `aria-label`,
-`type`); `id`, `command` and `commandfor` stay the parts' own, since they connect them.
+`type`). A `Root`'s `id` names the toast's element, and its `Close` points at it (see
+[Ids](README.md#ids)); `command` and `commandfor` stay the parts' own, since they connect them.
 
 - **`Viewport`**: rename the region with `aria-label`; keep the hotkey in it.
 - **`Root`**: the script fires a cancelable `close` event on it when a toast should close (a close
@@ -6192,7 +6265,7 @@ adds a red edge.
   runs; `[data-swipe-direction]` stays while a swiped toast leaves;
 - `--lu-toast-index` on each shown toast (0 for the first child), and `[data-limited]` on the ones
   past the limit;
-- `[data-expanded]` on the viewport while the pointer or focus is in it.
+- `[data-expanded]` on the viewport while the pointer or keyboard focus is in it.
 
 ```css
 .toast {
@@ -6212,9 +6285,10 @@ adds a red edge.
 `@lumiose/ui/toast.css`, in the `lu.core` layer, makes the viewport a box fixed to the window's
 bottom end, without a popover's default border, padding or centring; hides the toasts past the
 limit whatever display your CSS gives them; sets `touch-action` on swipeable toasts, so a swipe
-does not scroll the page along its axes; and gives the page `scroll-padding-block-end` the height
-of the shown toasts (`--lu-toast-stack-block-size`, which the script keeps on the root), so a
-control that takes focus is scrolled clear of them (WCAG 2.4.11).
+does not scroll the page along its axes, while pinch-zoom still works (where `touch-action` knows
+it: not in Safari); and gives the page `scroll-padding-block-end` the height of the shown toasts
+(`--lu-toast-stack-block-size`, which the script keeps on the root), so a control that takes focus
+is scrolled clear of them (WCAG 2.4.11).
 
 A modal dialog makes everything outside it inert, so while one is open the region moves into it,
 and back when it closes or leaves the page.
@@ -6230,8 +6304,11 @@ and back when it closes or leaves the page.
 
 - **When the focused toast closes**, focus moves to the next toast's first button, or back to
   where it was before it entered the region (F6, Tab or a click).
-- **Timers pause** while the pointer is over the region, while focus is in it, while the window is
-  in the background and while the page is hidden; they resume with the time that was left.
+- **Timers pause** while the pointer is over the region, while keyboard focus is in it, while the
+  window is in the background and while the page is hidden; they resume with the time that was
+  left. A press that focuses a toast pauses it only while the pointer stays, as in Base UI.
+- **A swipe** closes the toast past 40px, unless it is pulled back 10px or more from its farthest
+  point before the release.
 - **Swipes** have a single-pointer alternative, the close button, and a keyboard one, Escape
   (WCAG 2.5.1 and 2.5.7). A swipe never starts on a button, link or field.
 - **Time limits** (WCAG 2.2.1): a toast that times out must hold nothing the reader needs to act
@@ -6493,7 +6570,7 @@ Custom elements and `aria-pressed`: every supported browser.
 
 # Toolbar
 
-> A set of controls with one tab stop, after Base UI's Toolbar and the APG toolbar pattern: `<lu-toolbar role="toolbar">` moves focus between its items with the arrow keys, Home and End, following the orientation and the text direction. Its items are native: buttons that stay focusable when disabled, links, inputs, and the toggles of a [Toggle Group](toggle-group.md) inside it. In the server HTML every item is a tab stop, so each is reachable without JavaScript; a 1.0 kB script makes them one tab stop and moves it.
+> A set of controls with one tab stop, after Base UI's Toolbar and the APG toolbar pattern: `<lu-toolbar role="toolbar">` moves focus between its items with the arrow keys, Home and End, following the orientation and the text direction. Its items are native: buttons that stay focusable when disabled, links, inputs, and the toggles of a [Toggle Group](toggle-group.md) inside it. In the server HTML every item is a tab stop, so each is reachable without JavaScript; a 1.1 kB script makes them one tab stop and moves it.
 
 ```ts
 import { Toolbar } from "@lumiose/ui"; // or "@lumiose/ui/toolbar"
@@ -6608,13 +6685,14 @@ the buttons. Style the items with their own classes (`lu-button`, `lu-toggle`, `
 Natively disabled controls are skipped. When the item with the tab stop is removed, disabled or
 hidden, the first item takes it. A key an item handles itself (a Menu trigger's) moves nothing. A
 control keeps the keys it needs: a text field its
-caret's Left and Right (focus moves on at its start or end) and Home and End, a number field or a
-slider its arrows, a select Up and Down. Base UI advises at most one input, last.
+caret's Left and Right (focus moves on at its start or end; with Shift they select) and Home and
+End, a number field or a slider its arrows, a select Up and Down. A text field the arrows reach has
+its text selected, as in Base UI. Base UI advises at most one input, last.
 
 ## Without JavaScript, and the element's script
 
 The server HTML is a labelled toolbar whose items are all tab stops, so Tab reaches each one
-without JavaScript or before the script runs. `<lu-toolbar>`'s script (1.0 kB brotli with Button's)
+without JavaScript or before the script runs. `<lu-toolbar>`'s script (1.1 kB brotli with Button's)
 makes the toolbar one tab stop, moves focus with the keys and keeps the tab stop on the last focused
 item.
 
@@ -6633,7 +6711,7 @@ Custom elements and `role="toolbar"`: every supported browser and screen reader.
 
 # Tooltip
 
-> A short tip next to its trigger, on hover or keyboard focus: a native `popover="hint"` with `role="tooltip"`, placed with CSS anchor positioning. The trigger is described by the tip in server HTML, so screen readers announce it without hovering; a 1.6 kB script opens and closes it as Base UI's tooltip does. `bind:open` (or `open` and `onOpenChange`) keeps a signal in sync in islands.
+> A short tip next to its trigger, on hover or keyboard focus: a native `popover="hint"` with `role="tooltip"`, placed with CSS anchor positioning. The trigger is described by the tip in server HTML, so screen readers announce it without hovering; a 1.9 kB script opens and closes it as Base UI's tooltip does. `bind:open` (or `open` and `onOpenChange`) keeps a signal in sync in islands.
 
 ```ts
 import { Tooltip } from "@lumiose/ui"; // or "@lumiose/ui/tooltip"
@@ -6744,7 +6822,7 @@ A tooltip inside a popover keeps the popover open, and one inside a dialog belon
 ## Without JavaScript, and the client script
 
 Without JavaScript the tip never shows, but the trigger keeps its description: screen readers
-announce it. A page that renders a `Tooltip` loads a 1.6 kB (brotli) module once, without the
+announce it. A page that renders a `Tooltip` loads a 1.9 kB (brotli) module once, without the
 Lumiose runtime; islands bundle it. It opens and closes every tooltip on the page, and places them
 in browsers without CSS anchor positioning.
 

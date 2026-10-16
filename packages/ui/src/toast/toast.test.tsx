@@ -59,7 +59,7 @@ describe("Toast on the server", () => {
 });
 
 describe("the toast manager", () => {
-  it("adds toasts newest first, updates them in place and replaces by id", () => {
+  it("adds toasts newest first, and updates them in place, by update or by add (TASK-442 L4)", () => {
     const manager = Toast.createToastManager();
     const first = manager.add({ title: "One" });
     const toast = manager.toasts()[0]!;
@@ -69,8 +69,14 @@ describe("the toast manager", () => {
     // The same object, read reactively.
     expect(manager.toasts()[1]).toBe(toast);
     expect(toast).toMatchObject({ id: first, title: "Uno", type: "success" });
+    // `add` with an open toast's id updates it in place, as Base UI's does.
     manager.add({ id: first, title: "Again" });
-    expect(manager.toasts().map((each) => each.title)).toEqual(["Again", "Two"]);
+    expect(manager.toasts().map((each) => each.title)).toEqual(["Two", "Again"]);
+    expect(manager.toasts()[1]).toBe(toast);
+    // A closing toast's id adds a new one.
+    manager.close(first);
+    manager.add({ id: first, title: "New" });
+    expect(manager.toasts().map((each) => each.title)).toEqual(["New", "Two"]);
   });
 
   it("closes one toast or all: they end, and onClose runs once", () => {

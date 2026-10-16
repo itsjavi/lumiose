@@ -31,13 +31,13 @@ titles a section (Accordion renders its headings that way).
 
 ### Collapsible.Root
 
-| Prop           | Type                      | Default |                                                                                                                         |
-| -------------- | ------------------------- | ------- | ----------------------------------------------------------------------------------------------------------------------- |
-| `open`         | `boolean`                 |         | Opens or closes the panel when it changes. Server HTML starts as it says.                                               |
-| `defaultOpen`  | `boolean`                 | `false` | Whether the panel starts open, when there is no `open`.                                                                 |
-| `onOpenChange` | `(open: boolean) => void` |         | Called after the panel opens or closes, whatever did it: the trigger, find-in-page, a link, another item of its `name`. |
-| `bind:open`    | `Signal<boolean>`         |         | Stands in for `open` and `onOpenChange`.                                                                                |
-| `disabled`     | `boolean`                 | `false` | The trigger takes no focus and does not toggle the panel.                                                               |
+| Prop           | Type                      | Default |                                                                                                                                                   |
+| -------------- | ------------------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `open`         | `boolean`                 |         | Opens or closes the panel when it changes. Server HTML starts as it says.                                                                         |
+| `defaultOpen`  | `boolean`                 | `false` | Whether the panel starts open, when there is no `open`.                                                                                           |
+| `onOpenChange` | `(open: boolean) => void` |         | Called after the panel opens or closes, whatever did it: the trigger, find-in-page, a link, another item of its `name`; not when it renders open. |
+| `bind:open`    | `Signal<boolean>`         |         | Stands in for `open` and `onOpenChange`.                                                                                                          |
+| `disabled`     | `boolean`                 | `false` | The trigger takes no focus and does not toggle the panel.                                                                                         |
 
 Without `open`, `onOpenChange` or `bind:open` the element keeps its own state. `Root` takes the
 props of a `<details>` too: `name` makes collapsibles with the same name an exclusive group, where
@@ -46,8 +46,9 @@ opening one closes the others.
 ### The other parts
 
 Each part takes the props of the element it renders (`class`, `style`, `aria-*`, `data-*`, event
-handlers, `ref`) and passes them through. `id` and `aria-controls` stay the parts' own, since
-they connect the trigger and the panel.
+handlers, `ref`) and passes them through. The `Trigger`'s `id` names it, and the `Panel` points at
+it; the `Panel` keeps its own `id`, which the trigger points at (see [Ids](README.md#ids)), and
+`aria-controls` stays the trigger's own.
 
 - **`Trigger`**: a disabled trigger gets `aria-disabled="true"` and `tabindex="-1"`.
 - **`Panel`**: the client script sets `--lu-collapsible-panel-height` and `--lu-collapsible-panel-width`

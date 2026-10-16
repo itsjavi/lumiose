@@ -132,7 +132,7 @@ describe("Menu on the server", () => {
     expect(submenu!["aria-labelledby"]).toBe(subTrigger.id);
   });
 
-  it("passes props through, and keeps the wiring when they collide", async () => {
+  it("passes props through, and keeps the wiring when they collide; the trigger takes an id", async () => {
     const html = await renderToString(() => (
       <Menu.Root>
         <Menu.Trigger id="mine" popovertarget="elsewhere" style="color: red" data-x="1">
@@ -148,7 +148,9 @@ describe("Menu on the server", () => {
     const trigger = attrs(html, "button");
     const popup = attrs(html, "div");
     expect(trigger["data-x"]).toBe("1");
-    expect(trigger.id).not.toBe("mine");
+    // Nothing before it points at the trigger: its own id names it (TASK-441 M39).
+    expect(trigger.id).toBe("mine");
+    expect(popup["aria-labelledby"]).toBe("mine");
     expect(trigger.popovertarget).toBe(popup.id);
     expect(trigger.style).toMatch(/anchor-name: --[\w-]+; color: red/);
     expect(popup).toMatchObject({ role: "menu", "aria-label": "Commands" });

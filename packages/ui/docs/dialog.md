@@ -1,6 +1,6 @@
 # Dialog
 
-> A modal dialog, or an alert dialog that needs an answer: a native `<dialog>` opened and closed by invoker commands, so it works in server HTML with no JavaScript, and a 1.3 kB script closes the native element's gaps where JavaScript runs. `bind:open` (or `open` and `onOpenChange`) keeps a signal in sync in islands.
+> A modal dialog, or an alert dialog that needs an answer: a native `<dialog>` opened and closed by invoker commands, so it works in server HTML with no JavaScript, and a 1.5 kB script closes the native element's gaps where JavaScript runs. `bind:open` (or `open` and `onOpenChange`) keeps a signal in sync in islands.
 
 ```ts
 import { Dialog } from "@lumiose/ui"; // or "@lumiose/ui/dialog"
@@ -51,8 +51,9 @@ Without `open`, `onOpenChange` or `bind:open` the dialog keeps its own state.
 
 Each part takes the props of the element it renders (`class`, `style`, `aria-*`, `data-*`, event
 handlers, `ref`) and passes them through. Your props override the defaults (`type`,
-`aria-haspopup`, `aria-expanded`, `closedby`, `aria-labelledby`, `aria-describedby`); `id`,
-`command` and `commandfor` stay the parts' own, since they connect the parts.
+`aria-haspopup`, `aria-expanded`, `closedby`, `aria-labelledby`, `aria-describedby`). A `Title`'s or
+a `Description`'s `id` names it, and the popup points at it; the `Popup` keeps its own `id`, which
+its triggers point at (see [Ids](README.md#ids)), and `command` and `commandfor` stay the parts' own.
 
 - **`Trigger`**: `aria-expanded` follows the dialog in the browser. In server HTML it stays
   `"false"`, which is never wrong where assistive technology can reach it: while the modal dialog
@@ -61,7 +62,9 @@ handlers, `ref`) and passes them through. Your props override the defaults (`typ
   `"closerequest"` for an alert dialog (Escape only); pass `closedby="none"` to allow neither. Native
   events work as on a `<dialog>`: `on:close` runs after any close, and
   `event.currentTarget.returnValue` holds the value of the `Close` that closed it (it is unchanged
-  after Escape).
+  after Escape). To keep a dialog open (unsaved changes, say), use `closedby="none"` while it must
+  stay, not `preventDefault()` on its `cancel` event: browsers let a page cancel only the first of
+  repeated close requests, so a second Escape closes it anyway.
 - **`Title`** and **`Description`**: the popup's `aria-labelledby` and `aria-describedby` point at
   the ones it renders, and only those; in an island they follow parts that appear or go away. A
   dialog without a `Title` needs an `aria-label` on `Popup`.
@@ -186,15 +189,16 @@ or override the rule, to let the page scroll.
 The browser's modal dialog provides the
 [WAI-ARIA dialog pattern](https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/):
 
-| Key            | Does                                                                                                 |
-| -------------- | ---------------------------------------------------------------------------------------------------- |
-| Enter, Space   | On the trigger: opens the dialog.                                                                    |
-| Tab, Shift+Tab | Move between the focusable elements of the dialog. The page behind is inert: focus never reaches it. |
-| Escape         | Closes the dialog on top, alert dialogs included. With nested dialogs, one Escape closes one dialog. |
+| Key            | Does                                                                                                                                                                   |
+| -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Enter, Space   | On the trigger: opens the dialog.                                                                                                                                      |
+| Tab, Shift+Tab | Move between the focusable elements of the dialog. The page behind is inert: focus never reaches it.                                                                   |
+| Escape         | Closes the dialog on top, alert dialogs included. With nested dialogs, one Escape closes one dialog. An Escape that ends an input method's composition closes nothing. |
 
-- **On open**, focus moves to the element with `autofocus`, or else the first focusable element
-  inside, or else the dialog. Opened by touch, the dialog focuses itself instead, so no virtual
-  keyboard opens over it (an `autofocus` element still gets focus).
+- **On open**, focus moves to the element with `autofocus`, or else the first tab stop inside,
+  or else the dialog, as in Base UI and the same in every browser: not a scroller before it, nor a
+  `tabindex="-1"` title (where the script runs). Opened by touch, the dialog focuses itself
+  instead, so no virtual keyboard opens over it (an `autofocus` element still gets focus).
 - **On close**, focus returns to the element that had it before: the trigger, or the button that
   set the signal. If that element is gone, focus goes to another trigger of the dialog, without
   scrolling the page. The popovers, menus and dialogs open inside it close with it.
@@ -211,12 +215,13 @@ server-rendered page works before any script loads, and with none. `open`, `onOp
 `bind:open` and a live `aria-expanded` need the component to run in the browser, in an island.
 
 Where the native element falls short of Base UI's dialog, a small script closes the gap: a page
-that renders a `Dialog` loads it once, as a 1.3 kB (brotli) module without the Lumiose runtime, and
+that renders a `Dialog` loads it once, as a 1.5 kB (brotli) module without the Lumiose runtime, and
 islands bundle it. It covers every `<dialog>` on the page:
 
 - a right-click or a second finger outside does not close the dialog;
 - `data-nested-dialog-open` and `--lu-nested-dialogs` on a dialog with open dialogs inside;
-- a dialog opened by touch focuses itself;
+- the first tab stop takes focus on open, in every browser, and a dialog opened by touch focuses
+  itself;
 - focus returns without scrolling, to the opener or, if it is gone, another trigger (WebKit, which
   does not focus a clicked button, would otherwise leave focus on the page);
 - the click outside where the browser lacks `closedby` (Safari), and the invoker commands where it

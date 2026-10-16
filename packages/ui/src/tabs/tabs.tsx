@@ -104,6 +104,8 @@ interface TabsContextValue {
   tabs: Signal<TabRecord[]>;
   orientation: () => "horizontal" | "vertical";
   tabId: (value: string) => string;
+  /** Records a Tab's own `id`: the Panel after it points at it. */
+  name: (value: string, id: string) => void;
   panelId: (value: string) => string;
 }
 
@@ -132,6 +134,7 @@ function Root({
   const element = ref<LuTabs>();
   const selected = signal<string | undefined>(untrack(() => value ?? defaultValue));
   const tabs = signal<TabRecord[]>([]);
+  const named = new Map<string, string>();
   const context: TabsContextValue = {
     current: () => {
       const wanted = selected();
@@ -144,7 +147,9 @@ function Root({
     wanted: selected,
     tabs,
     orientation: () => orientation ?? "horizontal",
-    tabId: (of) => `${id}-tab-${fragment(of)}`,
+    // A Tab's own `id`, else one made from its value (TASK-441 M39).
+    tabId: (of) => named.get(of) ?? `${id}-tab-${fragment(of)}`,
+    name: (of, tabId) => named.set(of, tabId),
     panelId: (of) => `${id}-panel-${fragment(of)}`,
   };
 
@@ -191,6 +196,8 @@ function List({ children, activateOnFocus, loopFocus, ...rest }: TabsListProps) 
 
 function Tab({ children, value, disabled, ...rest }: TabsTabProps) {
   const tabs = useTabs();
+  // A caller's `id` names it; its Panel, after it, points at that (TASK-441 M39).
+  if (rest.id) tabs.name(value, rest.id);
   const record: TabRecord = { value, disabled: () => disabled === true };
   tabs.tabs.update((list) => [...list, record]);
   onCleanup(() => tabs.tabs.update((list) => list.filter((each) => each !== record)));

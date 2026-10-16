@@ -260,6 +260,9 @@ function register(count: Signal<number>) {
 
 function Title({ children, ...rest }: PopoverTitleProps) {
   const popover = usePopover();
+  // A caller's `id` names it: the Popup renders its parts before its own attributes on the server,
+  // and follows them in the browser (TASK-441 M39).
+  if (rest.id) popover.titleId = rest.id;
   register(popover.titles);
   return (
     <h2 {...rest} id={popover.titleId}>
@@ -270,6 +273,8 @@ function Title({ children, ...rest }: PopoverTitleProps) {
 
 function Description({ children, ...rest }: PopoverDescriptionProps) {
   const popover = usePopover();
+  // As Title's.
+  if (rest.id) popover.descriptionId = rest.id;
   register(popover.descriptions);
   return (
     <p {...rest} id={popover.descriptionId}>

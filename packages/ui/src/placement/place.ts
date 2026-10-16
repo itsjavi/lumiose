@@ -3,6 +3,11 @@
 // from the popup's `data-side` and `data-align`. Client scripts call it while a popup is open. A
 // popup taller than the room on both sides takes the roomier one, and `--lu-available-height`
 // caps it there (placement.css lets it scroll, TASK-428).
+//
+// It also watches the trigger of every open anchored popover (not a modal one): scrolled out of
+// view, of the page or of a scroller around it, the popup gets `data-anchor-hidden`, which
+// placement.css hides until the trigger is back (TASK-453 L28). CSS alone (`position-visibility:
+// anchors-visible`) covers inner scrollers, and in Chromium only.
 // It must not import `lumiose`: server-rendered pages load it without the runtime.
 
 export const anchoring = typeof CSS !== "undefined" && CSS.supports("anchor-name: --a");
@@ -70,3 +75,52 @@ export function place(popup: HTMLElement, trigger: Element) {
   }
   Object.assign(popup.style, { inset: "auto", margin: "0", left: `${x}px`, top: `${y}px` });
 }
+
+/** The open popups that each watched trigger anchors. */
+const anchored = new Map<Element, Set<HTMLElement>>();
+let watcher: IntersectionObserver | undefined;
+
+/** The value of `property` in `element`'s style attribute, read raw: a browser may not know it. */
+const inline = (element: Element, property: string) =>
+  new RegExp(`(?:^|;)\\s*${property}\\s*:\\s*([^;]+)`)
+    .exec(element.getAttribute("style") ?? "")?.[1]
+    ?.trim();
+
+/** The trigger whose `anchor-name` the popup's `position-anchor` names. */
+function anchorOf(popup: HTMLElement): Element | undefined {
+  const name = inline(popup, "position-anchor");
+  if (!name) return undefined;
+  return [...document.querySelectorAll("[style*='anchor-name']")].find(
+    (element) => element !== popup && inline(element, "anchor-name") === name,
+  );
+}
+
+function onToggle(event: Event): void {
+  const popup = event.target;
+  if (!(popup instanceof HTMLElement) || !popup.matches("[popover][data-side]")) return;
+  if ((event as ToggleEvent).newState === "open") {
+    const anchor = anchorOf(popup);
+    if (!anchor || typeof IntersectionObserver !== "function") return;
+    watcher ??= new IntersectionObserver((entries) => {
+      for (const entry of entries) {
+        for (const each of anchored.get(entry.target) ?? []) {
+          each.toggleAttribute("data-anchor-hidden", !entry.isIntersecting);
+        }
+      }
+    });
+    const popups = anchored.get(anchor) ?? new Set();
+    popups.add(popup);
+    anchored.set(anchor, popups);
+    watcher.observe(anchor);
+    return;
+  }
+  popup.removeAttribute("data-anchor-hidden");
+  for (const [anchor, popups] of anchored) {
+    if (!popups.delete(popup) || popups.size > 0) continue;
+    anchored.delete(anchor);
+    watcher?.unobserve(anchor);
+  }
+}
+
+// `toggle` does not bubble: the capture phase sees every popup's.
+if (typeof document !== "undefined") document.addEventListener("toggle", onToggle, true);

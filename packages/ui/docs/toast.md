@@ -50,7 +50,7 @@ are added and where they are shown: islands of a page share a module, so they sh
 | Method                      | Does                                                                                                                                |
 | --------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
 | `toasts()`                  | The open toasts, newest first, read reactively: map them to `Toast.Root`s.                                                          |
-| `add(options)`              | Adds a toast and returns its id. A toast with the `id` of an open one replaces it.                                                  |
+| `add(options)`              | Adds a toast and returns its id. With the `id` of an open toast, it updates that one in place.                                      |
 | `update(id, options)`       | Changes an open toast in place: the same object, its fields read reactively, so its parts update without a new element.             |
 | `close(id?)`                | Closes a toast, or every toast: it gets `transitionStatus: "ending"` and `data-ending-style`, then leaves after its exit animation. |
 | `promise(promise, options)` | Shows a loading toast while `promise` runs (it stays), then turns it into a success or an error toast; returns `promise`.           |
@@ -94,7 +94,8 @@ others `type: "success"` or `"error"` and the default timeout.
 
 Each part takes the props of the element it renders (`class`, `style`, `aria-*`, `data-*`, event
 handlers, `ref`) and passes them through. Your props override the defaults (`role`, `aria-label`,
-`type`); `id`, `command` and `commandfor` stay the parts' own, since they connect them.
+`type`). A `Root`'s `id` names the toast's element, and its `Close` points at it (see
+[Ids](README.md#ids)); `command` and `commandfor` stay the parts' own, since they connect them.
 
 - **`Viewport`**: rename the region with `aria-label`; keep the hotkey in it.
 - **`Root`**: the script fires a cancelable `close` event on it when a toast should close (a close
@@ -227,7 +228,7 @@ adds a red edge.
   runs; `[data-swipe-direction]` stays while a swiped toast leaves;
 - `--lu-toast-index` on each shown toast (0 for the first child), and `[data-limited]` on the ones
   past the limit;
-- `[data-expanded]` on the viewport while the pointer or focus is in it.
+- `[data-expanded]` on the viewport while the pointer or keyboard focus is in it.
 
 ```css
 .toast {
@@ -247,9 +248,10 @@ adds a red edge.
 `@lumiose/ui/toast.css`, in the `lu.core` layer, makes the viewport a box fixed to the window's
 bottom end, without a popover's default border, padding or centring; hides the toasts past the
 limit whatever display your CSS gives them; sets `touch-action` on swipeable toasts, so a swipe
-does not scroll the page along its axes; and gives the page `scroll-padding-block-end` the height
-of the shown toasts (`--lu-toast-stack-block-size`, which the script keeps on the root), so a
-control that takes focus is scrolled clear of them (WCAG 2.4.11).
+does not scroll the page along its axes, while pinch-zoom still works (where `touch-action` knows
+it: not in Safari); and gives the page `scroll-padding-block-end` the height of the shown toasts
+(`--lu-toast-stack-block-size`, which the script keeps on the root), so a control that takes focus
+is scrolled clear of them (WCAG 2.4.11).
 
 A modal dialog makes everything outside it inert, so while one is open the region moves into it,
 and back when it closes or leaves the page.
@@ -265,8 +267,11 @@ and back when it closes or leaves the page.
 
 - **When the focused toast closes**, focus moves to the next toast's first button, or back to
   where it was before it entered the region (F6, Tab or a click).
-- **Timers pause** while the pointer is over the region, while focus is in it, while the window is
-  in the background and while the page is hidden; they resume with the time that was left.
+- **Timers pause** while the pointer is over the region, while keyboard focus is in it, while the
+  window is in the background and while the page is hidden; they resume with the time that was
+  left. A press that focuses a toast pauses it only while the pointer stays, as in Base UI.
+- **A swipe** closes the toast past 40px, unless it is pulled back 10px or more from its farthest
+  point before the release.
 - **Swipes** have a single-pointer alternative, the close button, and a keyboard one, Escape
   (WCAG 2.5.1 and 2.5.7). A swipe never starts on a button, link or field.
 - **Time limits** (WCAG 2.2.1): a toast that times out must hold nothing the reader needs to act

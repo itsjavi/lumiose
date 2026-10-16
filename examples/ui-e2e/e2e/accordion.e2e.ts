@@ -122,7 +122,7 @@ test.describe("in an island", () => {
   test("bind:value keeps a signal in sync both ways", async ({ page }) => {
     await page.goto("/accordion/island");
     const state = page.getByTestId("value-state");
-    const accordion = page.locator("lu-accordion");
+    const accordion = page.locator("lu-accordion").first();
     await expect(state).toHaveText("value: one");
     await page.getByTestId("open-two").click();
     await expect(state).toHaveText("value: two");
@@ -132,6 +132,24 @@ test.describe("in an island", () => {
     expect(await opened(accordion)).toEqual(["One"]);
     await trigger(accordion, "One").click();
     await expect(state).toHaveText("value: none");
+  });
+
+  test("an item rendered open reports no change until it changes (TASK-441 M40)", async ({
+    page,
+  }) => {
+    await page.goto("/accordion/island");
+    const reports = page.getByTestId("reports");
+    await expect(async () => {
+      await page.getByTestId("mount").click({ timeout: 250 });
+      await expect(page.getByTestId("mounted")).toBeVisible({ timeout: 250 });
+    }).toPass();
+    const mounted = page.getByTestId("mounted");
+    expect(await opened(mounted)).toEqual(["Rendered open"]);
+    // The browser's `toggle` for a `<details>` created open comes a task later.
+    await page.waitForTimeout(200);
+    await expect(reports).toHaveText("reports: 0");
+    await trigger(mounted, "Rendered open").click();
+    await expect(reports).toHaveText("reports: 1");
   });
 });
 

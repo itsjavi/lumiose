@@ -2,7 +2,8 @@
  * Anchored popups (Popover, Tooltip): a `[popover]`, or a modal popover's `<dialog>`, with
  * `data-side` and `data-align` is placed next to the trigger its inline `position-anchor` names,
  * with CSS anchor positioning, from the server HTML on. It flips to the opposite side when it does
- * not fit, and hides while its trigger is scrolled out of view; one beside the trigger that fits
+ * not fit, and hides while its trigger is scrolled out of view (`data-anchor-hidden`, which the
+ * scripts' place.ts sets, as CSS covers inner scrollers in Chromium only); one beside the trigger that fits
  * on neither side goes below or above it. A popup taller than the space on both sides takes the
  * side with more room and shrinks to it, from its trigger to the viewport's edge, and scrolls
  * (TASK-428). `--lu-side-offset` is the gap to the trigger and
@@ -17,6 +18,10 @@
   :is([popover], dialog)[data-side] {
     max-block-size: var(--lu-available-height, none);
     overflow: auto;
+  }
+  /* Its trigger scrolled out of view, a popover waits, hidden (place.ts sets it, TASK-453 L28). */
+  [popover][data-side][data-anchor-hidden] {
+    visibility: hidden;
   }
   @supports (anchor-name: --a) {
     /*

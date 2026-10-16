@@ -163,6 +163,9 @@ function register(count: Signal<number>) {
 
 function Title({ children, ...rest }: DialogTitleProps) {
   const dialog = useDialog();
+  // A caller's `id` names it: the Popup renders its parts before its own attributes on the server,
+  // and follows them in the browser (TASK-441 M39).
+  if (rest.id) dialog.titleId = rest.id;
   register(dialog.titles);
   return (
     <h2 {...rest} id={dialog.titleId}>
@@ -173,6 +176,8 @@ function Title({ children, ...rest }: DialogTitleProps) {
 
 function Description({ children, ...rest }: DialogDescriptionProps) {
   const dialog = useDialog();
+  // As Title's.
+  if (rest.id) dialog.descriptionId = rest.id;
   register(dialog.descriptions);
   return (
     <p {...rest} id={dialog.descriptionId}>

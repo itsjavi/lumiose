@@ -1,6 +1,6 @@
 # Combobox
 
-> A text input that filters a list of options, for picking one value or several from many: the WAI-ARIA combobox pattern with list autocomplete, after Base UI's Combobox. The input shows the option's label and the form gets its value. `<lu-combobox>`, a 4.5 kB form-associated light-DOM element, runs it on server-rendered pages and in islands; `bind:value` and `bind:open` keep signals in sync. Groups, an empty state, a status, a clear button, multiple values with chips, validation and async options.
+> A text input that filters a list of options, for picking one value or several from many: the WAI-ARIA combobox pattern with list autocomplete, after Base UI's Combobox. The input shows the option's label and the form gets its value. `<lu-combobox>`, a 5.0 kB form-associated light-DOM element, runs it on server-rendered pages and in islands; `bind:value` and `bind:open` keep signals in sync. Groups, an empty state, a status, a clear button, multiple values with chips, validation and async options.
 
 ```ts
 import { Combobox } from "@lumiose/ui"; // or "@lumiose/ui/combobox"
@@ -102,8 +102,11 @@ The placement props go on the part that is the popover: the `Popup` when there i
 
 Each part takes the props of the element it renders (`class`, `style`, `aria-*`, `data-*`, event
 handlers, `ref`) and passes them through. Your props override the defaults (`tabindex`,
-`autocomplete`, `hidden`); the roles, ids, ARIA references, commands and the anchor stay the parts'
-own, since they connect the parts.
+`autocomplete`, `hidden`). A `Label`'s `id` names it, and the list points at it, and an `Item`'s
+`id` names the option (the input points at it only once the script highlights it). The `Root`,
+`Input`, `List`, `Popup`, `Empty`, `Chips` and group labels keep their own ids, which other parts
+or the element's script find them by (see [Ids](README.md#ids)); the roles, ARIA references,
+commands and the anchor stay the parts' own, since they connect the parts.
 
 - **`Input`**: `placeholder`, `onInput` (for async options) and `aria-describedby` pass through.
   Its `type` and `value` are the combobox's. Inside a [Field](field.md), it takes the field's id
@@ -301,7 +304,7 @@ cannot be styled or grouped, and customizable select cannot filter). Without Jav
 HTML shows a labelled text field and nothing opens, and the form gets no value. For a choice that
 must work without JavaScript, use [Select](select.md).
 
-A page that renders a `Combobox` loads the script once, as a 4.5 kB (brotli) module without the
+A page that renders a `Combobox` loads the script once, as a 5.0 kB (brotli) module without the
 Lumiose runtime, and islands bundle it. It defines `lu-combobox`, which upgrades every combobox on
 the page in place: it reads the selection the server rendered (`aria-selected="true"`), puts its
 label in the input (text typed before it ran is kept, as a search), renders the chips, and from

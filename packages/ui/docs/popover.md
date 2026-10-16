@@ -1,6 +1,6 @@
 # Popover
 
-> A popup anchored to its trigger: a native `popover` opened and closed by the trigger's `popovertarget`, placed with CSS anchor positioning, so it works in server HTML with no JavaScript. A 2.9 kB script moves focus into it and back, dismisses it as Base UI does (not on a right-click), keeps `aria-expanded` current and places it in browsers without anchor positioning. `bind:open` (or `open` and `onOpenChange`) keeps a signal in sync in islands. A trigger can open it on hover (`openOnHover`), and a `modal` popover is a modal `<dialog>` that makes the page behind it inert.
+> A popup anchored to its trigger: a native `popover` opened and closed by the trigger's `popovertarget`, placed with CSS anchor positioning, so it works in server HTML with no JavaScript. A 3.2 kB script moves focus into it and back, dismisses it as Base UI does (not on a right-click), keeps `aria-expanded` current and places it in browsers without anchor positioning. `bind:open` (or `open` and `onOpenChange`) keeps a signal in sync in islands. A trigger can open it on hover (`openOnHover`), and a `modal` popover is a modal `<dialog>` that makes the page behind it inert.
 
 ```ts
 import { Popover } from "@lumiose/ui"; // or "@lumiose/ui/popover"
@@ -76,14 +76,16 @@ The popup flips to the opposite side when it does not fit, and goes below (or ab
 when a `left` or `right` popup fits on neither side. A popup too tall for the room on both sides shrinks to the room beside its trigger
 (below, or above when below has less than 8rem), and scrolls; without anchor positioning the
 script writes that room as `--lu-available-height`, which the default theme's caps use. It hides while its trigger is
-scrolled out of view.
+scrolled out of view, of the page or of a scroller around it (`data-anchor-hidden` on the popup,
+where the script runs), and comes back with it.
 
 ### The other parts
 
 Each part takes the props of the element it renders (`class`, `style`, `aria-*`, `data-*`, event
 handlers, `ref`) and passes them through. Your props override the defaults (`type`,
-`aria-haspopup`, `role`, `aria-labelledby`, `aria-describedby`); `id`, `popover` and
-`popovertarget` stay the parts' own. A `style` you pass keeps the anchor name.
+`aria-haspopup`, `role`, `aria-labelledby`, `aria-describedby`). A `Title`'s or a `Description`'s
+`id` names it, and the popup points at it; the `Popup` keeps its own `id`, which its trigger points
+at (see [Ids](README.md#ids)), and `popover` and `popovertarget` stay the parts' own. A `style` you pass keeps the anchor name.
 
 - **`Trigger`**: `aria-expanded` comes from the browser for `popovertarget`, and from the client
   script once it runs.
@@ -197,12 +199,12 @@ them: `--lu-side-offset` and `--lu-align-offset`.
 
 ## Keyboard and focus
 
-| Key          | Does                                                                                                                             |
-| ------------ | -------------------------------------------------------------------------------------------------------------------------------- |
-| Enter, Space | On the trigger: opens or closes the popover.                                                                                     |
-| Tab          | Moves through the popup, then on to the element after the trigger. When the trigger is the last element, focus leaves the popup. |
-| Shift+Tab    | From the start of the popup, back to the trigger. The popover stays open.                                                        |
-| Escape       | Closes the popover on top. With nested popovers, or a popover in a dialog, one Escape closes one layer.                          |
+| Key          | Does                                                                                                                                                                      |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Enter, Space | On the trigger: opens or closes the popover.                                                                                                                              |
+| Tab          | Moves through the popup, then on to the element after the trigger. When the trigger is the last element, focus leaves the popup.                                          |
+| Shift+Tab    | From the start of the popup, back to the trigger. The popover stays open.                                                                                                 |
+| Escape       | Closes the popover on top. With nested popovers, or a popover in a dialog, one Escape closes one layer. An Escape that ends an input method's composition closes nothing. |
 
 - **On open**, focus moves to the popup's first tab stop (the checked radio of a group, not an
   item a roving widget takes out of the order), or to the popup itself when it has none. Opened by touch, the popup focuses itself, so no virtual keyboard opens.
@@ -234,7 +236,7 @@ does a modal popover, through invoker commands and `closedby` (where a browser l
 script.
 `open`, `onOpenChange` and `bind:open` need the component to run in an island.
 
-A page that renders a `Popover` loads a 2.9 kB (brotli) module once, without the Lumiose runtime;
+A page that renders a `Popover` loads a 3.2 kB (brotli) module once, without the Lumiose runtime;
 islands bundle it. It covers every Popover on the page:
 
 - focus on open (the first focusable element, or the popup) and its return on close;
