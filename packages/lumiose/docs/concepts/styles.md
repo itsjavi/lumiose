@@ -361,6 +361,11 @@ Folding regular properties, minification and browser targets come from
 project, which Lumiose's CSS compiler is built on. Lumiose adds `$` constants, scoping and the
 custom-property folding.
 
+Production builds minify CSS for the [supported browsers](../stability.md#browsers), which all
+have `:dir()`, nesting and the other modern syntax, so it ships as written. With an older
+`build.cssTarget` (or `build.target`) in your Vite config, Lightning CSS lowers what those browsers
+lack: `:dir(rtl)` becomes a list of `:lang()` selectors, which miss a `dir` attribute.
+
 ### Stylesheets, CSS Modules and Tailwind
 
 Style blocks hold a component's own styles. Three other ways to style work next to them through

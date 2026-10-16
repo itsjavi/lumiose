@@ -46,6 +46,14 @@ export function Counter() {
   );
 }
 `,
+  "Arrow.stsx": `export function Arrow() {
+  return (
+    <span class="arrow">
+      →<style>.arrow:dir(rtl) { scale: -1 1; }</style>
+    </span>
+  );
+}
+`,
   "main.tsx": `import { render } from "lumiose/dom";
 import { Counter } from "./Counter.stsx";
 render(() => <Counter />, document.body);
@@ -473,6 +481,29 @@ describe.skipIf(!binding)("@lumiose/vite", () => {
     expect(manifest.code).toContain('"@acme/kit/src/Nav.stsx#Nav"');
     expect(manifest.code).toContain(`import(\`./${nav.fileName.split("/").pop()}\`)`);
     expect(manifest.code).not.toContain(base);
+  });
+
+  it("keeps :dir() in production CSS, unless the project sets its own target (TASK-422)", async () => {
+    const css = async (build_: { cssTarget?: string[] } = {}): Promise<string> => {
+      const output = (await build({
+        root,
+        configFile: false,
+        logLevel: "silent",
+        plugins: [lumiose()],
+        build: {
+          write: false,
+          rolldownOptions: { input: { arrow: `${root}/Arrow.stsx` } },
+          ...build_,
+        },
+      })) as Rolldown.RolldownOutput;
+      const asset = output.output.find((item) => item.fileName.endsWith(".css"));
+      return asset?.type === "asset" ? String(asset.source) : "";
+    };
+    // A `:lang()` rewrite would miss `<html dir="rtl">` and any other `dir` attribute.
+    const own = await css();
+    expect(own).toMatch(/\.arrow:dir\(rtl\)\[data-l-\w+\]\{/);
+    expect(own).not.toContain(":lang(");
+    expect(await css({ cssTarget: ["chrome111"] })).toContain(":lang(");
   });
 
   it("serves the scoped CSS of a file through Vite's CSS pipeline", async () => {
