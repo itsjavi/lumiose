@@ -23,7 +23,7 @@ export type { SiteHeaderProps } from "./SiteHeader.stsx";
 export { SiteNav, isActive } from "./SiteNav.stsx";
 export type { NavLink, SiteNavProps } from "./SiteNav.stsx";
 export { Tabs } from "./Tabs.stsx";
-export type { TabsProps } from "./Tabs.stsx";
+export type { TabsListProps, TabsPanelProps, TabsRootProps, TabsTabProps } from "./Tabs.stsx";
 export { ThemeToggle } from "./ThemeToggle.stsx";
 export { escapeHtml, highlight } from "./highlight.ts";
 export type { Highlighter, TokenKind } from "./highlight.ts";

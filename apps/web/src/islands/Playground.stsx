@@ -10,6 +10,8 @@
 // `children` is a static stand-in (a slot, server-rendered): it shows until the compiler is ready,
 // and is all a visitor without JavaScript sees. Without children the editor shows at once.
 import { bp, color, font, radius, space, text, weight } from "@lumiose/site-kit/tokens";
+import { Tabs } from "@lumiose/ui";
+import "@lumiose/ui/tabs.css";
 import { onMount, signal } from "lumiose";
 import type { EditorView } from "@codemirror/view";
 import {
@@ -196,23 +198,6 @@ export function Playground(props: PlaygroundProps) {
     void saveState();
   }
 
-  function onTabKey(event: KeyboardEvent) {
-    const index = TABS.findIndex((item) => item.id === tab());
-    const next =
-      event.key === "ArrowRight"
-        ? (index + 1) % TABS.length
-        : event.key === "ArrowLeft"
-          ? (index - 1 + TABS.length) % TABS.length
-          : event.key === "Home"
-            ? 0
-            : event.key === "End"
-              ? TABS.length - 1
-              : -1;
-    if (next === -1) return;
-    event.preventDefault();
-    selectTab(TABS[next]!.id);
-    document.getElementById(`tab-${TABS[next]!.id}`)?.focus();
-  }
 
   function loadSample(id: string) {
     const sample = samples.find((item) => item.id === id);
@@ -321,31 +306,26 @@ export function Playground(props: PlaygroundProps) {
         </section>
 
         <section class="pane output-pane" aria-label="Output">
-          <div class="pane-head tabs" role="tablist" aria-label="Output" onKeyDown={onTabKey}>
-            {TABS.map((item) => (
-              <button
-                type="button"
-                role="tab"
-                id={`tab-${item.id}`}
-                aria-controls={`panel-${item.id}`}
-                aria-selected={tab() === item.id ? "true" : "false"}
-                tabindex={tab() === item.id ? 0 : -1}
-                onClick={() => selectTab(item.id)}
-              >
-                {item.label}
-                {item.id === "diagnostics" && diagnostics().length > 0 && (
-                  <span class={{ count: true, error: errors() > 0 }}>{diagnostics().length}</span>
-                )}
-              </button>
-            ))}
-          </div>
+          {/* @lumiose/ui's Tabs: the keys, the roving tab stop and the panels' wiring. */}
+          <Tabs.Root
+            class="tabs-root"
+            value={tab()}
+            onValueChange={(next: string) => selectTab(next as TabId)}
+          >
+            <Tabs.List class="pane-head tabs" aria-label="Output" activateOnFocus>
+              {TABS.map((item) => (
+                <Tabs.Tab value={item.id} class="tab">
+                  {item.label}
+                  {item.id === "diagnostics" && diagnostics().length > 0 && (
+                    <span class={{ count: true, error: errors() > 0 }}>{diagnostics().length}</span>
+                  )}
+                </Tabs.Tab>
+              ))}
+            </Tabs.List>
 
-          <div
+          <Tabs.Panel
+            value="preview"
             class="panel preview"
-            role="tabpanel"
-            id="panel-preview"
-            aria-labelledby="tab-preview"
-            hidden={tab() !== "preview"}
           >
             {stale() && <p class="stale">Fix the errors to update the preview.</p>}
             <iframe
@@ -358,37 +338,25 @@ export function Playground(props: PlaygroundProps) {
                 <li class={entry.level}>{entry.text}</li>
               ))}
             </ol>
-          </div>
-          <div
+          </Tabs.Panel>
+          <Tabs.Panel
+            value="client"
             class="panel code"
-            role="tabpanel"
-            id="panel-client"
-            aria-labelledby="tab-client"
-            hidden={tab() !== "client"}
             ref={(element: HTMLDivElement) => (clientHost = element)}
           />
-          <div
+          <Tabs.Panel
+            value="server"
             class="panel code"
-            role="tabpanel"
-            id="panel-server"
-            aria-labelledby="tab-server"
-            hidden={tab() !== "server"}
             ref={(element: HTMLDivElement) => (serverHost = element)}
           />
-          <div
+          <Tabs.Panel
+            value="css"
             class="panel code"
-            role="tabpanel"
-            id="panel-css"
-            aria-labelledby="tab-css"
-            hidden={tab() !== "css"}
             ref={(element: HTMLDivElement) => (cssHost = element)}
           />
-          <div
+          <Tabs.Panel
+            value="diagnostics"
             class="panel diagnostics"
-            role="tabpanel"
-            id="panel-diagnostics"
-            aria-labelledby="tab-diagnostics"
-            hidden={tab() !== "diagnostics"}
           >
             {diagnostics().length === 0 ? (
               <p class="empty">No diagnostics.</p>
@@ -411,7 +379,8 @@ export function Playground(props: PlaygroundProps) {
                 ))}
               </ul>
             )}
-          </div>
+          </Tabs.Panel>
+          </Tabs.Root>
         </section>
       </div>
     </div>
@@ -538,6 +507,13 @@ export function Playground(props: PlaygroundProps) {
     flex: 1;
     min-block-size: 0;
     overflow: hidden;
+  }
+  /* The tabs' element, between the pane and its head and panels: part of the pane's column. */
+  .tabs-root {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    min-block-size: 0;
   }
   .panel[hidden] {
     display: none;

@@ -1,14 +1,16 @@
-// The light/dark switch. Use it as an island (`<ThemeToggle client:load />`): the button is
-// server-rendered, and the icon follows the theme through CSS alone, so it is right before
-// hydration and never mismatches. The choice persists in localStorage (./theme.ts).
+// The light/dark switch: @lumiose/ui's Toggle (`<button aria-pressed>`). Use it as an island
+// (`<ThemeToggle client:load />`): the button is server-rendered, and the icon follows the theme
+// through CSS alone, so it is right before hydration and never mismatches. The choice persists in
+// localStorage (./theme.ts).
 
+import { Toggle } from "@lumiose/ui";
 import { onMount, signal } from "lumiose";
 import { activeTheme, setTheme, storedTheme } from "./theme.ts";
 import { color, motion, radius, space } from "./tokens.ts";
 
 export function ThemeToggle(props: { class?: JSX.ClassValue }) {
-  // `aria-pressed` needs the theme, which only the browser knows: set once mounted.
-  const dark = signal<boolean | undefined>(undefined);
+  // The pressed state needs the theme, which only the browser knows: it follows once mounted.
+  const dark = signal(false);
   const sync = () => dark.set(activeTheme() === "dark");
 
   onMount(() => {
@@ -20,20 +22,18 @@ export function ThemeToggle(props: { class?: JSX.ClassValue }) {
     return () => media.removeEventListener("change", sync);
   });
 
-  const toggle = () => {
-    const next = activeTheme() === "dark" ? "light" : "dark";
-    setTheme(next);
-    dark.set(next === "dark");
+  const toggle = (pressed: boolean) => {
+    setTheme(pressed ? "dark" : "light");
+    dark.set(pressed);
   };
 
   return (
-    <button
-      type="button"
+    <Toggle
       class={["toggle", props.class]}
       aria-label="Dark theme"
-      aria-pressed={dark() === undefined ? undefined : dark() ? "true" : "false"}
       title="Toggle dark theme"
-      onClick={toggle}
+      pressed={dark()}
+      onPressedChange={toggle}
     >
       <svg class="sun" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
         <circle cx="12" cy="12" r="4.2" />
@@ -42,7 +42,7 @@ export function ThemeToggle(props: { class?: JSX.ClassValue }) {
       <svg class="moon" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
         <path d="M20.2 14.6A8.4 8.4 0 0 1 9.4 3.8a8.4 8.4 0 1 0 10.8 10.8Z" />
       </svg>
-    </button>
+    </Toggle>
   );
 }
 
