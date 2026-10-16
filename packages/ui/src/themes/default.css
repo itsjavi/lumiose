@@ -53,6 +53,8 @@
  *   .lu-otp-field                       an OTPField.Root: a box per character, the caret's box
  *                                       ringed while focused, a dash for a separator
  *   .lu-preview-card                    a PreviewCard.Popup: a surface like a popover's, with a fade
+ *   .lu-toolbar                         a Toolbar.Root: a bordered row (or column) of its items,
+ *                                       separators across it
  */
 @layer lu.core, lu.theme;
 
@@ -1702,5 +1704,63 @@
         scale: 0.96;
       }
     }
+  }
+
+  /* Toolbar (TASK-383) ------------------------------------------------------------------------ */
+
+  .lu-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.25rem;
+    inline-size: fit-content;
+    max-inline-size: 100%;
+    box-sizing: border-box;
+    padding: 0.25rem;
+    border: 1px solid var(--lu-border);
+    border-radius: var(--lu-radius);
+    background: var(--lu-background);
+  }
+  .lu-toolbar[data-orientation="vertical"] {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .lu-toolbar :where([role="group"]) {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+  }
+  .lu-toolbar[data-orientation="vertical"] :where([role="group"]) {
+    flex-direction: column;
+  }
+  /* Separators run across the toolbar: a line from top to bottom in a row. */
+  .lu-toolbar :where(hr) {
+    flex: none;
+    align-self: stretch;
+    margin: 0 0.25rem;
+    border: 0;
+    background: var(--lu-border);
+  }
+  .lu-toolbar :where(hr[data-orientation="vertical"]) {
+    inline-size: 1px;
+    block-size: auto;
+  }
+  .lu-toolbar :where(hr[data-orientation="horizontal"]) {
+    inline-size: auto;
+    block-size: 1px;
+    margin: 0.25rem 0;
+  }
+  /* A link is an item like the buttons: as tall, with room around its text (2.5.8). */
+  .lu-toolbar :where(a) {
+    display: inline-flex;
+    align-items: center;
+    min-block-size: 2.25rem;
+    padding: 0 0.5rem;
+    border-radius: calc(var(--lu-radius) - 2px);
+    font-size: 0.875rem;
+  }
+  .lu-toolbar :where(a):focus-visible {
+    outline: 2px solid var(--lu-ring);
+    outline-offset: 2px;
   }
 }

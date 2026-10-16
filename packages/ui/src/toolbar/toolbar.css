@@ -1,0 +1,12 @@
+/*
+ * The CSS Toolbar needs, and nothing else (decision-62): `<lu-toolbar>` is a block, as Base UI's
+ * `<div>` root, rather than a custom element's default inline box. It sits in the `lu.core`
+ * layer, so any app CSS wins.
+ */
+@layer lu.core, lu.theme;
+
+@layer lu.core {
+  lu-toolbar {
+    display: block;
+  }
+}

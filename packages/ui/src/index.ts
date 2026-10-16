@@ -220,3 +220,12 @@ export type {
   PreviewCardRootProps,
   PreviewCardTriggerProps,
 } from "./preview-card/preview-card.tsx";
+export { Toolbar } from "./toolbar/toolbar.tsx";
+export type {
+  ToolbarButtonProps,
+  ToolbarGroupProps,
+  ToolbarInputProps,
+  ToolbarLinkProps,
+  ToolbarRootProps,
+  ToolbarSeparatorProps,
+} from "./toolbar/toolbar.tsx";

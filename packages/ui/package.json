@@ -73,6 +73,8 @@
     "./otp-field.css": "./src/otp-field/otp-field.css",
     "./preview-card": "./src/preview-card/preview-card.tsx",
     "./preview-card.css": "./src/preview-card/preview-card.css",
+    "./toolbar": "./src/toolbar/toolbar.tsx",
+    "./toolbar.css": "./src/toolbar/toolbar.css",
     "./themes/default.css": "./src/themes/default.css",
     "./package.json": "./package.json"
   },
@@ -132,6 +134,8 @@
       "./otp-field.css": "./dist/otp-field/otp-field.css",
       "./preview-card": "./dist/preview-card/preview-card.tsx",
       "./preview-card.css": "./dist/preview-card/preview-card.css",
+      "./toolbar": "./dist/toolbar/toolbar.tsx",
+      "./toolbar.css": "./dist/toolbar/toolbar.css",
       "./themes/default.css": "./dist/themes/default.css",
       "./package.json": "./package.json"
     }

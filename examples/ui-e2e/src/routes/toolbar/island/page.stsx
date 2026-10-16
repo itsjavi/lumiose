@@ -1,0 +1,12 @@
+import { Title } from "lumiose";
+import { ToolbarSignals } from "../../../islands/ToolbarSignals.tsx";
+
+export default function ToolbarIslandPage() {
+  return (
+    <>
+      <Title>Toolbar in an island</Title>
+      <h1>Toolbar in an island</h1>
+      <ToolbarSignals client:load />
+    </>
+  );
+}

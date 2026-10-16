@@ -1,0 +1,61 @@
+import { Menu, Toggle, ToggleGroup, Toolbar } from "@lumiose/ui";
+import { Title } from "lumiose";
+
+// Server-rendered, no island: `<lu-toolbar>`'s script moves focus between the items; the toggle
+// group inside presses its toggles and leaves its keys to the toolbar. Styled with the default
+// theme.
+export default function ToolbarPage() {
+  return (
+    <>
+      <Title>Toolbar</Title>
+      <h1>Toolbar</h1>
+      <Toolbar.Root aria-label="Formatting" class="lu-toolbar">
+        <ToggleGroup aria-label="Text style" multiple class="lu-toggle-group">
+          <Toggle value="bold" class="lu-toggle">
+            Bold
+          </Toggle>
+          <Toggle value="italic" class="lu-toggle">
+            Italic
+          </Toggle>
+        </ToggleGroup>
+        <Toolbar.Separator />
+        <Toolbar.Group aria-label="History">
+          <Toolbar.Button class="lu-button">Undo</Toolbar.Button>
+          <Toolbar.Button class="lu-button" disabled>
+            Redo
+          </Toolbar.Button>
+        </Toolbar.Group>
+        <Toolbar.Separator />
+        <Menu.Root>
+          <Menu.Trigger class="lu-button">Insert</Menu.Trigger>
+          <Menu.Popup class="lu-menu">
+            <Menu.Item>Image</Menu.Item>
+            <Menu.Item>Table</Menu.Item>
+          </Menu.Popup>
+        </Menu.Root>
+        <Toolbar.Link href="#help">Help</Toolbar.Link>
+        <Toolbar.Input aria-label="Font size" value="16" size={3} class="lu-input" />
+      </Toolbar.Root>
+      <p>
+        <button type="button" class="lu-button">
+          After the toolbar
+        </button>
+      </p>
+
+      <h2>Vertical, no loop, right to left</h2>
+      <div dir="rtl">
+        <Toolbar.Root
+          aria-label="Alignment"
+          orientation="vertical"
+          loopFocus={false}
+          class="lu-toolbar"
+        >
+          <Toolbar.Button class="lu-button">Start</Toolbar.Button>
+          <Toolbar.Button class="lu-button">Center</Toolbar.Button>
+          <Toolbar.Separator />
+          <Toolbar.Button class="lu-button">End</Toolbar.Button>
+        </Toolbar.Root>
+      </div>
+    </>
+  );
+}

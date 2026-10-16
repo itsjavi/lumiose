@@ -180,6 +180,12 @@ const COMPONENTS: Component[] = [
     scripts: ["preview-card/preview-card.script.ts"],
     css: "preview-card/preview-card.css",
   },
+  {
+    name: "toolbar",
+    module: "toolbar/toolbar.tsx",
+    scripts: ["toolbar/toolbar.script.ts", "button/button.script.ts"],
+    css: "toolbar/toolbar.css",
+  },
 ];
 
 const CLIENT_SCRIPT = /\?client$/;

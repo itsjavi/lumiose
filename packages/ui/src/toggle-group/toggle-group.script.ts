@@ -10,7 +10,9 @@
 //   and End, looping unless `data-loop-focus="false"`. Disabled toggles are native `disabled`
 //   buttons, which focus skips.
 //
-// A Toggle outside a group needs no script: the component presses it, in an island.
+// A Toggle outside a group needs no script: the component presses it, in an island. Inside a
+// Toolbar (`lu-toolbar`), the group still presses its toggles but leaves the tab stop and the
+// arrow keys to the toolbar, whose items its toggles are.
 //
 // It must not import `lumiose`: server-rendered pages load it without the runtime.
 
@@ -79,8 +81,14 @@ export class ToggleGroupElement extends HTMLElement {
     this.removeEventListener("focusin", this.#onFocusIn);
   }
 
+  /** Whether a Toolbar around the group moves focus instead. */
+  get #inToolbar(): boolean {
+    return this.closest("lu-toolbar") !== null;
+  }
+
   /** One tab stop: `to`, else the current one if still usable, else the first pressed or enabled. */
   #rove(to?: HTMLElement): void {
+    if (this.#inToolbar) return;
     const items = this.items;
     const usable = items.filter((item) => !item.disabled);
     const current = usable.find((item) => item.tabIndex === 0);
@@ -116,6 +124,7 @@ export class ToggleGroupElement extends HTMLElement {
   };
 
   #onKeyDown = (event: KeyboardEvent) => {
+    if (this.#inToolbar) return;
     const item = this.#itemOf(event);
     if (!item || event.isComposing || event.altKey || event.ctrlKey || event.metaKey) return;
     const vertical = this.dataset.orientation === "vertical";

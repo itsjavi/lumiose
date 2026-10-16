@@ -4,6 +4,7 @@
 // the component presses it, in an island.
 import { effect, onCleanup, signal, untrack, useContext } from "lumiose";
 import type { ToggleChangeDetail } from "../toggle-group/toggle-group.script.ts";
+import { ToolbarContext } from "../toolbar/context.ts";
 import { ToggleGroupContext, type ToggleRecord } from "./context.ts";
 
 /**
@@ -43,6 +44,8 @@ export function Toggle({
   ...rest
 }: ToggleProps) {
   const group = useContext(ToggleGroupContext);
+  // Inside a Toolbar, the toolbar's single tab stop (TASK-383).
+  const toolbar = useContext(ToolbarContext);
   // Standalone: the component holds the state; in a group, the group's element and value do.
   const state = signal(untrack(() => pressed ?? defaultPressed ?? false));
   effect(() => {
@@ -59,6 +62,7 @@ export function Toggle({
    * when none is pressed. The element keeps it from then on.
    */
   const stop = untrack(() => {
+    if (toolbar) return toolbar.stop();
     if (!group) return undefined;
     const usable = group.items().filter((each) => !each.disabled() && !group.disabled());
     const values = group.values();
