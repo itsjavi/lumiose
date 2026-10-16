@@ -139,6 +139,10 @@ submission work with no script, and the slots stay hidden. `<lu-otp-field>`'s sc
 brotli) shows the slots, cleans the value as it changes (firing `valueinvalid` for refused input),
 fires `valuecomplete`, auto-submits, and follows a form reset.
 
+A numeric code (`validationType="numeric"`, the default) renders `dir="ltr"` on the Root: its
+slots run left to right in a right-to-left page too, as digits read there. Other codes follow the
+page; pass `dir` to choose.
+
 ## Browser support
 
 `autocomplete="one-time-code"`: Safari (iOS, macOS) and Chrome on Android offer received codes;

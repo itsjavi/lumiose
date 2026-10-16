@@ -5,6 +5,9 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
 import { axe, clipped, lastNavLink, SCHEMES, smallTargets, TEXT_SPACING } from "./a11y.ts";
 
+/** Puts the whole page right to left. */
+const rtl = (page: Page) => page.evaluate(() => (document.documentElement.dir = "rtl"));
+
 const lumioseWarnings = (page: Page) => {
   const warnings: string[] = [];
   page.on("console", (message) => {
@@ -272,5 +275,19 @@ test.describe("WCAG 2.2 AA with the default theme (doc-9 section 17)", () => {
     const box = (await main.boundingBox())!;
     expect(box.x + box.width).toBeLessThanOrEqual(320);
     expect(await clipped(main)).toEqual([]);
+  });
+});
+
+test.describe("right to left (TASK-385)", () => {
+  test("Arrow Left moves to the next item and Arrow Right back", async ({ page }) => {
+    await page.goto("/menubar");
+    await ready(page);
+    await rtl(page);
+    const editor = bar(page, "Editor");
+    await editor.item("File").focus();
+    await page.keyboard.press("ArrowLeft");
+    await expect(editor.item("Edit")).toBeFocused();
+    await page.keyboard.press("ArrowRight");
+    await expect(editor.item("File")).toBeFocused();
   });
 });

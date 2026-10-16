@@ -16,6 +16,9 @@ import {
   TEXT_SPACING,
 } from "./a11y.ts";
 
+/** Puts the whole page right to left. */
+const rtl = (page: Page) => page.evaluate(() => (document.documentElement.dir = "rtl"));
+
 const lumioseWarnings = (page: Page) => {
   const warnings: string[] = [];
   page.on("console", (message) => {
@@ -394,5 +397,19 @@ test.describe("WCAG 2.2 AA with the default theme (doc-9 section 17)", () => {
       expect.stringMatching(/\/field\.script-[\w-]+\.js$/),
     ]);
     await expect(page.locator("script[data-l-islands]")).toHaveCount(0);
+  });
+});
+
+test.describe("right to left (TASK-385)", () => {
+  test("a radio group's Arrow Left goes to the next radio", async ({ page }) => {
+    await ready(page);
+    await rtl(page);
+    const group = page.getByRole("radiogroup", { name: "Size" });
+    const radio = (name: string) => group.getByRole("radio", { name });
+    await radio("Small").focus();
+    await page.keyboard.press("ArrowLeft");
+    await expect(radio("Medium")).toBeFocused();
+    await page.keyboard.press("ArrowRight");
+    await expect(radio("Small")).toBeFocused();
   });
 });

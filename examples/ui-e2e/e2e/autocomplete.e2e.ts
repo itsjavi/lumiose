@@ -17,6 +17,9 @@ import {
   TEXT_SPACING,
 } from "./a11y.ts";
 
+/** Puts the whole page right to left. */
+const rtl = (page: Page) => page.evaluate(() => (document.documentElement.dir = "rtl"));
+
 /** Lumiose's console warnings (LUM codes), such as a hydration that fell back to rendering. */
 const lumioseWarnings = (page: Page) => {
   const warnings: string[] = [];
@@ -257,5 +260,20 @@ test.describe("WCAG 2.2 AA with the default theme (doc-9 section 17)", () => {
       expect.stringMatching(/\/layer-[\w-]+\.js$/),
       expect.stringMatching(/\/place-[\w-]+\.js$/),
     ]);
+  });
+});
+
+test.describe("right to left (TASK-385)", () => {
+  test("the suggestions line up with the input's inline start: its right edge", async ({
+    page,
+  }) => {
+    await ready(page);
+    await rtl(page);
+    const tag = await parts(page, "Tag");
+    await tag.input.pressSequentially("a");
+    await expect(tag.input).toHaveAttribute("aria-expanded", "true");
+    const popup = tag.list.locator("xpath=ancestor-or-self::*[@popover][1]");
+    const [field, box] = [await tag.input.boundingBox(), await popup.boundingBox()];
+    expect(Math.abs(field!.x + field!.width - (box!.x + box!.width))).toBeLessThan(2);
   });
 });

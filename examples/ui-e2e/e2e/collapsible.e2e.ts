@@ -13,6 +13,9 @@ import {
   TEXT_SPACING,
 } from "./a11y.ts";
 
+/** Puts the whole page right to left. */
+const rtl = (page: Page) => page.evaluate(() => (document.documentElement.dir = "rtl"));
+
 const root = (page: Page, id: string) => page.getByTestId(id);
 const trigger = (scope: Locator) => scope.locator(":scope > summary");
 const isOpen = (scope: Locator) => scope.evaluate((details: HTMLDetailsElement) => details.open);
@@ -156,5 +159,20 @@ test.describe("WCAG 2.2 AA with the default theme (doc-9 section 17)", () => {
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(
       320,
     );
+  });
+});
+
+test.describe("right to left (TASK-385)", () => {
+  test("the chevron still points down when closed and up when open", async ({ page }) => {
+    await page.goto("/collapsible");
+    await rtl(page);
+    // Drawn from the right and bottom borders, rotated: the same shape in either direction.
+    const sides = (id: string) =>
+      trigger(root(page, id)).evaluate((summary) => {
+        const style = getComputedStyle(summary, "::after");
+        return [style.borderRightStyle, style.borderBottomStyle, style.borderLeftStyle];
+      });
+    expect(await sides("keys")).toEqual(["solid", "solid", "none"]);
+    expect(await sides("open")).toEqual(["solid", "solid", "none"]);
   });
 });

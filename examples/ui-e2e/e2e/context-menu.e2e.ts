@@ -5,6 +5,9 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
 import { axe, focusRing, SCHEMES, smallTargets } from "./a11y.ts";
 
+/** Puts the whole page right to left. */
+const rtl = (page: Page) => page.evaluate(() => (document.documentElement.dir = "rtl"));
+
 const area = (page: Page, id = "area") => page.getByTestId(id);
 const menu = (page: Page, name = "File actions") => page.getByRole("menu", { name });
 const item = (page: Page, name: string) => page.getByRole("menuitem", { name, exact: true });
@@ -201,5 +204,26 @@ test.describe("WCAG 2.2 AA with the default theme (doc-9 section 17)", () => {
     await expect(item(page, "Rename")).toBeFocused();
     expect(await focusRing(page)).not.toBe("none");
     expect(await smallTargets(menu(page))).toEqual([]);
+  });
+});
+
+test.describe("right to left (TASK-385)", () => {
+  test("a submenu opens with Arrow Left and closes with Arrow Right", async ({ page }) => {
+    await page.goto("/context-menu");
+    await rtl(page);
+    await area(page).focus();
+    await page.keyboard.press("Shift+F10");
+    await page.keyboard.press("End");
+    await expect(item(page, "Move to")).toBeFocused();
+    await page.keyboard.press("ArrowLeft");
+    await expect(item(page, "Archive")).toBeFocused();
+    const [parent, sub] = [
+      await item(page, "Move to").boundingBox(),
+      await item(page, "Archive").boundingBox(),
+    ];
+    // The submenu opens toward the inline end: the left.
+    expect(sub!.x + sub!.width).toBeLessThanOrEqual(parent!.x + 2);
+    await page.keyboard.press("ArrowRight");
+    await expect(item(page, "Move to")).toBeFocused();
   });
 });

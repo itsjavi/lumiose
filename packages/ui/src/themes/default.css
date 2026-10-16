@@ -321,18 +321,20 @@
     color: var(--lu-foreground);
     box-shadow: inset 0 -2px var(--lu-foreground);
   }
+  /*
+   * Logical sides, so a vertical list mirrors right to left without `:dir()` (which Lightning CSS
+   * lowers to `:lang()`s that miss a `dir` attribute, TASK-385).
+   */
   .lu-tabs [aria-orientation="vertical"] [role="tab"] {
-    border-radius: calc(var(--lu-radius) - 4px) 0 0 calc(var(--lu-radius) - 4px);
+    border-radius: 0;
+    border-start-start-radius: calc(var(--lu-radius) - 4px);
+    border-end-start-radius: calc(var(--lu-radius) - 4px);
+    border-inline-end: 2px solid transparent;
     text-align: start;
   }
   .lu-tabs [aria-orientation="vertical"] [role="tab"][aria-selected="true"] {
-    box-shadow: inset -2px 0 var(--lu-foreground);
-  }
-  .lu-tabs [aria-orientation="vertical"] [role="tab"]:dir(rtl) {
-    border-radius: 0 calc(var(--lu-radius) - 4px) calc(var(--lu-radius) - 4px) 0;
-  }
-  .lu-tabs [aria-orientation="vertical"] [role="tab"][aria-selected="true"]:dir(rtl) {
-    box-shadow: inset 2px 0 var(--lu-foreground);
+    border-inline-end-color: var(--lu-foreground);
+    box-shadow: none;
   }
   /* Dimmed by its text, not `opacity`, which would dim its focus ring too (disabled tabs take focus). */
   .lu-tabs [role="tab"][aria-disabled="true"] {
@@ -419,8 +421,15 @@
     margin-inline-start: auto;
     padding-inline-start: 1rem;
   }
-  .lu-menu :where([role="menuitem"][aria-haspopup="menu"]:dir(rtl))::after {
+  /* Not `:dir(rtl)`: Lightning CSS lowers it to `:lang()`s, which miss a `dir` attribute. */
+  :where([dir="rtl"]) .lu-menu :where([role="menuitem"][aria-haspopup="menu"])::after {
     content: "‹" / "";
+  }
+  :where([dir="rtl"])
+    :where([dir="ltr"])
+    .lu-menu
+    :where([role="menuitem"][aria-haspopup="menu"])::after {
+    content: "›" / "";
   }
   .lu-menu :where([role="separator"]) {
     block-size: 1px;
@@ -966,8 +975,9 @@
     flex: none;
     inline-size: 0.4375rem;
     block-size: 0.4375rem;
-    border-block-end: 1.5px solid currentColor;
-    border-inline-end: 1.5px solid currentColor;
+    /* Physical sides: rotated, they draw a down chevron in either direction (TASK-385). */
+    border-bottom: 1.5px solid currentColor;
+    border-right: 1.5px solid currentColor;
     rotate: 45deg;
     translate: 0 -25%;
   }
@@ -1253,6 +1263,16 @@
   @media (prefers-reduced-motion: no-preference) {
     .lu-progress > progress:indeterminate {
       animation: lu-progress-slide 1.4s linear infinite;
+    }
+    /*
+     * Right to left, the segment slides the other way (TASK-385). Not `:dir(rtl)`: Lightning CSS
+     * lowers it to a list of `:lang()`s, which misses a `dir` attribute.
+     */
+    :where([dir="rtl"]) .lu-progress > progress:indeterminate {
+      animation-direction: reverse;
+    }
+    :where([dir="rtl"]) :where([dir="ltr"]) .lu-progress > progress:indeterminate {
+      animation-direction: normal;
     }
   }
   @keyframes lu-progress-slide {

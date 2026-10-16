@@ -6,6 +6,9 @@
 import { expect, test, type Page } from "@playwright/test";
 import { axe, lastNavLink, SCHEMES } from "./a11y.ts";
 
+/** Puts the whole page right to left. */
+const rtl = (page: Page) => page.evaluate(() => (document.documentElement.dir = "rtl"));
+
 /** Lumiose's console warnings (LUM codes), such as a hydration that fell back to rendering. */
 const lumioseWarnings = (page: Page) => {
   const warnings: string[] = [];
@@ -165,5 +168,17 @@ test.describe("WCAG 2.2 AA with the default theme (doc-9 section 17)", () => {
     for (const script of scripts) {
       expect(script).toMatch(/\/(preview-card\.script|layer|place|hover)-[\w-]+\.js$/);
     }
+  });
+});
+
+test.describe("right to left (TASK-385)", () => {
+  test("hover and focus open the card below its link, as left to right", async ({ page }) => {
+    await ready(page);
+    await rtl(page);
+    await hover(page, "islands");
+    const islands = card(page, "Interactive components");
+    await expect(islands).toBeVisible();
+    const [a, b] = [await link(page, "islands").boundingBox(), await islands.boundingBox()];
+    expect(b!.y).toBeGreaterThan(a!.y + a!.height);
   });
 });

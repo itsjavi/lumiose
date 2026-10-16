@@ -6,6 +6,9 @@
 import { expect, test, type Page } from "@playwright/test";
 import { axe, clipped, lastNavLink, SCHEMES, smallTargets, TEXT_SPACING } from "./a11y.ts";
 
+/** Puts the whole page right to left. */
+const rtl = (page: Page) => page.evaluate(() => (document.documentElement.dir = "rtl"));
+
 /** Lumiose's console warnings (LUM codes), such as a hydration that fell back to rendering. */
 const lumioseWarnings = (page: Page) => {
   const warnings: string[] = [];
@@ -262,5 +265,19 @@ test.describe("WCAG 2.2 AA with the default theme (doc-9 section 17)", () => {
       expect.stringMatching(/\/number-field\.script-[\w-]+\.js$/),
     ]);
     await expect(page.locator("script[data-l-islands]")).toHaveCount(0);
+  });
+});
+
+test.describe("right to left (TASK-385)", () => {
+  test("dragging the scrub area toward the left steps up", async ({ page }) => {
+    await ready(page);
+    await rtl(page);
+    const label = page.locator("label[for=price]");
+    const box = (await label.boundingBox())!;
+    await page.mouse.move(box.x + box.width - 5, box.y + box.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(box.x + box.width - 25, box.y + box.height / 2, { steps: 5 });
+    await page.mouse.up();
+    await expect(field(page, "Price")).toHaveValue("$1,239.50");
   });
 });

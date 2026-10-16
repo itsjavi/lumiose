@@ -14,6 +14,9 @@ import {
   TEXT_SPACING,
 } from "./a11y.ts";
 
+/** Puts the whole page right to left. */
+const rtl = (page: Page) => page.evaluate(() => (document.documentElement.dir = "rtl"));
+
 const lumioseWarnings = (page: Page) => {
   const warnings: string[] = [];
   page.on("console", (message) => {
@@ -504,5 +507,18 @@ test.describe("WCAG 2.2 AA with the default theme (doc-9 section 17)", () => {
     await city(page);
     expect(scripts).toContainEqual(expect.stringMatching(/\/combobox\.script-[\w-]+\.js$/));
     await expect(page.locator("script[data-l-islands]")).toHaveCount(0);
+  });
+});
+
+test.describe("right to left (TASK-385)", () => {
+  test("the popup lines up with the input's inline start: its right edge", async ({ page }) => {
+    await page.goto("/combobox");
+    await rtl(page);
+    const { input, list } = await city(page);
+    await input.click();
+    await expect(input).toHaveAttribute("aria-expanded", "true");
+    const popup = list.locator("xpath=ancestor-or-self::*[@popover][1]");
+    const [field, box] = [await input.boundingBox(), await popup.boundingBox()];
+    expect(Math.abs(field!.x + field!.width - (box!.x + box!.width))).toBeLessThan(2);
   });
 });

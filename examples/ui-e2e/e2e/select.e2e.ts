@@ -5,6 +5,9 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
 import { axe, focusRing, lastNavLink, SCHEMES, smallTargets } from "./a11y.ts";
 
+/** Puts the whole page right to left. */
+const rtl = (page: Page) => page.evaluate(() => (document.documentElement.dir = "rtl"));
+
 const isOpen = (select: Locator) => select.evaluate((el) => el.matches(":open"));
 
 function fruit(page: Page) {
@@ -189,5 +192,17 @@ test.describe("WCAG 2.2 AA with the default theme (doc-9 section 17)", () => {
         all.map((el) => el.getBoundingClientRect()).filter((b) => b.height < 24 || b.width < 24),
       );
     expect(small).toEqual([]);
+  });
+});
+
+test.describe("right to left (TASK-385)", () => {
+  test("the picker lines up with the select's inline start: its right edge", async ({ page }) => {
+    await page.goto("/select");
+    await rtl(page);
+    const { select, option } = fruit(page);
+    await select.click();
+    await expect(option("Pear")).toBeVisible();
+    const [control, picked] = [await select.boundingBox(), await option("Apple").boundingBox()];
+    expect(Math.abs(control!.x + control!.width - (picked!.x + picked!.width))).toBeLessThan(24);
   });
 });

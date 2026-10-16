@@ -100,6 +100,9 @@ A progress bar is not interactive: it takes no focus and no keys.
 Fully: the server renders the `<progress>` with its value, the label and the text. It changes when
 the component renders again (in an island, from a signal).
 
+Right to left, the native bar fills from the right, and the default theme's indeterminate
+segment slides leftward.
+
 ## Browser support
 
 Native `<progress>`: every browser. Its pseudo-elements differ between engines, hence the two sets

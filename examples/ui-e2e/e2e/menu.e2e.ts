@@ -630,3 +630,14 @@ test.describe("WCAG 2.2 AA with the default theme (doc-9 section 17)", () => {
     expect(await clipped(menu)).toEqual([]);
   });
 });
+
+test.describe("right to left, in the production CSS too (TASK-385)", () => {
+  test("a submenu item's arrow points left", async ({ page }) => {
+    await page.goto("/menu");
+    await page.evaluate(() => (document.documentElement.dir = "rtl"));
+    const { trigger, item } = actions(page);
+    await trigger.click();
+    const arrow = await item("Share").evaluate((el) => getComputedStyle(el, "::after").content);
+    expect(arrow).toContain("‹");
+  });
+});

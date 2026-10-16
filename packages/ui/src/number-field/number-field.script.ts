@@ -18,7 +18,7 @@
 //   holding it steps again and again; a click from the keyboard or assistive technology steps once.
 //   They are disabled at the ends of the range.
 // - A `[data-scrub]` area: dragging across it steps the value (`data-direction`, horizontal or
-//   vertical, and `data-pixel-sensitivity`, pixels per step).
+//   vertical, and `data-pixel-sensitivity`, pixels per step); right to left, leftward goes up.
 // - The wheel steps the value only while the input has focus and the pointer is over it, with
 //   `allow-wheel-scrub`, and never otherwise (Chromium's native stepping of a focused number input
 //   is cancelled).
@@ -404,6 +404,8 @@ export class NumberFieldElement extends HTMLElement {
   #scrub(area: HTMLElement, event: PointerEvent): void {
     event.preventDefault();
     const vertical = area.dataset.direction === "vertical";
+    // Right to left, a horizontal drag goes up toward the left, as a slider does (TASK-385).
+    const sign = !vertical && getComputedStyle(area).direction === "rtl" ? -1 : 1;
     const sensitivity = finite(area.dataset.pixelSensitivity ?? null) ?? 2;
     let travelled = 0;
     let last = vertical ? event.clientY : event.clientX;
@@ -411,7 +413,7 @@ export class NumberFieldElement extends HTMLElement {
       if (next.pointerId !== event.pointerId) return;
       const position = vertical ? next.clientY : next.clientX;
       // Right and up go up.
-      travelled += vertical ? last - position : position - last;
+      travelled += vertical ? last - position : (position - last) * sign;
       last = position;
       const steps = Math.trunc(travelled / sensitivity);
       if (steps === 0) return;

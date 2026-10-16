@@ -206,6 +206,9 @@ function Root({
       <lu-otp-field
         {...rest}
         ref={element}
+        // Digits read left to right in right-to-left pages too: a numeric code's slots run that
+        // way unless `dir` says otherwise (TASK-385). Letters follow the page.
+        dir={rest.dir ?? (type() === "numeric" ? "ltr" : undefined)}
         length={length}
         validation-type={type()}
         mask={mask}

@@ -113,6 +113,27 @@ custom properties, named as in shadcn/ui, are listed in [Theming](theming.md#the
 | [Menubar](menubar.md)                 | Available: Menus in a `role="menubar"`, `<lu-menubar>` moves between them                 |
 | [Navigation Menu](navigation-menu.md) | Available: a `<nav>` whose triggers open panels of links, works without JavaScript        |
 
+## Right to left
+
+There is no direction provider: every component reads the direction from the page, the `dir`
+attribute on `<html>` or on any container around it, when it acts (TASK-385). Right to left:
+
+- **Arrow keys** that move along a row swap: Tabs, Toggle Group, Toolbar, Menubar, Navigation
+  Menu, Accordion's and Menu's submenu keys, a Radio group (the browser's), Slider and Number
+  Field's scrub area (leftward goes up).
+- **Placement** follows logical sides and alignment: `inline-start` and `inline-end` sides, and
+  `align="start"` or `"end"`, mirror; `left` and `right` sides stay physical, as in Base UI.
+- **Sliders and scrollbars** run from the right: a Slider's track and Indicator, a Scroll Area's
+  horizontal thumb, a Progress or Meter bar (the indeterminate segment slides leftward).
+- **Swipes** are physical: a Toast or a Drawer swiped right goes right in either direction.
+- **The theme** uses logical properties (`inset-inline-*`, `margin-inline-*`, `border-inline-*`),
+  so it mirrors with no extra rule. A numeric OTP Field keeps its slots left to right, as digits
+  read in right-to-left scripts too.
+
+The theme avoids `:dir()`: Lightning CSS, which minifies production CSS, lowers it to a list of
+`:lang()` selectors that misses a `dir` attribute. It uses `[dir="rtl"]` around the component
+instead, or logical properties.
+
 ## Size
 
 `@lumiose/ui` is opt-in, so its size is reported apart from the runtime's caps:
@@ -3909,7 +3930,8 @@ scrub area its resize cursor and `touch-action: none`.
 | Enter                   | Commits the typed number (clamped, formatted); a form submits.            |
 | Tab                     | Moves on: one tab stop, the input (the buttons are not in the tab order). |
 
-A press on a button steps once and keeps focus where it is; holding it steps again every 60 ms
+Right to left, dragging the scrub area toward the left steps up, as a slider runs. A press on a
+button steps once and keeps focus where it is; holding it steps again every 60 ms
 after 400 ms. A click from a keyboard or a screen reader on a button steps once. Every drag (the
 scrub area) has the arrow keys as its alternative (WCAG 2.5.7). The wheel steps the number only
 with `allowWheelScrub`, while the input has focus and the pointer is over it (Chromium's own
@@ -4079,6 +4101,10 @@ The input is a native text field: autofill, typing, paste, `pattern` and `requir
 submission work with no script, and the slots stay hidden. `<lu-otp-field>`'s script (1.2 kB
 brotli) shows the slots, cleans the value as it changes (firing `valueinvalid` for refused input),
 fires `valuecomplete`, auto-submits, and follows a form reset.
+
+A numeric code (`validationType="numeric"`, the default) renders `dir="ltr"` on the Root: its
+slots run left to right in a right-to-left page too, as digits read there. Other codes follow the
+page; pass `dir` to choose.
 
 ## Browser support
 
@@ -4577,6 +4603,9 @@ A progress bar is not interactive: it takes no focus and no keys.
 
 Fully: the server renders the `<progress>` with its value, the label and the text. It changes when
 the component renders again (in an island, from a signal).
+
+Right to left, the native bar fills from the right, and the default theme's indeterminate
+segment slides leftward.
 
 ## Browser support
 

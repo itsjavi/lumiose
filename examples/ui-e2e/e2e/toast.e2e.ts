@@ -6,6 +6,9 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
 import { axe, clipped, SCHEMES, smallTargets, TEXT_SPACING } from "./a11y.ts";
 
+/** Puts the whole page right to left. */
+const rtl = (page: Page) => page.evaluate(() => (document.documentElement.dir = "rtl"));
+
 const viewport = (page: Page) => page.getByRole("region", { name: "Notifications (F6)" });
 /** A toast by its title (a text match: role queries skip the hidden ones past the limit). */
 const toast = (page: Page, title: string) =>
@@ -228,5 +231,15 @@ test.describe("WCAG 2.2 AA with the default theme (doc-9 section 17)", () => {
     const box = (await error.boundingBox())!;
     expect(box.x).toBeGreaterThanOrEqual(0);
     expect(box.x + box.width).toBeLessThanOrEqual(320);
+  });
+});
+
+test.describe("right to left (TASK-385)", () => {
+  test("the viewport sits at the inline end: the bottom left", async ({ page }) => {
+    await page.goto("/toast");
+    await rtl(page);
+    const box = (await viewport(page).boundingBox())!;
+    const width = page.viewportSize()!.width;
+    expect(box.x).toBeLessThan(width / 2);
   });
 });

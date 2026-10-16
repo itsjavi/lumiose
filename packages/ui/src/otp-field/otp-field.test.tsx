@@ -22,7 +22,13 @@ describe("OTPField on the server", () => {
       </OTPField.Root>
     ));
     const root = attrs(html, "lu-otp-field");
-    expect(root).toEqual({ length: "4", "validation-type": "numeric", "auto-submit": "" });
+    // Digits read left to right, in a right-to-left page too.
+    expect(root).toEqual({
+      dir: "ltr",
+      length: "4",
+      "validation-type": "numeric",
+      "auto-submit": "",
+    });
     expect(attrs(html, "input")).toEqual({
       spellcheck: "false",
       autocapitalize: "off",
@@ -59,6 +65,8 @@ describe("OTPField on the server", () => {
       </OTPField.Root>
     ));
     expect(attrs(html, "lu-otp-field")).toMatchObject({ mask: "" });
+    // Letters follow the page's direction.
+    expect(attrs(html, "lu-otp-field")).not.toHaveProperty("dir");
     expect(attrs(html, "input")).toMatchObject({
       inputmode: "text",
       pattern: "[\\p{L}\\p{Nd}]{3}",

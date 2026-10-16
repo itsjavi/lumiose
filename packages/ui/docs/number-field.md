@@ -136,7 +136,8 @@ scrub area its resize cursor and `touch-action: none`.
 | Enter                   | Commits the typed number (clamped, formatted); a form submits.            |
 | Tab                     | Moves on: one tab stop, the input (the buttons are not in the tab order). |
 
-A press on a button steps once and keeps focus where it is; holding it steps again every 60 ms
+Right to left, dragging the scrub area toward the left steps up, as a slider runs. A press on a
+button steps once and keeps focus where it is; holding it steps again every 60 ms
 after 400 ms. A click from a keyboard or a screen reader on a button steps once. Every drag (the
 scrub area) has the arrow keys as its alternative (WCAG 2.5.7). The wheel steps the number only
 with `allowWheelScrub`, while the input has focus and the pointer is over it (Chromium's own

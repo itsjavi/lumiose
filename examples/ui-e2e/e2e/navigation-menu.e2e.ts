@@ -6,6 +6,9 @@
 import { expect, test, type Page } from "@playwright/test";
 import { axe, clipped, lastNavLink, SCHEMES, smallTargets, TEXT_SPACING } from "./a11y.ts";
 
+/** Puts the whole page right to left. */
+const rtl = (page: Page) => page.evaluate(() => (document.documentElement.dir = "rtl"));
+
 const lumioseWarnings = (page: Page) => {
   const warnings: string[] = [];
   page.on("console", (message) => {
@@ -257,5 +260,20 @@ test.describe("WCAG 2.2 AA with the default theme (doc-9 section 17)", () => {
     const box = (await main.boundingBox())!;
     expect(box.x + box.width).toBeLessThanOrEqual(320);
     expect(await clipped(main)).toEqual([]);
+  });
+});
+
+test.describe("right to left (TASK-385)", () => {
+  test("Arrow Left moves to the next trigger and Arrow Right back, looping", async ({ page }) => {
+    await page.goto("/navigation-menu");
+    await ready(page);
+    await rtl(page);
+    await trigger(page, "Products").focus();
+    await page.keyboard.press("ArrowLeft");
+    await expect(trigger(page, "Learn")).toBeFocused();
+    await page.keyboard.press("ArrowRight");
+    await expect(trigger(page, "Products")).toBeFocused();
+    await page.keyboard.press("ArrowRight");
+    await expect(page.getByRole("link", { name: "Pricing" })).toBeFocused();
   });
 });

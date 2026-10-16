@@ -5,6 +5,9 @@
 import { expect, test, type Page } from "@playwright/test";
 import { axe, clipped, SCHEMES } from "./a11y.ts";
 
+/** Puts the whole page right to left. */
+const rtl = (page: Page) => page.evaluate(() => (document.documentElement.dir = "rtl"));
+
 const tip = (page: Page, text: string) => page.getByRole("tooltip").filter({ hasText: text });
 
 /** Rests the mouse on the middle of a button. */
@@ -279,5 +282,20 @@ test.describe("WCAG 2.2 AA with the default theme (doc-9 section 17)", () => {
       expect(await clipped(open)).toEqual([]);
       await page.keyboard.press("Escape");
     }
+  });
+});
+
+test.describe("right to left (TASK-385)", () => {
+  test("a physical side stays put: a right tip is right of its trigger", async ({ page }) => {
+    await page.goto("/tooltip");
+    await rtl(page);
+    await hover(page, "Not hoverable");
+    const popup = tip(page, "Closes when the pointer leaves the trigger");
+    await expect(popup).toBeVisible();
+    const [a, b] = [
+      await page.getByRole("button", { name: "Not hoverable" }).boundingBox(),
+      await popup.boundingBox(),
+    ];
+    expect(b!.x).toBeGreaterThanOrEqual(a!.x + a!.width - 1);
   });
 });

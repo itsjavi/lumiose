@@ -4,6 +4,9 @@
 import { expect, test, type Page } from "@playwright/test";
 import { axe, clipped, SCHEMES, TEXT_SPACING } from "./a11y.ts";
 
+/** Puts the whole page right to left. */
+const rtl = (page: Page) => page.evaluate(() => (document.documentElement.dir = "rtl"));
+
 /** Lumiose's console warnings (LUM codes), such as a hydration that fell back to rendering. */
 const lumioseWarnings = (page: Page) => {
   const warnings: string[] = [];
@@ -110,5 +113,22 @@ test.describe("WCAG 2.2 AA with the default theme (doc-9 section 17)", () => {
     await page.goto("/progress");
     await page.waitForLoadState("networkidle");
     expect(scripts).toEqual([]);
+  });
+});
+
+test.describe("right to left (TASK-385)", () => {
+  test("the bar fills from the right, and the indeterminate segment slides leftward", async ({
+    page,
+  }) => {
+    await page.emulateMedia({ reducedMotion: "no-preference" });
+    await page.goto("/progress");
+    await rtl(page);
+    const loading = page.getByRole("progressbar", { name: "Loading", exact: true });
+    expect(await loading.evaluate((el) => getComputedStyle(el).animationDirection)).toBe("reverse");
+    expect(
+      await page
+        .getByRole("progressbar", { name: "Uploading" })
+        .evaluate((el) => getComputedStyle(el).direction),
+    ).toBe("rtl");
   });
 });

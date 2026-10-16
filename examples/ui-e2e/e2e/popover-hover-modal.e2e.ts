@@ -9,6 +9,9 @@
 import { expect, test, type Page } from "@playwright/test";
 import { axe, focusRing, lastNavLink, SCHEMES, smallTargets } from "./a11y.ts";
 
+/** Puts the whole page right to left. */
+const rtl = (page: Page) => page.evaluate(() => (document.documentElement.dir = "rtl"));
+
 /** Lumiose's console warnings (LUM codes), such as a hydration that fell back to rendering. */
 const lumioseWarnings = (page: Page) => {
   const warnings: string[] = [];
@@ -257,5 +260,19 @@ test.describe("WCAG 2.2 AA with the default theme (doc-9 section 17)", () => {
       expect.stringMatching(/\/place-[\w-]+\.js$/),
       expect.stringMatching(/\/popover\.script-[\w-]+\.js$/),
     ]);
+  });
+});
+
+test.describe("right to left (TASK-385)", () => {
+  test("a modal popover aligned to the start lines up with its trigger's right edge", async ({
+    page,
+  }) => {
+    await ready(page);
+    await rtl(page);
+    await trigger(page, "Rename").click();
+    const rename = card(page, "Rename the file");
+    await expect(rename).toBeVisible();
+    const [a, b] = [await trigger(page, "Rename").boundingBox(), await rename.boundingBox()];
+    expect(Math.abs(a!.x + a!.width - (b!.x + b!.width))).toBeLessThan(2);
   });
 });

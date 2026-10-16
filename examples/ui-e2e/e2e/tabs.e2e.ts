@@ -257,3 +257,17 @@ test.describe("WCAG 2.2 AA with the default theme (doc-9 section 17)", () => {
     );
   });
 });
+
+test.describe("right to left, in the production CSS too (TASK-385)", () => {
+  test("a vertical list marks the selected tab on its inline end: the left", async ({ page }) => {
+    await page.goto("/tabs");
+    await page.evaluate(() => (document.documentElement.dir = "rtl"));
+    const vertical = root(page, "vertical");
+    const selected = vertical.locator('[role="tab"][aria-selected="true"]');
+    const sides = await selected.evaluate((el) => {
+      const style = getComputedStyle(el);
+      return [style.borderLeftWidth, style.borderLeftColor === style.color, style.borderRightWidth];
+    });
+    expect(sides).toEqual(["2px", true, "0px"]);
+  });
+});

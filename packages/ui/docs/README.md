@@ -102,6 +102,27 @@ custom properties, named as in shadcn/ui, are listed in [Theming](theming.md#the
 | [Menubar](menubar.md)                 | Available: Menus in a `role="menubar"`, `<lu-menubar>` moves between them                 |
 | [Navigation Menu](navigation-menu.md) | Available: a `<nav>` whose triggers open panels of links, works without JavaScript        |
 
+## Right to left
+
+There is no direction provider: every component reads the direction from the page, the `dir`
+attribute on `<html>` or on any container around it, when it acts (TASK-385). Right to left:
+
+- **Arrow keys** that move along a row swap: Tabs, Toggle Group, Toolbar, Menubar, Navigation
+  Menu, Accordion's and Menu's submenu keys, a Radio group (the browser's), Slider and Number
+  Field's scrub area (leftward goes up).
+- **Placement** follows logical sides and alignment: `inline-start` and `inline-end` sides, and
+  `align="start"` or `"end"`, mirror; `left` and `right` sides stay physical, as in Base UI.
+- **Sliders and scrollbars** run from the right: a Slider's track and Indicator, a Scroll Area's
+  horizontal thumb, a Progress or Meter bar (the indeterminate segment slides leftward).
+- **Swipes** are physical: a Toast or a Drawer swiped right goes right in either direction.
+- **The theme** uses logical properties (`inset-inline-*`, `margin-inline-*`, `border-inline-*`),
+  so it mirrors with no extra rule. A numeric OTP Field keeps its slots left to right, as digits
+  read in right-to-left scripts too.
+
+The theme avoids `:dir()`: Lightning CSS, which minifies production CSS, lowers it to a list of
+`:lang()` selectors that misses a `dir` attribute. It uses `[dir="rtl"]` around the component
+instead, or logical properties.
+
 ## Size
 
 `@lumiose/ui` is opt-in, so its size is reported apart from the runtime's caps:
