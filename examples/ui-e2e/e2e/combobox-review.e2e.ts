@@ -180,3 +180,47 @@ test.describe("Combobox Lows (TASK-454, L32)", () => {
     await expect(page).toHaveURL(/[?&]q=/);
   });
 });
+
+test.describe("Escape on a closed combobox clears it, as Base UI's (TASK-465)", () => {
+  test("a value: the first Escape clears it and fires change, the next one reaches the dialog", async ({
+    page,
+  }) => {
+    await page.goto("/combobox");
+    await page.getByRole("button", { name: "Choose a language" }).click();
+    const dialog = page.getByRole("dialog", { name: "Language" });
+    const input = dialog.getByRole("combobox", { name: "Language" });
+    const root = dialog.locator("lu-combobox");
+    await input.click();
+    await page.getByRole("option", { name: "Português" }).click();
+    await expect(input).toHaveValue("Português");
+    await expect(input).toHaveAttribute("aria-expanded", "false");
+    await root.evaluate((el) => {
+      (window as unknown as { changes: number }).changes = 0;
+      el.addEventListener("change", () => (window as unknown as { changes: number }).changes++);
+    });
+    await page.keyboard.press("Escape");
+    await expect(input).toHaveValue("");
+    expect(await value(root)).toBe("");
+    expect(await page.evaluate(() => (window as unknown as { changes: number }).changes)).toBe(1);
+    await expect(dialog).toBeVisible();
+    // Empty: Escape goes on, and the dialog closes.
+    await page.keyboard.press("Escape");
+    await expect(dialog).toBeHidden();
+  });
+
+  test("outside a dialog too, and an Autocomplete's text", async ({ page }) => {
+    const { input, root } = await city(page);
+    await input.focus();
+    await page.keyboard.press("Escape");
+    await expect(input).toHaveValue("");
+    expect(await value(root)).toBe("");
+    await page.goto("/autocomplete");
+    const search = page.getByRole("combobox", { name: "Search" });
+    await search.fill("perf");
+    await page.keyboard.press("Escape");
+    await expect(search).toHaveAttribute("aria-expanded", "false");
+    await expect(search).toHaveValue("perf");
+    await page.keyboard.press("Escape");
+    await expect(search).toHaveValue("");
+  });
+});

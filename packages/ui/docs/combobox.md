@@ -271,17 +271,17 @@ The [WAI-ARIA combobox pattern](https://www.w3.org/WAI/ARIA/apg/patterns/combobo
 popup, list autocomplete and manual selection, with Base UI's behaviour where it leaves a choice.
 Focus stays in the input; the active option is `aria-activedescendant`.
 
-| Key                  | Does                                                                                                                                                                                                |
-| -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| A character          | Edits the text, filters the options and opens the popup when something matches (or there is an `Empty`). Never commits.                                                                             |
-| Arrow Down, Arrow Up | Closed: opens the popup on the selected option, else the first (Arrow Up: the last). Open: the next or previous option, past the last back to the input, then around. Disabled options are skipped. |
-| Alt+Arrow Down       | Opens the popup without highlighting an option.                                                                                                                                                     |
-| Alt+Arrow Up         | Closes the popup.                                                                                                                                                                                   |
-| Enter                | Chooses the highlighted option. With nothing highlighted, it does what Enter does in a form field.                                                                                                  |
-| Escape               | Closes the popup without choosing and puts the selection's label back. Closed, it goes on to the page, so a dialog closes.                                                                          |
-| Tab                  | Closes the popup without choosing and moves on.                                                                                                                                                     |
-| Backspace            | With `multiple`, in an empty input: removes the last value.                                                                                                                                         |
-| Home, End            | Move the text cursor, as in any text field.                                                                                                                                                         |
+| Key                  | Does                                                                                                                                                                                                                                |
+| -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| A character          | Edits the text, filters the options and opens the popup when something matches (or there is an `Empty`). Never commits.                                                                                                             |
+| Arrow Down, Arrow Up | Closed: opens the popup on the selected option, else the first (Arrow Up: the last). Open: the next or previous option, past the last back to the input, then around. Disabled options are skipped.                                 |
+| Alt+Arrow Down       | Opens the popup without highlighting an option.                                                                                                                                                                                     |
+| Alt+Arrow Up         | Closes the popup.                                                                                                                                                                                                                   |
+| Enter                | Chooses the highlighted option. With nothing highlighted, it does what Enter does in a form field.                                                                                                                                  |
+| Escape               | Open: closes the popup without choosing and puts the selection's label back. Closed: clears the text and the selection (a `change`), as Base UI's; closed and empty, it goes on to the page, so a dialog closes on the next Escape. |
+| Tab                  | Closes the popup without choosing and moves on.                                                                                                                                                                                     |
+| Backspace            | With `multiple`, in an empty input: removes the last value.                                                                                                                                                                         |
+| Home, End            | Move the text cursor, as in any text field.                                                                                                                                                                                         |
 
 - **Choosing** an option puts its label in the input and closes the popup, or, with `multiple`,
   toggles it, clears the text and keeps the popup open. It fires `change` once per change.
