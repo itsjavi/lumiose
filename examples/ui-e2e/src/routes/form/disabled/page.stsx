@@ -1,0 +1,39 @@
+import { Fieldset, NumberField, Slider } from "@lumiose/ui";
+import { Title } from "lumiose";
+
+// A disabled fieldset around a range Slider and a Number Field (TASK-439, M30): the platform
+// disables their inputs, and neither script moves them on a press, a scrub or a button.
+export default function FormDisabledPage() {
+  return (
+    <>
+      <Title>Controls in a disabled fieldset</Title>
+      <h1>Controls in a disabled fieldset</h1>
+      <form>
+        <Fieldset.Root disabled class="lu-fieldset">
+          <Fieldset.Legend>Disabled group</Fieldset.Legend>
+          <Slider.Root name="price" defaultValue={[20, 80]} class="lu-slider">
+            <Slider.Label>Price</Slider.Label>
+            <Slider.Value />
+            <Slider.Control>
+              <Slider.Track>
+                <Slider.Indicator />
+              </Slider.Track>
+              <Slider.Thumb aria-label="Minimum" />
+              <Slider.Thumb aria-label="Maximum" />
+            </Slider.Control>
+          </Slider.Root>
+          <NumberField.Root id="seats" name="seats" defaultValue={2} class="lu-number-field">
+            <NumberField.ScrubArea>
+              <label for="seats">Seats</label>
+            </NumberField.ScrubArea>
+            <NumberField.Group>
+              <NumberField.Decrement>−</NumberField.Decrement>
+              <NumberField.Input />
+              <NumberField.Increment>+</NumberField.Increment>
+            </NumberField.Group>
+          </NumberField.Root>
+        </Fieldset.Root>
+      </form>
+    </>
+  );
+}

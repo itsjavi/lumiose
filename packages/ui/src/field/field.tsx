@@ -386,7 +386,15 @@ function ErrorPart({ match, children, ...rest }: FieldErrorProps) {
       match === undefined ? (message() ? "" : "-invalid") : match === true ? "-always" : `-${match}`
     }`;
   return (
-    <output {...rest} id={id()} for={message() ? controlId(field) : undefined} hidden={!visible()}>
+    // Not a live region: the control's description says it, without re-announcing each keystroke
+    // (TASK-439, M31).
+    <output
+      aria-live="off"
+      {...rest}
+      id={id()}
+      for={message() ? controlId(field) : undefined}
+      hidden={!visible()}
+    >
       {message() ? field.messages().join(" ") : children}
     </output>
   );

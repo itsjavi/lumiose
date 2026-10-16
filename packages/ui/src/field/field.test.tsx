@@ -59,7 +59,12 @@ describe("Field on the server", () => {
     });
     expect(control).not.toHaveProperty("aria-invalid");
     const outputs = (id: string) => attrs(html, "output", (a) => a.id === id);
-    expect(outputs(`${root.id}-error`)).toMatchObject({ for: control.id, hidden: "" });
+    // Not live regions: a changing error is not re-announced on each keystroke (TASK-439, M31).
+    expect(outputs(`${root.id}-error`)).toMatchObject({
+      for: control.id,
+      hidden: "",
+      "aria-live": "off",
+    });
     expect(outputs(`${root.id}-error-valueMissing`)).toHaveProperty("hidden");
     expect(outputs(`${root.id}-error-valueMissing`)).not.toHaveProperty("for");
     expect(outputs(`${root.id}-error-always`)).not.toHaveProperty("hidden");

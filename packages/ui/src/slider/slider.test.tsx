@@ -43,7 +43,8 @@ describe("Slider on the server", () => {
       name: "volume",
     });
     expect(attrs(html, "label")).toMatchObject({ for: thumb!.id });
-    expect(attrs(html, "output")).toMatchObject({ for: thumb!.id });
+    // Not a live region: the thumb announces its value once (TASK-439, M31).
+    expect(attrs(html, "output")).toMatchObject({ for: thumb!.id, "aria-live": "off" });
     expect(output(html)).toBe("40");
   });
 

@@ -284,7 +284,8 @@ function Value({ children, ...rest }: SliderValueProps) {
       .map((_, i) => `${slider.id}-thumb-${i}`)
       .join(" ");
   return (
-    <output {...rest} for={children ? undefined : thumbs()}>
+    // Not a live region: the thumbs announce their values (TASK-439, M31).
+    <output aria-live="off" {...rest} for={children ? undefined : thumbs()}>
       {children ? children(slider.texts(), slider.values()) : slider.texts().join(" – ")}
     </output>
   );
