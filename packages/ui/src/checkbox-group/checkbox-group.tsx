@@ -39,6 +39,12 @@ export type CheckboxGroupProps = FieldsetProps & {
  *   <label><Checkbox.Root value="olives" /> Olives</label>
  * </CheckboxGroup>
  */
+/** The values of the checked boxes: the DOM holds the state, a parent's toggle included. */
+const checked = (group: HTMLFieldSetElement) =>
+  [...group.querySelectorAll<HTMLInputElement>("input[type=checkbox]:not([data-parent])")]
+    .filter((input) => input.closest("fieldset") === group && input.checked)
+    .map((input) => input.value);
+
 export function CheckboxGroup({
   value,
   defaultValue,
@@ -61,11 +67,6 @@ export function CheckboxGroup({
     if (next !== undefined) values.set(next);
   });
   const context = { values, allValues: () => allValues, name: () => name };
-  /** The values of the checked boxes: the DOM holds the state, a parent's toggle included. */
-  const checked = (group: HTMLFieldSetElement) =>
-    [...group.querySelectorAll<HTMLInputElement>("input[type=checkbox]:not([data-parent])")]
-      .filter((input) => input.closest("fieldset") === group && input.checked)
-      .map((input) => input.value);
   const report = (next: string[]) => {
     values.set(next);
     onValueChange?.(next);
