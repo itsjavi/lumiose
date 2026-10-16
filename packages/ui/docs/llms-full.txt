@@ -3547,18 +3547,18 @@ import "@lumiose/ui/themes/default.css"; // optional: the default theme
 </NavigationMenu.Root>
 ```
 
-| Part      | Renders                                                                                                        |
-| --------- | -------------------------------------------------------------------------------------------------------------- |
-| `Root`    | `<nav data-orientation="…">` inside `<lu-navigation-menu>`, an element with no box; `role="none"` when nested. |
-| `List`    | `<ul>` of the items.                                                                                           |
-| `Item`    | `<li data-value="…">`: a trigger with its content, or a link.                                                  |
-| `Trigger` | `<button type="button" popovertarget="…">`; `aria-expanded` follows its content where the script runs.         |
-| `Icon`    | `<span aria-hidden="true">` inside the trigger, such as a chevron.                                             |
-| `Content` | `<div popover="auto" data-side="…" data-align="…">` of links, anchored to its trigger.                         |
-| `Link`    | `<a>`; `aria-current="page"` and `data-active` when `active`.                                                  |
+| Part      | Renders                                                                                                    |
+| --------- | ---------------------------------------------------------------------------------------------------------- |
+| `Root`    | `<nav data-orientation="…">` inside `<lu-navigation-menu>`, an element with no box; a `<div>` when nested. |
+| `List`    | `<ul>` of the items.                                                                                       |
+| `Item`    | `<li data-value="…">`: a trigger with its content, or a link.                                              |
+| `Trigger` | `<button type="button" popovertarget="…">`; `aria-expanded` follows its content where the script runs.     |
+| `Icon`    | `<span aria-hidden="true">` inside the trigger, such as a chevron.                                         |
+| `Content` | `<div popover="auto" data-side="…" data-align="…">` of links, anchored to its trigger.                     |
+| `Link`    | `<a>`; `aria-current="page"` and `data-active` when `active`.                                              |
 
 Give `Root` an `aria-label` ("Main") when the page has more than one `<nav>`. A `Root` inside a
-`Content` is a nested menu, part of its parent's landmark: its `<nav>` has `role="none"`.
+`Content` is a nested menu: a `<div>`, inside its parent's landmark.
 
 ## API
 

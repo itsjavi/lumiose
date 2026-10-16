@@ -6,6 +6,7 @@ import { onCleanup } from "../core/owner.ts";
 import { computed, signal } from "../core/signal.ts";
 import type { JSX } from "../jsx/jsx-runtime.ts";
 import { createComponent, restProps } from "./component.ts";
+import { frame, setFrame } from "./frame.ts";
 import { insert } from "./insert.ts";
 import { spread } from "./spread.ts";
 import type { RenderedShell, RenderToStreamOptions } from "../server/render-types.ts";
@@ -73,12 +74,23 @@ export function Dynamic(props: DynamicProps): Renderable {
   const others = restProps(props, ["component"]) as Record<string, unknown>;
   const current = computed(() => props.component);
   if (import.meta.env?.DEV && INSPECTED) labelValue(current, "Dynamic component", true);
+  // While an island hydrates, the first render runs in this instance's frame, where the server
+  // renders the content: `insert` calls the function later, from the parent's frame, and the
+  // instance paths of what it creates (useId(), await replay) would not match (TASK-412).
+  let own = frame;
   return () => {
     const component = current();
-    return !component
-      ? null
-      : typeof component === "string"
-        ? createElement(component, others)
-        : createComponent(component, others);
+    const inFrame = own !== undefined;
+    const outer = inFrame ? setFrame!(own) : undefined;
+    own = undefined;
+    try {
+      return !component
+        ? null
+        : typeof component === "string"
+          ? createElement(component, others)
+          : createComponent(component, others);
+    } finally {
+      if (inFrame) setFrame!(outer);
+    }
   };
 }

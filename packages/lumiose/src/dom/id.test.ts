@@ -283,3 +283,34 @@ describe("useId", () => {
     expect(() => serverUseId()).toThrow(/useId\(\) can only be used while rendering/);
   });
 });
+
+// `Dynamic` renders its content from a function that `insert` calls later; hydration still gives
+// the content the server's instance paths (TASK-412).
+describe("useId under Dynamic (TASK-412)", () => {
+  it("keeps the server's ids under an intrinsic tag and under a component", async () => {
+    const { client, server } = await load(`
+      import { Dynamic, useId } from "lumiose";
+      function Item(props: { label: string }) {
+        const id = useId();
+        globalThis.ids.push(id);
+        return <b id={id}>{props.label}</b>;
+      }
+      function Box(props: { children?: unknown }) {
+        return <div>{props.children}</div>;
+      }
+      export function Repro() {
+        return (
+          <section>
+            <Dynamic component="nav"><Item label="a" /></Dynamic>
+            <Dynamic component={Box}><Item label="b" /></Dynamic>
+            <Item label="c" />
+          </section>
+        );
+      }`);
+    const serverIds = await serve(server, "Repro");
+    const before = idAttributes();
+    const clientIds = await hydrateAll(client);
+    expect(clientIds).toEqual(serverIds);
+    expect(idAttributes()).toEqual(before);
+  });
+});
