@@ -1,0 +1,12 @@
+import { Title } from "lumiose";
+import { ComboboxStatus } from "../../../islands/ComboboxStatus.tsx";
+
+export default function ComboboxStatusPage() {
+  return (
+    <>
+      <Title>Combobox with a status in its popup</Title>
+      <h1>Combobox with a status in its popup</h1>
+      <ComboboxStatus client:load />
+    </>
+  );
+}

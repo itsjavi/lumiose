@@ -60,6 +60,7 @@ const invokers =
 /** The events the element listens to on itself. */
 const EVENTS = [
   "input",
+  "compositionend",
   "keydown",
   "click",
   "pointerdown",
@@ -224,6 +225,9 @@ export class ComboboxElement extends HTMLElement {
     // The server's selection, once the element's content is parsed: the options rendered selected.
     const settle = () => {
       if (this.#defaults) return;
+      // Text typed before the script ran is the user's: kept, not the selection's label (M24).
+      const input = this.input;
+      const typed = input && input.value !== input.defaultValue ? input.value : undefined;
       if (this.#free) this.#typed = this.input?.value ?? "";
       const selected = this.#options().filter((o) => o.getAttribute("aria-selected") === "true");
       for (const option of selected)
@@ -231,6 +235,11 @@ export class ComboboxElement extends HTMLElement {
       const values = selected.map((option) => option.dataset.value ?? "");
       this.#defaults = this.multiple ? values : values.slice(0, 1);
       this.#set(this.#defaults, false);
+      if (typed !== undefined && input && !this.#free) {
+        input.value = typed;
+        this.#filter(typed);
+        this.#showClear();
+      }
     };
     if (document.readyState === "loading") {
       document.addEventListener("DOMContentLoaded", settle, { once: true });
@@ -282,6 +291,10 @@ export class ComboboxElement extends HTMLElement {
   handleEvent(event: Event): void {
     switch (event.type) {
       case "input":
+        if (event.target === this.input) this.#onInput(event as InputEvent);
+        return;
+      case "compositionend":
+        // The committed text is the search: an IME composition filtered nothing (TASK-438, M21).
         if (event.target === this.input) this.#onInput();
         return;
       case "keydown":
@@ -314,6 +327,9 @@ export class ComboboxElement extends HTMLElement {
         // rules: a right-click outside keeps it open.
         const to = (event as FocusEvent).relatedTarget as Node | null;
         if (to && !this.contains(to)) this.#close();
+        // Text typed after the popup closed itself (nothing matched) is no choice: the label of
+        // the selection comes back when focus leaves (TASK-438, M19).
+        else if (!to && event.target === input && !this.open) this.#showLabel();
         return;
       }
       case "change":
@@ -492,9 +508,16 @@ export class ComboboxElement extends HTMLElement {
     if (empty) empty.hidden = this.#options().some((option) => !option.hidden);
   }
 
-  /** Whether the popup has anything to show: an option, or the empty state. */
+  /** Whether the popup has anything to show: an option, the empty state, or a Status's message. */
   #showable(): boolean {
-    return this.#options().some((option) => !option.hidden) || this.#part("empty") !== null;
+    return (
+      this.#options().some((option) => !option.hidden) ||
+      this.#part("empty") !== null ||
+      // A Status in the popup (async options: "Loading…") shows while there is none (M22).
+      [...(this.popup?.querySelectorAll<HTMLElement>("[role=status]") ?? [])].some(
+        (status) => status.id !== `${this.id}-empty` && status.textContent?.trim() !== "",
+      )
+    );
   }
 
   // Opening and closing -----------------------------------------------------------------------
@@ -648,8 +671,16 @@ export class ComboboxElement extends HTMLElement {
     this.#showClear();
   }
 
-  #onInput(): void {
+  #onInput(event?: InputEvent): void {
     const input = this.input!;
+    // An IME composition is no search yet: `compositionend` filters (TASK-438, M21).
+    if (event?.isComposing) return;
+    // Browser autofill writes an unfocused field, or replaces the text: no popup, no filter; a
+    // text that names an option exactly chooses it (TASK-438, M20).
+    if (document.activeElement !== input || event?.inputType === "insertReplacementText") {
+      this.#autofill();
+      return;
+    }
     if (this.#free) {
       if (this.#echo) return;
       this.#typed = input.value;
@@ -670,6 +701,26 @@ export class ComboboxElement extends HTMLElement {
     this.#showClear();
     if (this.#showable()) this.#open();
     else this.#close(false);
+  }
+
+  /** Text the browser autofilled: the option whose label or value it is, else nothing new. */
+  #autofill(): void {
+    const input = this.input!;
+    const text = fold(input.value.trim());
+    if (this.#free) {
+      this.#typed = input.value;
+      this.#showClear();
+      return;
+    }
+    const option = this.#options().find(
+      (o) =>
+        !disabled(o) && (fold(optionLabel(o)) === text || fold(o.dataset.value ?? "") === text),
+    );
+    if (option) {
+      const value = option.dataset.value ?? "";
+      this.#set(this.multiple ? [...this.#values, value] : [value], true);
+    }
+    this.#close();
   }
 
   /** Options added or removed (async options): they take the selection and the current search. */
@@ -727,6 +778,9 @@ export class ComboboxElement extends HTMLElement {
         return;
       }
       case "Enter": {
+        // Safari's Enter that commits an IME composition comes after `compositionend`, as key 229:
+        // it chooses nothing (TASK-438, M21).
+        if (event.keyCode === 229) return;
         const option = this.#highlighted();
         if (open && option) {
           event.preventDefault();

@@ -16,4 +16,8 @@
   lu-combobox [hidden] {
     display: none !important;
   }
+  /* The Trigger and Clear buttons do nothing until the script runs (TASK-438, M24). */
+  lu-combobox:not(:defined) [command] {
+    visibility: hidden;
+  }
 }
