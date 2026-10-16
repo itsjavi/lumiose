@@ -95,11 +95,22 @@ it is too light to outline a control. Keep those ratios when you change the colo
 
 Style the parts through:
 
-- **Class props.** Every part takes `class` (and `style`), like the element it renders. No part
-  carries a class or attribute of its own.
+- **Class props.** Every part takes `class` (and `style`), like the element it renders.
 - **State.** Components expose state the way the platform does, so selectors read it directly:
   `dialog[open]`, `:modal`, `::backdrop`, `:popover-open`, `[aria-expanded]`, `[aria-checked]`,
-  `[aria-selected]`, and `data-highlighted` on the active option of a list.
+  `[aria-selected]`. Where the platform has no such state, they set Base UI's state attributes:
+  `data-highlighted` on the active option of a list, `data-side` and `data-align` on a placed
+  popup, `data-orientation`, `data-starting-style` and `data-ending-style` while a popup animates,
+  `data-swiping`, `data-indeterminate` and others. Each component's page lists its own.
+- **Custom properties.** The values components measure or place, such as a panel's height, a
+  toast's index in its stack or a popup's offset, are custom properties with the `--lu-` prefix.
+  Base UI names them without a prefix, so its `--collapsible-panel-height` is
+  `--lu-collapsible-panel-height` here and its `--scroll-area-thumb-height` is
+  `--lu-scroll-area-thumb-height`.
+
+Other `data-*` attributes on the rendered HTML, such as the markers scripts use to find a part or
+the settings the server HTML passes to a script, are internal and may change between versions.
+Style those parts through their class props.
 
 Each component's page has an example stylesheet to start from.
 

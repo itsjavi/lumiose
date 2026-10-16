@@ -107,19 +107,19 @@ describe("nesting", () => {
     dialog("middle").setAttribute("open", "");
     toggle(dialog("middle"), "toggle", "open");
     expect(dialog("outer").hasAttribute("data-nested-dialog-open")).toBe(true);
-    expect(dialog("outer").style.getPropertyValue("--nested-dialogs")).toBe("1");
+    expect(dialog("outer").style.getPropertyValue("--lu-nested-dialogs")).toBe("1");
     expect(dialog("middle").hasAttribute("data-nested-dialog-open")).toBe(false);
 
     dialog("inner").setAttribute("open", "");
     toggle(dialog("inner"), "toggle", "open");
-    expect(dialog("outer").style.getPropertyValue("--nested-dialogs")).toBe("2");
-    expect(dialog("middle").style.getPropertyValue("--nested-dialogs")).toBe("1");
+    expect(dialog("outer").style.getPropertyValue("--lu-nested-dialogs")).toBe("2");
+    expect(dialog("middle").style.getPropertyValue("--lu-nested-dialogs")).toBe("1");
 
     dialog("inner").removeAttribute("open");
     dialog("middle").removeAttribute("open");
     toggle(dialog("middle"), "toggle", "closed");
     expect(dialog("outer").hasAttribute("data-nested-dialog-open")).toBe(false);
-    expect(dialog("outer").style.getPropertyValue("--nested-dialogs")).toBe("");
+    expect(dialog("outer").style.getPropertyValue("--lu-nested-dialogs")).toBe("");
   });
 });
 

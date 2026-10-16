@@ -85,7 +85,7 @@ function Content({ children, ...rest }: DrawerContentProps) {
  * in server HTML with no JavaScript, and a swipe toward its edge closes it, as do its close
  * buttons, Escape and a click on the backdrop. Unstyled: style it through `class`,
  * `[data-swipe-direction]`, `[open]`, `[data-swiping]`, `[data-swipe-dismiss]` and the
- * `--drawer-swipe-movement-x`/`-y` and `--drawer-swipe-progress` variables.
+ * `--lu-drawer-swipe-movement-x`/`-y` and `--lu-drawer-swipe-progress` variables.
  *
  * @example
  * <Drawer.Root>

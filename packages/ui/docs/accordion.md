@@ -66,7 +66,7 @@ handlers, `ref`) and passes them through. `id`, `name`, `aria-controls` and `ari
 the parts' own, since they connect the parts.
 
 - **`Trigger`**: a disabled trigger gets `aria-disabled="true"` and `tabindex="-1"`.
-- **`Panel`**: the client script sets `--accordion-panel-height` and `--accordion-panel-width` on
+- **`Panel`**: the client script sets `--lu-accordion-panel-height` and `--lu-accordion-panel-width` on
   it while it opens and closes, and `data-starting-style` and `data-ending-style`
   ([Styling](#styling)).
 
@@ -141,7 +141,7 @@ with a chevron that turns while the item is open, and panels whose height animat
 
 **With your own CSS**, style the parts through `class`, `[open]` on the items and
 `[aria-disabled]` on the triggers. The client script gives each panel what Base UI's does, for an
-open and close animation: `--accordion-panel-height` (the content's height in pixels while it
+open and close animation: `--lu-accordion-panel-height` (the content's height in pixels while it
 moves, `auto` once open), `data-starting-style` for the frame an opening starts from and
 `data-ending-style` while it closes. The browser hides a panel as soon as its item closes, so keep
 it visible while it closes with a transition on `::details-content`:
@@ -149,7 +149,7 @@ it visible while it closes with a transition on `::details-content`:
 ```css
 .accordion > details > .panel {
   overflow: hidden;
-  block-size: var(--accordion-panel-height, auto);
+  block-size: var(--lu-accordion-panel-height, auto);
   transition: block-size 200ms ease-out;
 }
 .accordion > details > .panel:is([data-starting-style], [data-ending-style]) {

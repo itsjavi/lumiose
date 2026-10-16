@@ -191,7 +191,7 @@ describe("lumiose mcp", () => {
       ]),
     );
     expect(dialog.styling).toEqual(
-      expect.arrayContaining(["lu-dialog", "dialog[open]", "::backdrop", "--nested-dialogs"]),
+      expect.arrayContaining(["lu-dialog", "dialog[open]", "::backdrop", "--lu-nested-dialogs"]),
     );
 
     const one = await callJson("ui_components", { name: "dialog" });

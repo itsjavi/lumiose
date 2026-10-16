@@ -154,7 +154,7 @@ test.describe("toasts from an island's manager", () => {
     await expect(error).toBeVisible();
     await expect(error).not.toHaveAttribute("data-swiping");
     expect(
-      await error.evaluate((el) => el.style.getPropertyValue("--toast-swipe-movement-x")),
+      await error.evaluate((el) => el.style.getPropertyValue("--lu-toast-swipe-movement-x")),
     ).toBe("");
     // Up is not one of its directions; a drag that starts on a button is not a swipe.
     await drag(page, error.getByText("Check your card."), 0, -80);

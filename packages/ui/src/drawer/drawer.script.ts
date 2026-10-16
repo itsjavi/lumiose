@@ -5,7 +5,7 @@
 // that renders a Drawer, adds swiping it away in that direction, as Base UI's Drawer does:
 //
 // - A drag in the dismiss direction moves the drawer: `data-swiping` and
-//   `--drawer-swipe-movement-x` or `-y` (pixels) while it runs, `--drawer-swipe-progress` (0 to 1)
+//   `--lu-drawer-swipe-movement-x` or `-y` (pixels) while it runs, `--lu-drawer-swipe-progress` (0 to 1)
 //   for the backdrop. Against that direction it moves a little, as a hint.
 // - Released past 40% of its size, or flicked (faster than 0.5px/ms over 20px), it closes, with
 //   `data-swipe-dismiss` so a stylesheet can let it leave from where it is. Otherwise it springs
@@ -108,11 +108,11 @@ function move(x: number, y: number): boolean {
   drag.movement = movement;
   const size = axis(direction) === "y" ? dialog.offsetHeight : dialog.offsetWidth;
   dialog.style.setProperty(
-    `--drawer-swipe-movement-${axis(direction)}`,
+    `--lu-drawer-swipe-movement-${axis(direction)}`,
     `${movement * sign(direction)}px`,
   );
   dialog.style.setProperty(
-    "--drawer-swipe-progress",
+    "--lu-drawer-swipe-progress",
     String(Math.min(1, Math.max(0, movement / size))),
   );
   return true;
@@ -120,9 +120,9 @@ function move(x: number, y: number): boolean {
 
 function reset(dialog: HTMLDialogElement) {
   for (const name of [
-    "--drawer-swipe-movement-x",
-    "--drawer-swipe-movement-y",
-    "--drawer-swipe-progress",
+    "--lu-drawer-swipe-movement-x",
+    "--lu-drawer-swipe-movement-y",
+    "--lu-drawer-swipe-progress",
   ]) {
     dialog.style.removeProperty(name);
   }

@@ -3,8 +3,8 @@
 // find-in-page, an exclusive `name` group, the `open` prop), and this module only adds what the
 // element lacks next to Base UI:
 //
-// - The open and close animation's measurements, as Base UI exposes them: `--collapsible-panel-
-//   height` and `-width` (`--accordion-panel-…` in an accordion) on the panel, its content's size
+// - The open and close animation's measurements, as Base UI exposes them: `--lu-collapsible-panel-
+//   height` and `-width` (`--lu-accordion-panel-…` in an accordion) on the panel, its content's size
 //   in pixels while it opens and closes and `auto` once open; `data-starting-style` on the panel
 //   for the frame an opening starts from, `data-ending-style` while it closes. A stylesheet then
 //   transitions the height between 0 and the variable (the default theme does). A panel rendered
@@ -34,7 +34,7 @@ function panelOf(details: HTMLDetailsElement): HTMLElement | undefined {
 
 /** The variables' prefix: an accordion item is a `<details>` right inside `<lu-accordion>`. */
 const prefix = (details: HTMLDetailsElement) =>
-  details.parentElement?.localName === "lu-accordion" ? "--accordion-panel" : "--collapsible-panel";
+  details.parentElement?.localName === "lu-accordion" ? "--lu-accordion-panel" : "--lu-collapsible-panel";
 
 function measure(panel: HTMLElement, name: string) {
   panel.style.setProperty(`${name}-height`, `${panel.scrollHeight}px`);

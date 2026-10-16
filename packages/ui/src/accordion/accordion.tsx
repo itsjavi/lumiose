@@ -267,7 +267,7 @@ function Panel({ children, ...rest }: AccordionPanelProps) {
  * pattern. Items are native `<details>` (one open at a time by default, through the browser's
  * exclusive group), so they work in server HTML with no JavaScript; `<lu-accordion>`'s script adds
  * the arrow keys. Unstyled: style the parts through `class`, `[open]` on the items, and the
- * panels' `--accordion-panel-height`, `[data-starting-style]` and `[data-ending-style]`.
+ * panels' `--lu-accordion-panel-height`, `[data-starting-style]` and `[data-ending-style]`.
  *
  * @example
  * <Accordion.Root defaultValue={["shipping"]}>

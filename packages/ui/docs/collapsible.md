@@ -50,7 +50,7 @@ handlers, `ref`) and passes them through. `id` and `aria-controls` stay the part
 they connect the trigger and the panel.
 
 - **`Trigger`**: a disabled trigger gets `aria-disabled="true"` and `tabindex="-1"`.
-- **`Panel`**: the client script sets `--collapsible-panel-height` and `--collapsible-panel-width`
+- **`Panel`**: the client script sets `--lu-collapsible-panel-height` and `--lu-collapsible-panel-width`
   on it while it opens and closes, and `data-starting-style` and `data-ending-style`
   ([Styling](#styling)).
 
@@ -100,7 +100,7 @@ export function AdvancedOptions() {
 chevron that turns while the panel is open, and the panel's height animates.
 
 **With your own CSS**, style the parts through `class` and `[open]` on the root. The client script
-gives the panel what Base UI's does, for an open and close animation: `--collapsible-panel-height`
+gives the panel what Base UI's does, for an open and close animation: `--lu-collapsible-panel-height`
 (the content's height in pixels while it moves, `auto` once open), `data-starting-style` for the
 frame an opening starts from and `data-ending-style` while it closes. The browser hides the panel
 as soon as the `<details>` closes, so keep it visible while it closes with a transition on
@@ -109,7 +109,7 @@ as soon as the `<details>` closes, so keep it visible while it closes with a tra
 ```css
 .collapsible > .panel {
   overflow: hidden;
-  block-size: var(--collapsible-panel-height, auto);
+  block-size: var(--lu-collapsible-panel-height, auto);
   transition: block-size 200ms ease-out;
 }
 .collapsible > .panel:is([data-starting-style], [data-ending-style]) {

@@ -373,7 +373,7 @@ function Close({ children, ...rest }: ToastCloseProps) {
  * script times them, pauses on hover and focus, limits how many show, closes them on a swipe,
  * Escape or their close button, and focuses the region on F6. Unstyled: style the parts through
  * `class`, `[data-type]`, `[data-starting-style]`, `[data-ending-style]`, `[data-swiping]` and the
- * `--toast-swipe-movement-x`/`-y` and `--toast-index` variables.
+ * `--lu-toast-swipe-movement-x`/`-y` and `--lu-toast-index` variables.
  *
  * @example
  * const toasts = Toast.createToastManager();

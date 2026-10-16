@@ -223,15 +223,15 @@ adds a red edge.
 - `[data-starting-style]` on a new toast's first frame, and `[data-ending-style]` while it closes
   (the script, or the manager, waits for its animations before removing it);
 - `[data-swiping]`, `[data-swipe-direction]` (`up`, `down`, `left`, `right`) and the
-  `--toast-swipe-movement-x` and `--toast-swipe-movement-y` variables, in pixels, while a swipe
+  `--lu-toast-swipe-movement-x` and `--lu-toast-swipe-movement-y` variables, in pixels, while a swipe
   runs; `[data-swipe-direction]` stays while a swiped toast leaves;
-- `--toast-index` on each shown toast (0 for the first child), and `[data-limited]` on the ones
+- `--lu-toast-index` on each shown toast (0 for the first child), and `[data-limited]` on the ones
   past the limit;
 - `[data-expanded]` on the viewport while the pointer or focus is in it.
 
 ```css
 .toast {
-  translate: var(--toast-swipe-movement-x, 0) var(--toast-swipe-movement-y, 0);
+  translate: var(--lu-toast-swipe-movement-x, 0) var(--lu-toast-swipe-movement-y, 0);
   transition:
     opacity 200ms,
     translate 200ms;

@@ -54,7 +54,7 @@ test.describe("swipe", () => {
     await expect(filters).toBeVisible();
     await expect(filters).not.toHaveAttribute("data-swiping");
     expect(
-      await filters.evaluate((el) => el.style.getPropertyValue("--drawer-swipe-movement-y")),
+      await filters.evaluate((el) => el.style.getPropertyValue("--lu-drawer-swipe-movement-y")),
     ).toBe("");
     // Up is not its direction; a drag on a button is not a swipe.
     await drag(page, title, 0, -height * 0.6);
@@ -78,8 +78,8 @@ test.describe("swipe", () => {
     await page.mouse.move(box.x + 20, box.y + 40, { steps: 5 });
     await expect(filters).toHaveAttribute("data-swiping");
     const style = await filters.evaluate((el) => [
-      el.style.getPropertyValue("--drawer-swipe-movement-y"),
-      Number(el.style.getPropertyValue("--drawer-swipe-progress")),
+      el.style.getPropertyValue("--lu-drawer-swipe-movement-y"),
+      Number(el.style.getPropertyValue("--lu-drawer-swipe-progress")),
     ]);
     expect(style[0]).toBe("30px");
     expect(style[1]).toBeGreaterThan(0);

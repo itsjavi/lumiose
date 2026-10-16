@@ -6,7 +6,7 @@
 // - Light dismiss: a secondary button or a second finger outside does not close a dialog, and
 //   `closedby="any"` works where the browser lacks it (Safari).
 // - Invoker commands (`show-modal`, `close`, `request-close`) where the browser lacks them.
-// - Nesting: a dialog with open dialogs inside gets `data-nested-dialog-open` and `--nested-dialogs`.
+// - Nesting: a dialog with open dialogs inside gets `data-nested-dialog-open` and `--lu-nested-dialogs`.
 // - Touch: a dialog opened by touch focuses itself rather than its first field, so no virtual
 //   keyboard opens (an `autofocus` element still gets focus).
 // - Focus return: when closing leaves focus nowhere (WebKit does not focus a clicked trigger, or the
@@ -144,8 +144,8 @@ on("toggle", (event) => {
   for (const each of document.querySelectorAll("dialog")) {
     const nested = each.querySelectorAll("dialog[open]").length;
     each.toggleAttribute("data-nested-dialog-open", nested > 0);
-    if (nested) each.style.setProperty("--nested-dialogs", String(nested));
-    else each.style.removeProperty("--nested-dialogs");
+    if (nested) each.style.setProperty("--lu-nested-dialogs", String(nested));
+    else each.style.removeProperty("--lu-nested-dialogs");
   }
   if (event.newState !== "closed") return;
   // The browser has already restored focus, or failed to: fix only the failure.

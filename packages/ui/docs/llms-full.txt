@@ -315,11 +315,22 @@ it is too light to outline a control. Keep those ratios when you change the colo
 
 Style the parts through:
 
-- **Class props.** Every part takes `class` (and `style`), like the element it renders. No part
-  carries a class or attribute of its own.
+- **Class props.** Every part takes `class` (and `style`), like the element it renders.
 - **State.** Components expose state the way the platform does, so selectors read it directly:
   `dialog[open]`, `:modal`, `::backdrop`, `:popover-open`, `[aria-expanded]`, `[aria-checked]`,
-  `[aria-selected]`, and `data-highlighted` on the active option of a list.
+  `[aria-selected]`. Where the platform has no such state, they set Base UI's state attributes:
+  `data-highlighted` on the active option of a list, `data-side` and `data-align` on a placed
+  popup, `data-orientation`, `data-starting-style` and `data-ending-style` while a popup animates,
+  `data-swiping`, `data-indeterminate` and others. Each component's page lists its own.
+- **Custom properties.** The values components measure or place, such as a panel's height, a
+  toast's index in its stack or a popup's offset, are custom properties with the `--lu-` prefix.
+  Base UI names them without a prefix, so its `--collapsible-panel-height` is
+  `--lu-collapsible-panel-height` here and its `--scroll-area-thumb-height` is
+  `--lu-scroll-area-thumb-height`.
+
+Other `data-*` attributes on the rendered HTML, such as the markers scripts use to find a part or
+the settings the server HTML passes to a script, are internal and may change between versions.
+Style those parts through their class props.
 
 Each component's page has an example stylesheet to start from.
 
@@ -399,7 +410,7 @@ handlers, `ref`) and passes them through. `id`, `name`, `aria-controls` and `ari
 the parts' own, since they connect the parts.
 
 - **`Trigger`**: a disabled trigger gets `aria-disabled="true"` and `tabindex="-1"`.
-- **`Panel`**: the client script sets `--accordion-panel-height` and `--accordion-panel-width` on
+- **`Panel`**: the client script sets `--lu-accordion-panel-height` and `--lu-accordion-panel-width` on
   it while it opens and closes, and `data-starting-style` and `data-ending-style`
   ([Styling](#styling)).
 
@@ -474,7 +485,7 @@ with a chevron that turns while the item is open, and panels whose height animat
 
 **With your own CSS**, style the parts through `class`, `[open]` on the items and
 `[aria-disabled]` on the triggers. The client script gives each panel what Base UI's does, for an
-open and close animation: `--accordion-panel-height` (the content's height in pixels while it
+open and close animation: `--lu-accordion-panel-height` (the content's height in pixels while it
 moves, `auto` once open), `data-starting-style` for the frame an opening starts from and
 `data-ending-style` while it closes. The browser hides a panel as soon as its item closes, so keep
 it visible while it closes with a transition on `::details-content`:
@@ -482,7 +493,7 @@ it visible while it closes with a transition on `::details-content`:
 ```css
 .accordion > details > .panel {
   overflow: hidden;
-  block-size: var(--accordion-panel-height, auto);
+  block-size: var(--lu-accordion-panel-height, auto);
   transition: block-size 200ms ease-out;
 }
 .accordion > details > .panel:is([data-starting-style], [data-ending-style]) {
@@ -1303,7 +1314,7 @@ handlers, `ref`) and passes them through. `id` and `aria-controls` stay the part
 they connect the trigger and the panel.
 
 - **`Trigger`**: a disabled trigger gets `aria-disabled="true"` and `tabindex="-1"`.
-- **`Panel`**: the client script sets `--collapsible-panel-height` and `--collapsible-panel-width`
+- **`Panel`**: the client script sets `--lu-collapsible-panel-height` and `--lu-collapsible-panel-width`
   on it while it opens and closes, and `data-starting-style` and `data-ending-style`
   ([Styling](#styling)).
 
@@ -1353,7 +1364,7 @@ export function AdvancedOptions() {
 chevron that turns while the panel is open, and the panel's height animates.
 
 **With your own CSS**, style the parts through `class` and `[open]` on the root. The client script
-gives the panel what Base UI's does, for an open and close animation: `--collapsible-panel-height`
+gives the panel what Base UI's does, for an open and close animation: `--lu-collapsible-panel-height`
 (the content's height in pixels while it moves, `auto` once open), `data-starting-style` for the
 frame an opening starts from and `data-ending-style` while it closes. The browser hides the panel
 as soon as the `<details>` closes, so keep it visible while it closes with a transition on
@@ -1362,7 +1373,7 @@ as soon as the `<details>` closes, so keep it visible while it closes with a tra
 ```css
 .collapsible > .panel {
   overflow: hidden;
-  block-size: var(--collapsible-panel-height, auto);
+  block-size: var(--lu-collapsible-panel-height, auto);
   transition: block-size 200ms ease-out;
 }
 .collapsible > .panel:is([data-starting-style], [data-ending-style]) {
@@ -2106,7 +2117,7 @@ out. Its colours come from the theme's `--lu-` properties ([UI components](READM
 
 **With your own CSS**, style the parts through `class` and the dialog's native state: `dialog[open]`,
 `:modal`, `::backdrop` and `[role="alertdialog"]`. Where the client script runs, a dialog with open
-dialogs inside also gets `data-nested-dialog-open` and `--nested-dialogs` (how many are open inside
+dialogs inside also gets `data-nested-dialog-open` and `--lu-nested-dialogs` (how many are open inside
 it), as in Base UI; `dialog:has(dialog[open])` matches the same dialogs without the script. A starting point, with a fade that keeps the dialog in the top layer while it
 closes:
 
@@ -2182,7 +2193,7 @@ that renders a `Dialog` loads it once, as a 0.8 kB (brotli) module without the L
 islands bundle it. It covers every `<dialog>` on the page:
 
 - a right-click or a second finger outside does not close the dialog;
-- `data-nested-dialog-open` and `--nested-dialogs` on a dialog with open dialogs inside;
+- `data-nested-dialog-open` and `--lu-nested-dialogs` on a dialog with open dialogs inside;
 - a dialog opened by touch focuses itself;
 - focus returns without scrolling, to the opener or, if it is gone, another trigger (WebKit, which
   does not focus a clicked button, would otherwise leave focus on the page);
@@ -2333,14 +2344,14 @@ backdrop fades with it.
 **With your own CSS**, style the drawer through `class`, `[data-swipe-direction]`, `dialog[open]`
 and `::backdrop`, and the swipe through the script's state, named as in Base UI:
 
-- `[data-swiping]` while a swipe runs, with `--drawer-swipe-movement-x` or
-  `--drawer-swipe-movement-y` (pixels, toward the edge) and `--drawer-swipe-progress` (0 to 1,
+- `[data-swiping]` while a swipe runs, with `--lu-drawer-swipe-movement-x` or
+  `--lu-drawer-swipe-movement-y` (pixels, toward the edge) and `--lu-drawer-swipe-progress` (0 to 1,
   for the backdrop);
 - `[data-swipe-dismiss]` (the direction) when a swipe closed it, until it has left.
 
 ```css
 .drawer {
-  translate: var(--drawer-swipe-movement-x, 0) var(--drawer-swipe-movement-y, 0);
+  translate: var(--lu-drawer-swipe-movement-x, 0) var(--lu-drawer-swipe-movement-y, 0);
   transition:
     translate 250ms ease-out,
     overlay 250ms allow-discrete,
@@ -6117,15 +6128,15 @@ adds a red edge.
 - `[data-starting-style]` on a new toast's first frame, and `[data-ending-style]` while it closes
   (the script, or the manager, waits for its animations before removing it);
 - `[data-swiping]`, `[data-swipe-direction]` (`up`, `down`, `left`, `right`) and the
-  `--toast-swipe-movement-x` and `--toast-swipe-movement-y` variables, in pixels, while a swipe
+  `--lu-toast-swipe-movement-x` and `--lu-toast-swipe-movement-y` variables, in pixels, while a swipe
   runs; `[data-swipe-direction]` stays while a swiped toast leaves;
-- `--toast-index` on each shown toast (0 for the first child), and `[data-limited]` on the ones
+- `--lu-toast-index` on each shown toast (0 for the first child), and `[data-limited]` on the ones
   past the limit;
 - `[data-expanded]` on the viewport while the pointer or focus is in it.
 
 ```css
 .toast {
-  translate: var(--toast-swipe-movement-x, 0) var(--toast-swipe-movement-y, 0);
+  translate: var(--lu-toast-swipe-movement-x, 0) var(--lu-toast-swipe-movement-y, 0);
   transition:
     opacity 200ms,
     translate 200ms;

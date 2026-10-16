@@ -973,7 +973,7 @@
   /*
    * The trigger: a row with a chevron that turns while the panel is open (a shape, not only a
    * colour), a 36px target. The panel's height animates between 0 and the size the client script
-   * measures (--collapsible-panel-height, --accordion-panel-height), and `::details-content` stays
+   * measures (--lu-collapsible-panel-height, --lu-accordion-panel-height), and `::details-content` stays
    * visible while it closes. Spacers inside the panel keep its content's focus rings clear of the
    * clipping the animation needs.
    */
@@ -1045,10 +1045,10 @@
     block-size: 0.75rem;
   }
   .lu-collapsible > :not(summary) {
-    block-size: var(--collapsible-panel-height, auto);
+    block-size: var(--lu-collapsible-panel-height, auto);
   }
   .lu-accordion > details > :not(summary) {
-    block-size: var(--accordion-panel-height, auto);
+    block-size: var(--lu-accordion-panel-height, auto);
   }
   :is(.lu-collapsible, .lu-accordion > details) > :is([data-starting-style], [data-ending-style]) {
     block-size: 0;
@@ -1103,7 +1103,7 @@
       0 4px 6px -4px rgb(0 0 0 / 0.1);
     font-size: 0.875rem;
     line-height: 1.4;
-    translate: var(--toast-swipe-movement-x, 0) var(--toast-swipe-movement-y, 0);
+    translate: var(--lu-toast-swipe-movement-x, 0) var(--lu-toast-swipe-movement-y, 0);
   }
   .lu-toast > * {
     grid-column: 1;
@@ -1430,11 +1430,11 @@
     box-shadow:
       0 10px 15px -3px rgb(0 0 0 / 0.1),
       0 4px 6px -4px rgb(0 0 0 / 0.1);
-    translate: var(--drawer-swipe-movement-x, 0) var(--drawer-swipe-movement-y, 0);
+    translate: var(--lu-drawer-swipe-movement-x, 0) var(--lu-drawer-swipe-movement-y, 0);
   }
   .lu-drawer::backdrop {
     background: rgb(0 0 0 / 0.5);
-    opacity: calc(1 - var(--drawer-swipe-progress, 0));
+    opacity: calc(1 - var(--lu-drawer-swipe-progress, 0));
   }
   .lu-drawer[data-swipe-direction="down"] {
     max-block-size: 85dvh;

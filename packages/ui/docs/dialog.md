@@ -139,7 +139,7 @@ out. Its colours come from the theme's `--lu-` properties ([UI components](READM
 
 **With your own CSS**, style the parts through `class` and the dialog's native state: `dialog[open]`,
 `:modal`, `::backdrop` and `[role="alertdialog"]`. Where the client script runs, a dialog with open
-dialogs inside also gets `data-nested-dialog-open` and `--nested-dialogs` (how many are open inside
+dialogs inside also gets `data-nested-dialog-open` and `--lu-nested-dialogs` (how many are open inside
 it), as in Base UI; `dialog:has(dialog[open])` matches the same dialogs without the script. A starting point, with a fade that keeps the dialog in the top layer while it
 closes:
 
@@ -215,7 +215,7 @@ that renders a `Dialog` loads it once, as a 0.8 kB (brotli) module without the L
 islands bundle it. It covers every `<dialog>` on the page:
 
 - a right-click or a second finger outside does not close the dialog;
-- `data-nested-dialog-open` and `--nested-dialogs` on a dialog with open dialogs inside;
+- `data-nested-dialog-open` and `--lu-nested-dialogs` on a dialog with open dialogs inside;
 - a dialog opened by touch focuses itself;
 - focus returns without scrolling, to the opener or, if it is gone, another trigger (WebKit, which
   does not focus a clicked button, would otherwise leave focus on the page);

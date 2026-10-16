@@ -11,7 +11,7 @@
 //   while the pointer is over the viewport, while focus is in it, while the window is in the
 //   background or the page is hidden, and resume with the time that was left.
 // - Limit: past `data-limit` toasts (on the viewport), the older ones are hidden and paused until
-//   a newer one closes. Each shown toast gets `--toast-index` (0 for the first child).
+//   a newer one closes. Each shown toast gets `--lu-toast-index` (0 for the first child).
 // - Closing: a close button (`command="--close-toast"`), Escape in a toast, a swipe or its timer
 //   fires a cancelable `close` event on the toast. An island's toast handles it (its manager
 //   removes it after its exit animation); otherwise the script sets `data-ending-style`, waits
@@ -21,7 +21,7 @@
 // - Swipe: a pointer drag in one of the toast's `data-swipe-directions` (up, down, left, right)
 //   past 40px closes it. It locks to one axis, never starts on a control, and springs back when
 //   it falls short or reverses. While it runs the toast has `data-swiping`, `data-swipe-direction`
-//   and `--toast-swipe-movement-x` or `-y`. The close button and Escape do the same without a
+//   and `--lu-toast-swipe-movement-x` or `-y`. The close button and Escape do the same without a
 //   gesture (WCAG 2.5.1, 2.5.7).
 // - Announcements: each toast is a live region (`role="status"`, or `role="alert"`). Safari's
 //   VoiceOver misses the text of a region inserted with it, so 250ms after a toast appears the
@@ -261,8 +261,8 @@ export class LuToastViewport extends HTMLElement {
       const limited = limit > 0 && index >= limit;
       toast.hidden = limited;
       toast.toggleAttribute("data-limited", limited);
-      if (limited) toast.style.removeProperty("--toast-index");
-      else toast.style.setProperty("--toast-index", String(index));
+      if (limited) toast.style.removeProperty("--lu-toast-index");
+      else toast.style.setProperty("--lu-toast-index", String(index));
       index += 1;
     }
     this.syncTimers();
@@ -386,7 +386,7 @@ export class LuToastViewport extends HTMLElement {
       swipe.axis === "x" ? (delta > 0 ? "right" : "left") : delta > 0 ? "down" : "up";
     // Against an allowed direction it moves a little, as a hint that it does not go that way.
     const movement = swipe.directions.includes(direction) ? delta : delta / 8;
-    swipe.toast.style.setProperty(`--toast-swipe-movement-${swipe.axis}`, `${movement}px`);
+    swipe.toast.style.setProperty(`--lu-toast-swipe-movement-${swipe.axis}`, `${movement}px`);
     swipe.toast.setAttribute("data-swipe-direction", direction);
   };
 
@@ -416,8 +416,8 @@ export class LuToastViewport extends HTMLElement {
 
   #reset(toast: HTMLElement) {
     toast.removeAttribute("data-swipe-direction");
-    toast.style.removeProperty("--toast-swipe-movement-x");
-    toast.style.removeProperty("--toast-swipe-movement-y");
+    toast.style.removeProperty("--lu-toast-swipe-movement-x");
+    toast.style.removeProperty("--lu-toast-swipe-movement-y");
   }
 }
 

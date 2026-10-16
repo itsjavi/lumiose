@@ -89,7 +89,7 @@ exist. stdout carries the protocol; console output of app code goes to stderr an
   `props` (`{ part, name, type, default, description }` from the API tables), `events` (the callback
   props, such as `onOpenChange`, and the native `on:` events the API names, such as `on:close`) and
   `styling` (the classes, data attributes, state selectors and custom properties the Styling section
-  names, such as `lu-dialog`, `dialog[open]` and `--nested-dialogs`). `theme` lists the cascade
+  names, such as `lu-dialog`, `dialog[open]` and `--lu-nested-dialogs`). `theme` lists the cascade
   layers (`lu.core`, `lu.theme`) and the default theme's `--lu-` custom properties.
 - **`dev_logs`** returns `available: false` with an explanation until `render` started the dev
   server: the logs of a `lumiose dev` started in a terminal are not visible to the MCP server. Pass

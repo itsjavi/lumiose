@@ -158,7 +158,7 @@ test.describe("keyboard contract (APG Dialog)", () => {
     await expect(advanced.getByRole("button", { name: "Done" })).toBeFocused();
     // The client script marks the parent and counts what is open inside it.
     await expect(settings).toHaveAttribute("data-nested-dialog-open");
-    await expect(settings).toHaveCSS("--nested-dialogs", "1");
+    await expect(settings).toHaveCSS("--lu-nested-dialogs", "1");
     await expect(advanced).not.toHaveAttribute("data-nested-dialog-open");
     expect(await axe(page)).toEqual([]);
 

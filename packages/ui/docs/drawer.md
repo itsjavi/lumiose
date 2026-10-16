@@ -121,14 +121,14 @@ backdrop fades with it.
 **With your own CSS**, style the drawer through `class`, `[data-swipe-direction]`, `dialog[open]`
 and `::backdrop`, and the swipe through the script's state, named as in Base UI:
 
-- `[data-swiping]` while a swipe runs, with `--drawer-swipe-movement-x` or
-  `--drawer-swipe-movement-y` (pixels, toward the edge) and `--drawer-swipe-progress` (0 to 1,
+- `[data-swiping]` while a swipe runs, with `--lu-drawer-swipe-movement-x` or
+  `--lu-drawer-swipe-movement-y` (pixels, toward the edge) and `--lu-drawer-swipe-progress` (0 to 1,
   for the backdrop);
 - `[data-swipe-dismiss]` (the direction) when a swipe closed it, until it has left.
 
 ```css
 .drawer {
-  translate: var(--drawer-swipe-movement-x, 0) var(--drawer-swipe-movement-y, 0);
+  translate: var(--lu-drawer-swipe-movement-x, 0) var(--lu-drawer-swipe-movement-y, 0);
   transition:
     translate 250ms ease-out,
     overlay 250ms allow-discrete,

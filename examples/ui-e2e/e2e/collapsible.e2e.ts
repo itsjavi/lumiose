@@ -84,7 +84,7 @@ test("the client script measures the panel while it opens and closes", async ({ 
   const keys = root(page, "keys");
   const panel = keys.locator(":scope > div");
   const height = () =>
-    panel.evaluate((el) => el.style.getPropertyValue("--collapsible-panel-height"));
+    panel.evaluate((el) => el.style.getPropertyValue("--lu-collapsible-panel-height"));
   await trigger(keys).click();
   // The opening transitions from 0 to the content's height, then the height is `auto`.
   expect(await height()).toMatch(/^\d+px$/);

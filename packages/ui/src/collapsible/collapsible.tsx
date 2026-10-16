@@ -131,7 +131,7 @@ function Panel({ children, ...rest }: CollapsiblePanelProps) {
 /**
  * A panel that its trigger shows and hides: a native `<details>`, so it works in server HTML with
  * no JavaScript, and find-in-page opens it. Unstyled: style the parts through `class`, `[open]` on
- * the root, and the panel's `--collapsible-panel-height`, `[data-starting-style]` and
+ * the root, and the panel's `--lu-collapsible-panel-height`, `[data-starting-style]` and
  * `[data-ending-style]` for an animation.
  *
  * @example
