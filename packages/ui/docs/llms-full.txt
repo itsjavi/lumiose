@@ -296,8 +296,10 @@ shadcn palette carries over:
 | `--lu-radius`                                     | Corner radius                       |
 
 The theme sets `color-scheme: light dark` on `:root` and every colour with `light-dark()`, so it
-follows the system. Set `color-scheme: light` (or `dark`) on `:root` or on any element to force
-one, and redefine a property outside layers to change it:
+follows the system. Set `color-scheme: light` (or `dark`) on `:root` or on any element, in CSS,
+inline or from a script, to force one, in development and in production builds alike (Lumiose's
+CSS target keeps `light-dark()` as written; an older `build.cssTarget` would lower it to colours
+that follow the system only). Redefine a property outside layers to change it:
 
 ```css
 :root {

@@ -5,7 +5,7 @@ status: In Progress
 assignee:
   - '@Halo'
 created_date: '2026-10-16 10:07'
-updated_date: '2026-10-16 14:18'
+updated_date: '2026-10-16 14:51'
 labels:
   - ui
   - review
@@ -46,7 +46,7 @@ Found by Prism's release review of @lumiose/ui (TASK-386, 2026-10-16) on main 94
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 M37: Forced color-scheme works in builds (light-dark lowering)
+- [x] #1 M37: Forced color-scheme works in builds (light-dark lowering)
 - [ ] #2 M38: Forced-colors styles for the theme's state indicators
 - [ ] #3 M39: Parts honour a caller's id
 - [ ] #4 M40: Collapsible/Accordion report no open change on mount
@@ -63,4 +63,6 @@ Found by Prism's release review of @lumiose/ui (TASK-386, 2026-10-16) on main 94
 - M38 done (dec08fa9): a @media (forced-colors: active) block at the end of default.css draws the state indicators in system colours (Chromium keeps author system colours there, forces transparent borders visible and drops shadows and plain backgrounds): switch thumb (ButtonText) and on state (Highlight), pressed toggle, the selected tab's bar (others' edges Canvas, so vertical tabs no longer all look selected; the Indicator in Highlight), progress and meter values (indeterminate segment with forced-color-adjust: none), the slider range, the scroll thumb and the highlighted menu item. e2e forced-colors.e2e.ts (computed styles; a small PNG reader, e2e/pixels.ts, checks that <progress>/<meter> values paint) fails without it in Chromium (5 tests) and Firefox (4); WebKit's emulation only matches the media query. theming.md documents it.
 - M40 done (b03d7261): Collapsible and Accordion.Item keep the state they last reported, so the toggle a <details> created open fires reports nothing; real changes still report. Island fixtures render one open on demand; e2e fails without the fix (dev, build, Firefox).
 - M37 and M39 wait on decisions, asked of Lux: M37 needs @lumiose/vite's cssTarget (Safari 17.5) or excluding light-dark from Lightning CSS lowering (Photon's area, decision-66): lowering puts var(--lightningcss-light/dark) into the theme's custom properties, which resolve on :root, so no subtree, inline or JS color-scheme can flip them and nothing in the theme can fix it. M39 is API shape: one-pass SSR writes a trigger's popovertarget/aria-controls before its popup or panel renders, so a caller id on the later part cannot reach it; proposed (b) honour id on parts nothing earlier points at and record the rest, with a Root id for the rest as a proposal.
+
+2026-10-16 (Halo): M37 done with Lux's decision (option a; Lux amends decision-66). @lumiose/vite's CSS_TARGET has Safari/iOS 17.5 (was 17.4), the first Safari with light-dark(), so Lightning CSS keeps light-dark() as written. plugin.test.ts's target guard now also checks that light-dark() stays and that a 17.4 target would lower it (--lightningcss-light). New ui-e2e color-scheme.e2e.ts: with the system light or dark, a subtree's color-scheme and an inline root color-scheme set from script flip the default theme's button background; it fails with the old target in build, Firefox and WebKit (all production builds) and passes in dev. Docs: stability.md (supported Safari 17.5), concepts/styles.md (what lowering light-dark() does), ui theming.md.
 <!-- SECTION:NOTES:END -->

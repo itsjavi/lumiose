@@ -362,9 +362,11 @@ project, which Lumiose's CSS compiler is built on. Lumiose adds `$` constants, s
 custom-property folding.
 
 Production builds minify CSS for the [supported browsers](../stability.md#browsers), which all
-have `:dir()`, nesting and the other modern syntax, so it ships as written. With an older
-`build.cssTarget` (or `build.target`) in your Vite config, Lightning CSS lowers what those browsers
-lack: `:dir(rtl)` becomes a list of `:lang()` selectors, which miss a `dir` attribute.
+have `:dir()`, nesting, `light-dark()` and the other modern syntax, so it ships as written. With an
+older `build.cssTarget` (or `build.target`) in your Vite config, Lightning CSS lowers what those
+browsers lack: `:dir(rtl)` becomes a list of `:lang()` selectors, which miss a `dir` attribute, and
+`light-dark()` becomes variables that follow the system's colour scheme only, so a `color-scheme`
+set on an element, inline or from a script no longer switches the colours.
 
 ### Stylesheets, CSS Modules and Tailwind
 

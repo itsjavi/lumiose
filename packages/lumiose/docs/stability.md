@@ -70,9 +70,10 @@ The browser code targets the browsers covered by
 feature is used only with a fallback (View Transitions and speculation rules are progressive: other
 browsers navigate normally).
 
-Production CSS is minified for Chrome and Edge 123, Firefox 124 and Safari 17.4 (Baseline widely
-available on 2026-10-01), so syntax they all support, such as `:dir()` and nesting, stays as
-written. A `build.cssTarget` or `build.target` in your Vite config replaces that list.
+Production CSS is minified for Chrome and Edge 123, Firefox 124 and Safari 17.5 (Baseline widely
+available on 2026-10-01, with the Safari release that brought `light-dark()`), so syntax they all
+support, such as `:dir()`, nesting and `light-dark()`, stays as written. A `build.cssTarget` or
+`build.target` in your Vite config replaces that list.
 
 ## Security
 
