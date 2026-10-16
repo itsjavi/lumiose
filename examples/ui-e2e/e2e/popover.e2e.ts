@@ -376,21 +376,21 @@ test.describe("focus leaving (TASK-436 M2)", () => {
     const trigger = page.getByRole("button", { name: "Notifications", exact: true });
     await trigger.focus();
     await page.keyboard.press("Enter");
-    const popup = page.getByRole("dialog", { name: "Notifications" });
-    await expect(popup).toBeVisible();
-    await expect(popup.getByRole("link", { name: "Settings" })).toBeFocused();
+    const notifications = page.getByRole("dialog", { name: "Notifications" });
+    await expect(notifications).toBeVisible();
+    await expect(notifications.getByRole("link", { name: "Settings" })).toBeFocused();
     await page.keyboard.press("Tab");
-    await expect(popup.getByRole("button", { name: "Close" })).toBeFocused();
+    await expect(notifications.getByRole("button", { name: "Close" })).toBeFocused();
     await page.keyboard.press("Tab");
-    await expect(popup).toBeHidden();
+    await expect(notifications).toBeHidden();
     await expect(page.getByRole("button", { name: "Next step" })).toBeFocused();
     // Shift+Tab back to its trigger keeps it open.
     await trigger.focus();
     await page.keyboard.press("Enter");
-    await expect(popup.getByRole("link", { name: "Settings" })).toBeFocused();
+    await expect(notifications.getByRole("link", { name: "Settings" })).toBeFocused();
     await page.keyboard.press("Shift+Tab");
     await expect(trigger).toBeFocused();
-    await expect(popup).toBeVisible();
+    await expect(notifications).toBeVisible();
   });
 });
 
