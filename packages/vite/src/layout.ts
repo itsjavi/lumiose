@@ -11,9 +11,11 @@
 // - The generated `.lumiose/tsconfig.generated.json`, for a tsconfig to extend, pairs the *mirror base* with
 //   `.lumiose/shadow`: the nearest common directory of the root and the Lumiose packages it uses.
 //   Imports may then leave `src/`, and the `.stsx` modules of linked workspace packages
-//   (`@acme/ui` re-exporting `./Button.stsx`) are shadowed and type-check too.
+//   (`@acme/ui` re-exporting `./Button.stsx`) are shadowed and type-check too, as are those of the
+//   Lumiose packages installed in the root's `node_modules`, whose shadows sit below
+//   `.lumiose/shadow/node_modules/…` (TASK-398).
 
-import { LUMIOSE_OWN_PACKAGES } from "./packages.ts";
+import { LUMIOSE_OWN_PACKAGES, Packages } from "./packages.ts";
 import { existsSync, readFileSync, realpathSync } from "node:fs";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
@@ -52,7 +54,9 @@ export function shadowLayout(root: string, project = "tsconfig.json"): ShadowLay
     ? found.value.filter((dir) => typeof dir === "string").map((dir) => resolve(found.base, dir))
     : [];
   const pair = shadowPair(root, rootDirs) ?? { base: root, mirrored: join(root, SOURCE_DIR) };
-  const used = lumiosePackages(root);
+  // Installed packages sit in the root's node_modules: inside the mirror base, never moving it.
+  const installed = new Packages(root).installed().map((p) => resolve(p.dir));
+  const used = [...lumiosePackages(root), ...installed];
   return {
     root,
     ...pair,
