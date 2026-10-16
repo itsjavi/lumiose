@@ -370,11 +370,14 @@ test.describe("async validate and Field.Validity (TASK-405)", () => {
     await page.goto("/form/island");
     await hydrated(page);
     await expect(checks(page)).toHaveText("checks: 1");
+    // Field.Validity's element re-renders on its own: the control stays the same node (TASK-415).
+    await login(page).evaluate((el) => ((window as any).loginControl = el));
     await login(page).pressSequentially("taken", { delay: 30 });
     await expect(page.getByText("taken is taken.", { exact: true })).toBeVisible();
     // One check for five keystrokes.
     await expect(checks(page)).toHaveText("checks: 2");
     await expect(validity(page)).toHaveText("invalid: taken is taken.");
+    expect(await login(page).evaluate((el) => el === (window as any).loginControl)).toBe(true);
     await expect(login(page)).toHaveAttribute("aria-invalid", "true");
     // Playwright's accessible description leaves `<output>` out: ask Chromium's tree.
     await expect.poll(() => axDescription(login(page))).toMatch(/taken is taken\./);

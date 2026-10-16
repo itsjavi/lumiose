@@ -77,5 +77,5 @@ export function ChildrenTextAndInsert() {
 	} }))());
 }
 export function SingleInsert() {
-	return _c3(show() ? branchArm(true, item("a")) : branchArm(false));
+	return _c3(show() ? branchArm(true, insertValue(item("a"))) : branchArm(false));
 }

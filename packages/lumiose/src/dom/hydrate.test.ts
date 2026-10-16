@@ -1328,3 +1328,62 @@ describe("hydrate: a selector in a branch that never runs (TASK-402)", () => {
     expect(visible()).toBe(html);
   });
 });
+
+// A component that returns `<>{fn(value())}</>` among the children of another component: its
+// element is claimed when the component is created, before the siblings after it, in dev (hot
+// wrappers) as in a build; an update re-renders only that element (TASK-415).
+describe("hydrate: a component that returns a single dynamic item (TASK-415)", () => {
+  it.each([false, true])("claims its element in order and updates it alone (hot: %s)", async (hot) => {
+    if (hot) {
+      (globalThis as Record<string, unknown>).hot = { data: {}, invalidate: vi.fn(), accept: vi.fn() };
+    }
+    try {
+      const { client, server } = await load(
+        `
+        import { signal } from "lumiose";
+        export const valid = signal(true);
+        function Validity(props: { children: (valid: boolean) => any }) {
+          return <>{props.children(valid())}</>;
+        }
+        function Field(props: { children?: any }) {
+          return <section>{props.children}</section>;
+        }
+        export function Login() {
+          return (
+            <Field>
+              <label>Login</label>
+              <input id="login" />
+              <Validity>{(v) => <p>{String(v)}</p>}</Validity>
+              <output>o</output>
+            </Field>
+          );
+        }`,
+        { hot },
+      );
+      await serve(server, [["Login", {}]]);
+      const html = visible();
+      const section = document.querySelector("section")!;
+      const [input, p, output] = ["input", "p", "output"].map((tag) => section.querySelector(tag));
+      await hydrateAll(client);
+      expect(warn).not.toHaveBeenCalled();
+      expect(visible()).toBe(html);
+      expect(section.querySelector("input")).toBe(input);
+      expect(section.querySelector("p")).toBe(p);
+      expect(section.querySelector("output")).toBe(output);
+
+      const removed: Node[] = [];
+      new MutationObserver((records) => {
+        for (const record of records) removed.push(...record.removedNodes);
+      }).observe(section, { childList: true });
+      client.valid.set(false);
+      flush();
+      await Promise.resolve();
+      expect(section.querySelector("p")!.textContent).toBe("false");
+      expect(section.querySelector("input")).toBe(input);
+      expect(input!.isConnected).toBe(true);
+      expect(removed).toEqual([p]);
+    } finally {
+      delete (globalThis as Record<string, unknown>).hot;
+    }
+  });
+});

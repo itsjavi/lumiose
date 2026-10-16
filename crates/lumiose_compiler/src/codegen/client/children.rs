@@ -357,7 +357,9 @@ impl<'a> Codegen<'a, '_> {
 
     /// A fragment, or a component's children: one renderable, or an array of them. With
     /// `lazy` (a `children` getter), a single expression is returned as is: the getter is read
-    /// inside the consumer's tracked `insert`.
+    /// inside the consumer's tracked `insert`. A fragment's single dynamic item is an
+    /// `insertValue` range, as in an array: a component that returns `<>{fn(value())}</>` then
+    /// claims its server nodes when it is created, before siblings created after it (TASK-415).
     pub(super) fn compile_fragment_items(
         &mut self,
         items: Vec<Item<'a>>,
@@ -368,7 +370,7 @@ impl<'a> Codegen<'a, '_> {
             return None;
         }
         if self.server() {
-            return Some(self.ssr_fragment_items(items, span));
+            return Some(self.ssr_fragment_items(items, span, lazy));
         }
         if items.len() == 1 {
             let item = items.into_iter().next().expect("one item");
@@ -384,7 +386,8 @@ impl<'a> Codegen<'a, '_> {
                         value: emitted.whole,
                     }
                 }
-                Item::Dynamic(expression) => self.renderable(expression, !lazy),
+                Item::Dynamic(expression) if lazy => self.renderable(expression),
+                Item::Dynamic(expression) => self.fragment_item(expression),
                 Item::Rows(..) => unreachable!("rows are only grouped in <table> children"),
             });
         }
@@ -514,9 +517,9 @@ impl<'a> Codegen<'a, '_> {
             .unwrap_or_else(|| Compiled::value(self.ast.array(span, [])))
     }
 
-    /// A dynamic item outside an element: components and JSX compile in place; other dynamic
-    /// expressions become tracked functions when `wrap` is set.
-    fn renderable(&mut self, expression: Expression<'a>, wrap: bool) -> Compiled<'a> {
+    /// The single item of a `children` getter: components and JSX compile in place, and other
+    /// expressions are returned as they are, for the consumer's tracked `insert` to read.
+    fn renderable(&mut self, expression: Expression<'a>) -> Compiled<'a> {
         // Reactive conditionals and lists render themselves (`branchValue`/`listValue`): the
         // consumer's `insert` places one range and never re-runs for them.
         let expression = match self.live_value(expression) {
@@ -528,25 +531,9 @@ impl<'a> Codegen<'a, '_> {
             Expression::JSXElement(_) | Expression::JSXFragment(_)
         );
         if jsx || is_jsx_like(&expression) {
-            let reactive = !jsx && self.reads_reactive_test(&expression);
-            let span = expression.span();
-            let compiled = self.compile_value(expression);
-            if reactive && wrap {
-                return Compiled::value(self.ast.arrow_returning(
-                    span,
-                    &[],
-                    compiled.setup,
-                    compiled.value,
-                ));
-            }
-            return compiled;
+            return self.compile_value(expression);
         }
-        let value = self.visited(expression);
-        if wrap && self.is_dynamic(&value) {
-            Compiled::value(self.compute(value))
-        } else {
-            Compiled::value(value)
-        }
+        Compiled::value(self.visited(expression))
     }
 
     pub(super) fn reads_reactive_test(&self, expression: &Expression<'a>) -> bool {

@@ -89,8 +89,6 @@ submit attempt, whatever the `validationMode`, and when a `validate` result or a
 arrives; a form reset makes it unchecked again. On the server, and without JavaScript, it renders
 the unchecked state (or the server's error) once.
 
-Render text inside an element of your own, as in `<p><Field.Validity>…</Field.Validity></p>`.
-
 ### Field.Control
 
 [Input](input.md)'s props: every native `<input>` prop, plus `value`, `defaultValue`,
