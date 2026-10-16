@@ -3,9 +3,9 @@ id: TASK-361
 title: UI test kit
 status: To Do
 assignee:
-  - '@Halo'
+  - '@Beacon'
 created_date: '2026-10-15 16:46'
-updated_date: '2026-10-16 00:41'
+updated_date: '2026-10-16 01:47'
 labels:
   - ui
 milestone: m-12
@@ -32,4 +32,6 @@ Contract: decision-62 (approved by the user on 2026-10-15 from the TASK-332 spik
 
 <!-- SECTION:NOTES:BEGIN -->
 2026-10-15 (user): @lumiose/ui meets WCAG 2.2 AA (decision-62, doc-9 section 17).
+
+2026-10-16 (Lux, orchestrator): reassigned to Beacon for batch 8. No Spark or Photon session is running, and new sessions cannot start from an automated turn, so the idle Beacon session takes it. It may edit the files the task needs (runtime, Vite plugin, CI workflows, site-kit).
 <!-- SECTION:NOTES:END -->

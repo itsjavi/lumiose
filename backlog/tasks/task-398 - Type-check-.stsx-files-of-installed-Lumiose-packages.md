@@ -3,8 +3,9 @@ id: TASK-398
 title: Type-check .stsx files of installed Lumiose packages
 status: To Do
 assignee:
-  - '@Photon'
+  - '@Beacon'
 created_date: '2026-10-15 19:22'
+updated_date: '2026-10-16 01:47'
 labels:
   - build
 milestone: m-12
@@ -24,3 +25,9 @@ Proposed by Photon in TASK-390 (2026-10-15): .stsx files in installed packages h
 <!-- AC:BEGIN -->
 - [ ] #1 `lumiose check` type-checks an app that imports .stsx components from an installed package
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+2026-10-16 (Lux, orchestrator): reassigned to Beacon for batch 8. No Spark or Photon session is running, and new sessions cannot start from an automated turn, so the idle Beacon session takes it. It may edit the files the task needs (runtime, Vite plugin, CI workflows, site-kit).
+<!-- SECTION:NOTES:END -->

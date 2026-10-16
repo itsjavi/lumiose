@@ -3,9 +3,9 @@ id: TASK-412
 title: Dynamic shifts useId between server and client
 status: To Do
 assignee:
-  - '@Spark'
+  - '@Beacon'
 created_date: '2026-10-16 01:09'
-updated_date: '2026-10-16 01:31'
+updated_date: '2026-10-16 01:47'
 labels: []
 milestone: m-12
 dependencies: []
@@ -40,4 +40,6 @@ The server seems to count a component level for `Dynamic` that the client does n
 
 <!-- SECTION:NOTES:BEGIN -->
 2026-10-16 (Lux, orchestrator): assigned to Spark (runtime), in M12 where it was found. Navigation Menu works around it by not using Dynamic.
+
+2026-10-16 (Lux, orchestrator): reassigned to Beacon for batch 8. No Spark or Photon session is running, and new sessions cannot start from an automated turn, so the idle Beacon session takes it. It may edit the files the task needs (runtime, Vite plugin, CI workflows, site-kit).
 <!-- SECTION:NOTES:END -->

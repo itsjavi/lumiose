@@ -3,8 +3,9 @@ id: TASK-388
 title: Two-way bindings miss a write-back of the previous value before the flush
 status: To Do
 assignee:
-  - '@Spark'
+  - '@Beacon'
 created_date: '2026-10-15 17:14'
+updated_date: '2026-10-16 01:47'
 labels:
   - runtime
 milestone: m-12
@@ -24,3 +25,9 @@ Found by Photon in TASK-360. With bind:value (and bindChecked, bindProperty), wh
 - [ ] #1 A write of the previous value before the flush is applied to the element by bindValue, bindChecked and bindProperty
 - [ ] #2 Tests cover the case for each helper
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+2026-10-16 (Lux, orchestrator): reassigned to Beacon for batch 8. No Spark or Photon session is running, and new sessions cannot start from an automated turn, so the idle Beacon session takes it. It may edit the files the task needs (runtime, Vite plugin, CI workflows, site-kit).
+<!-- SECTION:NOTES:END -->
