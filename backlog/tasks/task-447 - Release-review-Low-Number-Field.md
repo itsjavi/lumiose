@@ -3,8 +3,9 @@ id: TASK-447
 title: 'Release review, Low: Number Field'
 status: To Do
 assignee:
-  - '@Halo'
+  - '@Beacon'
 created_date: '2026-10-16 10:07'
+updated_date: '2026-10-16 12:34'
 labels:
   - ui
   - review
@@ -38,3 +39,9 @@ Found by Prism's release review of @lumiose/ui (TASK-386, 2026-10-16) on main 94
 - [ ] #2 L18: A mouse press on a stepper leaves focus on body (documented); the next ArrowUp does nothing.
 - [ ] #3 L19: Firefox: "12abc" stays shown after commit.
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+2026-10-16 (Lux, orchestrator): assigned to Beacon for release-review fix batch 2 (it fixed the related Highs in batch 1).
+<!-- SECTION:NOTES:END -->

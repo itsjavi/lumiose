@@ -3,8 +3,9 @@ id: TASK-440
 title: 'Release review, Medium: Number Field, OTP Field'
 status: To Do
 assignee:
-  - '@Halo'
+  - '@Beacon'
 created_date: '2026-10-16 10:07'
+updated_date: '2026-10-16 12:34'
 labels:
   - ui
   - review
@@ -47,3 +48,9 @@ Found by Prism's release review of @lumiose/ui (TASK-386, 2026-10-16) on main 94
 - [ ] #4 M35: OTP Field: no iOS focus zoom
 - [ ] #5 M36: Number Field: a keyboard with a minus sign when negatives are allowed
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+2026-10-16 (Lux, orchestrator): assigned to Beacon for release-review fix batch 2 (it fixed the related Highs in batch 1).
+<!-- SECTION:NOTES:END -->

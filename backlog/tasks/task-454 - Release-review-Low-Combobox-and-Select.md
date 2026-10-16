@@ -3,8 +3,9 @@ id: TASK-454
 title: 'Release review, Low: Combobox and Select'
 status: To Do
 assignee:
-  - '@Halo'
+  - '@Beacon'
 created_date: '2026-10-16 10:07'
+updated_date: '2026-10-16 12:34'
 labels:
   - ui
   - review
@@ -46,3 +47,9 @@ Found by Prism's release review of @lumiose/ui (TASK-386, 2026-10-16) on main 94
   - options starting with an icon break typeahead in 3 engines; document `label` on Select.Item and use it in the fixture;
   - the docs and e2e are stal
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+2026-10-16 (Lux, orchestrator): assigned to Beacon for release-review fix batch 2 (it fixed the related Highs in batch 1).
+<!-- SECTION:NOTES:END -->
