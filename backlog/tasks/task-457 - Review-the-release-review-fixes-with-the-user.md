@@ -5,7 +5,7 @@ status: To Do
 assignee:
   - '@Lux'
 created_date: '2026-10-16 12:33'
-updated_date: '2026-10-16 12:34'
+updated_date: '2026-10-16 13:07'
 labels:
   - ui
   - review
@@ -46,4 +46,6 @@ Items so far (fix batch 1):
 
 <!-- SECTION:NOTES:BEGIN -->
 2026-10-16 (user): don't push yet; push once the release-review fixes are merged and green, and ask then.
+
+2026-10-16 (Lux), for the user's information, not a question: the Safari CSS target goes from 17.4 to 17.5 (decision-66 amended, TASK-441 M37). At 17.4 the minifier lowered light-dark() so that a subtree's color-scheme could never flip the default theme. Safari 17.4 is listed without the theme's light and dark colours.
 <!-- SECTION:NOTES:END -->
