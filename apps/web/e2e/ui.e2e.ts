@@ -12,6 +12,8 @@ const COMPONENTS = [
   "Dialog",
   "Drawer",
   "Menu",
+  "Menubar",
+  "Navigation Menu",
   "Popover",
   "Select",
   "Separator",

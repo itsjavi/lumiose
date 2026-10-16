@@ -58,6 +58,10 @@ export default function Root(props: LayoutProps<"/">) {
         <a href="/toolbar/island">Toolbar in an island</a>
         <a href="/scroll-area">Scroll Area</a>
         <a href="/scroll-area/island">Scroll Area in an island</a>
+        <a href="/menubar">Menubar</a>
+        <a href="/menubar/island">Menubar in an island</a>
+        <a href="/navigation-menu">Navigation Menu</a>
+        <a href="/navigation-menu/island">Navigation Menu in an island</a>
       </nav>
       <main>{props.children}</main>
     </div>

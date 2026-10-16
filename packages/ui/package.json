@@ -77,6 +77,10 @@
     "./toolbar.css": "./src/toolbar/toolbar.css",
     "./scroll-area": "./src/scroll-area/scroll-area.tsx",
     "./scroll-area.css": "./src/scroll-area/scroll-area.css",
+    "./menubar": "./src/menubar/menubar.tsx",
+    "./menubar.css": "./src/menubar/menubar.css",
+    "./navigation-menu": "./src/navigation-menu/navigation-menu.tsx",
+    "./navigation-menu.css": "./src/navigation-menu/navigation-menu.css",
     "./themes/default.css": "./src/themes/default.css",
     "./package.json": "./package.json"
   },
@@ -140,6 +144,10 @@
       "./toolbar.css": "./dist/toolbar/toolbar.css",
       "./scroll-area": "./dist/scroll-area/scroll-area.tsx",
       "./scroll-area.css": "./dist/scroll-area/scroll-area.css",
+      "./menubar": "./dist/menubar/menubar.tsx",
+      "./menubar.css": "./dist/menubar/menubar.css",
+      "./navigation-menu": "./dist/navigation-menu/navigation-menu.tsx",
+      "./navigation-menu.css": "./dist/navigation-menu/navigation-menu.css",
       "./themes/default.css": "./dist/themes/default.css",
       "./package.json": "./package.json"
     }

@@ -5,7 +5,7 @@ status: To Do
 assignee:
   - '@Lux'
 created_date: '2026-10-14 03:30'
-updated_date: '2026-10-15 17:39'
+updated_date: '2026-10-16 00:41'
 labels:
   - proposal
   - islands
@@ -32,4 +32,6 @@ Found in the itsjavi.com port to Lumiose 0.4.0 (the port's FINDINGS.md), gap 6. 
 Found by the TASK-332 spike (Halo, 2026-10-15) while prototyping @lumiose/ui widgets; details in TASK-332's notes and examples/ui-spike. F2: there is no way to ship a custom element's definition (a web component's script) with a server-rendered page that has no island; whatever this proposal decides should cover that case.
 
 2026-10-15 (Nova): the ?client import (decision-63, TASK-354) covers this: a component imports a small browser script with ?client and calls the import while it renders; the pages that render it load just that script as a module script, without the island runtime (documented in concepts/islands.md, "Scripts of server-rendered components"). A theme toggle is import theme from "./theme.ts?client" plus theme() in the header component. Left open: .html imports with <script> still load their scripts through an empty client:load island, so those pages still load the runtime; the content plugin could ship them through ?client instead (a proposal for Lux, not started).
+
+2026-10-16 (Beacon): examples/ui-spike, mentioned above, was removed in TASK-363; it remains in the git history.
 <!-- SECTION:NOTES:END -->

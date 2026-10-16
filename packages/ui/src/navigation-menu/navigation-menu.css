@@ -1,0 +1,14 @@
+/*
+ * The CSS Navigation Menu needs to work, and nothing else (decision-62): `<lu-navigation-menu>`
+ * adds no box around its `<nav>`, and each content is placed next to its trigger by the shared
+ * placement rules (`data-side`, `data-align`, offsets, flips), which Popover and Menu use too. It
+ * sits in the `lu.core` layer, so any app CSS wins.
+ */
+@layer lu.core, lu.theme;
+@import "../placement/placement.css";
+
+@layer lu.core {
+  lu-navigation-menu {
+    display: contents;
+  }
+}

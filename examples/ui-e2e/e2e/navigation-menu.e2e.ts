@@ -1,0 +1,261 @@
+// Navigation Menu (TASK-380): a `<nav>` landmark whose triggers open panels of links through
+// `popovertarget` (links and panels work without JavaScript), hover intent with its delays, click
+// to keep a panel open, the disclosure navigation keys, closing when focus leaves, the vertical
+// orientation, the activation direction, the sync with a signal in an island, and WCAG 2.2 AA with
+// the default theme (doc-9 sections 1, 3 and 17).
+import { expect, test, type Page } from "@playwright/test";
+import { axe, clipped, lastNavLink, SCHEMES, smallTargets, TEXT_SPACING } from "./a11y.ts";
+
+const lumioseWarnings = (page: Page) => {
+  const warnings: string[] = [];
+  page.on("console", (message) => {
+    if (message.text().includes("LUM")) warnings.push(message.text());
+  });
+  return warnings;
+};
+
+/** A trigger by its exact name. */
+const trigger = (page: Page, name: string) => page.getByRole("button", { name, exact: true });
+
+/** The panel a trigger opens. */
+async function panelOf(page: Page, name: string) {
+  const id = await page.getByRole("button", { name, exact: true }).getAttribute("popovertarget");
+  return page.locator(`[id="${id}"]`);
+}
+
+/** Waits until the element runs: it answers a click on Products. */
+async function ready(page: Page) {
+  await expect(page.locator("lu-navigation-menu").first()).toHaveJSProperty("value", null);
+}
+
+test.describe("without JavaScript", () => {
+  test.use({ javaScriptEnabled: false });
+
+  test("it is a navigation landmark whose links and panels work", async ({ page }) => {
+    await page.goto("/navigation-menu");
+    const main = page.getByRole("navigation", { name: "Main" });
+    await expect(main.getByRole("link", { name: "Pricing" })).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
+    const products = main.getByRole("button", { name: "Products" });
+    await products.click();
+    const panel = await panelOf(page, "Products");
+    await expect(panel).toBeVisible();
+    await panel.getByRole("link", { name: "Analytics" }).click();
+    await expect(page).toHaveURL(/#analytics$/);
+    // One panel at a time.
+    await main.getByRole("button", { name: "Learn" }).click();
+    await expect(await panelOf(page, "Learn")).toBeVisible();
+    await expect(panel).toBeHidden();
+  });
+});
+
+test.describe("pointer", () => {
+  test("resting on a trigger opens its panel; another trigger switches; leaving closes", async ({
+    page,
+  }) => {
+    await page.goto("/navigation-menu");
+    await ready(page);
+    const products = trigger(page, "Products");
+    const productsPanel = await panelOf(page, "Products");
+    const learnPanel = await panelOf(page, "Learn");
+    await products.hover();
+    await expect(productsPanel).toBeVisible();
+    await expect(products).toHaveAttribute("aria-expanded", "true");
+    await page.getByRole("button", { name: "Learn", exact: true }).hover();
+    await expect(learnPanel).toBeVisible();
+    await expect(productsPanel).toBeHidden();
+    // Learn is to the right of Products: its panel comes in from the right.
+    await expect(learnPanel).toHaveAttribute("data-activation-direction", "right");
+    // The pointer can travel into the panel.
+    await learnPanel.getByRole("link", { name: "Guides" }).hover();
+    await page.waitForTimeout(400);
+    await expect(learnPanel).toBeVisible();
+    await page.mouse.move(700, 600);
+    await expect(learnPanel).toBeHidden();
+    await expect(page.getByRole("button", { name: "Learn", exact: true })).toHaveAttribute(
+      "aria-expanded",
+      "false",
+    );
+  });
+
+  test("a click keeps a panel open when the pointer leaves; another click closes it", async ({
+    page,
+  }) => {
+    await page.goto("/navigation-menu");
+    await ready(page);
+    const products = trigger(page, "Products");
+    const panel = await panelOf(page, "Products");
+    await products.hover();
+    await expect(panel).toBeVisible();
+    await products.click();
+    await page.mouse.move(700, 600);
+    await page.waitForTimeout(400);
+    await expect(panel).toBeVisible();
+    await products.click();
+    await expect(panel).toBeHidden();
+    // A click outside closes a panel too.
+    await products.click();
+    await expect(panel).toBeVisible();
+    await page.mouse.click(700, 600);
+    await expect(panel).toBeHidden();
+  });
+
+  test("a link marked closeOnClick closes its panel", async ({ page }) => {
+    await page.goto("/navigation-menu");
+    await ready(page);
+    await trigger(page, "Learn").click();
+    const panel = await panelOf(page, "Learn");
+    await panel.getByRole("link", { name: "Blog" }).click();
+    await expect(panel).toBeHidden();
+    await expect(page).toHaveURL(/#blog$/);
+  });
+});
+
+test.describe("keyboard", () => {
+  test("every trigger and link is a tab stop; Enter opens a panel and Tab goes into it", async ({
+    page,
+  }) => {
+    await page.goto("/navigation-menu");
+    await ready(page);
+    await lastNavLink(page).focus();
+    await page.keyboard.press("Tab");
+    const products = trigger(page, "Products");
+    await expect(products).toBeFocused();
+    await page.keyboard.press("Enter");
+    const panel = await panelOf(page, "Products");
+    await expect(panel).toBeVisible();
+    await page.keyboard.press("Tab");
+    await expect(panel.getByRole("link", { name: "Analytics" })).toBeFocused();
+    // Escape closes it and returns to the trigger.
+    await page.keyboard.press("Escape");
+    await expect(panel).toBeHidden();
+    await expect(products).toBeFocused();
+  });
+
+  test("the arrows move between triggers and links, and into and within a panel", async ({
+    page,
+  }) => {
+    await page.goto("/navigation-menu");
+    await ready(page);
+    const products = trigger(page, "Products");
+    const learn = trigger(page, "Learn");
+    const pricing = page.getByRole("link", { name: "Pricing" });
+    await products.focus();
+    await page.keyboard.press("ArrowRight");
+    await expect(learn).toBeFocused();
+    await page.keyboard.press("ArrowRight");
+    await expect(pricing).toBeFocused();
+    await page.keyboard.press("ArrowRight");
+    await expect(products).toBeFocused();
+    await page.keyboard.press("ArrowLeft");
+    await expect(pricing).toBeFocused();
+    await page.keyboard.press("Home");
+    await expect(products).toBeFocused();
+    await page.keyboard.press("End");
+    await expect(pricing).toBeFocused();
+    await products.focus();
+    await page.keyboard.press("ArrowDown");
+    const panel = await panelOf(page, "Products");
+    await expect(panel.getByRole("link", { name: "Analytics" })).toBeFocused();
+    await page.keyboard.press("ArrowDown");
+    await expect(panel.getByRole("link", { name: "Automation" })).toBeFocused();
+    await page.keyboard.press("ArrowUp");
+    await page.keyboard.press("ArrowUp");
+    await expect(panel.getByRole("link", { name: "Reports" })).toBeFocused();
+  });
+
+  test("focus leaving an open item closes its panel", async ({ page }) => {
+    await page.goto("/navigation-menu");
+    await ready(page);
+    const products = trigger(page, "Products");
+    await products.focus();
+    await page.keyboard.press("Enter");
+    const panel = await panelOf(page, "Products");
+    await expect(panel).toBeVisible();
+    await page.keyboard.press("ArrowRight");
+    await expect(trigger(page, "Learn")).toBeFocused();
+    await expect(panel).toBeHidden();
+  });
+
+  test("a vertical menu moves with Up and Down and opens toward its panel", async ({ page }) => {
+    await page.goto("/navigation-menu");
+    await ready(page);
+    const account = trigger(page, "Account");
+    await account.focus();
+    await page.keyboard.press("ArrowDown");
+    await expect(page.getByRole("link", { name: "Help" })).toBeFocused();
+    await page.keyboard.press("ArrowUp");
+    await expect(account).toBeFocused();
+    await page.keyboard.press("ArrowRight");
+    const panel = await panelOf(page, "Account");
+    await expect(panel.getByRole("link", { name: "Profile" })).toBeFocused();
+    await expect(panel).toHaveAttribute("data-side", "inline-end");
+  });
+});
+
+test.describe("in an island", () => {
+  test("the open item follows a signal both ways", async ({ page }) => {
+    const warnings = lumioseWarnings(page);
+    await page.goto("/navigation-menu/island");
+    const value = page.getByTestId("value");
+    const docs = await panelOf(page, "Docs");
+    await expect(async () => {
+      await page.getByTestId("open-docs").click({ timeout: 250 });
+      await expect(docs).toBeVisible({ timeout: 250 });
+    }).toPass();
+    await expect(value).toHaveText("Open: docs");
+    await page.getByRole("button", { name: "Community", exact: true }).click();
+    await expect(value).toHaveText("Open: community");
+    await expect(docs).toBeHidden();
+    await page.getByTestId("close").click();
+    await expect(value).toHaveText("Open: none");
+    await expect(await panelOf(page, "Community")).toBeHidden();
+    expect(warnings).toEqual([]);
+  });
+});
+
+test.describe("WCAG 2.2 AA with the default theme (doc-9 section 17)", () => {
+  for (const scheme of SCHEMES) {
+    test(`axe passes closed and open, on the page and the island (${scheme})`, async ({ page }) => {
+      await page.emulateMedia({ colorScheme: scheme });
+      await page.goto("/navigation-menu");
+      await ready(page);
+      expect(await axe(page)).toEqual([]);
+      await trigger(page, "Products").click();
+      await expect(await panelOf(page, "Products")).toBeVisible();
+      expect(await axe(page)).toEqual([]);
+      await page.goto("/navigation-menu/island");
+      await expect(async () => {
+        await page.getByTestId("open-docs").click({ timeout: 250 });
+        await expect(await panelOf(page, "Docs")).toBeVisible({ timeout: 250 });
+      }).toPass();
+      expect(await axe(page)).toEqual([]);
+    });
+  }
+
+  test("triggers and links are 24px targets with a focus ring", async ({ page }) => {
+    await page.goto("/navigation-menu");
+    await ready(page);
+    await trigger(page, "Products").click();
+    expect(await smallTargets(page.locator("main"))).toEqual([]);
+    const learn = trigger(page, "Learn");
+    await learn.focus();
+    await page.keyboard.press("Shift+Tab");
+    await page.keyboard.press("Tab");
+    expect(await learn.evaluate((el) => getComputedStyle(el).outlineStyle)).toBe("solid");
+  });
+
+  test("the page reflows at 320 CSS pixels with text spacing (1.4.10, 1.4.12)", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 320, height: 640 });
+    await page.goto("/navigation-menu");
+    await page.addStyleTag({ content: TEXT_SPACING });
+    const main = page.locator("main");
+    const box = (await main.boundingBox())!;
+    expect(box.x + box.width).toBeLessThanOrEqual(320);
+    expect(await clipped(main)).toEqual([]);
+  });
+});

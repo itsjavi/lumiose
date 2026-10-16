@@ -1,0 +1,83 @@
+import { NavigationMenu } from "@lumiose/ui";
+import { Title } from "lumiose";
+
+// Server-rendered, no island: a site's main navigation, with two items that open panels of links,
+// a plain link marked as the current page, and a vertical menu. Without JavaScript the links work
+// and a trigger opens its panel on a click. Default theme.
+export default function NavigationMenuPage() {
+  return (
+    <>
+      <Title>Navigation Menu</Title>
+      <h1>Navigation Menu</h1>
+      <NavigationMenu.Root aria-label="Main" class="lu-navigation-menu">
+        <NavigationMenu.List>
+          <NavigationMenu.Item value="products">
+            <NavigationMenu.Trigger>
+              Products <NavigationMenu.Icon>▾</NavigationMenu.Icon>
+            </NavigationMenu.Trigger>
+            <NavigationMenu.Content>
+              <ul>
+                <li>
+                  <NavigationMenu.Link href="#analytics">Analytics</NavigationMenu.Link>
+                </li>
+                <li>
+                  <NavigationMenu.Link href="#automation">Automation</NavigationMenu.Link>
+                </li>
+                <li>
+                  <NavigationMenu.Link href="#reports">Reports</NavigationMenu.Link>
+                </li>
+              </ul>
+            </NavigationMenu.Content>
+          </NavigationMenu.Item>
+          <NavigationMenu.Item value="learn">
+            <NavigationMenu.Trigger>
+              Learn <NavigationMenu.Icon>▾</NavigationMenu.Icon>
+            </NavigationMenu.Trigger>
+            <NavigationMenu.Content>
+              <ul>
+                <li>
+                  <NavigationMenu.Link href="#guides">Guides</NavigationMenu.Link>
+                </li>
+                <li>
+                  <NavigationMenu.Link href="#blog" closeOnClick>
+                    Blog
+                  </NavigationMenu.Link>
+                </li>
+              </ul>
+            </NavigationMenu.Content>
+          </NavigationMenu.Item>
+          <NavigationMenu.Item>
+            <NavigationMenu.Link href="#pricing" active>
+              Pricing
+            </NavigationMenu.Link>
+          </NavigationMenu.Item>
+        </NavigationMenu.List>
+      </NavigationMenu.Root>
+
+      <h2>Vertical</h2>
+      <NavigationMenu.Root aria-label="Sidebar" orientation="vertical" class="lu-navigation-menu">
+        <NavigationMenu.List>
+          <NavigationMenu.Item value="account">
+            <NavigationMenu.Trigger>Account</NavigationMenu.Trigger>
+            <NavigationMenu.Content>
+              <ul>
+                <li>
+                  <NavigationMenu.Link href="#profile">Profile</NavigationMenu.Link>
+                </li>
+                <li>
+                  <NavigationMenu.Link href="#security">Security</NavigationMenu.Link>
+                </li>
+              </ul>
+            </NavigationMenu.Content>
+          </NavigationMenu.Item>
+          <NavigationMenu.Item>
+            <NavigationMenu.Link href="#help">Help</NavigationMenu.Link>
+          </NavigationMenu.Item>
+        </NavigationMenu.List>
+      </NavigationMenu.Root>
+      <p>
+        <a href="#after">A link after the menus</a>
+      </p>
+    </>
+  );
+}

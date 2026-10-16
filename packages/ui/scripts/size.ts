@@ -192,6 +192,18 @@ const COMPONENTS: Component[] = [
     scripts: ["scroll-area/scroll-area.script.ts"],
     css: "scroll-area/scroll-area.css",
   },
+  {
+    name: "menubar",
+    module: "menubar/menubar.tsx",
+    scripts: ["menu/menu.script.ts", "menubar/menubar.script.ts"],
+    css: "menubar/menubar.css",
+  },
+  {
+    name: "navigation-menu",
+    module: "navigation-menu/navigation-menu.tsx",
+    scripts: ["navigation-menu/navigation-menu.script.ts"],
+    css: "navigation-menu/navigation-menu.css",
+  },
 ];
 
 const CLIENT_SCRIPT = /\?client$/;

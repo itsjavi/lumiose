@@ -166,7 +166,16 @@ export interface MenuContextValue {
   submenu: boolean;
   /** How many triggers are rendered: the popup is labelled by the trigger only when there is one. */
   triggers: Signal<number>;
+  /** The orientation of the Menubar a top-level menu is in; `undefined` outside one. */
+  menubar?: "horizontal" | "vertical";
 }
+
+/** What a Menubar tells the Menus inside it (../menubar/menubar.tsx). */
+export interface MenubarContextValue {
+  orientation: "horizontal" | "vertical";
+}
+
+export const MenubarContext = createContext<MenubarContextValue>();
 
 interface GroupContextValue {
   labelId: string;
@@ -204,12 +213,16 @@ function menuRoot(props: MenuRootProps, submenu: boolean) {
   menuScript();
   const host = ref<MenuElement>();
   const id = useId();
+  // A top-level menu of a Menubar: not a submenu, and not inside another menu.
+  const bar =
+    submenu || useContext(MenuContext) !== undefined ? undefined : useContext(MenubarContext);
   const context: MenuContextValue = {
     popupId: `${id}-popup`,
     triggerId: `${id}-trigger`,
     id,
     submenu,
     triggers: signal(0),
+    menubar: bar?.orientation,
   };
 
   // The `open` prop drives the element; its `openchange` event reports back, so a signal written by
@@ -229,6 +242,7 @@ function menuRoot(props: MenuRootProps, submenu: boolean) {
     <MenuContext value={context}>
       <lu-menu
         ref={host}
+        role={context.menubar ? "none" : undefined}
         on:openchange={(event: CustomEvent<MenuOpenChangeDetail>) =>
           props.onOpenChange?.(event.detail.open)
         }
@@ -258,6 +272,7 @@ function Trigger({ children, style, ...rest }: MenuTriggerProps) {
       type="button"
       {...rest}
       id={menu.triggerId}
+      role={menu.menubar ? "menuitem" : undefined}
       popovertarget={menu.popupId}
       aria-haspopup="menu"
       style={withStyle(style, { "anchor-name": anchorName(menu.id) })}
@@ -299,7 +314,7 @@ function Popup({ children, side, align, sideOffset, alignOffset, style, ...rest 
       {...placement(
         { side, align, sideOffset, alignOffset, style },
         menu.id,
-        menu.submenu ? "inline-end" : "bottom",
+        menu.submenu || menu.menubar === "vertical" ? "inline-end" : "bottom",
         "start",
       )}
     >

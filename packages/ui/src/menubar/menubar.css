@@ -1,0 +1,16 @@
+/*
+ * Menubar is Menus in a bar: `@lumiose/ui/menu.css` lays out their popups and items. `<lu-menubar>`,
+ * a custom element, is inline until styled: it is a row of its items (a column when vertical), and
+ * each menu's `<lu-menu>` adds no box.
+ */
+@layer lu.core, lu.theme;
+@import "../menu/menu.css";
+
+@layer lu.core {
+  lu-menubar {
+    display: flex;
+  }
+  lu-menubar[aria-orientation="vertical"] {
+    flex-direction: column;
+  }
+}

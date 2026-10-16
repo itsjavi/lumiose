@@ -63,42 +63,44 @@ custom properties, named as in shadcn/ui, are listed in [Theming](theming.md#the
 
 ## Components
 
-| Component                           | Status                                                                                    |
-| ----------------------------------- | ----------------------------------------------------------------------------------------- |
-| [Dialog, alert dialog](dialog.md)   | Available: native `<dialog>`, works without JavaScript                                    |
-| [Popover](popover.md)               | Available: native popover, works without JavaScript                                       |
-| [Tooltip](tooltip.md)               | Available: native hint popover, opened by its script                                      |
-| [Menu](menu.md)                     | Available: popover menu, opens without JavaScript                                         |
-| [Combobox](combobox.md)             | Available: `<lu-combobox>`, a form control that filters its options                       |
-| [Select](select.md)                 | Available: native `<select>`, customizable where supported, no script                     |
-| [Tabs](tabs.md)                     | Available: server HTML with the full state, `<lu-tabs>` adds the keys                     |
-| [Field](field.md)                   | Available: label, description, errors; native validation in the field                     |
-| [Fieldset](fieldset.md)             | Available: native `<fieldset>` and `<legend>`, no script                                  |
-| [Form](form.md)                     | Available: native `<form>`, a form action's errors in its fields                          |
-| [Input](input.md)                   | Available: native `<input>`, no script                                                    |
-| [Checkbox](checkbox.md)             | Available: native checkbox, indeterminate and read-only                                   |
-| [Checkbox Group](checkbox-group.md) | Available: checkboxes with one value and a parent checkbox                                |
-| [Radio](radio-group.md)             | Available: native radios in a radiogroup fieldset                                         |
-| [Switch](switch.md)                 | Available: native checkbox with the switch role                                           |
-| [Collapsible](collapsible.md)       | Available: native `<details>`, works without JavaScript                                   |
-| [Accordion](accordion.md)           | Available: native `<details>` items, `<lu-accordion>` adds the keys                       |
-| [Toast](toast.md)                   | Available: server-rendered or from a manager, `<lu-toast-viewport>` times and closes them |
-| [Button](button.md)                 | Available: native `<button>`, focusable when disabled                                     |
-| [Toggle](toggle.md)                 | Available: `<button aria-pressed>`, pressed by the component in an island                 |
-| [Toggle Group](toggle-group.md)     | Available: `<lu-toggle-group>` presses its toggles and moves focus                        |
-| [Progress](progress.md)             | Available: native `<progress>`, indeterminate when unknown, no script                     |
-| [Meter](meter.md)                   | Available: native `<meter>`, no script                                                    |
-| [Slider](slider.md)                 | Available: native range inputs, `<lu-slider>` adds ranges and Page Up and Page Down       |
-| [Number Field](number-field.md)     | Available: native number input, or a formatted spinbutton; press-and-hold buttons         |
-| [Autocomplete](autocomplete.md)     | Available: free text with suggestions, on Combobox's `<lu-combobox>`                      |
-| [OTP Field](otp-field.md)           | Available: one native input under visual slots; autofill, paste, validation natively      |
-| [Preview Card](preview-card.md)     | Available: a link whose hover or focus opens a card; the link works without JavaScript    |
-| [Toolbar](toolbar.md)               | Available: `<lu-toolbar>`, one tab stop across buttons, links, inputs and toggles         |
-| [Scroll Area](scroll-area.md)       | Available: native scrolling, custom scrollbars from `<lu-scroll-area>`                    |
-| [Context Menu](context-menu.md)     | Available: Menu at the pointer, opened by its script (right-click, long press, keys)      |
-| [Drawer](drawer.md)                 | Available: a Dialog against an edge, works without JavaScript; its script adds the swipe  |
-| [Separator](separator.md)           | Available: native `<hr>`, horizontal or vertical, no script                               |
-| [Avatar](avatar.md)                 | Available: an image over its fallback, `<lu-avatar>` follows its loading status           |
+| Component                             | Status                                                                                    |
+| ------------------------------------- | ----------------------------------------------------------------------------------------- |
+| [Dialog, alert dialog](dialog.md)     | Available: native `<dialog>`, works without JavaScript                                    |
+| [Popover](popover.md)                 | Available: native popover, works without JavaScript                                       |
+| [Tooltip](tooltip.md)                 | Available: native hint popover, opened by its script                                      |
+| [Menu](menu.md)                       | Available: popover menu, opens without JavaScript                                         |
+| [Combobox](combobox.md)               | Available: `<lu-combobox>`, a form control that filters its options                       |
+| [Select](select.md)                   | Available: native `<select>`, customizable where supported, no script                     |
+| [Tabs](tabs.md)                       | Available: server HTML with the full state, `<lu-tabs>` adds the keys                     |
+| [Field](field.md)                     | Available: label, description, errors; native validation in the field                     |
+| [Fieldset](fieldset.md)               | Available: native `<fieldset>` and `<legend>`, no script                                  |
+| [Form](form.md)                       | Available: native `<form>`, a form action's errors in its fields                          |
+| [Input](input.md)                     | Available: native `<input>`, no script                                                    |
+| [Checkbox](checkbox.md)               | Available: native checkbox, indeterminate and read-only                                   |
+| [Checkbox Group](checkbox-group.md)   | Available: checkboxes with one value and a parent checkbox                                |
+| [Radio](radio-group.md)               | Available: native radios in a radiogroup fieldset                                         |
+| [Switch](switch.md)                   | Available: native checkbox with the switch role                                           |
+| [Collapsible](collapsible.md)         | Available: native `<details>`, works without JavaScript                                   |
+| [Accordion](accordion.md)             | Available: native `<details>` items, `<lu-accordion>` adds the keys                       |
+| [Toast](toast.md)                     | Available: server-rendered or from a manager, `<lu-toast-viewport>` times and closes them |
+| [Button](button.md)                   | Available: native `<button>`, focusable when disabled                                     |
+| [Toggle](toggle.md)                   | Available: `<button aria-pressed>`, pressed by the component in an island                 |
+| [Toggle Group](toggle-group.md)       | Available: `<lu-toggle-group>` presses its toggles and moves focus                        |
+| [Progress](progress.md)               | Available: native `<progress>`, indeterminate when unknown, no script                     |
+| [Meter](meter.md)                     | Available: native `<meter>`, no script                                                    |
+| [Slider](slider.md)                   | Available: native range inputs, `<lu-slider>` adds ranges and Page Up and Page Down       |
+| [Number Field](number-field.md)       | Available: native number input, or a formatted spinbutton; press-and-hold buttons         |
+| [Autocomplete](autocomplete.md)       | Available: free text with suggestions, on Combobox's `<lu-combobox>`                      |
+| [OTP Field](otp-field.md)             | Available: one native input under visual slots; autofill, paste, validation natively      |
+| [Preview Card](preview-card.md)       | Available: a link whose hover or focus opens a card; the link works without JavaScript    |
+| [Toolbar](toolbar.md)                 | Available: `<lu-toolbar>`, one tab stop across buttons, links, inputs and toggles         |
+| [Scroll Area](scroll-area.md)         | Available: native scrolling, custom scrollbars from `<lu-scroll-area>`                    |
+| [Context Menu](context-menu.md)       | Available: Menu at the pointer, opened by its script (right-click, long press, keys)      |
+| [Drawer](drawer.md)                   | Available: a Dialog against an edge, works without JavaScript; its script adds the swipe  |
+| [Separator](separator.md)             | Available: native `<hr>`, horizontal or vertical, no script                               |
+| [Avatar](avatar.md)                   | Available: an image over its fallback, `<lu-avatar>` follows its loading status           |
+| [Menubar](menubar.md)                 | Available: Menus in a `role="menubar"`, `<lu-menubar>` moves between them                 |
+| [Navigation Menu](navigation-menu.md) | Available: a `<nav>` whose triggers open panels of links, works without JavaScript        |
 
 ## Size
 

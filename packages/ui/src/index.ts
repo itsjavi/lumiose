@@ -238,3 +238,16 @@ export type {
   ScrollAreaThumbProps,
   ScrollAreaViewportProps,
 } from "./scroll-area/scroll-area.tsx";
+export { Menubar } from "./menubar/menubar.tsx";
+export type { MenubarOrientation, MenubarProps } from "./menubar/menubar.tsx";
+export { NavigationMenu } from "./navigation-menu/navigation-menu.tsx";
+export type {
+  NavigationMenuContentProps,
+  NavigationMenuIconProps,
+  NavigationMenuItemProps,
+  NavigationMenuLinkProps,
+  NavigationMenuListProps,
+  NavigationMenuOrientation,
+  NavigationMenuRootProps,
+  NavigationMenuTriggerProps,
+} from "./navigation-menu/navigation-menu.tsx";

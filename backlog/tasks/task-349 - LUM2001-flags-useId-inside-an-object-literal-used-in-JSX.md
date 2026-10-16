@@ -5,6 +5,7 @@ status: To Do
 assignee:
   - '@Photon'
 created_date: '2026-10-15 12:36'
+updated_date: '2026-10-16 00:41'
 labels:
   - compiler
   - diagnostics
@@ -16,7 +17,7 @@ ordinal: 351000
 ## Description
 
 <!-- SECTION:DESCRIPTION:BEGIN -->
-Found by the TASK-332 spike (Halo, 2026-10-15) while prototyping @lumiose/ui widgets; details in TASK-332's notes and examples/ui-spike. LUM2001 (a non-reactive value read in JSX) is reported for a useId() call inside an object literal that is spread or passed in JSX, although useId() returns a constant.
+Found by the TASK-332 spike (Halo, 2026-10-15) while prototyping @lumiose/ui widgets; details in TASK-332's notes and examples/ui-spike (removed in TASK-363; it remains in the git history). LUM2001 (a non-reactive value read in JSX) is reported for a useId() call inside an object literal that is spread or passed in JSX, although useId() returns a constant.
 <!-- SECTION:DESCRIPTION:END -->
 
 ## Acceptance Criteria

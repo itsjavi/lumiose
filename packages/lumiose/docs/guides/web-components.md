@@ -130,6 +130,10 @@ Lumiose follows React 19's rule. On a custom element (a tag with a dash), each p
 - **the attribute** otherwise: `max={5}` writes `max="5"`, and `true`, `false` and `null` add or
   remove it, as on built-in elements.
 
+A read-only property (a getter without a setter) cannot take a prop: the assignment throws, and
+an island that renders the prop fails to hydrate. When you write the element, give such a property
+a setter, or a name that no prop uses (a private `#getter` for an attribute it reads).
+
 Strings set as properties keep the URL check of attributes (a `javascript:` URL becomes a
 placeholder). An element that is not defined yet when the component runs gets attributes for
 everything, so load its definition first (above). `class`, `style`, `ref`, `attach` and
