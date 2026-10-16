@@ -9,7 +9,7 @@ test("checkValidity() is silent; a submit attempt shows the field's error and fo
   await page.goto("/form/attempt");
   const email = page.getByRole("textbox", { name: "Email" });
   const nickname = page.getByRole("textbox", { name: "Nickname" });
-  const error = page.locator("lu-field output");
+  const error = page.locator("lu-field").first().locator("output");
   // Field's script is up once it set the control's description (none here) or its id: wait for
   // its listener by a first, harmless focus round.
   await page.waitForLoadState("networkidle");

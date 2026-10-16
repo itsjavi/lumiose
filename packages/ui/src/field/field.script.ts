@@ -41,6 +41,8 @@ const shown = new WeakSet<HTMLElement>();
 const server = new WeakMap<HTMLElement, boolean>();
 /** Controls that lost focus once. */
 const touched = new WeakSet<Element>();
+/** Controls the user edited (TASK-446, L9): erasing an edit back to the default still counts. */
+const edited = new WeakSet<Element>();
 /** A pending focus move to the first invalid control of a form. */
 let focusing = false;
 /**
@@ -74,19 +76,12 @@ function errors(field: HTMLElement): HTMLElement[] {
   ].filter((error) => fieldOf(error) === field);
 }
 
-/** What an Error part shows for: "" (any problem), "always", or a `ValidityState` key. */
+/**
+ * What an Error part shows for: "" (any problem), "always", or a `ValidityState` key; a second
+ * Error of a kind ends in `-2` (TASK-446, L14).
+ */
 const matchOf = (field: HTMLElement, error: HTMLElement) =>
-  error.id.slice(`${field.id}-error`.length + 1);
-
-function dirty(control: Control): boolean {
-  if (control instanceof HTMLInputElement && /^(checkbox|radio)$/.test(control.type)) {
-    return control.checked !== control.defaultChecked;
-  }
-  if (control instanceof HTMLInputElement || control instanceof HTMLTextAreaElement) {
-    return control.value !== control.defaultValue;
-  }
-  return true;
-}
+  error.id.slice(`${field.id}-error`.length + 1).replace(/-?\d+$/, "");
 
 /**
  * Puts `message` in an `<output>` Error: into its text node, which Lumiose renders and updates with
@@ -120,8 +115,10 @@ function render(field: HTMLElement): void {
     if (show) visible.push(error.id);
   }
   const descriptions = [
-    ...field.querySelectorAll<HTMLElement>(`[id="${CSS.escape(`${field.id}-description`)}"]`),
-  ].map((description) => description.id);
+    ...field.querySelectorAll<HTMLElement>(`[id^="${CSS.escape(`${field.id}-description`)}"]`),
+  ]
+    .filter((description) => fieldOf(description) === field)
+    .map((description) => description.id);
   const done = new Set<Element>();
   for (const control of all) {
     const bad = (invalid !== undefined && !control.validity.valid) || fromServer;
@@ -274,7 +271,7 @@ on("focusout", (event) => {
   const mode = field.getAttribute("validation-mode") ?? "onSubmit";
   if (mode === "onSubmit" || control.validity?.valid !== false) return;
   // A missing value waits until the field was edited, as in Base UI.
-  if (control.validity.valueMissing && !dirty(control)) return;
+  if (control.validity.valueMissing && !edited.has(control)) return;
   shown.add(field);
   render(field);
 });
@@ -283,6 +280,7 @@ function onEdit(event: Event) {
   const field = fieldOf(event.target);
   if (!field) return;
   meet(field);
+  edited.add(event.target as Element);
   // A new value: the server's verdict no longer applies.
   server.set(field, false);
   if (field.getAttribute("validation-mode") === "onChange") shown.add(field);
@@ -336,6 +334,33 @@ on("reset", (event) => {
       render(field);
     }
   });
+});
+
+// A control that becomes disabled (its own attribute, a Field's, a fieldset's) is barred from
+// validation: a field whose controls are all disabled shows no error, the server's included
+// (TASK-446, L10).
+new MutationObserver((records) => {
+  const fields = new Set<HTMLElement>();
+  for (const { target } of records) {
+    const element = target as Element;
+    const own = fieldOf(element);
+    if (own) fields.add(own);
+    if (element.localName === "fieldset" || element.localName === "lu-field") {
+      for (const field of element.querySelectorAll<HTMLElement>("lu-field")) fields.add(field);
+    }
+  }
+  for (const field of fields) {
+    if (!server.has(field)) continue;
+    if (controls(field).every((control) => control.matches(":disabled"))) {
+      shown.delete(field);
+      server.set(field, false);
+    }
+    render(field);
+  }
+}).observe(document.documentElement, {
+  attributes: true,
+  attributeFilter: ["disabled"],
+  subtree: true,
 });
 
 function meetAll() {

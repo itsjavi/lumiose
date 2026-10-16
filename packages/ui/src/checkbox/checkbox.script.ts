@@ -22,6 +22,9 @@
 
 const BOX = "input[type=checkbox]";
 
+/** Checkboxes the server rendered indeterminate: a form reset puts them back (TASK-446, L11). */
+const mixed = new WeakSet<HTMLInputElement>();
+
 /** The fieldset a checkbox belongs to, for a group. */
 const groupOf = (input: Element) => input.closest("fieldset");
 
@@ -133,6 +136,9 @@ document.addEventListener("reset", (event) => {
   const form = event.target as HTMLFormElement;
   // The checkboxes take their default state after the event.
   setTimeout(() => {
+    for (const input of form.querySelectorAll<HTMLInputElement>(BOX)) {
+      if (mixed.has(input)) input.indeterminate = true;
+    }
     for (const parent of form.querySelectorAll<HTMLInputElement>(`${BOX}[data-parent]`)) {
       const group = groupOf(parent);
       if (group) follow(group);
@@ -140,10 +146,26 @@ document.addEventListener("reset", (event) => {
   });
 });
 
+// Shift+Tab into a radio group with nothing checked lands on its last radio in Chromium and
+// WebKit: the first enabled one takes focus instead, as Tab gives it (TASK-446, L13).
+document.addEventListener("focusin", (event) => {
+  const radio = event.target;
+  if (!(radio instanceof HTMLInputElement) || radio.type !== "radio") return;
+  const group = radio.closest<HTMLElement>("[role=radiogroup]");
+  if (!group || group.contains(event.relatedTarget as Node | null)) return;
+  const radios = [...group.querySelectorAll<HTMLInputElement>("input[type=radio]")].filter(
+    (each) => each.name === radio.name && each.closest("[role=radiogroup]") === group,
+  );
+  if (radios.some((each) => each.checked)) return;
+  const first = radios.find((each) => !each.matches(":disabled"));
+  if (first && first !== radio) first.focus();
+});
+
 function start() {
   for (const input of document.querySelectorAll<HTMLInputElement>(`${BOX}[data-indeterminate]`)) {
     // From here on the property, and `:indeterminate`, hold the state.
     input.indeterminate = true;
+    if (!input.hasAttribute("data-parent")) mixed.add(input);
     input.removeAttribute("data-indeterminate");
   }
 }

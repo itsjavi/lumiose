@@ -97,12 +97,12 @@ Radio Group ships no stylesheet: it needs none to work.
 
 ## Keyboard and focus
 
-| Key                     | Does                                                            |
-| ----------------------- | --------------------------------------------------------------- |
-| Tab                     | Into the group, on the checked radio (or the first); out of it. |
-| Arrow Down, Arrow Right | Checks the next enabled radio, around at the end.               |
-| Arrow Up, Arrow Left    | Checks the previous enabled radio, around at the start.         |
-| Space                   | Checks the focused radio.                                       |
+| Key                     | Does                                                                              |
+| ----------------------- | --------------------------------------------------------------------------------- |
+| Tab                     | Into the group, on the checked radio (or the first, from either side); out of it. |
+| Arrow Down, Arrow Right | Checks the next enabled radio, around at the end.                                 |
+| Arrow Up, Arrow Left    | Checks the previous enabled radio, around at the start.                           |
+| Space                   | Checks the focused radio.                                                         |
 
 Enter does not check a radio. Read-only radios move focus but do not change. Right to left, Arrow
 Left checks the next radio and Arrow Right the previous one.

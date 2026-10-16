@@ -1041,17 +1041,17 @@ Name it with a wrapping `<label>`, a `<label for>`, a `Field.Label`, or `aria-la
 
 ### Checkbox.Root
 
-| Prop              | Type                         | Default |                                                                                                      |
-| ----------------- | ---------------------------- | ------- | ---------------------------------------------------------------------------------------------------- |
-| `checked`         | `boolean`                    |         | Checks or unchecks it when it changes. Pair it with `onCheckedChange`.                               |
-| `defaultChecked`  | `boolean`                    | `false` | Whether it starts checked; a form reset goes back to it.                                             |
-| `onCheckedChange` | `(checked: boolean) => void` |         | Called after the user checks or unchecks it.                                                         |
-| `bind:checked`    | `Signal<boolean>`            |         | Stands in for `checked` and `onCheckedChange`.                                                       |
-| `indeterminate`   | `boolean`                    | `false` | Neither checked nor unchecked (mixed for assistive technology) until the user toggles it.            |
-| `value`           | `string`                     | `"on"`  | What it submits when checked, and its identity in a Checkbox Group.                                  |
-| `parent`          | `boolean`                    | `false` | The "select all" checkbox of a Checkbox Group: it checks them all and follows them. Never submitted. |
-| `readOnly`        | `boolean`                    | `false` | It cannot be toggled, but stays focusable and is submitted.                                          |
-| `uncheckedValue`  | `string`                     |         | What it submits when unchecked (by the script); by default an unchecked box submits nothing.         |
+| Prop              | Type                         | Default |                                                                                                                         |
+| ----------------- | ---------------------------- | ------- | ----------------------------------------------------------------------------------------------------------------------- |
+| `checked`         | `boolean`                    |         | Checks or unchecks it when it changes. Pair it with `onCheckedChange`.                                                  |
+| `defaultChecked`  | `boolean`                    | `false` | Whether it starts checked; a form reset goes back to it.                                                                |
+| `onCheckedChange` | `(checked: boolean) => void` |         | Called after the user checks or unchecks it.                                                                            |
+| `bind:checked`    | `Signal<boolean>`            |         | Stands in for `checked` and `onCheckedChange`.                                                                          |
+| `indeterminate`   | `boolean`                    | `false` | Neither checked nor unchecked (mixed for assistive technology) until the user toggles it, and again after a form reset. |
+| `value`           | `string`                     | `"on"`  | What it submits when checked, and its identity in a Checkbox Group.                                                     |
+| `parent`          | `boolean`                    | `false` | The "select all" checkbox of a Checkbox Group: it checks them all and follows them. Never submitted.                    |
+| `readOnly`        | `boolean`                    | `false` | It cannot be toggled, but stays focusable and is submitted.                                                             |
+| `uncheckedValue`  | `string`                     |         | What it submits when unchecked (by the script); by default an unchecked box submits nothing.                            |
 
 Every other native prop passes through: `name`, `required`, `disabled`, `form`, `id`, `class`,
 `aria-*`. Inside a Field it takes the field's `id`, `name`, `aria-describedby` and
@@ -2458,7 +2458,7 @@ import "@lumiose/ui/themes/default.css"; // optional: the default theme
 | `Root`        | `<lu-field>`, a block around the other parts, with `validation-mode`.                                                                        |
 | `Label`       | `<label for="…">`, pointing at the control.                                                                                                  |
 | `Control`     | `<input>`: [Input](input.md), with the field's `id`, `name`, `aria-describedby` and `aria-invalid`.                                          |
-| `Description` | `<p>` that describes the control.                                                                                                            |
+| `Description` | `<p>` that describes the control; several get ids of their own, and the control is described by each.                                        |
 | `Error`       | `<output hidden>`: without children, the field's message (`for` the control); with children, your message. Shown while the field is invalid. |
 | `Validity`    | No element: what its function child returns for the field's validity, in an island.                                                          |
 
@@ -4902,12 +4902,12 @@ Radio Group ships no stylesheet: it needs none to work.
 
 ## Keyboard and focus
 
-| Key                     | Does                                                            |
-| ----------------------- | --------------------------------------------------------------- |
-| Tab                     | Into the group, on the checked radio (or the first); out of it. |
-| Arrow Down, Arrow Right | Checks the next enabled radio, around at the end.               |
-| Arrow Up, Arrow Left    | Checks the previous enabled radio, around at the start.         |
-| Space                   | Checks the focused radio.                                       |
+| Key                     | Does                                                                              |
+| ----------------------- | --------------------------------------------------------------------------------- |
+| Tab                     | Into the group, on the checked radio (or the first, from either side); out of it. |
+| Arrow Down, Arrow Right | Checks the next enabled radio, around at the end.                                 |
+| Arrow Up, Arrow Left    | Checks the previous enabled radio, around at the start.                           |
+| Space                   | Checks the focused radio.                                                         |
 
 Enter does not check a radio. Read-only radios move focus but do not change. Right to left, Arrow
 Left checks the next radio and Arrow Right the previous one.

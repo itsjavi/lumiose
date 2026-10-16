@@ -73,6 +73,11 @@ export interface FieldContextValue {
   messages: () => string[];
   /** How many Description parts are rendered. */
   descriptions: Signal<number>;
+  /**
+   * Parts rendered so far, by kind (`description`, or an Error's match): the second and later of a
+   * kind get an id of their own, `-2`, `-3`… (TASK-446, L14).
+   */
+  rendered: Map<string, number>;
   /** How many Label parts are rendered: a group control is named by the label (TASK-439). */
   labels: Signal<number>;
   /** The control's validity from its last check, in the browser (`Field.Validity`). */
@@ -93,7 +98,9 @@ export const errorId = (field: FieldContextValue) => `${field.id}-error`;
  */
 export function describedBy(field: FieldContextValue): string | undefined {
   const ids = [
-    field.descriptions() > 0 ? `${field.id}-description` : "",
+    ...Array.from({ length: field.descriptions() }, (_, i) =>
+      numbered(`${field.id}-description`, i),
+    ),
     field.invalid() ? errorId(field) : "",
   ].filter(Boolean);
   return ids.length > 0 ? ids.join(" ") : undefined;
@@ -105,6 +112,16 @@ export function describedBy(field: FieldContextValue): string | undefined {
  */
 export const labelledBy = (field: FieldContextValue | undefined) =>
   field && field.labels() > 0 ? `${field.id}-label` : undefined;
+
+/** `id` for the first part of a kind, `id-2`, `id-3`… for the next ones. */
+export const numbered = (id: string, index: number) => (index === 0 ? id : `${id}-${index + 1}`);
+
+/** The index of the next part of `kind` in `field` (render order, the same on both sides). */
+export function nextIndex(field: FieldContextValue, kind: string): number {
+  const index = field.rendered.get(kind) ?? 0;
+  field.rendered.set(kind, index + 1);
+  return index;
+}
 
 export const useField = () => useContext(FieldContext);
 

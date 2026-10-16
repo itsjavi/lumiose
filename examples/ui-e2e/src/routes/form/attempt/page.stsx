@@ -1,4 +1,4 @@
-import { Field, Form } from "@lumiose/ui";
+import { Field, Form, Select } from "@lumiose/ui";
 import { Title } from "lumiose";
 
 // Submit attempts (TASK-439, M28 and M29): a field with an Error, then a required input without
@@ -15,6 +15,18 @@ export default function FormAttemptPage() {
           <Field.Error />
         </Field.Root>
         <input name="nickname" aria-label="Nickname" required class="lu-input" />
+        {/* TASK-446: a required select shows nothing on a Tab through, and two descriptions. */}
+        <Field.Root name="plan" validationMode="onBlur" class="lu-field">
+          <Field.Label>Plan</Field.Label>
+          <Select.Root required class="lu-select">
+            <Select.Item value="">Choose a plan</Select.Item>
+            <Select.Item value="pro">Pro</Select.Item>
+          </Select.Root>
+          <Field.Description>Billed monthly.</Field.Description>
+          <Field.Description>Cancel any time.</Field.Description>
+          <Field.Error match="valueMissing">Choose a plan.</Field.Error>
+          <Field.Error match="valueMissing">A plan is required.</Field.Error>
+        </Field.Root>
         <button type="submit" class="lu-button">
           Send
         </button>

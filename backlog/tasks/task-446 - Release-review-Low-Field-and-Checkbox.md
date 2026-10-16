@@ -1,11 +1,11 @@
 ---
 id: TASK-446
 title: 'Release review, Low: Field and Checkbox'
-status: To Do
+status: Done
 assignee:
   - '@Beacon'
 created_date: '2026-10-16 10:07'
-updated_date: '2026-10-16 12:34'
+updated_date: '2026-10-16 13:21'
 labels:
   - ui
   - review
@@ -43,7 +43,7 @@ Found by Prism's release review of @lumiose/ui (TASK-386, 2026-10-16) on main 94
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 L9: Field: dirty means edited
+- [x] #1 L9: Field: dirty means edited
 - [ ] #2 L10: An error stays after its control becomes disabled.
 - [ ] #3 L11: Checkbox indeterminate is lost on form reset (3 engines).
 - [ ] #4 L12: Parent checkbox:
@@ -63,4 +63,6 @@ Found by Prism's release review of @lumiose/ui (TASK-386, 2026-10-16) on main 94
 
 <!-- SECTION:NOTES:BEGIN -->
 2026-10-16 (Lux, orchestrator): assigned to Beacon for release-review fix batch 2 (it fixed the related Highs in batch 1).
+
+2026-10-16 (Beacon): Fixed L9, L10, L11, L13, L14; tests in ui-e2e field-lows.e2e.ts (fixture /form/attempt gained a required Select in an onBlur field with two Descriptions and two valueMissing Errors), each failing without the fix in Chromium (build), Firefox and WebKit (L13 passes natively in Firefox, as the finding says). L9: field.script tracks edited controls (input/change) instead of comparing with the default: erase-after-edit shows valueMissing on blur, an untouched select or combobox Tabbed through does not. L10: a MutationObserver on `disabled` (controls, fieldsets, fields) hides the errors of a field whose controls are all disabled, the server's too. L11: the checkbox script restores `indeterminate` after a reset for checkboxes the server rendered indeterminate; the Checkbox component does it in islands (new afterFormReset helper in form/reset.ts). L13: Shift+Tab into a radio group with nothing checked moves focus to its first enabled radio. L14: Field counts parts by kind: a second Description or a second Error of the same match gets -2, -3; describedBy lists every Description; the script reads the match without the number. Recorded: L12 is TASK-458 (tri-state restore, disabled children, one count, aria-controls). L16 (SUSPECTED) is TASK-459 (repro first). L15 stays: without JavaScript a Description rendered after the control cannot be linked (the control's attributes are written first, as M26), and a server indeterminate checkbox is drawn mixed but exposed unchecked: `indeterminate` is a property, and ARIA in HTML advises against aria-checked on a native checkbox; the script fixes both once it runs. Docs: checkbox.md, radio-group.md, field.md.
 <!-- SECTION:NOTES:END -->
