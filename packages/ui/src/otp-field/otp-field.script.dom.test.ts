@@ -76,6 +76,17 @@ it("types over the character at the caret when the field is full", async () => {
   expect(event.defaultPrevented).toBe(true);
   expect(input().value).toBe("1934");
   expect(input().selectionStart).toBe(2);
+  // WebKit's `beforeinput` into a full field with `maxlength` has no data: the key press tells.
+  input().dispatchEvent(new KeyboardEvent("keydown", { key: "7", bubbles: true }));
+  const empty = new InputEvent("beforeinput", {
+    inputType: "insertText",
+    data: "",
+    bubbles: true,
+    cancelable: true,
+  });
+  input().dispatchEvent(empty);
+  expect(empty.defaultPrevented).toBe(true);
+  expect(input().value).toBe("1974");
 });
 
 it("follows other validation types, and masks the slots", async () => {

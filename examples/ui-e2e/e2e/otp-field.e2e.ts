@@ -56,12 +56,7 @@ test.describe("without JavaScript", () => {
 test.describe("OTP Field", () => {
   test("typing fills the slots and refuses letters; Backspace and the arrows move between slots", async ({
     page,
-    browserName,
   }) => {
-    test.skip(
-      browserName === "webkit",
-      "TASK-417: typing over the caret's character in a full field fails in WebKit",
-    );
     await ready(page);
     await lastNavLink(page).focus();
     await page.keyboard.press("Tab");

@@ -37,6 +37,8 @@ const ALLOWED: Record<string, RegExp> = {
 export class OTPFieldElement extends HTMLElement {
   /** The value when the last `valuecomplete` fired, so it fires once per completion. */
   #completed = "";
+  /** The character of the last key pressed, for a `beforeinput` without `data` (WebKit). */
+  #key = "";
 
   /** Normalizes what is entered before the allowed characters are kept: an island sets it. */
   normalizeValue: ((value: string) => string) | undefined;
@@ -75,6 +77,7 @@ export class OTPFieldElement extends HTMLElement {
   connectedCallback(): void {
     // Capturing: the value is cleaned before any other listener reads it.
     this.addEventListener("input", this.#onInput, true);
+    this.addEventListener("keydown", this.#onKey);
     this.addEventListener("beforeinput", this.#onBeforeInput);
     this.addEventListener("paste", this.#onPaste);
     this.addEventListener("pointerdown", this.#onPress);
@@ -93,6 +96,7 @@ export class OTPFieldElement extends HTMLElement {
 
   disconnectedCallback(): void {
     this.removeEventListener("input", this.#onInput, true);
+    this.removeEventListener("keydown", this.#onKey);
     this.removeEventListener("beforeinput", this.#onBeforeInput);
     this.removeEventListener("paste", this.#onPaste);
     this.removeEventListener("pointerdown", this.#onPress);
@@ -172,19 +176,27 @@ export class OTPFieldElement extends HTMLElement {
     } else if (clean.length < this.#length) this.#completed = "";
   };
 
+  #onKey = (event: KeyboardEvent) => {
+    const plain = event.key.length === 1 && !event.ctrlKey && !event.metaKey && !event.isComposing;
+    this.#key = plain ? event.key : "";
+  };
+
   /** A full field: typing replaces the character at the caret instead of being refused. */
   #onBeforeInput = (event: InputEvent) => {
     const input = this.input;
-    if (!input || event.target !== input || event.inputType !== "insertText" || !event.data) return;
+    // WebKit cuts `data` to what `maxlength` lets in: nothing in a full field. The key tells.
+    const typed = event.data || this.#key;
+    this.#key = "";
+    if (!input || event.target !== input || event.inputType !== "insertText" || !typed) return;
     const { selectionStart: start, selectionEnd: end, value } = input;
     if (value.length < this.#length || start === null || start !== end || start >= value.length) {
       return;
     }
     event.preventDefault();
-    const char = this.#clean(event.data).slice(0, 1);
+    const char = this.#clean(typed).slice(0, 1);
     if (!char) {
       this.dispatchEvent(
-        new CustomEvent<OTPFieldValueDetail>("valueinvalid", { detail: { value: event.data } }),
+        new CustomEvent<OTPFieldValueDetail>("valueinvalid", { detail: { value: typed } }),
       );
       return;
     }
