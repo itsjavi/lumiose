@@ -117,6 +117,38 @@ test.describe("Scroll Area", () => {
     await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(0);
   });
 
+  test("each thumb takes presses over 24 by 24 px (2.5.8, TASK-444 L7)", async ({ page }) => {
+    await ready(page);
+    const releases = region(page, "Releases");
+    const box = (await releases.boundingBox())!;
+    await page.mouse.move(box.x + 10, box.y + 10);
+    const thumbAt = (x: number, y: number) =>
+      page.evaluate(
+        ([px, py]) => document.elementFromPoint(px!, py!)?.hasAttribute("data-thumb"),
+        [x, y],
+      );
+    const vertical = (await scrollbar(page, "Releases").locator("[data-thumb]").boundingBox())!;
+    // 14px inward from the vertical thumb, and 3px past its end: still the thumb.
+    expect(await thumbAt(vertical.x - 14, vertical.y + vertical.height / 2)).toBe(true);
+    expect(await thumbAt(vertical.x + vertical.width / 2, vertical.y + vertical.height + 3)).toBe(
+      true,
+    );
+    // A drag from beside it scrolls.
+    await page.mouse.move(vertical.x - 12, vertical.y + vertical.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(vertical.x - 12, vertical.y + vertical.height / 2 + 40, { steps: 4 });
+    await page.mouse.up();
+    expect(await scrollTop(releases)).toBeGreaterThan(40);
+    // The horizontal thumb, 14px above it.
+    const cells = region(page, "Table cells");
+    const cellsBox = (await cells.boundingBox())!;
+    await page.mouse.move(cellsBox.x + 10, cellsBox.y + 10);
+    const horizontal = (await scrollbar(page, "Table cells", "horizontal")
+      .locator("[data-thumb]")
+      .boundingBox())!;
+    expect(await thumbAt(horizontal.x + horizontal.width / 2, horizontal.y - 14)).toBe(true);
+  });
+
   test("dragging the thumb scrolls with it; a press on the track scrolls there", async ({
     page,
   }) => {

@@ -60,6 +60,9 @@ export function clipped(scope: Locator): Promise<string[]> {
       const style = getComputedStyle(element);
       if (style.display === "none" || style.visibility === "hidden") continue;
       if (/auto|scroll/.test(style.overflow)) continue;
+      // Decoration hidden from assistive technology holds no content to clip (a scroll thumb's
+      // larger pointer target, TASK-444).
+      if (element.closest("[aria-hidden='true']")) continue;
       const over =
         element.scrollWidth > element.clientWidth + 1 ||
         element.scrollHeight > element.clientHeight + 1;
