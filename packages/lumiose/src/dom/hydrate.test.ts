@@ -1511,6 +1511,38 @@ describe("hydrate: script and style text (TASK-472 L7)", () => {
     await hydrateAll(client);
     expect(warn).not.toHaveBeenCalled();
     expect(document.querySelector("img")).toBe(null);
-    expect(read().slice(0, 2).map((text) => JSON.parse(text!))).toEqual([data, data]);
+    expect(
+      read()
+        .slice(0, 2)
+        .map((text) => JSON.parse(text!)),
+    ).toEqual([data, data]);
+  });
+});
+
+describe("hydrate: written content next to a spread (TASK-478)", () => {
+  it("renders innerHTML and textContent written next to a spread, then updates them", async () => {
+    const { client, server } = await load(`
+      import { signal } from "lumiose";
+      export const html = signal("<b>bold</b>");
+      function Html({ html, ...rest }: { html: string; [key: string]: unknown }) {
+        return <div {...rest} innerHTML={html} />;
+      }
+      export function Page() {
+        return (
+          <section>
+            <Html class="a" html={html()} />
+            <p {...{ class: "b" }} textContent={"1 < 2"} />
+          </section>
+        );
+      }`);
+    await serve(server, [["Page", {}]]);
+    const expected = '<section><div class="a"><b>bold</b></div><p class="b">1 &lt; 2</p></section>';
+    expect(visible()).toBe(expected);
+    await hydrateAll(client);
+    expect(warn).not.toHaveBeenCalled();
+    expect(visible()).toBe(expected);
+    client.html.set("<i>italic</i>");
+    flush();
+    expect(document.querySelector("div.a")!.innerHTML).toBe("<i>italic</i>");
   });
 });

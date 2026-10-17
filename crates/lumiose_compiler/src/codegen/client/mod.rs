@@ -38,7 +38,7 @@ use oxc_syntax::symbol::SymbolId;
 
 pub use children::has_content;
 pub use contract::{ContractEntry, ContractKind, ContractSite, execution_contract};
-pub use element::{is_intrinsic, tag_name, takes_markup};
+pub use element::{is_intrinsic, is_written_content, tag_name, takes_markup};
 
 use crate::analyze::{Analysis, is_jsx_like};
 use crate::codegen::ast::Ast;

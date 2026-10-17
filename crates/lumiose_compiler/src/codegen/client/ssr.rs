@@ -19,7 +19,7 @@ use oxc_syntax::operator::BinaryOperator;
 use super::children::{Item, Kind, RawContent, group_table_rows, is_isolated};
 use super::element::{
     AttrValue, Literal, attr_value, attribute_name, is_custom_element, literal, static_object_keys,
-    static_strings, strip_parens, tag_name, take_bindings,
+    static_strings, strip_parens, tag_name, take_written,
 };
 use super::events::event_name;
 use super::html;
@@ -572,8 +572,9 @@ impl<'a> Codegen<'a, '_> {
             .iter()
             .any(|a| matches!(a, JSXAttributeItem::SpreadAttribute(_)))
         {
-            // As on the client, every attribute but `bind:` goes through the spread, in order.
-            let bindings = take_bindings(self.ast, &mut attributes);
+            // As on the client, every attribute but `bind:` and written content goes through the
+            // spread, in order.
+            let written = take_written(self.ast, &mut attributes);
             let props = self.props_expression(attributes, None, span);
             let hole = if is_custom_element(tag) {
                 // A custom element: objects and arrays are properties (TASK-337, `attr` below).
@@ -583,8 +584,8 @@ impl<'a> Codegen<'a, '_> {
                 self.helper_call("spreadAttrs", [props], span)
             };
             open.tail.push(Piece::Hole(hole));
-            if !bindings.is_empty() {
-                self.ssr_attributes(tag, bindings, open, span);
+            if !written.is_empty() {
+                self.ssr_attributes(tag, written, open, span);
             }
             return;
         }
