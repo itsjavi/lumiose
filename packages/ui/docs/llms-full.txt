@@ -2938,9 +2938,12 @@ Every other `<form>` prop passes through: `method`, `action`, `onSubmit` (Lumios
 an Input (Field.Control), an Autocomplete, a Select, a Number Field or a Slider, the checked state of
 a Checkbox or Switch (a name the submission left out means unchecked), and a Checkbox Group's,
 Radio Group's or Combobox's selection. Controls with a `value` (or `bind:`) keep theirs, and
-passwords, files, hidden inputs, OTP Fields and disabled controls (also in a disabled
-`Fieldset.Root`) are never filled. So after a failed action the page renders the form as the user
-left it, with JavaScript or without (WCAG 3.3.7, redundant entry).
+passwords, files, hidden inputs (whatever the case of their `type`), OTP Fields and disabled
+controls (also in a disabled `Fieldset.Root`) are never filled. So after a failed action the page
+renders the form as the user left it, with JavaScript or without (WCAG 3.3.7, redundant entry).
+Values match by name only: give a password and a text field different names, or the text field gets
+the password. A native `<fieldset disabled>` is not seen while rendering, so its controls are
+filled; use `Fieldset.Root disabled` instead.
 
 **Differences from Base UI's Form.** No `onFormSubmit` or `actionsRef`: the form is native and
 Lumiose's form actions post it (`action="?/name"`, `onSubmit={submit}`). Base UI sets

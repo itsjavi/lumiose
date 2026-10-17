@@ -67,7 +67,10 @@ function isMultipart(headers: Headers): boolean {
   return /^\s*multipart\/form-data\b/i.test(headers.get("content-type") ?? "");
 }
 
-/** The limit that applies to a request's body: `upload` for multipart, `body` otherwise. */
+/**
+ * The limit that applies to a request's body: `upload` for multipart, `body` otherwise (and for
+ * `json()` and `text()`, see `boundedRequest()`).
+ */
 export function limitOf(headers: Headers, limits: BodyLimits): number {
   return isMultipart(headers) ? limits.upload : limits.body;
 }
@@ -87,21 +90,39 @@ export function checkContentLength(headers: Headers, limits: BodyLimits): void {
  * The request with its body bounded by `limits()`, read on every chunk so that a route's own
  * limits (known once its module loaded) apply to reads after that. A body-less request is
  * returned as is.
+ *
+ * The client's Content-Type picks the limit, so `request.json()` and `request.text()`, which
+ * never parse multipart, keep `body` even for a body declared `multipart/form-data` (TASK-472):
+ * declaring it must not raise a JSON endpoint's limit to `upload`. `formData()` and raw reads
+ * (`arrayBuffer()`, the stream, for a parser of your own) of a multipart body get `upload`.
  */
 export function boundedRequest(request: Request, limits: () => BodyLimits): Request {
   if (request.body === null) return request;
   let total = 0;
+  let plain = false;
   const body = request.body.pipeThrough(
     new TransformStream<Uint8Array, Uint8Array>({
       transform(chunk, controller) {
         total += chunk.byteLength;
-        const limit = limitOf(request.headers, limits());
+        const limit = plain ? limits().body : limitOf(request.headers, limits());
         if (total > limit) controller.error(payloadTooLarge(limit));
         else controller.enqueue(chunk);
       },
     }),
   );
-  return new Request(request, { body, duplex: "half" } as RequestInit);
+  const bounded = new Request(request, { body, duplex: "half" } as RequestInit);
+  for (const name of ["json", "text"] as const) {
+    const read = Request.prototype[name];
+    Object.defineProperty(bounded, name, {
+      configurable: true,
+      writable: true,
+      value(this: Request) {
+        plain = true;
+        return read.call(this);
+      },
+    });
+  }
+  return bounded;
 }
 
 /**

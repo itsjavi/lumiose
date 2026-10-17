@@ -97,7 +97,7 @@ describe('lumiose({ csp: "strict" })', () => {
     const policy = res.headers.get("content-security-policy")!;
     const nonce = /'nonce-([^']+)'/.exec(policy)![1]!;
     expect(policy).toBe(
-      `script-src 'nonce-${nonce}' 'strict-dynamic'; style-src 'self' 'nonce-${nonce}'; object-src 'none'; base-uri 'self'`,
+      `script-src 'nonce-${nonce}' 'strict-dynamic'; style-src 'self' 'nonce-${nonce}'; object-src 'none'; base-uri 'self'; frame-ancestors 'self'`,
     );
     const html = await res.text();
     expect(html).toContain(`<meta property="csp-nonce" nonce="${nonce}">`);

@@ -34,8 +34,11 @@ export type InputProps = BindableProps<"input", "value" | "bind:value"> & {
  * @example
  * <Input name="q" type="search" aria-label="Search" bind:value={query} />
  */
-/** Types a Form's `values` never fill: secrets, files, buttons, and toggles, which have `checked`. */
-const UNFILLED = /^(password|file|hidden|submit|reset|button|image|checkbox|radio)$/;
+/**
+ * Types a Form's `values` never fill: secrets, files, buttons, and toggles, which have `checked`.
+ * HTML matches `type` in any case, so `PASSWORD` is a password too (TASK-472).
+ */
+const UNFILLED = /^\s*(password|file|hidden|submit|reset|button|image|checkbox|radio)\s*$/i;
 
 export function Input({ value, defaultValue, onValueChange, ...rest }: InputProps) {
   const field = useField();

@@ -4,6 +4,8 @@ import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from "node
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { pathToFileURL } from "node:url";
+import { setFlagsFromString } from "node:v8";
+import { runInNewContext } from "node:vm";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { BuiltAppConfig } from "./app.ts";
 import { staticFiles } from "./static-fs.ts";
@@ -191,5 +193,61 @@ describe("staticFiles", () => {
   it("has no files when the directory is missing", async () => {
     const get = serve({}, join(dir, "no-such-dir"));
     expect((await get("/")).status).toBe(418);
+  });
+});
+
+/**
+ * Collects garbage, then returns the uncaught errors raised meanwhile: on Node 26, garbage
+ * collection that has to close a FileHandle throws ERR_INVALID_STATE (TASK-476).
+ */
+async function collectGarbage(): Promise<unknown[]> {
+  setFlagsFromString("--expose-gc");
+  const gc = runInNewContext("gc") as () => void;
+  const errors: unknown[] = [];
+  const caught = (error: unknown) => errors.push(error);
+  process.prependListener("uncaughtException", caught);
+  try {
+    for (let i = 0; i < 3; i++) {
+      gc();
+      await new Promise((resolve) => setTimeout(resolve, 20));
+    }
+  } finally {
+    process.off("uncaughtException", caught);
+  }
+  return errors;
+}
+
+describe("staticFiles file handles (TASK-476)", () => {
+  it("holds no file open for a body that is never read", async () => {
+    const get = serve();
+    for (const path of ["/big.bin", "/about/", "/assets/style.css"]) {
+      expect((await get(path)).status).toBe(200);
+    }
+    expect(await collectGarbage()).toEqual([]);
+  });
+
+  it("closes the file when the body is read, cancelled or fails", async () => {
+    const get = serve();
+    expect((await (await get("/big.bin")).text()).length).toBe(200_000);
+    // Cancelled after a first chunk, and before any.
+    const reader = (await get("/big.bin")).body!.getReader();
+    expect((await reader.read()).value!.length).toBe(64 * 1024);
+    await reader.cancel();
+    await (await get("/big.bin")).body!.cancel();
+    // Removed after the response was made: the body fails.
+    writeFileSync(join(dir, "gone.txt"), "soon gone");
+    const gone = serve();
+    const response = await gone("/gone.txt");
+    rmSync(join(dir, "gone.txt"));
+    await expect(response.text()).rejects.toThrow();
+    expect(await collectGarbage()).toEqual([]);
+  });
+
+  it("leaves a file removed after the index was built to the app", async () => {
+    writeFileSync(join(dir, "removed.txt"), "removed");
+    const get = serve();
+    expect(await (await get("/removed.txt")).text()).toBe("removed");
+    rmSync(join(dir, "removed.txt"));
+    expect((await get("/removed.txt")).status).toBe(418);
   });
 });

@@ -162,6 +162,36 @@ describe("bounded bodies", () => {
       }),
     );
   });
+
+  it("keep the body limit for json() and text() of a body declared multipart (TASK-472)", async () => {
+    await fc.assert(
+      fc.asyncProperty(
+        fc.uint8Array({ maxLength: 6000 }),
+        fc.array(fc.nat(), { maxLength: 4 }),
+        limitsArb,
+        fc.constantFrom("json", "text", "arrayBuffer"),
+        async (bytes, cuts, limits, read) => {
+          const request = boundedRequest(
+            chunked(bytes, cuts, "multipart/form-data; boundary=x"),
+            () => limits,
+          );
+          const result = await settle(
+            request[read]().then(
+              () => "read",
+              (error: unknown) => {
+                if (error instanceof SyntaxError) return "read, not JSON";
+                throw error;
+              },
+            ),
+          );
+          // json() may also fail to parse: anything but a 413 means the bytes were read.
+          const limit = read === "arrayBuffer" ? limits.upload : limits.body;
+          if (bytes.length > limit) expect(result).toEqual({ status: 413 });
+          else expect(result).not.toEqual({ status: 413 });
+        },
+      ),
+    );
+  });
 });
 
 describe("form parsing", () => {

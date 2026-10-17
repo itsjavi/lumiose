@@ -122,10 +122,60 @@ export function styleAttr(value: unknown): string {
   const render = currentFrame()?.render;
   if (render === undefined || !render.strictStyles) return ` style="${escapeAttr(css)}"`;
   const id = render.nextStyle++;
-  // Braces and "<" are escaped so a value cannot close the rule or the <style> element.
-  const safe = css.replace(/[{}<\\]/g, (char) => `\\${char.charCodeAt(0).toString(16)} `);
+  // Braces and "<" are escaped so a value cannot close the rule or the <style> element, and what
+  // the value leaves open is closed, so it cannot swallow the rules after it (TASK-472).
+  const safe = closeOpen(
+    css.replace(/[{}<\\]/g, (char) => `\\${char.charCodeAt(0).toString(16)} `),
+  );
   resolveUnit(currentFrame()!.unit).styles.push(`[data-l-v="${id}"]{${safe}}`);
   return ` data-l-v="${id}"`;
+}
+
+/**
+ * `css` with the comment, string, `url(` and brackets it leaves open closed at its end, as the CSS
+ * tokenizer reads them: an unclosed `/*` or `url(x` would run into the next `[data-l-v]` rules
+ * of the same `<style>`, and those elements would lose their styles. Its only backslashes are the
+ * caller's hex escapes.
+ */
+function closeOpen(css: string): string {
+  if (!/[/"'([]/.test(css)) return css;
+  const closers: string[] = [];
+  let quote = "";
+  let url = false;
+  let comment = false;
+  for (let i = 0; i < css.length; i++) {
+    const char = css[i]!;
+    if (comment) {
+      if (char === "*" && css[i + 1] === "/") {
+        comment = false;
+        i++;
+      }
+    } else if (char === "\\") {
+      while (/[\da-f]/i.test(css[i + 1] ?? "")) i++;
+      if (css[i + 1] === " ") i++;
+    } else if (quote !== "") {
+      // A newline ends a string too (a bad string).
+      if (char === quote || char === "\n" || char === "\r" || char === "\f") quote = "";
+    } else if (url) {
+      if (char === ")") url = false;
+    } else if (char === "/" && css[i + 1] === "*") {
+      comment = true;
+      i++;
+    } else if (char === '"' || char === "'") {
+      quote = char;
+    } else if (char === "(") {
+      // `url(` with an unquoted argument is one url token up to `)`; other functions nest.
+      if (/(?:^|[^\w-])url$/i.test(css.slice(0, i)) && !/^\s*["']/.test(css.slice(i + 1))) {
+        url = true;
+      } else closers.push(")");
+    } else if (char === "[") {
+      closers.push("]");
+    } else if ((char === ")" || char === "]") && closers.at(-1) === char) {
+      closers.pop();
+    }
+  }
+  const open = comment ? "*/" : quote !== "" ? quote : url ? ")" : "";
+  return open === "" && closers.length === 0 ? css : css + open + closers.toReversed().join("");
 }
 
 /**

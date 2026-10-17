@@ -554,7 +554,7 @@ export default function Layout(props: { children?: JSX.Element }) {
 
   it("shares a route group's stylesheets with its pages only, after every page's (TASK-285)", async () => {
     const chrome = Array.from({ length: 150 }, (_, i) => `.chrome-${i} { padding-left: ${i}px; }`);
-    const page = (name: string): string => `export default function Page() {
+    const route = (name: string): string => `export default function Page() {
   return <main class="${name}">${name}<style>.${name} { color: teal; }</style></main>;
 }
 `;
@@ -572,10 +572,10 @@ export default function Site(props: { children?: JSX.Element }) {
   return <div class="chrome">{props.children}<style>${chrome.join("\n")}</style></div>;
 }
 `,
-      "src/routes/(site)/page.stsx": page("home"),
-      "src/routes/(site)/about/page.stsx": page("about"),
-      "src/routes/(site)/blog/page.stsx": page("blog"),
-      "src/routes/editor/page.stsx": page("editor"),
+      "src/routes/(site)/page.stsx": route("home"),
+      "src/routes/(site)/about/page.stsx": route("about"),
+      "src/routes/(site)/blog/page.stsx": route("blog"),
+      "src/routes/editor/page.stsx": route("editor"),
     });
     await build({ root, ...quiet() });
     const tags = (file: string): string[] =>

@@ -25,13 +25,18 @@ export function createNonce(): string {
   return base64(crypto.getRandomValues(new Uint8Array(16)));
 }
 
-/** The policy of a page rendered for one request. */
+/**
+ * The policy of a page rendered for one request. `frame-ancestors 'self'` keeps other sites from
+ * framing its forms (clickjacking, TASK-472); browsers ignore it in the `<meta>` policy of a
+ * prerendered page, which therefore leaves it out.
+ */
 export function noncePolicy(nonce: string): string {
   return [
     `script-src 'nonce-${nonce}' 'strict-dynamic'`,
     `style-src 'self' 'nonce-${nonce}'`,
     "object-src 'none'",
     "base-uri 'self'",
+    "frame-ancestors 'self'",
   ].join("; ");
 }
 
