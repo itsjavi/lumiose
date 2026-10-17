@@ -123,6 +123,19 @@ describe("Form values (TASK-430)", () => {
     expect(input(html, "locked")).toHaveProperty("checked");
   });
 
+  it("never fills a password or hidden input whose type is not lowercase (TASK-472)", async () => {
+    const html = await renderToString(() => (
+      <Form method="post" values={{ pin: "1234", secret: "s3cret", token: "forged" }}>
+        <Input name="pin" type={"PASSWORD" as "password"} />
+        <Input name="secret" type={" Password " as "password"} />
+        <Input name="token" type={"Hidden" as "hidden"} defaultValue="t0" />
+      </Form>
+    ));
+    expect(input(html, "pin")).not.toHaveProperty("value");
+    expect(input(html, "secret")).not.toHaveProperty("value");
+    expect(input(html, "token").value).toBe("t0");
+  });
+
   it("takes values by name as an object, and keeps the defaults without values", async () => {
     const html = await renderToString(() => (
       <Signup values={{ username: "linus", toppings: ["cheese", "olives"] }} />
