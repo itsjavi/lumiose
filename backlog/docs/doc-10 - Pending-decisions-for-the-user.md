@@ -17,17 +17,21 @@ Nothing here is decided until the user answers. Answered items move to the Answe
 
 ## Open
 
+**Backlog state (2026-10-17):** every task that doesn't wait on an item below is done. The workers are idle until the user answers.
+
 ### P1. Push main to origin
 
 - **Waiting:** local commits after 4bfc013a (the last push, which the user approved on 2026-10-16). Pushing runs CI, which costs money, so every push needs the user's OK (AGENTS.md).
 - **Recommendation:** push now, in one push. The checks on local main were green on 2026-10-17: pnpm check, cargo fmt and clippy, ui-e2e (Chromium 1018; Firefox and WebKit 1030), apps/web (179), pack smoke and nine example suites.
 - **Meanwhile:** commits stay local. Lux keeps the list of what each push would carry under this item.
-- **What the push carries (53 commits after 4bfc013a, at bf3c8e62 plus backlog):**
+- **What the push carries (58 commits after 4bfc013a, at 45486aba plus backlog):**
   - the final M12 follow-ups (TASK-458 to TASK-465);
   - Photon's compiler and packaging fixes (TASK-347, 348, 349, 289 and 466; decision-67);
   - Nova's shared route-group CSS (TASK-285; decision-68) and parallel precompression (TASK-288);
   - the security review's fixes (TASK-468 to TASK-476 and TASK-479 to TASK-480; decision-69);
-  - the static-file handle leak (TASK-476).
+  - the static-file handle leak (TASK-476);
+  - TASK-477 (spread objects in @lumiose/ui follow their props) and TASK-478 (a written innerHTML or textContent next to a spread).
+- **Checks at 45486aba (2026-10-17):** all green: pnpm check, cargo fmt and clippy, ui-e2e (Chromium 1018; Firefox and WebKit 1030), apps/web 179, pack smoke and nine example suites.
 
 ### P2. The screen reader pass (TASK-361)
 
