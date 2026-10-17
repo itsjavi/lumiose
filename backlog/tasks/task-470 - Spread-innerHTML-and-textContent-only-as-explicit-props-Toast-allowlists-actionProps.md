@@ -3,11 +3,11 @@ id: TASK-470
 title: >-
   Spread: innerHTML and textContent only as explicit props; Toast allowlists
   actionProps
-status: To Do
+status: Done
 assignee:
   - '@Beacon'
 created_date: '2026-10-16 23:46'
-updated_date: '2026-10-16 23:55'
+updated_date: '2026-10-17 00:44'
 labels:
   - security
 milestone: m-12
@@ -40,12 +40,20 @@ Found by Prism's pre-release security review (decision-56, 2026-10-17) on main 1
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 The client spread skips innerHTML and textContent, as the server spread does, with a test
-- [ ] #2 Toast's actionProps only pass allowlisted keys, with a test
+- [x] #1 The client spread skips innerHTML and textContent, as the server spread does, with a test
+- [x] #2 Toast's actionProps only pass allowlisted keys, with a test
 <!-- AC:END -->
 
 ## Implementation Notes
 
 <!-- SECTION:NOTES:BEGIN -->
 2026-10-17 (Lux, orchestrator): Beacon's in unattended batch 2. For TASK-470 it may edit packages/lumiose/src/dom (no Spark session is running).
+
+2026-10-17 (Beacon): done.
+- packages/lumiose/src/dom/spread.ts: a spread never writes innerHTML or textContent (neither property nor attribute), the same two keys the server's spreadAttrs skips. Test in dom/component.test.ts (a JSON payload with innerHTML, then textContent): fails without the fix.
+- Dynamic (dom/public.ts): its props are the element's written props, as the server's element() treats them, so it now applies innerHTML and textContent itself; server/parity.test.ts caught it. Documented: do not spread an untrusted object into Dynamic (reference/components.md, security.md).
+- Toast: actionProps pass only children, onClick, class, disabled and aria-* (Prism's list). Server test (toast.test.tsx) and a happy-dom test (toast.dom.test.tsx), both fail without it. The public type stays JSX.IntrinsicElements["button"]; narrowing it to the allowlist is a public-type change, proposed to Lux for doc-10.
+- Docs: jsx.md, security.md, web-components.md, reference/jsx.md, toast.md.
+- Follow-up: TASK-478. A written innerHTML next to a spread is dropped on both targets, because the compiler routes every prop of an element with a spread through the spread.
+Checks: pnpm check, pack smoke, ui-e2e Chromium (1006 passed) and Firefox/WebKit (1018 passed), apps/web (179 passed).
 <!-- SECTION:NOTES:END -->
