@@ -21,7 +21,9 @@ use reactivity::{
     PropsSymbols, first_reactive_read, is_import_member, server_only_imports, symbol_of,
 };
 
-use crate::codegen::client::{has_content, is_intrinsic, tag_name, takes_markup};
+use crate::codegen::client::{
+    has_content, is_intrinsic, is_written_content, tag_name, takes_markup,
+};
 use crate::diagnostics::{Code, Diagnostic};
 use crate::scanner::{Placement, StyleBlock};
 use crate::span::Span;
@@ -902,6 +904,9 @@ impl Analyzer<'_> {
                     }
                 }
                 JSXAttributeItem::Attribute(attribute) => {
+                    if is_written_content(&attribute.name) {
+                        return None;
+                    }
                     if matches!(&attribute.name, JSXAttributeName::Identifier(name) if name.name == "children")
                     {
                         insert = None;

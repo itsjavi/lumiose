@@ -345,13 +345,10 @@ impl<'a> Codegen<'a, '_> {
             .iter()
             .any(|a| matches!(a, JSXAttributeItem::SpreadAttribute(_)))
         {
-            let bindings = take_bindings(self.ast, &mut attributes);
+            let written = take_written(self.ast, &mut attributes);
             let attributes = self.bake_before_spreads(template, node, attributes);
             self.spread_attributes(template, node, attributes);
-            if !bindings.is_empty() {
-                self.element_attributes(template, node, bindings);
-            }
-            return false;
+            return !written.is_empty() && self.element_attributes(template, node, written);
         }
         let mut inner_html = false;
         for item in attributes {
@@ -902,7 +899,15 @@ impl<'a> Codegen<'a, '_> {
                 JSXAttributeItem::Attribute(_) => index += 1,
             }
         }
-        if suspends || !takes_markup(tag) || has_content(self.source, self.blocks, children) {
+        // Written content replaces the children, as it does written children (TASK-478).
+        let writes_content = attributes.iter().any(|item| {
+            matches!(item, JSXAttributeItem::Attribute(attribute) if is_written_content(&attribute.name))
+        });
+        if suspends
+            || writes_content
+            || !takes_markup(tag)
+            || has_content(self.source, self.blocks, children)
+        {
             return None;
         }
         let last = sources.pop()?;
@@ -983,9 +988,10 @@ pub fn takes_markup(tag: &str) -> bool {
         )
 }
 
-/// Takes the `bind:` attributes out of a list with spreads: they are two-way bindings, not props,
-/// so they apply after the spread instead of going through it.
-pub(super) fn take_bindings<'a>(
+/// Takes the attributes out of a list with spreads that apply after the spread instead of going
+/// through it: `bind:` two-way bindings, which are not props, and a written `innerHTML` or
+/// `textContent` ([`is_written_content`]).
+pub(super) fn take_written<'a>(
     ast: &super::super::ast::Ast<'a>,
     attributes: &mut oxc_allocator::ArenaVec<'a, JSXAttributeItem<'a>>,
 ) -> oxc_allocator::ArenaVec<'a, JSXAttributeItem<'a>> {
@@ -993,7 +999,7 @@ pub(super) fn take_bindings<'a>(
     let mut index = 0;
     while index < attributes.len() {
         let is_binding = matches!(&attributes[index], JSXAttributeItem::Attribute(attribute)
-            if attribute_name(&attribute.name).starts_with("bind:"));
+            if attribute_name(&attribute.name).starts_with("bind:") || is_written_content(&attribute.name));
         if is_binding {
             bindings.push(attributes.remove(index));
         } else {
@@ -1001,6 +1007,12 @@ pub(super) fn take_bindings<'a>(
         }
     }
     bindings
+}
+
+/// `innerHTML` or `textContent`: content a spread never writes (TASK-470), so a written one applies
+/// on its own, on both targets (TASK-478).
+pub fn is_written_content(name: &JSXAttributeName<'_>) -> bool {
+    matches!(attribute_name(name).as_str(), "innerHTML" | "textContent")
 }
 
 pub(super) fn strip_parens(mut expr: Expression<'_>) -> Expression<'_> {
