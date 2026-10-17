@@ -24,6 +24,15 @@ and `server` pages; how they compare with Astro's is in
 gets per-reader parts through an island in
 [Close to partial prerendering](rendering-modes.md#close-to-partial-prerendering).
 
+**Early events cover the island's own elements.** A click, input, submit or key press whose target
+is inside a server-rendered island that has not hydrated yet is held back, starts hydrating the
+island at once (whatever its directive) and is dispatched again once it has. Nothing else is
+replayed: a button outside the island that opens it (through a shared signal or a custom event), a
+keyboard shortcut the island listens for on `document` or `window`, a scroll or a pointer move find
+no listener before hydration, and are lost. For an island that such a trigger opens, a search
+dialog opened from a header button or with Ctrl+K say, use `client:load`, or move the trigger inside
+the island.
+
 **Directives** (components only):
 
 | Directive                                   | Hydrates                                            |

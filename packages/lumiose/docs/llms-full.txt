@@ -3482,6 +3482,15 @@ and `server` pages; how they compare with Astro's is in
 gets per-reader parts through an island in
 [Close to partial prerendering](rendering-modes.md#close-to-partial-prerendering).
 
+**Early events cover the island's own elements.** A click, input, submit or key press whose target
+is inside a server-rendered island that has not hydrated yet is held back, starts hydrating the
+island at once (whatever its directive) and is dispatched again once it has. Nothing else is
+replayed: a button outside the island that opens it (through a shared signal or a custom event), a
+keyboard shortcut the island listens for on `document` or `window`, a scroll or a pointer move find
+no listener before hydration, and are lost. For an island that such a trigger opens, a search
+dialog opened from a header button or with Ctrl+K say, use `client:load`, or move the trigger inside
+the island.
+
 **Directives** (components only):
 
 | Directive                                   | Hydrates                                            |
@@ -5147,7 +5156,7 @@ props. The differences (Astro 7.3, checked against its docs and source in Octobe
 | Components            | `.astro` server components plus islands from React, Preact, Svelte, Vue or Solid, mixable on one page                                                      | One component model on the server and in the browser, so `client:only` needs no framework name                                                                                           |
 | Island markup         | An `<astro-island>` custom element around each island, with its component URL and props as attributes                                                      | Comment markers (`<!--l:ID-->…<!--/l:ID-->`) plus JSON records: no wrapper element, so flex, grid and child selectors see the island's own elements                                      |
 | Directive options     | `client:idle={{timeout}}`, `client:visible={{rootMargin}}`                                                                                                 | `client:idle` hydrates at the latest after 2 s; `client:visible="200px"`                                                                                                                 |
-| Early events          | Not replayed                                                                                                                                               | Clicks, input, submits and key presses before hydration are replayed                                                                                                                     |
+| Early events          | Not replayed                                                                                                                                               | Clicks, input, submits and key presses on its own elements before hydration are replayed                                                                                                 |
 | Data                  | Passed to the island as props                                                                                                                              | Islands may also `await` data; the values are recorded during SSR and replayed during hydration, and cached awaits are sent once per page                                                |
 | Shared state          | Nano Stores (client side)                                                                                                                                  | Scoped state (`defineState`, [Sharing state](state.md)): one instance per page, seeded on the server and sent with the page                                                              |
 | Deferred server parts | `server:defer` server islands: a script fetches each one in a separate request after load (encrypted props, a `fallback` slot); works on prerendered pages | No `server:defer`. A `server` page streams the part in the same response with `<Suspense>` ([above](#close-to-partial-prerendering)); a built page uses a client island over an endpoint |
