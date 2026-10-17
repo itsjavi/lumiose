@@ -295,8 +295,9 @@ function Input(props: NumberFieldInputProps) {
       : String(number);
   });
   const initial = untrack(field.value);
-  // Initial values, read once (TASK-477 decides whether they should follow the field).
-  const spin = untrack(() =>
+  // The limits follow the field (TASK-477); the value's ARIA is the server HTML's, which the
+  // element keeps current from then on, as it does the text.
+  const spin = () =>
     formatted
       ? {
           role: "spinbutton",
@@ -305,8 +306,7 @@ function Input(props: NumberFieldInputProps) {
           "aria-valuemax": field.max(),
           "aria-valuetext": text,
         }
-      : { min: field.min(), max: field.max(), step: field.step() },
-  );
+      : { min: field.min(), max: field.max(), step: field.step() };
   return (
     <input
       autocomplete="off"
@@ -314,7 +314,7 @@ function Input(props: NumberFieldInputProps) {
       aria-describedby={owner ? describedBy(owner) : undefined}
       aria-invalid={owner?.invalid() ? "true" : undefined}
       {...props}
-      {...spin}
+      {...spin()}
       type={formatted ? "text" : "number"}
       // A minus key where negative numbers are allowed: iOS's decimal keyboard has none (M36).
       inputmode={(field.min() ?? -1) >= 0 ? "decimal" : "text"}
