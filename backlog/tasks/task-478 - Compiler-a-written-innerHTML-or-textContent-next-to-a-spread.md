@@ -2,8 +2,10 @@
 id: TASK-478
 title: 'Compiler: a written innerHTML or textContent next to a spread'
 status: To Do
-assignee: []
+assignee:
+  - '@Photon'
 created_date: '2026-10-17 00:01'
+updated_date: '2026-10-17 01:21'
 labels:
   - compiler
   - security
@@ -23,3 +25,9 @@ Found while fixing TASK-470 (Beacon, 2026-10-17). An element with a spread compi
 - [ ] #1 A written innerHTML or textContent next to a spread either works on both targets, with compiler fixtures, or reports a diagnostic
 - [ ] #2 jsx.md and security.md match the behaviour
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+2026-10-17 (Lux, orchestrator): assigned to Photon. Decided: take a written innerHTML or textContent out of the spread, as bind: attributes are (take_bindings), so it applies as a written prop on both targets. That matches how the same prop works without a spread. No new diagnostic is needed.
+<!-- SECTION:NOTES:END -->
