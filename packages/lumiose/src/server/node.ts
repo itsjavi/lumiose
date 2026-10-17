@@ -110,3 +110,20 @@ export function escape(value: unknown, attribute?: boolean): string {
 export function jsonForScript(value: unknown): string {
   return JSON.stringify(value).replace(/</g, "\\u003c");
 }
+
+/**
+ * The text of a `<script>` or `<style>` (`tag`), which HTML does not decode: written as it is,
+ * except what could end the element early or change how it parses: `</script` becomes
+ * `<\/script` (`</style`, `<\/style`) and `<!--` becomes `<\!--`, which mean the same in
+ * JavaScript and CSS strings. In a JSON script (`json`), every `<` becomes `\u003c`, like
+ * `jsonForScript`. Nullish and booleans render nothing.
+ */
+export function rawText(value: unknown, tag: string, json?: boolean): string {
+  if (value == null || typeof value === "boolean") return "";
+  const text = String(value);
+  if (json === true) return text.replace(/</g, "\\u003c");
+  const end = tag === "style" ? /<\/(style)/gi : /<\/(script)|<!--/gi;
+  return text.replace(end, (match, name: string | undefined) =>
+    name === undefined ? "<\\!--" : `<\\/${name}`,
+  );
+}

@@ -174,6 +174,7 @@ const SERVER_RUNTIME: &[&str] = &[
     "nonceAttr",
     "spreadAttrs",
     "escape",
+    "rawText",
     "list",
     "branch",
     "branchArm",

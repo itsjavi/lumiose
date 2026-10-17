@@ -12,6 +12,7 @@ import {
   insert,
   list,
   mergeProps,
+  rawText,
   renderToString,
   restProps,
   selector,
@@ -79,6 +80,30 @@ describe("escaping", () => {
       ssr(["<p>", "</p>"], insert([null, undefined, true, false, 0, 1n, ["a", () => "<b>"]])),
     );
     expect(out).toBe("<p>01a&lt;b></p>");
+  });
+});
+
+describe("rawText", () => {
+  it("writes script and style text as it is, ending neither element early", () => {
+    expect(rawText("if (a < b && c) {}", "script")).toBe("if (a < b && c) {}");
+    expect(rawText('"</script><img src=x>" + "</SCRIPT >"', "script")).toBe(
+      '"<\\/script><img src=x>" + "<\\/SCRIPT >"',
+    );
+    expect(rawText("x = '<!--<script>'", "script")).toBe("x = '<\\!--<script>'");
+    expect(rawText("a::after { content: '</style>' }", "style")).toBe(
+      "a::after { content: '<\\/style>' }",
+    );
+    expect(rawText("<!-- -->", "style")).toBe("<!-- -->");
+    expect(rawText(null, "script")).toBe("");
+    expect(rawText(false, "style")).toBe("");
+    expect(rawText(1, "script")).toBe("1");
+  });
+
+  it("writes every < of a JSON script as \\u003c, which JSON reads back", () => {
+    const data = { name: "</script><script>alert(1)</script>", note: "1 < 2 & 3" };
+    const out = rawText(JSON.stringify(data), "script", true);
+    expect(out).not.toContain("<");
+    expect(JSON.parse(out)).toEqual(data);
   });
 });
 

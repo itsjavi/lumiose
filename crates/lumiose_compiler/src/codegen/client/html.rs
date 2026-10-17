@@ -157,6 +157,43 @@ pub fn root_namespace(context: Namespace, tag: &str) -> Namespace {
     }
 }
 
+/// `<script>` and `<style>` in HTML: raw text elements, whose content HTML does not decode (in
+/// SVG and MathML it does).
+pub fn is_raw_text(namespace: Namespace, tag: &str) -> bool {
+    namespace == Namespace::Html && matches!(tag, "script" | "style")
+}
+
+/// Whether a `<script type>` holds JSON: `application/json`, `application/ld+json` and other
+/// `…json` types, import maps and speculation rules.
+pub fn is_json_script_type(value: &str) -> bool {
+    let value = value.trim().to_ascii_lowercase();
+    value.ends_with("json") || matches!(value.as_str(), "importmap" | "speculationrules")
+}
+
+/// The text of a raw text element `tag` as `lumiose/server`'s `rawText()` writes it: as it is,
+/// with `</script` (`</style`) and, in a script, `<!--` neutralized as `<\/script` and `<\!--`;
+/// in a JSON script every `<` is `\u003c` (TASK-472 L7).
+pub fn raw_text(text: &str, tag: &str, json: bool) -> String {
+    if json {
+        return text.replace('<', "\\u003c");
+    }
+    let mut out = String::with_capacity(text.len());
+    let mut rest = text;
+    while let Some(index) = rest.find('<') {
+        out.push_str(&rest[..index]);
+        let after = &rest[index + 1..];
+        let closes = after.starts_with('/')
+            && after
+                .get(1..=tag.len())
+                .is_some_and(|name| name.eq_ignore_ascii_case(tag));
+        let comment = tag == "script" && after.starts_with("!--");
+        out.push_str(if closes || comment { "<\\" } else { "<" });
+        rest = after;
+    }
+    out.push_str(rest);
+    out
+}
+
 /// Escapes text content (`&`, `<`).
 pub fn escape_text(text: &str, out: &mut String) {
     for c in text.chars() {
@@ -239,6 +276,30 @@ mod tests {
             template_literal_raw("a`b${c}\\d\n$e"),
             "a\\`b\\${c}\\\\d\\n$e"
         );
+    }
+
+    #[test]
+    fn raw_text_ends_no_element_early() {
+        assert_eq!(
+            raw_text("if (a < b && c) {}", "script", false),
+            "if (a < b && c) {}"
+        );
+        assert_eq!(
+            raw_text("'</script>' + '</SCRIPT' + '<!--'", "script", false),
+            r"'<\/script>' + '<\/SCRIPT' + '<\!--'"
+        );
+        assert_eq!(
+            raw_text("a::after { content: '</style>' }", "style", false),
+            r"a::after { content: '<\/style>' }"
+        );
+        assert_eq!(raw_text("<!-- </script>", "style", false), "<!-- </script>");
+        assert_eq!(
+            raw_text(r#"{"a":"</script>"}"#, "script", true),
+            r#"{"a":"\u003c/script>"}"#
+        );
+        assert!(is_json_script_type(" Application/LD+JSON "));
+        assert!(is_json_script_type("importmap"));
+        assert!(!is_json_script_type("module"));
     }
 
     #[test]

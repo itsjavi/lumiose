@@ -21,6 +21,12 @@ use crate::analyze::is_jsx_like;
 use crate::scanner::StyleBlock;
 
 /// A child after text normalisation and fragment flattening.
+/// The content of a raw text element ([`Codegen::raw_content`]).
+pub(super) enum RawContent<'a> {
+    Static(String),
+    Dynamic(Expression<'a>),
+}
+
 pub enum Item<'a> {
     Text(String, Span),
     Raw(String, Span),
@@ -160,6 +166,57 @@ impl<'a> Codegen<'a, '_> {
         }
     }
 
+    /// The content of a raw text element (`<script>`, `<style>`): one text, the JSX text and
+    /// `{…}` values in order (TASK-472 L7). Gives the items back when one is markup (an element, a
+    /// component or JSX), which then compiles as usual.
+    pub(super) fn raw_content(
+        &self,
+        items: Vec<Item<'a>>,
+        span: Span,
+    ) -> Result<RawContent<'a>, Vec<Item<'a>>> {
+        let markup = items.iter().any(|item| match item {
+            Item::Text(..) => false,
+            Item::Dynamic(expression) => {
+                matches!(
+                    expression.without_parentheses(),
+                    Expression::JSXElement(_) | Expression::JSXFragment(_)
+                ) || is_jsx_like(expression)
+            }
+            _ => true,
+        });
+        if markup {
+            return Err(items);
+        }
+        if items.iter().all(|item| matches!(item, Item::Text(..))) {
+            let text = items
+                .into_iter()
+                .map(|item| match item {
+                    Item::Text(text, _) => text,
+                    _ => unreachable!("checked above"),
+                })
+                .collect();
+            return Ok(RawContent::Static(text));
+        }
+        if items.len() == 1 {
+            let Some(Item::Dynamic(expression)) = items.into_iter().next() else {
+                unreachable!("checked above");
+            };
+            return Ok(RawContent::Dynamic(expression));
+        }
+        // Text and values: `[…].join("")`, which renders nullish values as nothing.
+        let parts = items
+            .into_iter()
+            .map(|item| match item {
+                Item::Text(text, span) => self.ast.string(span, &text),
+                Item::Dynamic(expression) => expression,
+                _ => unreachable!("checked above"),
+            })
+            .collect::<Vec<_>>();
+        let join = self.ast.member(span, self.ast.array(span, parts), "join");
+        let empty = self.ast.string(span, "");
+        Ok(RawContent::Dynamic(self.ast.call(span, join, [empty])))
+    }
+
     /// Adds the children of `parent` to the template, with their operations.
     pub(super) fn build_children(
         &mut self,
@@ -178,7 +235,7 @@ impl<'a> Codegen<'a, '_> {
         self.namespaces.pop();
     }
 
-    fn build_items(
+    pub(super) fn build_items(
         &mut self,
         template: &mut Template<'a>,
         parent: usize,

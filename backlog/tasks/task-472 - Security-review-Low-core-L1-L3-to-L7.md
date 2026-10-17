@@ -5,6 +5,7 @@ status: To Do
 assignee:
   - '@Nova'
 created_date: '2026-10-16 23:46'
+updated_date: '2026-10-17 00:24'
 labels:
   - security
 milestone: m-12
@@ -55,3 +56,9 @@ Found by Prism's pre-release security review (decision-56, 2026-10-17) on main 1
 - [ ] #5 L6: the strict policy sets frame-ancestors 'self' (a default X-Frame-Options header goes to doc-10)
 - [ ] #6 L7: JSON script blocks serialize safely, and JSON-LD is documented
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Photon, 2026-10-17: L7 implemented on branch claude/photon-bugs-2c1927 at Lux's request (the separate tasks were not filed yet; link them here). The content of an HTML <script> or <style> is now one raw text: static text is written as it is (no &lt;), dynamic text, innerHTML and textContent go through the new lumiose/server helper rawText(value, tag, json?) on the server, and the client writes DOM text (innerHTML on these elements is set as textContent). </script, </style and <!-- are neutralized; in a JSON script (type ending in json, importmap, speculationrules) every < becomes \u003c, like jsonForScript. This also fixes the second finding: a static {"1 < 2"} in <script> was written as 1 &lt; 2. Tests: compiler golden raw-text, html.rs unit test, rawText unit tests (ssr.test.ts), a hydration test with JSON-LD that tries to break out; contract (ServerRuntime, doc-2), docs (head.md JSON-LD, jsx.md). AC #6 is met by this change; left unchecked for the task's owner.
+<!-- SECTION:NOTES:END -->

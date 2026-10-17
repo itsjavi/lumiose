@@ -18,6 +18,7 @@ const CONTRACT_KEYS: ReadonlyArray<keyof ServerRuntime> = [
   "nonceAttr",
   "spreadAttrs",
   "escape",
+  "rawText",
   "list",
   "branch",
   "branchArm",

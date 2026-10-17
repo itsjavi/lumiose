@@ -3,7 +3,7 @@
 export { attr, classAttr, nonceAttr, spreadAttrs, styleAttr } from "./attrs.ts";
 export { $async, $await, $leave, createComponent } from "./frame.ts";
 export { island } from "./island.ts";
-export { escape, SSRHtml } from "./node.ts";
+export { escape, rawText, SSRHtml } from "./node.ts";
 export {
   branch,
   branchArm,
