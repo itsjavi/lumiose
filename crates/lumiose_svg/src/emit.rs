@@ -213,37 +213,48 @@ fn is_script_url(value: &str) -> bool {
 
 /// Elements never emitted (with their content): those outside the allowlist ([`allow::element`]:
 /// scripts, `<foreignObject>` and the HTML in it, unknown names), the file's own `<title>`
-/// (`title` is a prop), and SMIL animations that could set a link or a handler.
-fn dropped(element: Node) -> bool {
+/// (`title` is a prop), and SMIL animations that could set a link or a handler. `emitted` is the
+/// element's attributes as [`attributes`] emits them.
+fn dropped(element: Node, emitted: &[(String, String)]) -> bool {
     let tag = element.tag_name();
     let name = tag.name();
     if !matches!(tag.namespace(), None | Some(SVG)) || !allow::element(name) || name == "title" {
         return true;
     }
-    allow::ANIMATIONS.contains(&name) && unsafe_animation(element)
+    allow::ANIMATIONS.contains(&name) && unsafe_animation(element, emitted)
 }
 
-/// An animation of an `href`, of an event handler or of a `style` (`attributeName`, in any case,
-/// as an HTML parser reads it), or one whose `values`/`from`/`to`/`by` hold a `javascript:` URL.
-fn unsafe_animation(element: Node) -> bool {
-    let value = |name: &str| {
-        element
-            .attributes()
-            .find(|a| a.name().eq_ignore_ascii_case(name))
-            .map(|a| a.value())
-    };
-    let target = value("attributeName")
-        .unwrap_or_default()
-        .trim()
-        .to_ascii_lowercase();
-    let target = target.rsplit(':').next().unwrap_or_default();
-    target.ends_with("href")
-        || target.starts_with("on")
-        || target == "style"
-        || ["values", "from", "to", "by"]
-            .into_iter()
-            .filter_map(value)
-            .any(|text| text.split(';').any(is_script_url))
+/// An animation of an `href`, of an event handler or of a `style`, or one whose
+/// `values`/`from`/`to`/`by` hold a `javascript:` URL in any item. It fails closed (TASK-468):
+/// every attribute of those names counts, in any case and any namespace, both as the file has it
+/// and as emitted, so a decoy (`attributename="fill"` or `x:attributeName="fill"` before
+/// `attributeName="href"`) cannot vouch for the attribute that is emitted.
+fn unsafe_animation(element: Node, emitted: &[(String, String)]) -> bool {
+    let source = element.attributes().map(|a| (a.name(), a.value()));
+    let emitted = emitted
+        .iter()
+        .map(|(name, value)| (name.as_str(), value.as_str()));
+    source.chain(emitted).any(|(name, value)| {
+        let name = name.rsplit(':').next().unwrap_or_default();
+        if name.eq_ignore_ascii_case("attributeName") {
+            unsafe_target(value)
+        } else if ["values", "from", "to", "by"]
+            .iter()
+            .any(|each| name.eq_ignore_ascii_case(each))
+        {
+            value.split(';').any(is_script_url)
+        } else {
+            false
+        }
+    })
+}
+
+/// Whether an animation's `attributeName` (as an HTML parser reads it: in any case, with any
+/// prefix) names an `href`, an event handler or `style`.
+fn unsafe_target(name: &str) -> bool {
+    let name = name.trim().to_ascii_lowercase();
+    let name = name.rsplit(':').next().unwrap_or_default();
+    name.ends_with("href") || name.starts_with("on") || name == "style"
 }
 
 fn node(out: &mut String, prefixer: &Prefixer, node: Node, depth: usize, text_content: bool) {
@@ -259,11 +270,12 @@ fn node(out: &mut String, prefixer: &Prefixer, node: Node, depth: usize, text_co
         return;
     }
     let name = node.tag_name().name();
-    if dropped(node) {
+    let attributes = attributes(node, prefixer);
+    if dropped(node, &attributes) {
         return;
     }
     let _ = write!(out, "{indent}<{name}");
-    for (attribute_name, value) in attributes(node, prefixer) {
+    for (attribute_name, value) in attributes {
         let _ = write!(out, " {}", self::attribute(&attribute_name, &value));
     }
     if !node.has_children() {

@@ -5462,8 +5462,10 @@ The query is the switch, so it works the same for your files and for packages:
     attributes, `id`, `class`, `style`, `role`, `tabindex`, `aria-*` and `data-*`, as plain string
     attributes. Event handlers (`onload`), DOM properties (`innerHTML`) and attributes of other
     namespaces are dropped; so are `javascript:` URLs.
-  - **Animations** that target a link (`href`), a handler (`on…`) or `style`, in any letter case,
-    or whose `values`/`from`/`to`/`by` hold a `javascript:` URL, are dropped.
+  - **Animations** that target a link (`href`), a handler (`on…`) or `style`, or whose
+    `values`/`from`/`to`/`by` hold a `javascript:` URL in any item, are dropped. The check fails
+    closed: every spelling of those attributes counts, in any letter case or namespace, so a
+    second `attributename="fill"` cannot vouch for an `attributeName="href"`.
   - **`<style>` text** keeps its CSS, with `<` and `&` written as CSS escapes (`\3c `, `\26 `):
     in a page, an inline SVG's `<style>` is parsed as markup, where they could open a tag.
   - Elements nested more than 128 levels deep make the file an error.

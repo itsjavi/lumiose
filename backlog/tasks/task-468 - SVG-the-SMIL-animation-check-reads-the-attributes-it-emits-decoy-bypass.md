@@ -1,10 +1,11 @@
 ---
 id: TASK-468
 title: 'SVG: the SMIL animation check reads the attributes it emits (decoy bypass)'
-status: To Do
+status: Done
 assignee:
   - '@Halo'
 created_date: '2026-10-16 23:46'
+updated_date: '2026-10-17 00:03'
 labels:
   - security
 milestone: m-12
@@ -41,7 +42,19 @@ Found by Prism's pre-release security review (decision-56, 2026-10-17) on main 1
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 A decoy attribute, in another case or namespace, can't let an animation of href, xlink:href, on* or style through; every item of `values` is checked
-- [ ] #2 A property test and a fuzz invariant: no emitted animation targets href, xlink:href, on* or style
-- [ ] #3 Legitimate fill, opacity and transform animations are still emitted
+- [x] #1 A decoy attribute, in another case or namespace, can't let an animation of href, xlink:href, on* or style through; every item of `values` is checked
+- [x] #2 A property test and a fuzz invariant: no emitted animation targets href, xlink:href, on* or style
+- [x] #3 Legitimate fill, opacity and transform animations are still emitted
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Halo (2026-10-17): unsafe_animation now fails closed. It reads every attributeName/values/from/to/by attribute, in any case and any namespace, both as the file has it and as emitted (after id prefixing), so a decoy cannot vouch for the emitted attribute; every ';' item of a values list is checked. Tests in crates/lumiose_svg/tests/security.rs: Prism's decoy cases (case, namespace, xml:, Values/x:values/TO decoys, a tab inside the scheme), legitimate fill/opacity/transform/visibility animations kept, and a property test (3000 seeded random animations with decoys in any case, namespace and order; both kept and dropped outcomes occur). The invariant lives in tests/support/animations.rs, a parser of the emitted component independent of the sanitizer, shared by the tests and fuzz/fuzz_targets/svg_component.rs, which now panics on an unsafe emitted animation. Both new tests and the fuzz invariant fail on the old emit.rs (decoy replayed through an uninstrumented build of the fuzz target). Limitation: no nightly toolchain here, so no coverage-guided cargo fuzz run; a 60 s uninstrumented libFuzzer run with an SVG dictionary found nothing. svg.md's animation bullet updated.
+<!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+The SVG sanitizer decides an animation's safety from every spelling of its attributes (any case, any namespace) and from the emitted view, failing closed; values items are all checked. Property test plus a fuzz invariant (no emitted animation targets href, xlink:href, on* or style, or holds a javascript: value); svg.md updated.
+<!-- SECTION:FINAL_SUMMARY:END -->
