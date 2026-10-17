@@ -6378,12 +6378,13 @@ default stays off, so a project set up by hand opts in. With `lumiose({ csp: "st
   preloads. The response gets this header:
 
   ```
-  Content-Security-Policy: script-src 'nonce-…' 'strict-dynamic'; style-src 'self' 'nonce-…'; object-src 'none'; base-uri 'self'
+  Content-Security-Policy: script-src 'nonce-…' 'strict-dynamic'; style-src 'self' 'nonce-…'; object-src 'none'; base-uri 'self'; frame-ancestors 'self'
   ```
 
   `'strict-dynamic'` lets the scripts the page loads import their own modules (islands, SPA
-  routes). Stylesheets from your own origin are allowed; inline styles need the nonce. These
-  responses also get `Cache-Control: private, no-store` unless the page sets its own: a nonce is
+  routes). Stylesheets from your own origin are allowed; inline styles need the nonce.
+  `frame-ancestors 'self'` lets only your own pages frame them, so another site cannot overlay
+  your forms (clickjacking). These responses also get `Cache-Control: private, no-store` unless the page sets its own: a nonce is
   only secret while no shared cache hands the same HTML to someone else.
 
 - **Prerendered pages** (`static` routes, the shells of `spa` pages) are files that every visitor
@@ -6391,6 +6392,9 @@ default stays off, so a project set up by hand opts in. With `lumiose({ csp: "st
   `<meta http-equiv="Content-Security-Policy">`, first in `<head>`, with the SHA-256 hash of each
   inline script and style that Lumiose or your JSX wrote (the same ones that get a nonce per
   request) and `'self'` for scripts and stylesheets of your origin. It works on any static host.
+  Browsers ignore `frame-ancestors` in a `<meta>` policy, so it is left out there: to keep other
+  sites from framing prerendered pages, send `X-Frame-Options: SAMEORIGIN` or a
+  `Content-Security-Policy: frame-ancestors 'self'` header from your host or `lumiose({ headers })`.
 - **`style` props** render as rules of a nonce'd (or hashed) `<style>` that target a `data-l-v`
   attribute, instead of `style="…"` attributes, which a strict policy refuses. In the browser,
   styles are set through the CSSOM, which the policy allows.
@@ -6427,6 +6431,13 @@ renders as `about:blank#blocked`, on the server and in the browser, with a
 [LUM4009](../errors/LUM4009.md) warning in development. Case, leading spaces and control
 characters, and tabs or newlines inside the scheme do not get past it. String literals in your JSX
 are left as written.
+
+**Raw HTML.** `innerHTML={…}` and an iframe's `srcdoc={…}` render a string as HTML, as it is: a
+script in it runs, in a `srcdoc` frame with the page's origin and access to the page. Pass them only
+HTML you trust (your own, or sanitized). With `csp: "strict"` the browser refuses a script injected
+either way: neither gets a nonce, and a `srcdoc` frame inherits the page's policy (checked in
+Chromium, Firefox and WebKit). For HTML you do not control in a frame, add `sandbox` (without
+`allow-same-origin`), which gives the frame an origin of its own.
 
 **Error details.** In production server rendering, `<ErrorBoundary>` fallbacks receive a generic
 error with a short `digest`, and the original error is logged with the same digest
@@ -6481,7 +6492,10 @@ other bodies at 1 MB, `multipart/form-data` (uploads) at 10 MB. A larger request
 Too Large`, refused before reading when its `Content-Length` says so, else as soon as the bytes
 read pass the limit; nothing buffers an unbounded body. The limits hold for form actions
 (`ctx.formData()`), endpoints (`request.formData()`, `json()`, `text()`, `arrayBuffer()` read the
-bounded body) and middleware alike, in every deployment. Raise or lower them for the app with
+bounded body) and middleware alike, in every deployment. The client's `Content-Type` picks the
+limit, except that `json()` and `text()` keep the 1 MB one: declaring `multipart/form-data` does
+not raise a JSON endpoint's limit. `formData()` and raw reads (`arrayBuffer()`, `request.body`, for
+a multipart parser of your own) of a multipart body get the upload limit. Raise or lower them for the app with
 `lumiose({ limits: { body: "2mb", upload: "50mb" } })`, and for one route with
 `export const limits = { upload: "200mb" }` in its page or endpoint file.
 

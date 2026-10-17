@@ -204,6 +204,10 @@ interface IframeAttributes extends SizeAttributes {
   referrerpolicy?: ReferrerPolicy;
   sandbox?: string;
   src?: string;
+  /**
+   * HTML the frame renders, as it is, like `innerHTML`: its scripts run with the page's origin
+   * unless `sandbox` is set. Only trusted HTML (see Security).
+   */
   srcdoc?: string;
 }
 

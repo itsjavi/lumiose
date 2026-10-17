@@ -481,4 +481,37 @@ describe("strict CSP styles", () => {
       `<style nonce="abc">[data-l-v="0"]{color:red;content:'\\7d \\3c x'}</style>`,
     );
   });
+  it("closes what a style value leaves open, so it cannot swallow the next rules (TASK-472)", async () => {
+    const rules = async (...values: string[]) => {
+      const shell = await renderToStream(
+        () => ssr(["<p", ">x</p>"], values.map((value) => styleAttr(value)).join("")),
+        { strictStyles: true },
+      );
+      return shell.head.replace(/^<style>|<\/style>$/g, "");
+    };
+    expect(await rules("color:red /* note", "color:blue")).toBe(
+      '[data-l-v="0"]{color:red /* note*/}[data-l-v="1"]{color:blue}',
+    );
+    expect(await rules("background:url(x", "color:blue")).toBe(
+      '[data-l-v="0"]{background:url(x)}[data-l-v="1"]{color:blue}',
+    );
+    expect(await rules("content:'x", "color:blue")).toBe(
+      `[data-l-v="0"]{content:'x'}[data-l-v="1"]{color:blue}`,
+    );
+    expect(await rules("width:calc(1px + var(--a", "color:blue")).toBe(
+      '[data-l-v="0"]{width:calc(1px + var(--a))}[data-l-v="1"]{color:blue}',
+    );
+    expect(await rules("--x:[a", "color:blue")).toBe(
+      '[data-l-v="0"]{--x:[a]}[data-l-v="1"]{color:blue}',
+    );
+    // Closed values stay as they are, quotes and parentheses in strings and urls included.
+    for (const value of [
+      "background:url('a(b.png')",
+      "background:url(a.png) /* c */",
+      'content:"(["',
+      "width:calc((1px + 2px) * 3)",
+    ]) {
+      expect(await rules(value)).toBe(`[data-l-v="0"]{${value}}`);
+    }
+  });
 });
