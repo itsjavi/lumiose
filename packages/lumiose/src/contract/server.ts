@@ -49,6 +49,12 @@ export interface ServerRuntime {
   spreadAttrs(props: Record<string, unknown>): string;
   /** Escapes a value for text (`&`, `<`) or double-quoted attribute (`&`, `"`) context. */
   escape(value: unknown, attribute?: boolean): string;
+  /**
+   * The text of a `<script>` or `<style>` (`tag`), not HTML-escaped: `</script`, `</style` and
+   * `<!--` are neutralized, and in a JSON script (`json`) every `<` is `\u003c`. Nullish and
+   * booleans render nothing.
+   */
+  rawText(value: unknown, tag: string, json?: boolean): string;
 
   /** Server list rendering for compiled `.map()`; emits block markers only inside islands. */
   list<T>(

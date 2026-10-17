@@ -409,17 +409,20 @@ function List({
   const combobox = useCombobox();
   const field = useField();
   // The listbox is the popover unless a Popup holds it.
-  const popover = combobox.popup
-    ? { style }
-    : {
-        popover: "manual" as const,
-        ...placement(
-          { side, align, sideOffset, alignOffset, style },
-          combobox.id,
-          "bottom",
-          "start",
-        ),
-      };
+  // Initial values, read once (TASK-477 decides whether they should follow the props).
+  const popover = untrack(() =>
+    combobox.popup
+      ? { style }
+      : {
+          popover: "manual" as const,
+          ...placement(
+            { side, align, sideOffset, alignOffset, style },
+            combobox.id,
+            "bottom",
+            "start",
+          ),
+        },
+  );
   return (
     <div
       // Named by the Label, or in a field by the field's (TASK-454, L32).

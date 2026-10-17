@@ -34,3 +34,6 @@ export function Dynamic(props) {
 	const attrs = props.attrs;
 	return _c2(spreadAttrs(mergeProps({ role: "note" }, attrs())), "children" in attrs() ? insert(attrs().children) : "");
 }
+
+// --- diagnostics ---
+// LUM2001 warning 18:9 `attrs` is computed once from a reactive value, so the JSX that uses it never updates

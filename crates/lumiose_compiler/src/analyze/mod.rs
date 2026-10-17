@@ -21,6 +21,7 @@ use reactivity::{
     PropsSymbols, first_reactive_read, is_import_member, server_only_imports, symbol_of,
 };
 
+use crate::codegen::client::{has_content, is_intrinsic, tag_name, takes_markup};
 use crate::diagnostics::{Code, Diagnostic};
 use crate::scanner::{Placement, StyleBlock};
 use crate::span::Span;
@@ -90,6 +91,8 @@ pub fn analyze(
         .collect();
     let mut analyzer = Analyzer {
         scoping,
+        source: program.source_text,
+        blocks,
         jsx_blocks,
         analysis: Analysis::default(),
         frames: Vec::new(),
@@ -245,6 +248,9 @@ struct Frame {
 
 struct Analyzer<'s> {
     scoping: &'s Scoping,
+    /// The parsed (masked) source and the style blocks, for JSX text.
+    source: &'s str,
+    blocks: &'s [StyleBlock],
     /// Spans of JSX-placed blocks not already reported by the scanner.
     jsx_blocks: Vec<Span>,
     analysis: Analysis,
@@ -758,6 +764,37 @@ impl<'a> Visit<'a> for Analyzer<'_> {
         }
     }
 
+    /// A spread reads its object like a `{…}` container does (TASK-466).
+    fn visit_jsx_spread_attribute(&mut self, it: &JSXSpreadAttribute<'a>) {
+        if let Some(frame) = self.frames.last_mut() {
+            frame.jsx_depth += 1;
+        }
+        walk::walk_jsx_spread_attribute(self, it);
+        if let Some(frame) = self.frames.last_mut() {
+            frame.jsx_depth -= 1;
+        }
+    }
+
+    fn visit_jsx_spread_child(&mut self, it: &JSXSpreadChild<'a>) {
+        if let Some(frame) = self.frames.last_mut() {
+            frame.jsx_depth += 1;
+        }
+        walk::walk_jsx_spread_child(self, it);
+        if let Some(frame) = self.frames.last_mut() {
+            frame.jsx_depth -= 1;
+        }
+    }
+
+    fn visit_jsx_element(&mut self, it: &JSXElement<'a>) {
+        if let Some(span) = self.spread_children_insert(it)
+            && let Some(frame) = self.frames.last_mut()
+            && frame.component.is_some()
+        {
+            frame.children_inserts.push(span);
+        }
+        walk::walk_jsx_element(self, it);
+    }
+
     fn visit_jsx_child(&mut self, it: &JSXChild<'a>) {
         if let JSXChild::ExpressionContainer(container) = it
             && let Some(expr) = container.expression.as_expression()
@@ -842,6 +879,39 @@ impl<'a> Visit<'a> for Analyzer<'_> {
 }
 
 impl Analyzer<'_> {
+    /// The span of the spread whose `children` an intrinsic element without content inserts
+    /// (TASK-347), when that spread is the component's props object or a rest that still carries
+    /// `children` and no later `children` attribute replaces it.
+    fn spread_children_insert(&self, element: &JSXElement<'_>) -> Option<Span> {
+        let opening = &element.opening_element;
+        if !is_intrinsic(&opening.name)
+            || !takes_markup(&tag_name(&opening.name))
+            || has_content(self.source, self.blocks, &element.children)
+        {
+            return None;
+        }
+        let props = self.current_component()?.props.as_ref()?;
+        let mut insert = None;
+        for item in &opening.attributes {
+            match item {
+                JSXAttributeItem::SpreadAttribute(spread) => {
+                    if let Expression::Identifier(ident) = spread.argument.without_parentheses()
+                        && symbol_of(self.scoping, ident).is_some_and(|s| props.carries_children(s))
+                    {
+                        insert = Some(spread.span.into());
+                    }
+                }
+                JSXAttributeItem::Attribute(attribute) => {
+                    if matches!(&attribute.name, JSXAttributeName::Identifier(name) if name.name == "children")
+                    {
+                        insert = None;
+                    }
+                }
+            }
+        }
+        insert
+    }
+
     fn reads_children(&self, expr: &Expression<'_>) -> bool {
         let Some(component) = self.current_component() else {
             return false;

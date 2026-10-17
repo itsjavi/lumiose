@@ -36,8 +36,9 @@ use oxc_span::{GetSpan, Span};
 use oxc_syntax::scope::{ScopeFlags, ScopeId};
 use oxc_syntax::symbol::SymbolId;
 
+pub use children::has_content;
 pub use contract::{ContractEntry, ContractKind, ContractSite, execution_contract};
-pub use element::{is_intrinsic, tag_name};
+pub use element::{is_intrinsic, tag_name, takes_markup};
 
 use crate::analyze::{Analysis, is_jsx_like};
 use crate::codegen::ast::Ast;
@@ -173,6 +174,7 @@ const SERVER_RUNTIME: &[&str] = &[
     "nonceAttr",
     "spreadAttrs",
     "escape",
+    "rawText",
     "list",
     "branch",
     "branchArm",

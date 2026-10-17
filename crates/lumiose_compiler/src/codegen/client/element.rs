@@ -6,6 +6,7 @@ use oxc_allocator::ArenaBox;
 use oxc_ast::ast::*;
 use oxc_span::{GetSpan, Span};
 
+use super::children::{Item, RawContent, has_content};
 use super::class_flow::ClassFlow;
 use super::html::{self, Namespace};
 use super::template::{NodeKind, Op, Template};
@@ -215,7 +216,28 @@ impl<'a> Codegen<'a, '_> {
         let auto_nonce = self.options.strict_csp
             && matches!(tag.as_str(), "script" | "style")
             && !has_attribute(&attributes, "nonce");
-        let has_inner_html = self.element_attributes(template, node, attributes);
+        // `Some(json)` for a `<script>` or `<style>`, whose content is raw text.
+        let raw_text =
+            html::is_raw_text(namespace, &tag).then(|| is_json_script(&tag, &attributes));
+        // Their `innerHTML` is raw text too: browsers parse it as text, so it is set as
+        // `textContent`, which needs no parser at all (TASK-472 L7).
+        let mut sets_text = false;
+        if raw_text.is_some() {
+            for item in attributes.iter_mut() {
+                if let JSXAttributeItem::Attribute(attribute) = item
+                    && matches!(
+                        attribute_name(&attribute.name).as_str(),
+                        "innerHTML" | "textContent"
+                    )
+                {
+                    sets_text = true;
+                    let span = attribute.name.span();
+                    attribute.name =
+                        JSXAttributeName::new_identifier(span, "textContent", self.ast);
+                }
+            }
+        }
+        let has_inner_html = self.element_attributes(template, node, attributes) || sets_text;
         if auto_nonce {
             // Strict CSP (decision-27): the page's nonce, before the element is inserted.
             template.push(Op::Call {
@@ -233,7 +255,12 @@ impl<'a> Codegen<'a, '_> {
         }
         if !has_inner_html {
             let child_namespace = html::child_namespace(namespace, &tag);
-            self.build_children(template, Some(node), children, child_namespace);
+            match raw_text {
+                Some(json) => {
+                    self.build_raw_text(template, node, &tag, json, children, child_namespace);
+                }
+                None => self.build_children(template, Some(node), children, child_namespace),
+            }
         }
         if let Some(object) = spread_children {
             template.push(Op::SpreadChildren {
@@ -246,6 +273,39 @@ impl<'a> Codegen<'a, '_> {
             self.element_attributes(template, node, deferred);
         }
         node
+    }
+
+    /// The content of a `<script>` or `<style>` (TASK-472 L7): static text goes into the
+    /// template as `rawText()` writes it on the server, not HTML-escaped (which the parser would
+    /// not decode); a dynamic value is a text node the client writes.
+    fn build_raw_text(
+        &mut self,
+        template: &mut Template<'a>,
+        node: usize,
+        tag: &str,
+        json: bool,
+        children: oxc_allocator::ArenaVec<'a, JSXChild<'a>>,
+        namespace: Namespace,
+    ) {
+        let span = template.nodes[node].span;
+        let items = self.child_items(children);
+        let items = match self.raw_content(items, span) {
+            Ok(RawContent::Static(text)) => {
+                if !text.is_empty() {
+                    template.add(
+                        Some(node),
+                        NodeKind::Raw(html::raw_text(&text, tag, json)),
+                        span,
+                    );
+                }
+                return;
+            }
+            Ok(RawContent::Dynamic(value)) => vec![Item::Dynamic(value)],
+            Err(items) => items,
+        };
+        self.namespaces.push(namespace);
+        self.build_items(template, node, items, namespace);
+        self.namespaces.pop();
     }
 
     /// Takes the `value` / `bind:value` attributes out of a `<select>`'s attributes (none when
@@ -842,7 +902,7 @@ impl<'a> Codegen<'a, '_> {
                 JSXAttributeItem::Attribute(_) => index += 1,
             }
         }
-        if suspends || !takes_markup(tag) || self.has_content(children) {
+        if suspends || !takes_markup(tag) || has_content(self.source, self.blocks, children) {
             return None;
         }
         let last = sources.pop()?;
@@ -915,7 +975,7 @@ impl ChildrenSource<'_> {
 
 /// Whether an element's content is markup that `children` can render into: not a void element,
 /// raw text, a form value or a separate document.
-fn takes_markup(tag: &str) -> bool {
+pub fn takes_markup(tag: &str) -> bool {
     !html::is_void(tag)
         && !matches!(
             tag,
@@ -979,6 +1039,25 @@ pub(super) fn static_strings(array: &ArrayExpression<'_>) -> Option<Vec<String>>
         })
         .collect::<Option<Vec<_>>>()
         .map(|parts| parts.into_iter().filter(|p| !p.is_empty()).collect())
+}
+
+/// Whether `tag` is a `<script>` whose static `type` names JSON ([`html::is_json_script_type`]).
+pub(super) fn is_json_script(tag: &str, attributes: &[JSXAttributeItem<'_>]) -> bool {
+    tag == "script" && attributes.iter().any(|item| match item {
+        JSXAttributeItem::Attribute(attribute) if attribute_name(&attribute.name) == "type" => {
+            match &attribute.value {
+                Some(JSXAttributeValue::StringLiteral(value)) => {
+                    html::is_json_script_type(&value.value)
+                }
+                Some(JSXAttributeValue::ExpressionContainer(container)) => matches!(
+                    &container.expression,
+                    JSXExpression::StringLiteral(value) if html::is_json_script_type(&value.value)
+                ),
+                _ => false,
+            }
+        }
+        _ => false,
+    })
 }
 
 /// Whether `attributes` has an attribute named `name` (spreads may still set it at runtime).

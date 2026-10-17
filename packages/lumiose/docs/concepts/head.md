@@ -36,6 +36,14 @@ replaced a default carries it in a `data-l-default` attribute. The same goes for
 that loaded the document replaced them; SPA-wide defaults belong in the document or the outermost
 `spa` layout.
 
+**Inline JSON and scripts.** The text of a `<script>` or `<style>` is raw text, which HTML does
+not decode, so Lumiose writes it as it is (no `&lt;`) and makes sure it cannot end the element:
+`</script` becomes `<\/script`, `</style` becomes `<\/style`, and in a JSON script
+(`application/ld+json`, `application/json` and other `…json` types, `importmap`,
+`speculationrules`) every `<` becomes `\u003c`, which JSON reads back as `<`. So
+`{JSON.stringify(data)}` is the way to write JSON-LD, even with data users wrote. `innerHTML` and
+`textContent` on these elements get the same treatment.
+
 > **Status:** available on the server (`renderToStream`) and in the browser; the default and custom
 > documents are rendered by the request handler.
 
@@ -88,6 +96,27 @@ export default function About() {
 }
 ```
 
+JSON-LD for a page, from its data:
+
+```tsx check file=routes/books/page.tsx
+// src/routes/books/page.tsx
+import { Head, Title } from "lumiose";
+
+const book = { "@context": "https://schema.org", "@type": "Book", name: "Dune" };
+
+export default function Books() {
+  return (
+    <main>
+      <Title>{book.name}</Title>
+      <Head>
+        <script type="application/ld+json">{JSON.stringify(book)}</script>
+      </Head>
+      <h1>{book.name}</h1>
+    </main>
+  );
+}
+```
+
 ## Common mistakes
 
 - **A `meta` or `title` export.** There is none; render `<Title>` and `<Meta>`.
@@ -97,6 +126,8 @@ export default function About() {
 - **Writing `<title>` or `<meta>` elements directly in a page.** They land in the body. Use the
   components.
 - **Setting `document.title` in an effect.** It fights with `<Title>`; use the component.
+- **Escaping JSON for a `<script>` yourself.** `&lt;` stays `&lt;` in a script; write
+  `{JSON.stringify(data)}` and let Lumiose make it safe.
 
 ## Related diagnostics
 

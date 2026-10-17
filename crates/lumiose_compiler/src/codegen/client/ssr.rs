@@ -16,7 +16,7 @@ use oxc_ast::ast::*;
 use oxc_span::{GetSpan, Span};
 use oxc_syntax::operator::BinaryOperator;
 
-use super::children::{Item, Kind, group_table_rows, is_isolated};
+use super::children::{Item, Kind, RawContent, group_table_rows, is_isolated};
 use super::element::{
     AttrValue, Literal, attr_value, attribute_name, is_custom_element, literal, static_object_keys,
     static_strings, strip_parens, tag_name, take_bindings,
@@ -131,6 +131,8 @@ struct OpenTag<'a> {
     tail: Vec<Piece<'a>>,
     /// `innerHTML`, `textContent` or a `<textarea>` value, replacing the children.
     content: Option<Piece<'a>>,
+    /// `Some(json)` for a `<script>` or `<style>`, whose content is raw text (TASK-472 L7).
+    raw_text: Option<bool>,
 }
 
 impl<'a> Codegen<'a, '_> {
@@ -273,7 +275,13 @@ impl<'a> Codegen<'a, '_> {
         } else {
             None
         };
-        let mut open = OpenTag::default();
+        // The namespace the element is in, like the client's (`build_element`).
+        let namespace = self.namespace();
+        let mut open = OpenTag {
+            raw_text: html::is_raw_text(namespace, &tag)
+                .then(|| super::element::is_json_script(&tag, &opening.attributes)),
+            ..OpenTag::default()
+        };
         let auto_nonce = self.options.strict_csp
             && matches!(tag.as_str(), "script" | "style")
             && !super::element::has_attribute(&opening.attributes, "nonce");
@@ -303,10 +311,13 @@ impl<'a> Codegen<'a, '_> {
         }
         let has_select = select.is_some();
         self.select_values.extend(select);
-        match open.content {
-            Some(content) => out.piece(content),
-            None => self.ssr_children(out, &tag, children),
+        self.namespaces.push(html::child_namespace(namespace, &tag));
+        match (open.content, open.raw_text) {
+            (Some(content), _) => out.piece(content),
+            (None, Some(json)) => self.ssr_raw_text(out, &tag, json, children, span),
+            (None, None) => self.ssr_children(out, &tag, children),
         }
+        self.namespaces.pop();
         if let Some(object) = spread_children {
             // `"children" in props ? insert(props.children) : ""`, the client's guarded insert.
             let children = self
@@ -323,6 +334,45 @@ impl<'a> Codegen<'a, '_> {
             self.select_values.pop();
         }
         out.html(&format!("</{tag}>"));
+    }
+
+    /// The content of a `<script>` or `<style>`, as the client's `build_raw_text` creates it:
+    /// static text as `rawText()` writes it, a dynamic value through `rawText(value, tag, json)`.
+    fn ssr_raw_text(
+        &mut self,
+        out: &mut Ssr<'a>,
+        tag: &str,
+        json: bool,
+        children: ArenaVec<'a, JSXChild<'a>>,
+        span: Span,
+    ) {
+        let items = self.child_items(children);
+        match self.raw_content(items, span) {
+            Ok(RawContent::Static(text)) => out.html(&html::raw_text(&text, tag, json)),
+            Ok(RawContent::Dynamic(value)) => {
+                let value = self.visited(value);
+                let hole = self.raw_text_call(value, tag, json, span);
+                out.hole(hole);
+            }
+            Err(items) => self.ssr_items(out, items),
+        }
+    }
+
+    /// `rawText(value, tag)`, or `rawText(value, tag, true)` in a JSON script.
+    fn raw_text_call(
+        &mut self,
+        value: Expression<'a>,
+        tag: &str,
+        json: bool,
+        span: Span,
+    ) -> Expression<'a> {
+        let tag = self.ast.string(span, tag);
+        if json {
+            let json = self.ast.boolean(span, true);
+            self.helper_call("rawText", [value, tag, json], span)
+        } else {
+            self.helper_call("rawText", [value, tag], span)
+        }
     }
 
     /// `<select value={v}>` (or `bind:value`): a select has no `value` attribute, so the server
@@ -601,7 +651,13 @@ impl<'a> Codegen<'a, '_> {
                 Some(constant) => constant,
                 None => {
                     let expr = self.visited(expr);
-                    if name == "innerHTML" {
+                    if let Some(json) = open.raw_text
+                        && (name == "innerHTML" || text_content)
+                    {
+                        // Raw text either way: not HTML-escaped, but unable to end the element.
+                        let hole = self.raw_text_call(expr, tag, json, span);
+                        open.content = Some(Piece::Hole(hole));
+                    } else if name == "innerHTML" {
                         // Trusted HTML by definition: the value is written as it is.
                         open.content = Some(Piece::Hole(expr));
                     } else if text_content {
@@ -624,6 +680,12 @@ impl<'a> Codegen<'a, '_> {
             },
         };
         match constant {
+            Literal::Str(value)
+                if open.raw_text.is_some() && (name == "innerHTML" || text_content) =>
+            {
+                let json = open.raw_text == Some(true);
+                open.content = Some(Piece::Html(html::raw_text(&value, tag, json)));
+            }
             Literal::Str(value) if name == "innerHTML" => open.content = Some(Piece::Html(value)),
             Literal::Str(value) if text_content => {
                 let mut escaped = String::new();

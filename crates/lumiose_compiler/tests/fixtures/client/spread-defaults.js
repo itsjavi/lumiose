@@ -30,3 +30,6 @@ export function Dynamic(props) {
 	"children" in attrs() && insert(_el3, () => attrs().children);
 	return _el3;
 }
+
+// --- diagnostics ---
+// LUM2001 warning 18:9 `attrs` is computed once from a reactive value, so the JSX that uses it never updates

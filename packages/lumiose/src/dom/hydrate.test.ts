@@ -1484,3 +1484,33 @@ describe("hydrate: children carried by props", () => {
     expect(i!.textContent).toBe("1");
   });
 });
+
+describe("hydrate: script and style text (TASK-472 L7)", () => {
+  it("writes JSON-LD and static script text as raw text that cannot end the element", async () => {
+    const { client, server } = await load(`
+      export function Page(props: { data: object }) {
+        return (
+          <div>
+            <script type="application/ld+json">{JSON.stringify(props.data)}</script>
+            <script type="application/ld+json" innerHTML={JSON.stringify(props.data)} />
+            <script type="text/x-template">{"1 < 2 & '</script>'"}</script>
+          </div>
+        );
+      }`);
+    const data = { name: "</script><img src=x>", note: "1 < 2 & 3" };
+    await serve(server, [["Page", { data }]]);
+    const read = () =>
+      [...document.querySelectorAll("script:not([data-l-islands]):not([type='application/json'])")]
+        .filter((script) => !script.hasAttribute("data-l-payload"))
+        .map((script) => script.textContent);
+    expect(document.querySelector("img")).toBe(null);
+    const [ld, inner, template] = read();
+    expect(JSON.parse(ld!)).toEqual(data);
+    expect(JSON.parse(inner!)).toEqual(data);
+    expect(template).toBe("1 < 2 & '<\\/script>'");
+    await hydrateAll(client);
+    expect(warn).not.toHaveBeenCalled();
+    expect(document.querySelector("img")).toBe(null);
+    expect(read().slice(0, 2).map((text) => JSON.parse(text!))).toEqual([data, data]);
+  });
+});
