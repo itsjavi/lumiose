@@ -170,10 +170,12 @@ function Trigger({
     : popover.modal
       ? { command: "show-modal", commandfor: popover.popupId, "aria-expanded": "false" as const }
       : { popovertarget: popover.popupId };
-  const hover =
+  // Initial values, read once (TASK-477 decides whether they should follow the props).
+  const hover = untrack(() =>
     openOnHover && !popover.modal && !off
       ? { "data-open-on-hover": "", "data-delay": delay, "data-close-delay": closeDelay }
-      : {};
+      : {},
+  );
   return (
     <button
       type="button"

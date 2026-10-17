@@ -295,15 +295,18 @@ function Input(props: NumberFieldInputProps) {
       : String(number);
   });
   const initial = untrack(field.value);
-  const spin = formatted
-    ? {
-        role: "spinbutton",
-        "aria-valuenow": initial ?? undefined,
-        "aria-valuemin": field.min(),
-        "aria-valuemax": field.max(),
-        "aria-valuetext": text,
-      }
-    : { min: field.min(), max: field.max(), step: field.step() };
+  // Initial values, read once (TASK-477 decides whether they should follow the field).
+  const spin = untrack(() =>
+    formatted
+      ? {
+          role: "spinbutton",
+          "aria-valuenow": initial ?? undefined,
+          "aria-valuemin": field.min(),
+          "aria-valuemax": field.max(),
+          "aria-valuetext": text,
+        }
+      : { min: field.min(), max: field.max(), step: field.step() },
+  );
   return (
     <input
       autocomplete="off"
