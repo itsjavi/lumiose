@@ -30,11 +30,18 @@ pub struct PropsSymbols {
     pub rest: HashSet<SymbolId>,
     /// The destructured `children` bindings.
     pub children: HashSet<SymbolId>,
+    /// The `rest` bindings whose pattern takes `children` out (`{ children, ...rest }`).
+    pub rest_without_children: HashSet<SymbolId>,
 }
 
 impl PropsSymbols {
     pub fn is_props_object(&self, symbol: SymbolId) -> bool {
         self.object == Some(symbol) || self.rest.contains(&symbol)
+    }
+
+    /// Whether `symbol` is a props object that still carries `children`.
+    pub fn carries_children(&self, symbol: SymbolId) -> bool {
+        self.is_props_object(symbol) && !self.rest_without_children.contains(&symbol)
     }
 }
 

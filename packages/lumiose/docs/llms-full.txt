@@ -14580,7 +14580,8 @@ Split the expression into named parts, or load deeply nested data as JSON (`impo
 ## What it means
 
 A component's body runs once. `const doubled = count() * 2` reads the signal at setup time and
-stores a number, so JSX that uses `doubled` shows the first value forever.
+stores a number, so JSX that uses `doubled` shows the first value forever. A spread is a use too:
+`const attrs = { title: props.title }` spread as `<div {...attrs} />` keeps the first title.
 
 The compiler treats a zero-argument call of a local or imported binding (`count()`,
 `user.name()`) as a signal read, and so does a read of the component's props. Calls that can only
@@ -14649,8 +14650,11 @@ const total = computed(() => expensive(count())); // cached
 return <button>{doubled()}</button>;
 ```
 
+For a spread, make the object a function and call it in the spread: `const attrs = () => ({ title:
+props.title })` with `<div {...attrs()} />` stays live.
+
 If you really want the initial value only, read it with `count.peek()` or `untrack(count)` to make
-that explicit.
+that explicit (`const attrs = untrack(() => ({ title: props.title }))`).
 
 ## Related
 
@@ -14796,6 +14800,10 @@ Render it with JSX: `<Item label={item} />`. To choose a component at runtime, u
 
 `children` is lazy: each insertion evaluates it, creating a second set of nodes (or moving the
 first). Components below are instantiated twice, with separate state.
+
+Spreading the props onto an element without content of its own inserts `children` too
+(`<div {...props} />`, [JSX](../concepts/jsx.md)), so it counts as one insertion. A rest that took
+`children` out (`{ children, ...rest }`) inserts none.
 
 ## Example
 

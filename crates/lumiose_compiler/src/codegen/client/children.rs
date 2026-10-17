@@ -18,6 +18,7 @@ use super::template::{Marker, NodeKind, Op, Template};
 use super::text::{TextPiece, normalize, split_text};
 use super::{Codegen, Compiled};
 use crate::analyze::is_jsx_like;
+use crate::scanner::StyleBlock;
 
 /// A child after text normalisation and fragment flattening.
 pub enum Item<'a> {
@@ -127,33 +128,6 @@ impl<'a> Codegen<'a, '_> {
         }
         flush(&mut pending, &mut items);
         merge_text(items)
-    }
-
-    /// Whether an element has content of its own, as React counts children: anything but
-    /// whitespace that JSX drops (normalised as in [`Self::child_items`]) and empty `{}`.
-    pub(super) fn has_content(&self, children: &[JSXChild<'a>]) -> bool {
-        let mut text = String::new();
-        for child in children {
-            match child {
-                JSXChild::Text(node) => {
-                    for piece in split_text(self.source, node.span.into(), self.blocks) {
-                        match piece {
-                            TextPiece::Text(raw) => text.push_str(&raw),
-                            TextPiece::Raw(_) => return true,
-                        }
-                    }
-                }
-                JSXChild::ExpressionContainer(container)
-                    if matches!(container.expression, JSXExpression::EmptyExpression(_)) =>
-                {
-                    if normalize(&std::mem::take(&mut text)).is_some() {
-                        return true;
-                    }
-                }
-                _ => return true,
-            }
-        }
-        normalize(&text).is_some()
     }
 
     fn push_expression(&self, expression: Expression<'a>, span: Span, items: &mut Vec<Item<'a>>) {
@@ -813,4 +787,32 @@ impl<'a> Visit<'a> for RowReturns {
         }
         walk::walk_return_statement(self, it);
     }
+}
+
+/// Whether an element has content of its own, as React counts children: anything but whitespace
+/// that JSX drops (normalised as in [`Codegen::child_items`]) and empty `{}`. `source` is the
+/// file's source (or its masked copy: they agree outside style blocks).
+pub fn has_content(source: &str, blocks: &[StyleBlock], children: &[JSXChild<'_>]) -> bool {
+    let mut text = String::new();
+    for child in children {
+        match child {
+            JSXChild::Text(node) => {
+                for piece in split_text(source, node.span.into(), blocks) {
+                    match piece {
+                        TextPiece::Text(raw) => text.push_str(&raw),
+                        TextPiece::Raw(_) => return true,
+                    }
+                }
+            }
+            JSXChild::ExpressionContainer(container)
+                if matches!(container.expression, JSXExpression::EmptyExpression(_)) =>
+            {
+                if normalize(&std::mem::take(&mut text)).is_some() {
+                    return true;
+                }
+            }
+            _ => return true,
+        }
+    }
+    normalize(&text).is_some()
 }

@@ -120,6 +120,13 @@ fn collect_object_pattern(
             return false;
         };
         symbols.rest.extend(ident.symbol_id.get());
+        let takes_children = pattern
+            .properties
+            .iter()
+            .any(|property| property_key_name(&property.key) == Some("children"));
+        if takes_children {
+            symbols.rest_without_children.extend(ident.symbol_id.get());
+        }
     }
     true
 }
@@ -172,6 +179,9 @@ fn body_props_patterns(
             }
             symbols.destructured.extend(found.destructured);
             symbols.rest.extend(found.rest);
+            symbols
+                .rest_without_children
+                .extend(found.rest_without_children);
             symbols.children.extend(found.children);
             spans.push(declarator.span.into());
         }

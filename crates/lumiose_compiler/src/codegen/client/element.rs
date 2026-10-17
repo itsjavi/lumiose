@@ -6,6 +6,7 @@ use oxc_allocator::ArenaBox;
 use oxc_ast::ast::*;
 use oxc_span::{GetSpan, Span};
 
+use super::children::has_content;
 use super::class_flow::ClassFlow;
 use super::html::{self, Namespace};
 use super::template::{NodeKind, Op, Template};
@@ -842,7 +843,7 @@ impl<'a> Codegen<'a, '_> {
                 JSXAttributeItem::Attribute(_) => index += 1,
             }
         }
-        if suspends || !takes_markup(tag) || self.has_content(children) {
+        if suspends || !takes_markup(tag) || has_content(self.source, self.blocks, children) {
             return None;
         }
         let last = sources.pop()?;
@@ -915,7 +916,7 @@ impl ChildrenSource<'_> {
 
 /// Whether an element's content is markup that `children` can render into: not a void element,
 /// raw text, a form value or a separate document.
-fn takes_markup(tag: &str) -> bool {
+pub fn takes_markup(tag: &str) -> bool {
     !html::is_void(tag)
         && !matches!(
             tag,
