@@ -4349,10 +4349,14 @@ parameter that starts with `/`, wherever it is, so `?status=open&/close` runs `c
 | plain data                     | The page re-renders (200) and `actionData()` returns the data.                                  |
 | `fail(status, data)`           | The page re-renders with `status`; `actionData()` returns `data`. Use it for validation errors. |
 
-**Keeping what the user entered.** After a failed submission, send the submitted values back with
-the errors, so the page renders the form filled in and nobody types everything again (WCAG 3.3.7):
-`return fail(400, { errors, values: form })`. `actionData()` data may hold a `FormData`: its text
-entries reach the browser (files are left out), so delete secrets first (`form.delete("password")`).
+**Keeping what the user entered.** After a failed submission, send back the values to fill in
+again with the errors, so the page renders the form filled in and nobody types everything again
+(WCAG 3.3.7). Name the fields you send back:
+`return fail(400, { errors, values: { username, email } })`. Everything in `actionData()` data is
+embedded in the re-rendered page, so a password, a token or a card number in it would sit in the
+HTML, within reach of every script on the page. A `FormData` works too (its text entries; files are
+left out), but it carries every field of the form: in development, Lumiose warns when one carries a
+name that looks secret (`password`, `token`, `otp`, `card`, …).
 @lumiose/ui's [Form](https://itsjavi.com/lumiose/ui/form/) takes them as `values` and fills its
 controls by name; with your own inputs, use them as `defaultValue`s.
 
