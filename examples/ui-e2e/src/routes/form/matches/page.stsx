@@ -1,0 +1,23 @@
+import { Field } from "@lumiose/ui";
+import { Title } from "lumiose";
+
+// An Error for one problem only (TASK-475): a missing value, which no Error matches, keeps the
+// browser's bubble; a value too short shows the Error instead. Server-rendered, no island.
+export default function ErrorMatchesPage() {
+  return (
+    <>
+      <Title>Error matches</Title>
+      <h1>Error matches</h1>
+      <form method="get" action="/form/matches" class="lu-fieldset">
+        <Field.Root name="code" class="lu-field">
+          <Field.Label>Code</Field.Label>
+          <Field.Control required minlength={3} class="lu-input" />
+          <Field.Error match="tooShort">Use 3 characters or more.</Field.Error>
+        </Field.Root>
+        <button type="submit" class="lu-button">
+          Send
+        </button>
+      </form>
+    </>
+  );
+}

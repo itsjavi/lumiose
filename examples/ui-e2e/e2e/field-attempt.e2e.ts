@@ -110,3 +110,28 @@ test("the wrapped requestSubmit() and reportValidity() behave as the browser's",
   });
   await expect(page).toHaveURL(/[?&]via=wrapped/);
 });
+
+test("a problem no Error matches keeps the browser's bubble (TASK-475)", async ({ page }) => {
+  await page.goto("/form/matches");
+  await page.waitForLoadState("networkidle");
+  const code = page.getByRole("textbox", { name: "Code" });
+  const error = page.getByText("Use 3 characters or more.");
+  const send = page.getByRole("button", { name: "Send" });
+  // Whether the bubble may show: the `invalid` event's default, after Field's capturing listener.
+  await code.evaluate((input) =>
+    input.addEventListener("invalid", (event) =>
+      input.setAttribute("data-prevented", String(event.defaultPrevented)),
+    ),
+  );
+  // A missing value: no Error for it, so the browser reports it and focuses the control.
+  await send.click();
+  await expect(code).toHaveAttribute("data-prevented", "false");
+  await expect(code).toBeFocused();
+  await expect(error).toBeHidden();
+  // A value too short: the Error shows it, without the bubble.
+  await code.fill("ab");
+  await send.click();
+  await expect(code).toHaveAttribute("data-prevented", "true");
+  await expect(error).toBeVisible();
+  await expect(code).toHaveAttribute("aria-invalid", "true");
+});

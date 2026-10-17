@@ -5,9 +5,10 @@
 // reports the first problem in its own bubble. Where this script runs, for every `lu-field` on
 // the page:
 //
-// - A submit attempt fires `invalid` on each invalid control: a field with an Error part cancels
-//   it (no bubble) and shows the problem there, and focus goes to the first invalid control of
-//   the form, in DOM order; a later invalid control without a field shows no bubble meanwhile.
+// - A submit attempt fires `invalid` on each invalid control: a field with an Error part for the
+//   problem cancels it (no bubble) and shows it there (otherwise the bubble stays, TASK-475), and
+//   focus goes to the first invalid control of the form, in DOM order; a later invalid control
+//   without a field shows no bubble meanwhile.
 //   Only a submit attempt does: a submit button's click, Enter in a field, `requestSubmit()` or
 //   the form's `reportValidity()`. A silent `checkValidity()` shows nothing (TASK-439).
 // - A form action's errors move focus to the first field that shows one: on load, or when an
@@ -221,10 +222,26 @@ if (!formPrototype[WRAPPED]) {
   }
 }
 
-/** Whether a field with an Error part shows `control`'s problems. */
+/**
+ * Whether one of `field`'s Error parts shows `control`'s current problem: one for any problem or
+ * for this `ValidityState` key. A field whose only Error is for `tooShort` leaves a missing value
+ * to the browser's bubble (TASK-475).
+ */
+function shows(field: HTMLElement, control: Control): boolean {
+  return errors(field).some((error) => {
+    const match = matchOf(field, error);
+    return (
+      match === "" ||
+      match === "invalid" ||
+      (match !== "always" && control.validity[match as keyof ValidityState] === true)
+    );
+  });
+}
+
+/** Whether a field with an Error part shows `control`'s problem. */
 const handled = (control: Element) => {
   const field = fieldOf(control);
-  return field !== null && errors(field).length > 0;
+  return field !== null && shows(field, control as Control);
 };
 
 /** The control focus goes to: lu-combobox's input, or the control. */
@@ -251,10 +268,17 @@ on("invalid", (event) => {
     return;
   }
   meet(field);
-  // The field shows the problem: no bubble from the browser.
-  event.preventDefault();
   shown.add(field);
   render(field);
+  if (!shows(field, control)) {
+    // No Error part for this problem: the browser's bubble shows it, unless an earlier control's
+    // field shows its own and takes focus.
+    const first = firstInvalid(form);
+    if (first && first !== control && handled(first)) event.preventDefault();
+    return;
+  }
+  // The field shows the problem: no bubble from the browser.
+  event.preventDefault();
   if (focusing) return;
   focusing = true;
   queueMicrotask(() => {

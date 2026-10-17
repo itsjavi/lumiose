@@ -1859,7 +1859,7 @@ The element is also an API of its own, for scripts and other frameworks:
 
 # Context Menu
 
-> A menu opened at the pointer by a right-click in its trigger area, a long press on a touch screen, or Shift+F10 and the ContextMenu key: Menu's popup and items, with Menu's keys, typeahead, submenus and dismissal. A 0.6 kB script on top of Menu's (4.5 kB together) opens it; without JavaScript the browser shows its own menu. `bind:open` (or `open` and `onOpenChange`) keeps a signal in sync in islands.
+> A menu opened at the pointer by a right-click in its trigger area, a long press on a touch screen, or Shift+F10 and the ContextMenu key: Menu's popup and items, with Menu's keys, typeahead, submenus and dismissal. A 0.6 kB script on top of Menu's (4.6 kB together) opens it; without JavaScript the browser shows its own menu. `bind:open` (or `open` and `onOpenChange`) keeps a signal in sync in islands.
 
 ```ts
 import { ContextMenu } from "@lumiose/ui"; // or "@lumiose/ui/context-menu"
@@ -2035,7 +2035,7 @@ browser's own menu, and the popup stays hidden. `open`, `onOpenChange` and `bind
 component to run in an island.
 
 A page that renders a `ContextMenu` loads Menu's script and a 0.6 kB (brotli) one of its own,
-4.5 kB together, without the Lumiose runtime; islands bundle them. The element opens the menu on a
+4.6 kB together, without the Lumiose runtime; islands bundle them. The element opens the menu on a
 right-click, a long press or the keys, at the pointer, through a zero-size anchor that it moves
 there (CSS anchor positioning places the popup, with Menu's flips; without it, the shared
 placement script does). Menu's script does the rest: keys, items, submenus, and dismissal shared
@@ -2739,7 +2739,8 @@ form, in DOM order, takes focus, and its error is part of its accessible descrip
 reader reads it there.
 
 - **On a submit attempt**, every invalid field shows its errors; the browser's bubble does not
-  appear for a field with an Error part.
+  appear for a field with an Error part that shows the problem. A problem none of its Errors
+  match (a missing value where the only Error has `match="tooShort"`) still gets the bubble.
 - **`validationMode="onBlur"`** shows a field's error when focus leaves it, except a missing value
   in a field the user has not edited yet (Base UI's rule). **`"onChange"`** shows it as the user
   types.
@@ -2765,7 +2766,7 @@ Error, and its Descriptions before the control.
 A page that renders a `Field` loads a 1.7 kB (brotli) script once, without the Lumiose runtime;
 islands bundle it. On a submit attempt (a submit button, Enter in a field, `requestSubmit()` or
 the form's `reportValidity()`; a silent `checkValidity()` changes nothing) it cancels the browser's
-`invalid` bubble for fields that have an Error part and shows the problem there instead (the
+`invalid` bubble for fields that have an Error part for the problem and shows it there instead (the
 browser's message, or one your `validate` set), with the timing above, and focuses the first
 invalid control, with no bubble on a later control outside a field. A form action's errors move
 focus to the first field that shows one, when the page renders back (unless an `autofocus` element
@@ -4388,7 +4389,7 @@ does not zoom into it on focus.
 
 # Popover
 
-> A popup anchored to its trigger: a native `popover` opened and closed by the trigger's `popovertarget`, placed with CSS anchor positioning, so it works in server HTML with no JavaScript. A 3.2 kB script moves focus into it and back, dismisses it as Base UI does (not on a right-click), keeps `aria-expanded` current and places it in browsers without anchor positioning. `bind:open` (or `open` and `onOpenChange`) keeps a signal in sync in islands. A trigger can open it on hover (`openOnHover`), and a `modal` popover is a modal `<dialog>` that makes the page behind it inert.
+> A popup anchored to its trigger: a native `popover` opened and closed by the trigger's `popovertarget`, placed with CSS anchor positioning, so it works in server HTML with no JavaScript. A 3.3 kB script moves focus into it and back, dismisses it as Base UI does (not on a right-click), keeps `aria-expanded` current and places it in browsers without anchor positioning. `bind:open` (or `open` and `onOpenChange`) keeps a signal in sync in islands. A trigger can open it on hover (`openOnHover`), and a `modal` popover is a modal `<dialog>` that makes the page behind it inert.
 
 ```ts
 import { Popover } from "@lumiose/ui"; // or "@lumiose/ui/popover"
@@ -4624,7 +4625,7 @@ does a modal popover, through invoker commands and `closedby` (where a browser l
 script.
 `open`, `onOpenChange` and `bind:open` need the component to run in an island.
 
-A page that renders a `Popover` loads a 3.2 kB (brotli) module once, without the Lumiose runtime;
+A page that renders a `Popover` loads a 3.3 kB (brotli) module once, without the Lumiose runtime;
 islands bundle it. It covers every Popover on the page:
 
 - focus on open (the first focusable element, or the popup) and its return on close;
@@ -4662,7 +4663,7 @@ popover's `dialog::backdrop`) styles the layer under it, without an element of i
 
 # Preview Card
 
-> A card that previews a link's destination while the pointer or keyboard focus rests on the link, after Base UI's PreviewCard. The trigger is the link itself, which works as a link without JavaScript; the card is a manual popover placed with [Popover](popover.md)'s placement and opened with its hover timing by a 2.7 kB script. It is hoverable, persistent and dismissible (WCAG 1.4.13). `bind:open` keeps a signal in sync.
+> A card that previews a link's destination while the pointer or keyboard focus rests on the link, after Base UI's PreviewCard. The trigger is the link itself, which works as a link without JavaScript; the card is a manual popover placed with [Popover](popover.md)'s placement and opened with its hover timing by a 2.8 kB script. It is hoverable, persistent and dismissible (WCAG 1.4.13). `bind:open` keeps a signal in sync.
 
 ```ts
 import { PreviewCard } from "@lumiose/ui"; // or "@lumiose/ui/preview-card"
@@ -4777,7 +4778,7 @@ the link, with a fade (none where motion is reduced).
 ## Without JavaScript, and the client script
 
 The link is a plain link and the card never opens. A page that renders a `PreviewCard` loads a
-2.7 kB (brotli) module once (with the hover timing it shares with Popover): hover and focus with
+2.8 kB (brotli) module once (with the hover timing it shares with Popover): hover and focus with
 their delays, dismissal, `data-popup-open`, and the placement in browsers without CSS anchor
 positioning.
 
@@ -6770,7 +6771,7 @@ Custom elements and `role="toolbar"`: every supported browser and screen reader.
 
 # Tooltip
 
-> A short tip next to its trigger, on hover or keyboard focus: a native `popover="hint"` with `role="tooltip"`, placed with CSS anchor positioning. The trigger is described by the tip in server HTML, so screen readers announce it without hovering; a 1.9 kB script opens and closes it as Base UI's tooltip does. `bind:open` (or `open` and `onOpenChange`) keeps a signal in sync in islands.
+> A short tip next to its trigger, on hover or keyboard focus: a native `popover="hint"` with `role="tooltip"`, placed with CSS anchor positioning. The trigger is described by the tip in server HTML, so screen readers announce it without hovering; a 2.0 kB script opens and closes it as Base UI's tooltip does. `bind:open` (or `open` and `onOpenChange`) keeps a signal in sync in islands.
 
 ```ts
 import { Tooltip } from "@lumiose/ui"; // or "@lumiose/ui/tooltip"
@@ -6881,7 +6882,7 @@ A tooltip inside a popover keeps the popover open, and one inside a dialog belon
 ## Without JavaScript, and the client script
 
 Without JavaScript the tip never shows, but the trigger keeps its description: screen readers
-announce it. A page that renders a `Tooltip` loads a 1.9 kB (brotli) module once, without the
+announce it. A page that renders a `Tooltip` loads a 2.0 kB (brotli) module once, without the
 Lumiose runtime; islands bundle it. It opens and closes every tooltip on the page, and places them
 in browsers without CSS anchor positioning.
 

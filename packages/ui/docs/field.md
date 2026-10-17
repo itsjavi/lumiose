@@ -229,7 +229,8 @@ form, in DOM order, takes focus, and its error is part of its accessible descrip
 reader reads it there.
 
 - **On a submit attempt**, every invalid field shows its errors; the browser's bubble does not
-  appear for a field with an Error part.
+  appear for a field with an Error part that shows the problem. A problem none of its Errors
+  match (a missing value where the only Error has `match="tooShort"`) still gets the bubble.
 - **`validationMode="onBlur"`** shows a field's error when focus leaves it, except a missing value
   in a field the user has not edited yet (Base UI's rule). **`"onChange"`** shows it as the user
   types.
@@ -255,7 +256,7 @@ Error, and its Descriptions before the control.
 A page that renders a `Field` loads a 1.7 kB (brotli) script once, without the Lumiose runtime;
 islands bundle it. On a submit attempt (a submit button, Enter in a field, `requestSubmit()` or
 the form's `reportValidity()`; a silent `checkValidity()` changes nothing) it cancels the browser's
-`invalid` bubble for fields that have an Error part and shows the problem there instead (the
+`invalid` bubble for fields that have an Error part for the problem and shows it there instead (the
 browser's message, or one your `validate` set), with the timing above, and focuses the first
 invalid control, with no bubble on a later control outside a field. A form action's errors move
 focus to the first field that shows one, when the page renders back (unless an `autofocus` element

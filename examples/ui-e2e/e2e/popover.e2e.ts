@@ -472,6 +472,35 @@ test.describe("a trigger scrolled out of view (TASK-453 L28)", () => {
     expect(await isOpen(notifications)).toBe(true);
   });
 
+  test("also with a strict CSP's stylesheet rules instead of style attributes (TASK-475)", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1024, height: 400 });
+    await page.goto("/popover");
+    // What `lumiose({ csp: "strict" })` renders: each `style` attribute as a `[data-l-v]` rule.
+    await page.evaluate(() => {
+      const rules = [...document.querySelectorAll<HTMLElement>("[style]")].map((element, i) => {
+        element.setAttribute("data-l-v", String(i));
+        const rule = `[data-l-v="${i}"]{${element.getAttribute("style")}}`;
+        element.removeAttribute("style");
+        return rule;
+      });
+      const style = document.createElement("style");
+      style.textContent = rules.join("");
+      document.head.append(style);
+    });
+    await page.getByRole("button", { name: "Notifications", exact: true }).click();
+    const id = await popup(page, "Notifications").getAttribute("id");
+    const notifications = page.locator(`[id="${id}"]`);
+    await expect(notifications).toBeVisible();
+    await page.mouse.move(1000, 380);
+    await page.mouse.wheel(0, 600);
+    await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(300);
+    await expect(notifications).toHaveAttribute("data-anchor-hidden", "");
+    await page.mouse.wheel(0, -600);
+    await expect(notifications).toBeVisible();
+  });
+
   test("its popup hides while a scroller around it has scrolled it away", async ({ page }) => {
     await page.goto("/popover");
     await page.getByRole("button", { name: "Status", exact: true }).click();
