@@ -91,11 +91,16 @@ request path such as `//evil.com/`. `href()` refuses `.` and `..` as param value
 would resolve into another route.
 
 **Files from elsewhere.** Icon sets, Markdown and HTML often come from outside the project. The
-compiler treats them as untrusted input:
+compiler guards against what such files could carry:
 
-- **SVG imports** keep an allowlist of SVG elements and attributes: no scripts, handlers,
-  `<foreignObject>` HTML, `javascript:` URLs or animations of links, and `<style>` text cannot
-  open a tag ([SVG imports](svg.md)).
+- **SVG imports** are untrusted input. They keep an allowlist of SVG elements and attributes: no
+  scripts, handlers, `<foreignObject>` HTML, `javascript:` URLs or animations of links, and
+  `<style>` text cannot open a tag. They load nothing from outside the file: external `href`s on
+  `<use>`, `<image>` and `<feImage>`, `url()`s to other files and `@import` are dropped, so an
+  icon set cannot track the people who view your pages ([SVG imports](svg.md)).
+- **Markdown and HTML imports** are trusted author files, compiled as written: raw HTML, inline
+  handlers and, in `.html`, scripts are kept, and nothing sanitizes them at runtime. Review them
+  like code, and never put end-user content in them ([Markdown and HTML imports](content.md)).
 - **`$` constants** in style blocks cannot end their declaration or the `<style>` element
   ([LUM3021](../errors/LUM3021.md)), so data in a constant cannot add CSS outside its scope.
 - **Frontmatter** keys such as `__proto__` stay plain data.

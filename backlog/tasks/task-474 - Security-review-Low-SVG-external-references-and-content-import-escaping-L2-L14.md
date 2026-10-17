@@ -3,10 +3,11 @@ id: TASK-474
 title: >-
   Security review, Low: SVG external references and content-import escaping (L2,
   L14)
-status: To Do
+status: Done
 assignee:
   - '@Halo'
 created_date: '2026-10-16 23:46'
+updated_date: '2026-10-17 00:10'
 labels:
   - security
 milestone: m-12
@@ -32,6 +33,18 @@ Lux (2026-10-17), a technical decision: imported SVG icons drop external referen
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Imported SVGs drop external references and keep fragment references, documented, with tests
-- [ ] #2 lumiose_content escapes SVG <style> like lumiose_svg, and content.md states that imports must never carry end-user content
+- [x] #1 Imported SVGs drop external references and keep fragment references, documented, with tests
+- [x] #2 lumiose_content escapes SVG <style> like lumiose_svg, and content.md states that imports must never carry end-user content
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Halo (2026-10-17): decision-69 implemented, fail closed. An href that is not a fragment is dropped on every element but <a> (use, image, feImage, gradients, patterns, filters, textPath, mpath; relative paths and protocol-relative URLs too, not only http(s) and data); a link's href stays. In CSS (<style>, style and presentation attributes, animation values) a url()/src() whose target is not a fragment becomes none, also behind an escape (\75 rl()); an image-set()/-webkit-image-set() holding a string, url, src, var, env or attr becomes none; @import rules are removed at any level, with or without their ';'. @namespace keeps its URL (it loads nothing). Fragment references keep their prefix. The rewrite lives in prefix.rs (edits instead of insertions). L14: lumiose_content escapes an inline SVG's <style> text like lumiose_svg (< and & as CSS escapes); its new test (crates/lumiose_content/tests/svg.rs) fails on the old code. Docs: svg.md (References outside the file), security.md (SVG imports load nothing; Markdown and HTML imports are trusted author files), content.md (a Trusted files only callout: never end-user content, no runtime sanitizer).
+<!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Imported SVGs drop every reference outside the file (non-fragment hrefs but a link's, external url()/src(), image-set() with URLs, @import) and keep #id fragments, per decision-69; lumiose_content escapes SVG <style> text like lumiose_svg; svg.md, security.md and content.md updated, with tests.
+<!-- SECTION:FINAL_SUMMARY:END -->

@@ -161,8 +161,10 @@ fn check_depth(root: Node) -> Result<(), SvgError> {
 }
 
 /// The attributes kept on an element, with their JSX names and prefixed ids: those of the
-/// allowlist ([`allow::attribute`]), no `javascript:` URLs, no attributes of foreign namespaces;
-/// `xlink:href` becomes `href` and `xlink:show` `target`, other XLink attributes are dropped.
+/// allowlist ([`allow::attribute`]), no `javascript:` URLs, no `href` outside the file but a
+/// link's, no attributes of foreign namespaces; `xlink:href` becomes `href` and `xlink:show`
+/// `target`, other XLink attributes are dropped. CSS values lose their external `url()`s
+/// ([`Prefixer::attribute`]).
 fn attributes(element: Node, prefixer: &Prefixer) -> Vec<(String, String)> {
     let has = |name: &str| {
         element
@@ -189,7 +191,14 @@ fn attributes(element: Node, prefixer: &Prefixer) -> Vec<(String, String)> {
                 }
                 Some(_) => return None,
             };
-            (allow::attribute(&name) && !is_script_url(&value)).then(|| {
+            // A resource outside the file (`<use>`, `<image>`, `<feImage>`, a gradient's
+            // template) is never loaded (decision-69): only a link's `href` may leave the file.
+            let external = name == "href"
+                && element.tag_name().name() != "a"
+                && !value
+                    .trim_start_matches(|c: char| c <= ' ')
+                    .starts_with('#');
+            (allow::attribute(&name) && !is_script_url(&value) && !external).then(|| {
                 let value = prefixer.attribute(&name, &value);
                 (name, value)
             })

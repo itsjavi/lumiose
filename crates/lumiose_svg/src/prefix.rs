@@ -7,6 +7,10 @@
 //! define point at the page and stay as they are. Class names get the prefix only when the file
 //! has a `<style>` (otherwise they are hooks for the page's CSS), and selectors only for the
 //! names the file uses, so a class the page adds (`<Icon class="spin" />`) still matches.
+//!
+//! The same pass drops the CSS references to resources outside the file (decision-69): a
+//! `url()` or `src()` whose target is not a fragment (`#id`), and an `image-set()` holding a URL,
+//! become `none`, and `@import` rules go. Fragment references stay.
 
 use std::collections::HashSet;
 
@@ -96,7 +100,8 @@ impl<'a> Prefixer<'a> {
                 .map(|id| self.id(id).unwrap_or_else(|| id.to_owned()))
                 .collect::<Vec<_>>()
                 .join(" "),
-            _ if contains_ignore_case(value, "url") => self.css(value, Mode::Values),
+            // Any function, also an escaped `\75 rl(…)`: a `url()` may hide behind an escape.
+            _ if value.contains('(') => self.css(value, Mode::Values),
             _ => value.to_owned(),
         }
     }
@@ -109,35 +114,34 @@ impl<'a> Prefixer<'a> {
     fn css(&self, css: &str, mode: Mode) -> String {
         let mut input = ParserInput::new(css);
         let mut parser = Parser::new(&mut input);
-        let mut insertions = Vec::new();
-        self.walk(css, &mut parser, mode, 0, &mut insertions);
-        if insertions.is_empty() {
+        let mut edits = Vec::new();
+        self.walk(css, &mut parser, mode, 0, &mut edits);
+        if edits.is_empty() {
             return css.to_owned();
         }
-        insertions.sort_by_key(|(at, _)| *at);
-        let mut out = String::with_capacity(css.len() + insertions.len() * 16);
+        edits.sort_by_key(|edit| (edit.start, edit.end));
+        let mut out = String::with_capacity(css.len() + edits.len() * 16);
         let mut last = 0;
-        for (at, text) in insertions {
-            out.push_str(&css[last..at]);
-            out.push_str(&text);
-            last = at;
+        for edit in edits {
+            // An edit inside a range already replaced (a prefix in a dropped `@import`).
+            if edit.start < last {
+                continue;
+            }
+            out.push_str(&css[last..edit.start]);
+            out.push_str(&edit.text);
+            last = edit.end;
         }
         out.push_str(&css[last..]);
         out
     }
 
-    /// Collects `(offset, text)` insertions for the tokens of `parser`, read in `mode`.
-    fn walk(
-        &self,
-        css: &str,
-        parser: &mut Parser,
-        mode: Mode,
-        depth: usize,
-        out: &mut Vec<(usize, String)>,
-    ) {
+    /// Collects the edits for the tokens of `parser`, read in `mode`.
+    fn walk(&self, css: &str, parser: &mut Parser, mode: Mode, depth: usize, out: &mut Vec<Edit>) {
         // Rules: whether the current prelude is an at-rule's (with its name) or a selector.
         let mut at_rule: Option<String> = None;
         let mut prelude_started = false;
+        // Rules: where the current `@import` starts; the rule goes, up to its `;`.
+        let mut import = None;
         // Selectors: whether the previous token was a `.` (so an identifier is a class name).
         let mut after_dot = false;
         loop {
@@ -146,7 +150,7 @@ impl<'a> Prefixer<'a> {
                 break;
             };
             let token = token.clone();
-            let nested = |parser: &mut Parser, mode: Mode, out: &mut Vec<(usize, String)>| {
+            let nested = |parser: &mut Parser, mode: Mode, out: &mut Vec<Edit>| {
                 if depth < MAX_CSS_DEPTH {
                     let _ = parser.parse_nested_block(|parser| -> Result<(), ParseError<()>> {
                         self.walk(css, parser, mode, depth + 1, out);
@@ -160,8 +164,22 @@ impl<'a> Prefixer<'a> {
                     Token::AtKeyword(name) if !prelude_started => {
                         at_rule = Some(name.to_ascii_lowercase());
                         prelude_started = true;
+                        if name.eq_ignore_ascii_case("import") {
+                            import = Some(start);
+                        }
                     }
                     Token::Semicolon => {
+                        if let Some(from) = import.take() {
+                            out.push(Edit::replace(from, parser.position().byte_index(), ""));
+                        }
+                        at_rule = None;
+                        prelude_started = false;
+                    }
+                    Token::CurlyBracketBlock if import.is_some() => {
+                        let _ =
+                            parser.parse_nested_block(|_| -> Result<(), ParseError<()>> { Ok(()) });
+                        let from = import.take().unwrap_or(start);
+                        out.push(Edit::replace(from, parser.position().byte_index(), ""));
                         at_rule = None;
                         prelude_started = false;
                     }
@@ -182,7 +200,8 @@ impl<'a> Prefixer<'a> {
                     _ => {
                         prelude_started = true;
                         if at_rule.is_some() {
-                            if is_block(&token) {
+                            // `@namespace svg url(…)` names a namespace, it loads nothing.
+                            if is_block(&token) && at_rule.as_deref() != Some("namespace") {
                                 nested(parser, Mode::Values, out);
                             }
                         } else {
@@ -201,34 +220,69 @@ impl<'a> Prefixer<'a> {
                 }
                 Mode::Values => match &token {
                     Token::UnquotedUrl(url) => {
-                        if let Some(id) = url.strip_prefix('#')
-                            && self.ids.contains(id)
-                        {
-                            let raw = &css[start..parser.position().byte_index()];
-                            if let Some(hash) = raw.find('#') {
-                                out.push((start + hash + 1, format!("{}__", self.prefix)));
+                        if let Some(id) = url.strip_prefix('#') {
+                            if self.ids.contains(id) {
+                                let raw = &css[start..parser.position().byte_index()];
+                                if let Some(hash) = raw.find('#') {
+                                    out.push(Edit::insert(start + hash + 1, self.mark()));
+                                }
                             }
+                        } else {
+                            out.push(Edit::replace(start, parser.position().byte_index(), "none"));
                         }
                     }
-                    Token::Function(name) if name.eq_ignore_ascii_case("url") => {
-                        nested(parser, Mode::Url, out);
+                    Token::Function(name)
+                        if name.eq_ignore_ascii_case("url") || name.eq_ignore_ascii_case("src") =>
+                    {
+                        self.url_function(css, parser, start, out);
+                    }
+                    Token::Function(name)
+                        if name.eq_ignore_ascii_case("image-set")
+                            || name.eq_ignore_ascii_case("-webkit-image-set") =>
+                    {
+                        if holds_url(parser) {
+                            out.push(Edit::replace(start, parser.position().byte_index(), "none"));
+                        }
                     }
                     _ if is_block(&token) => nested(parser, Mode::Values, out),
                     _ => {}
                 },
-                Mode::Url => {
-                    if let Token::QuotedString(url) = &token
-                        && let Some(id) = url.strip_prefix('#')
-                        && self.ids.contains(id)
-                    {
-                        let raw = &css[start..parser.position().byte_index()];
-                        // The raw token is `"#id"`: insert after the quote and the `#`.
-                        if raw.get(1..2) == Some("#") {
-                            out.push((start + 2, format!("{}__", self.prefix)));
-                        }
-                    }
+            }
+        }
+        // An `@import` without its `;`, at the end of the stylesheet or block.
+        if let Some(from) = import {
+            out.push(Edit::replace(from, parser.position().byte_index(), ""));
+        }
+    }
+
+    /// `<prefix>__`.
+    fn mark(&self) -> String {
+        format!("{}__", self.prefix)
+    }
+
+    /// Records the edit for a `url("…")` or `src(…)`, from after its name: a reference to an id of
+    /// the file gets the prefix, other fragments stay, and anything else becomes `none`.
+    fn url_function(&self, css: &str, parser: &mut Parser, start: usize, out: &mut Vec<Edit>) {
+        let mut target = None;
+        let _ = parser.parse_nested_block(|parser| -> Result<(), ParseError<()>> {
+            let at = parser.position().byte_index();
+            if let Ok(Token::QuotedString(url)) = parser.next() {
+                target = Some((at, url.to_string()));
+            }
+            Ok(())
+        });
+        match target {
+            Some((at, url)) if is_fragment(&url) => {
+                // The raw token is `"#id"`: insert after the quote and the `#`.
+                if url
+                    .strip_prefix('#')
+                    .is_some_and(|id| self.ids.contains(id))
+                    && css.get(at + 1..at + 2) == Some("#")
+                {
+                    out.push(Edit::insert(at + 2, self.mark()));
                 }
             }
+            _ => out.push(Edit::replace(start, parser.position().byte_index(), "none")),
         }
     }
 
@@ -238,14 +292,14 @@ impl<'a> Prefixer<'a> {
         token: &Token,
         start: usize,
         after_dot: bool,
-        out: &mut Vec<(usize, String)>,
+        out: &mut Vec<Edit>,
     ) -> bool {
         match token {
             Token::IDHash(id) if self.ids.contains(id.as_ref()) => {
-                out.push((start + 1, format!("{}__", self.prefix)));
+                out.push(Edit::insert(start + 1, self.mark()));
             }
             Token::Ident(class) if after_dot && self.classes.contains(class.as_ref()) => {
-                out.push((start, format!("{}__", self.prefix)));
+                out.push(Edit::insert(start, self.mark()));
             }
             Token::Delim('.') => return true,
             _ => {}
@@ -260,10 +314,59 @@ enum Mode {
     Rules,
     /// Inside a functional pseudo-class of a selector (`:is(…)`, `:not(…)`).
     Selector,
-    /// Declarations and values: only `url(#id)` changes.
+    /// Declarations and values: `url(#id)` gets the prefix, URLs of other resources go.
     Values,
-    /// The argument of `url(…)` written as a function (`url("#id")`).
-    Url,
+}
+
+/// A change to CSS text: `text` replaces `start..end`, or goes at `start` when they are equal.
+struct Edit {
+    start: usize,
+    end: usize,
+    text: String,
+}
+
+impl Edit {
+    fn insert(at: usize, text: String) -> Self {
+        Self {
+            start: at,
+            end: at,
+            text,
+        }
+    }
+
+    fn replace(start: usize, end: usize, text: &str) -> Self {
+        Self {
+            start,
+            end,
+            text: text.to_owned(),
+        }
+    }
+}
+
+/// Whether `url` is a fragment, a reference inside the document (`#id`), as a URL parser reads
+/// it: leading spaces and control characters are ignored.
+fn is_fragment(url: &str) -> bool {
+    url.trim_start_matches(|c: char| c <= ' ').starts_with('#')
+}
+
+/// Whether the arguments of the function `parser` is at (an `image-set()`) name an image by URL:
+/// a string, a `url()` or a `src()`, or a `var()`, `env()` or `attr()` that could hold one.
+fn holds_url(parser: &mut Parser) -> bool {
+    parser
+        .parse_nested_block(|parser| -> Result<bool, ParseError<()>> {
+            let mut found = false;
+            while let Ok(token) = parser.next() {
+                found |= match token {
+                    Token::QuotedString(_) | Token::UnquotedUrl(_) | Token::BadUrl(_) => true,
+                    Token::Function(name) => ["url", "src", "var", "env", "attr"]
+                        .iter()
+                        .any(|each| name.eq_ignore_ascii_case(each)),
+                    _ => false,
+                };
+            }
+            Ok(found)
+        })
+        .unwrap_or(true)
 }
 
 fn is_block(token: &Token) -> bool {
@@ -274,11 +377,4 @@ fn is_block(token: &Token) -> bool {
             | Token::SquareBracketBlock
             | Token::CurlyBracketBlock
     )
-}
-
-fn contains_ignore_case(haystack: &str, needle: &str) -> bool {
-    haystack
-        .as_bytes()
-        .windows(needle.len())
-        .any(|window| window.eq_ignore_ascii_case(needle.as_bytes()))
 }

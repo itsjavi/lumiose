@@ -9,6 +9,13 @@ as a component that renders the file's content. The build compiles it into a sta
 like any `.stsx` markup, so it costs a clone in the browser and a string on the server. It works
 the same in `static`, `server` and `spa` routes and inside islands.
 
+> **Trusted files only.** An import is part of your app's code. Its raw HTML, inline handlers
+> and, in `.html`, scripts reach the page as written, and nothing sanitizes them at runtime.
+> Never fill a `.md` or `.html` import with end-user content (comments, profiles, input from a
+> CMS that untrusted people edit): render such content as text in a component. The compiler
+> still escapes an inline SVG's `<style>` text and limits nesting depth, but that is defence in
+> depth, not a sanitizer.
+
 **Markdown** is plain CommonMark with the GitHub extensions: tables, strikethrough, task lists,
 autolinks (`www.example.com`, bare URLs) and footnotes. There is no MDX: Markdown cannot use
 components or JS expressions. Raw HTML is allowed, since the file is part of your project, and

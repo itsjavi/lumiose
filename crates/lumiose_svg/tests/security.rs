@@ -276,3 +276,69 @@ fn no_emitted_animation_targets_a_link_a_handler_or_a_style() {
         "kept {kept}, dropped {dropped}"
     );
 }
+
+/// Decision-69 (TASK-474): an imported icon loads nothing from outside its file. Fragment
+/// references stay, with the file's prefix; a link may still point anywhere.
+#[test]
+fn drops_references_to_resources_outside_the_file() {
+    let source = component(&format!(
+        "<svg {NS} {NAMESPACES}>\
+         <defs><linearGradient id=\"g\"/><linearGradient id=\"h\" href=\"https://evil.example/t.svg#g\"/></defs>\
+         <use href=\"https://evil.example/s.svg#a\"/><use xlink:href=\"//evil.example/s.svg#a\"/>\
+         <use href=\" #g\"/><use xlink:href=\"#g\"/>\
+         <image href=\"data:image/png;base64,AAAA\"/><image href=\"evil.png\"/>\
+         <filter id=\"f\"><feImage href=\"http://evil.example/i.png\"/></filter>\
+         <rect fill=\"url(https://evil.example/p.svg#g)\" stroke=\"url(#g)\" mask=\"url('//evil.example/m.svg#m')\"/>\
+         <rect style=\"fill:url(#g);background:url(https://evil.example/b.png) red;cursor:\\75 rl(https://evil.example/c.png),auto\"/>\
+         <rect style=\"background-image:image-set('https://evil.example/x.png' 1x)\"/>\
+         <animate attributeName=\"fill\" values=\"url(#g);url(https://evil.example/v.svg#g)\" dur=\"1s\"/>\
+         <a href=\"https://example.com/\"><path d=\"M0 0\"/></a>\
+         </svg>"
+    ));
+    assert!(!source.contains("evil"), "{source}");
+    let prefix = &source[source.find("id=\"").unwrap() + 4..source.find("__g").unwrap()];
+    for kept in [
+        format!("<use href=\"#{prefix}__g\" />"),
+        format!("stroke=\"url(#{prefix}__g)\""),
+        format!("fill:url(#{prefix}__g)"),
+        format!("values=\"url(#{prefix}__g);none\""),
+        "<a href=\"https://example.com/\">".to_owned(),
+        "<image />".to_owned(),
+        "<feImage />".to_owned(),
+    ] {
+        assert!(source.contains(&kept), "{kept} not in\n{source}");
+    }
+    // A fragment with a leading space is still one; it is kept as written.
+    assert!(source.contains("<use href=\" #g\" />"), "{source}");
+}
+
+#[test]
+fn drops_external_references_in_style_text() {
+    let source = component(&format!(
+        "<svg {NS}><style>\
+         @namespace svg url(http://www.w3.org/2000/svg);\
+         @import url(https://evil.example/a.css);@import \"https://evil.example/b.css\" screen;\
+         @media screen{{@import 'https://evil.example/c.css'}}\
+         .a{{fill:url(#g)}}.b{{background:url(https://evil.example/x.png)}}\
+         .c{{mask:url(\"https://evil.example/m.svg#m\")}}.d{{background-image:-webkit-image-set(\"https://evil.example/x.png\" 1x)}}\
+         .e{{cursor:\\75 rl(https://evil.example/c.png),auto}}.f{{--u:url(//evil.example/u.png)}}\
+         .g{{background-image:image-set(var(--s) 1x)}}.h{{background-image:image-set(linear-gradient(red,blue) 1x)}}\
+         @font-face{{font-family:x;src:local(x),url(https://evil.example/f.woff2)}}\
+         </style><linearGradient id=\"g\"/><rect class=\"a b c d e f g h\"/></svg>"
+    ));
+    let style = &source[source.find("<style>").unwrap()..source.find("</style>").unwrap()];
+    assert!(
+        !style.contains("evil") && !style.contains("@import"),
+        "{style}"
+    );
+    for kept in [
+        "@namespace svg url(http://www.w3.org/2000/svg);",
+        "fill:url(#l",
+        "background:none}",
+        "--u:none}",
+        "image-set(linear-gradient(red,blue) 1x)",
+        "src:local(x),none}",
+    ] {
+        assert!(style.contains(kept), "{kept} not in\n{style}");
+    }
+}

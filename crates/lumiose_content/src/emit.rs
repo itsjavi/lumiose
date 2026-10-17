@@ -238,10 +238,14 @@ impl Emitter {
             &attrs,
         );
         if name.ns == ns!(svg) && local == "style" {
-            // Native SVG CSS: raw text, which the `.stsx` scanner keeps verbatim.
+            // Native SVG CSS: raw text, which the `.stsx` scanner keeps verbatim. In a page an
+            // inline SVG's `<style>` is read as markup, not raw text, so `<` and `&` become CSS
+            // escapes (`\3c `, `\26 `), as in `lumiose_svg`: the same in strings and identifiers,
+            // but they cannot open a tag or an entity (TASK-474).
             let mut css = String::new();
             node.text_content(&mut css);
-            let _ = writeln!(self.jsx, ">{}</style>", css.replace("</", "<\\/"));
+            let css = css.replace('<', "\\3c ").replace('&', "\\26 ");
+            let _ = writeln!(self.jsx, ">{css}</style>");
             return;
         }
         let verbatim = if let Data::Element {

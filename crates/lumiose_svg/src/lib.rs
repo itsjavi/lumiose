@@ -21,6 +21,9 @@
 //! These transforms always run:
 //! - scripts, event attributes, `javascript:` URLs and SMIL animations of a link target are
 //!   removed;
+//! - references outside the file are removed, so an icon loads nothing (decision-69): an `href`
+//!   that is not a fragment on any element but `<a>`, and in CSS a `url()`/`src()` to another
+//!   file (it becomes `none`), an `image-set()` with a URL and `@import`;
 //! - ids get a per-file prefix (`l<hash>__`), and so do the references to them, so two icons on
 //!   a page, or an icon and the page, never share one (repeated uses of the same icon still
 //!   repeat its ids); class names get it too when the file has a `<style>` (otherwise they stay

@@ -5468,6 +5468,13 @@ The query is the switch, so it works the same for your files and for packages:
     second `attributename="fill"` cannot vouch for an `attributeName="href"`.
   - **`<style>` text** keeps its CSS, with `<` and `&` written as CSS escapes (`\3c `, `\26 `):
     in a page, an inline SVG's `<style>` is parsed as markup, where they could open a tag.
+  - **References outside the file** are dropped, so an icon never makes the page load anything
+    (decision-69): an `href` that is not a fragment (`#id`) on `<use>`, `<image>`, `<feImage>`
+    or any element but a link `<a>`, and in CSS (`<style>`, `style` and presentation attributes,
+    animation values) a `url()` to another file, which becomes `none`, an `image-set()` with a
+    URL, and `@import` rules. Fragment references (`url(#gradient)`, `href="#shape"`) stay. To
+    show an outside image, render the `<svg>` markup in a component of your own, or point an
+    `<img>` at the file.
   - Elements nested more than 128 levels deep make the file an error.
 
   Comments and editor metadata go too, and redundant markup when optimising. Ids get a per-file
@@ -5592,6 +5599,13 @@ Both are opt-in options of the Vite plugin. A `.md` or `.html` file in your proj
 as a component that renders the file's content. The build compiles it into a static template,
 like any `.stsx` markup, so it costs a clone in the browser and a string on the server. It works
 the same in `static`, `server` and `spa` routes and inside islands.
+
+> **Trusted files only.** An import is part of your app's code. Its raw HTML, inline handlers
+> and, in `.html`, scripts reach the page as written, and nothing sanitizes them at runtime.
+> Never fill a `.md` or `.html` import with end-user content (comments, profiles, input from a
+> CMS that untrusted people edit): render such content as text in a component. The compiler
+> still escapes an inline SVG's `<style>` text and limits nesting depth, but that is defence in
+> depth, not a sanitizer.
 
 **Markdown** is plain CommonMark with the GitHub extensions: tables, strikethrough, task lists,
 autolinks (`www.example.com`, bare URLs) and footnotes. There is no MDX: Markdown cannot use
@@ -6454,11 +6468,16 @@ request path such as `//evil.com/`. `href()` refuses `.` and `..` as param value
 would resolve into another route.
 
 **Files from elsewhere.** Icon sets, Markdown and HTML often come from outside the project. The
-compiler treats them as untrusted input:
+compiler guards against what such files could carry:
 
-- **SVG imports** keep an allowlist of SVG elements and attributes: no scripts, handlers,
-  `<foreignObject>` HTML, `javascript:` URLs or animations of links, and `<style>` text cannot
-  open a tag ([SVG imports](svg.md)).
+- **SVG imports** are untrusted input. They keep an allowlist of SVG elements and attributes: no
+  scripts, handlers, `<foreignObject>` HTML, `javascript:` URLs or animations of links, and
+  `<style>` text cannot open a tag. They load nothing from outside the file: external `href`s on
+  `<use>`, `<image>` and `<feImage>`, `url()`s to other files and `@import` are dropped, so an
+  icon set cannot track the people who view your pages ([SVG imports](svg.md)).
+- **Markdown and HTML imports** are trusted author files, compiled as written: raw HTML, inline
+  handlers and, in `.html`, scripts are kept, and nothing sanitizes them at runtime. Review them
+  like code, and never put end-user content in them ([Markdown and HTML imports](content.md)).
 - **`$` constants** in style blocks cannot end their declaration or the `<style>` element
   ([LUM3021](../errors/LUM3021.md)), so data in a constant cannot add CSS outside its scope.
 - **Frontmatter** keys such as `__proto__` stay plain data.
