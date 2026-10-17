@@ -7,6 +7,7 @@
 // 4. Prerender `static` routes and endpoints, and `spa` routes with `prerender` (decision-38),
 //    in-process through that entry (./prerender.ts).
 // 5. Precompress `dist/client` (`.br` and `.gz` copies, ./precompress.ts) for adapters to serve.
+//    The client build's hashed files start compressing after step 2, during steps 3 and 4.
 // 6. With `lumiose({ adapter })` (decision-45, ./adapter.ts), the adapter writes the platform's
 //    output. Platforms that serve `dist/client` themselves get no precompressed copies, and a
 //    server entry without its static file layer.
@@ -45,7 +46,7 @@ import { typegen } from "../typegen/index.ts";
 import { lumioseBuild, type BuildState } from "./plugin.ts";
 import { ISLANDS_ID } from "../../islands.ts";
 import { SPA_ENTRY_ID } from "../router/entry.ts";
-import { precompress } from "./precompress.ts";
+import { startPrecompress } from "./precompress.ts";
 import { prerender, type PrerenderedFile, type ServerEntryModule } from "./prerender.ts";
 import { serverReason } from "./static-site.ts";
 import { headersFile } from "lumiose/internal/app/headers.ts";
@@ -152,6 +153,9 @@ export async function build(options: BuildOptions = {}): Promise<BuildResult> {
   const client = builder.environments.client!;
   const clientDir = resolve(root, client.config.build.outDir);
   const clientOutput = await builder.build(client);
+  // The client build's files named by content hash do not change: they compress meanwhile.
+  const precompression =
+    state.platformStaticFiles === true ? undefined : startPrecompress(clientDir, state.hashedFiles);
   Object.assign(state, await islandUrls(clientOutput, root, clientDir, client.config.base));
   // Island refs, including those of linked packages and bare specifiers (TASK-98).
   for (const [module, fileName] of Object.entries(state.islandChunks)) {
@@ -206,8 +210,8 @@ export async function build(options: BuildOptions = {}): Promise<BuildResult> {
     await rm(serverDir, { recursive: true, force: true });
     logger.info("✓ every route is prerendered: dist/client is the whole site (no dist/server).");
   }
-  if (state.platformStaticFiles !== true) {
-    const compressed = await precompress(clientDir);
+  if (precompression !== undefined) {
+    const compressed = await precompression.finish();
     if (compressed.files > 0) {
       logger.info(
         `✓ ${compressed.files} file${compressed.files === 1 ? "" : "s"} precompressed (.br, .gz): ${kb(compressed.bytes)} → ${kb(compressed.brotliBytes)} brotli.`,
