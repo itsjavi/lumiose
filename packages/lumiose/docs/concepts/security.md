@@ -81,9 +81,10 @@ either way: neither gets a nonce, and a `srcdoc` frame inherits the page's polic
 Chromium, Firefox and WebKit). For HTML you do not control in a frame, add `sandbox` (without
 `allow-same-origin`), which gives the frame an origin of its own.
 
-**JSON in a `<script>`** (JSON-LD, an import map): write it with `innerHTML` and `<` escaped as
-`<`, so a value such as `"</script><script>…"` cannot close the element, and the JSON reads
-back the same:
+**JSON in a `<script>`** (JSON-LD, an import map): write it as a text child. In a JSON-typed script
+(`application/ld+json` and other `…json` types, `importmap`, `speculationrules`), Lumiose writes
+every `<` as `<`. So a value such as `"</script><script>…"` can't close the element, and the
+JSON reads back the same:
 
 ```tsx
 export function ArticleData(props: { title: string; author: string }) {
@@ -93,14 +94,13 @@ export function ArticleData(props: { title: string; author: string }) {
     headline: props.title,
     author: { "@type": "Person", name: props.author },
   };
-  return (
-    <script type="application/ld+json" innerHTML={JSON.stringify(data).replace(/</g, "\\u003c")} />
-  );
+  return <script type="application/ld+json">{JSON.stringify(data)}</script>;
 }
 ```
 
-A text child (`<script>{JSON.stringify(data)}</script>`) is escaped as HTML text, and `&lt;` inside
-a `<script>` stays `&lt;`: the JSON would change.
+The text of any `<script>` or `<style>` is raw text: it is written as it is, not HTML-escaped, and
+`</script`, `</style` and `<!--` are neutralized so that a value can't end the element. See
+[Head and metadata](head.md) for JSON-LD per page.
 
 **Error details.** In production server rendering, `<ErrorBoundary>` fallbacks receive a generic
 error with a short `digest`, and the original error is logged with the same digest

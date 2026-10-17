@@ -1,11 +1,11 @@
 ---
 id: TASK-480
 title: 'Compiler: JSON script blocks serialize their children and innerHTML safely'
-status: To Do
+status: Done
 assignee:
   - '@Photon'
 created_date: '2026-10-17 00:53'
-updated_date: '2026-10-17 00:54'
+updated_date: '2026-10-17 01:20'
 labels:
   - compiler
   - security
@@ -22,6 +22,12 @@ Security review L7 (TASK-472, decision-56), filed by Nova. In server output, <sc
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 A JSON-typed <script> with a text child or innerHTML renders the value with < as \u003c, so the JSON reads back unchanged and a value cannot close the element, with tests
-- [ ] #2 security.md's JSON-LD example (Raw HTML, JSON in a script) uses the plain form once it is safe
+- [x] #1 A JSON-typed <script> with a text child or innerHTML renders the value with < as \u003c, so the JSON reads back unchanged and a value cannot close the element, with tests
+- [x] #2 security.md's JSON-LD example (Raw HTML, JSON in a script) uses the plain form once it is safe
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+2026-10-17 (Lux): fixed by Photon's 1628649d (TASK-472 L7, made at Lux's request before this task was filed): script and style text is raw text, and the lumiose/server rawText helper writes < as < in JSON-typed scripts. Its tests cover static text, '</script' and '<!--', and JSON-LD that tries to break out. security.md's JSON-LD example now uses the plain text-child form (Lux).
+<!-- SECTION:NOTES:END -->

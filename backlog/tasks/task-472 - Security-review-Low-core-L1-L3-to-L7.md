@@ -1,11 +1,11 @@
 ---
 id: TASK-472
 title: 'Security review, Low: core (L1, L3 to L7)'
-status: In Progress
+status: Done
 assignee:
   - '@Nova'
 created_date: '2026-10-16 23:46'
-updated_date: '2026-10-17 00:54'
+updated_date: '2026-10-17 01:21'
 labels:
   - security
 milestone: m-12
@@ -55,7 +55,7 @@ Found by Prism's pre-release security review (decision-56, 2026-10-17) on main 1
 - [x] #3 L4: the upload limit applies only to multipart parsing
 - [x] #4 L5: a style value can't comment out later strict-CSP rules
 - [x] #5 L6: the strict policy sets frame-ancestors 'self' (a default X-Frame-Options header goes to doc-10)
-- [ ] #6 L7: JSON script blocks serialize safely, and JSON-LD is documented
+- [x] #6 L7: JSON script blocks serialize safely, and JSON-LD is documented
 <!-- AC:END -->
 
 ## Implementation Notes
@@ -70,4 +70,6 @@ Validation (Nova, 2026-10-17): pnpm check exit 0 (2549 tests); pnpm pack:check -
 Nova (2026-10-17), per Lux: the compiler stays with Photon (TASK-466 is in codegen). L7's serialization is TASK-480 (JSON script children and innerHTML, with a lumiose/server helper); the static fold of a <script> text child ('1 < 2' → '1 &lt; 2') is TASK-479; both assigned to Photon. L7 is blocked on TASK-480. The JSON-LD documentation part is done here (security.md, e91d2623).
 
 Photon, 2026-10-17: L7 implemented on branch claude/photon-bugs-2c1927 at Lux's request (the separate tasks were not filed yet; link them here). The content of an HTML <script> or <style> is now one raw text: static text is written as it is (no &lt;), dynamic text, innerHTML and textContent go through the new lumiose/server helper rawText(value, tag, json?) on the server, and the client writes DOM text (innerHTML on these elements is set as textContent). </script, </style and <!-- are neutralized; in a JSON script (type ending in json, importmap, speculationrules) every < becomes \u003c, like jsonForScript. This also fixes the second finding: a static {"1 < 2"} in <script> was written as 1 &lt; 2. Tests: compiler golden raw-text, html.rs unit test, rawText unit tests (ssr.test.ts), a hydration test with JSON-LD that tries to break out; contract (ServerRuntime, doc-2), docs (head.md JSON-LD, jsx.md). AC #6 is met by this change; left unchecked for the task's owner.
+
+2026-10-17 (Lux): L7 is done by Photon's 1628649d (TASK-479 and TASK-480 are closed against it), and security.md shows the plain JSON-LD form. All of L1 and L3 to L7 are done; the merged checks follow at the batch merge.
 <!-- SECTION:NOTES:END -->
