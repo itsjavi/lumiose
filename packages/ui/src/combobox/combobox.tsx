@@ -408,9 +408,9 @@ function List({
 }: ComboboxListProps) {
   const combobox = useCombobox();
   const field = useField();
-  // The listbox is the popover unless a Popup holds it.
-  // Initial values, read once (TASK-477 decides whether they should follow the props).
-  const popover = untrack(() =>
+  // The listbox is the popover unless a Popup holds it. A function, so the placement and `style`
+  // follow the props (TASK-477).
+  const popover = () =>
     combobox.popup
       ? { style }
       : {
@@ -421,8 +421,7 @@ function List({
             "bottom",
             "start",
           ),
-        },
-  );
+        };
   return (
     <div
       // Named by the Label, or in a field by the field's (TASK-454, L32).
@@ -430,7 +429,7 @@ function List({
         combobox.labels() > 0 ? (combobox.labelId ?? `${combobox.id}-label`) : labelledBy(field)
       }
       {...rest}
-      {...popover}
+      {...popover()}
       id={`${combobox.id}-list`}
       role="listbox"
       aria-multiselectable={combobox.multiple() || undefined}

@@ -170,18 +170,18 @@ function Trigger({
     : popover.modal
       ? { command: "show-modal", commandfor: popover.popupId, "aria-expanded": "false" as const }
       : { popovertarget: popover.popupId };
-  // Initial values, read once (TASK-477 decides whether they should follow the props).
-  const hover = untrack(() =>
+  // A function, so hover opening and its delays follow the props: the script reads them from
+  // the trigger at each hover (TASK-477).
+  const hover = () =>
     openOnHover && !popover.modal && !off
       ? { "data-open-on-hover": "", "data-delay": delay, "data-close-delay": closeDelay }
-      : {},
-  );
+      : {};
   return (
     <button
       type="button"
       aria-haspopup="dialog"
       {...rest}
-      {...hover}
+      {...hover()}
       ref={(element: HTMLButtonElement) => {
         popover.trigger(element);
         forwarded?.(element);
