@@ -16,7 +16,27 @@
 //
 // `decodeData` is isomorphic and dependency-free so the island loader (TASK-18) can reuse it.
 
+import { DEV } from "../dom/dev.ts";
+
 type Fail = (path: string, reason: string) => never;
+
+/**
+ * Field names that look secret (TASK-471). A `FormData` serialized into the page puts every text
+ * entry in its HTML, so an action that echoes a whole submission (`values: form`) would put a
+ * password there. Development warns, once per name; the entries stay, as in production.
+ */
+const SECRET =
+  /pass(?:word|wd|code|phrase)?(?![a-z])|secret|token|otp|cvc|cvv|card|(?<![a-z])pin(?![a-z])|(?:security|verification|auth)[-_]?code|api[-_]?key|credential/i;
+const warnedSecrets = new Set<string>();
+
+function warnSecret(name: string, path: string): void {
+  if (!SECRET.test(name) || warnedSecrets.has(name)) return;
+  warnedSecrets.add(name);
+  const at = path === "" ? "" : ` at ${path.replace(/^\./, "")}`;
+  console.warn(
+    `A FormData serialized into the page${at} carries "${name}", which looks like a secret: its value ends up in the HTML. Send back only the fields to fill in again, as a record: \`values: { username }\`.`,
+  );
+}
 
 export function encodeData(input: unknown, fail: Fail): unknown {
   const ancestors = new Set<object>();
@@ -72,7 +92,11 @@ export function encodeData(input: unknown, fail: Fail): unknown {
       // A form action's submitted values, sent back to re-fill the form (TASK-430).
       if (typeof FormData !== "undefined" && value instanceof FormData) {
         const entries: [string, string][] = [];
-        for (const [name, item] of value) if (typeof item === "string") entries.push([name, item]);
+        for (const [name, item] of value) {
+          if (typeof item !== "string") continue;
+          if (DEV) warnSecret(name, path);
+          entries.push([name, item]);
+        }
         return { $: "F", v: entries };
       }
       if (value instanceof Set) {

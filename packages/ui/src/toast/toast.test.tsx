@@ -41,6 +41,27 @@ describe("Toast on the server", () => {
     });
   });
 
+  it("passes only the allowlisted actionProps to the action button (TASK-470)", async () => {
+    // A payload as it might arrive from a server or a socket.
+    const actionProps = JSON.parse(
+      '{"children":"Undo","class":"lu-button","aria-label":"Undo the move","disabled":true,' +
+        '"type":"submit","formaction":"/delete","style":"position:fixed;inset:0",' +
+        '"id":"pwn","innerHTML":"<img src=x>","data-action":"delete"}',
+    );
+    const html = await renderToString(() => (
+      <Toast.Root toast={{ title: "Moved", actionProps }}>
+        <Toast.Action />
+      </Toast.Root>
+    ));
+    expect(attrs(html, "button")).toEqual({
+      type: "button",
+      class: "lu-button",
+      "aria-label": "Undo the move",
+      disabled: "",
+    });
+    expect(html).toContain(">Undo</button>");
+  });
+
   it("takes the provider's timeout and limit, the toast's own, and high priority", async () => {
     const html = await renderToString(() => (
       <Toast.Provider timeout={2000} limit={1}>

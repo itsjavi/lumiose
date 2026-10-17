@@ -22,11 +22,11 @@ import { Form } from "@lumiose/ui"; // or "@lumiose/ui/form"
 
 ### Form
 
-| Prop             | Type                                                              | Default      |                                                                                                                                      |
-| ---------------- | ----------------------------------------------------------------- | ------------ | ------------------------------------------------------------------------------------------------------------------------------------ |
-| `errors`         | `object`                                                          |              | The server's errors by field name: a message or several for each `Field.Root` `name`, such as `actionData()` after a `fail()`.       |
-| `validationMode` | `"onSubmit" \| "onBlur" \| "onChange"`                            | `"onSubmit"` | When the fields show their errors, unless a field sets its own.                                                                      |
-| `values`         | `FormData`, `URLSearchParams` or `{ [name]: string \| string[] }` |              | The values to fill the controls with after a failed submission, by name, such as the `FormData` an action passes back with `fail()`. |
+| Prop             | Type                                                              | Default      |                                                                                                                                            |
+| ---------------- | ----------------------------------------------------------------- | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| `errors`         | `object`                                                          |              | The server's errors by field name: a message or several for each `Field.Root` `name`, such as `actionData()` after a `fail()`.             |
+| `validationMode` | `"onSubmit" \| "onBlur" \| "onChange"`                            | `"onSubmit"` | When the fields show their errors, unless a field sets its own.                                                                            |
+| `values`         | `FormData`, `URLSearchParams` or `{ [name]: string \| string[] }` |              | The values to fill the controls with after a failed submission, by name, such as the record of fields an action passes back with `fail()`. |
 
 Every other `<form>` prop passes through: `method`, `action`, `onSubmit` (Lumiose's `submit`),
 `novalidate`, `class`.
@@ -55,11 +55,13 @@ import { actionData, fail, type ActionContext } from "lumiose";
 export const actions = {
   async signup(ctx: ActionContext) {
     const form = await ctx.formData();
-    if (form.get("username") === "admin") {
-      // The errors, and what the user typed: the form renders back filled in.
-      return fail(400, { errors: { username: "That username is taken." }, values: form });
+    const username = String(form.get("username") ?? "");
+    if (username === "admin") {
+      // The errors, and the fields to fill in again (never a password): the form renders back
+      // filled in.
+      return fail(400, { errors: { username: "That username is taken." }, values: { username } });
     }
-    return { welcome: String(form.get("username")) };
+    return { welcome: username };
   },
 };
 
@@ -83,9 +85,12 @@ export function SignupForm() {
 
 Only the keys of `errors` that name a field and hold a string or an array of strings become
 errors, so `errors={result}` also works for an action that fails with the errors alone. The
-submitted `FormData` reaches the browser with the page (its text entries; files are left out):
-delete secrets such as a password from it before `fail()`. In an island, add `onSubmit={submit}`
-and the errors arrive without a page load; the controls keep what the user typed anyway.
+`values` reach the browser with the page, so send back the fields to fill in by name, as above. The
+submitted `FormData` works too (its text entries; files are left out), but it carries every field,
+a password included: Form never fills a password field, yet the password would sit in the page's
+HTML. In development, Lumiose warns when a `FormData` it serializes carries a name that looks
+secret. In an island, add `onSubmit={submit}` and the errors arrive without a page load; the
+controls keep what the user typed anyway.
 
 ## Styling
 

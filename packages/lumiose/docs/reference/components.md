@@ -71,7 +71,9 @@ interface DynamicProps {
 }
 ```
 
-Renders `component` with the other props, re-creating it only when `component` changes.
+Renders `component` with the other props, re-creating it only when `component` changes. With a tag
+name, the props are the element's written props, `innerHTML` and `textContent` included: do not
+spread an untrusted object (a JSON payload) into `Dynamic`.
 
 ## ref
 

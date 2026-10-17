@@ -46,7 +46,10 @@ export interface ToastOptions {
    * `"low"`, announced when the reader is idle (`role="status"`).
    */
   priority?: "low" | "high";
-  /** The props of its `Toast.Action` button: `children` for the label, `onClick`. */
+  /**
+   * The props of its `Toast.Action` button: `children` for the label, `onClick`, `class`,
+   * `disabled` and `aria-*`. Other keys are dropped: the options may be a payload as it arrived.
+   */
   actionProps?: JSX.IntrinsicElements["button"];
   /** Called when it starts closing. */
   onClose?: () => void;
@@ -352,9 +355,25 @@ function Description({ children, ...rest }: ToastDescriptionProps) {
   return <>{content() ? <p {...rest}>{content()}</p> : null}</>;
 }
 
+/**
+ * The `actionProps` keys the action button takes. A toast's options may be a notification or
+ * realtime payload passed as it arrived, so a key such as `type`, `formaction` or `style` from it
+ * must not reach the button (TASK-470). Props written on `Toast.Action` are the page's own.
+ */
+const ACTION_KEY = /^(?:children|onClick|class|disabled|aria-[a-z]+)$/;
+
+function allowed(props: ToastActionProps | undefined): ToastActionProps | undefined {
+  if (!props) return undefined;
+  const out: Record<string, unknown> = {};
+  for (const key of Object.keys(props)) {
+    if (ACTION_KEY.test(key)) out[key] = props[key as keyof ToastActionProps];
+  }
+  return out as ToastActionProps;
+}
+
 function Action({ children, ...rest }: ToastActionProps) {
   const item = useToastItem();
-  const props = () => item.toast.actionProps;
+  const props = () => allowed(item.toast.actionProps);
   return (
     <>
       {props() || children ? (

@@ -2,9 +2,11 @@
 // `lumiose` exposes the same names in the browser and under `node` (../server/public.ts): the
 // server-only render functions are stubs in ../app/server/browser.ts that throw LUM4003.
 import type { Component, Renderable } from "../contract/client.ts";
+import { renderEffect } from "../core/internal.ts";
 import { onCleanup } from "../core/owner.ts";
 import { computed, signal } from "../core/signal.ts";
 import type { JSX } from "../jsx/jsx-runtime.ts";
+import { setProp } from "./attributes.ts";
 import { createComponent, restProps } from "./component.ts";
 import { frame, setFrame } from "./frame.ts";
 import { insert } from "./insert.ts";
@@ -65,6 +67,16 @@ export interface DynamicProps {
 function createElement(tag: string, props: Record<string, unknown>): Element {
   const el = document.createElement(tag);
   spread(el, () => props);
+  // Dynamic's props are the element's written props, so `innerHTML` and `textContent` apply, as
+  // the server's `element` writes them: a spread never does (TASK-470).
+  for (const key of ["innerHTML", "textContent"]) {
+    if (key in props)
+      renderEffect(
+        el,
+        () => props[key],
+        (node, value) => setProp(node, key, value),
+      );
+  }
   insert(el, () => props.children as Renderable);
   return el;
 }

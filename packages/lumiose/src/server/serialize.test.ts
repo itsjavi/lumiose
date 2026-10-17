@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { decodeData, encodeData } from "./serialize.ts";
 
 const fail = (path: string, reason: string): never => {
@@ -52,6 +52,47 @@ describe("data-only serialization", () => {
     expect(decoded).toBeInstanceOf(FormData);
     expect(decoded.getAll("colours")).toEqual(["red", "blue"]);
     expect(decoded.has("avatar")).toBe(false);
+  });
+
+  it("warns in development when a FormData carries a name that looks secret (TASK-471)", () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    try {
+      const safe = new FormData();
+      for (const name of ["username", "postal_code", "passport", "spinner", "email"]) {
+        safe.append(name, "x");
+      }
+      encodeData({ values: safe }, fail);
+      expect(warn).not.toHaveBeenCalled();
+
+      const form = new FormData();
+      form.append("username", "ada");
+      form.append("newPassword", "hunter2");
+      form.append("card-pin", "1234");
+      form.append("api_key", "k");
+      // Serialized as before: the warning changes nothing.
+      expect(encodeData({ values: form }, fail)).toEqual({
+        values: {
+          $: "F",
+          v: [
+            ["username", "ada"],
+            ["newPassword", "hunter2"],
+            ["card-pin", "1234"],
+            ["api_key", "k"],
+          ],
+        },
+      });
+      const messages = warn.mock.calls.map(([message]) => String(message));
+      expect(messages).toHaveLength(3);
+      expect(messages[0]).toContain('at values carries "newPassword"');
+      expect(messages[0]).toContain("values: { username }");
+      expect(messages[1]).toContain('"card-pin"');
+      expect(messages[2]).toContain('"api_key"');
+      // Once per name.
+      encodeData(form, fail);
+      expect(warn).toHaveBeenCalledTimes(3);
+    } finally {
+      warn.mockRestore();
+    }
   });
 
   it("omits undefined properties like JSON", () => {

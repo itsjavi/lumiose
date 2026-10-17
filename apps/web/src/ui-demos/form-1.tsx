@@ -6,11 +6,13 @@ import { actionData, fail, type ActionContext } from "lumiose";
 export const actions = {
   async signup(ctx: ActionContext) {
     const form = await ctx.formData();
-    if (form.get("username") === "admin") {
-      // The errors, and what the user typed: the form renders back filled in.
-      return fail(400, { errors: { username: "That username is taken." }, values: form });
+    const username = String(form.get("username") ?? "");
+    if (username === "admin") {
+      // The errors, and the fields to fill in again (never a password): the form renders back
+      // filled in.
+      return fail(400, { errors: { username: "That username is taken." }, values: { username } });
     }
-    return { welcome: String(form.get("username")) };
+    return { welcome: username };
   },
 };
 

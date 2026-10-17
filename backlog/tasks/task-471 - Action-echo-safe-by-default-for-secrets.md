@@ -1,11 +1,11 @@
 ---
 id: TASK-471
 title: 'Action echo: safe by default for secrets'
-status: To Do
+status: Done
 assignee:
   - '@Beacon'
 created_date: '2026-10-16 23:46'
-updated_date: '2026-10-16 23:55'
+updated_date: '2026-10-17 00:44'
 labels:
   - security
 milestone: m-12
@@ -43,12 +43,20 @@ Lux (2026-10-17): no new public API is needed. Form's `values` already takes a r
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 form.md and data-and-actions.md echo only allow-listed fields, and no example echoes a whole FormData with a password in it
-- [ ] #2 In dev, serializing a FormData with a secret-looking name (password, token, secret, otp, card and the like) warns, with a test
+- [x] #1 form.md and data-and-actions.md echo only allow-listed fields, and no example echoes a whole FormData with a password in it
+- [x] #2 In dev, serializing a FormData with a secret-looking name (password, token, secret, otp, card and the like) warns, with a test
 <!-- AC:END -->
 
 ## Implementation Notes
 
 <!-- SECTION:NOTES:BEGIN -->
 2026-10-17 (Lux, orchestrator): Beacon's in unattended batch 2. For TASK-470 it may edit packages/lumiose/src/dom (no Spark session is running).
+
+2026-10-17 (Beacon): done.
+- Docs: form.md and data-and-actions.md now echo an explicit record. The form.md example reads `const username = String(form.get("username") ?? "")` and fails with `values: { username }`; the demo was regenerated. They explain that everything in actionData lands in the HTML and that a FormData carries every field.
+- `values: { username: form.get("username") }` as written in the brief does not type-check: get() returns File | string | null, and Form's FormValues takes strings.
+- Dev warning: server/serialize.ts warns once per name when a serialized FormData has a secret-looking name (password/passwd/passcode/passphrase, secret, token, otp, cvc/cvv, card, pin, security/verification/auth code, api key, credential). The entries are unchanged. Test in serialize.test.ts, which also covers names that must not warn (postal_code, passport, spinner).
+- The ui-e2e /form fixture still echoes its FormData, as the test of that path; it has no secret-looking names.
+- No pick helper (doc-10 P13). L1 is Nova's TASK-472.
+Checks: as in TASK-470.
 <!-- SECTION:NOTES:END -->

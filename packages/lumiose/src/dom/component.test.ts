@@ -177,6 +177,21 @@ describe("spread", () => {
     expect(el.getAttributeNames()).toEqual(["id"]);
   });
 
+  it("never writes innerHTML or textContent, as the server does not (TASK-470)", () => {
+    const el = document.createElement("div");
+    el.append("label");
+    const payload = signal<Record<string, unknown>>(
+      JSON.parse('{"innerHTML":"<img src=x id=pwn>","id":"a"}'),
+    );
+    root(() => spread(el, () => payload()));
+    expect(el.innerHTML).toBe("label");
+    expect(el.getAttributeNames()).toEqual(["id"]);
+    payload.set({ textContent: "y", id: "b" });
+    flush();
+    expect(el.innerHTML).toBe("label");
+    expect(el.getAttributeNames()).toEqual(["id"]);
+  });
+
   it("applies attributes, properties, class, style, events, ref and $$scope, and diffs updates", () => {
     const el = document.createElement("input");
     const clicks: string[] = [];
