@@ -2436,7 +2436,7 @@ the efficient form:
 | `bind:value`, `bind:checked` | Two-way binding to a writable signal, on `input`, `select` and `textarea`. `bind:x` also works on components and custom elements (below).                                                                                                                                                                                                                                                                    |
 | `attach={[fn]}`              | Runs `fn(el)` with the element in a tracked scope; it may return a cleanup.                                                                                                                                                                                                                                                                                                                                  |
 | `ref={fn}`                   | Called with the element. `ref<T>()` makes a callback you can read like a signal.                                                                                                                                                                                                                                                                                                                             |
-| `innerHTML`                  | Sets unescaped HTML. The lint rule `no-unsafe-html` warns.                                                                                                                                                                                                                                                                                                                                                   |
+| `innerHTML`                  | Sets unescaped HTML. The lint rule `no-unsafe-html` warns. Only as a written prop on an element without a spread: a spread drops `innerHTML` and `textContent` (written next to it too), on the server and the client, so an object from JSON cannot inject markup.                                                                                                                                          |
 | `key`                        | Allowed on intrinsic elements and components (list identity).                                                                                                                                                                                                                                                                                                                                                |
 | `{...props}`, `children`     | A spread applies every prop it carries, in order with the other attributes. An element without content of its own renders the `children` of its spreads or of a `children` attribute, as in React: `<button {...props} />` renders what the caller passed. Written content wins. When the spread has no `children` prop at all, the element's content is left alone, so a script or the browser may fill it. |
 | `client:*`                   | Island directives, on components only. See [Islands](islands.md).                                                                                                                                                                                                                                                                                                                                            |
@@ -6419,7 +6419,9 @@ file's `<style>` block.
 follow `http:` and `https:` URLs (relative ones included); a `javascript:` or `data:` location
 throws a `TypeError` instead of running in the page. Spread props drop lowercase `on*` keys
 (`{...{ onclick: "…" }}`): an inline handler attribute is a script sink, so handlers are only
-functions in `onClick`.
+functions in `onClick`. They drop `innerHTML` and `textContent` too, on the server and the client:
+an object from JSON (a notification passed to a toast as it came) cannot inject markup, and only a
+written `innerHTML` prop, on an element without a spread, sets HTML.
 
 **Unsafe URLs.** A dynamic value for a URL attribute (`href`, `src`, `action`, `formaction`,
 `xlink:href`, `poster`, `data`, …) whose scheme is `javascript:`, `vbscript:` or `data:text/html`
@@ -9526,7 +9528,8 @@ a setter, or a name that no prop uses (a private `#getter` for an attribute it r
 Strings set as properties keep the URL check of attributes (a `javascript:` URL becomes a
 placeholder). An element that is not defined yet when the component runs gets attributes for
 everything, so load its definition first (above). `class`, `style`, `ref`, `attach` and
-`innerHTML` work as on any element, and a spread (`{...props}`) follows the same rule.
+`innerHTML` work as on any element, and a spread (`{...props}`) follows the same rule (it never
+sets `innerHTML` or `textContent`, on any element).
 
 ## Events
 
@@ -13021,7 +13024,8 @@ the tsconfig's `rootDirs` leave out.
 | `JSX.HTMLProps<T>`, `JSX.SVGProps<T>`, `JSX.MathMLProps<T>` | Props of an element type, for wrappers.                                                                                                                 |
 
 **Element props.** Every element accepts `children`, `class`, `style`, `ref`, `attach`, `innerHTML`,
-`key`, its attributes, `onX` handlers and `on:x` listeners. `input` also accepts `bind:value`
+`key`, its attributes, `onX` handlers and `on:x` listeners (a spread never sets `innerHTML` or
+`textContent`). `input` also accepts `bind:value`
 (string or number signal) and `bind:checked` (boolean signal); `select` and `textarea` accept
 `bind:value`.
 

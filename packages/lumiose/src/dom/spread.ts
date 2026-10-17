@@ -6,7 +6,12 @@ type Props = Record<string, unknown>;
 type Listener = (event: Event) => void;
 
 /** Keys written as DOM properties; every other plain key is an attribute (HTML names, spec §4.5). */
-const PROPERTIES = /^(?:value|checked|selected|muted|indeterminate|innerHTML|textContent)$/;
+const PROPERTIES = /^(?:value|checked|selected|muted|indeterminate)$/;
+/**
+ * Content a spread never writes, as the server's `spreadAttrs` does not: an object from JSON (a
+ * notification, a realtime payload) must not inject HTML. Only a written prop sets it (TASK-470).
+ */
+const CONTENT = /^(?:innerHTML|textContent)$/;
 
 interface SpreadState {
   el: Element;
@@ -48,9 +53,9 @@ function setSpreadProp(el: Element, key: string, value: unknown, prev: unknown):
     if (typeof value === "function") {
       el.addEventListener(event, value as Listener);
     }
-  } else if (/^on/i.test(key)) {
+  } else if (/^on/i.test(key) || CONTENT.test(key)) {
     // A lowercase `onclick` would be an inline handler attribute, a script sink: dropped, as on
-    // the server and in React.
+    // the server and in React. Content keys too (above).
   } else if (key === "class") {
     setClass(el, value);
   } else if (key === "style") {

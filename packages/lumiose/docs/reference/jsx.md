@@ -118,7 +118,8 @@ the tsconfig's `rootDirs` leave out.
 | `JSX.HTMLProps<T>`, `JSX.SVGProps<T>`, `JSX.MathMLProps<T>` | Props of an element type, for wrappers.                                                                                                                 |
 
 **Element props.** Every element accepts `children`, `class`, `style`, `ref`, `attach`, `innerHTML`,
-`key`, its attributes, `onX` handlers and `on:x` listeners. `input` also accepts `bind:value`
+`key`, its attributes, `onX` handlers and `on:x` listeners (a spread never sets `innerHTML` or
+`textContent`). `input` also accepts `bind:value`
 (string or number signal) and `bind:checked` (boolean signal); `select` and `textarea` accept
 `bind:value`.
 
