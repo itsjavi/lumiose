@@ -146,20 +146,26 @@ test.describe("the safe triangle and trap-focus (TASK-410)", () => {
     const to = (await turing.boundingBox())!;
     const start = { x: from.x + from.width / 2, y: from.y + from.height / 2 };
     const end = { x: to.x + to.width * 0.8, y: to.y + to.height / 2 };
+    // From here the page's timers wait for the test (TASK-467): each move restarts a 100 ms
+    // grace, and a remote browser under load can take longer than that between two moves. An
+    // installed clock still follows the wall clock; a paused one moves only by `runFor`.
+    await page.clock.install({ time: 0 });
+    await page.clock.pauseAt(1000);
     // Ten small moves, 40 ms apart: far longer than the 100 ms grace in all.
     for (let i = 1; i <= 10; i++) {
       await page.mouse.move(
         start.x + ((end.x - start.x) * i) / 10,
         start.y + ((end.y - start.y) * i) / 10,
       );
-      await page.waitForTimeout(40);
+      await page.clock.runFor(40);
       await expect(turing).toBeVisible();
     }
-    await page.waitForTimeout(300);
+    await page.clock.runFor(300);
     await expect(turing).toBeVisible();
     // Back on the trigger, then off the other way: the triangle does not hold it.
     await page.mouse.move(start.x, start.y, { steps: 4 });
     await page.mouse.move(start.x, start.y - 120, { steps: 6 });
+    await page.clock.runFor(200);
     await expect(turing).toBeHidden();
   });
 
