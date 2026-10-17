@@ -1,8 +1,10 @@
 // Redirect targets (TASK-164, TASK-165), as properties (decision-56, TASK-313): `redirect()` only
-// lets through locations a browser resolves to an http(s) URL, the trailing-slash redirect never
-// leaves the site, and a Node request target never names another host.
+// lets through locations a browser resolves to an http(s) URL, the trailing-slash and
+// missing-translation redirects never leave the site, and a Node request target never names
+// another host.
 import type { IncomingMessage } from "node:http";
 import { describe, expect, it } from "vitest";
+import { resolveI18n } from "../i18n/config.ts";
 import { fc, RUNS } from "./__fixtures__/property.ts";
 import { app, page } from "./__fixtures__/app.ts";
 import { isRedirect, redirect } from "./control.ts";
@@ -106,6 +108,59 @@ describe("the trailing-slash redirect", () => {
         { numRuns: Math.max(20, Math.floor(RUNS / 2)) },
       );
     }
+  });
+});
+
+describe("the missing-translation redirect (TASK-469)", () => {
+  // A root catch-all in the default locale only: `/es/<path>` redirects to `<path>`.
+  const { handle } = app(
+    { "src/routes/[...path]/page.stsx": page(() => "<h1>any</h1>") },
+    {},
+    { i18n: resolveI18n({ locales: ["en", "es"], defaultLocale: "en", missing: "redirect" }) },
+  );
+  const segment = fc.oneof(
+    fc.constantFrom("", "\\", "\\\\", "evil.com", "%2F", "%5C", "..", "@evil.com"),
+    fc.stringMatching(/^[\w.~-]{1,8}$/),
+  );
+  const pathArb = fc
+    .array(segment, { minLength: 1, maxLength: 6 })
+    .map((parts) => `/${parts.join("/")}`);
+
+  /** The redirect's `Location` for `path`, requested as servers build the URL. */
+  async function locationOf(path: string, method = "GET"): Promise<string | undefined> {
+    let request: Request;
+    try {
+      request = new Request(`${ORIGIN}${path}`, { method });
+    } catch {
+      return undefined;
+    }
+    const response = await handle(request);
+    return response.status === 302 || response.status === 307
+      ? response.headers.get("location")!
+      : undefined;
+  }
+
+  it("keeps the redirect on the site for leading slashes and backslashes", async () => {
+    for (const path of ["/es//evil.example/x", "/es/\\evil.example", "/es/\\/evil.example"]) {
+      for (const method of ["GET", "POST"]) {
+        const location = await locationOf(path, method);
+        expect(location).toBeDefined();
+        expect(new URL(location!, `${ORIGIN}${path}`).origin).toBe(ORIGIN);
+      }
+    }
+    expect(await locationOf("/es//evil.example/x?q=1")).toBe("/evil.example/x?q=1");
+  });
+
+  it("stays on the site, whatever the path", async () => {
+    await fc.assert(
+      fc.asyncProperty(pathArb, fc.webQueryParameters(), async (path, query) => {
+        const target = `/es${path}${query === "" ? "" : `?${query}`}`;
+        const location = await locationOf(target);
+        if (location === undefined) return;
+        expect(new URL(location, `${ORIGIN}${target}`).origin).toBe(ORIGIN);
+      }),
+      { numRuns: Math.max(20, Math.floor(RUNS / 2)) },
+    );
   });
 });
 

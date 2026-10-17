@@ -73,6 +73,7 @@ import {
   type RequestScope,
 } from "./scope.ts";
 import { resolveStreamTimeout, type StreamTimeoutOption } from "./stream-timeout.ts";
+import { sameSiteLocation } from "./static-files.ts";
 
 export type ModuleExports = Record<string, unknown>;
 
@@ -732,10 +733,11 @@ export function createRequestHandler(options: RequestHandlerOptions): RequestHan
         config.missing === "redirect" &&
         declared.includes(config.defaultLocale)
       ) {
-        // 307 keeps the method and body of a form post.
+        // 307 keeps the method and body of a form post. The path may start with `//` (a root
+        // catch-all matches `/es//evil.example`): one slash, so the redirect stays on the site.
         const get = request.method === "GET" || request.method === "HEAD";
         return redirectResponse(
-          new Redirect(base + path.slice(1) + search, get ? 302 : 307),
+          new Redirect(sameSiteLocation(base + path.slice(1) + search), get ? 302 : 307),
           request,
         );
       }
@@ -756,7 +758,7 @@ export function createRequestHandler(options: RequestHandlerOptions): RequestHan
       const slash = trailingSlash === "always" && path === "/" ? "/" : "";
       return new Response(null, {
         status: 302,
-        headers: { location: base + localizedPath.slice(1) + slash + search },
+        headers: { location: sameSiteLocation(base + localizedPath.slice(1) + slash + search) },
       });
     }
     const values = params as Record<string, unknown>;

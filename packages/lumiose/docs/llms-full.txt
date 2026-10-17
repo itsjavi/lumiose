@@ -6447,8 +6447,9 @@ function safeNext(next: string | null, fallback = "/"): string {
 redirect(safeNext(url.searchParams.get("next")));
 ```
 
-Trailing-slash redirects (`lumiose({ trailingSlash })`) always stay on your site, also for a
-request path such as `//evil.com/`. `href()` refuses `.` and `..` as param values, which a browser
+Trailing-slash redirects (`lumiose({ trailingSlash })`) and the redirects of i18n (a missing
+translation with `missing: "redirect"`, locale detection) always stay on your site, also for a
+request path such as `//evil.com/` or `/es//evil.com`. `href()` refuses `.` and `..` as param values, which a browser
 would resolve into another route.
 
 **Files from elsewhere.** Icon sets, Markdown and HTML often come from outside the project. The
