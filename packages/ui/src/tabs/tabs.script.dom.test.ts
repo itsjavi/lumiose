@@ -135,3 +135,13 @@ it("leaves the element's style alone without an indicator", async () => {
   tab("b").click();
   expect(tabs.style.getPropertyValue("--lu-tabs-indicator-left")).toBe("");
 });
+
+it("only shows and hides its own panels (TASK-473, L13)", () => {
+  const tabs = mount();
+  document.body.insertAdjacentHTML("beforeend", '<main id="page">Page</main>');
+  tab("b").setAttribute("aria-controls", "page");
+  tabs.value = "b";
+  tabs.value = "c";
+  expect(document.getElementById("page")!.hidden).toBe(false);
+  expect(document.getElementById("p-c")!.hidden).toBe(false);
+});

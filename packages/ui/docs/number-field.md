@@ -1,6 +1,6 @@
 # Number Field
 
-> A number input with buttons to step it, after Base UI's NumberField and the APG spinbutton. Without `format` it is a native `<input type="number">`, which steps, validates and submits without JavaScript; with `format` (`Intl.NumberFormat` options: a currency, a percentage, grouping) it shows the formatted number, reads what is typed back in the same locale, and a hidden input submits the number. `<lu-number-field>`'s 2.3 kB script adds Page Up and Page Down, Home and End, press-and-hold buttons, a scrub area, the wheel when asked, and commit-time clamping. `bind:value` keeps a signal in sync.
+> A number input with buttons to step it, after Base UI's NumberField and the APG spinbutton. Without `format` it is a native `<input type="number">`, which steps, validates and submits without JavaScript; with `format` (`Intl.NumberFormat` options: a currency, a percentage, grouping) it shows the formatted number, reads what is typed back in the same locale, and a hidden input submits the number. `<lu-number-field>`'s 2.6 kB script adds Page Up and Page Down, Home and End, press-and-hold buttons, a scrub area, the wheel when asked, and commit-time clamping. `bind:value` keeps a signal in sync.
 
 ```ts
 import { NumberField } from "@lumiose/ui"; // or "@lumiose/ui/number-field"
@@ -37,25 +37,25 @@ Name the field with a [Field](field.md) (`Field.Label`), a `<label for>` the Roo
 
 ### NumberField.Root
 
-| Prop                               | Type                              | Default       |                                                                                                    |
-| ---------------------------------- | --------------------------------- | ------------- | -------------------------------------------------------------------------------------------------- |
-| `value`                            | `number \| null`                  |               | Shows this number (`null`: empty) when it changes. Pair it with `onValueChange`.                   |
-| `defaultValue`                     | `number \| null`                  | `null`        | The number at first; a form reset goes back to it.                                                 |
-| `onValueChange`                    | `(value: number \| null) => void` |               | Called as the number changes: typing, a key, a button, the wheel, a drag.                          |
-| `onValueCommitted`                 | `(value: number \| null) => void` |               | Called when a change is done: the input left, a key pressed, a button or a drag released.          |
-| `bind:value`                       | `Signal<number \| null>`          |               | Stands in for `value` and `onValueChange`.                                                         |
-| `min`, `max`                       | `number`                          |               | The range. A typed number outside it becomes its end when committed.                               |
-| `step`                             | `number`                          | `1`           | The step of the arrow keys, the buttons, the wheel and a drag.                                     |
-| `largeStep`                        | `number`                          | `10`          | The step of Page Up, Page Down, and Shift with an arrow key or a button.                           |
-| `smallStep`                        | `number`                          | `0.1`         | The step of Alt with an arrow key or a button.                                                     |
-| `snapOnStep`                       | `boolean`                         | `false`       | A step lands on the next multiple of its size (from `min`, or 0): 1.3 steps up to 2, not 2.3.      |
-| `format`                           | `Intl.NumberFormatOptions`        |               | How the number is shown; with it, the input is a text field and a hidden input submits the number. |
-| `locale`                           | `string`                          | the browser's | The locale of the formatted number (the server's in server HTML).                                  |
-| `allowWheelScrub`                  | `boolean`                         | `false`       | The wheel steps the number while the input has focus and the pointer is over it.                   |
-| `allowOutOfRange`                  | `boolean`                         | `false`       | Typed numbers outside the range stay as typed, for the browser's validation to report.             |
-| `name`, `form`                     | `string`                          |               | The name the number is submitted under, and the id of its form when it is outside it.              |
-| `id`                               | `string`                          | generated     | The input's id, for a `<label for>`.                                                               |
-| `required`, `disabled`, `readOnly` | `boolean`                         | `false`       | As on a native input; read-only and disabled fields' buttons are disabled.                         |
+| Prop                               | Type                              | Default       |                                                                                                                                                                         |
+| ---------------------------------- | --------------------------------- | ------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `value`                            | `number \| null`                  |               | Shows this number (`null`: empty) when it changes. Pair it with `onValueChange`.                                                                                        |
+| `defaultValue`                     | `number \| null`                  | `null`        | The number at first; a form reset goes back to it.                                                                                                                      |
+| `onValueChange`                    | `(value: number \| null) => void` |               | Called as the number changes: typing, a key, a button, the wheel, a drag.                                                                                               |
+| `onValueCommitted`                 | `(value: number \| null) => void` |               | Called when a change is done: the input left, a key pressed, a button or a drag released.                                                                               |
+| `bind:value`                       | `Signal<number \| null>`          |               | Stands in for `value` and `onValueChange`.                                                                                                                              |
+| `min`, `max`                       | `number`                          |               | The range. A typed number outside it becomes its end when committed.                                                                                                    |
+| `step`                             | `number`                          | `1`           | The step of the arrow keys, the buttons, the wheel and a drag.                                                                                                          |
+| `largeStep`                        | `number`                          | `10`          | The step of Page Up, Page Down, and Shift with an arrow key or a button.                                                                                                |
+| `smallStep`                        | `number`                          | `0.1`         | The step of Alt with an arrow key or a button.                                                                                                                          |
+| `snapOnStep`                       | `boolean`                         | `false`       | A step lands on the next multiple of its size (from `min`, or 0): 1.3 steps up to 2, not 2.3.                                                                           |
+| `format`                           | `Intl.NumberFormatOptions`        |               | How the number is shown; with it, the input is a text field and a hidden input submits the number. Options or a `locale` the browser refuses fall back to its defaults. |
+| `locale`                           | `string`                          | the browser's | The locale of the formatted number (the server's in server HTML).                                                                                                       |
+| `allowWheelScrub`                  | `boolean`                         | `false`       | The wheel steps the number while the input has focus and the pointer is over it.                                                                                        |
+| `allowOutOfRange`                  | `boolean`                         | `false`       | Typed numbers outside the range stay as typed, for the browser's validation to report.                                                                                  |
+| `name`, `form`                     | `string`                          |               | The name the number is submitted under, and the id of its form when it is outside it.                                                                                   |
+| `id`                               | `string`                          | generated     | The input's id, for a `<label for>`.                                                                                                                                    |
+| `required`, `disabled`, `readOnly` | `boolean`                         | `false`       | As on a native input; read-only and disabled fields' buttons are disabled.                                                                                              |
 
 ### NumberField.ScrubArea
 
@@ -165,7 +165,7 @@ need it, stay hidden and the native spinners show. With `format`, the text input
 as typed until the script moves the name to the hidden input, so a form that must work without
 JavaScript should leave `format` out.
 
-`<lu-number-field>`'s script (2.3 kB brotli) adds the large step, Home and End, the buttons, the
+`<lu-number-field>`'s script (2.6 kB brotli) adds the large step, Home and End, the buttons, the
 scrub area and the wheel, clamps and formats on commit, keeps the hidden input, `aria-valuenow`
 and `aria-valuetext` current, and follows a form reset.
 

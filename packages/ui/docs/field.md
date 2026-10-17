@@ -1,6 +1,6 @@
 # Field
 
-> A form field: a label, a native control, a description and its errors, wired with `for`, `aria-describedby` and `aria-invalid`, after Base UI's Field. Validation is the browser's constraint validation (`required`, `type`, `pattern`, `minlength`…); a 1.5 kB script shows it in the field's Error parts at the right time, instead of the browser's bubble, and focuses the first invalid field on submit. A Form's server errors render in the HTML, so they work without JavaScript. In an island, `validate` adds checks of your own, async ones included, and `Field.Validity` renders from the field's validity.
+> A form field: a label, a native control, a description and its errors, wired with `for`, `aria-describedby` and `aria-invalid`, after Base UI's Field. Validation is the browser's constraint validation (`required`, `type`, `pattern`, `minlength`…); a 1.7 kB script shows it in the field's Error parts at the right time, instead of the browser's bubble, and focuses the first invalid field on submit. A Form's server errors render in the HTML, so they work without JavaScript. In an island, `validate` adds checks of your own, async ones included, and `Field.Validity` renders from the field's validity.
 
 ```ts
 import { Field } from "@lumiose/ui"; // or "@lumiose/ui/field"
@@ -252,7 +252,7 @@ the message Error's id (`Field.Error` without children or `match`) even when the
 Errors with children or a `match`. Give a field that must read well without JavaScript a message
 Error, and its Descriptions before the control.
 
-A page that renders a `Field` loads a 1.5 kB (brotli) script once, without the Lumiose runtime;
+A page that renders a `Field` loads a 1.7 kB (brotli) script once, without the Lumiose runtime;
 islands bundle it. On a submit attempt (a submit button, Enter in a field, `requestSubmit()` or
 the form's `reportValidity()`; a silent `checkValidity()` changes nothing) it cancels the browser's
 `invalid` bubble for fields that have an Error part and shows the problem there instead (the

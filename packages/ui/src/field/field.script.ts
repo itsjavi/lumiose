@@ -27,6 +27,13 @@
 //
 // It must not import `lumiose`: server-rendered pages load it without the runtime.
 
+// A form's controls and descendants, read through the prototypes: a control named `elements` or
+// `querySelectorAll` shadows the form's own member (DOM clobbering, TASK-473 L9).
+const formElements = (form: HTMLFormElement): HTMLFormControlsCollection =>
+  Object.getOwnPropertyDescriptor(HTMLFormElement.prototype, "elements")!.get!.call(form);
+const formQuery = <E extends Element>(form: HTMLFormElement, selectors: string) =>
+  Element.prototype.querySelectorAll.call(form, selectors) as NodeListOf<E>;
+
 type Control = HTMLElement & {
   validity: ValidityState;
   validationMessage: string;
@@ -190,18 +197,28 @@ function during<T>(form: HTMLFormElement, call: () => T): T {
   }
 }
 
-for (const name of ["requestSubmit", "reportValidity"] as const) {
-  const native = HTMLFormElement.prototype[name] as (
-    this: HTMLFormElement,
-    ...args: never[]
-  ) => never;
-  Object.defineProperty(HTMLFormElement.prototype, name, {
-    configurable: true,
-    writable: true,
-    value(this: HTMLFormElement, ...args: never[]) {
-      return during(this, () => native.apply(this, args));
-    },
-  });
+// `requestSubmit()` and `reportValidity()` are submit attempts too. They are wrapped once per page
+// (TASK-473, L10): a second copy of this script (HMR, two versions of the package) leaves the
+// first copy's wrappers alone, whose listeners already handle every field on the page. A wrapper
+// keeps the native method's name, and a method the browser lacks stays missing.
+const WRAPPED = Symbol.for("lumiose.ui.field.attempts");
+const formPrototype = HTMLFormElement.prototype as HTMLFormElement & { [WRAPPED]?: true };
+if (!formPrototype[WRAPPED]) {
+  Object.defineProperty(formPrototype, WRAPPED, { value: true });
+  for (const name of ["requestSubmit", "reportValidity"] as const) {
+    const native: unknown = formPrototype[name];
+    if (typeof native !== "function") continue;
+    const wrapper = {
+      [name](this: HTMLFormElement, ...args: unknown[]): unknown {
+        return during(this, () => native.apply(this, args));
+      },
+    }[name];
+    Object.defineProperty(formPrototype, name, {
+      configurable: true,
+      writable: true,
+      value: wrapper,
+    });
+  }
 }
 
 /** Whether a field with an Error part shows `control`'s problems. */
@@ -217,7 +234,7 @@ const focusTarget = (control: Element) =>
     : (control as HTMLElement);
 
 const firstInvalid = (form: HTMLFormElement) =>
-  [...(form.elements as unknown as Control[])].find(
+  [...(formElements(form) as unknown as Control[])].find(
     (element) => element.willValidate && !element.validity.valid,
   );
 
@@ -328,7 +345,7 @@ on("reset", (event) => {
   const form = event.target as HTMLFormElement;
   // The controls take their default values after the event.
   queueMicrotask(() => {
-    for (const field of form.querySelectorAll<HTMLElement>("lu-field")) {
+    for (const field of formQuery<HTMLElement>(form, "lu-field")) {
       shown.delete(field);
       server.set(field, false);
       render(field);
@@ -375,3 +392,7 @@ function meetAll() {
 if (document.readyState === "loading") {
   document.addEventListener("DOMContentLoaded", meetAll, { once: true });
 } else queueMicrotask(meetAll);
+
+// A module, so it runs once per page whoever imports it.
+// oxlint-disable-next-line unicorn/require-module-specifiers
+export {};

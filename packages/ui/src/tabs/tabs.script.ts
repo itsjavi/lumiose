@@ -160,11 +160,24 @@ export class LuTabs extends HTMLElement {
       const on = each === tab;
       each.setAttribute("aria-selected", String(on));
       each.tabIndex = on || (!tab && each === tabs[0]) ? 0 : -1;
-      const panel = document.getElementById(each.getAttribute("aria-controls") ?? "");
+      const panel = this.#panelOf(each);
       if (panel) panel.hidden = !on;
     }
     this.#measure();
     if (report && this.value !== before) this.dispatchEvent(new Event("valuechange"));
+  }
+
+  /**
+   * The panel `tab` controls: one of this element's own tab panels, never another element of the
+   * page that has the id (TASK-473, L13).
+   */
+  #panelOf(tab: HTMLElement): HTMLElement | undefined {
+    const id = tab.getAttribute("aria-controls");
+    if (!id) return undefined;
+    for (const panel of this.querySelectorAll<HTMLElement>("[role=tabpanel]")) {
+      if (panel.id === id && panel.closest("lu-tabs") === this) return panel;
+    }
+    return undefined;
   }
 
   /** The tab an event happened on, if it is one of this element's own tabs. */

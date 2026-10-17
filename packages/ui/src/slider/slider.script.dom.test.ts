@@ -143,3 +143,9 @@ it("follows the thumbs back after a form reset", async () => {
   expect(document.querySelector("output")!.textContent).toBe("20 – 70");
   expect(slider.isConnected).toBe(false);
 });
+
+it("falls back from format options the browser refuses (TASK-473, L12)", async () => {
+  mount([10], `format='{"style":"currency"}' locale="en-US"`);
+  await settle();
+  expect(thumb(0).getAttribute("aria-valuetext")).toBe("10");
+});

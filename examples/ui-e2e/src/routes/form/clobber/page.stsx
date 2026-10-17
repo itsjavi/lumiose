@@ -1,0 +1,64 @@
+import { Checkbox, CheckboxGroup, Field, Fieldset, OTPField } from "@lumiose/ui";
+import { Title } from "lumiose";
+
+// DOM clobbering (TASK-473, L9): each form holds controls named after the members of the form
+// that the scripts use (`elements`, `querySelectorAll`, `requestSubmit`), which shadow those
+// members on the form element. Server-rendered, no island; the forms submit to this page (GET).
+export default function ClobberedFormsPage() {
+  return (
+    <>
+      <Title>Clobbered forms</Title>
+      <h1>Clobbered forms</h1>
+      <form method="get" action="/form/clobber" class="lu-fieldset">
+        <input type="hidden" name="elements" value="e" />
+        <input type="hidden" name="querySelectorAll" value="q" />
+        <Field.Root name="email" class="lu-field">
+          <Field.Label>Email</Field.Label>
+          <Field.Control type="email" required class="lu-input" />
+          <Field.Error />
+        </Field.Root>
+        <label>
+          <Checkbox.Root name="terms" value="yes" uncheckedValue="no" class="lu-checkbox" /> Terms
+        </label>
+        <CheckboxGroup
+          name="extras"
+          defaultValue={["sauce"]}
+          allValues={["sauce", "cutlery"]}
+          class="lu-fieldset"
+        >
+          <Fieldset.Legend>Extras</Fieldset.Legend>
+          <label>
+            <Checkbox.Root parent class="lu-checkbox" /> All extras
+          </label>
+          <label>
+            <Checkbox.Root value="sauce" class="lu-checkbox" /> Sauce
+          </label>
+          <label>
+            <Checkbox.Root value="cutlery" class="lu-checkbox" /> Cutlery
+          </label>
+        </CheckboxGroup>
+        <footer>
+          <button type="submit" class="lu-button">
+            Send
+          </button>
+          <button type="reset" class="lu-button">
+            Reset
+          </button>
+        </footer>
+      </form>
+      <form method="get" action="/form/clobber">
+        <input type="hidden" name="requestSubmit" value="r" />
+        <Field.Root name="code" class="lu-field">
+          <Field.Label>Code</Field.Label>
+          <OTPField.Root length={4} autoSubmit class="lu-otp-field">
+            <OTPField.Input />
+            <OTPField.Slot />
+            <OTPField.Slot />
+            <OTPField.Slot />
+            <OTPField.Slot />
+          </OTPField.Root>
+        </Field.Root>
+      </form>
+    </>
+  );
+}

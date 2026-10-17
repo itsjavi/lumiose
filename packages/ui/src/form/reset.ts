@@ -5,6 +5,7 @@
 // scripts, which follow the reset the same way) hold their defaults, and reports the new value
 // when it differs.
 import { onCleanup, onMount } from "lumiose";
+import { listenToForm } from "./native.ts";
 
 const same = (a: unknown, b: unknown) =>
   Array.isArray(a) && Array.isArray(b)
@@ -24,10 +25,10 @@ function listen(element: () => Element | undefined, atReset: () => () => void): 
       clearTimeout(timer);
       timer = setTimeout(later);
     };
-    form.addEventListener("reset", listener);
+    const stop = listenToForm(form, "reset", listener);
     onCleanup(() => {
       clearTimeout(timer);
-      form.removeEventListener("reset", listener);
+      stop();
     });
   });
 }

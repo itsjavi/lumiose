@@ -37,26 +37,26 @@ import "@lumiose/ui/themes/default.css"; // optional: the default theme
 
 ### Slider.Root
 
-| Prop                     | Type                             | Default        |                                                                                                                 |
-| ------------------------ | -------------------------------- | -------------- | --------------------------------------------------------------------------------------------------------------- |
-| `value`                  | `number \| number[]`             |                | Moves the thumbs when it changes (an array: one value per thumb). Pair it with `onValueChange`.                 |
-| `defaultValue`           | `number \| number[]`             | `min`          | The value at first; a form reset goes back to it.                                                               |
-| `onValueChange`          | `(value) => void`                |                | Called with the new value as a thumb moves.                                                                     |
-| `onValueCommitted`       | `(value) => void`                |                | Called when a move ends: a release, a key press.                                                                |
-| `bind:value`             | `Signal<number \| number[]>`     |                | Stands in for `value` and `onValueChange`.                                                                      |
-| `min`                    | `number`                         | `0`            | The smallest value.                                                                                             |
-| `max`                    | `number`                         | `100`          | The largest value.                                                                                              |
-| `step`                   | `number`                         | `1`            | The step of the arrow keys; values snap to it.                                                                  |
-| `largeStep`              | `number`                         | `10`           | The step of Page Up, Page Down and Shift with an arrow key.                                                     |
-| `minStepsBetweenValues`  | `number`                         | `0`            | With several thumbs: how many steps apart they stay.                                                            |
-| `thumbCollisionBehavior` | `"push"` \| `"swap"` \| `"none"` | `"push"`       | With several thumbs: a thumb moved into another pushes it along, swaps places with it (a drag), or stops at it. |
-| `thumbAlignment`         | `"edge"` \| `"center"`           | `"edge"`       | The thumbs stop inside the control at its ends, or with their centre on its ends (overhanging it).              |
-| `orientation`            | `"horizontal"` \| `"vertical"`   | `"horizontal"` | Vertical sliders run bottom to top.                                                                             |
-| `disabled`               | `boolean`                        | `false`        | Disables every thumb.                                                                                           |
-| `name`                   | `string`                         |                | The thumbs submit their values under it, one entry each.                                                        |
-| `form`                   | `string`                         |                | The id of a form the thumbs belong to, when they are outside it.                                                |
-| `format`                 | `Intl.NumberFormatOptions`       | plain numbers  | How the values are written; with it, each thumb's `aria-valuetext` is its formatted value.                      |
-| `locale`                 | `string`                         | the browser's  | The locale of the formatted values (the server's in server HTML).                                               |
+| Prop                     | Type                             | Default        |                                                                                                                                                                 |
+| ------------------------ | -------------------------------- | -------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `value`                  | `number \| number[]`             |                | Moves the thumbs when it changes (an array: one value per thumb). Pair it with `onValueChange`.                                                                 |
+| `defaultValue`           | `number \| number[]`             | `min`          | The value at first; a form reset goes back to it.                                                                                                               |
+| `onValueChange`          | `(value) => void`                |                | Called with the new value as a thumb moves.                                                                                                                     |
+| `onValueCommitted`       | `(value) => void`                |                | Called when a move ends: a release, a key press.                                                                                                                |
+| `bind:value`             | `Signal<number \| number[]>`     |                | Stands in for `value` and `onValueChange`.                                                                                                                      |
+| `min`                    | `number`                         | `0`            | The smallest value.                                                                                                                                             |
+| `max`                    | `number`                         | `100`          | The largest value.                                                                                                                                              |
+| `step`                   | `number`                         | `1`            | The step of the arrow keys; values snap to it.                                                                                                                  |
+| `largeStep`              | `number`                         | `10`           | The step of Page Up, Page Down and Shift with an arrow key.                                                                                                     |
+| `minStepsBetweenValues`  | `number`                         | `0`            | With several thumbs: how many steps apart they stay.                                                                                                            |
+| `thumbCollisionBehavior` | `"push"` \| `"swap"` \| `"none"` | `"push"`       | With several thumbs: a thumb moved into another pushes it along, swaps places with it (a drag), or stops at it.                                                 |
+| `thumbAlignment`         | `"edge"` \| `"center"`           | `"edge"`       | The thumbs stop inside the control at its ends, or with their centre on its ends (overhanging it).                                                              |
+| `orientation`            | `"horizontal"` \| `"vertical"`   | `"horizontal"` | Vertical sliders run bottom to top.                                                                                                                             |
+| `disabled`               | `boolean`                        | `false`        | Disables every thumb.                                                                                                                                           |
+| `name`                   | `string`                         |                | The thumbs submit their values under it, one entry each.                                                                                                        |
+| `form`                   | `string`                         |                | The id of a form the thumbs belong to, when they are outside it.                                                                                                |
+| `format`                 | `Intl.NumberFormatOptions`       | plain numbers  | How the values are written; with it, each thumb's `aria-valuetext` is its formatted value. Options or a `locale` the browser refuses fall back to its defaults. |
+| `locale`                 | `string`                         | the browser's  | The locale of the formatted values (the server's in server HTML).                                                                                               |
 
 The value's type follows `value`, `defaultValue` or `bind:value`: a number for one thumb, a
 `number[]` for a range. Every other prop passes through to `<lu-slider>`: `id`, `class`, `style`.

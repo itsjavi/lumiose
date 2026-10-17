@@ -12,6 +12,22 @@ export function formatValues(
   } catch {
     options = undefined;
   }
-  const formatter = new Intl.NumberFormat(locale ?? undefined, options);
+  const formatter = numberFormat(locale ?? undefined, options);
   return values.map((value) => formatter.format(value));
+}
+
+/**
+ * Options the browser refuses (`{"style":"currency"}` without a currency) are left out, and then
+ * an invalid locale, so the slider still works (TASK-473, L12); the server falls back the same way.
+ */
+function numberFormat(locale: string | undefined, options: Intl.NumberFormatOptions | undefined) {
+  try {
+    return new Intl.NumberFormat(locale, options);
+  } catch {
+    try {
+      return new Intl.NumberFormat(locale);
+    } catch {
+      return new Intl.NumberFormat();
+    }
+  }
 }

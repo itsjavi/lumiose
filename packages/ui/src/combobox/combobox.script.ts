@@ -46,6 +46,10 @@
 import { moved, openLayer } from "../layer/layer.ts";
 import { anchoring, place } from "../placement/place.ts";
 
+/** Submits `form` as its submit button would. Through the prototype: a control named
+ * `requestSubmit` shadows the form's own (DOM clobbering, TASK-473 L9). */
+const submit = (form: HTMLFormElement) => HTMLFormElement.prototype.requestSubmit.call(form);
+
 const OPTION = "[role=option]";
 
 export interface ComboboxOpenChangeDetail {
@@ -849,7 +853,7 @@ export class ComboboxElement extends HTMLElement {
           this.#choose(option);
           // As a click on it does (TASK-454, L32).
           if (this.hasAttribute("submit-on-item-click") && !disabled(option)) {
-            input.form?.requestSubmit();
+            if (input.form) submit(input.form);
           }
         }
         return;
@@ -899,7 +903,7 @@ export class ComboboxElement extends HTMLElement {
     if (option && this.listbox?.contains(option)) {
       this.#choose(option);
       if (this.hasAttribute("submit-on-item-click") && !disabled(option)) {
-        this.input?.form?.requestSubmit();
+        if (this.input?.form) submit(this.input.form);
       }
       return;
     }

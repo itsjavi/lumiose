@@ -22,6 +22,10 @@
 //
 // It must not import `lumiose`: server-rendered pages load it without the runtime.
 
+/** Submits `form` as its submit button would. Through the prototype: a control named
+ * `requestSubmit` shadows the form's own (DOM clobbering, TASK-473 L9). */
+const submit = (form: HTMLFormElement) => HTMLFormElement.prototype.requestSubmit.call(form);
+
 export interface OTPFieldValueDetail {
   value: string;
 }
@@ -137,9 +141,18 @@ export class OTPFieldElement extends HTMLElement {
     document.removeEventListener("reset", this.#onReset, true);
   }
 
+  /**
+   * The characters `validation-type` allows; an unknown type allows digits. An own key only:
+   * `constructor` or `__proto__` are not types (TASK-473, L11).
+   */
+  #allowed(): RegExp {
+    const type = this.getAttribute("validation-type") ?? "numeric";
+    return Object.hasOwn(ALLOWED, type) ? ALLOWED[type]! : ALLOWED.numeric!;
+  }
+
   /** `text` kept to the allowed characters and the length. */
   #clean(text: string): string {
-    const allowed = ALLOWED[this.getAttribute("validation-type") ?? "numeric"] ?? ALLOWED.numeric!;
+    const allowed = this.#allowed();
     return [...this.#normalize(text)]
       .filter((char) => allowed.test(char))
       .slice(0, this.#length)
@@ -153,7 +166,7 @@ export class OTPFieldElement extends HTMLElement {
 
   /** Whether `text` holds characters the field does not allow (spaces aside). */
   #rejects(text: string): boolean {
-    const allowed = ALLOWED[this.getAttribute("validation-type") ?? "numeric"] ?? ALLOWED.numeric!;
+    const allowed = this.#allowed();
     return [...this.#normalize(text)].some((char) => /\S/u.test(char) && !allowed.test(char));
   }
 
@@ -210,7 +223,7 @@ export class OTPFieldElement extends HTMLElement {
         this.dispatchEvent(
           new CustomEvent<OTPFieldValueDetail>("valuecomplete", { detail: { value: clean } }),
         );
-        if (this.hasAttribute("auto-submit")) input.form?.requestSubmit();
+        if (this.hasAttribute("auto-submit") && input.form) submit(input.form);
       });
     } else if (clean.length < this.#length) this.#completed = "";
   };

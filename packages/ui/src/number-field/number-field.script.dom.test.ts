@@ -194,3 +194,17 @@ it("follows a form reset", async () => {
   expect(field.value).toBe(5);
   expect(hidden().value).toBe("5");
 });
+
+it("falls back from format options and a locale the browser refuses (TASK-473, L12)", async () => {
+  for (const attributes of [
+    `format='{"style":"currency"}' locale="en-US"`,
+    `format='{"maximumFractionDigits":1}' locale="!!"`,
+  ]) {
+    const field = mount({ attributes, input: '<input type="text" role="spinbutton" value="5">' });
+    await settle();
+    key("ArrowUp");
+    expect(field.value).toBe(6);
+    expect(input().value).toBe("6");
+    document.body.innerHTML = "";
+  }
+});

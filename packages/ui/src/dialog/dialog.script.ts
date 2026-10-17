@@ -151,7 +151,9 @@ function firstTabStop(dialog: HTMLDialogElement): HTMLElement | undefined {
     if (!(element.checkVisibility?.() ?? true)) continue;
     // A radio group's tab stop is its checked radio.
     if (element instanceof HTMLInputElement && element.type === "radio" && !element.checked) {
-      const group = element.form?.elements.namedItem(element.name);
+      // Through the prototype: a control named `elements` shadows the form's (TASK-473, L9).
+      const elements = Object.getOwnPropertyDescriptor(HTMLFormElement.prototype, "elements")!;
+      const group = element.form && elements.get!.call(element.form).namedItem(element.name);
       if (group instanceof RadioNodeList && group.value !== "") continue;
     }
     return element;
@@ -248,9 +250,13 @@ on("toggle", (event) => {
   openers.delete(dialog);
   const active = document.activeElement;
   if (dialog.open || (active && active !== document.body && !dialog.contains(active))) return;
+  // A trigger found by comparing ids, not by a selector built from one: a quote in the id must
+  // not end the selector's string (TASK-473, L8).
   const trigger = opener?.isConnected
     ? opener
-    : document.querySelector<HTMLElement>(`[commandfor="${dialog.id}"][command="show-modal"]`);
+    : [...document.querySelectorAll<HTMLElement>('[command="show-modal"][commandfor]')].find(
+        (each) => dialog.id !== "" && each.getAttribute("commandfor") === dialog.id,
+      );
   trigger?.focus({ preventScroll: true });
 });
 

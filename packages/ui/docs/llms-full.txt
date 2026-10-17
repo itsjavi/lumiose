@@ -1487,7 +1487,7 @@ page:
 
 # Combobox
 
-> A text input that filters a list of options, for picking one value or several from many: the WAI-ARIA combobox pattern with list autocomplete, after Base UI's Combobox. The input shows the option's label and the form gets its value. `<lu-combobox>`, a 5.0 kB form-associated light-DOM element, runs it on server-rendered pages and in islands; `bind:value` and `bind:open` keep signals in sync. Groups, an empty state, a status, a clear button, multiple values with chips, validation and async options.
+> A text input that filters a list of options, for picking one value or several from many: the WAI-ARIA combobox pattern with list autocomplete, after Base UI's Combobox. The input shows the option's label and the form gets its value. `<lu-combobox>`, a 5.4 kB form-associated light-DOM element, runs it on server-rendered pages and in islands; `bind:value` and `bind:open` keep signals in sync. Groups, an empty state, a status, a clear button, multiple values with chips, validation and async options.
 
 ```ts
 import { Combobox } from "@lumiose/ui"; // or "@lumiose/ui/combobox"
@@ -1800,7 +1800,7 @@ In the server HTML the input is empty even with a selected value: the input rend
 options, so the server does not know the selected option's label when it writes the input. The
 script puts the label in as it upgrades the element (decision-62).
 
-A page that renders a `Combobox` loads the script once, as a 5.0 kB (brotli) module without the
+A page that renders a `Combobox` loads the script once, as a 5.4 kB (brotli) module without the
 Lumiose runtime, and islands bundle it. It defines `lu-combobox`, which upgrades every combobox on
 the page in place: it reads the selection the server rendered (`aria-selected="true"`), puts its
 label in the input (text typed before it ran is kept, as a search), renders the chips, and from
@@ -2510,7 +2510,7 @@ non-modal drawers.
 
 # Field
 
-> A form field: a label, a native control, a description and its errors, wired with `for`, `aria-describedby` and `aria-invalid`, after Base UI's Field. Validation is the browser's constraint validation (`required`, `type`, `pattern`, `minlength`…); a 1.5 kB script shows it in the field's Error parts at the right time, instead of the browser's bubble, and focuses the first invalid field on submit. A Form's server errors render in the HTML, so they work without JavaScript. In an island, `validate` adds checks of your own, async ones included, and `Field.Validity` renders from the field's validity.
+> A form field: a label, a native control, a description and its errors, wired with `for`, `aria-describedby` and `aria-invalid`, after Base UI's Field. Validation is the browser's constraint validation (`required`, `type`, `pattern`, `minlength`…); a 1.7 kB script shows it in the field's Error parts at the right time, instead of the browser's bubble, and focuses the first invalid field on submit. A Form's server errors render in the HTML, so they work without JavaScript. In an island, `validate` adds checks of your own, async ones included, and `Field.Validity` renders from the field's validity.
 
 ```ts
 import { Field } from "@lumiose/ui"; // or "@lumiose/ui/field"
@@ -2762,7 +2762,7 @@ the message Error's id (`Field.Error` without children or `match`) even when the
 Errors with children or a `match`. Give a field that must read well without JavaScript a message
 Error, and its Descriptions before the control.
 
-A page that renders a `Field` loads a 1.5 kB (brotli) script once, without the Lumiose runtime;
+A page that renders a `Field` loads a 1.7 kB (brotli) script once, without the Lumiose runtime;
 islands bundle it. On a submit attempt (a submit button, Enter in a field, `requestSubmit()` or
 the form's `reportValidity()`; a silent `checkValidity()` changes nothing) it cancels the browser's
 `invalid` bubble for fields that have an Error part and shows the problem there instead (the
@@ -4041,7 +4041,7 @@ positioning is missing.
 
 # Number Field
 
-> A number input with buttons to step it, after Base UI's NumberField and the APG spinbutton. Without `format` it is a native `<input type="number">`, which steps, validates and submits without JavaScript; with `format` (`Intl.NumberFormat` options: a currency, a percentage, grouping) it shows the formatted number, reads what is typed back in the same locale, and a hidden input submits the number. `<lu-number-field>`'s 2.3 kB script adds Page Up and Page Down, Home and End, press-and-hold buttons, a scrub area, the wheel when asked, and commit-time clamping. `bind:value` keeps a signal in sync.
+> A number input with buttons to step it, after Base UI's NumberField and the APG spinbutton. Without `format` it is a native `<input type="number">`, which steps, validates and submits without JavaScript; with `format` (`Intl.NumberFormat` options: a currency, a percentage, grouping) it shows the formatted number, reads what is typed back in the same locale, and a hidden input submits the number. `<lu-number-field>`'s 2.6 kB script adds Page Up and Page Down, Home and End, press-and-hold buttons, a scrub area, the wheel when asked, and commit-time clamping. `bind:value` keeps a signal in sync.
 
 ```ts
 import { NumberField } from "@lumiose/ui"; // or "@lumiose/ui/number-field"
@@ -4078,25 +4078,25 @@ Name the field with a [Field](field.md) (`Field.Label`), a `<label for>` the Roo
 
 ### NumberField.Root
 
-| Prop                               | Type                              | Default       |                                                                                                    |
-| ---------------------------------- | --------------------------------- | ------------- | -------------------------------------------------------------------------------------------------- |
-| `value`                            | `number \| null`                  |               | Shows this number (`null`: empty) when it changes. Pair it with `onValueChange`.                   |
-| `defaultValue`                     | `number \| null`                  | `null`        | The number at first; a form reset goes back to it.                                                 |
-| `onValueChange`                    | `(value: number \| null) => void` |               | Called as the number changes: typing, a key, a button, the wheel, a drag.                          |
-| `onValueCommitted`                 | `(value: number \| null) => void` |               | Called when a change is done: the input left, a key pressed, a button or a drag released.          |
-| `bind:value`                       | `Signal<number \| null>`          |               | Stands in for `value` and `onValueChange`.                                                         |
-| `min`, `max`                       | `number`                          |               | The range. A typed number outside it becomes its end when committed.                               |
-| `step`                             | `number`                          | `1`           | The step of the arrow keys, the buttons, the wheel and a drag.                                     |
-| `largeStep`                        | `number`                          | `10`          | The step of Page Up, Page Down, and Shift with an arrow key or a button.                           |
-| `smallStep`                        | `number`                          | `0.1`         | The step of Alt with an arrow key or a button.                                                     |
-| `snapOnStep`                       | `boolean`                         | `false`       | A step lands on the next multiple of its size (from `min`, or 0): 1.3 steps up to 2, not 2.3.      |
-| `format`                           | `Intl.NumberFormatOptions`        |               | How the number is shown; with it, the input is a text field and a hidden input submits the number. |
-| `locale`                           | `string`                          | the browser's | The locale of the formatted number (the server's in server HTML).                                  |
-| `allowWheelScrub`                  | `boolean`                         | `false`       | The wheel steps the number while the input has focus and the pointer is over it.                   |
-| `allowOutOfRange`                  | `boolean`                         | `false`       | Typed numbers outside the range stay as typed, for the browser's validation to report.             |
-| `name`, `form`                     | `string`                          |               | The name the number is submitted under, and the id of its form when it is outside it.              |
-| `id`                               | `string`                          | generated     | The input's id, for a `<label for>`.                                                               |
-| `required`, `disabled`, `readOnly` | `boolean`                         | `false`       | As on a native input; read-only and disabled fields' buttons are disabled.                         |
+| Prop                               | Type                              | Default       |                                                                                                                                                                         |
+| ---------------------------------- | --------------------------------- | ------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `value`                            | `number \| null`                  |               | Shows this number (`null`: empty) when it changes. Pair it with `onValueChange`.                                                                                        |
+| `defaultValue`                     | `number \| null`                  | `null`        | The number at first; a form reset goes back to it.                                                                                                                      |
+| `onValueChange`                    | `(value: number \| null) => void` |               | Called as the number changes: typing, a key, a button, the wheel, a drag.                                                                                               |
+| `onValueCommitted`                 | `(value: number \| null) => void` |               | Called when a change is done: the input left, a key pressed, a button or a drag released.                                                                               |
+| `bind:value`                       | `Signal<number \| null>`          |               | Stands in for `value` and `onValueChange`.                                                                                                                              |
+| `min`, `max`                       | `number`                          |               | The range. A typed number outside it becomes its end when committed.                                                                                                    |
+| `step`                             | `number`                          | `1`           | The step of the arrow keys, the buttons, the wheel and a drag.                                                                                                          |
+| `largeStep`                        | `number`                          | `10`          | The step of Page Up, Page Down, and Shift with an arrow key or a button.                                                                                                |
+| `smallStep`                        | `number`                          | `0.1`         | The step of Alt with an arrow key or a button.                                                                                                                          |
+| `snapOnStep`                       | `boolean`                         | `false`       | A step lands on the next multiple of its size (from `min`, or 0): 1.3 steps up to 2, not 2.3.                                                                           |
+| `format`                           | `Intl.NumberFormatOptions`        |               | How the number is shown; with it, the input is a text field and a hidden input submits the number. Options or a `locale` the browser refuses fall back to its defaults. |
+| `locale`                           | `string`                          | the browser's | The locale of the formatted number (the server's in server HTML).                                                                                                       |
+| `allowWheelScrub`                  | `boolean`                         | `false`       | The wheel steps the number while the input has focus and the pointer is over it.                                                                                        |
+| `allowOutOfRange`                  | `boolean`                         | `false`       | Typed numbers outside the range stay as typed, for the browser's validation to report.                                                                                  |
+| `name`, `form`                     | `string`                          |               | The name the number is submitted under, and the id of its form when it is outside it.                                                                                   |
+| `id`                               | `string`                          | generated     | The input's id, for a `<label for>`.                                                                                                                                    |
+| `required`, `disabled`, `readOnly` | `boolean`                         | `false`       | As on a native input; read-only and disabled fields' buttons are disabled.                                                                                              |
 
 ### NumberField.ScrubArea
 
@@ -4206,7 +4206,7 @@ need it, stay hidden and the native spinners show. With `format`, the text input
 as typed until the script moves the name to the hidden input, so a form that must work without
 JavaScript should leave `format` out.
 
-`<lu-number-field>`'s script (2.3 kB brotli) adds the large step, Home and End, the buttons, the
+`<lu-number-field>`'s script (2.6 kB brotli) adds the large step, Home and End, the buttons, the
 scrub area and the wheel, clamps and formats on commit, keeps the hidden input, `aria-valuenow`
 and `aria-valuetext` current, and follows a form reset.
 
@@ -4225,7 +4225,7 @@ Scrubbing uses pointer capture, without pointer lock.
 
 # OTP Field
 
-> A one-time code input, after Base UI's OTPField: one native `<input>` shown as one slot per character. SMS autofill (`autocomplete="one-time-code"`), paste, Backspace, the arrow keys, `maxlength`, `pattern`, `required` and the form's value are the platform's, without JavaScript too, and assistive technology meets one labelled text field. `<lu-otp-field>`'s 1.3 kB script lays the input over the slots, keeps the code to the allowed characters, and reports completion. `bind:value` keeps a signal in sync.
+> A one-time code input, after Base UI's OTPField: one native `<input>` shown as one slot per character. SMS autofill (`autocomplete="one-time-code"`), paste, Backspace, the arrow keys, `maxlength`, `pattern`, `required` and the form's value are the platform's, without JavaScript too, and assistive technology meets one labelled text field. `<lu-otp-field>`'s 1.5 kB script lays the input over the slots, keeps the code to the allowed characters, and reports completion. `bind:value` keeps a signal in sync.
 
 ```ts
 import { OTPField } from "@lumiose/ui"; // or "@lumiose/ui/otp-field"
@@ -4259,24 +4259,24 @@ Name the field with a [Field](field.md) (`Field.Label`), a `<label for>` the Roo
 
 ### OTPField.Root
 
-| Prop                               | Type                                               | Default           |                                                                                                                                                     |
-| ---------------------------------- | -------------------------------------------------- | ----------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `length`                           | `number`                                           |                   | How many characters the code has. Required.                                                                                                         |
-| `value`                            | `string`                                           |                   | Shows this code when it changes. Pair it with `onValueChange`.                                                                                      |
-| `defaultValue`                     | `string`                                           | `""`              | The code at first; a form reset goes back to it.                                                                                                    |
-| `onValueChange`                    | `(value: string) => void`                          |                   | Called as the code changes: typing, a paste, autofill, Backspace.                                                                                   |
-| `bind:value`                       | `Signal<string>`                                   |                   | Stands in for `value` and `onValueChange`.                                                                                                          |
-| `onValueComplete`                  | `(value: string) => void`                          |                   | Called when the last character is entered.                                                                                                          |
-| `onValueInvalid`                   | `(value: string) => void`                          |                   | Called with what was entered when it held characters the field does not allow.                                                                      |
-| `validationType`                   | `"numeric" \| "alpha" \| "alphanumeric" \| "none"` | `"numeric"`       | The characters the code may hold, ASCII as in Base UI (other scripts' digits and full-width letters are typed as ASCII); spaces are always dropped. |
-| `normalizeValue`                   | `(value: string) => string`                        |                   | Normalizes what is entered before the allowed characters are kept (an island).                                                                      |
-| `inputMode`                        | `"numeric" \| "text" \| "tel" \| "none"`           | from the type     | The virtual keyboard: numeric for digits, text otherwise.                                                                                           |
-| `mask`                             | `boolean`                                          | `false`           | The slots show dots, and the input is a password input, so screen readers do not speak the code.                                                    |
-| `autoComplete`                     | `string`                                           | `"one-time-code"` | The input's `autocomplete`.                                                                                                                         |
-| `autoSubmit`                       | `boolean`                                          | `false`           | Submits the form when the last character is entered.                                                                                                |
-| `name`, `form`                     | `string`                                           |                   | The name the code is submitted under, and the id of its form when it is outside it.                                                                 |
-| `id`                               | `string`                                           | generated         | The input's id, for a `<label for>`.                                                                                                                |
-| `required`, `disabled`, `readOnly` | `boolean`                                          | `false`           | As on a native input.                                                                                                                               |
+| Prop                               | Type                                               | Default           |                                                                                                                                                                                            |
+| ---------------------------------- | -------------------------------------------------- | ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `length`                           | `number`                                           |                   | How many characters the code has. Required.                                                                                                                                                |
+| `value`                            | `string`                                           |                   | Shows this code when it changes. Pair it with `onValueChange`.                                                                                                                             |
+| `defaultValue`                     | `string`                                           | `""`              | The code at first; a form reset goes back to it.                                                                                                                                           |
+| `onValueChange`                    | `(value: string) => void`                          |                   | Called as the code changes: typing, a paste, autofill, Backspace.                                                                                                                          |
+| `bind:value`                       | `Signal<string>`                                   |                   | Stands in for `value` and `onValueChange`.                                                                                                                                                 |
+| `onValueComplete`                  | `(value: string) => void`                          |                   | Called when the last character is entered.                                                                                                                                                 |
+| `onValueInvalid`                   | `(value: string) => void`                          |                   | Called with what was entered when it held characters the field does not allow.                                                                                                             |
+| `validationType`                   | `"numeric" \| "alpha" \| "alphanumeric" \| "none"` | `"numeric"`       | The characters the code may hold, ASCII as in Base UI (other scripts' digits and full-width letters are typed as ASCII); spaces are always dropped. Any other value counts as `"numeric"`. |
+| `normalizeValue`                   | `(value: string) => string`                        |                   | Normalizes what is entered before the allowed characters are kept (an island).                                                                                                             |
+| `inputMode`                        | `"numeric" \| "text" \| "tel" \| "none"`           | from the type     | The virtual keyboard: numeric for digits, text otherwise.                                                                                                                                  |
+| `mask`                             | `boolean`                                          | `false`           | The slots show dots, and the input is a password input, so screen readers do not speak the code.                                                                                           |
+| `autoComplete`                     | `string`                                           | `"one-time-code"` | The input's `autocomplete`.                                                                                                                                                                |
+| `autoSubmit`                       | `boolean`                                          | `false`           | Submits the form when the last character is entered.                                                                                                                                       |
+| `name`, `form`                     | `string`                                           |                   | The name the code is submitted under, and the id of its form when it is outside it.                                                                                                        |
+| `id`                               | `string`                                           | generated         | The input's id, for a `<label for>`.                                                                                                                                                       |
+| `required`, `disabled`, `readOnly` | `boolean`                                          | `false`           | As on a native input.                                                                                                                                                                      |
 
 ### The other parts
 
@@ -4364,7 +4364,7 @@ auto-submits.
 ## Without JavaScript, and the element's script
 
 The input is a native text field: autofill, typing, paste, `pattern` and `required` validation and
-submission work with no script, and the slots stay hidden. `<lu-otp-field>`'s script (1.3 kB
+submission work with no script, and the slots stay hidden. `<lu-otp-field>`'s script (1.5 kB
 brotli) shows the slots, cleans the value as it changes (firing `valueinvalid` for refused input),
 fires `valuecomplete`, auto-submits, and follows a form reset.
 
@@ -5588,26 +5588,26 @@ import "@lumiose/ui/themes/default.css"; // optional: the default theme
 
 ### Slider.Root
 
-| Prop                     | Type                             | Default        |                                                                                                                 |
-| ------------------------ | -------------------------------- | -------------- | --------------------------------------------------------------------------------------------------------------- |
-| `value`                  | `number \| number[]`             |                | Moves the thumbs when it changes (an array: one value per thumb). Pair it with `onValueChange`.                 |
-| `defaultValue`           | `number \| number[]`             | `min`          | The value at first; a form reset goes back to it.                                                               |
-| `onValueChange`          | `(value) => void`                |                | Called with the new value as a thumb moves.                                                                     |
-| `onValueCommitted`       | `(value) => void`                |                | Called when a move ends: a release, a key press.                                                                |
-| `bind:value`             | `Signal<number \| number[]>`     |                | Stands in for `value` and `onValueChange`.                                                                      |
-| `min`                    | `number`                         | `0`            | The smallest value.                                                                                             |
-| `max`                    | `number`                         | `100`          | The largest value.                                                                                              |
-| `step`                   | `number`                         | `1`            | The step of the arrow keys; values snap to it.                                                                  |
-| `largeStep`              | `number`                         | `10`           | The step of Page Up, Page Down and Shift with an arrow key.                                                     |
-| `minStepsBetweenValues`  | `number`                         | `0`            | With several thumbs: how many steps apart they stay.                                                            |
-| `thumbCollisionBehavior` | `"push"` \| `"swap"` \| `"none"` | `"push"`       | With several thumbs: a thumb moved into another pushes it along, swaps places with it (a drag), or stops at it. |
-| `thumbAlignment`         | `"edge"` \| `"center"`           | `"edge"`       | The thumbs stop inside the control at its ends, or with their centre on its ends (overhanging it).              |
-| `orientation`            | `"horizontal"` \| `"vertical"`   | `"horizontal"` | Vertical sliders run bottom to top.                                                                             |
-| `disabled`               | `boolean`                        | `false`        | Disables every thumb.                                                                                           |
-| `name`                   | `string`                         |                | The thumbs submit their values under it, one entry each.                                                        |
-| `form`                   | `string`                         |                | The id of a form the thumbs belong to, when they are outside it.                                                |
-| `format`                 | `Intl.NumberFormatOptions`       | plain numbers  | How the values are written; with it, each thumb's `aria-valuetext` is its formatted value.                      |
-| `locale`                 | `string`                         | the browser's  | The locale of the formatted values (the server's in server HTML).                                               |
+| Prop                     | Type                             | Default        |                                                                                                                                                                 |
+| ------------------------ | -------------------------------- | -------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `value`                  | `number \| number[]`             |                | Moves the thumbs when it changes (an array: one value per thumb). Pair it with `onValueChange`.                                                                 |
+| `defaultValue`           | `number \| number[]`             | `min`          | The value at first; a form reset goes back to it.                                                                                                               |
+| `onValueChange`          | `(value) => void`                |                | Called with the new value as a thumb moves.                                                                                                                     |
+| `onValueCommitted`       | `(value) => void`                |                | Called when a move ends: a release, a key press.                                                                                                                |
+| `bind:value`             | `Signal<number \| number[]>`     |                | Stands in for `value` and `onValueChange`.                                                                                                                      |
+| `min`                    | `number`                         | `0`            | The smallest value.                                                                                                                                             |
+| `max`                    | `number`                         | `100`          | The largest value.                                                                                                                                              |
+| `step`                   | `number`                         | `1`            | The step of the arrow keys; values snap to it.                                                                                                                  |
+| `largeStep`              | `number`                         | `10`           | The step of Page Up, Page Down and Shift with an arrow key.                                                                                                     |
+| `minStepsBetweenValues`  | `number`                         | `0`            | With several thumbs: how many steps apart they stay.                                                                                                            |
+| `thumbCollisionBehavior` | `"push"` \| `"swap"` \| `"none"` | `"push"`       | With several thumbs: a thumb moved into another pushes it along, swaps places with it (a drag), or stops at it.                                                 |
+| `thumbAlignment`         | `"edge"` \| `"center"`           | `"edge"`       | The thumbs stop inside the control at its ends, or with their centre on its ends (overhanging it).                                                              |
+| `orientation`            | `"horizontal"` \| `"vertical"`   | `"horizontal"` | Vertical sliders run bottom to top.                                                                                                                             |
+| `disabled`               | `boolean`                        | `false`        | Disables every thumb.                                                                                                                                           |
+| `name`                   | `string`                         |                | The thumbs submit their values under it, one entry each.                                                                                                        |
+| `form`                   | `string`                         |                | The id of a form the thumbs belong to, when they are outside it.                                                                                                |
+| `format`                 | `Intl.NumberFormatOptions`       | plain numbers  | How the values are written; with it, each thumb's `aria-valuetext` is its formatted value. Options or a `locale` the browser refuses fall back to its defaults. |
+| `locale`                 | `string`                         | the browser's  | The locale of the formatted values (the server's in server HTML).                                                                                               |
 
 The value's type follows `value`, `defaultValue` or `bind:value`: a number for one thumb, a
 `number[]` for a range. Every other prop passes through to `<lu-slider>`: `id`, `class`, `style`.
@@ -5868,7 +5868,9 @@ import "@lumiose/ui/themes/default.css"; // optional: the default theme
 | `Panel`     | `<div role="tabpanel" tabindex="0" aria-labelledby="…">`, `hidden` unless its tab is selected.                            |
 
 A `Tab` and a `Panel` with the same `value` belong together. Every panel stays in the page, hidden
-when its tab is not selected, so the browser can switch them before any script loads.
+when its tab is not selected, so the browser can switch them before any script loads. Panels go
+inside their `Tabs.Root`: `<lu-tabs>` shows and hides only its own panels, whatever ids its tabs
+name.
 
 ## API
 

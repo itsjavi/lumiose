@@ -23,6 +23,13 @@
 //
 // It must not import `lumiose`: server-rendered pages load it without the runtime.
 
+// A form's controls and descendants, read through the prototypes: a control named `elements` or
+// `querySelectorAll` shadows the form's own member (DOM clobbering, TASK-473 L9).
+const formElements = (form: HTMLFormElement): HTMLFormControlsCollection =>
+  Object.getOwnPropertyDescriptor(HTMLFormElement.prototype, "elements")!.get!.call(form);
+const formQuery = <E extends Element>(form: HTMLFormElement, selectors: string) =>
+  Element.prototype.querySelectorAll.call(form, selectors) as NodeListOf<E>;
+
 const BOX = "input[type=checkbox]";
 
 /** Checkboxes the server rendered indeterminate: a form reset puts them back (TASK-446, L11). */
@@ -113,7 +120,7 @@ document.addEventListener(
   "formdata",
   (event) => {
     const form = event.target as HTMLFormElement;
-    for (const input of form.elements) {
+    for (const input of formElements(form)) {
       if (
         input instanceof HTMLInputElement &&
         input.type === "checkbox" &&
@@ -165,10 +172,10 @@ document.addEventListener("reset", (event) => {
   const form = event.target as HTMLFormElement;
   // The checkboxes take their default state after the event.
   setTimeout(() => {
-    for (const input of form.querySelectorAll<HTMLInputElement>(BOX)) {
+    for (const input of formQuery<HTMLInputElement>(form, BOX)) {
       if (mixed.has(input)) input.indeterminate = true;
     }
-    for (const parent of form.querySelectorAll<HTMLInputElement>(`${BOX}[data-parent]`)) {
+    for (const parent of formQuery<HTMLInputElement>(form, `${BOX}[data-parent]`)) {
       const group = groupOf(parent);
       if (!group) continue;
       chosen.delete(group);
@@ -212,3 +219,7 @@ function start() {
 if (document.readyState === "loading") {
   document.addEventListener("DOMContentLoaded", start, { once: true });
 } else queueMicrotask(start);
+
+// A module, so it runs once per page whoever imports it.
+// oxlint-disable-next-line unicorn/require-module-specifiers
+export {};

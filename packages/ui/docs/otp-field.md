@@ -1,6 +1,6 @@
 # OTP Field
 
-> A one-time code input, after Base UI's OTPField: one native `<input>` shown as one slot per character. SMS autofill (`autocomplete="one-time-code"`), paste, Backspace, the arrow keys, `maxlength`, `pattern`, `required` and the form's value are the platform's, without JavaScript too, and assistive technology meets one labelled text field. `<lu-otp-field>`'s 1.3 kB script lays the input over the slots, keeps the code to the allowed characters, and reports completion. `bind:value` keeps a signal in sync.
+> A one-time code input, after Base UI's OTPField: one native `<input>` shown as one slot per character. SMS autofill (`autocomplete="one-time-code"`), paste, Backspace, the arrow keys, `maxlength`, `pattern`, `required` and the form's value are the platform's, without JavaScript too, and assistive technology meets one labelled text field. `<lu-otp-field>`'s 1.5 kB script lays the input over the slots, keeps the code to the allowed characters, and reports completion. `bind:value` keeps a signal in sync.
 
 ```ts
 import { OTPField } from "@lumiose/ui"; // or "@lumiose/ui/otp-field"
@@ -34,24 +34,24 @@ Name the field with a [Field](field.md) (`Field.Label`), a `<label for>` the Roo
 
 ### OTPField.Root
 
-| Prop                               | Type                                               | Default           |                                                                                                                                                     |
-| ---------------------------------- | -------------------------------------------------- | ----------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `length`                           | `number`                                           |                   | How many characters the code has. Required.                                                                                                         |
-| `value`                            | `string`                                           |                   | Shows this code when it changes. Pair it with `onValueChange`.                                                                                      |
-| `defaultValue`                     | `string`                                           | `""`              | The code at first; a form reset goes back to it.                                                                                                    |
-| `onValueChange`                    | `(value: string) => void`                          |                   | Called as the code changes: typing, a paste, autofill, Backspace.                                                                                   |
-| `bind:value`                       | `Signal<string>`                                   |                   | Stands in for `value` and `onValueChange`.                                                                                                          |
-| `onValueComplete`                  | `(value: string) => void`                          |                   | Called when the last character is entered.                                                                                                          |
-| `onValueInvalid`                   | `(value: string) => void`                          |                   | Called with what was entered when it held characters the field does not allow.                                                                      |
-| `validationType`                   | `"numeric" \| "alpha" \| "alphanumeric" \| "none"` | `"numeric"`       | The characters the code may hold, ASCII as in Base UI (other scripts' digits and full-width letters are typed as ASCII); spaces are always dropped. |
-| `normalizeValue`                   | `(value: string) => string`                        |                   | Normalizes what is entered before the allowed characters are kept (an island).                                                                      |
-| `inputMode`                        | `"numeric" \| "text" \| "tel" \| "none"`           | from the type     | The virtual keyboard: numeric for digits, text otherwise.                                                                                           |
-| `mask`                             | `boolean`                                          | `false`           | The slots show dots, and the input is a password input, so screen readers do not speak the code.                                                    |
-| `autoComplete`                     | `string`                                           | `"one-time-code"` | The input's `autocomplete`.                                                                                                                         |
-| `autoSubmit`                       | `boolean`                                          | `false`           | Submits the form when the last character is entered.                                                                                                |
-| `name`, `form`                     | `string`                                           |                   | The name the code is submitted under, and the id of its form when it is outside it.                                                                 |
-| `id`                               | `string`                                           | generated         | The input's id, for a `<label for>`.                                                                                                                |
-| `required`, `disabled`, `readOnly` | `boolean`                                          | `false`           | As on a native input.                                                                                                                               |
+| Prop                               | Type                                               | Default           |                                                                                                                                                                                            |
+| ---------------------------------- | -------------------------------------------------- | ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `length`                           | `number`                                           |                   | How many characters the code has. Required.                                                                                                                                                |
+| `value`                            | `string`                                           |                   | Shows this code when it changes. Pair it with `onValueChange`.                                                                                                                             |
+| `defaultValue`                     | `string`                                           | `""`              | The code at first; a form reset goes back to it.                                                                                                                                           |
+| `onValueChange`                    | `(value: string) => void`                          |                   | Called as the code changes: typing, a paste, autofill, Backspace.                                                                                                                          |
+| `bind:value`                       | `Signal<string>`                                   |                   | Stands in for `value` and `onValueChange`.                                                                                                                                                 |
+| `onValueComplete`                  | `(value: string) => void`                          |                   | Called when the last character is entered.                                                                                                                                                 |
+| `onValueInvalid`                   | `(value: string) => void`                          |                   | Called with what was entered when it held characters the field does not allow.                                                                                                             |
+| `validationType`                   | `"numeric" \| "alpha" \| "alphanumeric" \| "none"` | `"numeric"`       | The characters the code may hold, ASCII as in Base UI (other scripts' digits and full-width letters are typed as ASCII); spaces are always dropped. Any other value counts as `"numeric"`. |
+| `normalizeValue`                   | `(value: string) => string`                        |                   | Normalizes what is entered before the allowed characters are kept (an island).                                                                                                             |
+| `inputMode`                        | `"numeric" \| "text" \| "tel" \| "none"`           | from the type     | The virtual keyboard: numeric for digits, text otherwise.                                                                                                                                  |
+| `mask`                             | `boolean`                                          | `false`           | The slots show dots, and the input is a password input, so screen readers do not speak the code.                                                                                           |
+| `autoComplete`                     | `string`                                           | `"one-time-code"` | The input's `autocomplete`.                                                                                                                                                                |
+| `autoSubmit`                       | `boolean`                                          | `false`           | Submits the form when the last character is entered.                                                                                                                                       |
+| `name`, `form`                     | `string`                                           |                   | The name the code is submitted under, and the id of its form when it is outside it.                                                                                                        |
+| `id`                               | `string`                                           | generated         | The input's id, for a `<label for>`.                                                                                                                                                       |
+| `required`, `disabled`, `readOnly` | `boolean`                                          | `false`           | As on a native input.                                                                                                                                                                      |
 
 ### The other parts
 
@@ -139,7 +139,7 @@ auto-submits.
 ## Without JavaScript, and the element's script
 
 The input is a native text field: autofill, typing, paste, `pattern` and `required` validation and
-submission work with no script, and the slots stay hidden. `<lu-otp-field>`'s script (1.3 kB
+submission work with no script, and the slots stay hidden. `<lu-otp-field>`'s script (1.5 kB
 brotli) shows the slots, cleans the value as it changes (firing `valueinvalid` for refused input),
 fires `valuecomplete`, auto-submits, and follows a form reset.
 

@@ -29,6 +29,7 @@ import {
   type ValidationMode,
 } from "./context.ts";
 import fieldScript from "./field.script.ts?client";
+import { listenToForm, reportValidity } from "../form/native.ts";
 import { Input, type InputProps } from "../input/input.tsx";
 
 declare module "lumiose/jsx-runtime" {
@@ -295,7 +296,7 @@ function Root({
     if (!control || control.validity.valid) return;
     event.preventDefault();
     event.stopImmediatePropagation();
-    (event.currentTarget as HTMLFormElement).reportValidity();
+    reportValidity(event.currentTarget as HTMLFormElement);
   };
   effect(() => {
     if (!validate) return;
@@ -325,13 +326,16 @@ function Root({
     if (!element) return;
     const owner = element.closest("form");
     element.addEventListener("invalid", onInvalid, true);
-    owner?.addEventListener("reset", onReset);
-    // Capturing: before the form's own `submit` listeners.
-    owner?.addEventListener("submit", onSubmit, true);
+    const stops = owner
+      ? [
+          listenToForm(owner, "reset", onReset),
+          // Capturing: before the form's own `submit` listeners.
+          listenToForm(owner, "submit", onSubmit, true),
+        ]
+      : [];
     onCleanup(() => {
       element.removeEventListener("invalid", onInvalid, true);
-      owner?.removeEventListener("reset", onReset);
-      owner?.removeEventListener("submit", onSubmit, true);
+      for (const stop of stops) stop();
     });
   });
 

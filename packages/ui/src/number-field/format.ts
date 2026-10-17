@@ -3,12 +3,24 @@
 // locale and format (grouping, the decimal sign, the locale's digits, a currency, a percent sign).
 import { digitValue } from "../locale/digits.ts";
 
-/** The formatter for `format` (`Intl.NumberFormat` options) and `locale`. */
+/**
+ * The formatter for `format` (`Intl.NumberFormat` options) and `locale`. Options the browser
+ * refuses (`{"style":"currency"}` without a currency) are left out, and then an invalid locale,
+ * so the field still works (TASK-473, L12); the server falls back the same way.
+ */
 export function formatter(
   format: Intl.NumberFormatOptions | undefined,
   locale: Intl.LocalesArgument | null | undefined,
 ): Intl.NumberFormat {
-  return new Intl.NumberFormat(locale ?? undefined, format);
+  try {
+    return new Intl.NumberFormat(locale ?? undefined, format);
+  } catch {
+    try {
+      return new Intl.NumberFormat(locale ?? undefined);
+    } catch {
+      return new Intl.NumberFormat();
+    }
+  }
 }
 
 /** `value` as the field shows it: `""` for no value. */

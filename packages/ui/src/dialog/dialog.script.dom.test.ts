@@ -193,3 +193,17 @@ describe("focus", () => {
     expect(document.activeElement).toBe(get("p"));
   });
 });
+
+describe("ids (TASK-473, L8)", () => {
+  it("falls back to the trigger of a dialog whose id holds a quote", () => {
+    page(`<button id="t" command="show-modal" commandfor='a"b'>Open</button>
+      <button id="x" command="show-modal" commandfor="a">Other</button>
+      <dialog id='a"b'><input></dialog><button id="o">Opener</button>`);
+    const dialog = document.querySelector("dialog")!;
+    get("o").focus();
+    toggle(dialog, "beforetoggle", "open");
+    get("o").remove();
+    toggle(dialog, "toggle", "closed");
+    expect(document.activeElement).toBe(get("t"));
+  });
+});

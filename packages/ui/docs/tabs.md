@@ -29,7 +29,9 @@ import "@lumiose/ui/themes/default.css"; // optional: the default theme
 | `Panel`     | `<div role="tabpanel" tabindex="0" aria-labelledby="…">`, `hidden` unless its tab is selected.                            |
 
 A `Tab` and a `Panel` with the same `value` belong together. Every panel stays in the page, hidden
-when its tab is not selected, so the browser can switch them before any script loads.
+when its tab is not selected, so the browser can switch them before any script loads. Panels go
+inside their `Tabs.Root`: `<lu-tabs>` shows and hides only its own panels, whatever ids its tabs
+name.
 
 ## API
 

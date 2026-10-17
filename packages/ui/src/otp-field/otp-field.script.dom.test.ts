@@ -11,6 +11,7 @@ beforeAll(async () => {
 });
 
 afterEach(() => {
+  vi.restoreAllMocks();
   document.body.innerHTML = "";
 });
 
@@ -118,7 +119,24 @@ it("submits the form when complete with auto-submit", async () => {
   const form = document.querySelector("form")!;
   const submit = vi.fn((event: Event) => event.preventDefault());
   form.addEventListener("submit", submit);
-  form.requestSubmit = vi.fn(() => form.dispatchEvent(new Event("submit", { cancelable: true })));
+  // Through the prototype: the script never calls a member a control could shadow (TASK-473).
+  vi.spyOn(HTMLFormElement.prototype, "requestSubmit").mockImplementation(function (
+    this: HTMLFormElement,
+  ) {
+    this.dispatchEvent(new Event("submit", { cancelable: true }));
+  });
+  type("5678");
+  await settle();
+  expect(submit).toHaveBeenCalledTimes(1);
+});
+
+it("submits a form with a control named requestSubmit (TASK-473, L9)", async () => {
+  mount('length="4" auto-submit');
+  await settle();
+  const form = document.querySelector("form")!;
+  form.insertAdjacentHTML("beforeend", '<input type="hidden" name="requestSubmit">');
+  const submit = vi.fn((event: Event) => event.preventDefault());
+  form.addEventListener("submit", submit);
   type("5678");
   await settle();
   expect(submit).toHaveBeenCalledTimes(1);
@@ -141,8 +159,7 @@ it("sets the value without events, and follows a form reset", async () => {
 it("leaves an IME composition alone, and cleans, completes and submits its commit (TASK-432)", async () => {
   const field = mount('length="4" validation-type="none" auto-submit');
   await settle();
-  const form = document.querySelector("form")!;
-  const submit = vi.spyOn(form, "requestSubmit").mockImplementation(() => {});
+  const submit = vi.spyOn(HTMLFormElement.prototype, "requestSubmit").mockImplementation(() => {});
   const complete = vi.fn();
   field.addEventListener("valuecomplete", (event) => complete((event as CustomEvent).detail.value));
   const compose = (text: string) => {
@@ -197,4 +214,14 @@ it("types over the character at the caret, also before the field is full (TASK-4
   expect(event.defaultPrevented).toBe(true);
   expect(field.value).toBe("193");
   expect(input().selectionStart).toBe(2);
+});
+
+it("treats a validation-type that names an object's member as unknown: digits (TASK-473, L11)", async () => {
+  for (const name of ["constructor", "__proto__", "toString"]) {
+    const field = mount(`length="4" validation-type="${name}"`);
+    await settle();
+    type("1a2");
+    expect(field.value).toBe("12");
+    document.body.innerHTML = "";
+  }
 });
