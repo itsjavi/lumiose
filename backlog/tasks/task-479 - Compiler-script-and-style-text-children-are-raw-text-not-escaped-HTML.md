@@ -1,9 +1,11 @@
 ---
 id: TASK-479
-title: 'Compiler: script and style text children are raw text, not escaped HTML'
+title: 'Compiler: a static text child of <script> or <style> stays raw text'
 status: To Do
-assignee: []
+assignee:
+  - '@Photon'
 created_date: '2026-10-17 00:29'
+updated_date: '2026-10-17 00:53'
 labels:
   - compiler
   - bug
@@ -15,12 +17,11 @@ ordinal: 475000
 ## Description
 
 <!-- SECTION:DESCRIPTION:BEGIN -->
-Found by Nova in TASK-472 (L7). In server output, the text children of <script> (and <style>) are escaped as HTML text, but the HTML parser reads these elements as raw text: entities stay literal. A static child is folded at compile time: <script>{"var a = 1 < 2;"}</script> compiles to 'var a = 1 &lt; 2;' (a syntax error in the browser), and a dynamic one goes through insertText(), so <script type="application/ld+json">{JSON.stringify(data)}</script> writes &lt; and &amp; into the JSON. Raw text needs its own serialization: written as it is, except that '</script' (case-insensitive) and '<!--' must not appear; for JSON types (application/json, application/ld+json, importmap, speculationrules), '<' as \u003c is lossless. innerHTML on such a script is spliced in raw, so '</script>' in a JSON value breaks out (security review L7). Owner: crates/lumiose_compiler (codegen/client/ssr.rs) plus a lumiose/server helper. Until then, security.md documents innerHTML with JSON.stringify(data).replace(/</g, '\\u003c').
+Found by Nova in TASK-472 (L7). The HTML parser reads <script> and <style> content as raw text, where entities stay literal, but the server codegen folds a static text child as escaped HTML: <script>{"var a = 1 < 2;"}</script> compiles to 'var a = 1 &lt; 2;', a syntax error in the browser (the same for & and > ). A static child should be written as it is, except that a '</script' (case-insensitive) or '<!--' in it must not end the element: refuse it at compile time or escape it in a way the language keeps (such as '<\/script' in JS). Owner: crates/lumiose_compiler (codegen/client/ssr.rs). Dynamic children of JSON-typed scripts are TASK-480.
 <!-- SECTION:DESCRIPTION:END -->
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 A static or dynamic text child of <script>/<style> renders as raw text that the browser reads back unchanged
-- [ ] #2 JSON-typed scripts serialize children and innerHTML with < as \u003c, so a value cannot close the element
-- [ ] #3 security.md's JSON-LD example uses the simpler form once it is safe
+- [ ] #1 A static text child of <script> or <style> renders as raw text that the browser reads back unchanged
+- [ ] #2 A '</script' or '<!--' in a static child cannot end the element, with a test
 <!-- AC:END -->

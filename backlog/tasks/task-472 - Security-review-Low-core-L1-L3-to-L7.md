@@ -5,11 +5,12 @@ status: In Progress
 assignee:
   - '@Nova'
 created_date: '2026-10-16 23:46'
-updated_date: '2026-10-17 00:52'
+updated_date: '2026-10-17 00:54'
 labels:
   - security
 milestone: m-12
-dependencies: []
+dependencies:
+  - TASK-480
 priority: medium
 ordinal: 470000
 ---
@@ -65,4 +66,6 @@ Nova (2026-10-17): claimed, branch claude/nova-css-0fc0df. L2 is not in this tas
 Nova (2026-10-17): L1 in 9116c801 (packages/ui, Halo's area: Input's UNFILLED is case-insensitive and trims; form.md documents name-only matching and that a native <fieldset disabled> is not seen; test fails before the fix). L3-L6 in bfd1e764. L3: innerHTML has no runtime guard in Lumiose (explicit raw-HTML prop, documented, strict CSP blocks scripts injected through it), so srcdoc gets the same: security.md 'Raw HTML' paragraph and the srcdoc typing doc; verified in Chromium/Firefox/WebKit that a srcdoc frame runs an injected script with parent access without CSP and is blocked under the strict policy (it inherits it). A stronger guard (dev warning, or blocking dynamic srcdoc without sandbox) changes DX: proposed for doc-10. L4: boundedRequest's json()/text() use limits.body whatever Content-Type says; formData() and raw reads of multipart keep upload (custom upload parsers keep working); property test fails before the fix; security.md updated. L5: styleAttr closes the comment, string, url( and ()/[] a value leaves open (closeOpen), so later [data-l-v] rules hold: 5 attack shapes lost the next rule in all 3 engines before, none after; unit test. L6: noncePolicy adds frame-ancestors 'self'; the prerendered <meta> policy leaves it out (browsers ignore it there) and security.md says how to send it as a header; X-Frame-Options default already in doc-10. L7: pending, needs a compiler change (asked Lux).
 
 Validation (Nova, 2026-10-17): pnpm check exit 0 (2549 tests); pnpm pack:check --smoke --skip-npm exit 0; Playwright: apps/web 179 passed, ssg-spa-e2e 19, ssg-travel-journal 17, ssr-auth 6, ssr-bookshelf 17, ssr-i18n-i18next 5, ssr-i18n-paraglide 5, ssr-realtime 9, ssr-styles-e2e 10. L7 status: JSON-LD is documented (security.md: innerHTML with < as \u003c, commit e91d2623), but JSON script blocks do not serialize safely yet: that needs crates/lumiose_compiler (Photon's area), filed as TASK-479; asked Lux whether Nova may do it. AC #6 stays open. Claim released; the task stays In Progress until L7 lands. For doc-10 (Lux): whether srcdoc should also get a guard beyond innerHTML's treatment (a dev warning, or blocking a dynamic srcdoc without sandbox).
+
+Nova (2026-10-17), per Lux: the compiler stays with Photon (TASK-466 is in codegen). L7's serialization is TASK-480 (JSON script children and innerHTML, with a lumiose/server helper); the static fold of a <script> text child ('1 < 2' → '1 &lt; 2') is TASK-479; both assigned to Photon. L7 is blocked on TASK-480. The JSON-LD documentation part is done here (security.md, e91d2623).
 <!-- SECTION:NOTES:END -->
