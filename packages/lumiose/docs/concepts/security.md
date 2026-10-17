@@ -78,6 +78,27 @@ either way: neither gets a nonce, and a `srcdoc` frame inherits the page's polic
 Chromium, Firefox and WebKit). For HTML you do not control in a frame, add `sandbox` (without
 `allow-same-origin`), which gives the frame an origin of its own.
 
+**JSON in a `<script>`** (JSON-LD, an import map): write it with `innerHTML` and `<` escaped as
+`<`, so a value such as `"</script><script>…"` cannot close the element, and the JSON reads
+back the same:
+
+```tsx
+export function ArticleData(props: { title: string; author: string }) {
+  const data = {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    headline: props.title,
+    author: { "@type": "Person", name: props.author },
+  };
+  return (
+    <script type="application/ld+json" innerHTML={JSON.stringify(data).replace(/</g, "\\u003c")} />
+  );
+}
+```
+
+A text child (`<script>{JSON.stringify(data)}</script>`) is escaped as HTML text, and `&lt;` inside
+a `<script>` stays `&lt;`: the JSON would change.
+
 **Error details.** In production server rendering, `<ErrorBoundary>` fallbacks receive a generic
 error with a short `digest`, and the original error is logged with the same digest
 ([ErrorBoundary](../reference/components.md#errorboundary)).

@@ -138,7 +138,7 @@ export function styleAttr(value: unknown): string {
  * caller's hex escapes.
  */
 function closeOpen(css: string): string {
-  if (!/[/"'(\[]/.test(css)) return css;
+  if (!/[/"'([]/.test(css)) return css;
   const closers: string[] = [];
   let quote = "";
   let url = false;
@@ -175,7 +175,7 @@ function closeOpen(css: string): string {
     }
   }
   const open = comment ? "*/" : quote !== "" ? quote : url ? ")" : "";
-  return open === "" && closers.length === 0 ? css : css + open + closers.reverse().join("");
+  return open === "" && closers.length === 0 ? css : css + open + closers.toReversed().join("");
 }
 
 /**
