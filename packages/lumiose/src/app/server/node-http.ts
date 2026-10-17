@@ -142,7 +142,13 @@ export async function sendWebResponse(res: ServerResponse, response: Response): 
   try {
     for (;;) {
       const { done, value } = await reader.read();
-      if (done || res.destroyed) break;
+      if (done) break;
+      if (res.destroyed) {
+        // The client went away. Its `close` event, which cancels too, may not have fired yet, and
+        // a body left unread holds what it reads from, such as a file (TASK-476).
+        reader.cancel().catch(() => {});
+        break;
+      }
       if (!res.write(value)) await drained(res);
     }
     if (!res.destroyed) res.end();

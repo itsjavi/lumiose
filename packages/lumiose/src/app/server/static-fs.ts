@@ -9,7 +9,7 @@
 // @lumiose/adapter-node (./static-files.ts): precompressed `.br`/`.gz` copies for clients that
 // accept them, `immutable` hashed assets, ETag/Last-Modified revalidation, `trailingSlash`.
 
-import { open, readdir, realpath, stat, type FileHandle } from "node:fs/promises";
+import { access, open, readdir, realpath, stat, type FileHandle } from "node:fs/promises";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { BuiltAppConfig } from "./app.ts";
@@ -94,13 +94,12 @@ async function send(
   if (variant !== undefined) headers.set("content-encoding", variant.encoding);
   headers.set("content-length", String(size));
   if (request.method === "HEAD") return new Response(null, { status: 200, headers });
-  let handle: FileHandle;
   try {
-    handle = await open(absolute);
+    await access(absolute);
   } catch {
     return undefined; // removed since the index was built: the app answers
   }
-  return new Response(fileStream(handle), { status: 200, headers });
+  return new Response(fileStream(absolute), { status: 200, headers });
 }
 
 /** The precompressed copy of a file for the client's encoding, if the build wrote one. */
@@ -117,32 +116,53 @@ function variantOf(
   return undefined;
 }
 
-/** The file's bytes as a stream, read as the consumer pulls; the file closes at the end or on cancel. */
-function fileStream(handle: FileHandle): ReadableStream<Uint8Array> {
-  let closed = false;
+/**
+ * The file's bytes as a stream, read as the consumer pulls (TASK-476). The file opens on the first
+ * read and closes at the end, on an error or on cancel, so a Response whose body is never read
+ * (headers only, replaced by middleware, dropped by a server) holds no handle: Node 26 throws when
+ * garbage collection has to close one.
+ */
+function fileStream(path: string): ReadableStream<Uint8Array> {
+  let handle: FileHandle | undefined;
+  let done = false;
   const close = async () => {
-    if (closed) return;
-    closed = true;
-    await handle.close().catch(() => {});
+    done = true;
+    const current = handle;
+    handle = undefined;
+    await current?.close().catch(() => {});
   };
-  return new ReadableStream({
-    async pull(controller) {
-      try {
-        const buffer = new Uint8Array(CHUNK);
-        const { bytesRead } = await handle.read(buffer, 0, CHUNK, null);
-        if (bytesRead === 0) {
+  return new ReadableStream(
+    {
+      async pull(controller) {
+        try {
+          if (handle === undefined) {
+            const opened = await open(path);
+            if (done) {
+              // Cancelled while the file was opening.
+              await opened.close().catch(() => {});
+              return;
+            }
+            handle = opened;
+          }
+          const buffer = new Uint8Array(CHUNK);
+          const { bytesRead } = await handle.read(buffer, 0, CHUNK, null);
+          if (bytesRead === 0) {
+            await close();
+            controller.close();
+            return;
+          }
+          controller.enqueue(bytesRead === CHUNK ? buffer : buffer.subarray(0, bytesRead));
+        } catch (error) {
           await close();
-          controller.close();
-          return;
+          controller.error(error);
         }
-        controller.enqueue(bytesRead === CHUNK ? buffer : buffer.subarray(0, bytesRead));
-      } catch (error) {
-        await close();
-        controller.error(error);
-      }
+      },
+      cancel: close,
     },
-    cancel: close,
-  });
+    // No read ahead: with a high-water mark above 0 the stream pulls (and opens the file) as soon
+    // as it is made.
+    { highWaterMark: 0 },
+  );
 }
 
 /**

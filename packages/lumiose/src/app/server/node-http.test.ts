@@ -105,4 +105,28 @@ describe("toWebRequest / sendWebResponse", () => {
     controller.abort();
     await Promise.all([abortedSignal, cancelledBody]);
   });
+
+  it("cancels a body that is still streaming when the client disconnects (TASK-476)", async () => {
+    let cancelled!: () => void;
+    const cancelledBody = new Promise<void>((resolve) => (cancelled = resolve));
+    // Always more to send, like a large file: the bridge is writing, not waiting for the app.
+    const base = await serve(
+      () =>
+        new Response(
+          new ReadableStream<Uint8Array>({
+            pull(controller) {
+              controller.enqueue(new Uint8Array(64 * 1024));
+            },
+            cancel() {
+              cancelled();
+            },
+          }),
+        ),
+    );
+    const controller = new AbortController();
+    const response = await fetch(`${base}/`, { signal: controller.signal });
+    await response.body!.getReader().read();
+    controller.abort();
+    await cancelledBody;
+  });
 });
