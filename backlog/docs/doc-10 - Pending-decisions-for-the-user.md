@@ -20,8 +20,14 @@ Nothing here is decided until the user answers. Answered items move to the Answe
 ### P1. Push main to origin
 
 - **Waiting:** local commits after 4bfc013a (the last push, which the user approved on 2026-10-16). Pushing runs CI, which costs money, so every push needs the user's OK (AGENTS.md).
-- **Recommendation:** push once the final M12 batch (TASK-458 to TASK-465) is merged and green, in one push.
+- **Recommendation:** push now, in one push. The checks on local main were green on 2026-10-17: pnpm check, cargo fmt and clippy, ui-e2e (Chromium 1018; Firefox and WebKit 1030), apps/web (179), pack smoke and nine example suites.
 - **Meanwhile:** commits stay local. Lux keeps the list of what each push would carry under this item.
+- **What the push carries (53 commits after 4bfc013a, at bf3c8e62 plus backlog):**
+  - the final M12 follow-ups (TASK-458 to TASK-465);
+  - Photon's compiler and packaging fixes (TASK-347, 348, 349, 289 and 466; decision-67);
+  - Nova's shared route-group CSS (TASK-285; decision-68) and parallel precompression (TASK-288);
+  - the security review's fixes (TASK-468 to TASK-476 and TASK-479 to TASK-480; decision-69);
+  - the static-file handle leak (TASK-476).
 
 ### P2. The screen reader pass (TASK-361)
 
@@ -42,6 +48,7 @@ Nothing here is decided until the user answers. Answered items move to the Answe
 
 - **Not a question:** listed so that the user sees it.
 - AGENTS.md asks for an app-security-review before each lumiose minor release. TASK-430 changed form actions (lumiose's action data now carries `FormData`), so Lux runs that review unattended before P3 and records its findings as tasks.
+- **Status (2026-10-17): done.** Prism found 1 High, 3 Medium and 14 Low (TASK-468 to TASK-475). All are fixed and merged, and the merged checks pass. No High is open, so P3 waits only on P2 and the user's go. Two items need the user's call: P13.
 
 ### P5. The spa template: what it renders (TASK-276)
 
