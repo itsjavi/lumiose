@@ -1,4 +1,4 @@
-// Serves the eval results viewer: evals/viewer/ at /, evals/results/ at /results/.
+// Serves the eval results viewer: benchmarks/evals/viewer/ at /, benchmarks/evals/results/ at /results/.
 //   pnpm --filter @lumiose/evals run view [--port 4110]   (`run`: `pnpm view` is a pnpm built-in)
 import { createReadStream, existsSync, statSync } from "node:fs";
 import { createServer } from "node:http";

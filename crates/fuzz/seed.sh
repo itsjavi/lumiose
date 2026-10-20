@@ -3,14 +3,14 @@
 # cargo-fuzz then mutates real inputs instead of starting from nothing. Run it before
 # `cargo fuzz run`; the nightly workflow does, and keeps the grown corpora between runs.
 set -eu
-root=$(cd "$(dirname "$0")/.." && pwd)
+root=$(cd "$(dirname "$0")/../.." && pwd)
 
 # seed <target> "<extensions>" <directory>…: copies the files with those extensions.
 seed() {
   target=$1
   extensions=$2
   shift 2
-  dir="$root/fuzz/corpus/$target"
+  dir="$root/crates/fuzz/corpus/$target"
   mkdir -p "$dir"
   for fixtures in "$@"; do
     for extension in $extensions; do

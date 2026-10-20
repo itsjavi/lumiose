@@ -4,7 +4,7 @@ import { defineConfig, devices } from "@playwright/test";
 // the cross-origin-isolation service worker) and `pnpm preview:site`, which, like Pages, sends no
 // COOP/COEP headers. Run with `pnpm test:e2e:pages` (it builds the whole site first).
 const PORT = 5291;
-const OUT = "dist/site-e2e";
+const OUT = "apps/web/dist/site-e2e";
 
 export default defineConfig({
   testDir: "tests-pages",

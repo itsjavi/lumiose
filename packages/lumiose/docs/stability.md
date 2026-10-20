@@ -78,7 +78,7 @@ support, such as `:dir()`, nesting and `light-dark()`, stays as written. A `buil
 ## Security
 
 Until 1.0, only the latest minor release receives security fixes. Report vulnerabilities privately,
-as described in the [security policy](https://github.com/itsjavi/lumiose/blob/main/SECURITY.md).
+as described in the [security policy](https://github.com/itsjavi/lumiose/blob/main/.github/SECURITY.md).
 
 ## Maintenance
 

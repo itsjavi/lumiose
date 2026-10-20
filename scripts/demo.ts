@@ -97,8 +97,8 @@ function defaultKind(dir: string, name: string): Kind {
   if (/(^|[-/])e2e($|[-/])/.test(name) || /(^|[-/])e2e($|[-/])/.test(dir)) return "e2e";
   if (dir.startsWith("examples/")) return "example";
   if (dir.startsWith("apps/")) return "site";
+  if (dir.startsWith("benchmarks/evals")) return "eval";
   if (dir.startsWith("benchmarks/")) return "benchmark";
-  if (dir.startsWith("evals")) return "eval";
   return "other";
 }
 

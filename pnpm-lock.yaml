@@ -119,6 +119,25 @@ importers:
         specifier: ^8.3.4
         version: 8.3.4(@types/node@24.19.1)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(yaml@2.9.1)
 
+  benchmarks/evals:
+    dependencies:
+      create-lumiose:
+        specifier: workspace:*
+        version: link:../../packages/create
+      lumiose:
+        specifier: workspace:*
+        version: link:../../packages/lumiose
+    devDependencies:
+      '@lumiose/cli':
+        specifier: workspace:*
+        version: link:../../packages/cli
+      '@lumiose/vite':
+        specifier: workspace:*
+        version: link:../../packages/vite
+      '@types/node':
+        specifier: 24.19.1
+        version: 24.19.1
+
   benchmarks/fullstack/apps/astro:
     dependencies:
       '@astrojs/node':
@@ -498,25 +517,6 @@ importers:
       vite:
         specifier: ^8.3.4
         version: 8.3.4(@types/node@24.19.1)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(yaml@2.9.1)
-
-  evals:
-    dependencies:
-      create-lumiose:
-        specifier: workspace:*
-        version: link:../packages/create
-      lumiose:
-        specifier: workspace:*
-        version: link:../packages/lumiose
-    devDependencies:
-      '@lumiose/cli':
-        specifier: workspace:*
-        version: link:../packages/cli
-      '@lumiose/vite':
-        specifier: workspace:*
-        version: link:../packages/vite
-      '@types/node':
-        specifier: 24.19.1
-        version: 24.19.1
 
   examples/islands-e2e:
     dependencies:

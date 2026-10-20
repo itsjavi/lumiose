@@ -1,6 +1,7 @@
-# Nightly fuzzing (TASK-311, decision-56): every cargo-fuzz target of fuzz/ for a bounded time, and
-# the app layer's property tests at a high case count. Scheduled only, never on push; a crash fails
-# the run and its input is uploaded as an artifact. CONTRIBUTING.md (Fuzzing) has the local steps.
+# Nightly fuzzing (TASK-311, decision-56): every cargo-fuzz target of crates/fuzz/ for a bounded
+# time, and the app layer's property tests at a high case count. Scheduled only, never on push; a
+# crash fails the run and its input is uploaded as an artifact. .github/CONTRIBUTING.md (Fuzzing)
+# has the local steps.
 name: Fuzz
 
 on:
@@ -35,10 +36,10 @@ jobs:
       targets: ${{ steps.list.outputs.targets }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      # The [[bin]] names of fuzz/Cargo.toml: every target, without building anything.
+      # The [[bin]] names of crates/fuzz/Cargo.toml: every target, without building anything.
       - id: list
         run: |
-          targets=$(awk '/^\[\[bin\]\]/ { bin = 1 } bin && /^name = / { gsub(/"/, "", $3); print $3; bin = 0 }' fuzz/Cargo.toml | jq -R . | jq -s -c .)
+          targets=$(awk '/^\[\[bin\]\]/ { bin = 1 } bin && /^name = / { gsub(/"/, "", $3); print $3; bin = 0 }' crates/fuzz/Cargo.toml | jq -R . | jq -s -c .)
           echo "targets=$targets" >> "$GITHUB_OUTPUT"
 
   fuzz:
@@ -68,21 +69,21 @@ jobs:
 
       - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
         with:
-          workspaces: fuzz
+          workspaces: crates/fuzz
           key: ${{ matrix.target }}
 
       # The corpus grows from night to night; the fixtures seed it on the first run.
       - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
-          path: fuzz/corpus/${{ matrix.target }}
+          path: crates/fuzz/corpus/${{ matrix.target }}
           key: fuzz-corpus-${{ matrix.target }}-${{ github.run_id }}
           restore-keys: fuzz-corpus-${{ matrix.target }}-
 
-      - run: fuzz/seed.sh
+      - run: crates/fuzz/seed.sh
 
       - name: Fuzz for ${{ env.SECONDS_PER_TARGET }} s
         run: >
-          cargo +nightly fuzz run ${{ matrix.target }} --fuzz-dir fuzz
+          cargo +nightly fuzz run ${{ matrix.target }} --fuzz-dir crates/fuzz
           --target "$FUZZ_TRIPLE" --sanitizer address --
           -max_total_time=${{ env.SECONDS_PER_TARGET }} -timeout=30 -rss_limit_mb=4096
 
@@ -91,7 +92,7 @@ jobs:
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: fuzz-crash-${{ matrix.target }}
-          path: fuzz/artifacts/${{ matrix.target }}
+          path: crates/fuzz/artifacts/${{ matrix.target }}
           if-no-files-found: ignore
 
   properties:

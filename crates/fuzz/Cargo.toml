@@ -1,6 +1,6 @@
 # Fuzz targets for the Rust crates (TASK-311, decision-56), run with cargo-fuzz on a nightly
-# toolchain: `cargo +nightly fuzz run <target>` from the repository root. A workspace of its own,
-# so the main workspace never builds libFuzzer. See CONTRIBUTING.md (Fuzzing).
+# toolchain: `cargo +nightly fuzz run <target> --fuzz-dir crates/fuzz` from the repository root. A workspace of its own,
+# so the main workspace never builds libFuzzer. See .github/CONTRIBUTING.md (Fuzzing).
 [package]
 name = "lumiose_fuzz"
 version = "0.0.0"
@@ -20,10 +20,10 @@ libfuzzer-sys = "=0.4.13"
 
 [dependencies]
 libfuzzer-sys.workspace = true
-lumiose_compiler = { path = "../crates/lumiose_compiler" }
-lumiose_content = { path = "../crates/lumiose_content" }
-lumiose_css = { path = "../crates/lumiose_css", default-features = false }
-lumiose_svg = { path = "../crates/lumiose_svg" }
+lumiose_compiler = { path = "../lumiose_compiler" }
+lumiose_content = { path = "../lumiose_content" }
+lumiose_css = { path = "../lumiose_css", default-features = false }
+lumiose_svg = { path = "../lumiose_svg" }
 
 [[bin]]
 name = "scan"

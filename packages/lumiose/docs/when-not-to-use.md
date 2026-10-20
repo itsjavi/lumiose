@@ -37,7 +37,7 @@ Astro, SvelteKit or Nuxt.
 
 Lumiose is designed and maintained by one person, with no company behind it. Security reports have
 response targets, not guarantees (see the
-[security policy](https://github.com/itsjavi/lumiose/blob/main/SECURITY.md)). If your organization
+[security policy](https://github.com/itsjavi/lumiose/blob/main/.github/SECURITY.md)). If your organization
 requires a vendor, a support contract, a team of maintainers or a minimum project age, Lumiose does
 not meet that today.
 

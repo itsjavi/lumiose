@@ -24,7 +24,7 @@ import { fileURLToPath } from "node:url";
 import type { Ablation, Task } from "./tasks.ts";
 
 export const EVALS = fileURLToPath(new URL("../", import.meta.url));
-export const REPO = fileURLToPath(new URL("../../", import.meta.url));
+export const REPO = fileURLToPath(new URL("../../../", import.meta.url));
 const PACKAGES = join(REPO, "packages");
 
 /** The Lumiose packages a project can link, by package name. */

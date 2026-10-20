@@ -1,8 +1,8 @@
 // Builds the Lumiose website into one static directory, as GitHub Pages serves it
 // (.github/workflows/pages.yml runs the same command):
 //
-//   pnpm build:site [--base /lumiose/] [--out dist/site] [--skip-compiler] [--site-url <url>]
-//   pnpm preview:site [--base /lumiose/] [--out dist/site] [--port 4173]
+//   pnpm build:site [--base /lumiose/] [--out apps/web/dist/site] [--skip-compiler] [--site-url <url>]
+//   pnpm preview:site [--base /lumiose/] [--out apps/web/dist/site] [--port 4173]
 //   node scripts/site.ts redirects --out <dir> [--base /lumiose/]
 //
 // - apps/web (/, /docs, /showcase, /benchmarks, /playground) lands at the root of the output.
@@ -59,7 +59,7 @@ const { positionals, values } = parseArgs({
   allowPositionals: true,
   options: {
     base: { type: "string", default: process.env["LUMIOSE_BASE"] ?? "/" },
-    out: { type: "string", default: "dist/site" },
+    out: { type: "string", default: "apps/web/dist/site" },
     port: { type: "string", default: "4173" },
     "site-url": { type: "string", default: process.env["LUMIOSE_SITE_URL"] },
     "skip-compiler": { type: "boolean", default: false },

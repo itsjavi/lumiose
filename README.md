@@ -164,7 +164,7 @@ Lumiose is 0.x: any minor release may break the API, and breaking changes ship w
 external production app or 1.0. The [Stability](https://itsjavi.com/lumiose/docs/stability/) page has the 1.0
 criteria, what the API freeze covers, the supported Node.js versions and browsers, and who maintains Lumiose. Running
 it in production? Add your app to the [Used by](https://itsjavi.com/lumiose/showcase/#used-by) list. Security reports go
-through the [security policy](SECURITY.md).
+through the [security policy](.github/SECURITY.md).
 
 ## Working on Lumiose
 
@@ -178,7 +178,7 @@ pnpm build:compiler   # the Rust compiler, as a native Node addon
 pnpm demo             # pick an example, the website or a benchmark app and start it
 ```
 
-`pnpm check` runs what CI runs. [CONTRIBUTING.md](CONTRIBUTING.md) covers the demo runner, building the website, CI,
+`pnpm check` runs what CI runs. [CONTRIBUTING.md](.github/CONTRIBUTING.md) covers the demo runner, building the website, CI,
 the compiler binaries and releases.
 
 | Folder                      | What's in it                                                         |

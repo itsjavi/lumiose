@@ -22,19 +22,19 @@ workflow's). A failure prints its seed: rerun with `LUMIOSE_PROPERTY_SEED=<seed>
 
 ### Fuzzing
 
-`fuzz/` holds the [cargo-fuzz](https://rust-fuzz.github.io/book/cargo-fuzz.html) targets of the
+`crates/fuzz/` holds the [cargo-fuzz](https://rust-fuzz.github.io/book/cargo-fuzz.html) targets of the
 Rust crates (decision-56), a workspace of its own: `scan` (the `.stsx` scanner and its masking
 invariant), `compile_client` (the JSX transform and client codegen), `compile_server` (SSR
 codegen), `css_process` (style blocks, `$` constants and scoping in `lumiose_css`),
 `svg_component` (the SVG allowlist sanitizer), `content_markdown` and `content_html` (Markdown,
-frontmatter and HTML imports, with their depth limits). `cargo fuzz list --fuzz-dir fuzz` lists
-them. To run one:
+frontmatter and HTML imports, with their depth limits). It stays out of the main Cargo workspace
+(`exclude` in `Cargo.toml`). `cargo fuzz list --fuzz-dir crates/fuzz` lists them. To run one:
 
 ```sh
 cargo install cargo-fuzz                  # once
 rustup toolchain install nightly          # once: the sanitizers need nightly
-fuzz/seed.sh                              # seed fuzz/corpus/<target> with the test fixtures
-cargo +nightly fuzz run scan --fuzz-dir fuzz -- -max_total_time=300
+crates/fuzz/seed.sh                       # seed crates/fuzz/corpus/<target> with the test fixtures
+cargo +nightly fuzz run scan --fuzz-dir crates/fuzz -- -max_total_time=300
 ```
 
 On macOS add `RUSTFLAGS="-Clink-arg=-undefined -Clink-arg=dynamic_lookup"` (a dependency also
@@ -42,12 +42,13 @@ builds a dylib, which macOS would not link against the fuzzer's coverage symbols
 builds for the target it was itself built for: with its prebuilt Linux binary, a static musl one,
 pass `--target x86_64-unknown-linux-gnu`, as the nightly workflow does, since AddressSanitizer
 needs a dynamically linked libc. A crash stops the run and writes its input to
-`fuzz/artifacts/<target>/crash-<hash>`; replay it with
-`cargo +nightly fuzz run <target> --fuzz-dir fuzz fuzz/artifacts/<target>/crash-<hash>`, and shrink
-it with `cargo +nightly fuzz tmin <target> --fuzz-dir fuzz <file>`. Add the minimized input to the
-crate's tests with the fix. The corpus, artifacts and build output are ignored by Git.
+`crates/fuzz/artifacts/<target>/crash-<hash>`; replay it with
+`cargo +nightly fuzz run <target> --fuzz-dir crates/fuzz crates/fuzz/artifacts/<target>/crash-<hash>`,
+and shrink it with `cargo +nightly fuzz tmin <target> --fuzz-dir crates/fuzz <file>`. Add the
+minimized input to the crate's tests with the fix. The corpus, artifacts and build output are
+ignored by Git.
 
-Changes to the website (`apps/web`) follow [its contributing notes](apps/web/CONTRIBUTING.md): the
+Changes to the website (`apps/web`) follow [its contributing notes](../apps/web/CONTRIBUTING.md): the
 WCAG 2.2 AA axe suite and the manual accessibility checklist (decision-39).
 
 ## Run anything: `pnpm demo`
@@ -62,22 +63,22 @@ pnpm demo web --port 5000 --open   # choose the port, open the browser when it a
 pnpm demo --list                   # list without starting (--json for tools)
 ```
 
-It prints the URL once the server answers; Ctrl+C stops the server and everything it started. Entries come from the workspace packages that have a `dev`, `view`, `start`, `serve` or `preview` script, so new apps appear on their own. A package can describe itself with a `demo` field in its `package.json`: `"demo": { "title": "Chiptune tracker (SPA)", "kind": "example" }` (`kind`: `example`, `site`, `benchmark`, `eval` or `e2e`; optional `name`, `setup` scripts to run first such as `["seed"]`, `port: "flag" | "env"`, or `"demo": false` to hide it). Details: [`scripts/demo.ts`](scripts/demo.ts); tests: `node --test scripts/demo.test.ts`.
+It prints the URL once the server answers; Ctrl+C stops the server and everything it started. Entries come from the workspace packages that have a `dev`, `view`, `start`, `serve` or `preview` script, so new apps appear on their own. A package can describe itself with a `demo` field in its `package.json`: `"demo": { "title": "Chiptune tracker (SPA)", "kind": "example" }` (`kind`: `example`, `site`, `benchmark`, `eval` or `e2e`; optional `name`, `setup` scripts to run first such as `["seed"]`, `port: "flag" | "env"`, or `"demo": false` to hide it). Details: [`scripts/demo.ts`](../scripts/demo.ts); tests: `node --test scripts/demo.test.ts`.
 
 ## Website
 
 The website is assembled into one static site: `apps/web` (the landing page at `/`, the docs at `/docs`, the `/showcase` and `/benchmarks` pages, and the playground at `/playground`), the example apps that need no server (the real apps `examples/spa-chiptune` and `spa-dotmatrix` at `/showcase/chiptune-tracker/` and `/showcase/dotmatrix/`, indexed and in `sitemap.xml`; the samples `ssg-travel-journal` and `vite-counter` at `/demos/travel-journal/` and `/demos/counter/`, with `noindex` and out of the sitemap), the fullstack benchmark's results viewer with the committed results (`/benchmarks/fullstack/`) and the Lumiose js-framework-benchmark app (`/benchmarks/js-framework-benchmark/app/`).
 
 ```sh
-pnpm build:site                  # builds the compiler, the website and the examples into dist/site
+pnpm build:site                  # builds the compiler, the website and the examples into apps/web/dist/site
 pnpm build:site --base /lumiose/   # served below a path, e.g. a GitHub project page
-pnpm preview:site --base /lumiose/ # serves dist/site at http://localhost:4173/lumiose/
+pnpm preview:site --base /lumiose/ # serves apps/web/dist/site at http://localhost:4173/lumiose/
 pnpm build:site --site-url https://example.com/   # the public URL for sitemap.xml (default on GitHub Actions: https://<owner>.github.io<base>)
 ```
 
 `--skip-compiler` reuses an existing native compiler build. Each example gets `PUBLIC_LUMIOSE_SITE` (the site's base) and shows a small "Made with Lumiose" link back to the site when it is set; the static benchmark viewers get the same link. GitHub Pages answers every missing path with the root `404.html`; below an example that has its own `404.html` (the SPA shell of the chiptune tracker, the journal's 404 page), that page renders the example's instead, so deep links work. The old `/examples/<folder>/…` URLs redirect to the new homes with the same path, query and hash (Dotmatrix share links carry the song in `?song=…`), through a stub at each old root and the root `404.html`, with a meta refresh and a canonical link without JavaScript. The website's build also builds the playground's WebAssembly compiler (`apps/web/scripts/playground-assets.ts`), which needs `rustup target add wasm32-unknown-unknown` and `cargo install wasm-bindgen-cli --version 0.2.129 --locked` (the version must match the workspace's `wasm-bindgen` pin). `pnpm demo web` builds it too when the toolchain is installed; without it the rest of the site runs and the playground page reports the missing compiler.
 
-`.github/workflows/pages.yml` runs the same build on every push to `main` (or manually) and deploys `dist/site` to GitHub Pages, with the base taken from the Pages configuration. To enable it, set **Settings > Pages > Source** to **GitHub Actions** on the repository.
+`.github/workflows/pages.yml` runs the same build on every push to `main` (or manually) and deploys `apps/web/dist/site` to GitHub Pages, with the base taken from the Pages configuration. To enable it, set **Settings > Pages > Source** to **GitHub Actions** on the repository.
 
 The README's headline numbers and stack comparison table are generated from the same committed results as the landing page (`apps/web/src/content/readme.ts`), between `<!-- generated:… -->` markers. After committing new benchmark results (`benchmarks/*/RESULTS.md`, `benchmarks/fullstack/results/`) or editing the stack facts in `apps/web/src/content/stacks.ts`, run `pnpm readme:gen` and commit the README with them; the website's content tests fail while it is stale.
 
@@ -108,7 +109,7 @@ fields, so run those browsers in Linux through the Playwright Docker image: star
 read-only) and set `UI_E2E_WS=ws://127.0.0.1:3123/`.
 
 `.github/workflows/fuzz.yml` runs nightly (and by hand from the Actions tab), never on push: each
-target of `fuzz/` for 10 minutes on nightly Rust with AddressSanitizer, its corpus kept between
+target of `crates/fuzz/` for 10 minutes on nightly Rust with AddressSanitizer, its corpus kept between
 runs, and `pnpm --filter lumiose test:properties 200000`. A crash fails the run and uploads its
 input as an artifact; a property failure prints its seed (see Fuzzing above).
 

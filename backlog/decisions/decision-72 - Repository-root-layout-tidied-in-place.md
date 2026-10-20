@@ -25,3 +25,5 @@ The top level after the move is `.github/`, `apps/`, `backlog/`, `benchmarks/`, 
 
 - The moves touch CI workflows, scripts, docs links, the AGENTS.md ownership table and the release script. The task updates all of them.
 - It runs only when no worker is active, because it moves paths that other agents own.
+- `crates/fuzz/` stays a cargo-fuzz workspace of its own: the root `Cargo.toml` excludes it from `crates/*`.
+- Done in TASK-484 (2026-10-20). Nothing writes the root `data/` any more. The bookshelf example keeps its database in its own `data/` folder; the root copy was left by an early run from the root. The root `dist/` and `data/` folders in an existing checkout are leftovers and can be deleted.

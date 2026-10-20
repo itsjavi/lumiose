@@ -8,7 +8,6 @@ packages:
   - benchmarks/fullstack/apps/*
   - benchmarks/fullstack/packages/*
   - benchmarks/fullstack/harness
-  - evals
 allowBuilds:
   "@vscode/vsce-sign": false
   # Nuxt's esbuild: the platform binary comes as an optional dependency, no install script needed.

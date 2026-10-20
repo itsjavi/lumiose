@@ -1,6 +1,6 @@
 // Dev only (TASK-239): the apps scripts/site.ts mounts below the site (the showcase apps, the demos
 // and the benchmark UIs) are separate builds, so `lumiose dev` serves them from their built output
-// instead of answering 404. For each mount it takes the site build (dist/site/<mount>) when that was
+// instead of answering 404. For each mount it takes the site build (apps/web/dist/site/<mount>) when that was
 // built for this base, else the package's own output (scripts/site-mounts.ts). Missing paths get the
 // app's own 404.html (the SPA shell of the chiptune tracker, for its deep links), as on GitHub Pages.
 // An app that is not built answers with a page naming the command that builds it.
@@ -51,7 +51,7 @@ function builtFor(index: string, prefix: string): boolean {
 /** The site build's copy, or the package's own output; undefined (with why) when neither serves. */
 function findLayout(mount: Mount, prefix: string): { layout?: Layout; stale?: string } {
   // Without a trailing separator (join keeps the mount path's), for the containment check.
-  const site = join(repo, "dist/site", mount.path, ".");
+  const site = join(repo, "apps/web/dist/site", mount.path, ".");
   const candidates: Layout[] = [
     [{ at: "", dir: site }],
     mount.files.map(({ at, from }) => ({ at, dir: join(repo, from) })),
@@ -95,7 +95,7 @@ function escape(text: string): string {
 function notBuilt(mount: Mount, base: string, stale: string | undefined): string {
   const siteBuild = base === "/" ? "pnpm build:site" : `pnpm build:site --base ${base}`;
   const commands = [
-    `<li><code>${siteBuild}</code> builds the whole site, this app included, into <code>dist/site</code>.</li>`,
+    `<li><code>${siteBuild}</code> builds the whole site, this app included, into <code>apps/web/dist/site</code>.</li>`,
     mount.build && `<li><code>${escape(mount.build)}</code> builds only this app.</li>`,
     mount.demo &&
       `<li><code>pnpm demo ${escape(mount.demo)}</code> runs it on its own dev server instead.</li>`,
