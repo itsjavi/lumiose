@@ -5,10 +5,10 @@ status: To Do
 assignee:
   - '@Lux'
 created_date: '2026-10-20 21:23'
+updated_date: '2026-10-20 23:42'
 labels: []
 milestone: m-13
 dependencies:
-  - TASK-488
   - TASK-489
 priority: medium
 ordinal: 486000
@@ -17,7 +17,7 @@ ordinal: 486000
 ## Description
 
 <!-- SECTION:DESCRIPTION:BEGIN -->
-decision-73: delete examples/spa-dotmatrix and examples/spa-chiptune, point the showcase at the new repositories and their Pages, redirect /showcase/dotmatrix/ and /showcase/chiptune-tracker/ to the new pages, and update the demo script and its tests, README, CONTRIBUTING, AGENTS.md, agents.json (Chime) and the launch configuration.
+decision-73: delete examples/spa-dotmatrix and examples/spa-chiptune, point the showcase at itsjavi/dotmatrix and its Pages, redirect /showcase/dotmatrix/ to /dotmatrix/ and /showcase/chiptune-tracker/ to /dotmatrix/advanced/ (keeping the rest of the path, the query and the hash), and update the demo script and its tests, README, .github/CONTRIBUTING.md, AGENTS.md, agents.json (Chime) and the launch configuration.
 <!-- SECTION:DESCRIPTION:END -->
 
 ## Acceptance Criteria
