@@ -3,7 +3,7 @@ id: doc-10
 title: Pending decisions for the user
 type: other
 created_date: '2026-10-16 22:28'
-updated_date: '2026-10-16 22:28'
+updated_date: '2026-10-20 21:24'
 ---
 Decisions that need the user, collected while Lux and the workers run unattended (user request, 2026-10-17: "do not block yourself on more questions … postpone them (and their decisions) in a document that can be used later as follow ups").
 
@@ -87,7 +87,6 @@ These are syntax, DX or API proposals. Each task holds the proposal; nothing is 
 - TASK-280: frontmatter-only Markdown imports for listings.
 - TASK-281: a Markdown transform hook and typographic quotes.
 - TASK-282: warn on scoped descendant selectors that match other files' elements.
-- TASK-283: small client scripts without the island runtime.
 - TASK-286: an option to skip precompressed copies in static builds.
 - TASK-287: sitemap and redirects options for static sites.
 
@@ -96,6 +95,7 @@ These are syntax, DX or API proposals. Each task holds the proposal; nothing is 
 - **Waiting:** evals cost money, so they never run without the user's permission (AGENTS.md).
 - **Recommendation:** TASK-207 (three repeats per frontier model) first. TASK-243's /evals page depends on its results.
 - **Meanwhile:** eval files can be edited, but nothing runs.
+- **On hold (decision-70, 2026-10-20):** evals get no new work unless a port shows agents struggling.
 
 ### P10. External security review before 1.0 (TASK-310)
 
@@ -132,3 +132,11 @@ The review found 1 High, 3 Medium and 14 Low, now TASK-468 to TASK-475. Their fi
   - **Recommendation:** no helper for now; revisit if the record form proves verbose in practice.
 
 ## Answered
+
+### 2026-10-20: what Lumiose is for (grilling session)
+
+- **Purpose, evidence and focus:** decision-70, with milestone M13 and the scorecards in doc-11.
+- **TASK-283 (small client scripts, from P8):** decision-71. `?client` is the only mechanism, and data goes through attributes.
+- **Repository root:** decision-72.
+- **Extracting the chiptune apps and gbapu:** decision-73.
+- **Positioning:** decision-74. The direction is approved; the wording waits on TASK-483.
