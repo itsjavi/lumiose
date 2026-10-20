@@ -35,6 +35,7 @@ mistakes** and **Related**.
 - [Next.js](coming-from/nextjs.md): The App Router mapped to Lumiose: the same route file names, server components by default, `client:*` islands instead of `"use client"`, form actions instead of server actions, metadata, caching and rendering modes.
 - [React Router](coming-from/react-router.md): Framework mode mapped to Lumiose: file routes instead of `routes.ts`, async components instead of loaders, form actions and `submit()` instead of actions and fetchers, middleware, the document and custom servers.
 - [Solid](coming-from/solid.md): The closest model, so mostly differences: signal and store APIs, props destructuring, control flow as plain JSX, async components instead of resources, `.stsx` styles, islands, and SolidStart and Solid Router mapped to file routes, endpoints and form actions.
+- [Astro](coming-from/astro.md): The same page model with one component model instead of two: `.astro` files and framework islands mapped to `.stsx` components, typed `?client` scripts, file routes, endpoints, form actions and Markdown imports, and where Astro is still ahead.
 
 ## Concepts
 

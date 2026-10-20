@@ -150,6 +150,7 @@ describe("docs contract", () => {
   it("gives every Coming from guide the shared outline, in order (TASK-301)", () => {
     const guides = docs.filter((doc) => doc.topic.startsWith("coming-from/"));
     expect(guides.map((doc) => doc.topic).toSorted()).toEqual([
+      "coming-from/astro",
       "coming-from/nextjs",
       "coming-from/react",
       "coming-from/react-router",

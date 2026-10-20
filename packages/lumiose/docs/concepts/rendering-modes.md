@@ -128,7 +128,8 @@ The bookshelf sample shows each pattern:
 Lumiose islands follow Astro's idea: pages are server HTML with no JS by default, and a `client:*`
 directive at the usage site makes one component instance an island, with the same directive names
 (`client:load`, `client:idle`, `client:visible`, `client:media`, `client:only`) and serializable
-props. The differences (Astro 7.3, checked against its docs and source in October 2026):
+props. The differences (Astro 7.3, checked against its docs and source in October 2026; the rest
+of the API is mapped in [Coming from Astro](../coming-from/astro.md)):
 
 | Topic                 | Astro                                                                                                                                                      | Lumiose                                                                                                                                                                                  |
 | --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

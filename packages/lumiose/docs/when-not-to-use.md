@@ -51,5 +51,5 @@ Lumiose reaches 1.0, whichever matters to your organization.
 
 - [Stability](stability.md): what 0.x allows, the 1.0 criteria and the maintenance statement.
 - [Coming from React](coming-from/react.md), [Next.js](coming-from/nextjs.md),
-  [React Router](coming-from/react-router.md) and [Solid](coming-from/solid.md): what maps and what
-  has no equivalent.
+  [React Router](coming-from/react-router.md), [Solid](coming-from/solid.md) and
+  [Astro](coming-from/astro.md): what maps and what has no equivalent.
