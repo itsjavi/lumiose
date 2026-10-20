@@ -3,7 +3,7 @@ id: doc-10
 title: Pending decisions for the user
 type: other
 created_date: '2026-10-16 22:28'
-updated_date: '2026-10-20 21:24'
+updated_date: '2026-10-20 21:36'
 ---
 Decisions that need the user, collected while Lux and the workers run unattended (user request, 2026-10-17: "do not block yourself on more questions … postpone them (and their decisions) in a document that can be used later as follow ups").
 
@@ -139,4 +139,4 @@ The review found 1 High, 3 Medium and 14 Low, now TASK-468 to TASK-475. Their fi
 - **TASK-283 (small client scripts, from P8):** decision-71. `?client` is the only mechanism, and data goes through attributes.
 - **Repository root:** decision-72.
 - **Extracting the chiptune apps and gbapu:** decision-73.
-- **Positioning:** decision-74. The direction is approved; the wording waits on TASK-483.
+- **Positioning:** decision-74, with the new hero (TASK-483), Astro's row relabelled (TASK-482), the Coming from Astro guide (TASK-481) and a public scorecards page (TASK-494).

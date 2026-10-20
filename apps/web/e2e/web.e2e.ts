@@ -30,12 +30,12 @@ test("the landing page presents Lumiose with benchmark evidence", async ({ page 
   await expect(page).toHaveTitle(/Lumiose/);
   await expect(page).toHaveTitle("Lumiose: Feels like React. Runs like vanilla JS.");
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(
-    "The best of every stack, in one framework",
+    "One component model, from static pages to SPAs",
   );
   await expect(page.locator(".hero .eyebrow")).toHaveText(
     "Static sites · Server-side rendering · Islands · SPAs",
   );
-  await expect(page.locator(".hero .lead")).toContainText("TSX with scoped CSS built in");
+  await expect(page.locator(".hero .lead")).toContainText("TSX with their styles in the same file");
   // The meta and OG descriptions lead with the search terms, within 160 characters.
   const description = await page.locator('meta[name="description"]').last().getAttribute("content");
   expect(description).toMatch(

@@ -115,13 +115,13 @@ export default function Home() {
         <div class="hero">
           <p class="eyebrow">Static sites · Server-side rendering · Islands · SPAs</p>
           <h1 id="hero-title">
-            <span class="line">The best of every stack,</span>{" "}
-            <span class="line lit">in one framework</span>
+            <span class="line">One component model,</span>{" "}
+            <span class="line lit">from static pages to SPAs</span>
           </h1>
           <p class="lead">
-            Lumiose is a web framework for everything from static sites and SPAs to full-stack apps:{" "}
-            <strong>TSX with scoped CSS built in</strong>, signals, and{" "}
-            <strong>0 kB of JavaScript</strong> until a page needs it.
+            Write components in <strong>TSX with their styles in the same file</strong>. Each route
+            picks how it renders, and a component becomes interactive where you use it,{" "}
+            <strong>with no rewrite</strong>.
           </p>
           <div class="actions">
             <LinkButton href={getStarted} size="lg">

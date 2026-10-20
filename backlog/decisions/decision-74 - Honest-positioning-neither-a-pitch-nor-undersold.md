@@ -2,7 +2,7 @@
 id: decision-74
 title: 'Honest positioning, neither a pitch nor undersold'
 date: '2026-10-20 21:20'
-status: proposed
+status: accepted
 ---
 ## Context
 
@@ -12,14 +12,21 @@ That table lists Astro's client speed as "Depends on the UI framework", even tho
 
 ## Decision
 
-The user approved the direction on 2026-10-20. The wording still waits for approval.
+The user approved the direction and the wording on 2026-10-20 (TASK-483).
 
-- **Tone.** Less marketing and more honest, without underselling. Lumiose is a working framework, built and maintained by one person with coding agents, and its claims come from benchmarks and from ports of real projects.
-- **Astro's row** in the comparison says what was measured: Astro with Preact islands. The user approved this change on 2026-10-20.
-- **A "Coming from Astro" page** joins the guides for React, Next.js, React Router and Solid. The user approved this on 2026-10-20.
+- **Tone.** Less marketing and more honest, without underselling. Lumiose's claims come from benchmarks and from ports of real projects.
+- **Landing hero.**
+  - The H1 "The best of every stack, in one framework" becomes "One component model, from static pages to SPAs".
+  - The lead: "Write components in TSX with their styles in the same file. Each route picks how it renders, and a component becomes interactive where you use it, with no rewrite."
+  - The eyebrow, the tagline ("Feels like React. Runs like vanilla JS.", backed by the client benchmark), the descriptor, the meta description and the README stay as they are.
+- **No status line.** The user declined a "one developer with coding agents" line in the hero and the README. The pre-release badge, the Stability page and When not to use say it.
+- **Astro's row** in the comparison says what was measured: Astro with Preact islands (TASK-482).
+- **A "Coming from Astro" guide** joins the guides for React, Next.js, React Router and Solid (TASK-481).
+- **Port scorecards get a public page** at `/benchmarks/ports/`, filled from committed data (decision-70).
 
-Once the wording is approved, this decision supersedes decision-37 and is marked accepted.
+This amends decision-37's hero. Its audience, tagline and comparison table stand.
 
 ## Consequences
 
-The README, the landing page, meta tags, llms.txt, the docs index and the package descriptions all change together, once the wording is approved.
+- The landing page and its end-to-end test carry the new hero.
+- The scorecards page is its own task under M13. It starts with itsjavi.com once TASK-486 scores it.
