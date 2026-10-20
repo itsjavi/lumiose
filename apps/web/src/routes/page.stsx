@@ -116,7 +116,7 @@ export default function Home() {
           <p class="eyebrow">Static sites · Server-side rendering · Islands · SPAs</p>
           <h1 id="hero-title">
             <span class="line">One component model,</span>{" "}
-            <span class="line lit">from static pages to SPAs</span>
+            <span class="line lit">from static pages to full-stack apps</span>
           </h1>
           <p class="lead">
             Write components in <strong>TSX with their styles in the same file</strong>. Each route

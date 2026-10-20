@@ -30,7 +30,7 @@ test("the landing page presents Lumiose with benchmark evidence", async ({ page 
   await expect(page).toHaveTitle(/Lumiose/);
   await expect(page).toHaveTitle("Lumiose: Feels like React. Runs like vanilla JS.");
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(
-    "One component model, from static pages to SPAs",
+    "One component model, from static pages to full-stack apps",
   );
   await expect(page.locator(".hero .eyebrow")).toHaveText(
     "Static sites · Server-side rendering · Islands · SPAs",

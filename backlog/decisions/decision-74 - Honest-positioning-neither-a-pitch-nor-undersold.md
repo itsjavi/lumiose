@@ -16,7 +16,7 @@ The user approved the direction and the wording on 2026-10-20 (TASK-483).
 
 - **Tone.** Less marketing and more honest, without underselling. Lumiose's claims come from benchmarks and from ports of real projects.
 - **Landing hero.**
-  - The H1 "The best of every stack, in one framework" becomes "One component model, from static pages to SPAs".
+  - The H1 "The best of every stack, in one framework" becomes "One component model, from static pages to full-stack apps" (the user's wording; the draft said "to SPAs").
   - The lead: "Write components in TSX with their styles in the same file. Each route picks how it renders, and a component becomes interactive where you use it, with no rewrite."
   - The eyebrow, the tagline ("Feels like React. Runs like vanilla JS.", backed by the client benchmark), the descriptor, the meta description and the README stay as they are.
 - **No status line.** The user declined a "one developer with coding agents" line in the hero and the README. The pre-release badge, the Stability page and When not to use say it.
