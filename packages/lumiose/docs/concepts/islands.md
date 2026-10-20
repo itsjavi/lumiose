@@ -185,8 +185,10 @@ customElements.define(
   "copy-button",
   class extends HTMLElement {
     connectedCallback(): void {
+      // The server's data, from the attribute the component wrote.
+      const text = this.getAttribute("text") ?? "";
       this.addEventListener("click", () => {
-        void navigator.clipboard.writeText(this.getAttribute("text") ?? "");
+        void navigator.clipboard.writeText(text);
       });
     }
   },
@@ -196,6 +198,15 @@ customElements.define(
 ```stsx check file=components/CopyButton.stsx
 // src/components/CopyButton.stsx
 import defineCopyButton from "./copy-button.ts?client";
+
+// Types the attributes the server writes and the script reads.
+declare module "lumiose/jsx-runtime" {
+  namespace JSX {
+    interface IntrinsicElements {
+      "copy-button": JSX.HTMLProps<HTMLElement> & { text: string };
+    }
+  }
+}
 
 export function CopyButton(props: { text: string }) {
   defineCopyButton();
@@ -214,6 +225,13 @@ export function CopyButton(props: { text: string }) {
   import the component without rendering it load nothing.
 - **Never on the server.** The script is not imported on the server, so it may use
   `customElements`, `document` and `window` at its top level.
+- **Server data goes through attributes.** The call takes no arguments. The component writes its
+  data as attributes of the element it renders, and the script reads them in `connectedCallback`.
+  Declare the element in `JSX.IntrinsicElements`, as above, so the server side is type-checked
+  ([Web components](../guides/web-components.md#server-data-in-attributes)). Each instance carries
+  its own data, and custom elements upgrade wherever they appear: streamed boundaries, SPA
+  navigations, Markdown or CMS HTML. Attribute values are strings, so the script parses numbers,
+  booleans and JSON itself.
 - **Islands and SPA pages** import the script with their own code, before the component runs, and
   the call does nothing there: a page that gets it both ways runs it once.
 - **Keep it free of the runtime.** A script that imports `lumiose` makes its pages load the
@@ -227,6 +245,9 @@ export function CopyButton(props: { text: string }) {
   warns which script it goes without. In `lumiose dev`
   the script loads from its own URL. Its type comes from `lumiose/env`: a default export
   `() => void`.
+- **`.html` imports** load their `<script>` elements the same way
+  ([Markdown and HTML imports](content.md)): a page that renders one, and no island, loads its
+  scripts and no island runtime.
 
 **Build output.** `lumiose build` puts the Lumiose runtime in one chunk: the island loader's, the SPA
 entry's when the app has no islands, or a shared `lumiose-[hash].js` when it has both. The router's

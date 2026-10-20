@@ -1,14 +1,13 @@
 // @vitest-environment happy-dom
 // `.md` and `.html` components (./content.ts, `contentSource`) rendered by the real runtimes:
 // the client render (static template, verbatim template content), the same markup on the server,
-// and the scripts island, hydrated by the loader.
+// and the scripts, a client script (`?client`) that pages load without the island runtime.
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { compile, contentSource } from "@lumiose/compiler";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createComponent, render } from "lumiose/internal/dom/index.ts";
-import { loadIslands } from "lumiose/internal/dom/islands.ts";
-import { renderToString } from "lumiose/internal/server/index.ts";
+import { renderToStream, renderToString } from "lumiose/internal/server/index.ts";
 
 // happy-dom replaces the global `URL`, so paths are built with node:path.
 const src = resolve(import.meta.dirname, "../../lumiose/src");
@@ -57,14 +56,20 @@ function write(code: string, target: Target, name: string): string {
 async function load(target: Target, text: string, name: string): Promise<Module> {
   const kind = name.endsWith(".md") ? "md" : "html";
   const { code } = contentSource(text, `/src/${name}`, kind);
-  const stub = write(
-    `export const frontmatter = {};\nexport function Script() { globalThis.cardScriptRan = true; return null; }\n`,
+  const frontmatter = write(`export const frontmatter = {};\n`, target, "frontmatter");
+  // The `?client` module of each environment (../client-scripts.ts): in the client it runs the
+  // scripts; on the server its call records the scripts' URL for the page.
+  const record = JSON.stringify(join(src, "server/client-script.ts"));
+  const script = write(
+    target === "client"
+      ? `globalThis.cardScriptRan = true;\nexport default function clientScript() {}\n`
+      : `import { clientScript as record } from ${record};\nexport default function clientScript() { record("/src/${name}?lumiose-script"); }\n`,
     target,
-    "stub",
+    "script",
   );
   const source = code
-    .replace(`"./${name}?lumiose-frontmatter"`, JSON.stringify(stub))
-    .replace(`"./${name}?lumiose-script"`, JSON.stringify(stub));
+    .replace(`"./${name}?lumiose-frontmatter"`, JSON.stringify(frontmatter))
+    .replace(`"./${name}?lumiose-script?client"`, JSON.stringify(script));
   const result = compile(source, `/src/${name}.stsx`, {
     target,
     styleImport: false,
@@ -113,7 +118,7 @@ describe("content components", () => {
     expect(card.getAttribute("data-x")).toBe("1");
     expect(card.textContent).toBe("Ada Lovelace");
     expect(document.querySelector("script")).toBeNull();
-    // The scripts island is a component in client renders: its module loads with the file's.
+    // Client renders load the scripts with the component's module.
     expect((globalThis as Record<string, unknown>).cardScriptRan).toBe(true);
   });
 
@@ -128,31 +133,16 @@ describe("content components", () => {
       document.body.innerHTML = "";
       render(() => createComponent(client.default, {}), document.body);
       const parsed = document.createElement("div");
-      parsed.innerHTML = html.replace(
-        /<!--\/?l:\d+-->|<script[^>]*data-l-islands[^]*?<\/script>/g,
-        "",
-      );
+      parsed.innerHTML = html;
       expect(markup(parsed), name).toBe(markup(document.body));
     }
   });
 
-  it("load the scripts island on server-rendered pages", async () => {
+  it("load the scripts on server-rendered pages as a module script, without islands", async () => {
     const server = await load("server", CARD, "card.html");
-    document.body.innerHTML = await renderToString(() => server.default({}));
-    const record = document.querySelector("script[data-l-islands]")!.textContent!;
-    // The ref names the stub here; in an app, `/src/card.html?lumiose-script#Script`.
-    const [{ ref, strategy, props }] = JSON.parse(record);
-    expect([ref.endsWith("#Script"), strategy, props]).toEqual([true, "load", {}]);
-    delete (globalThis as Record<string, unknown>).cardScriptRan;
-    loadIslands({
-      [ref]: () =>
-        Promise.resolve(() => {
-          (globalThis as Record<string, unknown>).cardScriptRan = true;
-          return null;
-        }),
-    });
-    for (let i = 0; i < 10; i++) await new Promise((done) => setTimeout(done, 0));
-    expect((globalThis as Record<string, unknown>).cardScriptRan).toBe(true);
-    expect(warn.mock.calls.flat().join(" ")).not.toContain("LUM4006");
+    const { head, body } = await renderToStream(() => server.default({}));
+    expect(head).toBe(`<script type="module" async src="/src/card.html?lumiose-script"></script>`);
+    expect(body).not.toMatch(/<!--\/?l:\d+-->|data-l-islands/);
+    expect((globalThis as Record<string, unknown>).cardScriptRan).toBeUndefined();
   });
 });

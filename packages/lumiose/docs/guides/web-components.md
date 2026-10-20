@@ -199,6 +199,67 @@ star-rating:not(:defined) {
 }
 ```
 
+## Server data in attributes
+
+An element that needs a little behaviour, and no island, gets the server's data through its
+attributes (decision-71). The component that renders it writes the data as attributes and calls
+its `?client` script, which takes no arguments. The element reads the attributes in
+`connectedCallback`. Declare the element in `JSX.IntrinsicElements` so the server side is
+type-checked: a missing or mistyped attribute is a `lumiose check` error. The page loads the
+definition as one module script, without the island runtime.
+
+```ts check file=elements/local-time.ts
+// src/elements/local-time.ts: runs in the browser only
+customElements.define(
+  "local-time",
+  class extends HTMLElement {
+    connectedCallback(): void {
+      // Attribute values are strings: the script parses them.
+      const date = new Date(this.getAttribute("datetime") ?? "");
+      if (Number.isNaN(date.getTime())) return;
+      const options: Intl.DateTimeFormatOptions =
+        this.getAttribute("format") === "time" ? { timeStyle: "short" } : { dateStyle: "medium" };
+      this.textContent = date.toLocaleString(undefined, options);
+    }
+  },
+);
+```
+
+```stsx check file=components/PublishedAt.stsx
+// src/components/PublishedAt.stsx
+import defineLocalTime from "../elements/local-time.ts?client";
+
+declare module "lumiose/jsx-runtime" {
+  namespace JSX {
+    interface IntrinsicElements {
+      "local-time": JSX.HTMLProps<HTMLElement> & {
+        /** An ISO 8601 date, shown in the reader's locale and time zone. */
+        datetime: string;
+        format?: "date" | "time";
+      };
+    }
+  }
+}
+
+export function PublishedAt(props: { date: Date }) {
+  defineLocalTime();
+  // The server's text shows until the definition loads.
+  return (
+    <local-time datetime={props.date.toISOString()} format="date">
+      {props.date.toISOString().slice(0, 10)}
+    </local-time>
+  );
+}
+```
+
+Each instance carries its own data, and the element upgrades wherever it appears: in server HTML,
+in streamed `<Suspense>` boundaries, after SPA navigations, and in Markdown or CMS HTML that
+contains the tag. Numbers and booleans become attribute strings (`true` adds the attribute, `false`
+removes it), so the script converts them back. Pass structured data as JSON
+(`data={JSON.stringify(points)}`) and `JSON.parse` it in the script. An element that also renders
+inside an island gets the same attributes there, unless it defines a property of that name
+([Properties and attributes](#properties-and-attributes)).
+
 ## Related
 
 - [JSX](../concepts/jsx.md): element props and `on:` events.
