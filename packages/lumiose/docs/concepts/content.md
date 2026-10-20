@@ -51,8 +51,9 @@ component.
   that element's subtree, as in `.stsx`. A `<style>` inside `<template>` (a web component's shadow
   DOM) or `<svg>` is left as it is. `$name` references are not available: there is no JS scope.
 - **Scripts.** `<script>` and `<script type="module">` run as client modules: bundled by Vite and
-  loaded in the browser wherever the component renders, the way an island's module is. Inline
-  scripts and `src` files are both bundled. A relative `src` is resolved against the HTML file.
+  loaded in the browser on the pages that render the component, as a
+  [`?client` script](islands.md#concept) is, without the island runtime. Inline scripts and `src`
+  files are both bundled. A relative `src` is resolved against the HTML file.
   Classic scripts become modules too, so they are deferred and strict. Scripts with other types
   (`application/ld+json`, `importmap`) stay in the markup.
 - **Templates.** A `<template>`'s content stays verbatim, unscoped. So does the content of
@@ -72,11 +73,17 @@ component.
 Raw `<style>` in Markdown follows the same rules. Raw `<script>` in Markdown is an error, with
 the file and line ([LUM1008](../errors/LUM1008.md)); scripts belong in `.html` imports.
 
-**How scripts load.** When a file has scripts, its component also renders an empty island with
-`client:load`. On a server-rendered page, the island loader imports the island's module, which
-imports the scripts, so they run once per page however many times the component renders. In a
-client render, the scripts load with the component's module. An edit to such a file reloads the
-page in dev, since scripts such as `customElements.define` cannot run twice.
+**How scripts load.** A file's scripts take the path of a [`?client` import](islands.md#concept)
+("Scripts of server-rendered components"). A server-rendered page that renders the component gets
+one `<script type="module" async>` for them, in the `<head>` or with the streamed chunk of the
+`<Suspense>` boundary that rendered it. There is no island: a page with no islands loads that
+script and no island runtime. The scripts run once per page however many times the component
+renders. In a client render (in an island or an SPA page), they load with the component's module.
+A `src` file runs for its side effects even in a package with `"sideEffects": false`. An edit to
+such a file reloads the page in dev, since scripts such as `customElements.define` cannot run
+twice. An `.html` component takes no props: for a script that needs data from the server, render
+the element from a `.stsx` component with a `?client` script, and pass the data in attributes
+([Web components](../guides/web-components.md#server-data-in-attributes)).
 
 > **Status:** available in `lumiose dev` and builds, with HMR: an edit re-renders the content and
 > hot-updates its CSS.

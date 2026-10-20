@@ -3644,8 +3644,10 @@ customElements.define(
   "copy-button",
   class extends HTMLElement {
     connectedCallback(): void {
+      // The server's data, from the attribute the component wrote.
+      const text = this.getAttribute("text") ?? "";
       this.addEventListener("click", () => {
-        void navigator.clipboard.writeText(this.getAttribute("text") ?? "");
+        void navigator.clipboard.writeText(text);
       });
     }
   },
@@ -3655,6 +3657,15 @@ customElements.define(
 ```stsx check file=components/CopyButton.stsx
 // src/components/CopyButton.stsx
 import defineCopyButton from "./copy-button.ts?client";
+
+// Types the attributes the server writes and the script reads.
+declare module "lumiose/jsx-runtime" {
+  namespace JSX {
+    interface IntrinsicElements {
+      "copy-button": JSX.HTMLProps<HTMLElement> & { text: string };
+    }
+  }
+}
 
 export function CopyButton(props: { text: string }) {
   defineCopyButton();
@@ -3673,6 +3684,13 @@ export function CopyButton(props: { text: string }) {
   import the component without rendering it load nothing.
 - **Never on the server.** The script is not imported on the server, so it may use
   `customElements`, `document` and `window` at its top level.
+- **Server data goes through attributes.** The call takes no arguments. The component writes its
+  data as attributes of the element it renders, and the script reads them in `connectedCallback`.
+  Declare the element in `JSX.IntrinsicElements`, as above, so the server side is type-checked
+  ([Web components](../guides/web-components.md#server-data-in-attributes)). Each instance carries
+  its own data, and custom elements upgrade wherever they appear: streamed boundaries, SPA
+  navigations, Markdown or CMS HTML. Attribute values are strings, so the script parses numbers,
+  booleans and JSON itself.
 - **Islands and SPA pages** import the script with their own code, before the component runs, and
   the call does nothing there: a page that gets it both ways runs it once.
 - **Keep it free of the runtime.** A script that imports `lumiose` makes its pages load the
@@ -3686,6 +3704,9 @@ export function CopyButton(props: { text: string }) {
   warns which script it goes without. In `lumiose dev`
   the script loads from its own URL. Its type comes from `lumiose/env`: a default export
   `() => void`.
+- **`.html` imports** load their `<script>` elements the same way
+  ([Markdown and HTML imports](content.md)): a page that renders one, and no island, loads its
+  scripts and no island runtime.
 
 **Build output.** `lumiose build` puts the Lumiose runtime in one chunk: the island loader's, the SPA
 entry's when the app has no islands, or a shared `lumiose-[hash].js` when it has both. The router's
@@ -5656,8 +5677,9 @@ component.
   that element's subtree, as in `.stsx`. A `<style>` inside `<template>` (a web component's shadow
   DOM) or `<svg>` is left as it is. `$name` references are not available: there is no JS scope.
 - **Scripts.** `<script>` and `<script type="module">` run as client modules: bundled by Vite and
-  loaded in the browser wherever the component renders, the way an island's module is. Inline
-  scripts and `src` files are both bundled. A relative `src` is resolved against the HTML file.
+  loaded in the browser on the pages that render the component, as a
+  [`?client` script](islands.md#concept) is, without the island runtime. Inline scripts and `src`
+  files are both bundled. A relative `src` is resolved against the HTML file.
   Classic scripts become modules too, so they are deferred and strict. Scripts with other types
   (`application/ld+json`, `importmap`) stay in the markup.
 - **Templates.** A `<template>`'s content stays verbatim, unscoped. So does the content of
@@ -5677,11 +5699,17 @@ component.
 Raw `<style>` in Markdown follows the same rules. Raw `<script>` in Markdown is an error, with
 the file and line ([LUM1008](../errors/LUM1008.md)); scripts belong in `.html` imports.
 
-**How scripts load.** When a file has scripts, its component also renders an empty island with
-`client:load`. On a server-rendered page, the island loader imports the island's module, which
-imports the scripts, so they run once per page however many times the component renders. In a
-client render, the scripts load with the component's module. An edit to such a file reloads the
-page in dev, since scripts such as `customElements.define` cannot run twice.
+**How scripts load.** A file's scripts take the path of a [`?client` import](islands.md#concept)
+("Scripts of server-rendered components"). A server-rendered page that renders the component gets
+one `<script type="module" async>` for them, in the `<head>` or with the streamed chunk of the
+`<Suspense>` boundary that rendered it. There is no island: a page with no islands loads that
+script and no island runtime. The scripts run once per page however many times the component
+renders. In a client render (in an island or an SPA page), they load with the component's module.
+A `src` file runs for its side effects even in a package with `"sideEffects": false`. An edit to
+such a file reloads the page in dev, since scripts such as `customElements.define` cannot run
+twice. An `.html` component takes no props: for a script that needs data from the server, render
+the element from a `.stsx` component with a `?client` script, and pass the data in attributes
+([Web components](../guides/web-components.md#server-data-in-attributes)).
 
 > **Status:** available in `lumiose dev` and builds, with HMR: an edit re-renders the content and
 > hot-updates its CSS.
@@ -9693,6 +9721,67 @@ star-rating:not(:defined) {
 }
 ```
 
+## Server data in attributes
+
+An element that needs a little behaviour, and no island, gets the server's data through its
+attributes (decision-71). The component that renders it writes the data as attributes and calls
+its `?client` script, which takes no arguments. The element reads the attributes in
+`connectedCallback`. Declare the element in `JSX.IntrinsicElements` so the server side is
+type-checked: a missing or mistyped attribute is a `lumiose check` error. The page loads the
+definition as one module script, without the island runtime.
+
+```ts check file=elements/local-time.ts
+// src/elements/local-time.ts: runs in the browser only
+customElements.define(
+  "local-time",
+  class extends HTMLElement {
+    connectedCallback(): void {
+      // Attribute values are strings: the script parses them.
+      const date = new Date(this.getAttribute("datetime") ?? "");
+      if (Number.isNaN(date.getTime())) return;
+      const options: Intl.DateTimeFormatOptions =
+        this.getAttribute("format") === "time" ? { timeStyle: "short" } : { dateStyle: "medium" };
+      this.textContent = date.toLocaleString(undefined, options);
+    }
+  },
+);
+```
+
+```stsx check file=components/PublishedAt.stsx
+// src/components/PublishedAt.stsx
+import defineLocalTime from "../elements/local-time.ts?client";
+
+declare module "lumiose/jsx-runtime" {
+  namespace JSX {
+    interface IntrinsicElements {
+      "local-time": JSX.HTMLProps<HTMLElement> & {
+        /** An ISO 8601 date, shown in the reader's locale and time zone. */
+        datetime: string;
+        format?: "date" | "time";
+      };
+    }
+  }
+}
+
+export function PublishedAt(props: { date: Date }) {
+  defineLocalTime();
+  // The server's text shows until the definition loads.
+  return (
+    <local-time datetime={props.date.toISOString()} format="date">
+      {props.date.toISOString().slice(0, 10)}
+    </local-time>
+  );
+}
+```
+
+Each instance carries its own data, and the element upgrades wherever it appears: in server HTML,
+in streamed `<Suspense>` boundaries, after SPA navigations, and in Markdown or CMS HTML that
+contains the tag. Numbers and booleans become attribute strings (`true` adds the attribute, `false`
+removes it), so the script converts them back. Pass structured data as JSON
+(`data={JSON.stringify(points)}`) and `JSON.parse` it in the script. An element that also renders
+inside an island gets the same attributes there, unless it defines a property of that name
+([Properties and attributes](#properties-and-attributes)).
+
 ## Related
 
 - [JSX](../concepts/jsx.md): element props and `on:` events.
@@ -12882,7 +12971,8 @@ What it does:
 - With `md`/`html`, loads project `.md` and `.html` files as static components: their source
   becomes the Lumiose module `<file>.md.stsx` (`.html.stsx`), compiled like any `.stsx` file, with
   `frontmatter` from `<file>.md?lumiose-frontmatter`, `headings`, relative asset URLs as `?url`
-  imports, and client scripts loaded by an island from `<file>.html?lumiose-script`. HTML entries (`index.html`, HTML build inputs) and `public/` files
+  imports, and its `<script>` elements loaded as a `?client` script from
+  `<file>.html?lumiose-script`, without an island. HTML entries (`index.html`, HTML build inputs) and `public/` files
   stay Vite's. See [Markdown and HTML imports](../concepts/content.md).
 - Loads `?client` imports (`./menu.element.ts?client`): client environments get the module itself
   and a default export that does nothing; server environments get a default export that adds the

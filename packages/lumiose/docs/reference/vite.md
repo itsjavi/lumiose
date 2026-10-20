@@ -201,7 +201,8 @@ What it does:
 - With `md`/`html`, loads project `.md` and `.html` files as static components: their source
   becomes the Lumiose module `<file>.md.stsx` (`.html.stsx`), compiled like any `.stsx` file, with
   `frontmatter` from `<file>.md?lumiose-frontmatter`, `headings`, relative asset URLs as `?url`
-  imports, and client scripts loaded by an island from `<file>.html?lumiose-script`. HTML entries (`index.html`, HTML build inputs) and `public/` files
+  imports, and its `<script>` elements loaded as a `?client` script from
+  `<file>.html?lumiose-script`, without an island. HTML entries (`index.html`, HTML build inputs) and `public/` files
   stay Vite's. See [Markdown and HTML imports](../concepts/content.md).
 - Loads `?client` imports (`./menu.element.ts?client`): client environments get the module itself
   and a default export that does nothing; server environments get a default export that adds the
