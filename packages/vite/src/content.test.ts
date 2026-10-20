@@ -1,10 +1,12 @@
 // `.md` and `.html` imports (./content.ts) against a real Vite 8 dev server: the generated
-// modules for both environments, frontmatter and its hook, scoped styles, the scripts island,
-// HMR wiring, the build scan and the options. The fixture app is written to a temp dir whose
+// modules for both environments, frontmatter and its hook, scoped styles, the scripts (a client
+// script), HMR wiring, the build scan and the options. The fixture app is written to a temp dir whose
 // node_modules/lumiose links to this package.
 import { linkLumiose } from "./test-links.ts";
 import { mkdirSync, mkdtempSync, realpathSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
+import { createServer as createHttpServer } from "node:http";
+import type { AddressInfo } from "node:net";
 import { dirname, join } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import {
@@ -55,7 +57,7 @@ Some *Markdown* with <span class="note">raw HTML</span>.
   "components/define.js": `export function define() {}\n`,
   "components/extra.js": `globalThis.extra = true;\n`,
   "index.html": `<!doctype html><script type="module" src="/main.ts"></script>\n`,
-  "render.tsx": `import { renderToString } from "lumiose";
+  "render.tsx": `import { renderToStream, renderToString } from "lumiose";
 import Post, { frontmatter } from "./content/post.md";
 import Card from "./components/card.html";
 export const render = () =>
@@ -66,6 +68,7 @@ export const render = () =>
       <Card />
     </main>
   ));
+export const renderCard = () => renderToStream(() => <Card />);
 `,
 };
 
@@ -181,9 +184,10 @@ describe.skipIf(!binding)(".md and .html imports", () => {
     expect(failure!.loc).toEqual({ file: `${root}/content/scripted.md`, line: 6, column: 2 });
   });
 
-  it("server-renders the components, with the scripts as an island", async () => {
-    const { render } = (await server.ssrLoadModule("/render.tsx")) as {
+  it("server-renders the components, with the scripts as a client script", async () => {
+    const { render, renderCard } = (await server.ssrLoadModule("/render.tsx")) as {
       render: () => Promise<string>;
+      renderCard: () => Promise<{ head: string; body: string }>;
     };
     const html = await render();
     expect(html).toContain("<h2>Hello, Lumiose</h2>");
@@ -196,9 +200,14 @@ describe.skipIf(!binding)(".md and .html imports", () => {
     expect(html).toMatch(
       /<template id=card data-l-\w+><style>:host \{ color: red; \}<\/style><slot><\/slot><\/template>/,
     );
-    expect(html).toMatch(/<user-card data-l-\w+>Ada<\/user-card><!--l:0--><!--\/l:0-->/);
-    expect(html).not.toContain("define()");
-    expect(html).toContain("/components/card.html?lumiose-script#Script");
+    // No island: the page loads the scripts as a module script, from the URL client code imports.
+    expect(html).toMatch(/<user-card data-l-\w+>Ada<\/user-card>\s*<\/main>/);
+    expect(html).not.toMatch(/define\(\)|<!--l:|lumiose-script/);
+    const card = await renderCard();
+    expect(card.head).toBe(
+      `<script type="module" async src="/components/card.html?import&amp;lumiose-script"></script>`,
+    );
+    expect(card.body).not.toContain("data-l-islands");
   });
 
   it("loads the scripts in the client and nothing on the server", async () => {
@@ -207,7 +216,7 @@ describe.skipIf(!binding)(".md and .html imports", () => {
     );
     expect(client!.code).toContain("lumiose-script&index=0&lang.js");
     expect(client!.code).toContain("extra.js");
-    expect(client!.code).toContain("function Script()");
+    expect(client!.code).not.toContain("export");
     const inline = await server.environments.client.transformRequest(
       "/components/card.html?lumiose-script&index=0&lang.js",
     );
@@ -215,8 +224,30 @@ describe.skipIf(!binding)(".md and .html imports", () => {
     const ssr = await server.environments.ssr.transformRequest(
       "/components/card.html?lumiose-script",
     );
-    expect(ssr!.code).not.toContain("extra.js");
-    expect(ssr!.code).toContain("function Script()");
+    expect(ssr!.code).not.toMatch(/extra\.js|lumiose-script/);
+  });
+
+  it("serves the scripts at the URL the page loads, which client code imports too", async () => {
+    const http = createHttpServer(server.middlewares);
+    await new Promise<void>((done) => http.listen(0, "127.0.0.1", done));
+    const { port } = http.address() as AddressInfo;
+    const get = async (path: string) => {
+      const response = await fetch(`http://127.0.0.1:${port}${path}`);
+      expect([path, response.status]).toEqual([path, 200]);
+      expect(response.headers.get("content-type")).toMatch(/javascript/);
+      return response.text();
+    };
+    try {
+      // The page's module script (TASK-283).
+      const scripts = await get("/components/card.html?import&lumiose-script");
+      expect(scripts).toContain('import "/components/card.html?import&lumiose-script&index=0');
+      // Client renders: the component's `?client` import imports the same URL.
+      const component = await get("/components/card.html.stsx?import");
+      const marker = /import \w+ from "([^"]*client-script:[^"]*)"/.exec(component)![1]!;
+      expect(await get(marker)).toContain('import "/components/card.html?import&lumiose-script"');
+    } finally {
+      await new Promise((done) => http.close(done));
+    }
   });
 
   it("fingerprints the assets in client and server builds", async () => {
@@ -265,9 +296,8 @@ describe.skipIf(!binding)(".md and .html imports", () => {
       content,
     );
     const card = modules.find((m) => m.file === `${root}/components/card.html.stsx`);
-    expect(card!.islands.map((i) => i.ref)).toEqual([
-      "/components/card.html?lumiose-script#Script",
-    ]);
+    expect(card!.islands).toEqual([]);
+    expect(card!.clientScripts).toEqual(["./card.html?lumiose-script?client"]);
     expect(card!.hasStyles).toBe(true);
     expect(modules.find((m) => m.file === `${root}/content/post.md.stsx`)!.hasStyles).toBe(true);
     // index.html is the app's page; it would only be skipped once Vite's config is known.

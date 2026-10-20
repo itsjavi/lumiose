@@ -9,12 +9,13 @@
 //   its CSS module, so an edit updates both.
 // - `./post.md?lumiose-frontmatter`: the YAML frontmatter as `export const frontmatter`, after the
 //   optional `lumiose({ md: { frontmatter } })` hook. Values are written as JS data.
-// - `./card.html?lumiose-script`: the island the component renders (`<Script client:load />`) when
-//   the file has client scripts. In the client environment the module imports them (inline ones
-//   as `?lumiose-script&index=N&lang.js`); on the server it only exports the empty component. Pages
-//   therefore load the scripts the way they load island modules; client-rendered components load
-//   them with the component's module. An edit to such a file reloads the page (scripts such as
-//   `customElements.define` cannot run twice).
+// - `./card.html?lumiose-script`: the file's client scripts, when it has any. The component
+//   imports it as a client script (`./card.html?lumiose-script?client`, ./client-scripts.ts,
+//   decision-71) and calls it when it renders, so the pages that render it load the scripts as a
+//   module script, without the island runtime; client-rendered components (islands, SPA pages)
+//   load them with the component's module. In the client environment the module imports the
+//   scripts (inline ones as `?lumiose-script&index=N&lang.js`); on the server it is empty. An edit
+//   to such a file reloads the page (scripts such as `customElements.define` cannot run twice).
 // - HTML entries (the root `index.html`, HTML build inputs) and files in `public/` stay Vite's.
 
 import { existsSync, readFileSync } from "node:fs";
@@ -74,6 +75,9 @@ const MODULE = /\.(md|html)\.stsx$/;
 const MODULE_REQUEST = /\.(?:md|html)\.stsx(?:\?.*)?$/;
 const FRONTMATTER = /\?lumiose-frontmatter$/;
 const SCRIPT = /\?lumiose-script(?:&index=(\d+)&lang\.js)?$/;
+/** A `<script src>` as the scripts module imports it. */
+const SCRIPT_SRC_QUERY = "?lumiose-script-src";
+const SCRIPT_SRC = /\?lumiose-script-src$/;
 
 /** The content pipeline, when `md` or `html` is enabled. */
 export function contentOf(options: ContentOptions, exclude: RegExp): Content | null {
@@ -153,8 +157,15 @@ export class Content {
       },
 
       resolveId: {
-        filter: { id: [/\.(?:md|html)$/, MODULE_REQUEST] },
+        filter: { id: [/\.(?:md|html)$/, MODULE_REQUEST, SCRIPT_SRC] },
         async handler(id, importer, options) {
+          if (SCRIPT_SRC.test(id)) {
+            // A script runs for its side effects, whatever its package's `sideEffects` says.
+            const target = id.slice(0, -SCRIPT_SRC_QUERY.length);
+            const resolved = await this.resolve(target, importer, { ...options, skipSelf: true });
+            if (resolved === null || resolved.external) return resolved;
+            return { ...resolved, moduleSideEffects: true };
+          }
           if (MODULE_REQUEST.test(id)) {
             // A module id (`/abs/post.md.stsx`) or a dev URL (`/src/post.md.stsx`), maybe with
             // a query (its CSS module).
@@ -219,11 +230,17 @@ export class Content {
           }
           const client = this.environment.config.consumer !== "server";
           const index = SCRIPT.exec(id)![1];
+          // Scripts run for their side effects, whatever the package's `sideEffects` says.
           if (index !== undefined) {
             const inline = result.scripts.filter((script) => script.code != null);
-            return { code: client ? (inline[Number(index)]?.code ?? "") : "", moduleType: "js" };
+            const code = client ? (inline[Number(index)]?.code ?? "") : "";
+            return { code, moduleType: "js", moduleSideEffects: true };
           }
-          return { code: scriptModule(result, file, client), moduleType: "js" };
+          return {
+            code: scriptModule(result, file, client),
+            moduleType: "js",
+            moduleSideEffects: true,
+          };
         },
       },
 
@@ -289,7 +306,7 @@ function htmlEntries(config: ResolvedConfig): Set<string> {
   return entries;
 }
 
-/** The island module of a file's scripts: imports them in the client, an empty component. */
+/** The module of a file's scripts: imports them in the client, empty on the server. */
 function scriptModule(result: ContentSource, file: string, client: boolean): string {
   const name = file.slice(file.lastIndexOf("/") + 1);
   const imports: string[] = [];
@@ -297,11 +314,11 @@ function scriptModule(result: ContentSource, file: string, client: boolean): str
   for (const script of client ? result.scripts : []) {
     const specifier =
       script.src != null
-        ? relativeSpecifier(script.src)
+        ? relativeSpecifier(script.src) + SCRIPT_SRC_QUERY
         : `./${name}?lumiose-script&index=${inline++}&lang.js`;
-    imports.push(`import ${JSON.stringify(specifier)};`);
+    imports.push(`import ${JSON.stringify(specifier)};\n`);
   }
-  return `${imports.join("\n")}\nexport function Script() {\n  return null;\n}\n`;
+  return imports.join("") || "export {};\n";
 }
 
 /** A `<script src>` as an import: relative URLs (`x.js`) are relative to the file. */

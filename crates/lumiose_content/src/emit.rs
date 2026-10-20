@@ -121,18 +121,20 @@ pub(crate) fn module(input: Input) -> Component {
     }
     out.push_str(&assets.imports());
     if !scripts.is_empty() {
-        // An island without props: pages load the scripts the way they load island modules.
+        // A client script (`?client`, decision-71): the pages that render the component load the
+        // scripts as a module script, without the island runtime.
         let _ = writeln!(
             out,
-            "import {{ Script as LumioseScript }} from {};",
-            js_string(&format!("./{name}?lumiose-script"))
+            "import lumioseScript from {};",
+            js_string(&format!("./{name}?lumiose-script?client"))
         );
     }
-    out.push_str("export default function Content() {\n  return (\n    <>\n");
-    out.push_str(&jsx);
+    out.push_str("export default function Content() {\n");
     if !scripts.is_empty() {
-        out.push_str("      <LumioseScript client:load />\n");
+        out.push_str("  lumioseScript();\n");
     }
+    out.push_str("  return (\n    <>\n");
+    out.push_str(&jsx);
     out.push_str("    </>\n  );\n}\n");
     for (global, css) in blocks {
         let _ = write!(

@@ -27,10 +27,10 @@
 //!   (`<style global>` is not scoped). A `<style>` nested in an element scopes to that element's
 //!   subtree, as in `.stsx`. `<style>` inside `<svg>` or `<template>` is left as it is.
 //! - JavaScript `<script>` elements (no `type`, `module` or a JavaScript MIME type) are removed
-//!   from the markup and returned in [`Component::scripts`], in document order. The module then
-//!   renders `<Script client:load />` from `./<name>?lumiose-script`, an island whose module the
-//!   host makes import the scripts, so pages load them like island modules. Other scripts (JSON-LD,
-//!   import maps) stay in the markup.
+//!   from the markup and returned in [`Component::scripts`], in document order. The component
+//!   then calls the client script (`?client`, decision-71) `./<name>?lumiose-script?client`, a
+//!   module the host makes import the scripts, so the pages that render it load them as a module
+//!   script, without the island runtime. Other scripts (JSON-LD, import maps) stay in the markup.
 //! - A `<template>`'s content (a web component's shadow DOM) is kept verbatim, as are the raw
 //!   text elements (`<noscript>`, `<xmp>`, `<iframe>`…).
 //! - Comments and the doctype are dropped. Attributes JSX cannot write (`@click`) are passed

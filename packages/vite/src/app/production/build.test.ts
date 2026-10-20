@@ -1127,6 +1127,60 @@ export default function AppHome() { return <Combobox>SPA</Combobox>; }
     expect(counter).toContain(menu.slice("/assets/".length));
   });
 
+  it("loads the scripts of .html components as a module script, without the island runtime (TASK-283)", async () => {
+    const root = project({
+      "package.json": `{ "name": "fixture", "type": "module", "sideEffects": false }`,
+      "vite.config.ts": `import lumiose from "@lumiose/vite";
+export default { plugins: [lumiose({ html: true })] };
+`,
+      "src/ui/keys.ts": `export const key = "ArrowDown";
+`,
+      "src/ui/x-card.element.ts": element("x-card"),
+      "src/ui/card.html": `<x-card>Ada</x-card>
+<script type="module">globalThis.cardInline = true;</script>
+<script src="./x-card.element.ts"></script>
+`,
+      "src/components/Counter.stsx": `import { signal } from "lumiose";
+import Card from "../ui/card.html";
+export function Counter() {
+  const count = signal(0);
+  return <div><Card /><button onClick={() => count.update((n) => n + 1)}>{count()}</button></div>;
+}
+`,
+      "src/routes/page.stsx": `import Card from "../ui/card.html";
+export default function Home() { return <main><Card /><Card /></main>; }
+`,
+      "src/routes/island/page.stsx": `import { Counter } from "../../components/Counter.stsx";
+export default function Island() { return <main><Counter client:load /></main>; }
+`,
+    });
+    await build({ root, ...quiet() });
+    const entry = await entryOf(root);
+
+    // A static page with no island: the scripts' module script, once, and no loader or records.
+    const home = read(root, "index.html");
+    const scripts = moduleScripts(home);
+    expect(scripts).toHaveLength(1);
+    expect(scripts[0]).not.toBe(entry.app.loader);
+    expect(home).not.toMatch(/data-l-islands|<!--l:/);
+    expect(home).toContain("<x-card>Ada</x-card><x-card>Ada</x-card>");
+    // It runs the inline script and the `src` one (despite `sideEffects: false`), without the
+    // runtime.
+    const preloads = [...home.matchAll(/<link rel="modulepreload" href="([^"]+)">/g)];
+    const code = [scripts[0]!, ...preloads.map((match) => match[1]!)]
+      .map((url) => read(root, url.slice(1)))
+      .join("\n");
+    expect(code).toMatch(/globalThis\.cardInline/);
+    expect(code).toMatch(/customElements\.define\(["'`]x-card["'`]/);
+    expect(code).not.toMatch(/lumiose-[\w-]{8}\.js/);
+
+    // An island that renders the component: the loader plus the same file, which it imports.
+    const island = read(root, "island/index.html");
+    expect(moduleScripts(island)).toEqual([entry.app.loader, scripts[0]]);
+    const counter = read(root, entry.app.islands["/src/components/Counter.stsx"]!.slice(1));
+    expect(counter).toContain(scripts[0]!.slice("/assets/".length));
+  });
+
   it("stops with LUM4003 when src/instrumentation.client.ts imports server-only code (TASK-295)", async () => {
     const root = project({
       "src/instrumentation.client.ts": `import { secret } from "./lib/keys.server.ts";

@@ -15,7 +15,8 @@
 //   builds every module that a `?client` import of the one-time scan names (./scan.ts) as an entry,
 //   and the server build embeds its URL. An import the scan did not see is a warning, and records
 //   nothing; a page that renders its component then warns which script it goes without (TASK-463).
-// - Dev: the URL is the module's own (root-relative, or `/@fs/` outside the root).
+// - Dev: the URL is the module's own (root-relative, or `/@fs/` outside the root), with the
+//   `import` query when it is not JavaScript by its extension (an `.html` file's scripts).
 
 import { basename, relative } from "node:path";
 import { normalizePath, type Plugin, type ResolvedConfig, type Rollup } from "vite";
@@ -176,11 +177,31 @@ export default function clientScript() {
   };
 }
 
-/** The URL the dev server serves `file` at. */
+/** The URL the dev server serves `file` at, as client code imports it. */
 function devUrl(file: string, config: ResolvedConfig): string {
   const path = normalizePath(relative(config.root, file));
-  if (!path.startsWith("../") && !/^[a-z]:/i.test(path)) return config.base + path;
-  return `${config.base}@fs/${normalizePath(file).replace(/^\//, "")}`;
+  const url =
+    !path.startsWith("../") && !/^[a-z]:/i.test(path)
+      ? config.base + path
+      : `${config.base}@fs/${normalizePath(file).replace(/^\//, "")}`;
+  return explicitImport(url);
+}
+
+/** Vite's known JavaScript extensions (its `isJSRequest()`). */
+const JS_REQUEST = /\.(?:[jt]sx?|m[jt]s|vue|marko|svelte|astro|imba|mdx)$/;
+
+/**
+ * Adds the `import` query to the URL of a module that is not JavaScript by its extension, such as
+ * the scripts of an `.html` file (`card.html?lumiose-script`, ./content.ts), as Vite's import
+ * analysis does for client imports: the dev server only transforms such URLs with it, and the page
+ * and client code (islands, SPA pages) load the same URL, so the module runs once.
+ */
+function explicitImport(url: string): string {
+  const query = url.indexOf("?");
+  const path = query === -1 ? url : url.slice(0, query);
+  const file = path.slice(path.lastIndexOf("/") + 1);
+  if (JS_REQUEST.test(path) || !file.includes(".")) return url;
+  return query === -1 ? `${path}?import` : `${path}?import&${url.slice(query + 1)}`;
 }
 
 /** `menu.element.ts` → `menu.element`. */

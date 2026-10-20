@@ -819,7 +819,7 @@ pub struct ContentSource {
 
 /// The `.stsx` source of the component a `.md` or `.html` file imports as (`lumiose_content`,
 /// TASK-69): a static component of the file's content, with its top-level `<style>` elements as
-/// file-level blocks and its scripts loaded by an island.
+/// file-level blocks and its scripts loaded as a client script (`?client`).
 #[napi]
 pub fn content_source(
     source: String,
