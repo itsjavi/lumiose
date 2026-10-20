@@ -265,7 +265,7 @@ describe("stack table", () => {
       "React + Next.js",
       "React Router",
       "Preact",
-      "Astro",
+      "Astro (Preact islands)",
       "Svelte + SvelteKit",
       "Vue + Nuxt",
       "Solid + SolidStart",
@@ -294,9 +294,12 @@ describe("stack table", () => {
     expect(lumiose.requests).toMatchObject({ kind: "measured", text: /^\d[\d,]* req\/s$/ });
     const preact = rows.find((row) => row.stack === "Preact")!;
     expect(preact.requests).toEqual({ kind: "fact", text: "No full-stack layer" });
-    // Astro's server-page JS is measured on its fullstack port (TASK-242), not claimed.
-    const astro = rows.find((row) => row.stack === "Astro")!;
+    // Astro's server-page JS is measured on its fullstack port (TASK-242), not claimed, and its
+    // client speed is that of the port's island framework, Preact (decision-74).
+    const astro = rows.find((row) => row.stack === "Astro (Preact islands)")!;
     expect(astro.serverJs.kind).toBe("measured");
+    expect(astro.clientSpeed).toEqual(preact.clientSpeed);
+    expect(astro.clientSpeed.kind).toBe("measured");
     // React Router's framework mode is its full-stack layer.
     expect(rows.find((row) => row.stack === "React Router")!.fullStack).toEqual({
       kind: "fact",
@@ -327,10 +330,12 @@ describe("stack table", () => {
 
   it("maps the pending server speed sources, so committed results fill them", () => {
     const before = pending({ rendersByFramework: {}, requestsByApp: {} });
-    for (const stack of ["Preact", "Astro", "Remix 3"]) {
+    for (const stack of ["Preact", "Astro (Preact islands)", "Remix 3"]) {
       expect(before.find((row) => row.stack === stack)!.rendering).toEqual({ kind: "measuring" });
     }
-    expect(before.find((row) => row.stack === "Astro")!.requests).toEqual({ kind: "measuring" });
+    expect(before.find((row) => row.stack === "Astro (Preact islands)")!.requests).toEqual({
+      kind: "measuring",
+    });
     // The SSR entries of TASK-241 and the fullstack Astro app of TASK-242.
     const after = pending({
       rendersByFramework: { Preact: 310.4, Astro: 120, "Remix 3": 98.6 },
@@ -339,10 +344,11 @@ describe("stack table", () => {
     });
     const row = (stack: string) => after.find((candidate) => candidate.stack === stack)!;
     expect(row("Preact").rendering).toEqual({ kind: "measured", text: "310 renders/s" });
-    expect(row("Astro").rendering).toEqual({ kind: "measured", text: "120 renders/s" });
+    const astro = row("Astro (Preact islands)");
+    expect(astro.rendering).toEqual({ kind: "measured", text: "120 renders/s" });
     expect(row("Remix 3").rendering).toEqual({ kind: "measured", text: "99 renders/s" });
-    expect(row("Astro").requests).toEqual({ kind: "measured", text: "1,235 req/s" });
-    expect(row("Astro").serverJs).toEqual({ kind: "measured", text: "0 kB" });
+    expect(astro.requests).toEqual({ kind: "measured", text: "1,235 req/s" });
+    expect(astro.serverJs).toEqual({ kind: "measured", text: "0 kB" });
   });
 });
 

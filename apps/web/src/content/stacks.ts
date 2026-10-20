@@ -142,17 +142,22 @@ const STACKS: StackSource[] = [
     requests: { app: "remix" },
   },
   {
-    stack: "Astro",
+    // Named after what was measured (decision-74): the fullstack port's islands are Preact.
+    stack: "Astro (Preact islands)",
     downloads: { package: "astro", lastMonth: 28464424 },
     fullStack: "Built in",
     styles: "Built in",
     // Measured on the fullstack comparison's Astro port (TASK-242), like the other stacks.
     serverJs: { app: "astro" },
-    clientSpeed: { fact: "Depends on the UI framework" },
+    clientSpeed: { column: "preact-hooks" },
     rendering: { framework: "Astro" },
     requests: { app: "astro" },
   },
 ];
+
+/** The note under the table, on the landing page and in the README. */
+export const ASTRO_NOTE =
+  "Astro's interactive islands use a second UI framework: Preact in the fullstack comparison, so its client speed is Preact's. Solid islands would be faster on the client.";
 
 /** kB with no decimals past 10 (101 kB), one below it (6.5 kB), and 0 as "0 kB". */
 export function kilobytes(value: number): string {

@@ -4,6 +4,7 @@
 // generated. `pnpm readme:gen` writes them (scripts/readme.ts); content.test.ts fails when stale.
 import { evidence, type Evidence } from "./evidence.ts";
 import {
+  ASTRO_NOTE,
   type Cell,
   COLUMNS,
   SERVER_SPEED,
@@ -58,7 +59,7 @@ function compare(results: Evidence, rows: StackRow[]): string {
       "</tr>",
     ].join("");
   });
-  const note = `${escape(tableNote(results, rows))} Astro's interactive islands need a second UI framework. Method and every run: <a href="${WEBSITE}benchmarks/">benchmarks</a>.`;
+  const note = `${escape(tableNote(results, rows))} ${escape(ASTRO_NOTE)} Method and every run: <a href="${WEBSITE}benchmarks/">benchmarks</a>.`;
   return [
     "<table>",
     `  <thead><tr>${header}</tr></thead>`,

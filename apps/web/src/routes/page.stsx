@@ -31,6 +31,7 @@ import {
 } from "../content/samples.ts";
 import { renderingModes } from "../content/showcase.ts";
 import {
+  ASTRO_NOTE,
   type Cell,
   COLUMNS,
   SERVER_SPEED,
@@ -208,7 +209,7 @@ export default function Home() {
           {tableNote(results, rows)} Method and every run:{" "}
           <a href={href("/benchmarks")}>benchmarks</a>.
         </p>
-        <p class="note">Astro's interactive islands need a second UI framework.</p>
+        <p class="note">{ASTRO_NOTE}</p>
         <p class="note">
           Before you pick Lumiose: what 0.x allows and who maintains it, in{" "}
           <a href={href("/docs/[[...path]]", { path: "stability" })}>Stability</a>, and the cases
