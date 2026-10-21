@@ -449,7 +449,10 @@ describe.skipIf(!binding)("lumiose dev", () => {
     write(file, FILES[file]!.replace("String(n)", "`${n}!`"));
     await eventually(() => sent.length > 0);
     await new Promise((done) => setTimeout(done, 100));
-    expect(sent).toEqual([{ type: "full-reload", path: "*" }]);
+    // Reloads only. A loaded machine can report the one write as two changes further apart than
+    // the dev server's burst window, each with its reload (TASK-502); the burst test above checks
+    // the coalescing with events of its own.
+    expect(sent).toEqual(sent.map(() => ({ type: "full-reload", path: "*" })));
     write(file, FILES[file]!);
   });
 

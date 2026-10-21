@@ -1,10 +1,11 @@
 ---
 id: TASK-502
 title: Dev server reload test sees two reloads under full-suite load
-status: To Do
+status: In Progress
 assignee:
-  - '@Nova'
+  - '@Beacon'
 created_date: '2026-10-21 00:35'
+updated_date: '2026-10-21 04:59'
 labels:
   - test
 dependencies: []
@@ -22,3 +23,9 @@ packages/vite/src/app/dev/dev-server.test.ts 'reloads the browser after edits to
 <!-- AC:BEGIN -->
 - [ ] #1 The test no longer depends on the watcher emitting one event per edit; 20 consecutive full runs of the vite project pass
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Taken over by Beacon in the CI reliability batch for Lux (2026-10-21), at the orchestrator's request; Nova's area.
+<!-- SECTION:NOTES:END -->
