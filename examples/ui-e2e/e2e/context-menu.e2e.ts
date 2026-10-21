@@ -174,8 +174,12 @@ test.describe("in an island", () => {
     await page.goto("/context-menu/island");
     const state = page.getByTestId("state");
     await expect(state).toHaveText("open: false, grid: true, sort: name");
+    // Clicks until the island answers, and no further: a click before hydration is replayed after
+    // it, and the menu it opens under the pointer would take the next click (TASK-514).
     await expect(async () => {
-      await area(page).click({ button: "right", position: { x: 40, y: 30 } });
+      if (!(await state.textContent())?.includes("open: true")) {
+        await area(page).click({ button: "right", position: { x: 40, y: 30 }, timeout: 250 });
+      }
       await expect(state).toHaveText(/open: true/, { timeout: 250 });
     }).toPass();
     await page.getByRole("menuitemcheckbox", { name: "Show the grid" }).click();

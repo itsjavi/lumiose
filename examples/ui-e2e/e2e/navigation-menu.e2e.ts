@@ -297,8 +297,10 @@ test.describe("in an island", () => {
     await page.goto("/navigation-menu/island");
     const value = page.getByTestId("value");
     const docs = await panelOf(page, "Docs");
+    // Clicks until the island answers, and no further: a click before hydration is replayed after
+    // it, and one more would land outside the panel it opened (TASK-514).
     await expect(async () => {
-      await page.getByTestId("open-docs").click({ timeout: 250 });
+      if (!(await docs.isVisible())) await page.getByTestId("open-docs").click({ timeout: 250 });
       await expect(docs).toBeVisible({ timeout: 250 });
     }).toPass();
     await expect(value).toHaveText("Open: docs");
@@ -323,9 +325,11 @@ test.describe("WCAG 2.2 AA with the default theme (doc-9 section 17)", () => {
       await expect(await panelOf(page, "Products")).toBeVisible();
       expect(await axe(page)).toEqual([]);
       await page.goto("/navigation-menu/island");
+      const docs = await panelOf(page, "Docs");
+      // As above: no click once the panel is open (TASK-514).
       await expect(async () => {
-        await page.getByTestId("open-docs").click({ timeout: 250 });
-        await expect(await panelOf(page, "Docs")).toBeVisible({ timeout: 250 });
+        if (!(await docs.isVisible())) await page.getByTestId("open-docs").click({ timeout: 250 });
+        await expect(docs).toBeVisible({ timeout: 250 });
       }).toPass();
       expect(await axe(page)).toEqual([]);
     });

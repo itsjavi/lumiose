@@ -194,8 +194,12 @@ test.describe("in an island", () => {
   test("bind:open keeps a signal in sync, a swipe included", async ({ page }) => {
     await page.goto("/drawer/island");
     const state = page.getByTestId("state");
+    // Clicks until the island answers, and no further: a click before hydration is replayed after
+    // it, and the modal drawer it opens would take the next click (TASK-514).
     await expect(async () => {
-      await page.getByTestId("open").click();
+      if (!(await state.textContent())?.includes("open: true")) {
+        await page.getByTestId("open").click({ timeout: 250 });
+      }
       await expect(state).toHaveText("open: true", { timeout: 250 });
     }).toPass();
     const navigation = drawer(page, "Navigation");

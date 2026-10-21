@@ -147,8 +147,12 @@ test.describe("in an island", () => {
     await page.goto("/preview-card/island");
     const state = page.getByTestId("card-state");
     const changelog = card(page, "Every release");
+    // Clicks until the island answers, and no further: a click before hydration is replayed after
+    // it, and one more would land outside the card it opened (TASK-514).
     await expect(async () => {
-      await page.getByTestId("open-card").click({ timeout: 250 });
+      if (!(await changelog.isVisible())) {
+        await page.getByTestId("open-card").click({ timeout: 250 });
+      }
       await expect(changelog).toBeVisible({ timeout: 250 });
     }).toPass();
     await expect(state).toHaveText("card: open");
