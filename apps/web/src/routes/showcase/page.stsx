@@ -1,11 +1,11 @@
 // /showcase: the rendering modes with the apps that use them (moved from the landing,
-// decision-37), the real apps, built by scripts/site.ts below /showcase/<slug>/, then the demos
-// with dummy content below /demos/<slug>/ (TASK-163, TASK-215).
+// decision-37), the real apps (in their own repository and deployment, decision-73), then the demos
+// with dummy content, built by scripts/site.ts below /demos/<slug>/ (TASK-163, TASK-215).
 import { Card } from "@lumiose/site-kit";
 import { color, font, layout, space, text } from "@lumiose/site-kit/tokens";
 import { href, Meta, Title } from "lumiose";
 import { PageHead, ShowcaseGrid } from "../../components/Showcase.stsx";
-import { demos, renderingModes, REPOSITORY, showcase } from "../../content/showcase.ts";
+import { demos, DOTMATRIX, renderingModes, REPOSITORY, showcase } from "../../content/showcase.ts";
 import { usedBy } from "../../content/used-by.ts";
 
 const usedByFile = `${REPOSITORY}/blob/main/apps/web/src/content/used-by.ts`;
@@ -14,11 +14,12 @@ export default function Showcase() {
   return (
     <div class="page">
       <Title>Made with Lumiose · Showcase</Title>
-      <Meta name="description" content="Apps built with Lumiose, running on this site." />
+      <Meta name="description" content="Apps built with Lumiose, running live, with their code." />
       <PageHead kicker="Showcase" title="Made with Lumiose">
         <p>
-          Complete apps from the <a href={`${REPOSITORY}/tree/main/examples`}>examples folder</a>,
-          each built with <code>lumiose build</code> and published here as static files. Start your
+          Complete apps, each built with <code>lumiose build</code> and published as static files:
+          the Dotmatrix apps from their <a href={DOTMATRIX}>own repository</a>, and the samples
+          from the <a href={`${REPOSITORY}/tree/main/examples`}>examples folder</a>. Start your
           own with the{" "}
           <a href={href("/docs/[[...path]]", { path: "getting-started" })}>getting started</a>{" "}
           guide.

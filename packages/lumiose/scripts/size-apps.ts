@@ -10,7 +10,7 @@
 // is reported apart: only browsers without the Navigation API load it.
 //
 // Run: `pnpm --filter lumiose size:apps [app…] [--modules]` (apps: example directory names; default
-// the three sample apps). `--modules` lists the modules of each chunk: minified bytes and an
+// two sample apps and the SPA router's test app). `--modules` lists the modules of each chunk: minified bytes and an
 // estimate of their brotli share.
 import { existsSync } from "node:fs";
 import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
@@ -22,7 +22,7 @@ import { build } from "@lumiose/vite/internal/app/production/build.ts";
 import { findViteConfig } from "@lumiose/vite/internal/app/project.ts";
 import lumiose from "@lumiose/vite/internal/index.ts";
 
-const APPS = ["ssr-bookshelf", "ssg-travel-journal", "spa-chiptune"];
+const APPS = ["ssr-bookshelf", "ssg-travel-journal", "spa-router-e2e"];
 const examples = fileURLToPath(new URL("../../../examples/", import.meta.url));
 const lumioseSrc = fileURLToPath(new URL("../src/", import.meta.url));
 

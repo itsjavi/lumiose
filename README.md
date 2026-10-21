@@ -128,12 +128,12 @@ where another stack is the better choice today.
 
 <table>
   <tr>
-    <td width="50%"><a href="https://itsjavi.com/lumiose/showcase/chiptune-tracker/"><img src="apps/web/public/showcase/chiptune-tracker.png" alt="Lumiose Chip: a dark, pixel-font chiptune tracker with a pattern grid of notes across four channels, an order list, instruments and a mixer."></a></td>
-    <td width="50%"><a href="https://itsjavi.com/lumiose/showcase/dotmatrix/"><img src="apps/web/public/showcase/dotmatrix.png" alt="Dotmatrix: a Game Boy-style chiptune studio with four channel cards, a green piano roll and sound presets."></a></td>
+    <td width="50%"><a href="https://itsjavi.com/dotmatrix/"><img src="apps/web/public/showcase/dotmatrix.png" alt="Dotmatrix Pocket: a Game Boy-style chiptune studio with four channel cards, a green piano roll and sound presets."></a></td>
+    <td width="50%"><a href="https://itsjavi.com/dotmatrix/advanced/"><img src="apps/web/public/showcase/dotmatrix-advanced.png" alt="Dotmatrix Advanced: a dark, pixel-font chiptune tracker with a pattern grid of notes across four channels, an order list, instruments and a mixer."></a></td>
   </tr>
   <tr>
-    <td align="center"><a href="https://itsjavi.com/lumiose/showcase/chiptune-tracker/">Lumiose Chip</a>: a chiptune tracker (SPA)</td>
-    <td align="center"><a href="https://itsjavi.com/lumiose/showcase/dotmatrix/">Dotmatrix</a>: a pocket chiptune studio (SPA)</td>
+    <td align="center"><a href="https://itsjavi.com/dotmatrix/">Dotmatrix Pocket</a>: a pocket chiptune studio (SPA, <a href="https://github.com/itsjavi/dotmatrix">source</a>)</td>
+    <td align="center"><a href="https://itsjavi.com/dotmatrix/advanced/">Dotmatrix Advanced</a>: a chiptune tracker (SPA, <a href="https://github.com/itsjavi/dotmatrix">source</a>)</td>
   </tr>
   <tr>
     <td width="50%"><a href="https://itsjavi.com/lumiose/demos/travel-journal/"><img src="apps/web/public/showcase/travel-journal.png" alt="Long Way Round: a travel journal home page with a serif headline, a search box and a featured post illustrated with a moonlit city."></a></td>
@@ -192,5 +192,4 @@ the compiler binaries and releases.
 ## License
 
 [MIT](LICENSE). This covers the Lumiose packages, the website and all examples, except code vendored with its own
-notice: the [gbaudio](https://github.com/itsjavi/gbaudio) Game Boy APU engine in `examples/spa-dotmatrix/vendor/gbaudio`
-(MIT, with stoneface's MIT notice for the APU emulation it ports) and the Remix 3 benchmark entry (Apache-2.0).
+notice: the Remix 3 benchmark entry (Apache-2.0).

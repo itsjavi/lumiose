@@ -42,7 +42,7 @@
       "canCommit": true
     },
     "Chime": {
-      "role": "Sample-app engineer for the Game Boy chiptune SPA (examples/spa-dotmatrix): UI, audio integration with the gbapu engine, and original demo songs and SFX.",
+      "role": "Sample-app engineer for the Dotmatrix chiptune apps (Pocket and Advanced), which live in the itsjavi/dotmatrix repository since decision-73: UI, audio integration with the gbaudio engine, and original demo songs and SFX. It owns no area in this repository; Lumiose work for it (such as a showcase update) goes through the orchestrator.",
       "canWrite": true,
       "canCommit": true
     }

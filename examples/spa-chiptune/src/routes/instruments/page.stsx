@@ -1,5 +1,0 @@
-import { InstrumentView } from "../../ui/InstrumentView.stsx";
-
-export default function Instruments() {
-  return <InstrumentView />;
-}

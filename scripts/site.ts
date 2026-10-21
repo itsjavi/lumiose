@@ -6,15 +6,17 @@
 //   node scripts/site.ts redirects --out <dir> [--base /lumiose/]
 //
 // - apps/web (/, /docs, /showcase, /benchmarks, /playground) lands at the root of the output.
-// - The example apps that need no server are built below it (TASK-215): the real apps at
-//   showcase/<slug>/ (indexed), the samples with dummy content at demos/<slug>/ (every page gets
-//   `<meta name="robots" content="noindex">`). Repository folders keep their names. ssr-bookshelf
-//   needs a server: the website shows a screenshot and links its code instead.
-// - Old URLs (examples/<folder>/…, shared publicly before TASK-215) redirect without loss: a stub at
-//   each old root and the root 404.html (for deeper paths) send the browser to the new home with the
-//   same rest of the path, query and hash (Dotmatrix share links carry the song in `?song=…`). A
-//   meta refresh and a canonical link are the no-JS fallback. `redirects` writes only these into a
-//   built apps/web, for its e2e tests.
+// - The example apps that need no server are built below it (TASK-215): the samples with dummy
+//   content at demos/<slug>/ (every page gets `<meta name="robots" content="noindex">`); a real app
+//   would go at showcase/<slug>/, indexed. Repository folders keep their names. ssr-bookshelf needs
+//   a server: the website shows a screenshot and links its code instead.
+// - Old URLs redirect without loss: examples/<folder>/… (shared publicly before TASK-215), and the
+//   showcase homes of the two apps that moved to their own repository (decision-73), which now
+//   redirect to https://itsjavi.com/dotmatrix/ (Dotmatrix Pocket) and …/dotmatrix/advanced/
+//   (Dotmatrix Advanced). A stub at each old root and the root 404.html (for deeper paths) send the
+//   browser to the new home with the same rest of the path, query and hash (Dotmatrix share links
+//   carry the song in `?song=…`). A meta refresh and a canonical link are the no-JS fallback.
+//   `redirects` writes only these into a built apps/web, for its e2e tests.
 // - sitemap.xml lists every indexable page (not 404 pages, redirect stubs or noindex pages), with
 //   absolute URLs from --site-url (or LUMIOSE_SITE_URL; on GitHub Actions it defaults to
 //   https://<owner>.github.io<base>). Without one, no sitemap is written.
@@ -22,9 +24,8 @@
 //   benchmarks/fullstack/, and the Lumiose js-framework-benchmark app at
 //   benchmarks/js-framework-benchmark/app/ (the results page itself is apps/web's).
 // - GitHub Pages answers every missing path with the root 404.html, so that page gets a script
-//   that renders an example's own 404.html in place for paths below it: the SPA shell of
-//   the chiptune tracker (deep links such as /showcase/chiptune-tracker/songs/3) or the journal's
-//   404 page.
+//   that renders an example's own 404.html in place for paths below it (the journal's 404 page; an
+//   SPA's shell would serve its deep links the same way).
 // - The base is the URL path the site is served below (default "/"; also read from LUMIOSE_BASE).
 //   A project page on GitHub Pages lives at https://<user>.github.io/<repo>/, so its base is
 //   /<repo>/. The output holds the files themselves, not a <base> folder.
@@ -79,8 +80,27 @@ function pnpm(args: string[], env: NodeJS.ProcessEnv = {}): void {
   }
 }
 
-/** Old URL prefixes (before TASK-215) and their new homes, relative to the base. */
-const MOVED = EXAMPLES.map(({ name, path }) => ({ from: `examples/${name}/`, to: path }));
+/**
+ * The apps that moved to their own repository, itsjavi/dotmatrix (decision-73), and their former
+ * homes below the base: the showcase paths of TASK-215 and the examples/<folder>/ ones before them.
+ */
+const EXTRACTED = [
+  {
+    url: "https://itsjavi.com/dotmatrix/",
+    from: ["showcase/dotmatrix/", "examples/spa-dotmatrix/"],
+  },
+  {
+    url: "https://itsjavi.com/dotmatrix/advanced/",
+    from: ["showcase/chiptune-tracker/", "examples/spa-chiptune/"],
+  },
+];
+
+/** Old URL prefixes, relative to the base, and their new homes: a path with the base, or a URL. */
+const MOVED = [
+  // Before TASK-215, the examples lived at examples/<folder>/.
+  ...EXAMPLES.map(({ name, path }) => ({ from: `examples/${name}/`, to: `${base}${path}` })),
+  ...EXTRACTED.flatMap(({ url, from }) => from.map((prefix) => ({ from: prefix, to: url }))),
+];
 
 /** Copies a build without the precompressed twins and host config Pages does not use. */
 function copyBuild(from: string, to: string): void {
@@ -94,11 +114,8 @@ function build(): void {
   if (!values["skip-compiler"]) pnpm(["build:compiler"]);
   pnpm(["--filter", "@lumiose/web", "build"], { LUMIOSE_BASE: base });
   for (const { name, path } of EXAMPLES) {
-    // LUMIOSE_PAGES tells an example it is built for a static host without custom headers
-    // (spa-chiptune's cross-origin isolation service worker, TASK-172).
     pnpm(["--filter", `@lumiose-examples/${name}`, "build"], {
       LUMIOSE_BASE: `${base}${path}`,
-      LUMIOSE_PAGES: "1",
       // The website's root, for each demo's "Made with Lumiose" link.
       PUBLIC_LUMIOSE_SITE: base,
     });
@@ -141,15 +158,14 @@ function htmlFiles(dir: string): string[] {
 /**
  * The redirect from an old URL: below an old prefix, `location.replace()` to the new home with the
  * rest of the path, the query and the hash. It runs in the old roots' stubs and in the root 404 page
- * (GitHub Pages serves that for every missing path, such as /examples/spa-dotmatrix/songs).
+ * (GitHub Pages serves that for every missing path, such as /showcase/dotmatrix/songs).
  */
 function redirectScript(siteBase: string, moved: typeof MOVED): string {
-  return `(function(){var b=${JSON.stringify(siteBase)},m=${JSON.stringify(moved)},p=location.pathname;for(var i=0;i<m.length;i++){var f=b+m[i].from;if((p+"/").indexOf(f)===0){location.replace(b+m[i].to+p.slice(f.length)+location.search+location.hash);document.write('<plaintext style="display:none">');return}}})();`;
+  return `(function(){var b=${JSON.stringify(siteBase)},m=${JSON.stringify(moved)},p=location.pathname;for(var i=0;i<m.length;i++){var f=b+m[i].from;if((p+"/").indexOf(f)===0){location.replace(m[i].to+p.slice(f.length)+location.search+location.hash);document.write('<plaintext style="display:none">');return}}})();`;
 }
 
 /** The stub at an old root: the script, then a meta refresh and a canonical link without JS. */
-function redirectStub(to: string): string {
-  const target = `${base}${to}`;
+function redirectStub(target: string): string {
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Moved to ${target}</title><script>${redirectScript(base, MOVED)}</script><meta http-equiv="refresh" content="0;url=${target}">${NOINDEX}<link rel="canonical" href="${target}"></head><body><p>This page moved to <a href="${target}">${target}</a>.</p></body></html>\n`;
 }
 

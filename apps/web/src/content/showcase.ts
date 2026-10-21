@@ -1,49 +1,53 @@
-// The example apps and benchmark pages the site publishes (TASK-163, TASK-215). scripts/site.ts
-// builds the real apps below /showcase/<slug>/, the samples with dummy content below
-// /demos/<slug>/ (noindex) and the benchmark UIs below /benchmarks/; these entries describe and
-// link them. ssr-bookshelf needs a server, so it links its code and a screenshot.
+// The apps, example apps and benchmark pages the showcase lists (TASK-163, TASK-215). The real apps
+// live in their own repository and deployment (decision-73); scripts/site.ts builds the samples with
+// dummy content below /demos/<slug>/ (noindex) and the benchmark UIs below /benchmarks/; these
+// entries describe and link them. ssr-bookshelf needs a server, so it links its code and a screenshot.
 import { href } from "lumiose";
 import { link, REPOSITORY } from "../lib/site.ts";
 
 export { REPOSITORY };
 
+/** The repository of the Dotmatrix apps, deployed to GitHub Pages at itsjavi.com/dotmatrix/. */
+export const DOTMATRIX = "https://github.com/itsjavi/dotmatrix";
+
 export interface Showcase {
+  /** Its folder: in examples/ (or benchmarks/) here, or the repository and folder of its own. */
   name: string;
   title: string;
   /** What it shows, in one or two sentences. */
   description: string;
   /** The modes and features it uses. */
   tags: string[];
-  /** The running app on this site; absent when it needs a server. */
+  /** The running app, on this site or its own; absent when it needs a server. */
   demo?: string;
-  /** Its source in the repository. */
+  /** Its source code. */
   source: string;
   /** A screenshot (public/showcase/<slug>.png). */
   image?: string;
 }
 
-/** The real apps: indexed, at /showcase/<slug>/. */
+/** The real apps, in the itsjavi/dotmatrix repository and on its GitHub Pages (decision-73). */
 export function showcase(): Showcase[] {
   return [
     {
-      name: "spa-chiptune",
-      title: "Lumiose Chip",
-      description:
-        "A chiptune tracker in the browser: an SPA with a persistent layout, an AudioWorklet engine, keyboard-driven editing and a strict Content Security Policy.",
-      tags: ["mode = spa", "router", "signals", "CSP"],
-      demo: link("/showcase/chiptune-tracker/"),
-      source: `${REPOSITORY}/tree/main/examples/spa-chiptune`,
-      image: link("/showcase/chiptune-tracker.png"),
-    },
-    {
-      name: "spa-dotmatrix",
-      title: "Dotmatrix",
+      name: "dotmatrix/apps/pocket",
+      title: "Dotmatrix Pocket",
       description:
         "A pocket chiptune studio for the four channels of the Game Boy sound chip: a piano roll, presets and sound effects, rendered by the gbaudio engine in a Web Worker.",
       tags: ["mode = spa", "router", ".md imports", "Web Worker"],
-      demo: link("/showcase/dotmatrix/"),
-      source: `${REPOSITORY}/tree/main/examples/spa-dotmatrix`,
+      demo: "https://itsjavi.com/dotmatrix/",
+      source: `${DOTMATRIX}/tree/main/apps/pocket`,
       image: link("/showcase/dotmatrix.png"),
+    },
+    {
+      name: "dotmatrix/apps/advanced",
+      title: "Dotmatrix Advanced",
+      description:
+        "A chiptune tracker in the browser: an SPA with a persistent layout, an AudioWorklet engine, keyboard-driven editing and a strict Content Security Policy.",
+      tags: ["mode = spa", "router", "signals", "CSP"],
+      demo: "https://itsjavi.com/dotmatrix/advanced/",
+      source: `${DOTMATRIX}/tree/main/apps/advanced`,
+      image: link("/showcase/dotmatrix-advanced.png"),
     },
   ];
 }
@@ -162,7 +166,7 @@ export function renderingModes(): RenderingMode[] {
       description:
         "Client navigation with persistent layouts, where an app needs it, prerendered for a real first render.",
       docs: href("/docs/[[...path]]", { path: "reference/router" }),
-      apps: [live("spa-chiptune"), live("spa-dotmatrix")],
+      apps: [live("dotmatrix/apps/pocket"), live("dotmatrix/apps/advanced")],
     },
   ];
 }
