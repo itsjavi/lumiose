@@ -6,12 +6,19 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { compile } from "@lumiose/compiler";
+import { parseFragment, type DefaultTreeAdapterTypes } from "parse5";
 import type { Renderable } from "../contract/client.ts";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { runInRequestScope, type RequestScope } from "../app/server/scope.ts";
 import { flush } from "../core/index.ts";
 import { resetStates } from "../core/state.ts";
-import { createComponent, island, renderToStream, renderToString } from "../server/index.ts";
+import {
+  createComponent,
+  island,
+  rawText,
+  renderToStream,
+  renderToString,
+} from "../server/index.ts";
 import { loadIslands } from "./islands.ts";
 
 // happy-dom replaces the global `URL`, so paths are built with node:path.
@@ -1516,6 +1523,81 @@ describe("hydrate: script and style text (TASK-472 L7)", () => {
         .slice(0, 2)
         .map((text) => JSON.parse(text!)),
     ).toEqual([data, data]);
+  });
+});
+
+type ParsedElement = DefaultTreeAdapterTypes.Element;
+
+/** Elements of `html` as the HTML standard's parser (parse5) builds them, in document order. */
+function parsedElements(html: string): ParsedElement[] {
+  const found: ParsedElement[] = [];
+  const walk = (nodes: DefaultTreeAdapterTypes.ChildNode[]) => {
+    for (const node of nodes) {
+      if (!("tagName" in node)) continue;
+      found.push(node);
+      walk(node.childNodes);
+    }
+  };
+  walk(parseFragment(html).childNodes);
+  return found;
+}
+
+function textOf(element: ParsedElement): string {
+  return element.childNodes.map((node) => ("value" in node ? node.value : "")).join("");
+}
+
+describe("hydrate: script and style text inside <svg> and <math> (TASK-495)", () => {
+  it("opens no tag from the text of a <style> or <script> component in foreign content, and hydrates", async () => {
+    const { client, server } = await load(`
+      function Sheet(props: { css: string }) {
+        return <style>{props.css}</style>;
+      }
+      function Layer(props: { css: string }) {
+        return <g><style>{props.css}</style></g>;
+      }
+      function Code(props: { code: string }) {
+        return <script type="text/x-template">{props.code}</script>;
+      }
+      export function Page(props: { payload: string }) {
+        return (
+          <div>
+            <svg><Sheet css={props.payload} /><Layer css={props.payload} /></svg>
+            <math><mi>x</mi><Code code={props.payload} /></math>
+          </div>
+        );
+      }`);
+    const payload = "<img src=x onerror=alert(1)>";
+    const html = await renderToString(() =>
+      island("/src/case#Page", server.Page, { payload }, "load"),
+    );
+    const parsed = parsedElements(html);
+    expect(parsed.map((element) => element.tagName)).not.toContain("img");
+    const svg = "http://www.w3.org/2000/svg";
+    const math = "http://www.w3.org/1998/Math/MathML";
+    const foreign = parsed.filter(
+      (element) =>
+        element.namespaceURI !== "http://www.w3.org/1999/xhtml" &&
+        ["style", "script"].includes(element.tagName),
+    );
+    expect(foreign.map((element) => [element.namespaceURI, element.tagName])).toEqual([
+      [svg, "style"],
+      [svg, "style"],
+      [math, "script"],
+    ]);
+    for (const element of foreign) {
+      expect(element.childNodes.every((node) => !("tagName" in node))).toBe(true);
+    }
+    // A root <style> or <script> is raw text, which CSS and JavaScript read back; the <style> of
+    // the <g> is SVG, escaped text that the parser decodes.
+    expect(foreign.map(textOf)).toEqual([
+      rawText(payload, "style"),
+      payload,
+      rawText(payload, "script"),
+    ]);
+    document.body.innerHTML = html;
+    await hydrateAll(client);
+    expect(warn).not.toHaveBeenCalled();
+    expect(document.querySelector("img")).toBe(null);
   });
 });
 

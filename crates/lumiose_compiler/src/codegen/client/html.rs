@@ -170,27 +170,42 @@ pub fn is_json_script_type(value: &str) -> bool {
     value.ends_with("json") || matches!(value.as_str(), "importmap" | "speculationrules")
 }
 
-/// The text of a raw text element `tag` as `lumiose/server`'s `rawText()` writes it: as it is,
-/// with `</script` (`</style`) and, in a script, `<!--` neutralized as `<\/script` and `<\!--`;
-/// in a JSON script every `<` is `\u003c` (TASK-472 L7).
+/// The text of a raw text element `tag` as `lumiose/server`'s `rawText()` writes it (TASK-472
+/// L7, TASK-495): as it is, except that the character after a `<` that could open a tag, an end
+/// tag or a comment (a letter, `!`, `/`, `?`) is escaped: a letter as `\u0062` in a script and
+/// `\62 ` in a style, the others as `\!`, `\/`, `\?`. They read back the same in JavaScript and
+/// CSS strings, identifiers and regular expressions, and leave no tag for the HTML parser to
+/// open, also where the element ends up inside `<svg>` or `<math>`, whose `<style>` and
+/// `<script>` text is parsed as markup. In a JSON script every `<` is `\u003c` (TASK-472 L7).
 pub fn raw_text(text: &str, tag: &str, json: bool) -> String {
     if json {
         return text.replace('<', "\\u003c");
     }
     let mut out = String::with_capacity(text.len());
-    let mut rest = text;
-    while let Some(index) = rest.find('<') {
-        out.push_str(&rest[..index]);
-        let after = &rest[index + 1..];
-        let closes = after.starts_with('/')
-            && after
-                .get(1..=tag.len())
-                .is_some_and(|name| name.eq_ignore_ascii_case(tag));
-        let comment = tag == "script" && after.starts_with("!--");
-        out.push_str(if closes || comment { "<\\" } else { "<" });
-        rest = after;
+    let mut chars = text.chars().peekable();
+    while let Some(c) = chars.next() {
+        out.push(c);
+        if c != '<' {
+            continue;
+        }
+        match chars.peek().copied() {
+            Some(next) if next.is_ascii_alphabetic() => {
+                chars.next();
+                let code = next as u32;
+                if tag == "style" {
+                    out.push_str(&format!("\\{code:x} "));
+                } else {
+                    out.push_str(&format!("\\u{code:04x}"));
+                }
+            }
+            Some(next @ ('!' | '/' | '?')) => {
+                chars.next();
+                out.push('\\');
+                out.push(next);
+            }
+            _ => {}
+        }
     }
-    out.push_str(rest);
     out
 }
 
@@ -285,14 +300,31 @@ mod tests {
             "if (a < b && c) {}"
         );
         assert_eq!(
-            raw_text("'</script>' + '</SCRIPT' + '<!--'", "script", false),
-            r"'<\/script>' + '<\/SCRIPT' + '<\!--'"
+            raw_text("'</script>' + '</SCRIPT' + '<!--' + '<?'", "script", false),
+            r"'<\/script>' + '<\/SCRIPT' + '<\!--' + '<\?'"
         );
         assert_eq!(
             raw_text("a::after { content: '</style>' }", "style", false),
             r"a::after { content: '<\/style>' }"
         );
-        assert_eq!(raw_text("<!-- </script>", "style", false), "<!-- </script>");
+        assert_eq!(
+            raw_text("<!-- </script>", "style", false),
+            r"<\!-- <\/script>"
+        );
+        // A letter after `<` is escaped too, so no tag opens where the text is parsed as markup
+        // (inside `<svg>` or `<math>`).
+        assert_eq!(
+            raw_text("i<n; x = '<img src=x>'; <<Z", "script", false),
+            r"i<\u006e; x = '<\u0069mg src=x>'; <<\u005a"
+        );
+        assert_eq!(
+            raw_text(
+                "@media (400px<width) { a::after { content: '<b>' } }",
+                "style",
+                false
+            ),
+            r"@media (400px<\77 idth) { a::after { content: '<\62 >' } }"
+        );
         assert_eq!(
             raw_text(r#"{"a":"</script>"}"#, "script", true),
             r#"{"a":"\u003c/script>"}"#

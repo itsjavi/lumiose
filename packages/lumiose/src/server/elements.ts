@@ -4,7 +4,7 @@ import type { DynamicProps, PortalProps } from "../dom/public.ts";
 import type { JSX } from "../jsx/jsx-runtime.ts";
 import { spreadAttrs } from "./attrs.ts";
 import { createComponent, type ServerComponent } from "./frame.ts";
-import { escapeText, html, wrap, type Html } from "./node.ts";
+import { escapeText, html, rawText, wrap, type Html } from "./node.ts";
 import { insert, restProps } from "./ssr.ts";
 
 export type { DynamicProps, PortalProps };
@@ -51,16 +51,37 @@ function element(tag: string, props: Record<string, unknown>): Html {
     throw new TypeError(`<Dynamic component="${tag}">: "${tag}" is not a valid element name.`);
   }
   const open = `<${tag}${spreadAttrs(props)}>`;
-  if (VOID.has(tag.toLowerCase())) return open;
+  const name = tag.toLowerCase();
+  if (VOID.has(name)) return open;
   // As on the client, `innerHTML`/`textContent` set the content and `children` are appended.
-  const { innerHTML, textContent } = props;
+  const { innerHTML, textContent, children } = props;
+  if (name === "script" || name === "style") {
+    // Raw text, as the compiler writes a written `<script>` or `<style>`: the client sets it as
+    // text (`innerHTML` included), and `rawText` keeps it from ending the element or, inside
+    // `<svg>` or `<math>`, opening a tag (TASK-495).
+    const json = name === "script" && isJsonScriptType(props.type);
+    const own = rawText(innerHTML ?? textContent, name, json);
+    const text = typeof children === "string" || typeof children === "number";
+    const inner = text ? rawText(children, name, json) : (insert(children) as Html);
+    return wrap(open + own, inner, `</${tag}>`);
+  }
   const own =
     innerHTML != null
       ? String(innerHTML)
       : textContent != null
         ? escapeText(String(textContent))
         : "";
-  return wrap(open + own, insert(props.children) as Html, `</${tag}>`);
+  return wrap(open + own, insert(children) as Html, `</${tag}>`);
+}
+
+/**
+ * Whether a `<script type>` holds JSON, as the compiler's `is_json_script_type`: `…json` types,
+ * import maps and speculation rules.
+ */
+function isJsonScriptType(type: unknown): boolean {
+  if (typeof type !== "string") return false;
+  const value = type.trim().toLowerCase();
+  return value.endsWith("json") || value === "importmap" || value === "speculationrules";
 }
 
 /**

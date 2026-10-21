@@ -50,9 +50,10 @@ export interface ServerRuntime {
   /** Escapes a value for text (`&`, `<`) or double-quoted attribute (`&`, `"`) context. */
   escape(value: unknown, attribute?: boolean): string;
   /**
-   * The text of a `<script>` or `<style>` (`tag`), not HTML-escaped: `</script`, `</style` and
-   * `<!--` are neutralized, and in a JSON script (`json`) every `<` is `\u003c`. Nullish and
-   * booleans render nothing.
+   * The text of a `<script>` or `<style>` (`tag`), not HTML-escaped: the character after a `<`
+   * that could open a tag, an end tag or a comment is escaped (`<\u0062`, `<\62 `, `<\/`, `<\!`,
+   * `<\?`), and in a JSON script (`json`) every `<` is `\u003c` (TASK-495). Nullish and booleans
+   * render nothing.
    */
   rawText(value: unknown, tag: string, json?: boolean): string;
 

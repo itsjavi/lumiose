@@ -22,6 +22,7 @@ import {
   classAttr,
   createComponent,
   escape,
+  rawText,
   renderToString,
   spreadAttrs,
   styleAttr,
@@ -302,6 +303,11 @@ async function both(
   return [parsed(await renderToString(serverCode)), normalize(container).innerHTML];
 }
 
+/** Server-renders `<Dynamic>` with `props`. */
+function renderDynamic(props: client.DynamicProps): Promise<string> {
+  return renderToString(() => createComponent(server.Dynamic, props));
+}
+
 describe("public component parity", () => {
   it("ref() reads undefined on the server and ignores writes", () => {
     const el = document.createElement("div");
@@ -366,6 +372,24 @@ describe("public component parity", () => {
     );
     expect(dom).toBe(expected);
     expect(ssr).toBe(dom);
+  });
+
+  it("Dynamic writes the text of a <style> or <script> as raw text, as the compiler does (TASK-495)", async () => {
+    const css = "a::after { content: '</style><img src=x onerror=alert(1)>' }";
+    const data = JSON.stringify({ html: "</script><img src=x>" });
+    expect(await renderDynamic({ component: "style", children: css })).toBe(
+      `<style>${rawText(css, "style")}</style>`,
+    );
+    // The client sets a raw text element's `innerHTML` as text.
+    expect(await renderDynamic({ component: "STYLE", innerHTML: css })).toBe(
+      `<STYLE>${rawText(css, "style")}</STYLE>`,
+    );
+    expect(await renderDynamic({ component: "script", textContent: "x = '<b>'" })).toBe(
+      `<script>${rawText("x = '<b>'", "script")}</script>`,
+    );
+    expect(
+      await renderDynamic({ component: "script", type: "application/ld+json", children: data }),
+    ).toBe(`<script type="application/ld+json">${rawText(data, "script", true)}</script>`);
   });
 
   it("Dynamic rejects tag names that could inject markup", () => {

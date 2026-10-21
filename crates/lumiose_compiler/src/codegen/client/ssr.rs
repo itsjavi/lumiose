@@ -22,7 +22,7 @@ use super::element::{
     static_strings, strip_parens, tag_name, take_written,
 };
 use super::events::event_name;
-use super::html;
+use super::html::{self, Namespace};
 use super::{Codegen, Compiled, clone_expression};
 use crate::analyze::{is_jsx_like, property_key_name};
 
@@ -143,7 +143,10 @@ impl<'a> Codegen<'a, '_> {
     ) -> Compiled<'a> {
         let span = element.span;
         let mut out = Ssr::new();
-        self.ssr_element(&mut out, element);
+        // As the client's `compile_element_root`: a `<g>` or `<mi>` root is in its own namespace.
+        let namespace =
+            html::root_namespace(self.namespace(), &tag_name(&element.opening_element.name));
+        self.ssr_element(&mut out, element, namespace);
         out.emit(self, span)
     }
 
@@ -163,11 +166,23 @@ impl<'a> Codegen<'a, '_> {
         let mut setup = Vec::new();
         let mut run = Ssr::new();
         let array = items.len() > 1 || !lazy;
+        // The namespace the client's `compile_fragment_items` creates the elements in: that of
+        // the first one, as a root.
+        let namespace = items
+            .iter()
+            .find_map(|item| match item {
+                Item::Element(element) => Some(html::root_namespace(
+                    self.namespace(),
+                    &tag_name(&element.opening_element.name),
+                )),
+                _ => None,
+            })
+            .unwrap_or(self.namespace());
         for item in items {
             match item {
                 Item::Text(text, _) => run.text(&text),
                 Item::Raw(raw, span) => self.ssr_raw(&mut run, &raw, span),
-                Item::Element(element) => self.ssr_element(&mut run, element),
+                Item::Element(element) => self.ssr_element(&mut run, element, namespace),
                 Item::Dynamic(expression) => {
                     self.flush_run(&mut run, &mut values, &mut setup, span);
                     let compiled = if array {
@@ -257,8 +272,13 @@ impl<'a> Codegen<'a, '_> {
         }
     }
 
-    /// Writes an intrinsic element: opening tag, content, closing tag.
-    fn ssr_element(&mut self, out: &mut Ssr<'a>, element: ArenaBox<'a, JSXElement<'a>>) {
+    /// Writes an intrinsic element in `namespace`: opening tag, content, closing tag.
+    fn ssr_element(
+        &mut self,
+        out: &mut Ssr<'a>,
+        element: ArenaBox<'a, JSXElement<'a>>,
+        namespace: Namespace,
+    ) {
         let span = element.span;
         let element = element.unbox();
         let mut opening = element.opening_element.unbox();
@@ -275,8 +295,9 @@ impl<'a> Codegen<'a, '_> {
         } else {
             None
         };
-        // The namespace the element is in, like the client's (`build_element`).
-        let namespace = self.namespace();
+        // Raw text only where the client's `build_element` has it too: a `<style>` or `<script>`
+        // inside `<svg>`, `<math>` or a root such as `<g>` is SVG or MathML, its text escaped and
+        // decoded by the parser (TASK-495).
         let mut open = OpenTag {
             raw_text: html::is_raw_text(namespace, &tag)
                 .then(|| super::element::is_json_script(&tag, &opening.attributes)),
@@ -504,7 +525,10 @@ impl<'a> Codegen<'a, '_> {
             match item {
                 Item::Text(text, _) => out.text(&text),
                 Item::Raw(raw, span) => self.ssr_raw(out, &raw, span),
-                Item::Element(element) => self.ssr_element(out, element),
+                Item::Element(element) => {
+                    let namespace = self.namespace();
+                    self.ssr_element(out, element, namespace);
+                }
                 Item::Rows(rows, span) => {
                     out.html("<tbody");
                     for token in self.tbody_scope_tokens(span) {

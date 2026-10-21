@@ -111,19 +111,29 @@ export function jsonForScript(value: unknown): string {
   return JSON.stringify(value).replace(/</g, "\\u003c");
 }
 
+/** A `<` and the character after it, when that could open a tag, an end tag or a comment. */
+const TAG_START = /<([A-Za-z!/?])/g;
+
 /**
  * The text of a `<script>` or `<style>` (`tag`), which HTML does not decode: written as it is,
- * except what could end the element early or change how it parses: `</script` becomes
- * `<\/script` (`</style`, `<\/style`) and `<!--` becomes `<\!--`, which mean the same in
- * JavaScript and CSS strings. In a JSON script (`json`), every `<` becomes `\u003c`, like
- * `jsonForScript`. Nullish and booleans render nothing.
+ * except that the character after a `<` that could open a tag, an end tag or a comment (a letter,
+ * `!`, `/`, `?`) is escaped: a letter as `\u0062` in a script and `\62 ` in a style, the others as
+ * `\!`, `\/`, `\?`. They read back the same in JavaScript and CSS strings, identifiers and regular
+ * expressions, and leave the HTML parser no tag to open: the text cannot end the element, nor
+ * open a tag where the element ends up inside `<svg>` or `<math>` (a component whose root is a
+ * `<style>`), whose `<style>` and `<script>` text is parsed as markup (TASK-495). In a JSON script
+ * (`json`), every `<` becomes `\u003c`, like `jsonForScript`. Nullish and booleans render nothing.
+ * The compiler writes static text the same way (`raw_text`, codegen/client/html.rs).
  */
 export function rawText(value: unknown, tag: string, json?: boolean): string {
   if (value == null || typeof value === "boolean") return "";
   const text = String(value);
   if (json === true) return text.replace(/</g, "\\u003c");
-  const end = tag === "style" ? /<\/(style)/gi : /<\/(script)|<!--/gi;
-  return text.replace(end, (match, name: string | undefined) =>
-    name === undefined ? "<\\!--" : `<\\/${name}`,
-  );
+  if (!text.includes("<")) return text;
+  const style = tag === "style";
+  return text.replace(TAG_START, (_, next: string) => {
+    if (next === "!" || next === "/" || next === "?") return `<\\${next}`;
+    const hex = next.charCodeAt(0).toString(16);
+    return style ? `<\\${hex} ` : `<\\u00${hex}`;
+  });
 }
