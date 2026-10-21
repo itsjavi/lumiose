@@ -3,7 +3,7 @@ id: doc-10
 title: Pending decisions for the user
 type: other
 created_date: '2026-10-16 22:28'
-updated_date: '2026-10-20 21:36'
+updated_date: '2026-10-21 00:47'
 ---
 Decisions that need the user, collected while Lux and the workers run unattended (user request, 2026-10-17: "do not block yourself on more questions … postpone them (and their decisions) in a document that can be used later as follow ups").
 
@@ -21,6 +21,7 @@ Nothing here is decided until the user answers. Answered items move to the Answe
 
 ### P1. Push main to origin
 
+- **Pushed on 2026-10-21** with the user's approval: main at 13be67c4 and the tag v0.5.0 (21 commits after 3d17ea32). The history below is kept for reference until the next push.
 - **Waiting:** local commits after 4bfc013a (the last push, which the user approved on 2026-10-16). Pushing runs CI, which costs money, so every push needs the user's OK (AGENTS.md).
 - **Recommendation:** push now, in one push. The checks on local main were green on 2026-10-17: pnpm check, cargo fmt and clippy, ui-e2e (Chromium 1018; Firefox and WebKit 1030), apps/web (179), pack smoke and nine example suites.
 - **Meanwhile:** commits stay local. Lux keeps the list of what each push would carry under this item.
