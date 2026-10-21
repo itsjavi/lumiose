@@ -989,8 +989,9 @@ pub fn takes_markup(tag: &str) -> bool {
 }
 
 /// Takes the attributes out of a list with spreads that apply after the spread instead of going
-/// through it: `bind:` two-way bindings, which are not props, and a written `innerHTML` or
-/// `textContent` ([`is_written_content`]).
+/// through it: `bind:` two-way bindings, which are not props, a written `innerHTML` or
+/// `textContent` ([`is_written_content`]), and a written `srcdoc`, which a spread never writes
+/// either (TASK-496).
 pub(super) fn take_written<'a>(
     ast: &super::super::ast::Ast<'a>,
     attributes: &mut oxc_allocator::ArenaVec<'a, JSXAttributeItem<'a>>,
@@ -999,7 +1000,9 @@ pub(super) fn take_written<'a>(
     let mut index = 0;
     while index < attributes.len() {
         let is_binding = matches!(&attributes[index], JSXAttributeItem::Attribute(attribute)
-            if attribute_name(&attribute.name).starts_with("bind:") || is_written_content(&attribute.name));
+            if attribute_name(&attribute.name).starts_with("bind:")
+                || is_written_content(&attribute.name)
+                || attribute_name(&attribute.name) == "srcdoc");
         if is_binding {
             bindings.push(attributes.remove(index));
         } else {

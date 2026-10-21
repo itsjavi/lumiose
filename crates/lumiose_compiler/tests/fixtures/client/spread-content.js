@@ -1,8 +1,10 @@
-import { template, bind, setProp, restProps, spread } from "lumiose/dom";
+import { template, bind, setAttr, setProp, restProps, spread } from "lumiose/dom";
 const _t0 = /* @__PURE__ */ template(`<div>`);
 const _t1 = /* @__PURE__ */ template(`<section><p></p><p></p><article>`);
+const _t2 = /* @__PURE__ */ template(`<iframe></iframe>`);
 const _a0 = (el, v) => setProp(el, "innerHTML", v);
 const _a1 = (el, v) => setProp(el, "textContent", v);
+const _a2 = (el, v) => setAttr(el, "srcdoc", v);
 // A written `innerHTML` or `textContent` next to a spread applies as written, after the spread,
 // on both targets (TASK-478): a spread never writes content (TASK-470), so it cannot go through
 // it. It replaces the spread's `children` (TASK-347), as it replaces written children.
@@ -22,4 +24,12 @@ export function Text(props) {
 	spread(_article, () => props.attrs);
 	_article.innerHTML = "<b>static</b>";
 	return _el2;
+}
+// An iframe's `srcdoc` too: a spread never writes it (TASK-496), so a written one applies after
+// the spread.
+export function Frame(props) {
+	const _el3 = _t2();
+	spread(_el3, () => props.attrs);
+	bind(_el3, () => props.doc, _a2);
+	return _el3;
 }

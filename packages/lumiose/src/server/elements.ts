@@ -2,7 +2,7 @@
 
 import type { DynamicProps, PortalProps } from "../dom/public.ts";
 import type { JSX } from "../jsx/jsx-runtime.ts";
-import { spreadAttrs } from "./attrs.ts";
+import { attr, spreadAttrs } from "./attrs.ts";
 import { createComponent, type ServerComponent } from "./frame.ts";
 import { escapeText, html, rawText, wrap, type Html } from "./node.ts";
 import { insert, restProps } from "./ssr.ts";
@@ -50,7 +50,9 @@ function element(tag: string, props: Record<string, unknown>): Html {
   if (!TAG_NAME.test(tag)) {
     throw new TypeError(`<Dynamic component="${tag}">: "${tag}" is not a valid element name.`);
   }
-  const open = `<${tag}${spreadAttrs(props)}>`;
+  // A spread never writes `srcdoc`; Dynamic's props are written ones, as on the client (TASK-496).
+  const srcdoc = "srcdoc" in props ? attr("srcdoc", props.srcdoc) : "";
+  const open = `<${tag}${spreadAttrs(props)}${srcdoc}>`;
   const name = tag.toLowerCase();
   if (VOID.has(name)) return open;
   // As on the client, `innerHTML`/`textContent` set the content and `children` are appended.

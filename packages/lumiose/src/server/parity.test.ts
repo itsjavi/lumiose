@@ -279,6 +279,16 @@ describe("spread parity", () => {
     expect(parsed(`<div${spreadAttrs(props)}></div>`)).toBe(written(div));
   });
 
+  it("drops srcdoc in any case, on both sides (TASK-496)", () => {
+    const html = "<script>parent.alert(1)</script>";
+    const props = { srcdoc: html, srcDoc: html, SRCDOC: html, title: "kept" };
+    const iframe = document.createElement("iframe");
+    render(() => (spread(iframe, () => props), iframe), document.createElement("main"));
+    expect(parsed(`<iframe${spreadAttrs(props)}></iframe>`)).toBe(written(iframe));
+    expect(spreadAttrs(props)).toBe(' title="kept"');
+    expect(iframe.hasAttribute("srcdoc")).toBe(false);
+  });
+
   it("renders DOM properties as the attributes that give the same initial state", () => {
     const props = { type: "checkbox", value: "on", checked: true, indeterminate: true };
     const input = document.createElement("input");
@@ -362,6 +372,12 @@ describe("public component parity", () => {
       "div",
       { innerHTML: "<b>bold</b>", children: " tail" },
       "<div><b>bold</b> tail</div>",
+    ],
+    [
+      "srcdoc",
+      "iframe",
+      { title: "t", srcdoc: '<p class="x">a & b</p>' },
+      '<iframe title="t" srcdoc="<p class=&quot;x&quot;>a &amp; b</p>"></iframe>',
     ],
     ["nothing", null, { children: "x" }, ""],
   ])("Dynamic with %s", async (_, component, props, expected) => {

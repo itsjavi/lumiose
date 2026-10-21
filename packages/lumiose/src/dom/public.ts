@@ -6,7 +6,7 @@ import { renderEffect } from "../core/internal.ts";
 import { onCleanup } from "../core/owner.ts";
 import { computed, signal } from "../core/signal.ts";
 import type { JSX } from "../jsx/jsx-runtime.ts";
-import { setProp } from "./attributes.ts";
+import { setAttr, setProp } from "./attributes.ts";
 import { createComponent, restProps } from "./component.ts";
 import { frame, setFrame } from "./frame.ts";
 import { insert } from "./insert.ts";
@@ -67,8 +67,8 @@ export interface DynamicProps {
 function createElement(tag: string, props: Record<string, unknown>): Element {
   const el = document.createElement(tag);
   spread(el, () => props);
-  // Dynamic's props are the element's written props, so `innerHTML` and `textContent` apply, as
-  // the server's `element` writes them: a spread never does (TASK-470).
+  // Dynamic's props are the element's written props, so `innerHTML`, `textContent` and `srcdoc`
+  // apply, as the server's `element` writes them: a spread never does (TASK-470, TASK-496).
   for (const key of ["innerHTML", "textContent"]) {
     if (key in props)
       renderEffect(
@@ -76,6 +76,13 @@ function createElement(tag: string, props: Record<string, unknown>): Element {
         () => props[key],
         (node, value) => setProp(node, key, value),
       );
+  }
+  if ("srcdoc" in props) {
+    renderEffect(
+      el,
+      () => props.srcdoc,
+      (node, value) => setAttr(node, "srcdoc", value),
+    );
   }
   insert(el, () => props.children as Renderable);
   return el;

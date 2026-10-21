@@ -14,3 +14,9 @@ export function Text(props: { text: string; attrs: object }) {
     </section>
   );
 }
+
+// An iframe's `srcdoc` too: a spread never writes it (TASK-496), so a written one applies after
+// the spread.
+export function Frame(props: { doc: string; attrs: object }) {
+  return <iframe {...props.attrs} srcdoc={props.doc} />;
+}

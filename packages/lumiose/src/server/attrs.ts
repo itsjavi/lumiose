@@ -215,6 +215,9 @@ const SKIPPED = new Set([
 // script sink: dropped, as on the client and in React, TASK-165) and directives. Other namespaced
 // names (`xlink:href`, `xml:lang`) are attributes, as on the client.
 const NOT_ATTRIBUTE = /^on|^(?:bind|client):/i;
+// An iframe's `srcdoc`, in any case (the parser lowercases attribute names): a document with the
+// page's origin, which only a written prop sets, like `innerHTML` (TASK-496).
+const SRCDOC = /^srcdoc$/i;
 // A valid attribute name with nothing that could close the tag or start another attribute.
 const ATTRIBUTE_NAME = /^[^\s"'<>/=\p{Cc}]+$/u;
 
@@ -225,7 +228,7 @@ const ATTRIBUTE_NAME = /^[^\s"'<>/=\p{Cc}]+$/u;
 export function spreadAttrs(props: Record<string, unknown>, custom?: boolean): string {
   let out = "";
   for (const key of Object.keys(props)) {
-    if (SKIPPED.has(key) || NOT_ATTRIBUTE.test(key)) continue;
+    if (SKIPPED.has(key) || NOT_ATTRIBUTE.test(key) || SRCDOC.test(key)) continue;
     const value = props[key];
     if (key === "class") out += classAttr(value);
     else if (key === "style") out += styleAttr(value);

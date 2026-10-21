@@ -1628,3 +1628,42 @@ describe("hydrate: written content next to a spread (TASK-478)", () => {
     expect(document.querySelector("div.a")!.innerHTML).toBe("<i>italic</i>");
   });
 });
+
+/** The `title` and `srcdoc` of the document's iframes. */
+function frameAttributes(): (string | null)[][] {
+  return [...document.querySelectorAll("iframe")].map((frame) => [
+    frame.getAttribute("title"),
+    frame.getAttribute("srcdoc"),
+  ]);
+}
+
+describe("hydrate: srcdoc only as a written prop (TASK-496)", () => {
+  it("drops the srcdoc of a spread and applies a written one, next to a spread too", async () => {
+    const { client, server } = await load(`
+      import { signal } from "lumiose";
+      export const html = signal("<p>ok</p>");
+      export function Page(props: { payload: Record<string, unknown> }) {
+        return (
+          <section>
+            <iframe class="a" {...props.payload} />
+            <iframe class="b" {...props.payload} srcdoc={html()} />
+            <iframe class="c" srcdoc={html()} />
+          </section>
+        );
+      }`);
+    const payload = { title: "t", srcdoc: "<b>injected</b>", srcDoc: "<b>injected</b>" };
+    await serve(server, [["Page", { payload }]]);
+    const expected = [
+      ["t", null],
+      ["t", "<p>ok</p>"],
+      [null, "<p>ok</p>"],
+    ];
+    expect(frameAttributes()).toEqual(expected);
+    await hydrateAll(client);
+    expect(warn).not.toHaveBeenCalled();
+    expect(frameAttributes()).toEqual(expected);
+    client.html.set("<p>new</p>");
+    flush();
+    expect(document.querySelector("iframe.b")!.getAttribute("srcdoc")).toBe("<p>new</p>");
+  });
+});
