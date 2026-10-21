@@ -9,21 +9,6 @@
       "url": "http://localhost:5196"
     },
     {
-      "name": "dotmatrix",
-      "runtimeExecutable": "pnpm",
-      "runtimeArgs": [
-        "--dir",
-        "examples/spa-dotmatrix",
-        "exec",
-        "lumiose",
-        "dev",
-        "--port",
-        "5197"
-      ],
-      "port": 5197,
-      "url": "http://localhost:5197"
-    },
-    {
       "name": "bookshelf",
       "runtimeExecutable": "pnpm",
       "runtimeArgs": ["--dir", "examples/ssr-bookshelf", "run", "dev", "--port", "5198"],

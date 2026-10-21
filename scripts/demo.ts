@@ -1,7 +1,7 @@
 // `pnpm demo`: list and start anything in the repo that serves HTML (TASK-184).
 //
 //   pnpm demo                      interactive picker, grouped by kind
-//   pnpm demo <name>               start one (fuzzy: `pnpm demo chip` starts spa-chiptune)
+//   pnpm demo <name>               start one (fuzzy: `pnpm demo shelf` starts ssr-bookshelf)
 //   pnpm demo --list [--json]      list without starting
 //   pnpm demo <name> --prod        build, then run its production server (preview/start/serve)
 //   pnpm demo <name> --port 5000   pick the port
@@ -11,7 +11,7 @@
 // `view`, `start`, `serve` or `preview` script, so new apps show up on their own. A package can
 // describe itself with a `demo` field in its package.json:
 //
-//   "demo": { "title": "Chiptune tracker (SPA)", "kind": "example" }
+//   "demo": { "title": "Bookshelf (server-rendered, node:sqlite)", "kind": "example" }
 //
 // `kind` is example | site | benchmark | eval | e2e (default: from the folder), `setup` lists
 // scripts to run first (e.g. `["seed"]`), `name` overrides
@@ -37,7 +37,7 @@ export const KINDS: { kind: Kind; label: string }[] = [
 ];
 
 export interface Demo {
-  /** Short name for the command line, e.g. `spa-chiptune`. */
+  /** Short name for the command line, e.g. `ssr-bookshelf`. */
   name: string;
   title: string;
   kind: Kind;

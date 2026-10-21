@@ -90,7 +90,7 @@ describe("discover", () => {
   it("lists every HTML-serving package of this repo", () => {
     const names = discover(repo).map((demo) => demo.name);
     for (const name of [
-      "spa-chiptune",
+      "vite-counter",
       "ssr-bookshelf",
       "ssg-travel-journal",
       "web",
@@ -122,12 +122,12 @@ describe("matching", () => {
 
   it("matches exact names, prefixes, words, substrings and subsequences", () => {
     assert.equal(pick("web"), "web");
-    assert.equal(pick("chip"), "spa-chiptune");
+    assert.equal(pick("glide"), "ssr-i18n-paraglide");
     assert.equal(pick("bookshelf"), "ssr-bookshelf");
     assert.equal(pick("journal"), "ssg-travel-journal");
     assert.equal(pick("tnext"), "tracker-next");
     assert.equal(pick("eval"), "eval-viewer");
-    assert.equal(pick("dotmatrix"), "spa-dotmatrix");
+    assert.equal(pick("realtime"), "ssr-realtime");
   });
 
   it("reports ambiguous and unknown queries", () => {
