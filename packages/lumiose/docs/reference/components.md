@@ -72,8 +72,13 @@ interface DynamicProps {
 ```
 
 Renders `component` with the other props, re-creating it only when `component` changes. With a tag
-name, the props are the element's written props, `innerHTML` and `textContent` included: do not
-spread an untrusted object (a JSON payload) into `Dynamic`.
+name, the props are the element's written props. The text of a `<script>` or `<style>` (children,
+`innerHTML` or `textContent`) is raw text, as in JSX
+([Security](../concepts/security.md#concept)).
+
+> **Warning:** with a tag name, `Dynamic` applies `innerHTML`, `textContent` and `srcdoc` from its
+> props, which a spread never does. Never spread an untrusted object (a JSON payload) into
+> `Dynamic`.
 
 ## ref
 

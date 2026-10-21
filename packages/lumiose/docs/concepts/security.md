@@ -62,10 +62,14 @@ file's `<style>` block.
 follow `http:` and `https:` URLs (relative ones included); a `javascript:` or `data:` location
 throws a `TypeError` instead of running in the page. Spread props drop lowercase `on*` keys
 (`{...{ onclick: "…" }}`): an inline handler attribute is a script sink, so handlers are only
-functions in `onClick`. They drop `innerHTML` and `textContent` too, on the server and the client:
-an object from JSON (a notification passed to a toast as it came) cannot inject markup, and only a
-written `innerHTML` prop sets HTML, next to a spread too (`<div {...rest} innerHTML={html} />`). `<Dynamic component="div">`
-takes its props as written ones, so do not spread such an object into it.
+functions in `onClick`. They drop `innerHTML`, `textContent` and an iframe's `srcdoc` (in any
+case) too, on the server and the client: an object from JSON (a notification passed to a toast as
+it came) cannot inject markup, and only a written `innerHTML` or `srcdoc` prop sets HTML, next to a
+spread too (`<div {...rest} innerHTML={html} />`).
+
+> **Warning:** `<Dynamic component="div">` takes its props as written ones: it applies
+> `innerHTML`, `textContent` and `srcdoc` from them. Never spread an object from JSON, or any
+> other untrusted object, into `Dynamic`.
 
 **Unsafe URLs.** A dynamic value for a URL attribute (`href`, `src`, `action`, `formaction`,
 `xlink:href`, `poster`, `data`, …) whose scheme is `javascript:`, `vbscript:` or `data:text/html`
