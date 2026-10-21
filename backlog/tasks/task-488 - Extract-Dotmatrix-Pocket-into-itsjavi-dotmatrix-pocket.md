@@ -5,7 +5,7 @@ status: In Progress
 assignee:
   - '@Chime'
 created_date: '2026-10-20 21:22'
-updated_date: '2026-10-21 01:10'
+updated_date: '2026-10-21 01:38'
 labels: []
 milestone: m-13
 dependencies:
@@ -37,4 +37,6 @@ Chime (2026-10-21): prepared the dotmatrix workspace locally; no GitHub reposito
 - Apps: @dotmatrix/pocket and @dotmatrix/advanced on lumiose ^0.5.0; Lumiose Chip renamed to Dotmatrix Advanced (title, pixel logo, import error, README), Dotmatrix to Dotmatrix Pocket (title, header, guide, README); driver/dialect names, storage keys and the song file format id unchanged. Pages e2e (playwright.pages.config.ts, tests-pages) removed (TASK-489). vendor/gbapu kept until gbapu is on npm.
 - Verification: npm still has lumiose 0.4.0, so no install or lockfile yet (CI needs pnpm-lock.yaml). Pre-check against this checkout's packages (scratch copy, not committed): lumiose check, Vitest (pocket 225, advanced 10), lumiose lint (0 errors; advanced 7 warnings, pre-existing), fmt check, build and Chromium e2e (pocket 66, advanced 28) all pass.
 - Remaining: pnpm install + lockfile commit and a full run once 0.5.0 is on npm; then create the repository (AC #1-#3).
+
+Chime (2026-10-21, follow-up): rewrote the imported histories with git filter-branch (paths moved under apps/pocket and apps/advanced) and rebuilt main as the root commit, two --allow-unrelated-histories merges and the replayed commits (identical final tree). git log -- apps/pocket shows 32 commits, apps/advanced 28, git log --follow works on app files, no local paths in any message. pnpm-workspace.yaml now excludes lumiose, @lumiose/* and gbapu from the minimum release age. 66 commits; still no install (0.5.0 not on npm), remote or push.
 <!-- SECTION:NOTES:END -->
