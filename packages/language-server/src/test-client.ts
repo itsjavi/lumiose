@@ -126,7 +126,9 @@ export async function startTestServer(
     },
     request: (method, params) => connection.sendRequest(method, params),
     async close() {
-      await connection.sendRequest("shutdown").catch(() => undefined);
+      // Every step is bounded, as an editor bounds them: a busy server (Windows CI under load)
+      // could take longer over `shutdown` than the hook's timeout (TASK-510).
+      await within(3000, connection.sendRequest("shutdown")).catch(() => undefined);
       await connection.sendNotification("exit").catch(() => undefined);
       await new Promise<void>((resolve) => {
         if (child.exitCode !== null) resolve();
@@ -137,9 +139,18 @@ export async function startTestServer(
         }, 2000).unref();
       });
       connection.dispose();
-      await rm(root, { recursive: true, force: true });
+      // Windows keeps a killed process's files busy for a moment.
+      await rm(root, { recursive: true, force: true, maxRetries: 10 });
     },
   };
+}
+
+/** `promise`, or a rejection once `ms` passed. */
+function within<T>(ms: number, promise: Promise<T>): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error(`No answer in ${ms} ms`)), ms);
+    promise.then(resolve, reject).finally(() => clearTimeout(timer));
+  });
 }
 
 function languageId(path: string): string {
