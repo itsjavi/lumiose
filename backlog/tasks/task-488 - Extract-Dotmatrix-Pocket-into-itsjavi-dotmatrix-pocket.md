@@ -1,11 +1,11 @@
 ---
 id: TASK-488
 title: Extract both chiptune apps into itsjavi/dotmatrix
-status: In Progress
+status: Done
 assignee:
   - '@Chime'
 created_date: '2026-10-20 21:22'
-updated_date: '2026-10-21 04:45'
+updated_date: '2026-10-21 04:53'
 labels: []
 milestone: m-13
 dependencies:
@@ -23,9 +23,9 @@ decision-73 (revised 2026-10-21): one public MIT repository, a pnpm workspace wi
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 The user approved creating the repository
-- [ ] #2 github.com/itsjavi/dotmatrix exists, public, with apps/pocket and apps/advanced and the history of both examples
-- [ ] #3 CI passes for both apps
+- [x] #1 The user approved creating the repository
+- [x] #2 github.com/itsjavi/dotmatrix exists, public, with apps/pocket and apps/advanced and the history of both examples
+- [x] #3 CI passes for both apps
 <!-- AC:END -->
 
 ## Implementation Notes
@@ -42,3 +42,9 @@ Chime (2026-10-21, follow-up): rewrote the imported histories with git filter-br
 
 2026-10-21 (Lux): apps/pocket now uses gbaudio 1.0.1 from npm (vendored build and its checksum test removed), and the workspace installs lumiose 0.5.0 from npm with its first lockfile. Green locally: pnpm check (typecheck, lint with 0 errors, fmt, Vitest 212 + 10), both builds, Chromium e2e (pocket 66, advanced 28). History was rewritten earlier to drop private project references. Waiting for the user's approval to create github.com/itsjavi/dotmatrix and push.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+github.com/itsjavi/dotmatrix (public) holds apps/pocket (Dotmatrix Pocket, from examples/spa-dotmatrix) and apps/advanced (Dotmatrix Advanced, formerly Lumiose Chip, from examples/spa-chiptune) with both histories under their app folders, scrubbed of private references. A pnpm workspace on lumiose 0.5.0 and gbaudio 1.0.1 from npm, with the create-lumiose agent files, CI and Renovate. First CI run green (check, e2e). Pages deployment is TASK-489; the React port is TASK-491.
+<!-- SECTION:FINAL_SUMMARY:END -->
