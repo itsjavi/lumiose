@@ -1,6 +1,6 @@
 {
   "name": "@lumiose/adapter-cloudflare",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "description": "Deploy a Lumiose build to Cloudflare Workers: the build's fetch handler as the Worker, dist/client as static assets.",
   "license": "MIT",
   "repository": {

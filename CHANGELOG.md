@@ -1,6 +1,109 @@
 # Changelog
 
-All Lumiose packages share one version.
+All Lumiose packages share one version, except those released outside lockstep (@lumiose/ui), which keep their own changelog in their directory.
+
+## 0.5.0 (2026-10-21)
+
+### Features
+
+- **web:** hero reads 'from static pages to full-stack apps' (TASK-483) (161550c9)
+- **web:** hero says what Lumiose is, one component model from static pages to SPAs (TASK-483, decision-74) (7b2de99f)
+- **content:** .html scripts load through ?client, without the island runtime (TASK-283) (e28dbbc6)
+- **web:** label Astro's comparison row as measured, with Preact islands (TASK-482) (9f8a58de)
+- **vite:** share a route group's CSS in a second stylesheet file (TASK-285) (d57d6bc2)
+- **vite:** warn which page renders a component whose client script the build did not build (TASK-463) (968a831e)
+- **web:** DocsSearch on @lumiose/ui's Autocomplete (TASK-421) (d19d8db0)
+- **web,site-kit:** the sites use @lumiose/ui's Tabs and Toggle (TASK-362) (99443055)
+- **cli:** lumiose check type-checks the .stsx of installed Lumiose packages (TASK-398) (db09fc6f)
+- **vite:** pre-bundle the CommonJS dependencies of Lumiose packages (TASK-399) (c63cd5df)
+- **vite:** summarize the compiler warnings of installed Lumiose packages (TASK-397) (11803f57)
+- **web:** /ui pages and live demos for Context Menu and Drawer (TASK-378, TASK-382) (a513cee6)
+- **web:** /ui pages and live demos for Collapsible, Accordion and Toast (TASK-370, TASK-371) (d5b39366)
+- **web:** a /ui section for the @lumiose/ui docs, with live demos (TASK-387) (fb3a4ff4)
+- **create:** offer @lumiose/ui with --ui, hidden until it is public (TASK-393) (bc3c1352)
+- **cli:** agent-ready @lumiose/ui docs (TASK-393) (c5dfea39)
+- **vite:** compile Lumiose packages installed in node_modules (TASK-390) (2c2a9530)
+- **app:** the ?client import for scripts of server-rendered components (TASK-354, decision-63) (58e44723)
+- **release:** release @lumiose/ui outside lockstep with its own version and changelog (TASK-333) (0bd2256a)
+- **compiler:** bind:x on components and custom elements (TASK-360) (8ae27df7)
+- **app:** ship client scripts of server-rendered components with the pages that render them (TASK-354) (62ab8998)
+- **router:** searchParams.set() loads the page by default in islands; { shallow: true } opts in (TASK-352) (3a8346ed)
+- **router:** shallow URL state for islands of MPA pages: searchParams() and searchParams.set() (TASK-351) (b63a3e83)
+- **router:** announce client navigations and match the Navigation API focus reset in the History fallback (TASK-345) (8cb4d95c)
+- **vite:** in-page dev inspector and lumiose({ inspector }) (TASK-341) (fb6274a8)
+- **app:** response().setStreaming(false) and lumiose({ streamTimeout }) (TASK-340) (c46fe06a)
+- **dom,compiler:** dev hook registry and source locations for the in-page inspector (TASK-341) (4791c181)
+- **css:** pass Tailwind v4 at-rules through style blocks without LUM3015 (TASK-339) (67203834)
+- **release:** the scale gate in release:version (TASK-320) (873466dd)
+- **web:** fullstack comparison method and data page (TASK-317) (e969385d)
+- **dom:** client onError and instrumentations of src/instrumentation.client.ts (TASK-299) (e3b4ed17)
+- **vite:** createDevHandler() mounts lumiose dev in your own server (TASK-300) (d8689ab7)
+- **actions:** submission() for per-instance form submissions (TASK-297) (d7f1655e)
+- **bench:** the keyed entry for upstream js-framework-benchmark, checked with krausest's rebuild-ci (TASK-316) (f20a45c3)
+- **app:** src/instrumentation.client.ts runs before hydration on every page (TASK-295) (bf2c8100)
+- **dom:** custom element props go to their properties; Custom Elements Everywhere 100 (TASK-326) (428cdc28)
+- **create:** strict CSP in every template (TASK-315) (659b7336)
+- **server:** src/instrumentation.server.ts on every host, onError on adapter-node (TASK-298) (c3990655)
+- **router:** beforeNavigate and afterNavigate (TASK-296) (ca5d377e)
+- **app:** folder middleware.ts and ctx.route (TASK-294) (51cf817a)
+
+### Fixes
+
+- **dom,server,compiler:** a spread never writes srcdoc (TASK-496) (a6ba7dfa)
+- **compiler,server:** script and style text opens no tag inside svg or math (TASK-495) (c989112d)
+- **compiler:** a written innerHTML or textContent next to a spread applies as written (TASK-478) (6f3eaf7a)
+- **compiler:** script and style text is raw text that cannot end its element (TASK-472 L7) (1628649d)
+- **server:** lint of the strict-style closer; docs: safe JSON-LD in a script (TASK-472) (e91d2623)
+- **compiler:** LUM2001 and LUM2005 see JSX spreads (TASK-466) (7cd6facf)
+- **server:** harden body limits, strict styles and the strict policy (TASK-472 L3-L6) (bfd1e764)
+- **svg:** imported icons load nothing from outside the file, and content imports escape SVG style text (TASK-474) (5c07b95c)
+- **dom:** Dynamic applies its innerHTML and textContent props itself, as the server does (TASK-470) (c8c5137d)
+- **svg:** an animation's safety is read from every spelling of its attributes, so a decoy cannot let an animation of href through (TASK-468) (ffba6dd9)
+- **server:** warn in development when a serialized FormData carries a secret-looking name; the docs echo an explicit record of fields (TASK-471) (f22663dc)
+- **i18n:** the missing-translation redirect never leaves the site (TASK-469) (f154d8f6)
+- **dom:** a spread never writes innerHTML or textContent, as on the server; Toast passes only allowlisted actionProps (TASK-470) (26436413)
+- **server:** open a static file on the first read, so an unread response holds no handle (TASK-476) (c48b2b81)
+- **compiler:** render children carried by props, read them where inserted (TASK-347, TASK-348, TASK-349) (f7568fc7)
+- **vite:** production CSS targets Safari 17.5, so light-dark() follows a forced color-scheme (TASK-441 M37) (3e13ecea)
+- **dom:** live <output> content survives a form reset in Firefox and WebKit (TASK-425) (233d2d4a)
+- **web:** a UI example that passes a function prop is an island demo (TASK-423) (94b1a211)
+- **vite:** production CSS targets Baseline widely available, so :dir() stays as written (TASK-422) (0db7397b)
+- **compiler:** a fragment's single dynamic item claims in order, as an insertValue range (TASK-415) (6480b53f)
+- **dom:** two-way bindings apply the previous value written back before the flush (TASK-388) (bc4dc33f)
+- **dom:** Dynamic's content keeps the server's instance paths while hydrating (TASK-412) (dda1e5ee)
+- **dom:** selectors evaluate their source when a row reaches the comparison (TASK-402) (784d459c)
+- **compiler:** a member call on an imported module is a factory call for LUM2001 (TASK-401) (02e63dde)
+- **dom:** remove the attribute behind a number property set to nullish (TASK-407) (912de956)
+- **dom:** hot-wrapped components render at once, so hydration claims in order (TASK-403) (1e21e170)
+- **web:** inline code breaks on phones; reflow check and screenshots for /ui (TASK-387) (676649b3)
+- **build:** keep the runtime off pages without islands when instrumentation.client.ts uses import() (TASK-346) (210c85c9)
+- **router:** leave fragment navigations to the browser in the History fallback (TASK-350) (5c0a82ab)
+- **app:** hold the parser after linked stylesheets so a reload keeps its scroll position (TASK-278) (83b1ec9f)
+- **app:** the Origin check compares ports after scheme defaults (TASK-344) (bf4ced12)
+- **compiler:** no data-lumiose-source on elements that render no box (TASK-341) (f4095b4c)
+- **dom:** guard inspector hooks with import.meta.env?.DEV so multi-chunk builds drop them (TASK-341) (be3379a9)
+- **build:** link the stylesheets another plugin renamed after Lumiose (TASK-342) (5e33e574)
+- **cli:** lumiose lint leaves node_modules out of oxlint's walk (db9c74c3)
+- **server:** leave object and array props of custom elements out of server HTML (TASK-337) (0d65dc68)
+- **jsx:** type *.module.css imports as class maps (TASK-334) (60445f1b)
+- **app:** keep RequestContext<P> assignable to RequestContext (TASK-294) (e5ae9c43)
+- **dom:** report island load and hydration failures, keep their events (TASK-305) (0b2cb90e)
+- **ci:** typecheck the Paraglide example before the parallel run, so the busy macOS runner no longer hits its 30s project-open limit (TASK-292) (f57dfba6)
+- **adapter-vercel:** commonAncestor stops at the filesystem root, so the Windows CI test no longer loops forever (TASK-291) (eb9b353b)
+
+### Performance
+
+- **vite:** precompress in parallel, starting during the server build (TASK-288) (4fac89e7)
+### Scale
+
+The large-app benchmark (1,500 routes, 5,000 components), working tree against v0.4.0 (9702f55e), medians of 3 rounds on Apple M1 Max (10 cores, 32 GB, darwin 27.0.0 arm64, Node v26.8.1). The release gate stops at a ratio above 1.2.
+
+| Metric | Previous | This release | Ratio |
+| ------ | -------- | ------------ | ----- |
+| Production build (ms) | 53569 | 27854.6 | 0.520 |
+| Dev cold start (ms) | 933.5 | 950.9 | 1.019 |
+| HMR latency (ms) | 80.7 | 79.2 | 0.981 |
+| Server memory, peak RSS (MB) | 493.5 | 502.4 | 1.018 |
 
 ## 0.4.0 (2026-10-14)
 
