@@ -5,7 +5,7 @@ status: In Progress
 assignee:
   - '@Chime'
 created_date: '2026-10-20 21:22'
-updated_date: '2026-10-21 01:38'
+updated_date: '2026-10-21 01:48'
 labels: []
 milestone: m-13
 dependencies: []
@@ -21,8 +21,8 @@ decision-73: a public MIT repository with the engine's TypeScript source from th
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 The user approved creating the repository and publishing
-- [ ] #2 github.com/itsjavi/gbapu exists, MIT, with source, tests and CI
+- [x] #1 The user approved creating the repository and publishing
+- [x] #2 github.com/itsjavi/gbapu exists, MIT, with source, tests and CI
 - [ ] #3 gbapu is on npm and its types resolve
 <!-- AC:END -->
 
@@ -38,4 +38,6 @@ decision-73: a public MIT repository with the engine's TypeScript source from th
 - **Waiting for the user**: approval to create github.com/itsjavi/gbapu and push, and to publish to npm (AC #1 to #3). Open questions: the name `gbapu` (also the name of stoneface's C++ library), the README wording, and whether to reformat the verbatim engine modules (oxfmt skips them for now).
 
 2026-10-21 (Lux): the user confirmed the stoneface86/gbapu port (credit and MIT notice kept), kept the unscoped npm name gbapu, and chose to format the engine sources (done in the package, local commits). Waiting for approval to create the repository, push and publish.
+
+2026-10-21 (Lux): the user approved creating the repository and pushing; github.com/itsjavi/gbapu created (public) and main pushed (9 commits; the package description and README intro now name the stoneface86/gbapu port). The user publishes to npm themselves; AC 3 waits for that.
 <!-- SECTION:NOTES:END -->
