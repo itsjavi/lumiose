@@ -5,7 +5,7 @@ status: In Progress
 assignee:
   - '@Chime'
 created_date: '2026-10-20 21:22'
-updated_date: '2026-10-21 01:07'
+updated_date: '2026-10-21 01:38'
 labels: []
 milestone: m-13
 dependencies: []
@@ -36,4 +36,6 @@ decision-73: a public MIT repository with the engine's TypeScript source from th
 - **License**: `src/gbapu.ts` is a TypeScript port of stoneface86/gbapu (C++, MIT, copyright 2020 stoneface). LICENSE carries that notice after the project's MIT notice, and the README credits it.
 - **Verification**: 27 Vitest tests (identical renders on repeat, the pitch of a pulse tone, NR51 routing, loops, render horizon and limits, a three-channel song's compiled writes and controls, token lookups, WAV header, encoding and `smpl` loop, `Apu` reset). Typecheck, lint, fmt check, build and the CI steps on a clean clone all pass. `npm publish --dry-run` accepts the tarball (15 files, 22.1 kB). The packed tarball installed in a scratch project: the README example runs and writes a valid WAV, and the types resolve under nodenext and bundler without skipLibCheck. The npm name `gbapu` is free.
 - **Waiting for the user**: approval to create github.com/itsjavi/gbapu and push, and to publish to npm (AC #1 to #3). Open questions: the name `gbapu` (also the name of stoneface's C++ library), the README wording, and whether to reformat the verbatim engine modules (oxfmt skips them for now).
+
+2026-10-21 (Lux): the user confirmed the stoneface86/gbapu port (credit and MIT notice kept), kept the unscoped npm name gbapu, and chose to format the engine sources (done in the package, local commits). Waiting for approval to create the repository, push and publish.
 <!-- SECTION:NOTES:END -->

@@ -3,7 +3,7 @@ id: doc-10
 title: Pending decisions for the user
 type: other
 created_date: '2026-10-16 22:28'
-updated_date: '2026-10-21 00:47'
+updated_date: '2026-10-21 01:39'
 ---
 Decisions that need the user, collected while Lux and the workers run unattended (user request, 2026-10-17: "do not block yourself on more questions … postpone them (and their decisions) in a document that can be used later as follow ups").
 
@@ -18,6 +18,12 @@ Nothing here is decided until the user answers. Answered items move to the Answe
 ## Open
 
 **Backlog state (2026-10-17):** every task that doesn't wait on an item below is done. The workers are idle until the user answers.
+
+### P0. Renew the npm token, then re-run the 0.5.0 publish (TASK-485)
+
+- **Waiting:** the Release workflow for v0.5.0 built every binary and packed every package, but the first `npm publish` got E404 on PUT, which is what an expired or under-privileged `NPM_TOKEN` secret returns. Nothing was published.
+- **The user:** create a new npm token with publish rights for `lumiose`, `create-lumiose` and `@lumiose/*` (or set up trusted publishing for each), store it as the repository's `NPM_TOKEN` secret, then re-run the failed `publish` job of the v0.5.0 Release run, or ask Lux to (a re-run costs CI minutes).
+- **Meanwhile:** the itsjavi.com re-score (TASK-486), the dotmatrix install (TASK-488) and the private-app port (TASK-492) wait for 0.5.0 on npm.
 
 ### P1. Push main to origin
 
