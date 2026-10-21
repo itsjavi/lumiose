@@ -1,11 +1,11 @@
 ---
 id: TASK-487
 title: Extract gbaudio (formerly gbapu) into itsjavi/gbaudio and publish it to npm
-status: In Progress
+status: Done
 assignee:
   - '@Chime'
 created_date: '2026-10-20 21:22'
-updated_date: '2026-10-21 03:33'
+updated_date: '2026-10-21 06:53'
 labels: []
 milestone: m-13
 dependencies: []
@@ -23,7 +23,7 @@ decision-73: a public MIT repository with the engine's TypeScript source, fresh 
 <!-- AC:BEGIN -->
 - [x] #1 The user approved creating the repository and publishing
 - [x] #2 github.com/itsjavi/gbaudio exists, MIT, with source, tests and CI
-- [ ] #3 gbaudio is on npm and its types resolve
+- [x] #3 gbaudio is on npm and its types resolve
 <!-- AC:END -->
 
 ## Implementation Notes
@@ -43,3 +43,9 @@ decision-73: a public MIT repository with the engine's TypeScript source, fresh 
 
 2026-10-21 (Lux): npm refused the name gbapu (too similar to gsap). The package is now gbaudio (user's choice); the user published 1.0.0 by hand, which npm holds as a staged release (only a 0.0.0-stage placeholder is visible) until the user approves it on npmjs.com. The repository was renamed to itsjavi/gbaudio and the local folder to ../gbaudio. The release workflow now skips a version npm already has, so tagging v1.0.0 creates the GitHub release without publishing again. Two local commits (rename, repository URLs plus skip) wait for the user's push approval.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+github.com/itsjavi/gbaudio (renamed from gbapu: npm refused that name), MIT, with a clean single-commit history. gbaudio 1.0.0 published by hand, 1.0.1 by the tag-based release workflow through npm trusted publishing with provenance; GitHub releases v1.0.0 and v1.0.1. Dotmatrix Pocket and its React port use it from npm and type-check against it.
+<!-- SECTION:FINAL_SUMMARY:END -->
