@@ -3,7 +3,7 @@ id: doc-11
 title: Port scorecards
 type: other
 created_date: '2026-10-20 21:23'
-updated_date: '2026-10-20 21:24'
+updated_date: '2026-10-21 02:01'
 ---
 Every port of a real project records a scorecard against its original stack here (decision-70). Lumiose's public claims come from these scorecards and the benchmarks, so a port where Lumiose is not clearly better on something that matters is written down as plainly as a win, and its gaps become tasks.
 
@@ -53,10 +53,10 @@ Every port of a real project records a scorecard against its original stack here
 
 TASK-491, after the extraction (TASK-488).
 
-### pokepc-net: Pokémon list and detail (planned)
+### A private app: list and detail (planned)
 
-TASK-492.
+TASK-492. The scorecard names the stacks and the numbers, not the app.
 
-### pokepc dex tracker: forms, actions and auth (later)
+### The same app: forms, actions and auth (later)
 
 TASK-493.

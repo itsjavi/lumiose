@@ -40,7 +40,7 @@ Chime (2026-10-09): done (solo edit of Spark's examples/spa-chiptune, authorised
 - Strict CSP: the prerendered shells' meta policy has script-src 'self', which covers the worker registration.
 - e2e: playwright.pages.config.ts + tests-pages/pages.spec.ts (pnpm test:e2e:pages): build:site --base /lumen/ into dist/site-e2e and preview:site (no COOP/COEP, like Pages); a fresh visit to the /settings deep link becomes isolated after one reload, plays with Settings showing 'SharedArrayBuffer (cross-origin isolated)'; the tracker's /songs/<id> deep link (served through the root 404.html) reloads isolated; with service workers blocked the app plays in 'postMessage, ~60 Hz' mode. 2/2.
 - README explains the trade-off (one reload on the first visit; isolation depends on the worker; fallback otherwise).
-- spa-dotmatrix README and Learn credits: gbapu is the author's own library from the Newbark engine, planned for an MIT release; the vendored LICENSE-NOTICE.md, PROVENANCE.json and CHECKSUMS.sha256 unchanged (checksum test green).
+- spa-dotmatrix README and Learn credits: gbapu is the author's own library, planned for an MIT release; the vendored files and CHECKSUMS.sha256 unchanged (checksum test green).
 Note for Beacon/Lux: scripts/site.ts still describes dotmatrix as excluded pending redistribution rights (--with-dotmatrix); that comment and the flag are yours to revisit.
 Validation: spa-chiptune lumen check clean, Vitest 10/10, Playwright 20/20 (dev + preview), Pages e2e 2/2; spa-dotmatrix check clean, Vitest 205 (+5 known skipped).
 ![Settings on the Pages build: SharedArrayBuffer (cross-origin isolated)](../assets/task-172-settings-pages.png)

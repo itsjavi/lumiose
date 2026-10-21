@@ -192,5 +192,5 @@ the compiler binaries and releases.
 ## License
 
 [MIT](LICENSE). This covers the Lumiose packages, the website and all examples, except code vendored with its own
-notice: the gbapu Game Boy APU engine in `examples/spa-dotmatrix/vendor/gbapu` (by the same author, MIT release
-planned) and the Remix 3 benchmark entry (Apache-2.0).
+notice: the [gbapu](https://github.com/itsjavi/gbapu) Game Boy APU engine in `examples/spa-dotmatrix/vendor/gbapu`
+(MIT, with stoneface's MIT notice for the APU emulation it ports) and the Remix 3 benchmark entry (Apache-2.0).

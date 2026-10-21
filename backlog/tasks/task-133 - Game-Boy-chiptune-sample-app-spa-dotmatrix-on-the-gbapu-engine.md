@@ -19,14 +19,14 @@ ordinal: 133000
 ## Description
 
 <!-- SECTION:DESCRIPTION:BEGIN -->
-User request 2026-10-09: a sibling of spa-chiptune built with Lumen, using the user's Game Boy APU engine (newbark-engine's packages/gbapu, vendored with its LICENSE-NOTICE.md and PROVENANCE.json) and learning from crystal-exporter (docs/audio.md, audio/DSL.md, authored examples) how Crystal-style music and SFX are expressed. Easier for beginners than spa-chiptune, equally polished, with its own design. Demo songs and SFX must be original compositions in that style: no Pokémon Crystal songs, SFX, cries or exported game data.
+User request 2026-10-09: a sibling of spa-chiptune built with Lumen, using the user's Game Boy APU engine (gbapu, vendored) and learning from the user's own audio notes how Crystal-style music and SFX are expressed. Easier for beginners than spa-chiptune, equally polished, with its own design. Demo songs and SFX must be original compositions in that style: no Pokémon Crystal songs, SFX, cries or exported game data.
 <!-- SECTION:DESCRIPTION:END -->
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
 - [x] #1 examples/spa-dotmatrix: a Lumen SPA where a beginner can make a short 4-channel Game Boy song (pulse 1/2, wave, noise) and simple SFX with presets, play it, and export WAV
 - [x] #2 Ships several original demo songs and an SFX gallery in the Crystal style (duty cycles, envelopes, vibrato, pitch slides, noise drums)
-- [x] #3 gbapu vendored with its notice and provenance unchanged; no game audio or data copied from crystal-exporter
+- [x] #3 gbapu vendored unchanged; no game audio or data copied
 - [x] #4 lumen check, lumen fmt --check, build, Playwright e2e green; README; screenshots in backlog/assets linked from the task
 <!-- AC:END -->
 
@@ -42,7 +42,7 @@ Design and architecture
 - Beginner UX: piano-roll lite (click to add, drag to lengthen, click to remove; arrows/Enter/Shift+arrows on the focused grid), rows from key + scale, presets per channel with a Fine-tune drawer (duty, envelope, vibrato, glide, arp, gate, wave shape, drum tone), bars/loop/copy/paste/duplicate/clear, undo/redo (snapshots, merged drags), autosave, share links (deflate-raw + base64url in ?song=, sanitized on load), WAV export (intro + loop twice with RIFF smpl loop points), shortcuts sheet (?).
 - Look: handheld-inspired shell (light/dark), dot-matrix LCD piano roll with 4 selectable 4-shade palettes, power LED, cartridge-style song cards; Silkscreen + Space Grotesk (OFL, @fontsource, pinned 5.3.0).
 
-Content (all original): 5 demo songs (Maple Hollow town, Over the Ridge route, Rival Clash battle, Lantern Night night, First Steps tutorial; 9-37 s loops, 2-bar intros on route/battle/night) written in a small notation (src/model/notation.ts); 15 SFX (select, cursor, back, text blip, error, jump, hit, bump, door, pickup, heal, save, item get, level up, warp). Own wave tables (computed) and drum kit; the gbapu drum alias tokens (source-derived) are not used. Nothing from crystal-exporter/output or game data was copied.
+Content (all original): 5 demo songs (Maple Hollow town, Over the Ridge route, Rival Clash battle, Lantern Night night, First Steps tutorial; 9-37 s loops, 2-bar intros on route/battle/night) written in a small notation (src/model/notation.ts); 15 SFX (select, cursor, back, text blip, error, jump, hit, bump, door, pickup, heal, save, item get, level up, warp). Own wave tables (computed) and drum kit; the gbapu drum alias tokens (source-derived) are not used. No game data was copied.
 
 Vendoring: vendor/gbapu/{dist/*, LICENSE-NOTICE.md, PROVENANCE.json, CHECKSUMS.sha256} copied unchanged; src/audio/vendor.test.ts checks every dist file against CHECKSUMS.sha256. The example's .gitignore re-includes vendor/gbapu/dist/ (the root ignores dist/). README states the origin and that redistribution needs the rights holder's permission.
 

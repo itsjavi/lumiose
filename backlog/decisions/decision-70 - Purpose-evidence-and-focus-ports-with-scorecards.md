@@ -25,8 +25,8 @@ Approved by the user on 2026-10-20.
 
 1. **itsjavi.com** (in progress): switch it to `?client` (decision-71) once 0.5.0 is out, then score it again.
 2. **Dotmatrix Pocket** (now examples/spa-dotmatrix): an idiomatic React port in its own repository (decision-73), built with React 19, the React Compiler, Vite and CSS modules.
-3. **pokepc-net**: the Pokémon list and detail pages, without Tailwind.
-4. **Later, the pokepc dex tracker** from the v7 routes, as the proof for forms, actions and auth. It uses Better Auth with email one-time codes instead of the tracker's own auth, and includes the onboarding step.
+3. **A private app of the author's**: a list and detail slice, from React Router and Tailwind to Lumiose with scoped CSS.
+4. **Later, a forms, actions and auth slice of the same app**, as the proof for those features. It uses Better Auth with email one-time codes instead of the app's own auth, and includes the onboarding step.
 
 **Focus.** These get no new work unless a port needs them:
 

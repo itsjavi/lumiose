@@ -16,7 +16,7 @@ ordinal: 483000
 ## Description
 
 <!-- SECTION:DESCRIPTION:BEGIN -->
-decision-73: a public MIT repository with the engine's TypeScript source from the crystal-exporter tool of the pokemon-time-crystal project, fresh history, tests, types and a build, published to npm as gbapu. The create-lumiose agent setup does not apply (no Lumiose code); it gets AGENTS.md, CLAUDE.md, README, LICENSE, oxlint, oxfmt, Vitest, CI and Renovate. Ask the user before creating the repository and before publishing.
+decision-73: a public MIT repository with the engine's TypeScript source, fresh history, tests, types and a build, published to npm as gbapu. The create-lumiose agent setup does not apply (no Lumiose code); it gets AGENTS.md, CLAUDE.md, README, LICENSE, oxlint, oxfmt, Vitest, CI and Renovate. Ask the user before creating the repository and before publishing.
 <!-- SECTION:DESCRIPTION:END -->
 
 ## Acceptance Criteria

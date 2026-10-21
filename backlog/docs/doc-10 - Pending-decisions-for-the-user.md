@@ -3,7 +3,7 @@ id: doc-10
 title: Pending decisions for the user
 type: other
 created_date: '2026-10-16 22:28'
-updated_date: '2026-10-21 01:39'
+updated_date: '2026-10-21 02:01'
 ---
 Decisions that need the user, collected while Lux and the workers run unattended (user request, 2026-10-17: "do not block yourself on more questions … postpone them (and their decisions) in a document that can be used later as follow ups").
 

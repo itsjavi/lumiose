@@ -11,9 +11,10 @@ of a tracker and hex effect columns.
 
 ![The studio playing a demo song](../../backlog/assets/task-133-studio-demo.png)
 
-> The sound engine in `vendor/gbapu/` is gbapu, the author's own Game Boy APU library from the
-> Newbark engine (`packages/gbapu`), planned for an MIT release. It is vendored unchanged, with its
-> current [notice](vendor/gbapu/LICENSE-NOTICE.md), provenance and checksums kept as they were.
+> The sound engine in `vendor/gbapu/` is [gbapu](https://github.com/itsjavi/gbapu), the author's
+> Game Boy APU library (MIT; its emulation is a TypeScript port of
+> [stoneface's gbapu](https://github.com/stoneface86/gbapu)). It is vendored as a build until it is
+> on npm; `CHECKSUMS.sha256` pins its files.
 
 ## Run it
 
@@ -117,9 +118,9 @@ recipes and original examples.
 
 ## Credits
 
-- Sound engine: gbapu, the author's own library from the Newbark engine, planned for an MIT release;
-  vendored unchanged with `LICENSE-NOTICE.md`, `PROVENANCE.json` and `CHECKSUMS.sha256`;
-  `src/audio/vendor.test.ts` checks the files against the checksums.
+- Sound engine: [gbapu](https://github.com/itsjavi/gbapu) (MIT), vendored as a build in
+  `vendor/gbapu` with its `LICENSE` and `CHECKSUMS.sha256`; `src/audio/vendor.test.ts` checks the
+  build against the checksums.
 - The driver, presets, wave tables, drum kit, demo songs and sound effects are original work for
   this sample, written in the style of late-90s handheld RPG soundtracks. No game music, sound
   effects or data are included.
