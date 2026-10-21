@@ -5,7 +5,7 @@ status: In Progress
 assignee:
   - '@Lux'
 created_date: '2026-10-20 21:22'
-updated_date: '2026-10-21 07:24'
+updated_date: '2026-10-21 12:39'
 labels: []
 milestone: m-13
 dependencies:
@@ -41,4 +41,6 @@ Worker session (Lux, standalone worker started by the orchestrator) took TASK-48
 - **Scorecard (AC #2):** doc-11 itsjavi.com section; full tables in the port's FINDINGS.md. Evidence image: backlog/assets/task-486-home-parity.webp (Astro, Lumiose, pixel diff).
 - **Gaps (AC #3):** TASK-517 (?client elements can connect before their children; docs example duplicates text; unscoped script-created elements), TASK-518 (agent guidance still says only islands), TASK-519 (proposal: inline or combine small ?client scripts), TASK-520 (Astro docs page quotes 0.4.0 numbers).
 - **Waits on the user:** creating the port's remote, pushing it and deploying it to itsjavi.com. The Astro site's release cache was replaced with the port's so both builds show the same releases (a cache under node_modules; nothing committed there).
+
+2026-10-21 (Lux): the user keeps the port local for now; deploying it to itsjavi.com (replacing the Astro site) is postponed until they decide.
 <!-- SECTION:NOTES:END -->
