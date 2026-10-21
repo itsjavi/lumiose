@@ -90,9 +90,11 @@ Windows:
 - **check**: `pnpm build:compiler`, `pnpm typecheck`, `pnpm lint`, `pnpm fmt:examples`,
   `pnpm --filter lumiose size`, `pnpm test` (Vitest), `node --test scripts/*.test.ts`, and
   `cargo fmt --check`, `cargo clippy` (warnings are errors) and `cargo test` for the workspace.
-- **e2e**: the Playwright suites (Chromium). Linux runs every suite (`examples/*` and `apps/*`
-  with a `playwright.config.ts`); macOS and Windows run a smoke subset (`examples/vite-counter`,
-  `examples/islands-e2e`). Failed runs upload the `test-results` folders.
+- **e2e**: the Playwright suites (Chromium). Linux runs every suite in two jobs: `site`
+  (`apps/web`) and `examples` (every `examples/*` suite with a `playwright.config.ts`). macOS and
+  Windows run a smoke subset (`smoke`: `examples/vite-counter`, `examples/islands-e2e`). Failed
+  jobs upload their `test-results` folders. No test is retried (decision-76): fix a flaky test's
+  cause.
 
 - **pack** (Linux): `pnpm pack:check --smoke`, below.
 
@@ -107,6 +109,15 @@ fields, so run those browsers in Linux through the Playwright Docker image: star
 `node <playwright-core>/cli.js run-server --port 3123 --host 0.0.0.0` in
 `mcr.microsoft.com/playwright:v<version>-noble` (the workspace's `playwright-core` mounted
 read-only) and set `UI_E2E_WS=ws://127.0.0.1:3123/`.
+
+Linux renders differently from macOS, and only CI's Linux jobs run most suites. Fonts that are not
+installed fall back to DejaVu Sans, which is much wider than macOS's San Francisco, and scrollbars
+are classic (15px) instead of overlay. A test that measures layout (reflow at 320px, a width, an
+edge) must pass there too: compare with the page as rendered (the root's width, `clientWidth`), not
+with the viewport size. Check such a test in that Docker image's Chromium, after
+`apt-get install fonts-dejavu-core` in the container (CI's runner has it): with the run-server
+above, `PW_TEST_CONNECT_WS_ENDPOINT=ws://127.0.0.1:3123/ PW_TEST_CONNECT_EXPOSE_NETWORK='<loopback>'
+pnpm exec playwright test …` runs any suite's projects there.
 
 `.github/workflows/fuzz.yml` runs nightly (and by hand from the Actions tab), never on push: each
 target of `crates/fuzz/` for 10 minutes on nightly Rust with AddressSanitizer, its corpus kept between

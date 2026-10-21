@@ -70,18 +70,26 @@ jobs:
       - run: cargo test --workspace
 
   e2e:
-    name: e2e (${{ matrix.os }})
+    name: e2e (${{ matrix.os }}, ${{ matrix.part }})
     strategy:
       fail-fast: false
       matrix:
         include:
-          # Every Playwright suite.
+          # Every Playwright suite, in two jobs of about 15 minutes (decision-76): in one, the
+          # 25-30 minutes neared its timeout. The site (with the playground's WebAssembly compiler)
+          # and the @lumiose/ui fixture take about 10 minutes each.
           - os: ubuntu-latest
-            suites: all
+            part: site
+            suites: apps/web
+          - os: ubuntu-latest
+            part: examples
+            suites: examples
           # A smoke subset: dev and preview servers, SSR, islands and HMR.
           - os: macos-latest
+            part: smoke
             suites: examples/vite-counter examples/islands-e2e
           - os: windows-latest
+            part: smoke
             suites: examples/vite-counter examples/islands-e2e
     runs-on: ${{ matrix.os }}
     timeout-minutes: 30
@@ -92,13 +100,13 @@ jobs:
         shell: bash
         run: |
           rustup toolchain install
-          # The playground (in "all") runs the WebAssembly compiler.
-          if [ "${{ matrix.suites }}" = all ]; then rustup target add wasm32-unknown-unknown; fi
+          # The site's playground runs the WebAssembly compiler.
+          if [ "${{ matrix.part }}" = site ]; then rustup target add wasm32-unknown-unknown; fi
 
       - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
 
       # Must match the workspace's wasm-bindgen pin in Cargo.toml.
-      - if: matrix.suites == 'all'
+      - if: matrix.part == 'site'
         uses: taiki-e/install-action@f7e5d7c961414b23f5b25b2da9294395d08513ad # v2.87.26
         with:
           tool: wasm-bindgen@0.2.129
@@ -140,9 +148,9 @@ jobs:
       - name: Playwright suites
         shell: bash
         run: |
-          if [ "${{ matrix.suites }}" = all ]; then
+          if [ "${{ matrix.suites }}" = examples ]; then
             # vite-counter first (HMR specs that edit files; see TASK-161 notes), then the rest.
-            suites="examples/vite-counter $(ls -d examples/*/playwright.config.ts apps/*/playwright.config.ts | xargs -n1 dirname | grep -v vite-counter)"
+            suites="examples/vite-counter $(ls -d examples/*/playwright.config.ts | xargs -n1 dirname | grep -v vite-counter)"
           else
             suites="${{ matrix.suites }}"
           fi
@@ -165,7 +173,7 @@ jobs:
       - if: failure()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: playwright-results-${{ matrix.os }}
+          name: playwright-results-${{ matrix.os }}-${{ matrix.part }}
           path: |
             examples/*/test-results
             apps/*/test-results
