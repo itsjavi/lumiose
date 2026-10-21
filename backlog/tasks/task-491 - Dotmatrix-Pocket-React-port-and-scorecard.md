@@ -1,11 +1,11 @@
 ---
 id: TASK-491
 title: 'Dotmatrix Pocket: React port and scorecard'
-status: In Progress
+status: Done
 assignee:
   - '@Quasar'
 created_date: '2026-10-20 21:23'
-updated_date: '2026-10-21 06:00'
+updated_date: '2026-10-21 06:53'
 labels: []
 milestone: m-13
 dependencies:
@@ -23,7 +23,7 @@ decision-70: an idiomatic React port of Dotmatrix Pocket as apps/pocket-react in
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
 - [x] #1 apps/pocket-react matches the Lumiose app's features and look
-- [ ] #2 It is deployed at /dotmatrix/react/
+- [x] #2 It is deployed at /dotmatrix/react/
 - [x] #3 The scorecard is in the repository README and in doc-11
 <!-- AC:END -->
 
@@ -49,3 +49,9 @@ decision-70: an idiomatic React port of Dotmatrix Pocket as apps/pocket-react in
 
 2026-10-21 (Lux): merged into dotmatrix main (fast-forward, 619b60a); pnpm check green for the three apps. The scorecard is in doc-11 and the dotmatrix README. Findings: TASK-515 (hydration cost of large prerendered pages), TASK-516 (composing guide overflow, both apps). Open for the user: whether pocket and pocket-react keep sharing localStorage keys. Deployment at /dotmatrix/react/ waits for the push.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+apps/pocket-react in itsjavi/dotmatrix: an idiomatic React 19 port (React Compiler, React Router data mode, Zustand and Immer, CSS modules, MDX) with the same features, look and sound, live at itsjavi.com/dotmatrix/react/. Scorecard in the repository README and doc-11: 50.8 vs 125.7 kB of JavaScript on the studio, shown at 0.70 s vs 3.01 s on a slow profile, same interaction timing, similar source size. Findings: TASK-515, TASK-516.
+<!-- SECTION:FINAL_SUMMARY:END -->

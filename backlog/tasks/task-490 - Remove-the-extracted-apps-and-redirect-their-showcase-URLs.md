@@ -1,11 +1,11 @@
 ---
 id: TASK-490
 title: Remove the extracted apps and redirect their showcase URLs
-status: In Progress
+status: Done
 assignee:
   - '@Nova'
 created_date: '2026-10-20 21:23'
-updated_date: '2026-10-21 05:37'
+updated_date: '2026-10-21 06:53'
 labels: []
 milestone: m-13
 dependencies:
@@ -40,3 +40,9 @@ Nova, 2026-10-21, on its worktree branch (Lux merges it):
 - Validation: pnpm check green. node --test scripts/*.test.ts: 49/49. docs:check green. pnpm build:site --base /lumiose/ ok. Through preview:site, a browser check covered 10 old URLs, including ?song= share links and #hashes: all land on the new URLs, and the stubs carry the refresh, canonical and noindex tags. apps/web e2e: 187 passed (all redirect and showcase tests), 1 failed. The failure is web.e2e.ts's landing test: it expects an older Astro note sentence than content/stacks.ts has. It predates this task and is unrelated.
 - Remaining: merge. After TASK-489 deploys the dotmatrix Pages, confirm that https://itsjavi.com/dotmatrix/ and /dotmatrix/advanced/ are live, and that an old /lumiose/showcase/dotmatrix/?song=… link plays there. Then mark Done.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+examples/spa-dotmatrix and examples/spa-chiptune are removed with every reference; the showcase links the live pages and the repository; the old /showcase/dotmatrix/, /showcase/chiptune-tracker/ and /examples/<folder>/ URLs redirect to itsjavi.com/dotmatrix/ and /dotmatrix/advanced/ with path, query and hash. Verified live after the 2026-10-21 deploy: /lumiose/showcase/dotmatrix/learn/?song=abc#top lands on /dotmatrix/learn/?song=abc#top, and /lumiose/showcase/chiptune-tracker/songs/2 on /dotmatrix/advanced/songs/2.
+<!-- SECTION:FINAL_SUMMARY:END -->

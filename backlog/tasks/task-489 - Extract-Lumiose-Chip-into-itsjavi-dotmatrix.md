@@ -3,11 +3,11 @@ id: TASK-489
 title: >-
   Dotmatrix: deploy the apps to GitHub Pages at /dotmatrix/, /dotmatrix/react/
   and /dotmatrix/advanced/
-status: In Progress
+status: Done
 assignee:
   - '@Chime'
 created_date: '2026-10-20 21:22'
-updated_date: '2026-10-21 05:30'
+updated_date: '2026-10-21 06:53'
 labels: []
 milestone: m-13
 dependencies:
@@ -26,7 +26,7 @@ decision-73 (revised 2026-10-21): one Pages deployment of itsjavi/dotmatrix with
 <!-- AC:BEGIN -->
 - [x] #1 A push to main deploys pocket at /dotmatrix/ and advanced at /dotmatrix/advanced/
 - [x] #2 Deep links and share links (?song=) work in each app, including after a reload
-- [ ] #3 pocket-react is served at /dotmatrix/react/ once TASK-491 lands
+- [x] #3 pocket-react is served at /dotmatrix/react/ once TASK-491 lands
 <!-- AC:END -->
 
 ## Implementation Notes
@@ -41,3 +41,9 @@ Chime, 2026-10-21: the Pages deployment is committed on itsjavi/dotmatrix main, 
 
 2026-10-21 (Lux): pushed (user-approved) and deployed: itsjavi.com/dotmatrix/ (Dotmatrix Pocket) and itsjavi.com/dotmatrix/advanced/ (Dotmatrix Advanced) answer 200; a deep link (/dotmatrix/advanced/songs/1) reloads into the app shell through the root 404.html; pocket's /learn/ loads. AC 3 waits for the React port (TASK-491).
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+itsjavi/dotmatrix deploys one GitHub Pages site on every push to main: Dotmatrix Pocket at itsjavi.com/dotmatrix/, the React port at /dotmatrix/react/ and Dotmatrix Advanced at /dotmatrix/advanced/. Each app builds with its base; the root 404.html hands deep links below /advanced/ and /react/ to that app's shell. Verified live: all three load, a deep link and an old share link reload into the right app.
+<!-- SECTION:FINAL_SUMMARY:END -->
