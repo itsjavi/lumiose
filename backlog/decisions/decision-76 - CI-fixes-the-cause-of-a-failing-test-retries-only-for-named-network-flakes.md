@@ -6,9 +6,10 @@ status: accepted
 ---
 ## Context
 
-CI failed on every push from 2026-10-15 to 2026-10-21 (six runs after the last green one, 7db9db0d), each time for what looked like a different reason. The failures had nine distinct causes:
-- **Deterministic on Linux.** Four tests were written and checked on macOS only:
+CI failed on every push from 2026-10-15 to 2026-10-21 (six runs after the last green one, 7db9db0d), each time for what looked like a different reason. The UI browsers workflow failed in all four of its runs. The failures had ten distinct causes:
+- **Deterministic on Linux.** Five tests were written and checked on macOS only, or in the Playwright Docker image, which lacks DejaVu Sans:
   - wide fallback fonts broke two 320 px reflow checks (TASK-505);
+  - with the same fonts, a popup covered the button the popover axe test clicks next, in Firefox and WebKit (TASK-513);
   - classic scrollbars broke the drawer's width check (TASK-506);
   - a copy change left the landing test behind (TASK-504).
 - **Flaky.** Three tests depended on timing:
@@ -19,11 +20,11 @@ CI failed on every push from 2026-10-15 to 2026-10-21 (six runs after the last g
 
 Meanwhile, the single Linux e2e job grew from 12 to 25–30 minutes against a 30-minute timeout (TASK-512).
 
-Retries would have turned most of these green while hiding them. Four were real failures on every Linux run, and one exposed a runtime ordering bug.
+Retries would have turned most of these green while hiding them. Five were real failures on every Linux run, and one exposed a runtime ordering bug.
 
 ## Decision
 
-Orchestrator decision (delegated to Beacon by Lux, 2026-10-21, for TASK-504 to TASK-512).
+Orchestrator decision (delegated to Beacon by Lux, 2026-10-21, for TASK-502 and TASK-504 to TASK-513).
 
 - **No retries for tests.** No Playwright `retries` and no Vitest `retry` in CI. A failing or flaky test gets its cause found and fixed in the test or the code: wait on the condition the behaviour needs, not on time, and compare with what the platform renders. If a cause can be named but not removed, a retry is allowed next to it, with the reason. Today that is only the registry's network: `pack:check` installs with `--fetch-retries=5` (TASK-511).
 - **Linux e2e in two jobs.** CI's Linux e2e runs as two jobs of about 15 minutes each, each with its own results artifact:

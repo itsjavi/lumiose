@@ -404,7 +404,13 @@ test.describe("WCAG 2.2 AA with the default theme (doc-9 section 17)", () => {
       await expect(popup(page, "Notifications")).toBeVisible();
       expect(await axe(page)).toEqual([]);
       await page.getByRole("button", { name: "Shipping" }).click();
+      const shipping = page.getByText("Free shipping on orders over 50 euros.");
+      await expect(shipping).toBeVisible();
       expect(await axe(page)).toEqual([]);
+      // Closed first, as a person would: in Firefox and WebKit on Linux (DejaVu Sans) the popup on
+      // Shipping's right covers the Filters button, and a click there lands in the popup (TASK-513).
+      await page.keyboard.press("Escape");
+      await expect(shipping).toBeHidden();
       await page.getByRole("button", { name: "Filters" }).click();
       await page.getByRole("button", { name: "Date range…" }).click();
       await expect(popup(page, "Date range")).toBeVisible();
