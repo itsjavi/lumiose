@@ -98,8 +98,18 @@ export function ArticleData(props: { title: string; author: string }) {
 }
 ```
 
-The text of any `<script>` or `<style>` is raw text: it is written as it is, not HTML-escaped, and
-`</script`, `</style` and `<!--` are neutralized so that a value can't end the element. See
+The text of any `<script>` or `<style>` is raw text: it is written as it is, not HTML-escaped,
+except for the character after a `<` that could open a tag, an end tag or a comment (a letter, `!`,
+`/` or `?`), which Lumiose escapes: `<img` becomes `<\u0069mg` in a script and `<\69 mg` in a
+style, `</script` becomes `<\/script` and `<!--` becomes `<\!--`. So a value can't end the
+element, nor open a tag where the element ends up inside `<svg>` or `<math>` (a component whose
+root is a `<style>`), whose `<style>` and `<script>` text the browser parses as markup. The escapes
+read back as written in JavaScript strings, template literals, regular expressions and
+identifiers, and in CSS strings, identifiers and URLs. They don't in script code with `<` right
+before a keyword or `!` (`i<this.n`, `a<!b`: write `i < this.n`), in raw template strings
+(`String.raw`), for `<!` in a regular expression with the `u` or `v` flag, and for a CSS `<!--`. A
+`<style>` or `<script>` written inside `<svg>` or `<math>`, or under a root such as `<g>`, is an SVG
+or MathML element: its text is escaped as usual, and the parser decodes it. See
 [Head and metadata](head.md) for JSON-LD per page.
 
 **Error details.** In production server rendering, `<ErrorBoundary>` fallbacks receive a generic

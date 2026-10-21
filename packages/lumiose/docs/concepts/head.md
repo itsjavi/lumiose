@@ -37,8 +37,10 @@ that loaded the document replaced them; SPA-wide defaults belong in the document
 `spa` layout.
 
 **Inline JSON and scripts.** The text of a `<script>` or `<style>` is raw text, which HTML does
-not decode, so Lumiose writes it as it is (no `&lt;`) and makes sure it cannot end the element:
-`</script` becomes `<\/script`, `</style` becomes `<\/style`, and in a JSON script
+not decode, so Lumiose writes it as it is (no `&lt;`) and makes sure it cannot end the element or
+open a tag: the character after a `<` that could start one is escaped (`</script` becomes
+`<\/script`, `<b` becomes `<\u0062` in a script and `<\62 ` in a style; see
+[Security](security.md) for what reads them back), and in a JSON script
 (`application/ld+json`, `application/json` and other `…json` types, `importmap`,
 `speculationrules`) every `<` becomes `\u003c`, which JSON reads back as `<`. So
 `{JSON.stringify(data)}` is the way to write JSON-LD, even with data users wrote. `innerHTML` and

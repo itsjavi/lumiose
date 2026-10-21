@@ -2787,7 +2787,7 @@ the efficient form:
 | `ref={fn}`                   | Called with the element. `ref<T>()` makes a callback you can read like a signal.                                                                                                                                                                                                                                                                                                                             |
 | `innerHTML`                  | Sets unescaped HTML. The lint rule `no-unsafe-html` warns. Only as a written prop: a spread drops `innerHTML` and `textContent`, on the server and the client, so an object from JSON cannot inject markup. Written next to a spread (`<div {...rest} innerHTML={html} />`), they apply as written, and replace the spread's `children`.                                                                     |
 | `key`                        | Allowed on intrinsic elements and components (list identity).                                                                                                                                                                                                                                                                                                                                                |
-| `<script>`, `<style>` text   | Raw text: written as it is, never `&lt;`, and unable to end the element; in a JSON script every `<` is `\u003c`. See [Head](head.md) for JSON-LD.                                                                                                                                                                                                                                                            |
+| `<script>`, `<style>` text   | Raw text: written as it is, never `&lt;`; the character after a `<` that could open a tag is escaped (`<\u0069mg`, in a style `<\69 mg`; `<\/`, `<\!`), so a value can neither end the element nor open a tag inside `<svg>` or `<math>`. In a JSON script every `<` is `\u003c`. See [Security](security.md), and [Head](head.md) for JSON-LD.                                                              |
 | `{...props}`, `children`     | A spread applies every prop it carries, in order with the other attributes. An element without content of its own renders the `children` of its spreads or of a `children` attribute, as in React: `<button {...props} />` renders what the caller passed. Written content wins. When the spread has no `children` prop at all, the element's content is left alone, so a script or the browser may fill it. |
 | `client:*`                   | Island directives, on components only. See [Islands](islands.md).                                                                                                                                                                                                                                                                                                                                            |
 
@@ -6255,8 +6255,10 @@ that loaded the document replaced them; SPA-wide defaults belong in the document
 `spa` layout.
 
 **Inline JSON and scripts.** The text of a `<script>` or `<style>` is raw text, which HTML does
-not decode, so Lumiose writes it as it is (no `&lt;`) and makes sure it cannot end the element:
-`</script` becomes `<\/script`, `</style` becomes `<\/style`, and in a JSON script
+not decode, so Lumiose writes it as it is (no `&lt;`) and makes sure it cannot end the element or
+open a tag: the character after a `<` that could start one is escaped (`</script` becomes
+`<\/script`, `<b` becomes `<\u0062` in a script and `<\62 ` in a style; see
+[Security](security.md) for what reads them back), and in a JSON script
 (`application/ld+json`, `application/json` and other `…json` types, `importmap`,
 `speculationrules`) every `<` becomes `\u003c`, which JSON reads back as `<`. So
 `{JSON.stringify(data)}` is the way to write JSON-LD, even with data users wrote. `innerHTML` and
@@ -6898,8 +6900,18 @@ export function ArticleData(props: { title: string; author: string }) {
 }
 ```
 
-The text of any `<script>` or `<style>` is raw text: it is written as it is, not HTML-escaped, and
-`</script`, `</style` and `<!--` are neutralized so that a value can't end the element. See
+The text of any `<script>` or `<style>` is raw text: it is written as it is, not HTML-escaped,
+except for the character after a `<` that could open a tag, an end tag or a comment (a letter, `!`,
+`/` or `?`), which Lumiose escapes: `<img` becomes `<\u0069mg` in a script and `<\69 mg` in a
+style, `</script` becomes `<\/script` and `<!--` becomes `<\!--`. So a value can't end the
+element, nor open a tag where the element ends up inside `<svg>` or `<math>` (a component whose
+root is a `<style>`), whose `<style>` and `<script>` text the browser parses as markup. The escapes
+read back as written in JavaScript strings, template literals, regular expressions and
+identifiers, and in CSS strings, identifiers and URLs. They don't in script code with `<` right
+before a keyword or `!` (`i<this.n`, `a<!b`: write `i < this.n`), in raw template strings
+(`String.raw`), for `<!` in a regular expression with the `u` or `v` flag, and for a CSS `<!--`. A
+`<style>` or `<script>` written inside `<svg>` or `<math>`, or under a root such as `<g>`, is an SVG
+or MathML element: its text is escaped as usual, and the parser decodes it. See
 [Head and metadata](head.md) for JSON-LD per page.
 
 **Error details.** In production server rendering, `<ErrorBoundary>` fallbacks receive a generic
