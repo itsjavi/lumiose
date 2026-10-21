@@ -1,11 +1,11 @@
 ---
 id: TASK-487
-title: Extract gbapu into itsjavi/gbapu and publish it to npm
+title: Extract gbaudio (formerly gbapu) into itsjavi/gbaudio and publish it to npm
 status: In Progress
 assignee:
   - '@Chime'
 created_date: '2026-10-20 21:22'
-updated_date: '2026-10-21 01:48'
+updated_date: '2026-10-21 03:33'
 labels: []
 milestone: m-13
 dependencies: []
@@ -22,8 +22,8 @@ decision-73: a public MIT repository with the engine's TypeScript source, fresh 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
 - [x] #1 The user approved creating the repository and publishing
-- [x] #2 github.com/itsjavi/gbapu exists, MIT, with source, tests and CI
-- [ ] #3 gbapu is on npm and its types resolve
+- [x] #2 github.com/itsjavi/gbaudio exists, MIT, with source, tests and CI
+- [ ] #3 gbaudio is on npm and its types resolve
 <!-- AC:END -->
 
 ## Implementation Notes
@@ -40,4 +40,6 @@ decision-73: a public MIT repository with the engine's TypeScript source, fresh 
 2026-10-21 (Lux): the user confirmed the stoneface86/gbapu port (credit and MIT notice kept), kept the unscoped npm name gbapu, and chose to format the engine sources (done in the package, local commits). Waiting for approval to create the repository, push and publish.
 
 2026-10-21 (Lux): the user approved creating the repository and pushing; github.com/itsjavi/gbapu created (public) and main pushed (9 commits; the package description and README intro now name the stoneface86/gbapu port). The user publishes to npm themselves; AC 3 waits for that.
+
+2026-10-21 (Lux): npm refused the name gbapu (too similar to gsap). The package is now gbaudio (user's choice); the user published 1.0.0 by hand, which npm holds as a staged release (only a 0.0.0-stage placeholder is visible) until the user approves it on npmjs.com. The repository was renamed to itsjavi/gbaudio and the local folder to ../gbaudio. The release workflow now skips a version npm already has, so tagging v1.0.0 creates the GitHub release without publishing again. Two local commits (rename, repository URLs plus skip) wait for the user's push approval.
 <!-- SECTION:NOTES:END -->

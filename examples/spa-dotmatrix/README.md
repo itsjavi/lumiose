@@ -11,7 +11,7 @@ of a tracker and hex effect columns.
 
 ![The studio playing a demo song](../../backlog/assets/task-133-studio-demo.png)
 
-> The sound engine in `vendor/gbapu/` is [gbapu](https://github.com/itsjavi/gbapu), the author's
+> The sound engine in `vendor/gbapu/` is [gbaudio](https://github.com/itsjavi/gbaudio), the author's
 > Game Boy APU library (MIT; its emulation is a TypeScript port of
 > [stoneface's gbapu](https://github.com/stoneface86/gbapu)). It is vendored as a build until it is
 > on npm; `CHECKSUMS.sha256` pins its files.
@@ -118,7 +118,7 @@ recipes and original examples.
 
 ## Credits
 
-- Sound engine: [gbapu](https://github.com/itsjavi/gbapu) (MIT), vendored as a build in
+- Sound engine: [gbaudio](https://github.com/itsjavi/gbaudio) (MIT), vendored as a build in
   `vendor/gbapu` with its `LICENSE` and `CHECKSUMS.sha256`; `src/audio/vendor.test.ts` checks the
   build against the checksums.
 - The driver, presets, wave tables, drum kit, demo songs and sound effects are original work for

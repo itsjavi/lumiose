@@ -17,9 +17,9 @@ gbapu is the author's Game Boy APU engine. Its LICENSE-NOTICE records that it wa
 
 Approved by the user on 2026-10-20 and revised on 2026-10-21: one repository for both apps instead of two. The work becomes two public repositories under the author's GitHub account, both MIT:
 
-- **`itsjavi/gbapu`**, published to npm as `gbapu`. It holds the engine's TypeScript source, with tests, types and a build. It starts with a fresh history.
+- **`itsjavi/gbaudio`** (created as `itsjavi/gbapu`, renamed on 2026-10-21), published to npm as `gbaudio`. It holds the engine's TypeScript source, with tests, types and a build. It starts with a fresh history.
   - **Provenance** (confirmed by the user on 2026-10-21): the APU emulation (`src/gbapu.ts`) is a TypeScript port of stoneface's C++ gbapu (github.com/stoneface86/gbapu, MIT, 2020). Its MIT notice is in LICENSE and the README credits it. The audio compiler, token tables and WAV export are the author's.
-  - **Name:** the user kept the unscoped name `gbapu`. The package description and README say it is a TypeScript port of stoneface86/gbapu, with an audio compiler.
+  - **Name:** npm refused `gbapu` as too similar to an existing package (`gsap`), so the package is `gbaudio` and the repository was renamed to match (user, 2026-10-21). The package description and README say the emulation is a TypeScript port of stoneface86/gbapu.
   - **Formatting:** the engine files are formatted with the package's oxfmt settings. The package is their source of truth from now on.
 - **`itsjavi/dotmatrix`**, a pnpm workspace with three apps. It keeps the history of both examples, moved to their new folders:
 
@@ -29,7 +29,7 @@ Approved by the user on 2026-10-20 and revised on 2026-10-21: one repository for
   | `apps/pocket-react`  | the React port with its scorecard (decision-70) | `/dotmatrix/react/` |
   | `apps/advanced`      | examples/spa-chiptune (formerly Lumiose Chip) | `/dotmatrix/advanced/` |
 
-  One Pages deployment holds the three builds. The root `404.html` hands paths below `/react/` and `/advanced/` to that app's own SPA shell, as the Lumiose site does for its showcase. `pocket` and `pocket-react` depend on `gbapu` from npm.
+  One Pages deployment holds the three builds. The root `404.html` hands paths below `/react/` and `/advanced/` to that app's own SPA shell, as the Lumiose site does for its showcase. `pocket` and `pocket-react` depend on `gbaudio` from npm.
 
 The repositories get:
 - What `npm create lumiose` writes: AGENTS.md and the Lumiose skill.
@@ -50,5 +50,5 @@ After the extraction, this repository:
 
 - Lumiose's CI loses its two largest apps as build checks. Each new repository's own CI builds against the latest `lumiose` through Renovate, so a break shows up there, at no extra cost here.
 - Commit messages carried over mention Lumiose TASK ids, so each README points to the Lumiose backlog.
-- Creating each repository and publishing `gbapu` wait for the user's go-ahead.
+- Creating each repository and publishing `gbaudio` wait for the user's go-ahead.
 - The Chime agent's area leaves this repository with the apps.

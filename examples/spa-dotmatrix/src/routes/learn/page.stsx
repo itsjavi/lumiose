@@ -234,7 +234,7 @@ export default function Learn() {
         <h2>Credits</h2>
         <ul>
           <li>
-            Sound: <b>gbapu</b>, the author's Game Boy APU emulator and offline renderer (MIT), a
+            Sound: <b>gbaudio</b>, the author's Game Boy APU emulator and offline renderer (MIT), a
             TypeScript port of stoneface's gbapu; vendored in <code>vendor/gbapu</code>.
           </li>
           <li>

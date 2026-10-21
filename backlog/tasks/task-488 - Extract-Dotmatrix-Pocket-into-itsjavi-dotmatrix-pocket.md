@@ -18,7 +18,7 @@ ordinal: 484000
 ## Description
 
 <!-- SECTION:DESCRIPTION:BEGIN -->
-decision-73 (revised 2026-10-21): one public MIT repository, a pnpm workspace with apps/pocket (examples/spa-dotmatrix, Dotmatrix Pocket) and apps/advanced (examples/spa-chiptune, formerly Lumiose Chip), keeping both histories (git filter-repo of both paths, moved to their app folders); apps/pocket-react comes with TASK-491. Depends on lumiose 0.5.0+ and gbapu from npm. Setup: what npm create lumiose writes (AGENTS.md, Lumiose skill), CLAUDE.md pointing to AGENTS.md, README pointing to the Lumiose backlog for old TASK ids, MIT LICENSE, oxlint, oxfmt, Vitest, Playwright, a CI workflow and Renovate. Ask the user before creating the repository.
+decision-73 (revised 2026-10-21): one public MIT repository, a pnpm workspace with apps/pocket (examples/spa-dotmatrix, Dotmatrix Pocket) and apps/advanced (examples/spa-chiptune, formerly Lumiose Chip), keeping both histories (git filter-repo of both paths, moved to their app folders); apps/pocket-react comes with TASK-491. Depends on lumiose 0.5.0+ and gbaudio (formerly gbapu) from npm. Setup: what npm create lumiose writes (AGENTS.md, Lumiose skill), CLAUDE.md pointing to AGENTS.md, README pointing to the Lumiose backlog for old TASK ids, MIT LICENSE, oxlint, oxfmt, Vitest, Playwright, a CI workflow and Renovate. Ask the user before creating the repository.
 <!-- SECTION:DESCRIPTION:END -->
 
 ## Acceptance Criteria
