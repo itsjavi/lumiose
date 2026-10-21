@@ -3,7 +3,7 @@ id: doc-11
 title: Port scorecards
 type: other
 created_date: '2026-10-20 21:23'
-updated_date: '2026-10-21 02:01'
+updated_date: '2026-10-21 06:00'
 ---
 Every port of a real project records a scorecard against its original stack here (decision-70). Lumiose's public claims come from these scorecards and the benchmarks, so a port where Lumiose is not clearly better on something that matters is written down as plainly as a win, and its gaps become tasks.
 
@@ -49,9 +49,31 @@ Every port of a real project records a scorecard against its original stack here
   - Pages with an island still load about 13 kB gzip of island runtime, where the Astro site's inline scripts were 1-2 kB (TASK-283).
 - **Next:** TASK-486 switches its small scripts to `?client` after 0.5.0 and records the full scorecard here.
 
-### Dotmatrix Pocket: Lumiose vs idiomatic React (planned)
+### Dotmatrix Pocket: Lumiose vs idiomatic React
 
-TASK-491, after the extraction (TASK-488).
+- Original: the Lumiose app (lumiose 0.5.0, a prerendered SPA). Port: React 19.3 with the React Compiler 1.0, React Router 8.5 (data mode, lazy routes), Zustand and Immer, CSS modules, MDX. Both on Vite 8.3 and gbaudio 1.0, the same driver, model, demo songs and CSS. Date: 2026-10-21. Machine: Apple M1 Max, Node 26.8.
+- Port: github.com/itsjavi/dotmatrix (apps/pocket and apps/pocket-react); the full scorecard and DX notes are in its README ("Lumiose vs React"). Task: TASK-491.
+
+| Metric                                     |                         Lumiose |                          React | Notes                                                   |
+| ------------------------------------------ | ------------------------------: | -----------------------------: | ------------------------------------------------------- |
+| JavaScript, first load (studio/songs/learn) |           50.8 / 36.8 / 32.6 kB |       125.7 / 107.9 / 103.2 kB | Lumiose's runtime 17.7 kB; React + React DOM 56.8 kB    |
+| CSS, first load                             |             10.1 / 7.1 / 7.1 kB |            10.5 / 8.1 / 7.6 kB |                                                         |
+| Requests, first load                        |                    13 / 11 / 11 |                     10 / 9 / 8 |                                                         |
+| Studio first load, slow 4G + 4x CPU         | shows 0.70 s, interactive 1.50 s | shows and interactive 3.01 s | Lumiose prerenders every page                           |
+| Build, cold / warm                          |                   1.22 / 1.19 s |                  1.59 / 1.60 s | The Babel React Compiler takes about 1.0 s              |
+| Interactions                                |                            same |                           same | Within 1-2 ms on every measured interaction             |
+| Source lines (code + styles)                |                           5,669 |                          5,867 |                                                         |
+| Runtime dependencies (direct)               |                               5 |                              9 |                                                         |
+
+**Easier in Lumiose:** first paint (prerendered pages), reactivity without stale state in handlers, fine-grained updates without splitting components for the playhead, the DOM's own change events, and scoped element selectors.
+
+**Harder in Lumiose:**
+- Hydration: browser-saved state (the open song, preferences) loads after mount so the first client render matches the prerendered HTML. The songs gallery (18 kB of prerendered HTML) becomes interactive at 2.8 s on the slow profile, slightly later than React's 2.7 s (TASK-515).
+- Share links: React Router's `loader` opens `?song=` before the studio renders; Lumiose reads it in `onMount`.
+- Undo: Immer's immutable songs make history cheap; the Lumiose store snapshots the song on every edit.
+- Ecosystem: React had a ready answer for every need (MDX, Zustand, Immer, lint rules) and familiar docs.
+
+**Gaps found:** TASK-515.
 
 ### A private app: list and detail (planned)
 
