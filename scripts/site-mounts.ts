@@ -13,10 +13,11 @@ export interface Example {
   indexed: boolean;
 }
 
-/** The examples the site publishes: static output, no server. */
+/**
+ * The examples the site publishes: static output, no server. The showcase's real apps live in their
+ * own repositories now (decision-73); scripts/site.ts redirects their old paths.
+ */
 export const EXAMPLES: Example[] = [
-  { name: "spa-chiptune", dist: "dist/client", path: "showcase/chiptune-tracker/", indexed: true },
-  { name: "spa-dotmatrix", dist: "dist/client", path: "showcase/dotmatrix/", indexed: true },
   {
     name: "ssg-travel-journal",
     dist: "dist/client",

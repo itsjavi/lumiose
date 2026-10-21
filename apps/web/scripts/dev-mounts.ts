@@ -1,8 +1,8 @@
-// Dev only (TASK-239): the apps scripts/site.ts mounts below the site (the showcase apps, the demos
-// and the benchmark UIs) are separate builds, so `lumiose dev` serves them from their built output
+// Dev only (TASK-239): the apps scripts/site.ts mounts below the site (the demos and the benchmark
+// UIs) are separate builds, so `lumiose dev` serves them from their built output
 // instead of answering 404. For each mount it takes the site build (apps/web/dist/site/<mount>) when that was
 // built for this base, else the package's own output (scripts/site-mounts.ts). Missing paths get the
-// app's own 404.html (the SPA shell of the chiptune tracker, for its deep links), as on GitHub Pages.
+// app's own 404.html (an SPA's shell, for its deep links, or the journal's 404 page), as on GitHub Pages.
 // An app that is not built answers with a page naming the command that builds it.
 import { existsSync, readFileSync, statSync } from "node:fs";
 import type { IncomingMessage, ServerResponse } from "node:http";

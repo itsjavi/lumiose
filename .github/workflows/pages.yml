@@ -1,6 +1,6 @@
 # Builds the website with `pnpm build:site` and deploys it to GitHub Pages: apps/web at / (docs,
 # showcase and benchmarks pages, and the playground at /playground), the serverless examples at
-# /showcase/<slug>/ and /demos/<slug>/ and the benchmark UIs at /benchmarks/ (scripts/site.ts).
+# /demos/<slug>/, the benchmark UIs at /benchmarks/ and the old URLs' redirects (scripts/site.ts).
 # Enable it under Settings > Pages > Source: GitHub Actions.
 name: Pages
 
