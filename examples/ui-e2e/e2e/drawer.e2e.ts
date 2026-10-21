@@ -47,7 +47,10 @@ test.describe("without JavaScript", () => {
     const box = (await filters.boundingBox())!;
     const viewport = page.viewportSize()!;
     expect(Math.round(box.y + box.height)).toBe(viewport.height);
-    expect(Math.round(box.width)).toBe(viewport.width);
+    // As wide as the page: the scroll lock (dialog.css) keeps a stable scrollbar gutter, 15px of
+    // the viewport with Linux's classic scrollbars and none with macOS's overlay ones (TASK-507).
+    const width = await page.evaluate(() => document.documentElement.getBoundingClientRect().width);
+    expect(Math.round(box.width)).toBe(Math.round(width));
     await page.keyboard.press("Escape");
     await expect(filters).toBeHidden();
   });
