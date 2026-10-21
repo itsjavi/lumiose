@@ -5,7 +5,7 @@ status: In Progress
 assignee:
   - '@Chime'
 created_date: '2026-10-20 21:22'
-updated_date: '2026-10-21 01:38'
+updated_date: '2026-10-21 04:45'
 labels: []
 milestone: m-13
 dependencies:
@@ -39,4 +39,6 @@ Chime (2026-10-21): prepared the dotmatrix workspace locally; no GitHub reposito
 - Remaining: pnpm install + lockfile commit and a full run once 0.5.0 is on npm; then create the repository (AC #1-#3).
 
 Chime (2026-10-21, follow-up): rewrote the imported histories with git filter-branch (paths moved under apps/pocket and apps/advanced) and rebuilt main as the root commit, two --allow-unrelated-histories merges and the replayed commits (identical final tree). git log -- apps/pocket shows 32 commits, apps/advanced 28, git log --follow works on app files, no local paths in any message. pnpm-workspace.yaml now excludes lumiose, @lumiose/* and gbapu from the minimum release age. 66 commits; still no install (0.5.0 not on npm), remote or push.
+
+2026-10-21 (Lux): apps/pocket now uses gbaudio 1.0.1 from npm (vendored build and its checksum test removed), and the workspace installs lumiose 0.5.0 from npm with its first lockfile. Green locally: pnpm check (typecheck, lint with 0 errors, fmt, Vitest 212 + 10), both builds, Chromium e2e (pocket 66, advanced 28). History was rewritten earlier to drop private project references. Waiting for the user's approval to create github.com/itsjavi/dotmatrix and push.
 <!-- SECTION:NOTES:END -->
