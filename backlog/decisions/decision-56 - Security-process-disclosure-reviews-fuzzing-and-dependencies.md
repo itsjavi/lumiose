@@ -22,3 +22,4 @@ User decision, 2026-10-15.
 
 - Tasks: TASK-309 (SECURITY.md and the review step), TASK-310 (external review), TASK-311, TASK-312 and TASK-313 (fuzzing and property tests), TASK-314 (dependencies), TASK-315 (CSP in templates).
 - Enabling private vulnerability reporting and the Renovate app are repository settings the user changes.
+- Until 2026-10-21 the release workflow authenticated with an `NPM_TOKEN` secret, although the context above says trusted publishing; the v0.5.0 publish then failed on that token (TASK-485). Since 2026-10-21 every package has a trusted publisher for `release.yml`, and the workflow passes no token.

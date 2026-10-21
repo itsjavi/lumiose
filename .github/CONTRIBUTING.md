@@ -219,9 +219,12 @@ own 0.x versions until its own 1.0 ([below](#packages-outside-lockstep)).
    publish, the `github-release` job creates the tag's GitHub release, with the version's
    `CHANGELOG.md` section as notes (`node scripts/release-notes.ts <x.y.z>` prints them) and marked
    as a pre-release for `x.y.z-*` versions.
-3. Until the repository variable `LUMIOSE_PUBLISH` is `true` (with npm trusted publishing set up
-   for the packages, or an `NPM_TOKEN` secret), the workflow is a dry run (`npm publish --dry-run`)
-   and publishes nothing. A manual run (workflow_dispatch) is always a dry run.
+3. Publishing uses npm trusted publishing: each package's npm settings trust this repository's
+   `release.yml`, so the workflow uses no token and npm adds provenance on its own (npm 11.5.1 or
+   later, which the workflow checks). A new package needs one first publish by hand before its
+   trusted publisher can be set. Until the repository variable `LUMIOSE_PUBLISH` is `true`, the
+   workflow is a dry run (`npm publish --dry-run`) and publishes nothing. A manual run
+   (workflow_dispatch) is always a dry run.
 
 CI exercises the same path without publishing: the `pack` job's `pnpm pack:check` runs
 `npm publish --dry-run` in publish order, and `node --test scripts/*.test.ts` covers
