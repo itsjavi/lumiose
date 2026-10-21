@@ -1,10 +1,11 @@
 ---
 id: TASK-487
 title: Extract gbapu into itsjavi/gbapu and publish it to npm
-status: To Do
+status: In Progress
 assignee:
   - '@Chime'
 created_date: '2026-10-20 21:22'
+updated_date: '2026-10-21 01:07'
 labels: []
 milestone: m-13
 dependencies: []
@@ -24,3 +25,15 @@ decision-73: a public MIT repository with the engine's TypeScript source from th
 - [ ] #2 github.com/itsjavi/gbapu exists, MIT, with source, tests and CI
 - [ ] #3 gbapu is on npm and its types resolve
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+2026-10-21, Chime: the package is prepared locally as its own git repository (`gbapu`, 5 Conventional Commits on `main`, no remote). Nothing is created on GitHub, pushed or published.
+
+- **Package**: `gbapu` 0.1.0, MIT (Javi Aguilar), ESM, no dependencies, `sideEffects: false`, no `engines` (no Node APIs: typed arrays and `Blob` only). `exports` `.` points types and default to `dist/`; `files`: dist, README.md, LICENSE. TypeScript 7.0.2 build (strict, ES2022, declarations), pnpm 11.25.0, Vitest 5, oxlint, oxfmt. CI (`.github/workflows/ci.yml`, same action SHAs as Lumiose) runs install, typecheck, lint, fmt check, test, build and `npm pack --dry-run`; Renovate config copied from Lumiose without the Cargo rule.
+- **Source**: the five engine modules are byte-identical to the author's source; `src/index.ts` re-exports them. Its declarations match `examples/spa-dotmatrix/vendor/gbapu/dist/*.d.ts`, plus additive optional driver-program types (`EffectDriverProgram`, `NoiseDriverProgram`, `WaveDriverProgram`, `MusicPulseDriverProgram`, `NoiseSampleBank`, `WaveSampleBank`) and channel fields. `audio-export` adds handling for writes at a finite wave channel's end cycle. Dotmatrix clamps writes to `total - 1`, so its renders do not change, and its imports switch with specifier changes only (TASK-488).
+- **License**: `src/gbapu.ts` is a TypeScript port of stoneface86/gbapu (C++, MIT, copyright 2020 stoneface). LICENSE carries that notice after the project's MIT notice, and the README credits it.
+- **Verification**: 27 Vitest tests (identical renders on repeat, the pitch of a pulse tone, NR51 routing, loops, render horizon and limits, a three-channel song's compiled writes and controls, token lookups, WAV header, encoding and `smpl` loop, `Apu` reset). Typecheck, lint, fmt check, build and the CI steps on a clean clone all pass. `npm publish --dry-run` accepts the tarball (15 files, 22.1 kB). The packed tarball installed in a scratch project: the README example runs and writes a valid WAV, and the types resolve under nodenext and bundler without skipLibCheck. The npm name `gbapu` is free.
+- **Waiting for the user**: approval to create github.com/itsjavi/gbapu and push, and to publish to npm (AC #1 to #3). Open questions: the name `gbapu` (also the name of stoneface's C++ library), the README wording, and whether to reformat the verbatim engine modules (oxfmt skips them for now).
+<!-- SECTION:NOTES:END -->
