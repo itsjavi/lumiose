@@ -22,6 +22,7 @@ import {
   classAttr,
   createComponent,
   escape,
+  rawText,
   renderToString,
   spreadAttrs,
   styleAttr,
@@ -278,6 +279,16 @@ describe("spread parity", () => {
     expect(parsed(`<div${spreadAttrs(props)}></div>`)).toBe(written(div));
   });
 
+  it("drops srcdoc in any case, on both sides (TASK-496)", () => {
+    const html = "<script>parent.alert(1)</script>";
+    const props = { srcdoc: html, srcDoc: html, SRCDOC: html, title: "kept" };
+    const iframe = document.createElement("iframe");
+    render(() => (spread(iframe, () => props), iframe), document.createElement("main"));
+    expect(parsed(`<iframe${spreadAttrs(props)}></iframe>`)).toBe(written(iframe));
+    expect(spreadAttrs(props)).toBe(' title="kept"');
+    expect(iframe.hasAttribute("srcdoc")).toBe(false);
+  });
+
   it("renders DOM properties as the attributes that give the same initial state", () => {
     const props = { type: "checkbox", value: "on", checked: true, indeterminate: true };
     const input = document.createElement("input");
@@ -300,6 +311,11 @@ async function both(
   const container = document.createElement("div");
   render(clientCode as () => never, container);
   return [parsed(await renderToString(serverCode)), normalize(container).innerHTML];
+}
+
+/** Server-renders `<Dynamic>` with `props`. */
+function renderDynamic(props: client.DynamicProps): Promise<string> {
+  return renderToString(() => createComponent(server.Dynamic, props));
 }
 
 describe("public component parity", () => {
@@ -357,6 +373,12 @@ describe("public component parity", () => {
       { innerHTML: "<b>bold</b>", children: " tail" },
       "<div><b>bold</b> tail</div>",
     ],
+    [
+      "srcdoc",
+      "iframe",
+      { title: "t", srcdoc: '<p class="x">a & b</p>' },
+      '<iframe title="t" srcdoc="<p class=&quot;x&quot;>a &amp; b</p>"></iframe>',
+    ],
     ["nothing", null, { children: "x" }, ""],
   ])("Dynamic with %s", async (_, component, props, expected) => {
     const all = { component, ...props } as client.DynamicProps;
@@ -366,6 +388,24 @@ describe("public component parity", () => {
     );
     expect(dom).toBe(expected);
     expect(ssr).toBe(dom);
+  });
+
+  it("Dynamic writes the text of a <style> or <script> as raw text, as the compiler does (TASK-495)", async () => {
+    const css = "a::after { content: '</style><img src=x onerror=alert(1)>' }";
+    const data = JSON.stringify({ html: "</script><img src=x>" });
+    expect(await renderDynamic({ component: "style", children: css })).toBe(
+      `<style>${rawText(css, "style")}</style>`,
+    );
+    // The client sets a raw text element's `innerHTML` as text.
+    expect(await renderDynamic({ component: "STYLE", innerHTML: css })).toBe(
+      `<STYLE>${rawText(css, "style")}</STYLE>`,
+    );
+    expect(await renderDynamic({ component: "script", textContent: "x = '<b>'" })).toBe(
+      `<script>${rawText("x = '<b>'", "script")}</script>`,
+    );
+    expect(
+      await renderDynamic({ component: "script", type: "application/ld+json", children: data }),
+    ).toBe(`<script type="application/ld+json">${rawText(data, "script", true)}</script>`);
   });
 
   it("Dynamic rejects tag names that could inject markup", () => {

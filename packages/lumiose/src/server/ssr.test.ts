@@ -83,20 +83,46 @@ describe("escaping", () => {
   });
 });
 
+/** Evaluates the expression `code` as it reads in a `<script>` that `rawText` wrote. */
+function evaluate(code: string): unknown {
+  return new Function(`return ${rawText(code, "script")}`)();
+}
+
 describe("rawText", () => {
   it("writes script and style text as it is, ending neither element early", () => {
     expect(rawText("if (a < b && c) {}", "script")).toBe("if (a < b && c) {}");
     expect(rawText('"</script><img src=x>" + "</SCRIPT >"', "script")).toBe(
-      '"<\\/script><img src=x>" + "<\\/SCRIPT >"',
+      '"<\\/script><\\u0069mg src=x>" + "<\\/SCRIPT >"',
     );
-    expect(rawText("x = '<!--<script>'", "script")).toBe("x = '<\\!--<script>'");
+    expect(rawText("x = '<!--<script>' + '<?x'", "script")).toBe(
+      "x = '<\\!--<\\u0073cript>' + '<\\?x'",
+    );
     expect(rawText("a::after { content: '</style>' }", "style")).toBe(
       "a::after { content: '<\\/style>' }",
     );
-    expect(rawText("<!-- -->", "style")).toBe("<!-- -->");
+    expect(rawText("<!-- -->", "style")).toBe("<\\!-- -->");
     expect(rawText(null, "script")).toBe("");
     expect(rawText(false, "style")).toBe("");
     expect(rawText(1, "script")).toBe("1");
+  });
+
+  it("escapes the character after a < that could open a tag, which JavaScript and CSS read back (TASK-495)", () => {
+    // Inside <svg> or <math> the text is parsed as markup: no tag may open there either.
+    expect(rawText("x = '<img src=x onerror=alert(1)>'; for (;i<n;) {}", "script")).toBe(
+      "x = '<\\u0069mg src=x onerror=alert(1)>'; for (;i<\\u006e;) {}",
+    );
+    expect(rawText("@media (400px<width) { a::after { content: '<Img>' } }", "style")).toBe(
+      "@media (400px<\\77 idth) { a::after { content: '<\\49 mg>' } }",
+    );
+    expect(rawText("<<b", "script")).toBe("<<\\u0062");
+    // The same value in a JavaScript string, template literal, regular expression and identifier.
+    const payload = "</script><img src=x onerror=alert(1)><!--<?x</style>";
+    expect(evaluate(JSON.stringify(payload))).toBe(payload);
+    expect(evaluate(`\`${payload}\``)).toBe(payload);
+    expect(
+      evaluate("['<img>', '<!--', '</x'].map((s) => /^(?:<img>|<!--|<\\/x)$/.test(s))"),
+    ).toEqual([true, true, true]);
+    expect(evaluate("((i, n) => i<n)(1, 2)")).toBe(true);
   });
 
   it("writes every < of a JSON script as \\u003c, which JSON reads back", () => {

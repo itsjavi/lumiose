@@ -138,7 +138,7 @@ Strings set as properties keep the URL check of attributes (a `javascript:` URL 
 placeholder). An element that is not defined yet when the component runs gets attributes for
 everything, so load its definition first (above). `class`, `style`, `ref`, `attach` and
 `innerHTML` work as on any element, and a spread (`{...props}`) follows the same rule (it never
-sets `innerHTML` or `textContent`, on any element).
+sets `innerHTML`, `textContent` or `srcdoc`, on any element).
 
 ## Events
 

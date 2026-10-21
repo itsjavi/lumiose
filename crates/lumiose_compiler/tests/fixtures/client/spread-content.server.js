@@ -1,4 +1,4 @@
-import { ssr, SSRHtml, spreadAttrs, escape, restProps } from "lumiose/server";
+import { ssr, SSRHtml, attr, spreadAttrs, escape, restProps } from "lumiose/server";
 const _s0 = [
 	"<div",
 	">",
@@ -13,6 +13,12 @@ const _s1 = [
 	"><b>static</b></article></section>"
 ];
 const _c1 = (h0, h1, h2, h3) => typeof h0 === "string" && typeof h1 === "string" && typeof h2 === "string" && typeof h3 === "string" ? new SSRHtml("<section><p" + h0 + ">" + h1 + "</p><p" + h2 + ">static</p><article" + h3 + "><b>static</b></article></section>") : ssr(_s1, h0, h1, h2, h3);
+const _s2 = [
+	"<iframe",
+	"",
+	"></iframe>"
+];
+const _c2 = (h0, h1) => typeof h0 === "string" && typeof h1 === "string" ? new SSRHtml("<iframe" + h0 + h1 + "></iframe>") : ssr(_s2, h0, h1);
 // A written `innerHTML` or `textContent` next to a spread applies as written, after the spread,
 // on both targets (TASK-478): a spread never writes content (TASK-470), so it cannot go through
 // it. It replaces the spread's `children` (TASK-347), as it replaces written children.
@@ -22,4 +28,9 @@ export function Html(props) {
 }
 export function Text(props) {
 	return _c1(spreadAttrs(props.attrs), escape(props.text), spreadAttrs(props.attrs), spreadAttrs(props.attrs));
+}
+// An iframe's `srcdoc` too: a spread never writes it (TASK-496), so a written one applies after
+// the spread.
+export function Frame(props) {
+	return _c2(spreadAttrs(props.attrs), attr("srcdoc", props.doc));
 }

@@ -10,8 +10,10 @@ const PROPERTIES = /^(?:value|checked|selected|muted|indeterminate)$/;
 /**
  * Content a spread never writes, as the server's `spreadAttrs` does not: an object from JSON (a
  * notification, a realtime payload) must not inject HTML. Only a written prop sets it (TASK-470).
+ * That includes an iframe's `srcdoc`, a document with the page's origin, in any case, as
+ * attribute names are (TASK-496).
  */
-const CONTENT = /^(?:innerHTML|textContent)$/;
+const CONTENT = /^(?:innerHTML|textContent)$|^srcdoc$/i;
 
 interface SpreadState {
   el: Element;

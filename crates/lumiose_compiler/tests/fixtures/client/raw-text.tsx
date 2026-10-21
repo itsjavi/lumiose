@@ -29,3 +29,33 @@ export function Inline(props: { name: string; css: string }) {
     </div>
   );
 }
+
+// TASK-495: a `<style>` or `<script>` under a root such as `<g>` or `<mi>` is SVG or MathML, as on
+// the client: its text is escaped (and the parser decodes it). A root `<style>` or `<script>` may
+// still end up inside `<svg>`, where its text is parsed as markup: `rawText()` escapes the
+// character after each `<` that could open a tag, as in the static text here.
+export function Layer(props: { css: string }) {
+  return (
+    <g>
+      <style>{props.css}</style>
+    </g>
+  );
+}
+
+export function Formula(props: { code: string }) {
+  return (
+    <>
+      <mi>x</mi>
+      <script>{props.code}</script>
+    </>
+  );
+}
+
+export function Sheet(props: { css: string }) {
+  return (
+    <>
+      <style>{props.css}</style>
+      <style>{"a::after { content: '<img src=x>' }"}</style>
+    </>
+  );
+}

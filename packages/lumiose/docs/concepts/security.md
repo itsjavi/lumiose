@@ -62,10 +62,14 @@ file's `<style>` block.
 follow `http:` and `https:` URLs (relative ones included); a `javascript:` or `data:` location
 throws a `TypeError` instead of running in the page. Spread props drop lowercase `on*` keys
 (`{...{ onclick: "…" }}`): an inline handler attribute is a script sink, so handlers are only
-functions in `onClick`. They drop `innerHTML` and `textContent` too, on the server and the client:
-an object from JSON (a notification passed to a toast as it came) cannot inject markup, and only a
-written `innerHTML` prop sets HTML, next to a spread too (`<div {...rest} innerHTML={html} />`). `<Dynamic component="div">`
-takes its props as written ones, so do not spread such an object into it.
+functions in `onClick`. They drop `innerHTML`, `textContent` and an iframe's `srcdoc` (in any
+case) too, on the server and the client: an object from JSON (a notification passed to a toast as
+it came) cannot inject markup, and only a written `innerHTML` or `srcdoc` prop sets HTML, next to a
+spread too (`<div {...rest} innerHTML={html} />`).
+
+> **Warning:** `<Dynamic component="div">` takes its props as written ones: it applies
+> `innerHTML`, `textContent` and `srcdoc` from them. Never spread an object from JSON, or any
+> other untrusted object, into `Dynamic`.
 
 **Unsafe URLs.** A dynamic value for a URL attribute (`href`, `src`, `action`, `formaction`,
 `xlink:href`, `poster`, `data`, …) whose scheme is `javascript:`, `vbscript:` or `data:text/html`
@@ -98,8 +102,18 @@ export function ArticleData(props: { title: string; author: string }) {
 }
 ```
 
-The text of any `<script>` or `<style>` is raw text: it is written as it is, not HTML-escaped, and
-`</script`, `</style` and `<!--` are neutralized so that a value can't end the element. See
+The text of any `<script>` or `<style>` is raw text: it is written as it is, not HTML-escaped,
+except for the character after a `<` that could open a tag, an end tag or a comment (a letter, `!`,
+`/` or `?`), which Lumiose escapes: `<img` becomes `<\u0069mg` in a script and `<\69 mg` in a
+style, `</script` becomes `<\/script` and `<!--` becomes `<\!--`. So a value can't end the
+element, nor open a tag where the element ends up inside `<svg>` or `<math>` (a component whose
+root is a `<style>`), whose `<style>` and `<script>` text the browser parses as markup. The escapes
+read back as written in JavaScript strings, template literals, regular expressions and
+identifiers, and in CSS strings, identifiers and URLs. They don't in script code with `<` right
+before a keyword or `!` (`i<this.n`, `a<!b`: write `i < this.n`), in raw template strings
+(`String.raw`), for `<!` in a regular expression with the `u` or `v` flag, and for a CSS `<!--`. A
+`<style>` or `<script>` written inside `<svg>` or `<math>`, or under a root such as `<g>`, is an SVG
+or MathML element: its text is escaped as usual, and the parser decodes it. See
 [Head and metadata](head.md) for JSON-LD per page.
 
 **Error details.** In production server rendering, `<ErrorBoundary>` fallbacks receive a generic

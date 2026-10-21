@@ -9,7 +9,7 @@ import { fc } from "../app/server/__fixtures__/property.ts";
 import { navigationUrl } from "../app/actions/navigation.ts";
 import { BLOCKED_URL, isUnsafeUrl, safeAttrValue } from "../dom/url.ts";
 import { attr } from "./attrs.ts";
-import { escapeText } from "./node.ts";
+import { escapeText, rawText } from "./node.ts";
 
 /** Whether a browser runs `value` as script, or loads it as an HTML document (the URL parser decides). */
 function runsOrLoadsHtml(value: string): boolean {
@@ -143,6 +143,86 @@ describe("escaping", () => {
   it("keeps a stray comment end in text as text", () => {
     // The 200,000-case counterexample of happy-dom's parser (TASK-344).
     for (const value of ["javascript:,-->", "a-->", "--!>", "<!-- a -->"]) textSurvives(value);
+  });
+});
+
+/** Text for `<script>` and `<style>`: openers of tags, end tags, comments and CDATA, entities, quotes. */
+const rawArb = fc.oneof(
+  fc
+    .array(
+      fc.constantFrom(
+        "<",
+        "</",
+        "<!--",
+        "<!",
+        "<?",
+        "<![CDATA[",
+        "-->",
+        "]]>",
+        "img src=x onerror=alert(1)>",
+        "script",
+        "STYLE",
+        "svg",
+        "math",
+        "b",
+        "Z",
+        "/",
+        "!",
+        "?",
+        "&lt;",
+        "&#60;",
+        '"',
+        "'",
+        "`",
+        "\\",
+        " ",
+        "\n",
+        "a{}",
+      ),
+      { maxLength: 12 },
+    )
+    .map((parts) => parts.join("")),
+  fc.string(),
+  fc.string({ unit: "binary" }),
+);
+
+describe("raw text", () => {
+  it("opens no tag, end tag or comment in script and style text, in HTML, SVG and MathML (TASK-495)", () => {
+    fc.assert(
+      fc.property(
+        fc.constantFrom("script", "style"),
+        fc.constantFrom("", "svg", "math"),
+        rawArb,
+        (tag, parent, value) => {
+          const raw = rawText(value, tag);
+          const inner = `<${tag}>${raw}</${tag}>`;
+          let element = parseElement(parent === "" ? inner : `<${parent}>${inner}</${parent}>`);
+          if (parent !== "") {
+            expect(element.childNodes).toHaveLength(1);
+            element = element.childNodes[0] as DefaultTreeAdapterTypes.Element;
+            // A foreign element, whose text the parser reads as markup.
+            expect(element.namespaceURI).not.toBe("http://www.w3.org/1999/xhtml");
+          }
+          expect(element.tagName).toBe(tag);
+          for (const node of element.childNodes) expect(node.nodeName).toBe("#text");
+          if (parent === "" && htmlSafe(value)) {
+            const text = element.childNodes.map(
+              (node) => (node as DefaultTreeAdapterTypes.TextNode).value,
+            );
+            expect(text.join("")).toBe(raw);
+          }
+        },
+      ),
+    );
+  });
+
+  it("keeps a JavaScript string the same in script text", () => {
+    fc.assert(
+      fc.property(rawArb, (value) => {
+        const code = rawText(JSON.stringify(value), "script");
+        expect(new Function(`return ${code}`)()).toBe(value);
+      }),
+    );
   });
 });
 
