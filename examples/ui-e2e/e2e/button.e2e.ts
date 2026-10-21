@@ -21,12 +21,10 @@ const button = (page: Page, name: string) => page.getByRole("button", { name, ex
  * same state, so nothing else tells.
  */
 async function hydrated(page: Page) {
-  await expect(async () => {
-    await button(page, "Save").click({ timeout: 250 });
-    await expect(page.getByTestId("button-state")).toHaveText("saves: 1, saving", {
-      timeout: 250,
-    });
-  }).toPass();
+  // One click: the island loader holds a click that comes before hydration and replays it after.
+  // Clicking until it answers would count each held click (TASK-514).
+  await button(page, "Save").click();
+  await expect(page.getByTestId("button-state")).toHaveText("saves: 1, saving");
 }
 
 test.describe("without JavaScript", () => {

@@ -284,8 +284,12 @@ test.describe("in an island", () => {
     await page.goto("/popover/hover-modal/island");
     const state = page.getByTestId("popover-state");
     const settings = card(page, "Settings");
+    // Clicks until the island answers, and no further: a click before hydration is replayed after
+    // it, and the modal popover it opens would take the next click (TASK-514).
     await expect(async () => {
-      await page.getByTestId("open-modal").click({ timeout: 250 });
+      if (!(await settings.isVisible())) {
+        await page.getByTestId("open-modal").click({ timeout: 250 });
+      }
       await expect(settings).toBeVisible({ timeout: 250 });
     }).toPass();
     await expect(state).toHaveText("modal: open, card: closed");

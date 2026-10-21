@@ -357,9 +357,12 @@ export function DocArticle(props: DocArticleProps) {
     background: none;
   }
 
+  /* Two equal columns that a long label ("Autocomplete") cannot widen: it breaks instead, at 320 px
+     with WCAG's text spacing (1.4.10, 1.4.12) and in wider fallback fonts (DejaVu Sans on Linux,
+     where Inter is not installed). */
   .adjacent {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: $space.md;
     margin-block-start: $space.xxl;
     padding-block-start: $space.lg;
@@ -373,6 +376,7 @@ export function DocArticle(props: DocArticleProps) {
     border-radius: $radius.md;
     font-weight: $weight.semibold;
     text-decoration: none;
+    overflow-wrap: anywhere;
   }
   .adjacent a:hover {
     border-color: $color.accent;
@@ -415,10 +419,12 @@ export function DocArticle(props: DocArticleProps) {
   .chunk :deep(code) {
     font-family: $font.mono;
   }
-  /* A long path or expression in a sentence or a heading (`Toast.createToastManager`) breaks rather
-     than widening a phone's page, also with WCAG's text-spacing overrides (1.4.10, 1.4.12). Table
-     cells keep theirs on one line. */
+  /* A long path or expression in a sentence or a heading (`Toast.createToastManager`), or a long
+     title ("Autocomplete" in Linux's wider fallback font), breaks rather than widening a phone's
+     page, also with WCAG's text-spacing overrides (1.4.10, 1.4.12). Table cells keep theirs on one
+     line. */
   .chunk :deep(code),
+  h1,
   .chunk :deep(h2),
   .chunk :deep(h3),
   .lead :deep(code) {

@@ -233,8 +233,12 @@ test.describe("in an island", () => {
     await page.goto("/menubar/island");
     const doc = bar(page, "Document");
     const status = page.getByTestId("status");
+    // Clicks until the island answers, and no further: a click before hydration is replayed after
+    // it, and one more would land outside the menu it opened (TASK-514).
     await expect(async () => {
-      await page.getByTestId("open-file").click({ timeout: 250 });
+      if (!(await doc.menu("File").isVisible())) {
+        await page.getByTestId("open-file").click({ timeout: 250 });
+      }
       await expect(doc.menu("File")).toBeVisible({ timeout: 250 });
     }).toPass();
     await expect(status).toContainText("the File menu is open");

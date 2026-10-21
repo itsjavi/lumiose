@@ -10,6 +10,12 @@ body {
   font-family: system-ui, sans-serif;
 }
 
+/* A one-word title ("Autocomplete") breaks rather than widening the page at 320px with WCAG's text
+   spacing (1.4.10, 1.4.12), in wide system fonts too (DejaVu Sans on Linux). */
+h1 {
+  overflow-wrap: anywhere;
+}
+
 .field {
   display: grid;
   gap: 0.375rem;

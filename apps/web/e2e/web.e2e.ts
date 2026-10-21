@@ -75,7 +75,8 @@ test("the landing page presents Lumiose with benchmark evidence", async ({ page 
   await expect(preact.locator("td").last()).toHaveText("No full-stack layer");
   await expect(
     page.locator("#compare .note", {
-      hasText: /^Astro's interactive islands need a second UI framework\.$/,
+      hasText:
+        /^Astro's interactive islands use a second UI framework: Preact in the fullstack comparison/,
     }),
   ).toHaveCount(1);
 

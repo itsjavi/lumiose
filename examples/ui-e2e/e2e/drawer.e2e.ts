@@ -47,7 +47,10 @@ test.describe("without JavaScript", () => {
     const box = (await filters.boundingBox())!;
     const viewport = page.viewportSize()!;
     expect(Math.round(box.y + box.height)).toBe(viewport.height);
-    expect(Math.round(box.width)).toBe(viewport.width);
+    // As wide as the page: the scroll lock (dialog.css) keeps a stable scrollbar gutter, 15px of
+    // the viewport with Linux's classic scrollbars and none with macOS's overlay ones (TASK-507).
+    const width = await page.evaluate(() => document.documentElement.getBoundingClientRect().width);
+    expect(Math.round(box.width)).toBe(Math.round(width));
     await page.keyboard.press("Escape");
     await expect(filters).toBeHidden();
   });
@@ -191,8 +194,12 @@ test.describe("in an island", () => {
   test("bind:open keeps a signal in sync, a swipe included", async ({ page }) => {
     await page.goto("/drawer/island");
     const state = page.getByTestId("state");
+    // Clicks until the island answers, and no further: a click before hydration is replayed after
+    // it, and the modal drawer it opens would take the next click (TASK-514).
     await expect(async () => {
-      await page.getByTestId("open").click();
+      if (!(await state.textContent())?.includes("open: true")) {
+        await page.getByTestId("open").click({ timeout: 250 });
+      }
       await expect(state).toHaveText("open: true", { timeout: 250 });
     }).toPass();
     const navigation = drawer(page, "Navigation");

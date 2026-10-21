@@ -30,6 +30,11 @@ import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
 
 const REPO = fileURLToPath(new URL("..", import.meta.url));
+/**
+ * `npm install` in the smoke app, whose dependencies outside the tarballs come from the registry.
+ * A connection reset on the CI runner outlasted npm's default 2 fetch retries (TASK-511): 5 then.
+ */
+const NPM_INSTALL = ["install", "--no-audit", "--no-fund", "--loglevel=error", "--fetch-retries=5"];
 
 export interface Manifest {
   name: string;
@@ -244,7 +249,7 @@ function smoke(packed: Packed[], out: string): void {
         overrides,
       }),
     );
-    run("npm", ["install", "--no-audit", "--no-fund", "--loglevel=error"], tools);
+    run("npm", NPM_INSTALL, tools);
     run(
       process.execPath,
       [join(tools, "node_modules/create-lumiose/dist/bin.js"), "app", "--template", "ssr", "--yes"],
@@ -261,7 +266,7 @@ function smoke(packed: Packed[], out: string): void {
     manifest.devDependencies["@playwright/test"] = playwrightVersion();
     writeFileSync(join(app, "package.json"), JSON.stringify({ ...manifest, overrides }, null, 2));
     cpSync(PACK_UI_FIXTURE, app, { recursive: true });
-    run("npm", ["install", "--no-audit", "--no-fund", "--loglevel=error"], app);
+    run("npm", NPM_INSTALL, app);
     const bin = join(app, "node_modules/@lumiose/cli/dist/bin.js");
     const playwright = join(app, "node_modules/@playwright/test/cli.js");
     const steps: [string, string[]][] = [
