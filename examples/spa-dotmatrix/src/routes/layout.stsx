@@ -103,7 +103,7 @@ export default function Layout(props: { children?: JSX.Element }) {
       <footer class="foot">
         <span>
           Built with {LUMIOSE_SITE ? <a href={LUMIOSE_SITE}>Lumiose</a> : "Lumiose"}. Sound by the
-          gbapu Game Boy APU engine (see <Link href={href("/learn")}>Learn</Link> for credits).
+          gbaudio Game Boy APU engine (see <Link href={href("/learn")}>Learn</Link> for credits).
         </span>
         <span class="keys">
           Press <kbd>?</kbd> for shortcuts

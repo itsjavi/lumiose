@@ -44,7 +44,7 @@ Design and architecture
 
 Content (all original): 5 demo songs (Maple Hollow town, Over the Ridge route, Rival Clash battle, Lantern Night night, First Steps tutorial; 9-37 s loops, 2-bar intros on route/battle/night) written in a small notation (src/model/notation.ts); 15 SFX (select, cursor, back, text blip, error, jump, hit, bump, door, pickup, heal, save, item get, level up, warp). Own wave tables (computed) and drum kit; the gbapu drum alias tokens (source-derived) are not used. No game data was copied.
 
-Vendoring: vendor/gbapu/{dist/*, LICENSE-NOTICE.md, PROVENANCE.json, CHECKSUMS.sha256} copied unchanged; src/audio/vendor.test.ts checks every dist file against CHECKSUMS.sha256. The example's .gitignore re-includes vendor/gbapu/dist/ (the root ignores dist/). README states the origin and that redistribution needs the rights holder's permission.
+Vendoring: vendor/gbaudio/{dist/*, LICENSE-NOTICE.md, PROVENANCE.json, CHECKSUMS.sha256} copied unchanged; src/audio/vendor.test.ts checks every dist file against CHECKSUMS.sha256. The example's .gitignore re-includes vendor/gbaudio/dist/ (the root ignores dist/). README states the origin and that redistribution needs the rights holder's permission.
 
 Validation: lumen check, lumen fmt --check, lumen lint clean; Vitest 30 tests (driver registers/loop markers, every demo channel audible on the real engine, notation, sanitize, share round trip of every demo, history, SFX mods/listing, vendor checksums); Playwright 22 tests x dev + build/preview green (playback, grid + keyboard editing, presets, gallery listen/open/undo, WAV export with smpl, share-link round trip in a fresh context, SFX maker + WAV, phone widths without sideways scroll, dark theme).
 

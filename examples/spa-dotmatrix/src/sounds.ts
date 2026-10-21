@@ -2,7 +2,7 @@
 // waveform, opening it in the studio as a sound sheet, and the "My sounds" shelf.
 import { href, signal } from "lumiose";
 import { navigate } from "lumiose/router";
-import type { EngineAudioData } from "../vendor/gbapu/dist/index.js";
+import type { EngineAudioData } from "../vendor/gbaudio/dist/index.js";
 import { songData } from "./audio/driver.ts";
 import { monoWav } from "./audio/player.ts";
 import { renderPcm } from "./audio/renderer.ts";

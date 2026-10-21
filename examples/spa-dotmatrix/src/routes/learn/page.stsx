@@ -235,7 +235,7 @@ export default function Learn() {
         <ul>
           <li>
             Sound: <b>gbaudio</b>, the author's Game Boy APU emulator and offline renderer (MIT), a
-            TypeScript port of stoneface's gbapu; vendored in <code>vendor/gbapu</code>.
+            TypeScript port of stoneface's gbapu; vendored in <code>vendor/gbaudio</code>.
           </li>
           <li>
             The sound driver (notes, vibrato, slides, arpeggios, drums), the instrument presets,

@@ -39,7 +39,7 @@ export function showcase(): Showcase[] {
       name: "spa-dotmatrix",
       title: "Dotmatrix",
       description:
-        "A pocket chiptune studio for the four channels of the Game Boy sound chip: a piano roll, presets and sound effects, rendered by the gbapu engine in a Web Worker.",
+        "A pocket chiptune studio for the four channels of the Game Boy sound chip: a piano roll, presets and sound effects, rendered by the gbaudio engine in a Web Worker.",
       tags: ["mode = spa", "router", ".md imports", "Web Worker"],
       demo: link("/showcase/dotmatrix/"),
       source: `${REPOSITORY}/tree/main/examples/spa-dotmatrix`,

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { renderEngineAudioToPcm } from "../../vendor/gbapu/dist/index.js";
+import { renderEngineAudioToPcm } from "../../vendor/gbaudio/dist/index.js";
 import { DEMOS } from "../model/songs/index.ts";
 import { STEPS_PER_BAR, type ChannelIndex } from "../model/types.ts";
 import {

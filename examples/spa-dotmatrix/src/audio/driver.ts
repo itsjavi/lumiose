@@ -1,4 +1,4 @@
-// The Dotmatrix sound driver: turns songs and SFX into gbapu command streams (register writes and
+// The Dotmatrix sound driver: turns songs and SFX into gbaudio command streams (register writes and
 // waits in CPU cycles). It works like a Game Boy game's music driver: notes start on step
 // boundaries, and once per video frame (70,224 cycles, ~59.7 Hz) it updates vibrato, slides,
 // arpeggios, duty cycle patterns and the wave channel's volume steps.
@@ -7,7 +7,7 @@ import type {
   EngineAudioCommand,
   EngineAudioData,
   EngineAudioRegisterToken,
-} from "../../vendor/gbapu/dist/index.js";
+} from "../../vendor/gbaudio/dist/index.js";
 import { DRUMS } from "../model/instruments.ts";
 import { hz } from "../model/music.ts";
 import {
@@ -271,7 +271,7 @@ function trackWrites(
   return out;
 }
 
-/** Writes in time order as gbapu commands, with a loop marker at `loopAt` cycles. */
+/** Writes in time order as gbaudio commands, with a loop marker at `loopAt` cycles. */
 function toCommands(
   events: TimedWrites[],
   total: number,
@@ -310,7 +310,7 @@ export interface StemOptions {
   loop?: boolean;
 }
 
-/** One channel of a song as a gbapu channel stream: one pass, intro included. */
+/** One channel of a song as a gbaudio channel stream: one pass, intro included. */
 export function channelData(
   song: Song,
   ch: ChannelIndex,
@@ -377,7 +377,7 @@ export function sfxFrames(sfx: Sfx): number {
   return Math.max(1, ...sfx.voices.map((v) => voiceFrames(v.notes)));
 }
 
-/** An SFX as gbapu channels: each step retriggers its channel, like Crystal's square/noise notes. */
+/** An SFX as gbaudio channels: each step retriggers its channel, like Crystal's square/noise notes. */
 export function sfxData(sfx: Sfx): EngineAudioData {
   const total = sfxFrames(sfx) * FRAME;
   return {

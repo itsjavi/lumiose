@@ -17,7 +17,7 @@ gbapu is the author's Game Boy APU engine. Its LICENSE-NOTICE records that it wa
 
 Approved by the user on 2026-10-20 and revised on 2026-10-21: one repository for both apps instead of two. The work becomes two public repositories under the author's GitHub account, both MIT:
 
-- **`itsjavi/gbaudio`** (created as `itsjavi/gbapu`, renamed on 2026-10-21), published to npm as `gbaudio`. It holds the engine's TypeScript source, with tests, types and a build. It starts with a fresh history.
+- **`itsjavi/gbaudio`**, published to npm as `gbaudio`. It holds the engine's TypeScript source, with tests, types and a build. It starts with a fresh history.
   - **Provenance** (confirmed by the user on 2026-10-21): the APU emulation (`src/gbapu.ts`) is a TypeScript port of stoneface's C++ gbapu (github.com/stoneface86/gbapu, MIT, 2020). Its MIT notice is in LICENSE and the README credits it. The audio compiler, token tables and WAV export are the author's.
   - **Name:** npm refused `gbapu` as too similar to an existing package (`gsap`), so the package is `gbaudio` and the repository was renamed to match (user, 2026-10-21). The package description and README say the emulation is a TypeScript port of stoneface86/gbapu.
   - **Formatting:** the engine files are formatted with the package's oxfmt settings. The package is their source of truth from now on.

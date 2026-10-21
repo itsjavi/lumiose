@@ -3,9 +3,9 @@ import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
-const root = new URL("../../vendor/gbapu/", import.meta.url);
+const root = new URL("../../vendor/gbaudio/", import.meta.url);
 
-describe("vendored gbapu", () => {
+describe("vendored gbaudio", () => {
   const lines = readFileSync(new URL("CHECKSUMS.sha256", root), "utf8")
     .split("\n")
     .map((line) => /^([0-9a-f]{64}) {2}(dist\/\S+)$/.exec(line))

@@ -1,5 +1,5 @@
 // Messages between the UI and the render worker.
-import type { EngineAudioData } from "../../vendor/gbapu/dist/index.js";
+import type { EngineAudioData } from "../../vendor/gbaudio/dist/index.js";
 
 export const SAMPLE_RATE = 48_000;
 

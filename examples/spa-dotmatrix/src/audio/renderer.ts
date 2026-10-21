@@ -1,5 +1,5 @@
 // The UI side of rendering: a small pool of render workers and a promise per request.
-import type { EngineAudioData } from "../../vendor/gbapu/dist/index.js";
+import type { EngineAudioData } from "../../vendor/gbaudio/dist/index.js";
 import type { FromWorker, ToWorker } from "./protocol.ts";
 
 type Pending = {
@@ -17,7 +17,7 @@ function worker(): Worker {
   if (workers.length < POOL) {
     const w = new Worker(new URL("./render.worker.ts", import.meta.url), {
       type: "module",
-      name: "gbapu",
+      name: "gbaudio",
     });
     w.addEventListener("message", (event: MessageEvent<FromWorker>) => {
       const msg = event.data;

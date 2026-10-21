@@ -1,10 +1,10 @@
-// The render worker: runs the vendored gbapu engine offline, so the UI never waits on synthesis.
+// The render worker: runs the vendored gbaudio engine offline, so the UI never waits on synthesis.
 // It renders a command stream to PCM (mono for song stems: a channel is routed to both sides) and
 // encodes WAV files.
 import {
   encodeInterleavedStereoPcm16Wav,
   renderEngineAudioToPcm,
-} from "../../vendor/gbapu/dist/index.js";
+} from "../../vendor/gbaudio/dist/index.js";
 import { SAMPLE_RATE, type FromWorker, type ToWorker } from "./protocol.ts";
 
 function reply(message: FromWorker, transfer: Transferable[] = []): void {

@@ -5,7 +5,7 @@ import { defineConfig } from "vite";
 // A prerendered SPA: `lumiose build` writes the real HTML of every route, which the browser hydrates
 // inside the persistent root layout; later navigation is client-side. Browser-only work (storage,
 // Web Audio, the render worker) starts after hydration or on a user gesture. Audio renders offline
-// in a module Web Worker (the vendored gbapu engine), so no cross-origin isolation is needed.
+// in a module Web Worker (the vendored gbaudio engine), so no cross-origin isolation is needed.
 export default defineConfig({
   // Served below a path when LUMIOSE_BASE is set (the Lumiose website: /lumiose/examples/spa-dotmatrix/).
   base: process.env["LUMIOSE_BASE"] ?? "/",

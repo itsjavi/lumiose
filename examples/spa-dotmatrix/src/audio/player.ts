@@ -3,7 +3,7 @@
 // panning. An edit re-renders only the channels it changed, and the new stem takes over at the
 // same position with a short crossfade, so playback continues while you edit.
 import { signal } from "lumiose";
-import type { EngineAudioData } from "../../vendor/gbapu/dist/index.js";
+import type { EngineAudioData } from "../../vendor/gbaudio/dist/index.js";
 import { isAudible } from "../model/song.ts";
 import type { ChannelIndex, Song } from "../model/types.ts";
 import { loopSeconds, loops, songData, songSeconds, stepSeconds } from "./driver.ts";

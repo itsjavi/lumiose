@@ -2,4 +2,4 @@ test-results/
 playwright-report/
 .lumiose/
 # The vendored engine ships its compiled dist/ (the repository ignores dist/ folders).
-!vendor/gbapu/dist/
+!vendor/gbaudio/dist/
