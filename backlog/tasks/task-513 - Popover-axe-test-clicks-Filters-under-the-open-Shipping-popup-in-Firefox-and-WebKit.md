@@ -3,10 +3,11 @@ id: TASK-513
 title: >-
   Popover axe test clicks Filters under the open Shipping popup in Firefox and
   WebKit
-status: In Progress
+status: Done
 assignee:
   - '@Beacon'
 created_date: '2026-10-21 05:20'
+updated_date: '2026-10-21 05:48'
 labels:
   - test
   - ui
@@ -23,7 +24,19 @@ The UI browsers workflow (ui-browsers.yml, Firefox and WebKit on Linux) failed i
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 The test closes the Shipping popup (Escape) before it opens Filters
-- [ ] #2 It passes in Linux Chromium (dev, build), Firefox and WebKit with DejaVu Sans, 5 repeats
-- [ ] #3 The ui-e2e suite passes in Linux Firefox and WebKit
+- [x] #1 The test closes the Shipping popup (Escape) before it opens Filters
+- [x] #2 It passes in Linux Chromium (dev, build), Firefox and WebKit with DejaVu Sans, 5 repeats
+- [x] #3 The ui-e2e suite passes in Linux Firefox and WebKit
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+2026-10-21 (Beacon): reproduced in Linux Firefox and WebKit (Playwright 1.63.0 run-server with DejaVu Sans): the 4 popover axe tests failed as in CI. The test now presses Escape and waits for the Shipping popup to hide before it clicks Filters. Checked with CI=1, 5 times in Linux Chromium (dev, build), Firefox and WebKit: 40 passed. The full ui-e2e suite in Linux Chromium, Firefox and WebKit: 2047 passed, 36 skipped, 1 failed (popover-hover-modal in dev, run before TASK-514's fix). Every Firefox and WebKit test passed, the autocomplete reflow included (TASK-505).
+<!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+The popover axe test closes the Shipping popup before it opens Filters, which the popup covers in Firefox and WebKit with DejaVu Sans. The ui-e2e suite passes in Linux Firefox and WebKit, as the UI browsers workflow runs it.
+<!-- SECTION:FINAL_SUMMARY:END -->

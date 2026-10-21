@@ -1,11 +1,11 @@
 ---
 id: TASK-509
 title: Toast F6 e2e test presses F6 before the toast exists
-status: In Progress
+status: Done
 assignee:
   - '@Beacon'
 created_date: '2026-10-21 04:57'
-updated_date: '2026-10-21 04:59'
+updated_date: '2026-10-21 05:48'
 labels:
   - test
 dependencies: []
@@ -21,6 +21,18 @@ Flaky in CI e2e (ubuntu), dev project only, 2 of 5 runs with the test (388808002
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 The test waits for the toast before pressing F6
-- [ ] #2 It passes with the replay window widened, and 5 repeats under CI settings and CPU load
+- [x] #1 The test waits for the toast before pressing F6
+- [x] #2 It passes with the replay window widened, and 5 repeats under CI settings and CPU load
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+2026-10-21 (Beacon): reproduction. 30 repeats under CPU load passed, and so did delaying the island module (the loader holds the click and F6 and replays both in order) or the toast script (page load waits for it). The failure came back once the loader's replay window was widened (island module delayed 600 ms, 0 ms timers stretched to 400 ms, F6 pressed 150 ms after the module loaded): build failed with 'Received: inactive', as in CI; with the fix it passed in dev and build. Checked with CI=1: 5 times each in Linux and macOS Chromium, dev and build.
+<!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+The toast F6 test waits for the toast before it presses F6. An F6 that arrived after hydration but before the replay of the held click found no toast. The loader's ordering is TASK-508 (Spark).
+<!-- SECTION:FINAL_SUMMARY:END -->

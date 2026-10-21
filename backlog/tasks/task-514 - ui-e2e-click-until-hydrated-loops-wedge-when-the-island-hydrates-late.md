@@ -1,10 +1,11 @@
 ---
 id: TASK-514
 title: ui-e2e click-until-hydrated loops wedge when the island hydrates late
-status: In Progress
+status: Done
 assignee:
   - '@Beacon'
 created_date: '2026-10-21 05:44'
+updated_date: '2026-10-21 06:01'
 labels:
   - test
   - ui
@@ -21,7 +22,19 @@ Found in a local full ui-e2e run in Linux Chromium under load (two suites at onc
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Loops that open an overlay click only while it is not open: popover-hover-modal, drawer, context-menu, menubar, navigation-menu (both), preview-card
-- [ ] #2 button.e2e.ts's hydrated() clicks once and relies on the replay
-- [ ] #3 With the island module delayed, the fixed loops pass in dev and build; the changed tests pass 5 times in dev and build
+- [x] #1 Loops that open an overlay click only while it is not open: popover-hover-modal, drawer, context-menu, menubar, navigation-menu (both), preview-card
+- [x] #2 button.e2e.ts's hydrated() clicks once and relies on the replay
+- [x] #3 With the island module delayed, the fixed loops pass in dev and build; the changed tests pass 5 times in dev and build
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+2026-10-21 (Beacon): reproduced with the island module held back 900 ms. The original loops failed (popover-hover-modal in dev and build, drawer in build, button in dev and build); the guarded overlay loops passed. Guarding the button counter was not enough, since two held clicks replay as 'saves: 2', so button.e2e.ts's hydrated() clicks once (passes 3 times in dev and build with the delay). Checked with CI=1: the changed tests 5 times in dev and build (215 passed, 5 skipped); the full ui-e2e suite in macOS Chromium (1018 passed, 24 skipped) and, at the same time, in Linux Chromium (1017 passed, 24 skipped, 1 failed). That failure is navigation-menu.e2e.ts 'crossing the next trigger keeps it (TASK-451 L25)', which tests the 300 ms travel window with a 12-step mouse move. It fails 1 in 20 only with the browser behind the Docker run-server, whose round trips slow the move; with a local browser it passed 40 of 40 under CPU load. Not a CI cause; left as is.
+<!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Click-until-hydrated loops in ui-e2e no longer click past the island's answer. Overlay loops click only while the overlay is closed, and the button helper clicks once and relies on the loader's replay. With a delayed island, the old loops wedge and the new ones pass; the full ui-e2e suite passes in macOS Chromium.
+<!-- SECTION:FINAL_SUMMARY:END -->
