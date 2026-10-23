@@ -1,5 +1,6 @@
 // Pure DOM writers, usable as `bind` apply functions (contract doc-2 §2, spec §4.5, §4.6.2).
 
+import { hydrator } from "./hydration.ts";
 import { safeAttrValue } from "./url.ts";
 
 type Slots = Record<string, unknown>;
@@ -134,8 +135,20 @@ export function toggleClass(el: Element, name: string, on: unknown): void {
   }
 }
 
+/**
+ * `lumiose({ csp: "strict" })` (decision-78): the server wrote a claimed element's `style` prop as a
+ * `[data-l-v]` rule. Strict builds set every declaration through the CSSOM, the static ones
+ * included, in the same task that claims the element, so its first style write while hydrating
+ * drops the hook: a property a binding removes later is then unset, as without CSP, instead of
+ * falling back to the rule's value (TASK-526).
+ */
+function claimStyle(el: HTMLElement | SVGElement): void {
+  if (el.hasAttribute("data-l-v")) el.removeAttribute("data-l-v");
+}
+
 /** Sets one style property (kebab-case or `--custom`); nullish or `false` removes it. */
 export function setStyleProperty(el: HTMLElement | SVGElement, name: string, value: unknown): void {
+  if (hydrator !== undefined) claimStyle(el);
   if (value == null || value === false) {
     el.style.removeProperty(name);
   } else {
@@ -148,6 +161,7 @@ export function setStyleProperty(el: HTMLElement | SVGElement, name: string, val
  * diffed against the object applied before: only changed properties are written.
  */
 export function setStyle(el: HTMLElement | SVGElement, value: unknown): void {
+  if (hydrator !== undefined) claimStyle(el);
   const slots = el as unknown as Slots;
   const style = el.style;
   let prev = slots.$$style as Slots | string | undefined;

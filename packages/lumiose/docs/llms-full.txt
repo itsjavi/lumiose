@@ -4768,8 +4768,8 @@ again with the errors, so the page renders the form filled in and nobody types e
 embedded in the re-rendered page, so a password, a token or a card number in it would sit in the
 HTML, within reach of every script on the page. A `FormData` works too (its text entries; files are
 left out), but it carries every field of the form: in development, Lumiose warns when one carries a
-name that looks secret (`password`, `pwd`, `token`, `otp`, `card`, …, in camelCase too, such as
-`passwordConfirm`).
+name that looks secret (`password`, `pwd`, `token`, `otp`, `card`, `ssn`, `iban`, `privateKey`,
+`sessionId`, …, in camelCase too, such as `passwordConfirm`).
 @lumiose/ui's [Form](https://itsjavi.com/lumiose/ui/form/) takes them as `values` and fills its
 controls by name; with your own inputs, use them as `defaultValue`s.
 
@@ -6886,6 +6886,9 @@ default stays off, so a project set up by hand opts in. With `lumiose({ csp: "st
     Like an inline style, it gives way to `!important` rules, CSS animations, and the styles an
     island sets once it hydrates. Only a selector with two ids or more can win over it where it
     would not win over an inline style.
+  - **Hydration.** An island sets every style of its elements through the CSSOM as it hydrates,
+    and they drop their `data-l-v`: a style property the island removes later is unset, as without
+    CSP, instead of falling back to the server's rule.
   - **Isolation.** A value cannot close its rule or the `<style>` element, and a comment, string,
     `url(` or bracket it leaves open is closed at its end, so it cannot reach other elements'
     rules. A value with a `url(` right after an identifier character (`éurl(`, `#url(`), which

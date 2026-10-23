@@ -119,6 +119,39 @@ describe("data-only serialization", () => {
     }
   });
 
+  it("knows private keys, plural passwords, ssn, iban and session ids (TASK-535)", () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    try {
+      const safe = new FormData();
+      for (const name of ["classname", "passes", "sessionIdle", "keyboard", "spinning"]) {
+        safe.append(name, "x");
+      }
+      encodeData(safe, fail);
+      expect(warn).not.toHaveBeenCalled();
+
+      const secret = [
+        "privateKey",
+        "private_key",
+        "passwords",
+        "ssn",
+        "userSsn",
+        "iban",
+        "IBAN",
+        "sessionId",
+        "session-id",
+      ];
+      const form = new FormData();
+      for (const name of secret) form.append(name, "x");
+      encodeData(form, fail);
+      const names = warn.mock.calls.map(
+        ([message]) => /carries "([^"]+)"/.exec(String(message))![1],
+      );
+      expect(names).toEqual(secret);
+    } finally {
+      warn.mockRestore();
+    }
+  });
+
   it("omits undefined properties like JSON", () => {
     expect(encodeData({ a: undefined, b: 1 }, fail)).toEqual({ b: 1 });
   });
