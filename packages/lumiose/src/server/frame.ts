@@ -76,7 +76,10 @@ export interface Unit {
   preloads: string[];
   /** Module scripts the unit's components need in the browser (./client-script.ts). */
   scripts: string[];
+  /** Strict-CSP `style` rules (./strict-styles.ts), flushed in one `<style>`. */
   styles: string[];
+  /** Strict-CSP `style` rules that get a `<style>` each (./strict-styles.ts). */
+  isolatedStyles: string[];
   /** Boundaries whose placeholder is inside this unit, waiting for it to flush. */
   waiting: Unit[];
 }
@@ -130,6 +133,8 @@ export interface RenderState {
   nextIsland: number;
   nextBoundary: number;
   nextStyle: number;
+  /** Strict-CSP `style` rules by declarations, so that identical ones share a rule (./strict-styles.ts). */
+  readonly styleRules: Map<string, { readonly id: number; readonly unit: Unit }>;
   title: HeadEntry | undefined;
   metas: Map<string, HeadEntry>;
   head: string[];

@@ -95,6 +95,30 @@ describe("data-only serialization", () => {
     }
   });
 
+  it("splits camelCase names and knows pwd before looking for a secret (TASK-501)", () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    try {
+      const safe = new FormData();
+      for (const name of ["passportNumber", "spinCount", "compassion", "displayName"]) {
+        safe.append(name, "x");
+      }
+      encodeData(safe, fail);
+      expect(warn).not.toHaveBeenCalled();
+
+      const form = new FormData();
+      for (const name of ["pwd", "passwordConfirm", "confirmNewPassword", "userPwd", "pinCode"]) {
+        form.append(name, "x");
+      }
+      encodeData(form, fail);
+      const names = warn.mock.calls.map(
+        ([message]) => /carries "([^"]+)"/.exec(String(message))![1],
+      );
+      expect(names).toEqual(["pwd", "passwordConfirm", "confirmNewPassword", "userPwd", "pinCode"]);
+    } finally {
+      warn.mockRestore();
+    }
+  });
+
   it("omits undefined properties like JSON", () => {
     expect(encodeData({ a: undefined, b: 1 }, fail)).toEqual({ b: 1 });
   });

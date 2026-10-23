@@ -134,7 +134,7 @@ describe("streaming() turned off", () => {
       { streaming: () => streams, strictStyles: true },
     );
     expect(shell.html).toBe('<p data-l-v="0">styled</p>');
-    expect(shell.head).toBe('<style>[data-l-v="0"]{color:red}</style>');
+    expect(shell.head).toBe('<style>[data-l-v="0"]:not(#a#b){color:red}</style>');
   });
 
   it("while rendering: a failed boundary keeps its fallback and is reported", async () => {

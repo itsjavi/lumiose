@@ -105,7 +105,7 @@ describe('lumiose({ csp: "strict" })', () => {
     expect(html).toContain(`<i>${nonce}</i>`);
     // `style` props become rules; no inline style attribute is left.
     expect(html).toContain('<main data-l-v="0">');
-    expect(html).toContain(`<style nonce="${nonce}">[data-l-v="0"]{color:red}</style>`);
+    expect(html).toContain(`<style nonce="${nonce}">[data-l-v="0"]:not(#a#b){color:red}</style>`);
     expect(html).not.toMatch(/\sstyle="/);
     const tags = [...html.matchAll(/<(script|style)\b[^>]*>/g)].map((match) => match[0]);
     expect(tags.length).toBeGreaterThan(4);
@@ -210,7 +210,7 @@ describe('lumiose({ csp: "strict" })', () => {
         html,
       );
     expect(meta).not.toBeNull();
-    expect(meta![1]).toContain(sha('[data-l-v="0"]{color:red}'));
+    expect(meta![1]).toContain(sha('[data-l-v="0"]:not(#a#b){color:red}'));
     expect(meta![1]).toContain(sha(".a{}"));
     // The script after the linked stylesheets (TASK-278).
     expect(meta![1]).toContain(sha(/<script>(.*)<\/script>/.exec(STYLESHEETS_LOADED)![1]!));
