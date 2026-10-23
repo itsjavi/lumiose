@@ -25,10 +25,11 @@ type Fail = (path: string, reason: string) => never;
  * entry in its HTML, so an action that echoes a whole submission (`values: form`) would put a
  * password there. Development warns, once per name; the entries stay, as in production. Tested
  * on the lowercased name with its camelCase humps split (`passwordConfirm` as `password_confirm`,
- * TASK-501), so that a word ends where the next one starts.
+ * TASK-501), so that a word ends where the next one starts. Short words must stand alone (`ssn`,
+ * not `classname`; TASK-535).
  */
 const SECRET =
-  /pass(?:word|wd|code|phrase)?(?![a-z])|pwd|secret|token|otp|cvc|cvv|card|(?<![a-z])pin(?![a-z])|(?:security|verification|auth)[-_]?code|api[-_]?key|credential/;
+  /pass(?:word|wd|code|phrase)?s?(?![a-z])|pwd|secret|token|otp|cvc|cvv|card|(?<![a-z])(?:pin|ssn|iban)(?![a-z])|(?:security|verification|auth)[-_]?code|(?:api|private)[-_]?key|session[-_]?ids?(?![a-z])|credential/;
 const warnedSecrets = new Set<string>();
 
 function looksSecret(name: string): boolean {
