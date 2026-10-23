@@ -11,16 +11,17 @@ All Lumiose packages share one version, except those released outside lockstep (
 ### Fixes
 
 - **router:** keep ; escaped in readable query strings (0.6.0 security review) (1dc5910c)
+
 ### Scale
 
 The large-app benchmark (1,500 routes, 5,000 components), working tree against v0.5.1 (121c124b), medians of 3 rounds on Apple M1 Max (10 cores, 32 GB, darwin 27.0.0 arm64, Node v26.8.1). The release gate stops at a ratio above 1.2.
 
-| Metric | Previous | This release | Ratio |
-| ------ | -------- | ------------ | ----- |
-| Production build (ms) | 28493.2 | 29128.7 | 1.022 |
-| Dev cold start (ms) | 976.1 | 981.9 | 1.006 |
-| HMR latency (ms) | 81.1 | 82.2 | 1.013 |
-| Server memory, peak RSS (MB) | 526 | 525.3 | 0.999 |
+| Metric                       | Previous | This release | Ratio |
+| ---------------------------- | -------- | ------------ | ----- |
+| Production build (ms)        | 28493.2  | 29128.7      | 1.022 |
+| Dev cold start (ms)          | 976.1    | 981.9        | 1.006 |
+| HMR latency (ms)             | 81.1     | 82.2         | 1.013 |
+| Server memory, peak RSS (MB) | 526      | 525.3        | 0.999 |
 
 ## 0.5.1 (2026-10-23)
 
@@ -44,16 +45,17 @@ The large-app benchmark (1,500 routes, 5,000 components), working tree against v
 ### Performance
 
 - **dom:** a new row that renders several nodes goes in with one insertion (TASK-522) (68ed5a16)
+
 ### Scale
 
 The large-app benchmark (1,500 routes, 5,000 components), working tree against v0.5.0 (13be67c4), medians of 3 rounds on Apple M1 Max (10 cores, 32 GB, darwin 27.0.0 arm64, Node v26.8.1). The release gate stops at a ratio above 1.2.
 
-| Metric | Previous | This release | Ratio |
-| ------ | -------- | ------------ | ----- |
-| Production build (ms) | 27592.1 | 27912.1 | 1.012 |
-| Dev cold start (ms) | 963.8 | 933.7 | 0.969 |
-| HMR latency (ms) | 80 | 81.7 | 1.022 |
-| Server memory, peak RSS (MB) | 528.5 | 528 | 0.999 |
+| Metric                       | Previous | This release | Ratio |
+| ---------------------------- | -------- | ------------ | ----- |
+| Production build (ms)        | 27592.1  | 27912.1      | 1.012 |
+| Dev cold start (ms)          | 963.8    | 933.7        | 0.969 |
+| HMR latency (ms)             | 80       | 81.7         | 1.022 |
+| Server memory, peak RSS (MB) | 528.5    | 528          | 0.999 |
 
 ## 0.5.0 (2026-10-21)
 
@@ -147,16 +149,17 @@ The large-app benchmark (1,500 routes, 5,000 components), working tree against v
 ### Performance
 
 - **vite:** precompress in parallel, starting during the server build (TASK-288) (4fac89e7)
+
 ### Scale
 
 The large-app benchmark (1,500 routes, 5,000 components), working tree against v0.4.0 (9702f55e), medians of 3 rounds on Apple M1 Max (10 cores, 32 GB, darwin 27.0.0 arm64, Node v26.8.1). The release gate stops at a ratio above 1.2.
 
-| Metric | Previous | This release | Ratio |
-| ------ | -------- | ------------ | ----- |
-| Production build (ms) | 53569 | 27854.6 | 0.520 |
-| Dev cold start (ms) | 933.5 | 950.9 | 1.019 |
-| HMR latency (ms) | 80.7 | 79.2 | 0.981 |
-| Server memory, peak RSS (MB) | 493.5 | 502.4 | 1.018 |
+| Metric                       | Previous | This release | Ratio |
+| ---------------------------- | -------- | ------------ | ----- |
+| Production build (ms)        | 53569    | 27854.6      | 0.520 |
+| Dev cold start (ms)          | 933.5    | 950.9        | 1.019 |
+| HMR latency (ms)             | 80.7     | 79.2         | 0.981 |
+| Server memory, peak RSS (MB) | 493.5    | 502.4        | 1.018 |
 
 ## 0.4.0 (2026-10-14)
 

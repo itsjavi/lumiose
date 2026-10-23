@@ -34,7 +34,9 @@ function panelOf(details: HTMLDetailsElement): HTMLElement | undefined {
 
 /** The variables' prefix: an accordion item is a `<details>` right inside `<lu-accordion>`. */
 const prefix = (details: HTMLDetailsElement) =>
-  details.parentElement?.localName === "lu-accordion" ? "--lu-accordion-panel" : "--lu-collapsible-panel";
+  details.parentElement?.localName === "lu-accordion"
+    ? "--lu-accordion-panel"
+    : "--lu-collapsible-panel";
 
 function measure(panel: HTMLElement, name: string) {
   panel.style.setProperty(`${name}-height`, `${panel.scrollHeight}px`);

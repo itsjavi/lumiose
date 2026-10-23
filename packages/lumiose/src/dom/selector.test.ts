@@ -55,11 +55,23 @@ describe("selector", () => {
     });
     expect(source).not.toHaveBeenCalled();
     const classes: boolean[] = [];
-    runWithOwner(row, () => bind(null, () => isSelected(2), (_, on) => classes.push(on)));
+    runWithOwner(row, () =>
+      bind(
+        null,
+        () => isSelected(2),
+        (_, on) => classes.push(on),
+      ),
+    );
     expect(classes).toEqual([false]);
     // The row goes; the selector keeps notifying the next reader.
     disposeOwner(row);
-    runWithOwner(owner, () => bind(null, () => isSelected(2), (_, on) => classes.push(on)));
+    runWithOwner(owner, () =>
+      bind(
+        null,
+        () => isSelected(2),
+        (_, on) => classes.push(on),
+      ),
+    );
     selected.set(2);
     flush();
     expect(classes).toEqual([false, false, true]);

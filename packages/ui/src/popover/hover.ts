@@ -157,7 +157,8 @@ export function hoverIntent(source: HoverSource): HoverIntent {
     const { popup, x, y } = corridor;
     // Arrived (the popup's `pointerover` cancelled the close), or closed already.
     if (!closing.has(popup)) corridor = undefined;
-    else if (toward(popup.getBoundingClientRect(), x, y, event.clientX, event.clientY)) close(popup);
+    else if (toward(popup.getBoundingClientRect(), x, y, event.clientX, event.clientY))
+      close(popup);
     else corridor = undefined;
   });
 

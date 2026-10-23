@@ -27,9 +27,13 @@ test("compiles in the browser and runs the preview", async ({ page }) => {
   await expect(preview(page).getByText("Doubled: 2")).toBeVisible();
 
   await page.getByRole("tab", { name: "Client JS" }).click();
-  await expect(page.getByRole("tabpanel", { name: "Client JS" })).toContainText('from "lumiose/dom"');
+  await expect(page.getByRole("tabpanel", { name: "Client JS" })).toContainText(
+    'from "lumiose/dom"',
+  );
   await page.getByRole("tab", { name: "Server JS" }).click();
-  await expect(page.getByRole("tabpanel", { name: "Server JS" })).toContainText('from "lumiose/server"');
+  await expect(page.getByRole("tabpanel", { name: "Server JS" })).toContainText(
+    'from "lumiose/server"',
+  );
   await page.getByRole("tab", { name: "CSS" }).click();
   await expect(page.getByRole("tabpanel", { name: "CSS" })).toContainText("[data-l-");
 });

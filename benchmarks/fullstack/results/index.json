@@ -21,9 +21,7 @@
         "remix",
         "astro"
       ],
-      "groups": [
-        "server"
-      ]
+      "groups": ["server"]
     },
     {
       "file": "2026-10-12T114559-macbookpro.json",
@@ -46,13 +44,7 @@
         "remix",
         "astro"
       ],
-      "groups": [
-        "dev",
-        "build",
-        "load",
-        "server",
-        "other"
-      ]
+      "groups": ["dev", "build", "load", "server", "other"]
     },
     {
       "file": "2026-10-09T085822-macbookpro.json",
@@ -65,14 +57,8 @@
         "os": "macOS 27.0"
       },
       "quick": false,
-      "apps": [
-        "lumiose",
-        "react-router",
-        "next"
-      ],
-      "groups": [
-        "server"
-      ]
+      "apps": ["lumiose", "react-router", "next"],
+      "groups": ["server"]
     },
     {
       "file": "2026-10-09T084814-macbookpro.json",
@@ -85,18 +71,8 @@
         "os": "macOS 27.0"
       },
       "quick": false,
-      "apps": [
-        "lumiose",
-        "react-router",
-        "next"
-      ],
-      "groups": [
-        "dev",
-        "build",
-        "load",
-        "server",
-        "other"
-      ]
+      "apps": ["lumiose", "react-router", "next"],
+      "groups": ["dev", "build", "load", "server", "other"]
     },
     {
       "file": "2026-10-09T052359-macbookpro.json",
@@ -109,18 +85,8 @@
         "os": "macOS 27.0"
       },
       "quick": true,
-      "apps": [
-        "lumiose",
-        "react-router",
-        "next"
-      ],
-      "groups": [
-        "dev",
-        "build",
-        "load",
-        "server",
-        "other"
-      ]
+      "apps": ["lumiose", "react-router", "next"],
+      "groups": ["dev", "build", "load", "server", "other"]
     },
     {
       "file": "2026-10-09T045317-macbookpro.json",
@@ -133,18 +99,8 @@
         "os": "macOS 27.0"
       },
       "quick": true,
-      "apps": [
-        "lumiose",
-        "react-router",
-        "next"
-      ],
-      "groups": [
-        "dev",
-        "build",
-        "load",
-        "server",
-        "other"
-      ]
+      "apps": ["lumiose", "react-router", "next"],
+      "groups": ["dev", "build", "load", "server", "other"]
     }
   ]
 }
