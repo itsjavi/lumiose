@@ -297,6 +297,8 @@ interface MetaAttributes {
   "http-equiv"?: string;
   media?: string;
   name?: string;
+  /** RDFa, as Open Graph uses it: `<meta property="og:title" content="…" />`. */
+  property?: string;
 }
 
 interface MeterAttributes {
@@ -481,6 +483,8 @@ export interface SVGAttributes {
   id?: string;
   lang?: string;
   tabindex?: Numeric;
+  /** SVG Tiny 1.2; current browsers ignore it, but icon markup ported from React often sets it. */
+  focusable?: boolean | "true" | "false" | "auto";
   xmlns?: string;
   "xmlns:xlink"?: string;
   "xml:lang"?: string;

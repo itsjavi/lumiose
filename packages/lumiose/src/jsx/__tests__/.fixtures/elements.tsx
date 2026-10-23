@@ -25,6 +25,7 @@ export const accepted = [
   />,
   <label for="name">Name</label>,
   <meta http-equiv="refresh" content="5" />,
+  <meta property="og:title" content="Title" />,
   <form accept-charset="utf-8" method="post" novalidate />,
   <input type="number" min={0} max="10" required placeholder="n" />,
   <a href="/x" target="_blank" rel="noopener" />,
@@ -71,7 +72,7 @@ export const accepted = [
       null,
     ]}
   />,
-  <svg viewBox="0 0 10 10" xmlns="http://www.w3.org/2000/svg">
+  <svg viewBox="0 0 10 10" xmlns="http://www.w3.org/2000/svg" focusable="false">
     <circle cx={5} cy="5" r={4} stroke-width={2} fill="none" class="dot" />
     <a href="#x">
       <text x={1}>t</text>
