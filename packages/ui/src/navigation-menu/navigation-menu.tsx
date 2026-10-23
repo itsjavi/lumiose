@@ -15,6 +15,7 @@ import type {
   NavigationMenuElement,
   NavigationMenuValueChangeDetail,
 } from "./navigation-menu.script.ts";
+import { batched } from "../batched.ts";
 
 declare module "lumiose/jsx-runtime" {
   namespace JSX {
@@ -150,9 +151,9 @@ function Root({
         data-delay={delay}
         data-close-delay={closeDelay}
         data-orientation={vertical() ? "vertical" : "horizontal"}
-        on:valuechange={(event: CustomEvent<NavigationMenuValueChangeDetail>) =>
-          onValueChange?.(event.detail.value)
-        }
+        on:valuechange={batched((event: CustomEvent<NavigationMenuValueChangeDetail>) =>
+          onValueChange?.(event.detail.value),
+        )}
       >
         {/* A nested menu is a `<div>`, inside its parent's landmark. */}
         <Dynamic component={nested ? "div" : "nav"} {...attributes()}>

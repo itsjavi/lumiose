@@ -4,7 +4,7 @@
 // value when its form resets and again a task later, once the controls (and the elements'
 // scripts, which follow the reset the same way) hold their defaults, and reports the new value
 // when it differs.
-import { onCleanup, onMount } from "lumiose";
+import { batch, onCleanup, onMount } from "lumiose";
 import { listenToForm } from "./native.ts";
 
 const same = (a: unknown, b: unknown) =>
@@ -20,10 +20,12 @@ function listen(element: () => Element | undefined, atReset: () => () => void): 
       (host as { form?: HTMLFormElement | null } | undefined)?.form ?? host?.closest("form");
     if (!form) return;
     let timer: ReturnType<typeof setTimeout> | undefined;
+    // In `batch()`, as the components' listeners (../batched.ts): the callbacks' writes render
+    // together.
     const listener = () => {
       const later = atReset();
       clearTimeout(timer);
-      timer = setTimeout(later);
+      timer = setTimeout(() => batch(later));
     };
     const stop = listenToForm(form, "reset", listener);
     onCleanup(() => {

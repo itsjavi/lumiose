@@ -4,6 +4,7 @@
 import { ref, untrack } from "lumiose";
 import { fieldProps, useField, useFormValues } from "../field/context.ts";
 import { onFormReset } from "../form/reset.ts";
+import { batched } from "../batched.ts";
 
 /**
  * An element's props without the brand of intrinsic elements' props, so that the component's
@@ -61,7 +62,9 @@ export function Input({ value, defaultValue, onValueChange, ...rest }: InputProp
         rest.ref?.(element);
       }}
       value={value !== undefined ? value : untrack(() => sent?.[0] ?? defaultValue)}
-      on:input={(event: Event) => onValueChange?.((event.currentTarget as HTMLInputElement).value)}
+      on:input={batched((event: Event) =>
+        onValueChange?.((event.currentTarget as HTMLInputElement).value),
+      )}
     />
   );
 }

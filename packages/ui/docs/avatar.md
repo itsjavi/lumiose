@@ -180,8 +180,8 @@ when it fails) and hides its fallback, from sight and from assistive technology,
 the avatar twice; an avatar without an image shows its fallback.
 `onLoadingStatusChange` needs the component to run in an island.
 
-A page that renders an `Avatar` loads a 0.5 kB (brotli) script, without the Lumiose runtime;
-islands bundle it. `<lu-avatar>` reads the image's state when it connects (a cached image shows
+A page that renders an `Avatar` loads a 0.5 kB (brotli) script, without the Lumiose runtime; an
+island loads the same module. `<lu-avatar>` reads the image's state when it connects (a cached image shows
 at once), then follows its `load` and `error` events and changes to its `src` and `srcset`. An
 image that is complete without a size (an SVG without intrinsic dimensions, or a broken image) is
 told apart with `decode()`.

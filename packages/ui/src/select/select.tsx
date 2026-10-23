@@ -3,14 +3,22 @@
 // already does everything Base UI's Select does around the value: the combobox role, the keyboard
 // and typeahead (on the closed control too), the top-layer picker anchored to the control, forms
 // (`name`, `required`, autofill, reset, a disabled fieldset) and the mobile pickers. So Select
-// ships no script: it works in server HTML, with no JavaScript, and in islands, where `value` drives
-// the control when it changes and its `change` event reports back through `onValueChange`. Where
-// customizable select is supported, `Select.Trigger` and `Select.Value` style the button and show
-// the selected option's content, and options may hold more than text. TASK-358 records why it is
-// native rather than the listbox pattern.
+// works in server HTML, with no JavaScript, and in islands, where `value` drives the control when
+// it changes and its `change` event reports back through `onValueChange`. Where customizable select
+// is supported, `Select.Trigger` and `Select.Value` style the button and show the selected option's
+// content, and options may hold more than text. TASK-358 records why it is native rather than the
+// listbox pattern.
+//
+// An item's `label` (TASK-537) names it: the option's `label` attribute, which the classic select
+// shows and typeahead matches, a hidden copy first in its content, which typeahead matches once
+// the attribute is gone, and its `aria-label`. A customizable select's picker shows an option's
+// `label` attribute instead of its content (the browser's style, which no CSS overrides), so
+// select.script.ts removes the attribute from a customizable select's items as it takes focus.
 import { createContext, effect, ref, untrack, useContext } from "lumiose";
+import selectScript from "./select.script.ts?client";
 import { fieldProps, useField, useFormValues } from "../field/context.ts";
 import { onFormReset } from "../form/reset.ts";
+import { batched } from "../batched.ts";
 
 declare module "lumiose/jsx-runtime" {
   namespace JSX {
@@ -67,6 +75,11 @@ export type SelectValueProps = Omit<JSX.IntrinsicElements["selectedcontent"], "c
 export type SelectItemProps = Omit<JSX.IntrinsicElements["option"], "value" | "selected"> & {
   /** The value the select takes, and submits, when the option is selected. */
   value: string;
+  /**
+   * The option's name, for typeahead, assistive technology and the classic select, when its
+   * content starts with an icon or holds more than text. The picker shows the content.
+   */
+  label?: string;
   /** The option cannot be selected. */
   disabled?: boolean;
 };
@@ -112,9 +125,9 @@ function Root({ value, defaultValue, onValueChange, children, ...rest }: SelectR
           select(element);
           rest.ref?.(element);
         }}
-        on:change={(event: Event) =>
-          onValueChange?.((event.currentTarget as HTMLSelectElement).value)
-        }
+        on:change={batched((event: Event) =>
+          onValueChange?.((event.currentTarget as HTMLSelectElement).value),
+        )}
       >
         {children}
       </select>
@@ -134,11 +147,24 @@ function Value(props: SelectValueProps) {
   return <selectedcontent {...props} />;
 }
 
-function Item({ children, value, ...rest }: SelectItemProps) {
+function Item({ children, value, label, ...rest }: SelectItemProps) {
   const select = useContext(SelectContext);
   if (!select) throw new Error("Select parts must be inside <Select.Root>.");
+  // Only items with a label need the script.
+  if (untrack(() => label) !== undefined) selectScript();
   return (
-    <option {...rest} value={value} selected={select.initial === value || undefined}>
+    <option
+      aria-label={label}
+      {...rest}
+      label={label}
+      value={value}
+      selected={select.initial === value || undefined}
+    >
+      {label === undefined ? null : (
+        <span hidden data-label="">
+          {label}
+        </span>
+      )}
       {children}
     </option>
   );

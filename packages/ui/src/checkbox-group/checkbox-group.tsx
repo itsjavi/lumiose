@@ -7,6 +7,7 @@ import checkboxScript from "../checkbox/checkbox.script.ts?client";
 import { CheckboxGroupContext } from "../checkbox/context.ts";
 import { describedBy, labelledBy, useField, useFormValues } from "../field/context.ts";
 import { onFormReset } from "../form/reset.ts";
+import { batched } from "../batched.ts";
 
 /** The fieldset props CheckboxGroup passes through, without the brand of intrinsic elements' props. */
 type FieldsetProps = Omit<JSX.IntrinsicElements["fieldset"], symbol>;
@@ -98,11 +99,11 @@ export function CheckboxGroup({
         }
         aria-describedby={rest["aria-describedby"] ?? (field ? describedBy(field) : undefined)}
         aria-invalid={rest["aria-invalid"] ?? (field?.invalid() ? "true" : undefined)}
-        on:change={(event: Event) => {
+        on:change={batched((event: Event) => {
           if (!(event.target as Element).matches("input[type=checkbox]")) return;
           // checkbox.script.ts ran first, for a parent's toggle.
           report(checked(event.currentTarget as HTMLFieldSetElement));
-        }}
+        })}
       >
         {children}
       </fieldset>

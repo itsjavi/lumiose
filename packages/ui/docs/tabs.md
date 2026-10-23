@@ -235,7 +235,7 @@ The [WAI-ARIA tabs pattern](https://www.w3.org/WAI/ARIA/apg/patterns/tabs/):
 The server HTML is complete: the selected tab, its panel and the tab stop are right before any
 script loads, and the panels of the other tabs are `hidden`. Selecting another tab needs
 `<lu-tabs>`' script, a 1.2 kB (brotli) module that a page rendering `Tabs` loads once, without
-the Lumiose runtime; islands bundle it. A `Tabs.Indicator` is placed by CSS alone until then; the
+the Lumiose runtime; an island loads the same module. A `Tabs.Indicator` is placed by CSS alone until then; the
 script makes it follow a new selection. `value`, `onValueChange` and `bind:value` need the
 component to run in an island.
 

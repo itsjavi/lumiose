@@ -2,9 +2,8 @@
 
 > `@lumiose/ui`: accessible, unstyled UI primitives built on native elements (`<dialog>`, popover, invoker commands, CSS anchor positioning), server-rendered without hydration. Style them with your own CSS or the optional default theme.
 
-**Status:** in development. `@lumiose/ui` keeps its own 0.x versions, apart from the version all
-other Lumiose packages share, and is not on npm yet: today it is used from this repository's
-workspace. The goal for its 1.0 is parity with [Base UI](https://base-ui.com)'s components; the
+**Status:** in development. `@lumiose/ui` is on npm and keeps its own 0.x versions, apart from
+the version all other Lumiose packages share. The goal for its 1.0 is parity with [Base UI](https://base-ui.com)'s components; the
 table below lists them as they land.
 
 These pages ship in the package, in `node_modules/@lumiose/ui/docs`, so they match the installed
@@ -37,7 +36,8 @@ Anatomy, API, Example, Styling, Keyboard and focus, Without JavaScript, Browser 
   with `onCheckedChange`, `value` with `onValueChange`. Pass a signal's value and write it back in
   the callback to keep both in sync, or leave both out and the element keeps its own state. Custom
   elements report changes with lowercase DOM events, like native ones: `openchange`,
-  `checkedchange` and `change`.
+  `checkedchange` and `change`. The callbacks run inside `batch()`, as event handlers do: what
+  they write renders together, and the DOM is current as soon as the event returns.
 - **Keyboard contracts.** Every component follows its WAI-ARIA Authoring Practices pattern, and
   its end-to-end tests check the keyboard paths.
 - **WCAG 2.2 AA.** Every component meets it: the components own semantics, keyboard and
@@ -70,7 +70,7 @@ custom properties, named as in shadcn/ui, are listed in [Theming](theming.md#the
 | [Tooltip](tooltip.md)                 | Available: native hint popover, opened by its script                                      |
 | [Menu](menu.md)                       | Available: popover menu, opens without JavaScript                                         |
 | [Combobox](combobox.md)               | Available: `<lu-combobox>`, a form control that filters its options                       |
-| [Select](select.md)                   | Available: native `<select>`, customizable where supported, no script                     |
+| [Select](select.md)                   | Available: native `<select>`, customizable where supported, no script but for `label`s    |
 | [Tabs](tabs.md)                       | Available: server HTML with the full state, `<lu-tabs>` adds the keys                     |
 | [Field](field.md)                     | Available: label, description, errors; native validation in the field                     |
 | [Fieldset](fieldset.md)               | Available: native `<fieldset>` and `<legend>`, no script                                  |
@@ -165,7 +165,10 @@ errors are yours.
 `@lumiose/ui` is opt-in, so its size is reported apart from the runtime's caps:
 `pnpm --filter @lumiose/ui size` prints, per component, the JavaScript a server-rendered page loads
 for its custom elements, the JavaScript an island that uses it loads, and its CSS (minified, gzip
-and brotli).
+and brotli). The scripts load as separate modules, in islands too: each component's script, and
+the modules several scripts share (the dismissal model, the placement fallback, the hover timing),
+each a file of its own, as an app's build splits them. The sizes on the component pages are those
+files' brotli sizes added up.
 
 ## Related
 

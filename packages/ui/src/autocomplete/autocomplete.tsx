@@ -24,6 +24,7 @@ import comboboxScript from "../combobox/combobox.script.ts?client";
 import { ComboboxContext, type ComboboxContextValue } from "../combobox/context.ts";
 import { controlId, useField, useFormValues } from "../field/context.ts";
 import { onFormReset } from "../form/reset.ts";
+import { batched } from "../batched.ts";
 
 /**
  * How the suggestions complete the text, as in Base UI: `"list"` filters them by the text,
@@ -193,13 +194,13 @@ function Root({
         submit-on-item-click={submitOnItemClick}
         limit={limit}
         disabled={context.disabled()}
-        on:input={(event: Event) => {
+        on:input={batched((event: Event) => {
           const input = host()?.input;
           if (input && event.target === input) onValueChange?.(input.value);
-        }}
-        on:openchange={(event: CustomEvent<ComboboxOpenChangeDetail>) =>
-          onOpenChange?.(event.detail.open)
-        }
+        })}
+        on:openchange={batched((event: CustomEvent<ComboboxOpenChangeDetail>) =>
+          onOpenChange?.(event.detail.open),
+        )}
       >
         {children}
       </lu-combobox>

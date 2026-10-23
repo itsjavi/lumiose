@@ -6,6 +6,7 @@ import { effect, onCleanup, signal, untrack, useContext } from "lumiose";
 import type { ToggleChangeDetail } from "../toggle-group/toggle-group.script.ts";
 import { ToolbarContext } from "../toolbar/context.ts";
 import { ToggleGroupContext, type ToggleRecord } from "./context.ts";
+import { batched } from "../batched.ts";
 
 /**
  * The button props Toggle passes through, without the brand of intrinsic elements' props, so that
@@ -82,16 +83,16 @@ export function Toggle({
       aria-disabled={toolbar?.disabled() ? "true" : rest["aria-disabled"]}
       value={value}
       aria-pressed={on() ? "true" : "false"}
-      on:click={(event: MouseEvent) => {
+      on:click={batched((event: MouseEvent) => {
         // In a group, the group's element presses it and reports `pressedchange`.
         if (group || event.defaultPrevented) return;
         const next = !state();
         state.set(next);
         onPressedChange?.(next);
-      }}
-      on:pressedchange={(event: CustomEvent<ToggleChangeDetail>) =>
-        onPressedChange?.(event.detail.pressed)
-      }
+      })}
+      on:pressedchange={batched((event: CustomEvent<ToggleChangeDetail>) =>
+        onPressedChange?.(event.detail.pressed),
+      )}
     >
       {children}
     </button>

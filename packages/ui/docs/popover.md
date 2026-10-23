@@ -1,6 +1,6 @@
 # Popover
 
-> A popup anchored to its trigger: a native `popover` opened and closed by the trigger's `popovertarget`, placed with CSS anchor positioning, so it works in server HTML with no JavaScript. A 3.3 kB script moves focus into it and back, dismisses it as Base UI does (not on a right-click), keeps `aria-expanded` current and places it in browsers without anchor positioning. `bind:open` (or `open` and `onOpenChange`) keeps a signal in sync in islands. A trigger can open it on hover (`openOnHover`), and a `modal` popover is a modal `<dialog>` that makes the page behind it inert.
+> A popup anchored to its trigger: a native `popover` opened and closed by the trigger's `popovertarget`, placed with CSS anchor positioning, so it works in server HTML with no JavaScript. A 3.2 kB script moves focus into it and back, dismisses it as Base UI does (not on a right-click), keeps `aria-expanded` current and places it in browsers without anchor positioning. `bind:open` (or `open` and `onOpenChange`) keeps a signal in sync in islands. A trigger can open it on hover (`openOnHover`), and a `modal` popover is a modal `<dialog>` that makes the page behind it inert.
 
 ```ts
 import { Popover } from "@lumiose/ui"; // or "@lumiose/ui/popover"
@@ -233,11 +233,14 @@ The trigger, the close buttons, Escape, the click outside and the placement are 
 features: a popover in a server-rendered page works before any script loads, and with none. So
 does a modal popover, through invoker commands and `closedby` (where a browser lacks them,
 [Dialog](dialog.md)'s script, which a modal popover loads, stands in). Opening on hover needs the
-script.
+scripts.
 `open`, `onOpenChange` and `bind:open` need the component to run in an island.
 
-A page that renders a `Popover` loads a 3.3 kB (brotli) module once, without the Lumiose runtime;
-islands bundle it. It covers every Popover on the page:
+A page that renders a `Popover` loads its script once, with the dismissal and placement modules it
+shares with Menu, Combobox and Tooltip: 3.2 kB (brotli) without the Lumiose runtime. A trigger
+with `openOnHover` adds 1.0 kB, the hover timing it shares with
+[Preview Card](preview-card.md); a page without one goes without it. An island loads the same
+modules. The scripts cover every Popover on the page:
 
 - focus on open (the first focusable element, or the popup) and its return on close;
 - dismissal, shared with [Menu](menu.md) and [Combobox](combobox.md): a trigger's click makes the

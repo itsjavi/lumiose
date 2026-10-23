@@ -242,10 +242,9 @@ test("a server-rendered page with tooltips loads only the client scripts", async
   await page.goto("/tooltip");
   await hover(page, "Bold");
   await expect(tip(page, "Bold (Ctrl+B)")).toBeVisible();
-  // The page also has a dialog and a popover; no island runtime.
+  // The page also has a dialog and a popover (without hover, TASK-541); no island runtime.
   expect(scripts.toSorted()).toEqual([
     expect.stringMatching(/\/dialog\.script-[\w-]+\.js$/),
-    expect.stringMatching(/\/hover-[\w-]+\.js$/),
     expect.stringMatching(/\/layer-[\w-]+\.js$/),
     expect.stringMatching(/\/place-[\w-]+\.js$/),
     expect.stringMatching(/\/popover\.script-[\w-]+\.js$/),

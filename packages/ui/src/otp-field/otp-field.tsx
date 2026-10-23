@@ -12,6 +12,7 @@ import { controlId, describedBy, useField } from "../field/context.ts";
 import { onFormReset } from "../form/reset.ts";
 import type { OTPFieldElement, OTPFieldValueDetail } from "./otp-field.script.ts";
 import otpFieldScript from "./otp-field.script.ts?client";
+import { batched } from "../batched.ts";
 
 declare module "lumiose/jsx-runtime" {
   namespace JSX {
@@ -234,19 +235,19 @@ function Root({
         validation-type={type()}
         mask={mask}
         auto-submit={autoSubmit}
-        on:input={(event: Event) => {
+        on:input={batched((event: Event) => {
           const input = element()?.input;
           // A composition reports once committed (the element fires `input` then, TASK-432).
           if (input && event.target === input && !(event as InputEvent).isComposing) {
             onValueChange?.(input.value);
           }
-        }}
-        on:valuecomplete={(event: CustomEvent<OTPFieldValueDetail>) =>
-          onValueComplete?.(event.detail.value)
-        }
-        on:valueinvalid={(event: CustomEvent<OTPFieldValueDetail>) =>
-          onValueInvalid?.(event.detail.value)
-        }
+        })}
+        on:valuecomplete={batched((event: CustomEvent<OTPFieldValueDetail>) =>
+          onValueComplete?.(event.detail.value),
+        )}
+        on:valueinvalid={batched((event: CustomEvent<OTPFieldValueDetail>) =>
+          onValueInvalid?.(event.detail.value),
+        )}
       >
         {children}
       </lu-otp-field>

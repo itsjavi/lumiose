@@ -7,6 +7,7 @@ import { createContext, effect, ref, signal, untrack, useContext, useId } from "
 import checkboxScript from "../checkbox/checkbox.script.ts?client";
 import { describedBy, labelledBy, useField, useFormValues } from "../field/context.ts";
 import { onFormReset } from "../form/reset.ts";
+import { batched } from "../batched.ts";
 
 interface RadioGroupContextValue {
   name: () => string;
@@ -121,12 +122,12 @@ export function RadioGroup({
         role="radiogroup"
         aria-required={required ? "true" : undefined}
         aria-readonly={readOnly ? "true" : undefined}
-        on:change={(event: Event) => {
+        on:change={batched((event: Event) => {
           const radio = event.target as HTMLInputElement;
           if (radio.type !== "radio" || !radio.checked) return;
           selected.set(radio.value);
           onValueChange?.(radio.value);
-        }}
+        })}
       >
         {children}
       </fieldset>

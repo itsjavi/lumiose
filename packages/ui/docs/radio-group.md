@@ -3,7 +3,7 @@
 > A group of radios with one value, after Base UI's RadioGroup and Radio: native radios in a `<fieldset role="radiogroup">`. The browser gives the group one tab stop, arrow keys that move and select (skipping disabled radios), `required`, submission and reset, in server HTML and without JavaScript; a legend names the group. `bind:value` keeps a signal in sync.
 
 ```ts
-import { Radio, RadioGroup, Fieldset } from "@lumiose/ui"; // or "@lumiose/ui/radio-group"
+import { Radio, RadioGroup, Fieldset } from "@lumiose/ui"; // or "@lumiose/ui/radio-group" and "@lumiose/ui/fieldset"
 import "@lumiose/ui/themes/default.css"; // optional: the default theme
 ```
 

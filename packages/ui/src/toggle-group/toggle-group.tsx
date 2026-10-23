@@ -11,6 +11,7 @@ import {
 } from "../toggle/context.ts";
 import type { ToggleGroupElement } from "./toggle-group.script.ts";
 import toggleGroupScript from "./toggle-group.script.ts?client";
+import { batched } from "../batched.ts";
 
 declare module "lumiose/jsx-runtime" {
   namespace JSX {
@@ -39,7 +40,10 @@ type ElementProps = {
  * `aria-labelledby`. `bind:value={signal}` stands in for `value` and `onValueChange`.
  */
 export interface ToggleGroupProps extends Omit<ElementProps, "children"> {
-  /** Presses the toggles with these values when it changes. Pair it with `onValueChange`. */
+  /**
+   * The pressed toggles. Pair it with `onValueChange`, which updates it: the toggles show `value`
+   * again after each press, so one that `onValueChange` does not take is undone.
+   */
   value?: string[];
   /** The toggles pressed at first, when `value` is left out. */
   defaultValue?: string[];
@@ -104,11 +108,19 @@ export function ToggleGroup({
         multiple={multiple}
         data-orientation={orientation ?? "horizontal"}
         data-loop-focus={loopFocus === false ? "false" : undefined}
-        on:valuechange={() => {
-          const next = element()!.value;
+        on:valuechange={batched(() => {
+          const host = element()!;
+          const next = host.value;
           values.set(next);
           onValueChange?.(next);
-        }}
+          // Controlled: when the callback leaves `value` as it was, the toggles show it again, as
+          // in Base UI (TASK-538). A changed `value` equals the element's, which then does nothing.
+          const held = value;
+          if (held !== undefined) {
+            values.set(held);
+            host.value = held;
+          }
+        })}
       >
         {children}
       </lu-toggle-group>

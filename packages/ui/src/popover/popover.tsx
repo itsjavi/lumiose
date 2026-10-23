@@ -6,7 +6,8 @@
 // `onOpenChange`. Ported from Timeless's approach (https://timeless.build).
 //
 // TASK-394: a trigger may open the popover on hover (`openOnHover`, after `delay`, closing
-// `closeDelay` after the pointer leaves both), which popover.script.ts runs. A `modal` popover is a
+// `closeDelay` after the pointer leaves both), which popover-hover.script.ts times (only hover
+// triggers load it, TASK-541) and popover.script.ts follows. A `modal` popover is a
 // modal `<dialog>` instead, opened by the trigger's `command="show-modal"`: the page behind it is
 // inert and does not scroll, focus stays inside, and a press outside or Escape closes it.
 import {
@@ -24,7 +25,9 @@ import {
 import dialogScript from "../dialog/dialog.script.ts?client";
 import { anchorName, placement, withStyle, type PlacementProps } from "../placement/placement.ts";
 import popoverScript from "./popover.script.ts?client";
+import popoverHoverScript from "./popover-hover.script.ts?client";
 import { OUTSIDE_TOOLBAR, ToolbarContext } from "../toolbar/context.ts";
+import { batched } from "../batched.ts";
 
 /**
  * `Popover.Root` renders no element: it holds the ids its parts share. `bind:open={signal}`
@@ -176,6 +179,8 @@ function Trigger({
     openOnHover && !popover.modal && !off
       ? { "data-open-on-hover": "", "data-delay": delay, "data-close-delay": closeDelay }
       : {};
+  // Only a hover trigger loads the hover timing on a server page (TASK-541).
+  if (untrack(() => openOnHover)) popoverHoverScript();
   return (
     <button
       type="button"
@@ -228,7 +233,7 @@ function Popup({
       ref={attach}
       id={popover.popupId}
       closedby="any"
-      on:toggle={toggle}
+      on:toggle={batched(toggle)}
     >
       {isServer ? content : inside()}
     </dialog>
@@ -247,7 +252,7 @@ function Popup({
       id={popover.popupId}
       popover="auto"
       data-trap-focus={popover.trapFocus ? "" : undefined}
-      on:toggle={toggle}
+      on:toggle={batched(toggle)}
     >
       {isServer ? content : inside()}
     </div>

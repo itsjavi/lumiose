@@ -253,8 +253,8 @@ the message Error's id (`Field.Error` without children or `match`) even when the
 Errors with children or a `match`. Give a field that must read well without JavaScript a message
 Error, and its Descriptions before the control.
 
-A page that renders a `Field` loads a 1.7 kB (brotli) script once, without the Lumiose runtime;
-islands bundle it. On a submit attempt (a submit button, Enter in a field, `requestSubmit()` or
+A page that renders a `Field` loads a 1.7 kB (brotli) script once, without the Lumiose runtime; an
+island loads the same module. On a submit attempt (a submit button, Enter in a field, `requestSubmit()` or
 the form's `reportValidity()`; a silent `checkValidity()` changes nothing) it cancels the browser's
 `invalid` bubble for fields that have an Error part for the problem and shows it there instead (the
 browser's message, or one your `validate` set), with the timing above, and focuses the first

@@ -3,7 +3,7 @@
 > A group of checkboxes with one value, the list of the checked ones, after Base UI's CheckboxGroup: a native `<fieldset>` whose checkboxes share a name, so the form submits each checked value and a disabled group disables them all, without JavaScript. A parent checkbox checks them all and shows checked, mixed or unchecked as they are; `bind:value` keeps a signal in sync.
 
 ```ts
-import { CheckboxGroup, Checkbox, Fieldset } from "@lumiose/ui"; // or "@lumiose/ui/checkbox-group"
+import { CheckboxGroup, Checkbox, Fieldset } from "@lumiose/ui"; // or "@lumiose/ui/checkbox-group", "@lumiose/ui/checkbox" and "@lumiose/ui/fieldset"
 import "@lumiose/ui/themes/default.css"; // optional: the default theme
 ```
 

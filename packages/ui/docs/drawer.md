@@ -182,8 +182,9 @@ The trigger, the close buttons, Escape and the click outside are HTML features, 
 drawer in a server-rendered page works before any script loads, and with none, against its edge.
 `open`, `onOpenChange` and `bind:open` need the component to run in an island.
 
-A page that renders a `Drawer` loads Dialog's script and a 1 kB (brotli) one of its own (2.5 kB
-together), without the Lumiose runtime; islands bundle them. The drawer's script handles the
+A page that renders a `Drawer` loads Dialog's script and a 1.1 kB (brotli) one of its own (2.8 kB
+together, with the animation module it shares with Toast), without the Lumiose runtime; an island
+loads the same modules. The drawer's script handles the
 swipe, with the mouse and pen through pointer events and on touch screens through touch events,
 taking the gesture from scrolling only once it is a swipe.
 

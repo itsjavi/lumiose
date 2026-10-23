@@ -16,6 +16,7 @@ import {
   type Signal,
 } from "lumiose";
 import dialogScript from "./dialog.script.ts?client";
+import { batched } from "../batched.ts";
 
 /**
  * `Dialog.Root` renders no element: it holds the dialog's state and the ids its parts share.
@@ -148,7 +149,7 @@ function Popup({ children, ref: forwarded, ...rest }: DialogPopupProps) {
         forwarded?.(element);
       }}
       id={dialog.popupId}
-      on:toggle={(event: ToggleEvent) => dialog.onToggle(event.newState === "open")}
+      on:toggle={batched((event: ToggleEvent) => dialog.onToggle(event.newState === "open"))}
     >
       {isServer ? content : children}
     </dialog>

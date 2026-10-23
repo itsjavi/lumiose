@@ -12,6 +12,7 @@ import type {
   AvatarLoadingStatus,
   AvatarLoadingStatusChangeDetail,
 } from "./avatar.script.ts";
+import { batched } from "../batched.ts";
 
 export type { AvatarLoadingStatus } from "./avatar.script.ts";
 
@@ -75,9 +76,9 @@ function Image({ onLoadingStatusChange, ...rest }: AvatarImageProps) {
       {...rest}
       ref={image}
       data-loading
-      on:loadingstatuschange={(event: CustomEvent<AvatarLoadingStatusChangeDetail>) =>
-        report(event.detail.status)
-      }
+      on:loadingstatuschange={batched((event: CustomEvent<AvatarLoadingStatusChangeDetail>) =>
+        report(event.detail.status),
+      )}
     />
   );
 }

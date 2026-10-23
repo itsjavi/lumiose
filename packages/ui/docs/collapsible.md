@@ -1,6 +1,6 @@
 # Collapsible
 
-> A panel that its trigger shows and hides: a native `<details>` whose `<summary>` is the trigger, so it works in server HTML with no JavaScript, keeps the browser's keyboard handling, and opens when find-in-page or a link lands inside it. A 0.7 kB script adds Base UI's animation hooks. `bind:open` (or `open` and `onOpenChange`) keeps a signal in sync in islands.
+> A panel that its trigger shows and hides: a native `<details>` whose `<summary>` is the trigger, so it works in server HTML with no JavaScript, keeps the browser's keyboard handling, and opens when find-in-page or a link lands inside it. A 0.9 kB script adds Base UI's animation hooks. `bind:open` (or `open` and `onOpenChange`) keeps a signal in sync in islands.
 
 ```ts
 import { Collapsible } from "@lumiose/ui"; // or "@lumiose/ui/collapsible"
@@ -141,8 +141,9 @@ Collapsible in a server-rendered page works before any script loads, and with no
 trigger ignores the pointer through CSS. `open`, `onOpenChange` and `bind:open` need the component
 to run in an island.
 
-A page that renders a `Collapsible` loads a 0.7 kB (brotli) module once, without the Lumiose
-runtime; islands bundle it. It covers every Collapsible and [Accordion](accordion.md) panel on the
+A page that renders a `Collapsible` loads 0.9 kB (brotli) of modules once (its script, and the
+panel and animation modules it shares with Accordion), without the Lumiose runtime; an island
+loads the same modules. It covers every Collapsible and [Accordion](accordion.md) panel on the
 page:
 
 - the animation hooks above, set on every opening and closing, whatever caused it (the trigger,

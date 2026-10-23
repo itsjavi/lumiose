@@ -16,6 +16,9 @@ const customizable = (page: Page) => page.evaluate(() => CSS.supports("appearanc
 const CLASSIC =
   "no customizable select (appearance: base-select): the classic select and its native picker, as the docs say";
 
+/** Compares the text as rendered, without the hidden copy of an item's label. */
+const INNER = { useInnerText: true };
+
 function fruit(page: Page) {
   const select = page.getByRole("combobox", { name: "Fruit" });
   return { select, option: (name: string) => page.getByRole("option", { name, exact: true }) };
@@ -47,7 +50,8 @@ test.describe("customizable select", () => {
     await page.goto("/select");
     const { select, option } = fruit(page);
     expect(await select.evaluate((el) => getComputedStyle(el).appearance)).toBe("base-select");
-    await expect(select.locator("selectedcontent")).toHaveText("🍐 Pear");
+    // The rendered text: a labelled item's content starts with its label's hidden copy (TASK-537).
+    await expect(select.locator("selectedcontent")).toHaveText("🍐 Pear", INNER);
     await select.click();
     expect(await isOpen(select)).toBe(true);
     await expect(option("Pear")).toBeVisible();
@@ -56,7 +60,7 @@ test.describe("customizable select", () => {
     await option("Lemon").click();
     expect(await isOpen(select)).toBe(false);
     await expect(select).toHaveValue("lemon");
-    await expect(select.locator("selectedcontent")).toHaveText("🍋 Lemon");
+    await expect(select.locator("selectedcontent")).toHaveText("🍋 Lemon", INNER);
     await expect(select).toBeFocused();
   });
 
@@ -110,6 +114,25 @@ test.describe("customizable select", () => {
     await expect(option("Large")).toBeFocused();
   });
 
+  test("the picker shows labelled items' content; typeahead matches their label (TASK-537)", async ({
+    page,
+  }) => {
+    await page.goto("/select");
+    const { select, option } = fruit(page);
+    await select.click();
+    expect(await isOpen(select)).toBe(true);
+    // Not only the label: the emoji before it shows too, and the name stays the label.
+    for (const name of ["Apple", "Banana", "Pear", "Lemon"]) {
+      await expect(option(name).locator("[aria-hidden=true]")).toBeVisible();
+    }
+    await expect(option("Lime")).toBeVisible();
+    await page.keyboard.press("b");
+    await expect(option("Banana")).toBeFocused();
+    await page.keyboard.press("Enter");
+    await expect(select).toHaveValue("banana");
+    await expect(select.locator("selectedcontent")).toHaveText("🍌 Banana", INNER);
+  });
+
   test("a click on the label focuses the select without opening it", async ({ page }) => {
     await page.goto("/select");
     const { select } = fruit(page);
@@ -144,6 +167,22 @@ test.describe("customizable select", () => {
     await page.keyboard.press("Escape");
     await expect(dialog).toBeHidden();
   });
+});
+
+// Every browser: a select without a Trigger or a theme class is the classic one.
+test("a classic select shows its items' labels, and typeahead matches them (TASK-537)", async ({
+  page,
+}) => {
+  await page.goto("/select");
+  const color = page.getByLabel("Color");
+  await color.focus();
+  expect(await color.evaluate((el) => getComputedStyle(el).appearance)).not.toBe("base-select");
+  // The classic select draws each option's `label`, which focus left in place.
+  expect(
+    await color.locator("option").evaluateAll((all) => all.map((el) => el.getAttribute("label"))),
+  ).toEqual(["Red", "Green", "Blue"]);
+  await page.keyboard.press("b");
+  await expect(color).toHaveValue("blue");
 });
 
 test.describe("in an island", () => {

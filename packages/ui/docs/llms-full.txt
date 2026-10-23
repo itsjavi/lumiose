@@ -13,9 +13,8 @@ props, events and styling hooks. The Lumiose docs: `node_modules/lumiose/docs/ll
 
 > `@lumiose/ui`: accessible, unstyled UI primitives built on native elements (`<dialog>`, popover, invoker commands, CSS anchor positioning), server-rendered without hydration. Style them with your own CSS or the optional default theme.
 
-**Status:** in development. `@lumiose/ui` keeps its own 0.x versions, apart from the version all
-other Lumiose packages share, and is not on npm yet: today it is used from this repository's
-workspace. The goal for its 1.0 is parity with [Base UI](https://base-ui.com)'s components; the
+**Status:** in development. `@lumiose/ui` is on npm and keeps its own 0.x versions, apart from
+the version all other Lumiose packages share. The goal for its 1.0 is parity with [Base UI](https://base-ui.com)'s components; the
 table below lists them as they land.
 
 These pages ship in the package, in `node_modules/@lumiose/ui/docs`, so they match the installed
@@ -48,7 +47,8 @@ Anatomy, API, Example, Styling, Keyboard and focus, Without JavaScript, Browser 
   with `onCheckedChange`, `value` with `onValueChange`. Pass a signal's value and write it back in
   the callback to keep both in sync, or leave both out and the element keeps its own state. Custom
   elements report changes with lowercase DOM events, like native ones: `openchange`,
-  `checkedchange` and `change`.
+  `checkedchange` and `change`. The callbacks run inside `batch()`, as event handlers do: what
+  they write renders together, and the DOM is current as soon as the event returns.
 - **Keyboard contracts.** Every component follows its WAI-ARIA Authoring Practices pattern, and
   its end-to-end tests check the keyboard paths.
 - **WCAG 2.2 AA.** Every component meets it: the components own semantics, keyboard and
@@ -81,7 +81,7 @@ custom properties, named as in shadcn/ui, are listed in [Theming](theming.md#the
 | [Tooltip](tooltip.md)                 | Available: native hint popover, opened by its script                                      |
 | [Menu](menu.md)                       | Available: popover menu, opens without JavaScript                                         |
 | [Combobox](combobox.md)               | Available: `<lu-combobox>`, a form control that filters its options                       |
-| [Select](select.md)                   | Available: native `<select>`, customizable where supported, no script                     |
+| [Select](select.md)                   | Available: native `<select>`, customizable where supported, no script but for `label`s    |
 | [Tabs](tabs.md)                       | Available: server HTML with the full state, `<lu-tabs>` adds the keys                     |
 | [Field](field.md)                     | Available: label, description, errors; native validation in the field                     |
 | [Fieldset](fieldset.md)               | Available: native `<fieldset>` and `<legend>`, no script                                  |
@@ -176,7 +176,10 @@ errors are yours.
 `@lumiose/ui` is opt-in, so its size is reported apart from the runtime's caps:
 `pnpm --filter @lumiose/ui size` prints, per component, the JavaScript a server-rendered page loads
 for its custom elements, the JavaScript an island that uses it loads, and its CSS (minified, gzip
-and brotli).
+and brotli). The scripts load as separate modules, in islands too: each component's script, and
+the modules several scripts share (the dismissal model, the placement fallback, the hover timing),
+each a file of its own, as an app's build splits them. The sizes on the component pages are those
+files' brotli sizes added up.
 
 ## Related
 
@@ -190,13 +193,13 @@ and brotli).
 
 > Add `@lumiose/ui` to a Lumiose app and import its stylesheets, and the default theme if you want its look. The components then render in server HTML, without an island, and a page loads only the small scripts of the components it renders.
 
-**Status:** `@lumiose/ui` is not on npm yet. In this repository's workspace, an app adds it as
-`"@lumiose/ui": "workspace:*"` in its `dependencies`.
+**Status:** in development, on npm with its own 0.x versions, apart from the version the other
+Lumiose packages share.
 
 ## Add the package
 
 `@lumiose/ui` needs a Lumiose app: it ships its components as TSX, which the app's build compiles
-with the app's own code, and `lumiose` is its peer dependency. Once it is on npm:
+with the app's own code, and `lumiose` is its peer dependency. Install it from npm:
 
 ```sh
 pnpm add @lumiose/ui
@@ -578,8 +581,9 @@ closed item are HTML features: an accordion in a server-rendered page works befo
 loads, and with none. Disabled triggers ignore the pointer through CSS. `value`, `onValueChange`
 and `bind:value` need the component to run in an island.
 
-A page that renders an `Accordion` loads a 1 kB (brotli) module once, without the Lumiose runtime;
-islands bundle it. It defines `<lu-accordion>`, which adds the arrow keys, Home and End, and sets
+A page that renders an `Accordion` loads its script once, with the panel and animation modules it
+shares with Collapsible: 1.3 kB (brotli) without the Lumiose runtime; an island loads the same
+modules. It defines `<lu-accordion>`, which adds the arrow keys, Home and End, and sets
 the panels' animation hooks (shared with [Collapsible](collapsible.md)); a disabled trigger does
 not toggle, also from the keyboard.
 
@@ -602,7 +606,7 @@ not toggle, also from the keyboard.
 
 # Autocomplete
 
-> A text input with suggestions, for text that may be anything (a search, a tag, an address): the WAI-ARIA combobox pattern with list autocomplete, after Base UI's Autocomplete. Unlike a [Combobox](combobox.md), the text is the value: the input has the name and submits what is typed, and choosing a suggestion only fills it in. It runs on the Combobox's element (`<lu-combobox free>`, 5.0 kB) and parts, on server-rendered pages and in islands; `bind:value` keeps a signal in sync. Filtering, inline completion, groups, an empty state and a status.
+> A text input with suggestions, for text that may be anything (a search, a tag, an address): the WAI-ARIA combobox pattern with list autocomplete, after Base UI's Autocomplete. Unlike a [Combobox](combobox.md), the text is the value: the input has the name and submits what is typed, and choosing a suggestion only fills it in. It runs on the Combobox's element (`<lu-combobox free>`, 5.8 kB) and parts, on server-rendered pages and in islands; `bind:value` keeps a signal in sync. Filtering, inline completion, groups, an empty state and a status.
 
 ```ts
 import { Autocomplete } from "@lumiose/ui"; // or "@lumiose/ui/autocomplete"
@@ -747,7 +751,7 @@ Focus stays in the input: the highlight moves through `aria-activedescendant`.
 ## Without JavaScript, and the element's script
 
 The input is a native text field with the name: typing, `required`, submission and reset work with
-no script; the suggestions need it. `<lu-combobox>`'s script (5.0 kB brotli, shared with Combobox)
+no script; the suggestions need it. `<lu-combobox>`'s script (5.8 kB brotli, shared with Combobox)
 filters and opens them, moves the highlight, fills in a choice (firing `input` and `change` on the
 input) and runs inline completion.
 
@@ -946,8 +950,8 @@ when it fails) and hides its fallback, from sight and from assistive technology,
 the avatar twice; an avatar without an image shows its fallback.
 `onLoadingStatusChange` needs the component to run in an island.
 
-A page that renders an `Avatar` loads a 0.5 kB (brotli) script, without the Lumiose runtime;
-islands bundle it. `<lu-avatar>` reads the image's state when it connects (a cached image shows
+A page that renders an `Avatar` loads a 0.5 kB (brotli) script, without the Lumiose runtime; an
+island loads the same module. `<lu-avatar>` reads the image's state when it connects (a cached image shows
 at once), then follows its `load` and `error` events and changes to its `src` and `srcset`. An
 image that is complete without a size (an SVG without intrinsic dimensions, or a broken image) is
 told apart with `decode()`.
@@ -1180,7 +1184,7 @@ A native checkbox: toggling, submission, `required`, reset and `disabled` (its o
 work with no script.
 
 A page that renders a Checkbox, Checkbox Group, Radio Group or Switch loads one 1.0 kB (brotli)
-script once, without the Lumiose runtime; islands bundle it. It turns server HTML's
+script once, without the Lumiose runtime; an island loads the same module. It turns server HTML's
 `data-indeterminate` into the `indeterminate` property (which has no attribute), makes read-only
 inputs ignore clicks, Space and the label, runs the parent checkbox of a group and a [Radio
 Group](radio-group.md)'s arrow keys, and adds an
@@ -1207,7 +1211,7 @@ browser.
 > A group of checkboxes with one value, the list of the checked ones, after Base UI's CheckboxGroup: a native `<fieldset>` whose checkboxes share a name, so the form submits each checked value and a disabled group disables them all, without JavaScript. A parent checkbox checks them all and shows checked, mixed or unchecked as they are; `bind:value` keeps a signal in sync.
 
 ```ts
-import { CheckboxGroup, Checkbox, Fieldset } from "@lumiose/ui"; // or "@lumiose/ui/checkbox-group"
+import { CheckboxGroup, Checkbox, Fieldset } from "@lumiose/ui"; // or "@lumiose/ui/checkbox-group", "@lumiose/ui/checkbox" and "@lumiose/ui/fieldset"
 import "@lumiose/ui/themes/default.css"; // optional: the default theme
 ```
 
@@ -1319,7 +1323,7 @@ Every supported browser.
 
 # Collapsible
 
-> A panel that its trigger shows and hides: a native `<details>` whose `<summary>` is the trigger, so it works in server HTML with no JavaScript, keeps the browser's keyboard handling, and opens when find-in-page or a link lands inside it. A 0.7 kB script adds Base UI's animation hooks. `bind:open` (or `open` and `onOpenChange`) keeps a signal in sync in islands.
+> A panel that its trigger shows and hides: a native `<details>` whose `<summary>` is the trigger, so it works in server HTML with no JavaScript, keeps the browser's keyboard handling, and opens when find-in-page or a link lands inside it. A 0.9 kB script adds Base UI's animation hooks. `bind:open` (or `open` and `onOpenChange`) keeps a signal in sync in islands.
 
 ```ts
 import { Collapsible } from "@lumiose/ui"; // or "@lumiose/ui/collapsible"
@@ -1460,8 +1464,9 @@ Collapsible in a server-rendered page works before any script loads, and with no
 trigger ignores the pointer through CSS. `open`, `onOpenChange` and `bind:open` need the component
 to run in an island.
 
-A page that renders a `Collapsible` loads a 0.7 kB (brotli) module once, without the Lumiose
-runtime; islands bundle it. It covers every Collapsible and [Accordion](accordion.md) panel on the
+A page that renders a `Collapsible` loads 0.9 kB (brotli) of modules once (its script, and the
+panel and animation modules it shares with Accordion), without the Lumiose runtime; an island
+loads the same modules. It covers every Collapsible and [Accordion](accordion.md) panel on the
 page:
 
 - the animation hooks above, set on every opening and closing, whatever caused it (the trigger,
@@ -1487,7 +1492,7 @@ page:
 
 # Combobox
 
-> A text input that filters a list of options, for picking one value or several from many: the WAI-ARIA combobox pattern with list autocomplete, after Base UI's Combobox. The input shows the option's label and the form gets its value. `<lu-combobox>`, a 5.4 kB form-associated light-DOM element, runs it on server-rendered pages and in islands; `bind:value` and `bind:open` keep signals in sync. Groups, an empty state, a status, a clear button, multiple values with chips, validation and async options.
+> A text input that filters a list of options, for picking one value or several from many: the WAI-ARIA combobox pattern with list autocomplete, after Base UI's Combobox. The input shows the option's label and the form gets its value. `<lu-combobox>`, a 5.8 kB form-associated light-DOM element, runs it on server-rendered pages and in islands; `bind:value` and `bind:open` keep signals in sync. Groups, an empty state, a status, a clear button, multiple values with chips, validation and async options.
 
 ```ts
 import { Combobox } from "@lumiose/ui"; // or "@lumiose/ui/combobox"
@@ -1800,8 +1805,9 @@ In the server HTML the input is empty even with a selected value: the input rend
 options, so the server does not know the selected option's label when it writes the input. The
 script puts the label in as it upgrades the element (decision-62).
 
-A page that renders a `Combobox` loads the script once, as a 5.4 kB (brotli) module without the
-Lumiose runtime, and islands bundle it. It defines `lu-combobox`, which upgrades every combobox on
+A page that renders a `Combobox` loads the script once, with the dismissal and placement modules
+it shares with Menu and Popover: 5.8 kB (brotli) without the Lumiose runtime, and an island loads
+the same modules. It defines `lu-combobox`, which upgrades every combobox on
 the page in place: it reads the selection the server rendered (`aria-selected="true"`), puts its
 label in the input (text typed before it ran is kept, as a search), renders the chips, and from
 then on owns the value, the filtering, the popup,
@@ -1859,7 +1865,7 @@ The element is also an API of its own, for scripts and other frameworks:
 
 # Context Menu
 
-> A menu opened at the pointer by a right-click in its trigger area, a long press on a touch screen, or Shift+F10 and the ContextMenu key: Menu's popup and items, with Menu's keys, typeahead, submenus and dismissal. A 0.6 kB script on top of Menu's (4.6 kB together) opens it; without JavaScript the browser shows its own menu. `bind:open` (or `open` and `onOpenChange`) keeps a signal in sync in islands.
+> A menu opened at the pointer by a right-click in its trigger area, a long press on a touch screen, or Shift+F10 and the ContextMenu key: Menu's popup and items, with Menu's keys, typeahead, submenus and dismissal. A 0.9 kB script on top of Menu's (5.4 kB together) opens it; without JavaScript the browser shows its own menu. `bind:open` (or `open` and `onOpenChange`) keeps a signal in sync in islands.
 
 ```ts
 import { ContextMenu } from "@lumiose/ui"; // or "@lumiose/ui/context-menu"
@@ -2034,8 +2040,8 @@ Opening a menu at the pointer needs the script: without JavaScript a right-click
 browser's own menu, and the popup stays hidden. `open`, `onOpenChange` and `bind:open` need the
 component to run in an island.
 
-A page that renders a `ContextMenu` loads Menu's script and a 0.6 kB (brotli) one of its own,
-4.6 kB together, without the Lumiose runtime; islands bundle them. The element opens the menu on a
+A page that renders a `ContextMenu` loads Menu's script and a 0.9 kB (brotli) one of its own,
+5.4 kB together, without the Lumiose runtime; an island loads the same modules. The element opens the menu on a
 right-click, a long press or the keys, at the pointer, through a zero-size anchor that it moves
 there (CSS anchor positioning places the popup, with Menu's flips; without it, the shared
 placement script does). Menu's script does the rest: keys, items, submenus, and dismissal shared
@@ -2280,7 +2286,7 @@ server-rendered page works before any script loads, and with none. `open`, `onOp
 
 Where the native element falls short of Base UI's dialog, a small script closes the gap: a page
 that renders a `Dialog` loads it once, as a 1.5 kB (brotli) module without the Lumiose runtime, and
-islands bundle it. It covers every `<dialog>` on the page:
+an island loads the same module. It covers every `<dialog>` on the page:
 
 - a right-click or a second finger outside does not close the dialog;
 - `data-nested-dialog-open` and `--lu-nested-dialogs` on a dialog with open dialogs inside;
@@ -2500,8 +2506,9 @@ The trigger, the close buttons, Escape and the click outside are HTML features, 
 drawer in a server-rendered page works before any script loads, and with none, against its edge.
 `open`, `onOpenChange` and `bind:open` need the component to run in an island.
 
-A page that renders a `Drawer` loads Dialog's script and a 1 kB (brotli) one of its own (2.5 kB
-together), without the Lumiose runtime; islands bundle them. The drawer's script handles the
+A page that renders a `Drawer` loads Dialog's script and a 1.1 kB (brotli) one of its own (2.8 kB
+together, with the animation module it shares with Toast), without the Lumiose runtime; an island
+loads the same modules. The drawer's script handles the
 swipe, with the mouse and pen through pointer events and on touch screens through touch events,
 taking the gesture from scrolling only once it is a swipe.
 
@@ -2778,8 +2785,8 @@ the message Error's id (`Field.Error` without children or `match`) even when the
 Errors with children or a `match`. Give a field that must read well without JavaScript a message
 Error, and its Descriptions before the control.
 
-A page that renders a `Field` loads a 1.7 kB (brotli) script once, without the Lumiose runtime;
-islands bundle it. On a submit attempt (a submit button, Enter in a field, `requestSubmit()` or
+A page that renders a `Field` loads a 1.7 kB (brotli) script once, without the Lumiose runtime; an
+island loads the same module. On a submit attempt (a submit button, Enter in a field, `requestSubmit()` or
 the form's `reportValidity()`; a silent `checkValidity()` changes nothing) it cancels the browser's
 `invalid` bubble for fields that have an Error part for the problem and shows it there instead (the
 browser's message, or one your `validate` set), with the timing above, and focuses the first
@@ -3142,7 +3149,7 @@ Every browser; input types and constraints as the browser supports them.
 
 # Menu
 
-> A menu of commands, links, checkbox and radio items and submenus, opened by a button: the trigger's `popovertarget` opens it and CSS anchor positioning places it, so it works in server HTML with no JavaScript, and a 4.0 kB script adds the APG Menu Button keyboard contract where JavaScript runs. `bind:open`, `bind:checked` and `bind:value` keep signals in sync in islands.
+> A menu of commands, links, checkbox and radio items and submenus, opened by a button: the trigger's `popovertarget` opens it and CSS anchor positioning places it, so it works in server HTML with no JavaScript, and a 4.4 kB script adds the APG Menu Button keyboard contract where JavaScript runs. `bind:open`, `bind:checked` and `bind:value` keep signals in sync in islands.
 
 ```ts
 import { Menu } from "@lumiose/ui"; // or "@lumiose/ui/menu"
@@ -3463,8 +3470,9 @@ submenu closes it, but the browser leaves focus on the page rather than on the s
 Tab starts over from the top (the script returns focus to the trigger). `open`, `onOpenChange` and
 the `bind:` props need the component to run in the browser, in an island.
 
-The keyboard contract comes from a small script: a page that renders a `Menu` loads it once, as a
-4.0 kB (brotli) module without the Lumiose runtime, and islands bundle it. It defines `lu-menu`,
+The keyboard contract comes from a small script: a page that renders a `Menu` loads it once, with
+the dismissal and placement modules it shares with Popover and Combobox: 4.4 kB (brotli) without
+the Lumiose runtime, and an island loads the same modules. It defines `lu-menu`,
 which upgrades every menu on the page in place, and adds what the native popover lacks: focus on
 open and its return on close, the arrows, Home, End and typeahead, Escape one level at a time, Tab,
 submenus, checkbox and radio items, disabled items, `data-highlighted`, and the pointer behaviour
@@ -3510,7 +3518,7 @@ The element is also an API of its own, for scripts and other frameworks:
 
 # Menubar
 
-> A bar of menus, such as an app's File, Edit and View, after Base UI's Menubar and the WAI-ARIA menubar pattern: `Menu.Root`s inside `<lu-menubar role="menubar">`, whose triggers are the bar's items. Menu's popups, items, submenus and dismissal; the bar is one tab stop, the arrow keys move between its items and between open menus, and once a menu is open, hovering another item opens its menu instead. A 0.7 kB script on top of Menu's (4.7 kB together); without JavaScript each trigger opens its menu.
+> A bar of menus, such as an app's File, Edit and View, after Base UI's Menubar and the WAI-ARIA menubar pattern: `Menu.Root`s inside `<lu-menubar role="menubar">`, whose triggers are the bar's items. Menu's popups, items, submenus and dismissal; the bar is one tab stop, the arrow keys move between its items and between open menus, and once a menu is open, hovering another item opens its menu instead. A 1.1 kB script on top of Menu's (5.5 kB together); without JavaScript each trigger opens its menu.
 
 ```ts
 import { Menu, Menubar } from "@lumiose/ui"; // or "@lumiose/ui/menu" and "@lumiose/ui/menubar"
@@ -3679,8 +3687,8 @@ flex row (a column when vertical); each `<lu-menu>` adds no box.
 Each trigger opens its menu through `popovertarget`, and the browser light-dismisses it: without
 JavaScript every trigger is a tab stop, and the menus open with Enter, Space or a click.
 
-A page that renders a `Menubar` loads Menu's script and a 0.7 kB (brotli) one of its own, 4.7 kB
-together, without the Lumiose runtime; islands bundle them. The menubar's script makes the bar one
+A page that renders a `Menubar` loads Menu's script and a 1.1 kB (brotli) one of its own, 5.5 kB
+together, without the Lumiose runtime; an island loads the same modules. The menubar's script makes the bar one
 tab stop once the page has loaded, and adds the arrow keys between items and menus and the hover
 switching. Each menu stays Menu's: its keys, items, submenus and dismissal.
 
@@ -3805,7 +3813,7 @@ above. `role="meter"` reaches screen readers in recent versions; older ones read
 
 # Navigation Menu
 
-> A site's navigation whose items open panels of links, after Base UI's NavigationMenu and the WAI-ARIA disclosure navigation pattern: a `<nav>` landmark around a list, each trigger opening its content through `popovertarget` (a native popover placed under it by CSS anchor positioning), so the links work and the panels open on a click, one at a time, in server HTML with no JavaScript. A 3.5 kB script adds hover intent, the arrow keys, closing when focus leaves and the direction a panel comes in from. `bind:value` (or `value` and `onValueChange`) keeps the open item in a signal.
+> A site's navigation whose items open panels of links, after Base UI's NavigationMenu and the WAI-ARIA disclosure navigation pattern: a `<nav>` landmark around a list, each trigger opening its content through `popovertarget` (a native popover placed under it by CSS anchor positioning), so the links work and the panels open on a click, one at a time, in server HTML with no JavaScript. A 4.0 kB script adds hover intent, the arrow keys, closing when focus leaves and the direction a panel comes in from. `bind:value` (or `value` and `onValueChange`) keeps the open item in a signal.
 
 ```ts
 import { NavigationMenu } from "@lumiose/ui"; // or "@lumiose/ui/navigation-menu"
@@ -4040,8 +4048,9 @@ The `<nav>`, its links and the triggers are HTML: each trigger opens its content
 `popovertarget`, one at a time (an auto popover closes the others), and Escape or a click outside
 closes it. `value`, `onValueChange` and `bind:value` need the component to run in an island.
 
-A page that renders a `NavigationMenu` loads a 3.5 kB (brotli) script (its dismissal module is
-Menu's and Popover's too), without the Lumiose runtime; islands bundle it. `<lu-navigation-menu>`
+A page that renders a `NavigationMenu` loads its script, with the dismissal and placement modules
+it shares with Menu and Popover: 4.0 kB (brotli) without the Lumiose runtime; an island loads the
+same modules. `<lu-navigation-menu>`
 takes over the trigger's click (so a click keeps a content opened by hover open), opens contents on
 hover, adds the arrow keys, closes a content when focus leaves its item, dismisses contents as Menu
 and Popover do (a press of the main button outside, an Escape, another layer opening), keeps
@@ -4249,7 +4258,7 @@ Scrubbing uses pointer capture, without pointer lock.
 
 # OTP Field
 
-> A one-time code input, after Base UI's OTPField: one native `<input>` shown as one slot per character. SMS autofill (`autocomplete="one-time-code"`), paste, Backspace, the arrow keys, `maxlength`, `pattern`, `required` and the form's value are the platform's, without JavaScript too, and assistive technology meets one labelled text field. `<lu-otp-field>`'s 1.5 kB script lays the input over the slots, keeps the code to the allowed characters, and reports completion. `bind:value` keeps a signal in sync.
+> A one-time code input, after Base UI's OTPField: one native `<input>` shown as one slot per character. SMS autofill (`autocomplete="one-time-code"`), paste, Backspace, the arrow keys, `maxlength`, `pattern`, `required` and the form's value are the platform's, without JavaScript too, and assistive technology meets one labelled text field. `<lu-otp-field>`'s 1.6 kB script lays the input over the slots, keeps the code to the allowed characters, and reports completion. `bind:value` keeps a signal in sync.
 
 ```ts
 import { OTPField } from "@lumiose/ui"; // or "@lumiose/ui/otp-field"
@@ -4388,7 +4397,7 @@ auto-submits.
 ## Without JavaScript, and the element's script
 
 The input is a native text field: autofill, typing, paste, `pattern` and `required` validation and
-submission work with no script, and the slots stay hidden. `<lu-otp-field>`'s script (1.5 kB
+submission work with no script, and the slots stay hidden. `<lu-otp-field>`'s script (1.6 kB
 brotli) shows the slots, cleans the value as it changes (firing `valueinvalid` for refused input),
 fires `valuecomplete`, auto-submits, and follows a form reset.
 
@@ -4412,7 +4421,7 @@ does not zoom into it on focus.
 
 # Popover
 
-> A popup anchored to its trigger: a native `popover` opened and closed by the trigger's `popovertarget`, placed with CSS anchor positioning, so it works in server HTML with no JavaScript. A 3.3 kB script moves focus into it and back, dismisses it as Base UI does (not on a right-click), keeps `aria-expanded` current and places it in browsers without anchor positioning. `bind:open` (or `open` and `onOpenChange`) keeps a signal in sync in islands. A trigger can open it on hover (`openOnHover`), and a `modal` popover is a modal `<dialog>` that makes the page behind it inert.
+> A popup anchored to its trigger: a native `popover` opened and closed by the trigger's `popovertarget`, placed with CSS anchor positioning, so it works in server HTML with no JavaScript. A 3.2 kB script moves focus into it and back, dismisses it as Base UI does (not on a right-click), keeps `aria-expanded` current and places it in browsers without anchor positioning. `bind:open` (or `open` and `onOpenChange`) keeps a signal in sync in islands. A trigger can open it on hover (`openOnHover`), and a `modal` popover is a modal `<dialog>` that makes the page behind it inert.
 
 ```ts
 import { Popover } from "@lumiose/ui"; // or "@lumiose/ui/popover"
@@ -4645,11 +4654,14 @@ The trigger, the close buttons, Escape, the click outside and the placement are 
 features: a popover in a server-rendered page works before any script loads, and with none. So
 does a modal popover, through invoker commands and `closedby` (where a browser lacks them,
 [Dialog](dialog.md)'s script, which a modal popover loads, stands in). Opening on hover needs the
-script.
+scripts.
 `open`, `onOpenChange` and `bind:open` need the component to run in an island.
 
-A page that renders a `Popover` loads a 3.3 kB (brotli) module once, without the Lumiose runtime;
-islands bundle it. It covers every Popover on the page:
+A page that renders a `Popover` loads its script once, with the dismissal and placement modules it
+shares with Menu, Combobox and Tooltip: 3.2 kB (brotli) without the Lumiose runtime. A trigger
+with `openOnHover` adds 1.0 kB, the hover timing it shares with
+[Preview Card](preview-card.md); a page without one goes without it. An island loads the same
+modules. The scripts cover every Popover on the page:
 
 - focus on open (the first focusable element, or the popup) and its return on close;
 - dismissal, shared with [Menu](menu.md) and [Combobox](combobox.md): a trigger's click makes the
@@ -4686,7 +4698,7 @@ popover's `dialog::backdrop`) styles the layer under it, without an element of i
 
 # Preview Card
 
-> A card that previews a link's destination while the pointer or keyboard focus rests on the link, after Base UI's PreviewCard. The trigger is the link itself, which works as a link without JavaScript; the card is a manual popover placed with [Popover](popover.md)'s placement and opened with its hover timing by a 2.8 kB script. It is hoverable, persistent and dismissible (WCAG 1.4.13). `bind:open` keeps a signal in sync.
+> A card that previews a link's destination while the pointer or keyboard focus rests on the link, after Base UI's PreviewCard. The trigger is the link itself, which works as a link without JavaScript; the card is a manual popover placed with [Popover](popover.md)'s placement and opened with its hover timing by a 3.4 kB script. It is hoverable, persistent and dismissible (WCAG 1.4.13). `bind:open` keeps a signal in sync.
 
 ```ts
 import { PreviewCard } from "@lumiose/ui"; // or "@lumiose/ui/preview-card"
@@ -4800,8 +4812,9 @@ the link, with a fade (none where motion is reduced).
 
 ## Without JavaScript, and the client script
 
-The link is a plain link and the card never opens. A page that renders a `PreviewCard` loads a
-2.8 kB (brotli) module once (with the hover timing it shares with Popover): hover and focus with
+The link is a plain link and the card never opens. A page that renders a `PreviewCard` loads its
+script once, with the hover timing, dismissal and placement modules it shares with Popover: 3.4 kB
+(brotli) without the Lumiose runtime; an island loads the same modules. It runs hover and focus with
 their delays, dismissal, `data-popup-open`, and the placement in browsers without CSS anchor
 positioning.
 
@@ -4940,7 +4953,7 @@ above.
 > A group of radios with one value, after Base UI's RadioGroup and Radio: native radios in a `<fieldset role="radiogroup">`. The browser gives the group one tab stop, arrow keys that move and select (skipping disabled radios), `required`, submission and reset, in server HTML and without JavaScript; a legend names the group. `bind:value` keeps a signal in sync.
 
 ```ts
-import { Radio, RadioGroup, Fieldset } from "@lumiose/ui"; // or "@lumiose/ui/radio-group"
+import { Radio, RadioGroup, Fieldset } from "@lumiose/ui"; // or "@lumiose/ui/radio-group" and "@lumiose/ui/fieldset"
 import "@lumiose/ui/themes/default.css"; // optional: the default theme
 ```
 
@@ -5217,7 +5230,7 @@ supported browser.
 
 # Select
 
-> A native `<select>` for picking one value from a list: it works with no JavaScript, submits with its form and keeps the platform's keyboard, typeahead and mobile pickers. Where the browser has customizable select (`appearance: base-select`, Chrome 135, Safari 26), `Select.Trigger` and `Select.Value` shape the button, the picker is styleable and options may hold more than text; elsewhere it is the classic select. No script; `bind:value` keeps a signal in sync in islands.
+> A native `<select>` for picking one value from a list: it works with no JavaScript, submits with its form and keeps the platform's keyboard, typeahead and mobile pickers. Where the browser has customizable select (`appearance: base-select`, Chrome 135, Safari 26), `Select.Trigger` and `Select.Value` shape the button, the picker is styleable and options may hold more than text; elsewhere it is the classic select. No script, but a tiny one for items with a `label`; `bind:value` keeps a signal in sync in islands.
 
 ```ts
 import { Select } from "@lumiose/ui"; // or "@lumiose/ui/select"
@@ -5273,11 +5286,17 @@ handlers. Name it with a `<label for>` pointing at its `id`, or `aria-label`, or
 
 ### Select.Item
 
-| Prop       | Type      | Default |                                                                                                                       |
-| ---------- | --------- | ------- | --------------------------------------------------------------------------------------------------------------------- |
-| `value`    | `string`  |         | Required: the value the select takes, and submits, when selected.                                                     |
-| `disabled` | `boolean` | `false` | The option cannot be selected; the arrow keys skip it.                                                                |
-| `label`    | `string`  |         | The option's text for typeahead and the classic select, when its content starts with an icon or holds more than text. |
+| Prop       | Type      | Default |                                                                                                                                              |
+| ---------- | --------- | ------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| `value`    | `string`  |         | Required: the value the select takes, and submits, when selected.                                                                            |
+| `disabled` | `boolean` | `false` | The option cannot be selected; the arrow keys skip it.                                                                                       |
+| `label`    | `string`  |         | The option's name, for typeahead, assistive technology and the classic select, when its content starts with an icon or holds more than text. |
+
+A customizable select's picker shows each item's content, with or without `label`. The classic
+select, which shows text only, shows the `label`. An item with a `label` renders the `<option>`'s
+`label` and `aria-label`, and a hidden copy of it first in its content (`<span hidden
+data-label>`), which typeahead matches: so `option.text`, and `<selectedcontent>`'s
+`textContent`, start with the label, while the rendered text does not.
 
 ### Select.Group
 
@@ -5292,7 +5311,7 @@ handlers. Name it with a `<label for>` pointing at its `id`, or `aria-label`, or
 
 **Differences from Base UI's Select.** Select is the native control, chosen over the listbox
 pattern because it works without JavaScript, carries forms, autofill, validation and the mobile
-pickers, and ships no script. So it has no `open`, `onOpenChange` or `modal` (the platform fires no
+pickers, and needs no script. So it has no `open`, `onOpenChange` or `modal` (the platform fires no
 event when the picker opens; style `:open` instead), no `Label` (use `<label for>`), no `multiple`
 (use [Combobox](combobox.md) with `multiple`), no `alignItemWithTrigger` (the picker opens below the
 control and flips), no `Portal`, `Positioner`, `Popup`, `List`, `Icon`, `ItemText`,
@@ -5421,13 +5440,22 @@ A click on a `<label for>` focuses the select without opening it. A click on the
 picker; a click on an option selects it; a click outside closes the picker. Other browsers keep
 their own select keyboard and pickers, which differ by platform.
 
-## Without JavaScript
+## Without JavaScript, and the client script
 
 Select needs none: it is a native control, in server HTML and with JavaScript off, on every
 browser. It submits under its `name`, is validated (`required`), resets with its form, takes the
 browser's autofill and is disabled by a disabled `<fieldset>`. `value`, `onValueChange` and
 `bind:value` need the component to run in the browser, in an island; there `value` sets the
 control's value when it changes, and its `change` event calls `onValueChange`.
+
+Items with a `label` are the exception. A customizable select's picker shows an `<option>`'s
+`label` attribute instead of its content, through the browser's own style, which no CSS
+overrides. So a page whose selects have such items loads a 0.2 kB (brotli) script once, without
+the Lumiose runtime (an island loads the same module). When a customizable select is pressed or
+takes focus, before its picker opens, the script removes the attribute from its items: the picker
+shows their content, typeahead matches the label's hidden copy, and `aria-label` keeps their name.
+A classic select keeps the attribute, which it shows. Without the script, the customizable
+picker shows the labels alone.
 
 ## Browser support
 
@@ -5439,8 +5467,8 @@ control's value when it changes, and its `change` event calls `onValueChange`.
   `Trigger`). Older browsers without customizable select drop them from server HTML, so an
   island's select falls back to rendering on the client there
   ([LUM4006](https://itsjavi.com/lumiose/docs/errors/LUM4006/)).
-- **Typeahead** matches an option's text, or its `label`: give options that start with an icon a
-  `label`.
+- **Typeahead** matches an option's text, or its `label`: give options whose content starts with
+  an icon (an emoji, a symbol) a `label`.
 - **`:open`** comes with customizable select.
 
 ## Related
@@ -6098,7 +6126,7 @@ The [WAI-ARIA tabs pattern](https://www.w3.org/WAI/ARIA/apg/patterns/tabs/):
 The server HTML is complete: the selected tab, its panel and the tab stop are right before any
 script loads, and the panels of the other tabs are `hidden`. Selecting another tab needs
 `<lu-tabs>`' script, a 1.2 kB (brotli) module that a page rendering `Tabs` loads once, without
-the Lumiose runtime; islands bundle it. A `Tabs.Indicator` is placed by CSS alone until then; the
+the Lumiose runtime; an island loads the same module. A `Tabs.Indicator` is placed by CSS alone until then; the
 script makes it follow a new selection. `value`, `onValueChange` and `bind:value` need the
 component to run in an island.
 
@@ -6120,7 +6148,7 @@ component to run in an island.
 
 # Toast
 
-> Short notices in a region of their own, after Base UI's toast: server HTML renders them (a form action's result), and islands add, update and close them through a toast manager. `<lu-toast-viewport>`, a 2.6 kB light-DOM element, puts them in the top layer, times them (pausing on hover and focus), limits how many show, closes them on a swipe, Escape or their close button, focuses the region on F6, and makes screen readers announce them.
+> Short notices in a region of their own, after Base UI's toast: server HTML renders them (a form action's result), and islands add, update and close them through a toast manager. `<lu-toast-viewport>`, a 2.8 kB light-DOM element, puts them in the top layer, times them (pausing on hover and focus), limits how many show, closes them on a swipe, Escape or their close button, focuses the region on F6, and makes screen readers announce them.
 
 ```ts
 import { Toast } from "@lumiose/ui"; // or "@lumiose/ui/toast"
@@ -6404,7 +6432,7 @@ and back when it closes or leaves the page.
 
 What is server-rendered and what needs the client:
 
-| Server HTML                                                                   | The element's script (2.6 kB, loaded once per page)                                                      |
+| Server HTML                                                                   | The element's script (2.8 kB, loaded once per page, as an island loads it)                               |
 | ----------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
 | The region and the toasts a page renders, with their text, roles and buttons. | The top layer (a manual popover), so toasts sit above dialogs and survive other popovers' light dismiss. |
 | Toasts show at the window's bottom end (`toast.css`).                         | Timers, pausing, the limit, closing (button, Escape, swipe), F6, focus when a toast goes.                |
@@ -6534,7 +6562,7 @@ group's script presses it on server pages too. For a value a form submits, use a
 > A set of [Toggles](toggle.md) with one value, after Base UI's ToggleGroup: text alignment (one pressed at a time) or text style (several). `<lu-toggle-group role="group">` presses its toggles and gives the group one tab stop that the arrow keys, Home and End move, following the orientation and the direction, on server pages and in islands. `bind:value` keeps a signal in sync.
 
 ```ts
-import { Toggle, ToggleGroup } from "@lumiose/ui"; // or "@lumiose/ui/toggle-group"
+import { Toggle, ToggleGroup } from "@lumiose/ui"; // or "@lumiose/ui/toggle" and "@lumiose/ui/toggle-group"
 import "@lumiose/ui/themes/default.css"; // optional: the default theme
 ```
 
@@ -6558,7 +6586,7 @@ import "@lumiose/ui/themes/default.css"; // optional: the default theme
 
 | Prop            | Type                           | Default        |                                                                            |
 | --------------- | ------------------------------ | -------------- | -------------------------------------------------------------------------- |
-| `value`         | `string[]`                     |                | Presses these toggles when it changes. Pair it with `onValueChange`.       |
+| `value`         | `string[]`                     |                | The pressed toggles. Pair it with `onValueChange`, which updates it.       |
 | `defaultValue`  | `string[]`                     | `[]`           | The toggles pressed at first.                                              |
 | `onValueChange` | `(value: string[]) => void`    |                | Called after the user presses or releases a toggle.                        |
 | `bind:value`    | `Signal<string[]>`             |                | Stands in for `value` and `onValueChange`.                                 |
@@ -6570,6 +6598,11 @@ import "@lumiose/ui/themes/default.css"; // optional: the default theme
 Every other prop passes through to `<lu-toggle-group>`: `aria-label`, `aria-labelledby`, `id`,
 `class`. Name the group with one of the first two.
 
+With `value`, the group is controlled: after the user presses or releases a toggle, the toggles
+show `value` again, so a press shows only once `onValueChange` has updated `value` with it. One
+that leaves `value` as it was keeps the toggles as they were: an `onValueChange` that ignores an
+empty array keeps one toggle pressed. Setting `value` to the toggles already pressed does nothing.
+
 Each toggle's `value` is its identity in the group; its `onPressedChange` still fires. A
 `pressedchange` event (`detail.pressed`) bubbles from a toggle before it changes, and
 `event.preventDefault()` cancels the change.
@@ -6580,7 +6613,8 @@ Each toggle's `value` is its identity in the group; its `onPressedChange` still 
 ## Example
 
 ```tsx check
-import { Toggle, ToggleGroup } from "@lumiose/ui";
+import { Toggle } from "@lumiose/ui/toggle";
+import { ToggleGroup } from "@lumiose/ui/toggle-group";
 import { signal } from "lumiose";
 
 export function TextAlignment() {
@@ -6633,7 +6667,7 @@ and single tab stop take over: the toggles are toolbar items.
 ## Without JavaScript, and the element's script
 
 The server HTML has each toggle's `aria-pressed` and the tab stop. `<lu-toggle-group>`'s script
-(0.9 kB brotli) presses the toggles and moves focus, on server pages and in islands; when the tab
+(1.0 kB brotli) presses the toggles and moves focus, on server pages and in islands; when the tab
 stop's toggle goes or is disabled, or a disabled group is enabled, the first pressed (else enabled)
 toggle takes the tab stop. With no script
 at all the toggles show their state but do not change. For values a form submits, use a
@@ -6653,7 +6687,7 @@ Custom elements and `aria-pressed`: every supported browser.
 
 # Toolbar
 
-> A set of controls with one tab stop, after Base UI's Toolbar and the APG toolbar pattern: `<lu-toolbar role="toolbar">` moves focus between its items with the arrow keys, Home and End, following the orientation and the text direction. Its items are native: buttons that stay focusable when disabled, links, inputs, and the toggles of a [Toggle Group](toggle-group.md) inside it. In the server HTML every item is a tab stop, so each is reachable without JavaScript; a 1.1 kB script makes them one tab stop and moves it.
+> A set of controls with one tab stop, after Base UI's Toolbar and the APG toolbar pattern: `<lu-toolbar role="toolbar">` moves focus between its items with the arrow keys, Home and End, following the orientation and the text direction. Its items are native: buttons that stay focusable when disabled, links, inputs, and the toggles of a [Toggle Group](toggle-group.md) inside it. In the server HTML every item is a tab stop, so each is reachable without JavaScript; a 1.2 kB script makes them one tab stop and moves it.
 
 ```ts
 import { Toolbar } from "@lumiose/ui"; // or "@lumiose/ui/toolbar"
@@ -6775,7 +6809,7 @@ its text selected, as in Base UI. Base UI advises at most one input, last.
 ## Without JavaScript, and the element's script
 
 The server HTML is a labelled toolbar whose items are all tab stops, so Tab reaches each one
-without JavaScript or before the script runs. `<lu-toolbar>`'s script (1.1 kB brotli with Button's)
+without JavaScript or before the script runs. `<lu-toolbar>`'s script (1.2 kB brotli with Button's)
 makes the toolbar one tab stop, moves focus with the keys and keeps the tab stop on the last focused
 item.
 
@@ -6794,7 +6828,7 @@ Custom elements and `role="toolbar"`: every supported browser and screen reader.
 
 # Tooltip
 
-> A short tip next to its trigger, on hover or keyboard focus: a native `popover="hint"` with `role="tooltip"`, placed with CSS anchor positioning. The trigger is described by the tip in server HTML, so screen readers announce it without hovering; a 2.0 kB script opens and closes it as Base UI's tooltip does. `bind:open` (or `open` and `onOpenChange`) keeps a signal in sync in islands.
+> A short tip next to its trigger, on hover or keyboard focus: a native `popover="hint"` with `role="tooltip"`, placed with CSS anchor positioning. The trigger is described by the tip in server HTML, so screen readers announce it without hovering; a 2.1 kB script opens and closes it as Base UI's tooltip does. `bind:open` (or `open` and `onOpenChange`) keeps a signal in sync in islands.
 
 ```ts
 import { Tooltip } from "@lumiose/ui"; // or "@lumiose/ui/tooltip"
@@ -6905,8 +6939,9 @@ A tooltip inside a popover keeps the popover open, and one inside a dialog belon
 ## Without JavaScript, and the client script
 
 Without JavaScript the tip never shows, but the trigger keeps its description: screen readers
-announce it. A page that renders a `Tooltip` loads a 2.0 kB (brotli) module once, without the
-Lumiose runtime; islands bundle it. It opens and closes every tooltip on the page, and places them
+announce it. A page that renders a `Tooltip` loads its script once, with the placement module it
+shares with Popover and Menu: 2.1 kB (brotli) without the Lumiose runtime; an island loads the
+same modules. It opens and closes every tooltip on the page, and places them
 in browsers without CSS anchor positioning.
 
 ## Browser support

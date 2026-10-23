@@ -17,6 +17,7 @@ import {
 } from "lumiose";
 import defineAccordion from "./accordion.script.ts?client";
 import type { LuAccordion } from "./accordion.script.ts";
+import { batched } from "../batched.ts";
 
 declare module "lumiose/jsx-runtime" {
   namespace JSX {
@@ -223,13 +224,13 @@ function Item({
         }}
         name={accordion.multiple ? undefined : accordion.id}
         open={shown}
-        on:toggle={(event: ToggleEvent) => {
+        on:toggle={batched((event: ToggleEvent) => {
           const now = event.newState === "open";
           accordion.onToggle(key, now);
           if (now === shown) return;
           shown = now;
           onOpenChange?.(now);
-        }}
+        })}
       >
         {children}
       </details>

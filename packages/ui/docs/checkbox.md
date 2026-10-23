@@ -112,7 +112,7 @@ A native checkbox: toggling, submission, `required`, reset and `disabled` (its o
 work with no script.
 
 A page that renders a Checkbox, Checkbox Group, Radio Group or Switch loads one 1.0 kB (brotli)
-script once, without the Lumiose runtime; islands bundle it. It turns server HTML's
+script once, without the Lumiose runtime; an island loads the same module. It turns server HTML's
 `data-indeterminate` into the `indeterminate` property (which has no attribute), makes read-only
 inputs ignore clicks, Space and the label, runs the parent checkbox of a group and a [Radio
 Group](radio-group.md)'s arrow keys, and adds an

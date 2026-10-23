@@ -21,6 +21,8 @@
 //   focus. It stays open while the pointer is on the trigger or the popup (WCAG 1.4.13: hoverable)
 //   and closes `data-close-delay` (0 ms, at least a 100 ms grace to cross the gap) after it left
 //   both. A click on the trigger keeps it open until it is dismissed (an outside press, Escape).
+//   The hover timing is popover-hover.script.ts's, which only a trigger with `openOnHover` loads
+//   (TASK-541); this script follows the popovers it opened.
 // - A modal popover is a modal `<dialog data-side>` opened by `command="show-modal"`: placement,
 //   focus and `aria-expanded` as above; Dialog's script and the native dialog do the rest.
 // - `data-trap-focus` (`modal="trap-focus"`, TASK-410): Tab and Shift+Tab go around the open
@@ -34,7 +36,7 @@
 //
 // It must not import `lumiose`: server-rendered pages load it without the runtime.
 import { openLayer } from "../layer/layer.ts";
-import { hoverIntent } from "./hover.ts";
+import type { HoverIntent } from "./hover.ts";
 import { anchoring, place } from "../placement/place.ts";
 
 /** The last press, until a key is pressed: what an opening came from. */
@@ -75,7 +77,7 @@ function tabStops(popup: HTMLElement): HTMLElement[] {
   });
 }
 
-const isPopover = (node: unknown): node is HTMLElement =>
+export const isPopover = (node: unknown): node is HTMLElement =>
   node instanceof HTMLElement &&
   node.matches("[popover][data-side][role=dialog], dialog[data-side]");
 
@@ -135,9 +137,9 @@ on("click", (event) => {
   const popup = trigger && document.getElementById(trigger.getAttribute("popovertarget")!);
   if (!isPopover(popup) || trigger!.matches("[popovertargetaction=hide]")) return;
   if (!popup.matches(":popover-open")) popup.popover = "manual";
-  else if (hovered.has(popup)) {
+  else if (hovered(popup)) {
     event.preventDefault();
-    hover.forget(popup);
+    hover!.forget(popup);
   }
 });
 
@@ -158,25 +160,17 @@ on("focusout", (event) => {
   }
 });
 
-// Open on hover (hover.ts) -------------------------------------------------------------------
+// Open on hover: popover-hover.script.ts, which only hover triggers load, hands its timing here.
 
-const hover = hoverIntent({
-  triggerAt: (node) =>
-    node.closest?.<HTMLElement>("button[data-open-on-hover][popovertarget]") ?? undefined,
-  popupOf: (trigger) => {
-    const popup = document.getElementById(trigger.getAttribute("popovertarget")!);
-    return isPopover(popup) ? popup : undefined;
-  },
-  show: (trigger, popup) => {
-    // A hover-opened popover leaves focus where it is (see `toggle`).
-    popup.popover = "manual";
-    (popup.showPopover as (options?: { source?: HTMLElement }) => void)({ source: trigger });
-  },
-  hide: (popup) => popup.hidePopover(),
-  delay: 300,
-  closeDelay: 0,
-});
-const hovered = hover.hovered;
+let hover: HoverIntent | undefined;
+
+/** Takes the hover timing of popover-hover.script.ts. */
+export function useHover(intent: HoverIntent): void {
+  hover = intent;
+}
+
+/** Whether a hover opened `popup`, and no click on its trigger has kept it open since. */
+const hovered = (popup: HTMLElement) => hover?.hovered.has(popup) === true;
 
 /** Stops dismissing `popup`: as it closes, so the next close request goes to the layer below. */
 function release(popup: HTMLElement) {
@@ -226,7 +220,7 @@ on("toggle", (event) => {
 
   if (open) {
     // A hover opens it without taking focus from where it is.
-    if (hovered.has(popup) || popup.contains(document.activeElement)) return;
+    if (hovered(popup) || popup.contains(document.activeElement)) return;
     const touch = press?.pointerType === "touch" && event.timeStamp - press.timeStamp < 1000;
     const first = touch ? undefined : tabStops(popup)[0];
     if (first) first.focus();
@@ -238,10 +232,10 @@ on("toggle", (event) => {
   }
 
   placed.delete(popup);
-  const wasHovered = hovered.has(popup);
+  const wasHovered = hovered(popup);
   const held = holding.has(popup);
   holding.delete(popup);
-  hover.forget(popup);
+  hover?.forget(popup);
   // A hover opened it and focus was elsewhere: closing it moves no focus.
   if (wasHovered && !held) return;
   const active = document.activeElement;

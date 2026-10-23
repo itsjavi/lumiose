@@ -3,7 +3,7 @@
 > A set of [Toggles](toggle.md) with one value, after Base UI's ToggleGroup: text alignment (one pressed at a time) or text style (several). `<lu-toggle-group role="group">` presses its toggles and gives the group one tab stop that the arrow keys, Home and End move, following the orientation and the direction, on server pages and in islands. `bind:value` keeps a signal in sync.
 
 ```ts
-import { Toggle, ToggleGroup } from "@lumiose/ui"; // or "@lumiose/ui/toggle-group"
+import { Toggle, ToggleGroup } from "@lumiose/ui"; // or "@lumiose/ui/toggle" and "@lumiose/ui/toggle-group"
 import "@lumiose/ui/themes/default.css"; // optional: the default theme
 ```
 
@@ -27,7 +27,7 @@ import "@lumiose/ui/themes/default.css"; // optional: the default theme
 
 | Prop            | Type                           | Default        |                                                                            |
 | --------------- | ------------------------------ | -------------- | -------------------------------------------------------------------------- |
-| `value`         | `string[]`                     |                | Presses these toggles when it changes. Pair it with `onValueChange`.       |
+| `value`         | `string[]`                     |                | The pressed toggles. Pair it with `onValueChange`, which updates it.       |
 | `defaultValue`  | `string[]`                     | `[]`           | The toggles pressed at first.                                              |
 | `onValueChange` | `(value: string[]) => void`    |                | Called after the user presses or releases a toggle.                        |
 | `bind:value`    | `Signal<string[]>`             |                | Stands in for `value` and `onValueChange`.                                 |
@@ -39,6 +39,11 @@ import "@lumiose/ui/themes/default.css"; // optional: the default theme
 Every other prop passes through to `<lu-toggle-group>`: `aria-label`, `aria-labelledby`, `id`,
 `class`. Name the group with one of the first two.
 
+With `value`, the group is controlled: after the user presses or releases a toggle, the toggles
+show `value` again, so a press shows only once `onValueChange` has updated `value` with it. One
+that leaves `value` as it was keeps the toggles as they were: an `onValueChange` that ignores an
+empty array keeps one toggle pressed. Setting `value` to the toggles already pressed does nothing.
+
 Each toggle's `value` is its identity in the group; its `onPressedChange` still fires. A
 `pressedchange` event (`detail.pressed`) bubbles from a toggle before it changes, and
 `event.preventDefault()` cancels the change.
@@ -49,7 +54,8 @@ Each toggle's `value` is its identity in the group; its `onPressedChange` still 
 ## Example
 
 ```tsx check
-import { Toggle, ToggleGroup } from "@lumiose/ui";
+import { Toggle } from "@lumiose/ui/toggle";
+import { ToggleGroup } from "@lumiose/ui/toggle-group";
 import { signal } from "lumiose";
 
 export function TextAlignment() {
@@ -102,7 +108,7 @@ and single tab stop take over: the toggles are toolbar items.
 ## Without JavaScript, and the element's script
 
 The server HTML has each toggle's `aria-pressed` and the tab stop. `<lu-toggle-group>`'s script
-(0.9 kB brotli) presses the toggles and moves focus, on server pages and in islands; when the tab
+(1.0 kB brotli) presses the toggles and moves focus, on server pages and in islands; when the tab
 stop's toggle goes or is disabled, or a disabled group is enabled, the first pressed (else enabled)
 toggle takes the tab stop. With no script
 at all the toggles show their state but do not change. For values a form submits, use a
