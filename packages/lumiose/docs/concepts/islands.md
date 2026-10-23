@@ -157,7 +157,8 @@ export const instrumentations: ClientInstrumentation[] = [
 ```
 
 - **`onError(error, info)`** receives errors of islands, `"hydrate"` (the island's module did not
-  load or its hydration threw), `"render"` (an async component, or what an `<ErrorBoundary>`
+  load, its hydration threw, or an event caught before it hydrated could not be dispatched
+  again), `"render"` (an async component, or what an `<ErrorBoundary>`
   caught) and `"effect"` (an effect or binding after hydration), of the SPA router, `"navigate"`
   (a page that throws or whose module does not load), and of `submit()`, `"submit"` (a rejection;
   not an abort). `info` is `{ phase, route, island }`: the SPA route (undefined on MPA pages) and

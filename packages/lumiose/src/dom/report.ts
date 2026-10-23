@@ -1,9 +1,13 @@
 // Errors the client runtime catches where nothing else would see them (owner: Spark): an island
-// whose chunk fails to load or whose hydration throws (TASK-305). They are logged, and with
+// whose chunk fails to load or whose hydration throws (TASK-305), or an event it caught before it
+// hydrated that cannot be dispatched again (TASK-534). They are logged, and with
 // `src/instrumentation.client.ts` they also reach its `onError` (TASK-299, ./instrument.ts).
 import { INSTRUMENTED, notify } from "./instrument.ts";
 
-/** Where a reported error happened: `hydrate` covers loading an island's chunk and hydrating it. */
+/**
+ * Where a reported error happened: `hydrate` covers loading an island's chunk, hydrating it and
+ * dispatching again the events it caught meanwhile.
+ */
 export interface ErrorInfo {
   phase: "hydrate";
   /** The island's ref: its module and export (`/src/Counter.tsx#Counter`). */

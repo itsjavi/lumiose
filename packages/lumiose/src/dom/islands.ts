@@ -23,7 +23,8 @@
 //   are stopped (clicks and submits also held back), hydrate it at once, and are dispatched again
 //   on their target afterwards; an `input` first restores the value typed meanwhile. An island
 //   with caught events keeps holding new ones until it has dispatched them, a task after
-//   hydration, so every event runs in the order it came (TASK-508).
+//   hydration, so every event runs in the order it came (TASK-508). One that cannot be
+//   dispatched again is reported without stopping the others (TASK-534).
 // - Dev: with the in-page inspector on, each step reaches its registry (../core/devtools.ts).
 import type { Component } from "../contract/client.ts";
 import { islandState } from "./devtools.ts";
@@ -303,13 +304,20 @@ export function loadIslands(manifest: IslandManifest): () => void {
     island.q = undefined;
     for (const [event, value] of queue) {
       const target = event.target as HTMLInputElement & HTMLFormElement;
-      if (event.type === "submit") {
-        target.requestSubmit((event as SubmitEvent).submitter);
-      } else {
-        if (event.type === "input") {
-          target.value = value as string;
+      // One event that cannot run again (a submitter no longer in its form, a file input whose
+      // files changed meanwhile) is reported; the events after it still run, in order (TASK-534).
+      try {
+        if (event.type === "submit") {
+          target.requestSubmit((event as SubmitEvent).submitter);
+        } else {
+          // Only a value that changed is restored: a file input's cannot be set.
+          if (event.type === "input" && value !== target.value) {
+            target.value = value as string;
+          }
+          target.dispatchEvent(new (event.constructor as typeof Event)(event.type, event));
         }
-        target.dispatchEvent(new (event.constructor as typeof Event)(event.type, event));
+      } catch (error) {
+        reportError(error, { phase: "hydrate", island: island.ref });
       }
     }
   };
