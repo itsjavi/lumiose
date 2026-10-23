@@ -3,7 +3,7 @@ id: doc-10
 title: Pending decisions for the user
 type: other
 created_date: '2026-10-16 22:28'
-updated_date: '2026-10-23 21:59'
+updated_date: '2026-10-23 23:05'
 ---
 Decisions that need the user, collected while Lux and the workers run unattended (user request, 2026-10-17: "do not block yourself on more questions … postpone them (and their decisions) in a document that can be used later as follow ups").
 
@@ -116,6 +116,21 @@ The review found 1 High, 3 Medium and 14 Low, now TASK-468 to TASK-475. Their fi
 - **Why:** Chromium and WebKit hide an option's content whenever it has a `label` attribute, and CSS cannot override that. The classic select needs the attribute, so no markup works in both.
 - **What changed:** a select with labelled items now loads a 0.19 kB brotli script. In a customizable select, it removes the attribute as the picker opens (classic selects keep it), so the item's content shows. Items without `label` ship no script, as TASK-358 promised for every item.
 - **Alternative:** no script, and the docs say not to use `label` on items whose content starts with an icon.
+
+### P15. beforeNavigate: link clicks on MPA pages and what cancel() means (TASK-549, decision-50 amendment)
+
+- **Waiting:** the user's confirmation, before 0.7.0. It is on main (unreleased) and marked "to be confirmed" in decision-50.
+- **What changed:**
+  - On MPA pages, `beforeNavigate` now sees same-origin link clicks as `"link"` (`willUnload: true`), and `cancel()` prevents the click. Before, every navigation there was `"leave"`.
+  - In SPAs, `cancel()` on a link out of the SPA or a `navigate()` to another document now keeps the page. Before, it made the browser show its prompt (TASK-296).
+  - The browser's prompt stays for `"leave"` only (closing the tab, typing a URL).
+- **Why both:** with only the first part, the documented `if (n.willUnload) n.cancel()` would silently block every link on MPA pages. Together they give one rule: a hook cancels `"leave"`, and asks with its own UI for everything else. This matches decision-50's wording and SvelteKit.
+- **Options:**
+  1. Keep both.
+  2. Keep only the MPA reporting, and restore the browser prompt for `cancel()` on links that load another document.
+  3. Revert TASK-549.
+- **Recommendation:** keep both.
+- **Also in 0.7.0 (no decision needed):** native `on:` listeners run inside `batch()` (TASK-548, decision-81), and the new LUM2001/LUM2003 cases (TASK-529, TASK-536).
 
 ## Answered
 
