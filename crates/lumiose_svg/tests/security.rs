@@ -129,8 +129,8 @@ fn nesting_depth_is_an_error_not_a_crash() {
     assert!(component_source(&svg).is_ok());
 }
 
-#[path = "support/animations.rs"]
-mod animations;
+#[path = "support/invariants.rs"]
+mod invariants;
 
 const NAMESPACES: &str =
     r#"xmlns:x="urn:x" xmlns:y="urn:y" xmlns:xlink="http://www.w3.org/1999/xlink""#;
@@ -159,7 +159,7 @@ fn decoys_cannot_vouch_for_an_animation_of_a_link() {
             !source.contains("<animate") && !source.contains("<set"),
             "{animation}\n{source}"
         );
-        assert_eq!(animations::unsafe_animation(&source), None);
+        assert_eq!(invariants::unsafe_animation(&source), None);
     }
 }
 
@@ -261,7 +261,7 @@ fn no_emitted_animation_targets_a_link_a_handler_or_a_style() {
         }
         animation.push_str(" dur=\"1s\"/>");
         let source = animated(&animation);
-        if let Some(line) = animations::unsafe_animation(&source) {
+        if let Some(line) = invariants::unsafe_animation(&source) {
             panic!("{animation} emitted\n{line}");
         }
         if source.contains(" dur=\"1s\"") {
@@ -341,4 +341,179 @@ fn drops_external_references_in_style_text() {
     ] {
         assert!(style.contains(kept), "{kept} not in\n{style}");
     }
+}
+
+/// The `<style>` text between its tags in `source`.
+fn style_text(source: &str) -> &str {
+    &source[source.find("<style>").unwrap() + 7..source.find("</style>").unwrap()]
+}
+
+/// Delta review C2 (TASK-499): blocks nested past the filter's depth limit kept their `url()`s.
+/// Their content goes now; the blocks around it stay, so the CSS still reads the same.
+#[test]
+fn css_nested_past_the_depth_limit_loses_its_content() {
+    for opener in ["@media all{", "@supports (a:b){", ".x{"] {
+        for closers in ["}".repeat(70), String::new()] {
+            let svg = format!(
+                "<svg {NS}><style>{}.a{{background:url(https://evil.example/x.png)}}{closers}</style><path class=\"a\" d=\"M0 0\"/></svg>",
+                opener.repeat(70)
+            );
+            let source = component(&svg);
+            let style = style_text(&source);
+            assert!(!style.contains("evil"), "{style}");
+            assert_eq!(invariants::external_reference(&source), None, "{style}");
+            // The 65th block is the first too deep: it stays, empty and closed.
+            let closed = if closers.is_empty() { 1 } else { 65 };
+            assert_eq!(style.matches('{').count(), 65, "{style}");
+            assert_eq!(style.matches('}').count(), closed, "{style}");
+            assert!(style.contains("{}"), "{style}");
+        }
+    }
+    // Values nest functions: `style`, presentation attributes, animation values.
+    let value = format!(
+        "{}url(https://evil.example/x.png){}",
+        "calc(".repeat(70),
+        ")".repeat(70)
+    );
+    let source = component(&format!(
+        "<svg {NS}><rect style=\"fill:{value}\" fill=\"{value}\"/></svg>"
+    ));
+    assert!(!source.contains("evil"), "{source}");
+    assert_eq!(invariants::external_reference(&source), None, "{source}");
+    // Within the limit, the CSS is read as usual.
+    let source = component(&format!(
+        "<svg {NS}><style>{}.a{{fill:url(#g)}}{}</style><linearGradient id=\"g\"/><path class=\"a\" d=\"M0 0\"/></svg>",
+        "@media all{".repeat(60),
+        "}".repeat(60)
+    ));
+    assert!(source.contains("__a{fill:url(#l"), "{source}");
+}
+
+/// Delta review C2 (TASK-499): the filter read the text before `<` became `\3c `, so in
+/// `\<url(…)` it saw one identifier, `<url`, while the page got `\\3c url(…)`, a URL token after
+/// an escaped backslash. An escaped character is one unit now (`\<` becomes `\3c `), and the
+/// filter reads the text that is emitted.
+#[test]
+fn markup_escapes_cannot_hide_a_url() {
+    let source = component(&format!(
+        "<svg {NS}><style>li{{list-style:\\&lt;url(https://evil.example/x)}}\
+         .b{{list-style:\\&amp;url(https://evil.example/y)}}\
+         .c{{list-style:\\\\&lt;url(https://evil.example/z)}}</style><path class=\"b c\" d=\"M0 0\"/></svg>"
+    ));
+    let style = style_text(&source);
+    assert_eq!(invariants::external_reference(&source), None, "{style}");
+    // `\<` was an escaped `<` and still is: a function named `<url`, which loads nothing.
+    assert!(style.contains(r"li{list-style:\3c url(https"), "{style}");
+    assert!(style.contains(r"{list-style:\26 url(https"), "{style}");
+    // `\\` is an escaped backslash; the `<` after it is escaped on its own.
+    assert!(style.contains(r"{list-style:\\\3c url(https"), "{style}");
+}
+
+/// Found with the reference invariant (TASK-499): the filter now fails closed in every context.
+/// A URL goes from selectors and at-rule preludes too, but a top-level `@namespace`'s; so do bad
+/// URLs, a `url("#…")` with anything after its string, and an `image-set()` with a URL at any
+/// depth.
+#[test]
+fn urls_go_in_every_context_but_a_namespace_prelude() {
+    let source = component(&format!(
+        "<svg {NS}><style>\
+         @namespace svg url(http://www.w3.org/2000/svg);\
+         @media all{{@namespace x url(https://evil.example/n)}}\
+         url(https://evil.example/s){{}}.a:not(url(https://evil.example/n)){{}}\
+         @media url(\"https://evil.example/m\"){{}}\
+         .b{{background:url(https://evil.example/b c)}}\
+         .c{{fill:url(\"#g\" https://evil.example/c)}}\
+         .d{{background-image:image-set(-webkit-cross-fade(url(https://evil.example/d),red,50%) 1x)}}\
+         </style><linearGradient id=\"g\"/><rect class=\"a b c d\"/></svg>"
+    ));
+    let style = style_text(&source);
+    assert!(!style.contains("evil"), "{style}");
+    assert_eq!(invariants::external_reference(&source), None, "{style}");
+    assert!(
+        style.starts_with("@namespace svg url(http://www.w3.org/2000/svg);"),
+        "{style}"
+    );
+}
+
+/// A property test (TASK-499): random CSS made of nesting, escapes, markup characters, URLs in
+/// every form and rule starts, in `<style>` text and in a `style` attribute, never emits a
+/// reference outside the file.
+#[test]
+fn no_emitted_css_references_a_resource_outside_the_file() {
+    const PIECES: [&str; 40] = [
+        "@media all{",
+        "@supports (a:b){",
+        ".a{",
+        ".b:is(",
+        "calc(",
+        "image-set(",
+        "-webkit-cross-fade(",
+        "(",
+        "[",
+        "{",
+        "}",
+        ")",
+        "]",
+        ";",
+        " ",
+        "/*",
+        "*/",
+        "\"",
+        "\\",
+        "\\&lt;",
+        "&lt;",
+        "&amp;",
+        "\\\\",
+        "\\75 rl(",
+        "u\\72 l(",
+        "url(",
+        "src(",
+        "https://evil.example/u)",
+        "url(https://evil.example/u)",
+        "url(\"https://evil.example/q\")",
+        "url(#g)",
+        "url(\"#g\")",
+        "url(a b)",
+        "\"https://evil.example/s\"",
+        "@import ",
+        "@namespace x ",
+        "var(--u)",
+        "background:",
+        "--u:",
+        "1x",
+    ];
+
+    // SplitMix64: a fixed seed, so a failure reproduces.
+    let mut state = 0x2545_f491_4f6c_dd1d_u64;
+    let mut next = |below: usize| {
+        state = state.wrapping_add(0x9e37_79b9_7f4a_7c15);
+        let mut z = state;
+        z = (z ^ (z >> 30)).wrapping_mul(0xbf58_476d_1ce4_e5b9);
+        z = (z ^ (z >> 27)).wrapping_mul(0x94d0_49bb_1331_11eb);
+        usize::try_from((z ^ (z >> 31)) % below as u64).unwrap()
+    };
+
+    let mut kept = 0;
+    for round in 0..4000 {
+        let mut css = String::new();
+        if round % 10 == 0 {
+            css.push_str(&"@media all{".repeat(60 + next(10)));
+        }
+        for _ in 0..1 + next(30) {
+            css.push_str(PIECES[next(PIECES.len())]);
+        }
+        let svg = format!(
+            "<svg {NS}><style>{css}</style><linearGradient id=\"g\"/><rect class=\"a b\" style='{css}'/></svg>"
+        );
+        let Ok(source) = component_source(&svg) else {
+            continue;
+        };
+        if let Some(breach) = invariants::external_reference(&source) {
+            panic!("{breach}\n{svg}\n{source}");
+        }
+        kept += usize::from(source.contains("evil"));
+    }
+    // Some of the URLs survive as inert text (a string, a `<url(` function), so the inputs do
+    // hold them.
+    assert!(kept > 100, "kept {kept}");
 }

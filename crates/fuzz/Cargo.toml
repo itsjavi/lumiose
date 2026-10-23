@@ -16,9 +16,12 @@ members = ["."]
 
 # Pinned exactly, as in the main workspace (decision-5).
 [workspace.dependencies]
+# The version lumiose_svg uses (the root Cargo.toml): the svg_component invariant reads CSS with it.
+cssparser = "=0.37.0"
 libfuzzer-sys = "=0.4.13"
 
 [dependencies]
+cssparser.workspace = true
 libfuzzer-sys.workspace = true
 lumiose_compiler = { path = "../lumiose_compiler" }
 lumiose_content = { path = "../lumiose_content" }

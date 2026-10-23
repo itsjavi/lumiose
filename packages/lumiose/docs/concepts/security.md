@@ -155,7 +155,8 @@ compiler guards against what such files could carry:
   ([LUM3021](../errors/LUM3021.md)), so data in a constant cannot add CSS outside its scope.
 - **Frontmatter** keys such as `__proto__` stay plain data.
 - **Depth limits** turn absurdly nested files into errors instead of crashes or stalls: CSS
-  blocks past 64 levels and parentheses past 16 ([LUM3014](../errors/LUM3014.md)), SVG elements past 128,
+  blocks past 64 levels and parentheses past 16 ([LUM3014](../errors/LUM3014.md)), SVG elements past 128
+  (in an SVG's own CSS, blocks past 64 levels lose their content instead),
   Markdown and HTML past 512 ([LUM1009](../errors/LUM1009.md)).
 
 **Cross-site form posts.** Form actions and form-encoded posts to endpoints are checked against
