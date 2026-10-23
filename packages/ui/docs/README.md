@@ -166,7 +166,10 @@ errors are yours.
 `@lumiose/ui` is opt-in, so its size is reported apart from the runtime's caps:
 `pnpm --filter @lumiose/ui size` prints, per component, the JavaScript a server-rendered page loads
 for its custom elements, the JavaScript an island that uses it loads, and its CSS (minified, gzip
-and brotli).
+and brotli). The scripts load as separate modules, in islands too: each component's script, and
+the modules several scripts share (the dismissal model, the placement fallback, the hover timing),
+each a file of its own, as an app's build splits them. The sizes on the component pages are those
+files' brotli sizes added up.
 
 ## Related
 

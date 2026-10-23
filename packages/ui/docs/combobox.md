@@ -1,6 +1,6 @@
 # Combobox
 
-> A text input that filters a list of options, for picking one value or several from many: the WAI-ARIA combobox pattern with list autocomplete, after Base UI's Combobox. The input shows the option's label and the form gets its value. `<lu-combobox>`, a 5.4 kB form-associated light-DOM element, runs it on server-rendered pages and in islands; `bind:value` and `bind:open` keep signals in sync. Groups, an empty state, a status, a clear button, multiple values with chips, validation and async options.
+> A text input that filters a list of options, for picking one value or several from many: the WAI-ARIA combobox pattern with list autocomplete, after Base UI's Combobox. The input shows the option's label and the form gets its value. `<lu-combobox>`, a 5.8 kB form-associated light-DOM element, runs it on server-rendered pages and in islands; `bind:value` and `bind:open` keep signals in sync. Groups, an empty state, a status, a clear button, multiple values with chips, validation and async options.
 
 ```ts
 import { Combobox } from "@lumiose/ui"; // or "@lumiose/ui/combobox"
@@ -313,8 +313,9 @@ In the server HTML the input is empty even with a selected value: the input rend
 options, so the server does not know the selected option's label when it writes the input. The
 script puts the label in as it upgrades the element (decision-62).
 
-A page that renders a `Combobox` loads the script once, as a 5.4 kB (brotli) module without the
-Lumiose runtime, and islands bundle it. It defines `lu-combobox`, which upgrades every combobox on
+A page that renders a `Combobox` loads the script once, with the dismissal and placement modules
+it shares with Menu and Popover: 5.8 kB (brotli) without the Lumiose runtime, and an island loads
+the same modules. It defines `lu-combobox`, which upgrades every combobox on
 the page in place: it reads the selection the server rendered (`aria-selected="true"`), puts its
 label in the input (text typed before it ran is kept, as a search), renders the chips, and from
 then on owns the value, the filtering, the popup,

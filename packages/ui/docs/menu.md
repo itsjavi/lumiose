@@ -1,6 +1,6 @@
 # Menu
 
-> A menu of commands, links, checkbox and radio items and submenus, opened by a button: the trigger's `popovertarget` opens it and CSS anchor positioning places it, so it works in server HTML with no JavaScript, and a 4.0 kB script adds the APG Menu Button keyboard contract where JavaScript runs. `bind:open`, `bind:checked` and `bind:value` keep signals in sync in islands.
+> A menu of commands, links, checkbox and radio items and submenus, opened by a button: the trigger's `popovertarget` opens it and CSS anchor positioning places it, so it works in server HTML with no JavaScript, and a 4.4 kB script adds the APG Menu Button keyboard contract where JavaScript runs. `bind:open`, `bind:checked` and `bind:value` keep signals in sync in islands.
 
 ```ts
 import { Menu } from "@lumiose/ui"; // or "@lumiose/ui/menu"
@@ -321,8 +321,9 @@ submenu closes it, but the browser leaves focus on the page rather than on the s
 Tab starts over from the top (the script returns focus to the trigger). `open`, `onOpenChange` and
 the `bind:` props need the component to run in the browser, in an island.
 
-The keyboard contract comes from a small script: a page that renders a `Menu` loads it once, as a
-4.0 kB (brotli) module without the Lumiose runtime, and islands bundle it. It defines `lu-menu`,
+The keyboard contract comes from a small script: a page that renders a `Menu` loads it once, with
+the dismissal and placement modules it shares with Popover and Combobox: 4.4 kB (brotli) without
+the Lumiose runtime, and an island loads the same modules. It defines `lu-menu`,
 which upgrades every menu on the page in place, and adds what the native popover lacks: focus on
 open and its return on close, the arrows, Home, End and typeahead, Escape one level at a time, Tab,
 submenus, checkbox and radio items, disabled items, `data-highlighted`, and the pointer behaviour

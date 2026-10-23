@@ -187,8 +187,9 @@ closed item are HTML features: an accordion in a server-rendered page works befo
 loads, and with none. Disabled triggers ignore the pointer through CSS. `value`, `onValueChange`
 and `bind:value` need the component to run in an island.
 
-A page that renders an `Accordion` loads a 1 kB (brotli) module once, without the Lumiose runtime;
-islands bundle it. It defines `<lu-accordion>`, which adds the arrow keys, Home and End, and sets
+A page that renders an `Accordion` loads its script once, with the panel and animation modules it
+shares with Collapsible: 1.3 kB (brotli) without the Lumiose runtime; an island loads the same
+modules. It defines `<lu-accordion>`, which adds the arrow keys, Home and End, and sets
 the panels' animation hooks (shared with [Collapsible](collapsible.md)); a disabled trigger does
 not toggle, also from the keyboard.
 

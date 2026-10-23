@@ -30,15 +30,41 @@ async function hover(page: Page, name: string) {
   await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
 }
 
-/** /popover/hover-modal with Popover's script running. */
+/** /popover/hover-modal with Popover's scripts running. */
 async function ready(page: Page) {
   await page.goto("/popover/hover-modal");
   // The script makes a trigger's popup manual on its first click; until then it has no state of
-  // its own to wait for, so wait for the module to have run.
+  // its own to wait for, so wait for the modules to have run: the hover script imports
+  // popover.script.ts and the hover timing (TASK-541).
   await page.waitForFunction(() =>
-    performance.getEntriesByType("resource").some((entry) => /popover\.script/.test(entry.name)),
+    performance
+      .getEntriesByType("resource")
+      .some((entry) => /popover-hover\.script/.test(entry.name)),
   );
 }
+
+/** The hover timing's module (hover.ts), if the page loaded it: in dev or in a build. */
+const hoverModules = (page: Page) =>
+  page.evaluate(() =>
+    performance
+      .getEntriesByType("resource")
+      .map((entry) => new URL(entry.name).pathname)
+      .filter((path) => /\/hover[-.][^/]*$/.test(path)),
+  );
+
+test("only a page with a hover trigger loads the hover timing (TASK-541)", async ({ page }) => {
+  await page.goto("/popover");
+  await page.waitForLoadState("networkidle");
+  expect(
+    await page.evaluate(() =>
+      performance.getEntriesByType("resource").some((entry) => /popover\.script/.test(entry.name)),
+    ),
+  ).toBe(true);
+  expect(await hoverModules(page)).toEqual([]);
+  await ready(page);
+  await page.waitForLoadState("networkidle");
+  expect(await hoverModules(page)).toHaveLength(1);
+});
 
 test.describe("without JavaScript", () => {
   test.use({ javaScriptEnabled: false });
@@ -340,12 +366,14 @@ test.describe("WCAG 2.2 AA with the default theme (doc-9 section 17)", () => {
     });
     await ready(page);
     await page.waitForLoadState("networkidle");
-    // With the modules the scripts share with others (the layer model, the fallback placement).
+    // With the modules the scripts share with others (the layer model, the fallback placement,
+    // the hover timing), and the hover triggers' own script (TASK-541).
     expect(scripts.toSorted()).toEqual([
       expect.stringMatching(/\/dialog\.script-[\w-]+\.js$/),
       expect.stringMatching(/\/hover-[\w-]+\.js$/),
       expect.stringMatching(/\/layer-[\w-]+\.js$/),
       expect.stringMatching(/\/place-[\w-]+\.js$/),
+      expect.stringMatching(/\/popover-hover\.script-[\w-]+\.js$/),
       expect.stringMatching(/\/popover\.script-[\w-]+\.js$/),
     ]);
   });

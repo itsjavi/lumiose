@@ -1,6 +1,6 @@
 # OTP Field
 
-> A one-time code input, after Base UI's OTPField: one native `<input>` shown as one slot per character. SMS autofill (`autocomplete="one-time-code"`), paste, Backspace, the arrow keys, `maxlength`, `pattern`, `required` and the form's value are the platform's, without JavaScript too, and assistive technology meets one labelled text field. `<lu-otp-field>`'s 1.5 kB script lays the input over the slots, keeps the code to the allowed characters, and reports completion. `bind:value` keeps a signal in sync.
+> A one-time code input, after Base UI's OTPField: one native `<input>` shown as one slot per character. SMS autofill (`autocomplete="one-time-code"`), paste, Backspace, the arrow keys, `maxlength`, `pattern`, `required` and the form's value are the platform's, without JavaScript too, and assistive technology meets one labelled text field. `<lu-otp-field>`'s 1.6 kB script lays the input over the slots, keeps the code to the allowed characters, and reports completion. `bind:value` keeps a signal in sync.
 
 ```ts
 import { OTPField } from "@lumiose/ui"; // or "@lumiose/ui/otp-field"
@@ -139,7 +139,7 @@ auto-submits.
 ## Without JavaScript, and the element's script
 
 The input is a native text field: autofill, typing, paste, `pattern` and `required` validation and
-submission work with no script, and the slots stay hidden. `<lu-otp-field>`'s script (1.5 kB
+submission work with no script, and the slots stay hidden. `<lu-otp-field>`'s script (1.6 kB
 brotli) shows the slots, cleans the value as it changes (firing `valueinvalid` for refused input),
 fires `valuecomplete`, auto-submits, and follows a form reset.
 

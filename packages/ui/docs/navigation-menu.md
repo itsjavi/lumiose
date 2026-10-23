@@ -1,6 +1,6 @@
 # Navigation Menu
 
-> A site's navigation whose items open panels of links, after Base UI's NavigationMenu and the WAI-ARIA disclosure navigation pattern: a `<nav>` landmark around a list, each trigger opening its content through `popovertarget` (a native popover placed under it by CSS anchor positioning), so the links work and the panels open on a click, one at a time, in server HTML with no JavaScript. A 3.5 kB script adds hover intent, the arrow keys, closing when focus leaves and the direction a panel comes in from. `bind:value` (or `value` and `onValueChange`) keeps the open item in a signal.
+> A site's navigation whose items open panels of links, after Base UI's NavigationMenu and the WAI-ARIA disclosure navigation pattern: a `<nav>` landmark around a list, each trigger opening its content through `popovertarget` (a native popover placed under it by CSS anchor positioning), so the links work and the panels open on a click, one at a time, in server HTML with no JavaScript. A 4.0 kB script adds hover intent, the arrow keys, closing when focus leaves and the direction a panel comes in from. `bind:value` (or `value` and `onValueChange`) keeps the open item in a signal.
 
 ```ts
 import { NavigationMenu } from "@lumiose/ui"; // or "@lumiose/ui/navigation-menu"
@@ -235,8 +235,9 @@ The `<nav>`, its links and the triggers are HTML: each trigger opens its content
 `popovertarget`, one at a time (an auto popover closes the others), and Escape or a click outside
 closes it. `value`, `onValueChange` and `bind:value` need the component to run in an island.
 
-A page that renders a `NavigationMenu` loads a 3.5 kB (brotli) script (its dismissal module is
-Menu's and Popover's too), without the Lumiose runtime; islands bundle it. `<lu-navigation-menu>`
+A page that renders a `NavigationMenu` loads its script, with the dismissal and placement modules
+it shares with Menu and Popover: 4.0 kB (brotli) without the Lumiose runtime; an island loads the
+same modules. `<lu-navigation-menu>`
 takes over the trigger's click (so a click keeps a content opened by hover open), opens contents on
 hover, adds the arrow keys, closes a content when focus leaves its item, dismisses contents as Menu
 and Popover do (a press of the main button outside, an Escape, another layer opening), keeps

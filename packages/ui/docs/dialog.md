@@ -221,7 +221,7 @@ server-rendered page works before any script loads, and with none. `open`, `onOp
 
 Where the native element falls short of Base UI's dialog, a small script closes the gap: a page
 that renders a `Dialog` loads it once, as a 1.5 kB (brotli) module without the Lumiose runtime, and
-islands bundle it. It covers every `<dialog>` on the page:
+an island loads the same module. It covers every `<dialog>` on the page:
 
 - a right-click or a second finger outside does not close the dialog;
 - `data-nested-dialog-open` and `--lu-nested-dialogs` on a dialog with open dialogs inside;

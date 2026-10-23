@@ -358,10 +358,10 @@ test("a server-rendered page with popovers loads only Popover's client script", 
   await page.getByRole("button", { name: "Notifications" }).click();
   await expect(popup(page, "Notifications")).toBeVisible();
   // Popover's script, the placement fallback it shares with Tooltip's, the dismissal model it
-  // shares with Menu and Combobox, and Dialog's (the page has a dialog); no island runtime.
+  // shares with Menu and Combobox, and Dialog's (the page has a dialog); no island runtime, and no
+  // hover timing without a hover trigger (TASK-541).
   expect(scripts.toSorted()).toEqual([
     expect.stringMatching(/\/dialog\.script-[\w-]+\.js$/),
-    expect.stringMatching(/\/hover-[\w-]+\.js$/),
     expect.stringMatching(/\/layer-[\w-]+\.js$/),
     expect.stringMatching(/\/place-[\w-]+\.js$/),
     expect.stringMatching(/\/popover\.script-[\w-]+\.js$/),
