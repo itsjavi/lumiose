@@ -1,6 +1,6 @@
 {
   "name": "@lumiose/eslint-plugin",
-  "version": "0.5.1",
+  "version": "0.6.0",
   "description": "Lumiose's compiler diagnostics (LUMxxxx) as lint rules for oxlint (JS plugins) and ESLint, plus a .stsx processor for ESLint.",
   "license": "MIT",
   "repository": {

@@ -1,6 +1,6 @@
 {
   "name": "@lumiose/query",
-  "version": "0.5.1",
+  "version": "0.6.0",
   "description": "TanStack Query for Lumiose: useQuery, useMutation and QueryClientProvider over @tanstack/query-core, with results in reactive stores.",
   "license": "MIT",
   "repository": {

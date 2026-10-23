@@ -1,6 +1,6 @@
 {
   "name": "create-lumiose",
-  "version": "0.5.1",
+  "version": "0.6.0",
   "description": "Create a Lumiose app: `pnpm create lumiose my-app --template ssr`. Every project starts agent-ready (AGENTS.md, CLAUDE.md, the lumiose skill).",
   "license": "MIT",
   "repository": {

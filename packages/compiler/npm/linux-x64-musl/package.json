@@ -1,6 +1,6 @@
 {
   "name": "@lumiose/compiler-linux-x64-musl",
-  "version": "0.5.1",
+  "version": "0.6.0",
   "description": "Native bindings (napi-rs) of the Lumiose Rust compiler, with a WebAssembly (WASI) fallback.",
   "license": "MIT",
   "repository": {

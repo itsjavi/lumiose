@@ -2,6 +2,26 @@
 
 All Lumiose packages share one version, except those released outside lockstep (@lumiose/ui), which keep their own changelog in their directory.
 
+## 0.6.0 (2026-10-23)
+
+### Breaking changes
+
+- **core:** run the effects queued in a flush before the render work their writes trigger (TASK-527) (ddb80552)
+
+### Fixes
+
+- **router:** keep ; escaped in readable query strings (0.6.0 security review) (1dc5910c)
+### Scale
+
+The large-app benchmark (1,500 routes, 5,000 components), working tree against v0.5.1 (121c124b), medians of 3 rounds on Apple M1 Max (10 cores, 32 GB, darwin 27.0.0 arm64, Node v26.8.1). The release gate stops at a ratio above 1.2.
+
+| Metric | Previous | This release | Ratio |
+| ------ | -------- | ------------ | ----- |
+| Production build (ms) | 28493.2 | 29128.7 | 1.022 |
+| Dev cold start (ms) | 976.1 | 981.9 | 1.006 |
+| HMR latency (ms) | 81.1 | 82.2 | 1.013 |
+| Server memory, peak RSS (MB) | 526 | 525.3 | 0.999 |
+
 ## 0.5.1 (2026-10-23)
 
 ### Features
