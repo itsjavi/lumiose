@@ -1,6 +1,7 @@
 // Generated from packages/ui/docs/toggle-group.md by apps/web/scripts/ui-demos.ts: do not edit.
 // Change the example there and run `pnpm --filter @lumiose/web ui:demos`.
-import { Toggle, ToggleGroup } from "@lumiose/ui";
+import { Toggle } from "@lumiose/ui/toggle";
+import { ToggleGroup } from "@lumiose/ui/toggle-group";
 import { signal } from "lumiose";
 
 export function TextAlignment() {
