@@ -51,10 +51,14 @@ list row goes into the document complete, with its nested lists, conditionals an
 one insertion, and only then do the attachments inside it run. The exception is content that a
 `<Suspense>` holds back while it shows its fallback: it waits in a fragment, so its attachments run
 before it is in the document (`el.isConnected` is `false`), and do not run again when it appears.
-Each attachment's writes reach the DOM before the next attachment runs: an attachment that measures
-(`getBoundingClientRect`) and then sets a signal the page renders makes the next one's measurement
-force a new layout, once per element. To measure many elements, observe them with a
-`ResizeObserver` instead, which reads every size before its callback writes anything.
+
+The attachments and effects that one update queues all run before the DOM shows their own writes.
+When each attachment measures (`getBoundingClientRect`) and then sets a signal the page renders,
+every measurement reads the same layout, and the writes reach the DOM together after the last
+attachment has run: N elements cost one layout, not N. Reading the signal still returns the new
+value at once; only the DOM lags. To measure what such a write renders, read the signal in an
+effect (it re-runs once the DOM shows the write), or measure in the next frame or in a
+`ResizeObserver`.
 
 **`bind:` on components and custom elements.** `bind:x={signal}` works on any component with an
 `x` prop and an `onXChange` callback, like `bind:value` on inputs: `bind:open` on `Dialog.Root`,

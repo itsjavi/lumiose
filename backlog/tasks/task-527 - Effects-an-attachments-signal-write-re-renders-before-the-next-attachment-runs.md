@@ -3,11 +3,11 @@ id: TASK-527
 title: >-
   Effects: an attachment's signal write re-renders before the next attachment
   runs
-status: To Do
+status: In Progress
 assignee:
-  - '@Spark'
+  - Spark
 created_date: '2026-10-23 09:05'
-updated_date: '2026-10-23 13:53'
+updated_date: '2026-10-23 13:58'
 labels:
   - performance
   - core
@@ -35,4 +35,6 @@ Found while measuring TASK-522. When several attachments (or effects) run in one
 
 <!-- SECTION:NOTES:BEGIN -->
 2026-10-23 (Lux): the user accepted the proposal (batch: queued user effects run before the render work their writes trigger), to ship in 0.6.0 as a documented behaviour change. Decision recorded as decision-80.
+
+2026-10-23 (Spark): claimed, implementing decision-80 in core/effect.ts on a worktree branch.
 <!-- SECTION:NOTES:END -->

@@ -44,6 +44,11 @@ Runs `fn` after the DOM updates, then again whenever a signal it read changes. A
 is a cleanup, run before the next run and on disposal. Returns a disposer. Owned by the current
 owner, so it is disposed with the component.
 
+The effects queued in a flush all run before the DOM bindings that their writes trigger; those
+writes then render together, and the effects they schedule run after that, in the same flush. So
+an effect sees the current value of a signal that an earlier effect of the same pass wrote, but
+not yet its DOM.
+
 ## onMount
 
 ```ts

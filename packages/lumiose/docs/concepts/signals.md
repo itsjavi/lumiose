@@ -12,7 +12,12 @@ the signal marks it dirty and re-runs only what depends on it.
 - **Writes are batched.** Writes inside a delegated event handler are batched for the duration of
   the handler. Any other write schedules a microtask flush. `flush()` flushes immediately.
 - **Flush order:** computeds are pulled, then DOM bindings run (parents before children), then user
-  effects.
+  effects. The effects queued at that point all run before the DOM bindings that their own writes
+  trigger, so effects that measure the DOM and then write share one layout. Then those bindings
+  run, then the effects that the writes scheduled. A later effect of the same pass reads the new
+  signal values, but the DOM does not show them yet. A conditional or list around a queued effect
+  that such a write changed still updates first, so an effect never runs inside content that an
+  earlier effect's write removed.
 - **Owners.** Every component, effect and root is an _owner_. Owners scope cleanups
   (`onCleanup`), context (`<Ctx value>`/`useContext`), error handling and `getAbortSignal()`. Disposing an owner
   disposes everything created under it.
@@ -91,6 +96,9 @@ function ThemeLabel() {
   an extra flush. Use `computed(() => a() * 2)`.
 - **Expecting an effect to run synchronously.** Effects run after the DOM updates. In tests, call
   `flush()` after a write before asserting.
+- **Measuring, in one effect, what another effect's write renders.** Effects of the same pass all
+  run before their writes reach the DOM, so the second effect measures the previous layout. Read the
+  written signal in the effect that measures: it re-runs once the DOM shows the write.
 - **Module-scope signals in server code.** On the server, a signal at module scope is shared by
   every request. Keep request data in components or context (`LUM4008`).
 - **Posting a store to a worker.** `postMessage()` and `structuredClone()` throw on proxies: send
