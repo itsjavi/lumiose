@@ -13523,7 +13523,8 @@ What it does:
 - Loads `?client` imports (`./menu.element.ts?client`): client environments get the module itself
   and a default export that does nothing; server environments get a default export that adds the
   module's script to the page being rendered, without running the module. Builds build each script
-  that the project scan finds as a chunk of its own. See
+  that the project scan finds as a chunk of its own: every one of the app's, and those of the
+  [Lumiose packages](#lumiose-packages)' modules that the app's modules can use. See
   [Islands](../concepts/islands.md) ("Scripts of server-rendered components").
 - Hot updates: an edited component re-renders in place, in every instance, and the rest of the page
   keeps its DOM and state (`lumiose dev` registers each named component of client code with
@@ -13560,7 +13561,14 @@ not. The plugin treats their modules like the app's own, whether the package is 
   exists, so their islands get chunks and their pages load their scripts. An installed package is
   scanned whole, `dist/` included, but not the packages in its own `node_modules`; a linked one
   without its build output (`dist/`, `build/`) and nested projects (a folder with a
-  `package.json`, `tsconfig.json` or `vite.config.*`).
+  `package.json`, `tsconfig.json` or `vite.config.*`). A build builds only the client scripts of
+  the package modules the app's modules can run: it follows their imports by name, through
+  re-exports, so `import { Tabs } from "@lumiose/ui"` builds the script of Tabs and not those of the
+  other components. A module that runs builds all its scripts, whichever export the app uses. A
+  package that may resolve its modules differently in the browser and on the server (`exports` or
+  `imports` conditions such as `browser` or `node`, or a `browser` field) builds all of its
+  scripts. When the imports cannot be followed (a package module with an `import()` of a computed
+  specifier, or `import.meta.glob()`), the build builds every script, as it would without the scan.
 - **One `lumiose`.** They are bundled with the server code (`resolve.noExternal`) and kept out of
   Vite's dependency pre-bundling (`optimizeDeps.exclude`), so their modules and the app's share one
   runtime instance, and Vite never compiles their JSX for React. Their CommonJS dependencies,
@@ -15336,8 +15344,9 @@ The compiler treats a zero-argument call of a local or imported binding (`count(
 run on the server are not reads, so server pages can store request data in constants:
 
 - `lumiose`'s request APIs: `url()`, `params()`, `locals()`, `cookies()`, `request()`,
-  `response()` and `publicEnv()`. Inside SPA routes, `url()` and `params()` from `lumiose/router`
-  are reactive and still count.
+  `response()` and `publicEnv()`. The accessors of `lumiose/router` (`url()`, `params()`,
+  `searchParams()`, …) are reactive inside SPA routes and still count, except in the page or
+  layout of a `static` or `server` route, where they read the request too.
 - `lumiose`'s control-flow APIs, which never return: `notFound()`, `redirect()` and `error()`, so
   `const project = getProject(slug) ?? notFound()` is fine.
 - Anything imported from a server-only module (`*.server.ts`, `src/server/**`), such as
@@ -15360,12 +15369,25 @@ still warns when its arguments read a signal or a prop (`const day = format.date
 `useId()`, `ref()`, `signal()`, `createContext()` and `getAbortSignal()`, so
 `const context = { id: useId(), open: signal(false) }` is fine.
 
-Copying a signal's value into a constant warns too: `const n = count()` reads `count` once, when
-`count` is a `signal()`, `computed()`, `resource()` or `optimistic()` made in the same file (in the
-component or at the top level). A zero-argument call of an imported function (`const n = total()`)
-is not reported, because the compiler cannot tell a signal of a store module from a plain function
-or a `defineState()` getter (`const cart = useCart()`). Read an imported signal in the JSX all the
-same (`{total()}`).
+Copying a signal's value into a constant warns too: `const n = count()` reads `count` once. The
+compiler reports the copies it can tell are reactive:
+
+- an accessor made in the same file with `signal()`, `computed()`, `resource()` or `optimistic()`
+  (in the component or at the top level);
+- an accessor prop destructured from the props (`const { value } = props; const v = value()`),
+  as it reports `const v = props.value()`;
+- `url()`, `searchParams()` and `isNavigating()` from `lumiose/router`: a navigation that only
+  changes the query keeps the page and changes the URL, and every navigation changes
+  `isNavigating()`.
+
+Other copies are not reported. A zero-argument call of an imported function (`const n = total()`)
+may be a signal of a store module, a plain function or a `defineState()` getter
+(`const cart = useCart()`), which the compiler cannot tell apart. A copy of `params()`, `route()` or
+`locale()` from `lumiose/router` (`const { id } = params()`) is current for the whole life of a
+page, since a page with other params is a new page; only a layout's code sees them change, and the
+compiler cannot tell it from a page's. A value derived from them (`const id = params().id`) still
+warns, as any derivation from a call does. In those cases, read the value in the JSX all the same
+(`{total()}`, `{params().id}` in a layout).
 
 `count.peek()` and `untrack(…)` read without tracking, so they are never reads for this diagnostic
 (or for [LUM2003](LUM2003.md)): `const start = count.peek()` keeps the first value on purpose.
@@ -15494,9 +15516,12 @@ through a local declared from one (`const kind = props.kind`): both forms get th
 diagnostic, and a read through a local also points at the local's declaration.
 
 - **A signal read is an error.** A zero-argument call such as `count()`, `store.count()` or an
-  accessor prop (`props.user()`) reads a signal, and so does a local that copies a signal made in
-  the same file (`const n = count()`). The component is written to react, and the early return
-  never does. `count.peek()` reads without tracking, on purpose: it is not a read.
+  accessor prop (`props.user()`, or `user()` destructured from the props) reads a signal, and so
+  does a local that copies one: `const n = count()` for a signal made in the same file,
+  `const u = user()` for a destructured accessor prop, and `const busy = isNavigating()` for
+  `url()`, `searchParams()` and `isNavigating()` from `lumiose/router` (see
+  [LUM2001](LUM2001.md) for what counts as a copy). The component is written to react, and the
+  early return never does. `count.peek()` reads without tracking, on purpose: it is not a read.
 - **A prop read is a warning.** `props.kind`, a destructured prop, or a method of a prop's value
   (`props.title.trim()`) only goes stale when the component renders in the browser (in an
   island or an SPA page) and a parent passes a value that changes, as in
@@ -15504,8 +15529,8 @@ diagnostic, and a read through a local also points at the local's declaration.
   that only renders on the server, or whose parents pass constants, can keep the early return.
 
 The default export of a page or layout whose route mode is `static` or `server` gets no
-diagnostic for its own props: it renders once per request or build, so they never change (as
-for [LUM2001](LUM2001.md)).
+diagnostic for its own props, nor for `lumiose/router`'s accessors, which read the request there:
+it renders once per request or build, so they never change (as for [LUM2001](LUM2001.md)).
 
 ## Example
 

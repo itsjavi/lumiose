@@ -31,6 +31,8 @@ interface PackageJson {
   main?: string;
   module?: string;
   exports?: unknown;
+  imports?: unknown;
+  browser?: unknown;
   types?: string;
   dependencies?: Record<string, string>;
   devDependencies?: Record<string, string>;
@@ -194,7 +196,46 @@ function isCommonJs(manifest: PackageJson): boolean {
   }
   if (manifest.main?.endsWith(".mjs")) return false;
   // A types-only package has nothing to bundle.
-  return manifest.main !== undefined || manifest.exports !== undefined || manifest.types === undefined;
+  return (
+    manifest.main !== undefined || manifest.exports !== undefined || manifest.types === undefined
+  );
+}
+
+/**
+ * Conditions of `exports` and `imports` that are the same in every environment: the browser's
+ * resolve adds `browser`, the server's `node`, and each may add its `resolve.conditions`.
+ */
+const NEUTRAL_CONDITIONS = new Set([
+  "default",
+  "development",
+  "import",
+  "module",
+  "module-sync",
+  "production",
+  "require",
+  "types",
+]);
+
+/**
+ * Whether the package in `dir` may resolve its modules differently in the browser and on the server:
+ * it has a `browser` field, or `exports` or `imports` with other conditions than the neutral ones.
+ */
+export function resolvesByEnvironment(dir: string): boolean {
+  const manifest = readManifest(dir);
+  if (manifest === null) return false;
+  if (manifest.browser !== undefined) return true;
+  return hasEnvironmentCondition(manifest.exports) || hasEnvironmentCondition(manifest.imports);
+}
+
+/** Whether an `exports` or `imports` value has a condition that is not a neutral one. */
+function hasEnvironmentCondition(value: unknown): boolean {
+  if (Array.isArray(value)) return value.some(hasEnvironmentCondition);
+  if (value === null || typeof value !== "object") return false;
+  return Object.entries(value).some(
+    ([key, target]) =>
+      (!key.startsWith(".") && !key.startsWith("#") && !NEUTRAL_CONDITIONS.has(key)) ||
+      hasEnvironmentCondition(target),
+  );
 }
 
 function dependencyNames(manifest: PackageJson): string[] {

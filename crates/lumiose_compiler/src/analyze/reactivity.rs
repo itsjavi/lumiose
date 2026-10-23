@@ -134,6 +134,62 @@ const CONSTANT_APIS: [&str; 5] = ["createContext", "getAbortSignal", "ref", "sig
 /// `lumiose`'s APIs that return a reactive accessor: a call of the accessor reads its value.
 const ACCESSOR_APIS: [&str; 4] = ["computed", "optimistic", "resource", "signal"];
 
+/// `lumiose/router`'s accessors. Inside an SPA they read the current route; on the server they read
+/// the request, so they are plain values in a component that only renders there.
+const ROUTER_ACCESSORS: [&str; 6] = [
+    "isNavigating",
+    "locale",
+    "params",
+    "route",
+    "searchParams",
+    "url",
+];
+
+/// The [`ROUTER_ACCESSORS`] whose value changes while a page stays mounted: a navigation that only
+/// changes the query keeps the page and changes `url()` and `searchParams()`, and every navigation
+/// changes `isNavigating()`. `params()`, `route()` and `locale()` do not: a page with other params
+/// is a new page, so their values change only for a layout's code, which the compiler cannot tell
+/// from a page's (TASK-536).
+const CHANGING_ROUTER_ACCESSORS: [&str; 3] = ["isNavigating", "searchParams", "url"];
+
+/// The [`ROUTER_ACCESSORS`] a module imports from `lumiose/router`.
+#[derive(Debug, Default)]
+pub struct RouterAccessors {
+    /// All of them.
+    pub all: HashSet<SymbolId>,
+    /// The [`CHANGING_ROUTER_ACCESSORS`]: a zero-argument call copies a value that changes.
+    pub changing: HashSet<SymbolId>,
+}
+
+/// The accessors the module imports from `lumiose/router` (`import { url } from "lumiose/router"`).
+pub fn router_accessors(program: &Program<'_>) -> RouterAccessors {
+    let mut accessors = RouterAccessors::default();
+    for statement in &program.body {
+        let Statement::ImportDeclaration(import) = statement else {
+            continue;
+        };
+        if import.source.value != "lumiose/router" {
+            continue;
+        }
+        for specifier in import.specifiers.iter().flatten() {
+            let ImportDeclarationSpecifier::ImportSpecifier(s) = specifier else {
+                continue;
+            };
+            let name = s.imported.name();
+            let Some(symbol) = s.local.symbol_id.get() else {
+                continue;
+            };
+            if ROUTER_ACCESSORS.contains(&name.as_str()) {
+                accessors.all.insert(symbol);
+            }
+            if CHANGING_ROUTER_ACCESSORS.contains(&name.as_str()) {
+                accessors.changing.insert(symbol);
+            }
+        }
+    }
+    accessors
+}
+
 /// Bindings, anywhere in the module and never reassigned, that hold an accessor made by one of
 /// `lumiose`'s [`ACCESSOR_APIS`] (`const count = signal(0)`). A zero-argument call of one
 /// (`const n = count()`) reads a signal, although it has the shape of a factory call (TASK-529).

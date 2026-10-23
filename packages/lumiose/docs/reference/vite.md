@@ -207,7 +207,8 @@ What it does:
 - Loads `?client` imports (`./menu.element.ts?client`): client environments get the module itself
   and a default export that does nothing; server environments get a default export that adds the
   module's script to the page being rendered, without running the module. Builds build each script
-  that the project scan finds as a chunk of its own. See
+  that the project scan finds as a chunk of its own: every one of the app's, and those of the
+  [Lumiose packages](#lumiose-packages)' modules that the app's modules can use. See
   [Islands](../concepts/islands.md) ("Scripts of server-rendered components").
 - Hot updates: an edited component re-renders in place, in every instance, and the rest of the page
   keeps its DOM and state (`lumiose dev` registers each named component of client code with
@@ -244,7 +245,14 @@ not. The plugin treats their modules like the app's own, whether the package is 
   exists, so their islands get chunks and their pages load their scripts. An installed package is
   scanned whole, `dist/` included, but not the packages in its own `node_modules`; a linked one
   without its build output (`dist/`, `build/`) and nested projects (a folder with a
-  `package.json`, `tsconfig.json` or `vite.config.*`).
+  `package.json`, `tsconfig.json` or `vite.config.*`). A build builds only the client scripts of
+  the package modules the app's modules can run: it follows their imports by name, through
+  re-exports, so `import { Tabs } from "@lumiose/ui"` builds the script of Tabs and not those of the
+  other components. A module that runs builds all its scripts, whichever export the app uses. A
+  package that may resolve its modules differently in the browser and on the server (`exports` or
+  `imports` conditions such as `browser` or `node`, or a `browser` field) builds all of its
+  scripts. When the imports cannot be followed (a package module with an `import()` of a computed
+  specifier, or `import.meta.glob()`), the build builds every script, as it would without the scan.
 - **One `lumiose`.** They are bundled with the server code (`resolve.noExternal`) and kept out of
   Vite's dependency pre-bundling (`optimizeDeps.exclude`), so their modules and the app's share one
   runtime instance, and Vite never compiles their JSX for React. Their CommonJS dependencies,

@@ -13,13 +13,18 @@
 //   once, as a module script. The module itself never runs on the server.
 // - Builds: the server graph does not exist yet when the client is built, so the client build
 //   builds every module that a `?client` import of the one-time scan names (./scan.ts) as an entry,
-//   and the server build embeds its URL. An import the scan did not see is a warning, and records
+//   and the server build embeds its URL. In the Lumiose packages, only the imports of the modules
+//   that the project's modules can run count (./reachable.ts, TASK-542): the server build gives the
+//   others a stub that records nothing. An import the scan did not see is a warning, and records
 //   nothing; a page that renders its component then warns which script it goes without (TASK-463).
 // - Dev: the URL is the module's own (root-relative, or `/@fs/` outside the root), with the
 //   `import` query when it is not JavaScript by its extension (an `.html` file's scripts).
 
-import { basename, relative } from "node:path";
+import { basename, dirname, relative, resolve as resolvePath } from "node:path";
+import type { PackageRoot } from "@lumiose/compiler";
 import { normalizePath, type Plugin, type ResolvedConfig, type Rollup } from "vite";
+import { resolvesByEnvironment } from "./packages.ts";
+import { reachedPackageModules } from "./reachable.ts";
 import { runtimeFile } from "./runtime-files.ts";
 import type { ScannedModule } from "./scan.ts";
 
@@ -35,6 +40,8 @@ export interface ClientScriptsOptions {
   scan: () => readonly ScannedModule[];
   /** Whether the build has a server environment (a client-only build records nothing). */
   hasServerBuild: (config: ResolvedConfig) => boolean;
+  /** The project's Lumiose packages (./packages.ts). */
+  packages: () => readonly PackageRoot[];
 }
 
 /** A client script as the client build wrote it: its URL and those of the chunks it imports. */
@@ -46,6 +53,8 @@ interface Built {
 export function clientScriptsPlugin(options: ClientScriptsOptions): Plugin {
   /** Files the client build builds as entries. */
   const emitted = new Set<string>();
+  /** Client scripts of package modules that the project's modules cannot run: not built. */
+  const unused = new Set<string>();
   const built = new Map<string, Built>();
   const warned = new Set<string>();
   /** Files that `?client` modules of a client environment import. */
@@ -87,7 +96,7 @@ export function clientScriptsPlugin(options: ClientScriptsOptions): Plugin {
           script = { url: devUrl(file, config), preloads: [] };
         } else {
           script = built.get(file);
-          if (script === undefined && !warned.has(file)) {
+          if (script === undefined && !warned.has(file) && !unused.has(file)) {
             warned.add(file);
             this.warn(
               `${normalizePath(relative(config.root, file))} is a client script (${CLIENT_SCRIPT_QUERY}), but the client build did not build it: the module that imports it is outside the project and its Lumiose packages. Pages that render it do not load it.`,
@@ -125,15 +134,20 @@ export default function clientScript() {
       if (options.serve() || environment.config.consumer !== "client") return;
       if (!options.hasServerBuild(environment.getTopLevelConfig())) return;
       emitted.clear();
+      unused.clear();
       built.clear();
       warned.clear();
-      for (const module of options.scan()) {
+      const modules = options.scan();
+      const reached = await reachedFromProject(this, modules, options.packages());
+      for (const module of modules) {
+        const runs = module.package === undefined || reached === null || reached.has(module.file);
         for (const specifier of module.clientScripts ?? []) {
           const target = specifier.slice(0, -CLIENT_SCRIPT_QUERY.length);
           const resolved = await this.resolve(target, module.file);
-          if (resolved !== null && !resolved.external) emitted.add(resolved.id);
+          if (resolved !== null && !resolved.external) (runs ? emitted : unused).add(resolved.id);
         }
       }
+      for (const id of emitted) unused.delete(id);
       for (const id of [...emitted].toSorted()) {
         this.emitFile({ type: "chunk", id, name: chunkName(id), preserveSignature: false });
       }
@@ -175,6 +189,57 @@ export default function clientScript() {
       }
     },
   };
+}
+
+/** `lumiose`'s own modules and Node's: no package components there. */
+const NOT_A_COMPONENT_MODULE = /^(?:lumiose(?:\/|$)|node:)/;
+const SOURCE_MODULE = /(?<!\.d)\.(?:[cm]?[jt]sx?|stsx)$/;
+
+/** Whether `file` is below `dir`, and not in a `node_modules` there. */
+function inside(file: string, dir: string): boolean {
+  return file.startsWith(`${dir}/`) && !file.slice(dir.length).includes("/node_modules/");
+}
+
+/**
+ * The package modules the project's modules can run (./reachable.ts), or `null` for all of them:
+ * when no package module has client scripts, or when that cannot be told.
+ *
+ * The client build resolves imports as the browser does, but pages render with the server's
+ * modules: a package that may resolve differently on the server (`exports` conditions, a `browser`
+ * field) counts whole.
+ */
+async function reachedFromProject(
+  context: Rollup.PluginContext,
+  modules: readonly ScannedModule[],
+  packages: readonly PackageRoot[],
+): Promise<Set<string> | null> {
+  if (!modules.some((module) => module.package !== undefined && module.clientScripts)) return null;
+  const root = normalizePath(context.environment.config.root);
+  const reached = await reachedPackageModules(modules, {
+    async resolve(specifier, importer) {
+      if (NOT_A_COMPONENT_MODULE.test(specifier)) return null;
+      // A relative import of a project module: the project's modules all run.
+      if (
+        specifier.startsWith(".") &&
+        inside(normalizePath(resolvePath(dirname(importer), specifier)), root)
+      ) {
+        return null;
+      }
+      const resolved = await context.resolve(specifier, importer);
+      return resolved === null || resolved.external ? null : resolved.id;
+    },
+    isPackageSource: (id) =>
+      SOURCE_MODULE.test(id) &&
+      !id.startsWith("\0") &&
+      !id.includes("?") &&
+      packages.some((p) => inside(id, p.dir)),
+  });
+  if (reached === null) return null;
+  const whole = new Set(packages.filter((p) => resolvesByEnvironment(p.dir)).map((p) => p.name));
+  for (const module of modules) {
+    if (module.package !== undefined && whole.has(module.package)) reached.add(module.file);
+  }
+  return reached;
 }
 
 /** The URL the dev server serves `file` at, as client code imports it. */
