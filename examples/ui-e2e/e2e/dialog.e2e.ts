@@ -20,6 +20,16 @@ const focusBehind = (page: Page) =>
     return active !== null && active !== document.body && !dialog?.contains(active);
   });
 
+/** Whether the page is taller than the window, so it has a scrollbar (a classic one takes space). */
+const overflows = (page: Page) =>
+  page.evaluate(
+    () => document.documentElement.scrollHeight > document.documentElement.clientHeight,
+  );
+
+/** The width of the page's root box, which a scroll lock's gutter narrows (TASK-507). */
+const rootWidth = (page: Page) =>
+  page.evaluate(() => document.documentElement.getBoundingClientRect().width);
+
 test.describe("without JavaScript", () => {
   test.use({ javaScriptEnabled: false });
 
@@ -54,6 +64,18 @@ test.describe("without JavaScript", () => {
     await expect(dialog).toBeVisible();
     await page.mouse.click(5, 5);
     await expect(dialog).toBeHidden();
+  });
+
+  test("a page that overflows keeps its scrollbar's gutter while locked (TASK-507)", async ({
+    page,
+  }) => {
+    await page.goto("/dialog");
+    expect(await overflows(page)).toBe(true);
+    await page.getByRole("button", { name: "Edit profile" }).click();
+    await expect(page.getByRole("dialog", { name: "Edit profile" })).toBeVisible();
+    const html = page.locator("html");
+    await expect(html).toHaveCSS("overflow-y", "hidden");
+    await expect(html).toHaveCSS("scrollbar-gutter", "stable");
   });
 });
 
@@ -202,6 +224,7 @@ test.describe("keyboard contract (APG Dialog)", () => {
 
   test("the page behind a modal dialog does not scroll", async ({ page }) => {
     await page.goto("/dialog");
+    expect(await overflows(page)).toBe(true);
     const overflow = () =>
       page.evaluate(() => getComputedStyle(document.documentElement).overflowY);
     expect(await overflow()).not.toBe("hidden");
@@ -308,10 +331,14 @@ test.describe("in an island", () => {
   test("a page without a scrollbar gets no empty gutter while locked", async ({ page }) => {
     await page.goto("/dialog/island");
     const html = page.locator("html");
+    expect(await overflows(page)).toBe(false);
+    const width = await rootWidth(page);
     await page.getByTestId("bind-open").click();
     await expect(page.getByRole("dialog", { name: "Rename project" })).toBeVisible();
     await expect(html).toHaveCSS("overflow-y", "hidden");
     await expect(html).toHaveCSS("scrollbar-gutter", "auto");
+    // With classic scrollbars (Linux), a gutter would take 15px of the root (TASK-507).
+    expect(await rootWidth(page)).toBe(width);
     await page.keyboard.press("Escape");
     await expect(html).not.toHaveAttribute("style", /\S/);
   });

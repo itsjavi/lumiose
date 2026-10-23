@@ -153,6 +153,11 @@ and `::backdrop`, and the swipe through the script's state, named as in Base UI:
 `dialog[data-swipe-direction]` against its edge, across that edge's length, instead of the
 browser's centred box; a swiped drawer selects no text.
 
+With classic scrollbars (Windows, Linux), the scroll lock keeps the scrollbar's space on a page
+that overflows, so the page does not shift: a drawer across the window stops at that gutter, as
+the page does. On a page that fits the window there is no gutter, and the drawer spans it all
+([Dialog's scroll lock](dialog.md#styling); without JavaScript in Firefox, the gutter stays).
+
 ## Keyboard and focus
 
 | Key            | Does                                                                         |
@@ -188,7 +193,8 @@ non-modal drawers.
 
 ## Browser support
 
-- **`<dialog>`, invoker commands and `closedby`**: as for [Dialog](dialog.md#browser-support).
+- **`<dialog>`, invoker commands, `closedby` and scroll timelines**: as for
+  [Dialog](dialog.md#browser-support).
 - **Exit animations** that keep the drawer in the top layer (`overlay`) are Chromium-only.
   Elsewhere it leaves the top layer as soon as it starts closing.
 

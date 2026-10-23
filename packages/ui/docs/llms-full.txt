@@ -2238,10 +2238,15 @@ closes:
 }
 ```
 
-`@lumiose/ui/dialog.css` holds one rule, in the `lu.core` layer: the page behind any modal
-`<dialog>` does not scroll, and keeps its scrollbar's space so the layout does not shift
-(`:root:has(dialog:modal) { overflow: hidden; scrollbar-gutter: stable }`). Leave the stylesheet out,
-or override the rule, to let the page scroll.
+`@lumiose/ui/dialog.css` holds the scroll lock, in the `lu.core` layer: the page behind any modal
+`<dialog>` does not scroll (`:root:has(dialog:modal) { overflow: hidden }`). A page that overflows
+keeps its scrollbar's space (`scrollbar-gutter: stable`), so with classic scrollbars (Windows,
+Linux) its layout does not shift. A page that fits the window gets no gutter, which would leave an
+empty strip of about 15px at its inline end. The client script measures the page before the dialog
+opens; without it, a scroll timeline in the stylesheet tells the two apart (decision-79), and a
+browser without scroll timelines keeps the gutter on a page that fits too
+([Browser support](#browser-support)). Leave the stylesheet out, or override the rule, to let the
+page scroll.
 
 ## Keyboard and focus
 
@@ -2297,6 +2302,10 @@ Until the script loads (or without JavaScript) the dialog behaves as the browser
   client script closes the dialog on a click outside; without JavaScript only Escape does.
 - **Exit animations** that keep the dialog in the top layer (`overlay`) are Chromium-only.
   Elsewhere the dialog leaves the top layer as soon as it starts closing.
+- **Scroll timelines** (`animation-timeline: scroll()`) keep the scroll lock's gutter off a page
+  that fits the window without JavaScript: Chrome and Edge 115, Safari 26. In Firefox, until the
+  client script runs or without JavaScript, such a page keeps the gutter while a dialog is open:
+  with classic scrollbars, an empty strip at its inline end.
 
 ## Related
 
@@ -2462,6 +2471,11 @@ and `::backdrop`, and the swipe through the script's state, named as in Base UI:
 `dialog[data-swipe-direction]` against its edge, across that edge's length, instead of the
 browser's centred box; a swiped drawer selects no text.
 
+With classic scrollbars (Windows, Linux), the scroll lock keeps the scrollbar's space on a page
+that overflows, so the page does not shift: a drawer across the window stops at that gutter, as
+the page does. On a page that fits the window there is no gutter, and the drawer spans it all
+([Dialog's scroll lock](dialog.md#styling); without JavaScript in Firefox, the gutter stays).
+
 ## Keyboard and focus
 
 | Key            | Does                                                                         |
@@ -2497,7 +2511,8 @@ non-modal drawers.
 
 ## Browser support
 
-- **`<dialog>`, invoker commands and `closedby`**: as for [Dialog](dialog.md#browser-support).
+- **`<dialog>`, invoker commands, `closedby` and scroll timelines**: as for
+  [Dialog](dialog.md#browser-support).
 - **Exit animations** that keep the drawer in the top layer (`overlay`) are Chromium-only.
   Elsewhere it leaves the top layer as soon as it starts closing.
 
