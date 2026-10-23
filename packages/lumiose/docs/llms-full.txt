@@ -6885,6 +6885,9 @@ default stays off, so a project set up by hand opts in. With `lumiose({ csp: "st
     Like an inline style, it gives way to `!important` rules, CSS animations, and the styles an
     island sets once it hydrates. Only a selector with two ids or more can win over it where it
     would not win over an inline style.
+  - **Hydration.** An island sets every style of its elements through the CSSOM as it hydrates,
+    and they drop their `data-l-v`: a style property the island removes later is unset, as without
+    CSP, instead of falling back to the server's rule.
   - **Isolation.** A value cannot close its rule or the `<style>` element, and a comment, string,
     `url(` or bracket it leaves open is closed at its end, so it cannot reach other elements'
     rules. A value with a `url(` right after an identifier character (`éurl(`, `#url(`), which

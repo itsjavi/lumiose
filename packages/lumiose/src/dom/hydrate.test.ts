@@ -37,7 +37,7 @@ type Module = Record<string, any>;
 /** Compiles `source` for both targets and imports the two modules. */
 async function load(
   source: string,
-  options: { hot?: boolean; states?: string[] } = {},
+  options: { hot?: boolean; states?: string[]; strictCsp?: boolean } = {},
 ): Promise<{ client: Module; server: Module }> {
   const id = counter++;
   const modules: Record<string, Module> = {};
@@ -47,6 +47,7 @@ async function load(
       styleImport: false,
       sourceMap: false,
       ...(options.hot && target === "client" ? { hot: true } : {}),
+      ...(options.strictCsp ? { strictCsp: true } : {}),
     });
     expect(result.diagnostics.filter((d) => d.severity === "error")).toEqual([]);
     let code = result.code;
@@ -1707,5 +1708,61 @@ describe("hydrate: srcdoc only as a written prop (TASK-496)", () => {
     client.html.set("<p>new</p>");
     flush();
     expect(document.querySelector("iframe.b")!.getAttribute("srcdoc")).toBe("<p>new</p>");
+  });
+});
+
+describe("hydrate: strict-CSP style props (TASK-526)", () => {
+  it("unsets a style property the client removes instead of falling back to the server rule", async () => {
+    const { client, server } = await load(
+      `
+      import { signal } from "lumiose";
+      export const on = signal(true);
+      export function Page() {
+        return (
+          <div>
+            <p class="keyed" style={{ color: on() ? "red" : null, margin: "0px" }}>a</p>
+            <p class="string" style={on() ? "color: red; margin: 0px" : "margin: 0px"}>b</p>
+            <p class="object" style={on() ? { color: "red", margin: "0px" } : { margin: "0px" }}>c</p>
+            <p class="static" style="color: red">d</p>
+          </div>
+        );
+      }`,
+      { strictCsp: true },
+    );
+    const shell = await renderToStream(
+      () => island("/src/case#Page", server.Page, {}, "load", undefined, undefined),
+      { strictStyles: true, resolveAll: true },
+    );
+    const styles = document.createElement("div");
+    styles.innerHTML = shell.head;
+    const sheets = [...styles.children];
+    document.head.append(...sheets);
+    try {
+      document.body.innerHTML = shell.body;
+      const paragraphs = [...document.querySelectorAll("p")];
+      const colors = () => paragraphs.map((p) => getComputedStyle(p).color);
+      const margins = () => paragraphs.slice(0, 3).map((p) => getComputedStyle(p).margin);
+      const inherited = getComputedStyle(document.body).color;
+      // The server wrote rules, not style attributes.
+      expect(paragraphs.map((p) => [p.hasAttribute("data-l-v"), p.hasAttribute("style")])).toEqual(
+        paragraphs.map(() => [true, false]),
+      );
+      expect(colors()).toEqual(["red", "red", "red", "red"]);
+      expect(inherited).not.toBe("red");
+
+      await hydrateAll(client);
+      expect(warn).not.toHaveBeenCalled();
+      expect(colors()).toEqual(["red", "red", "red", "red"]);
+      expect(margins()).toEqual(["0px", "0px", "0px"]);
+
+      // Each binding removes the color: it is inherited again, as without CSP, where it fell back
+      // to the server rule's red before. The margin stays.
+      client.on.set(false);
+      flush();
+      expect(colors()).toEqual([inherited, inherited, inherited, "red"]);
+      expect(margins()).toEqual(["0px", "0px", "0px"]);
+    } finally {
+      for (const sheet of sheets) sheet.remove();
+    }
   });
 });
