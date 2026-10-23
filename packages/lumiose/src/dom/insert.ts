@@ -137,11 +137,26 @@ export function lastOf(node: Node): Node {
   return (node as Partial<RangeStart>).$$end ?? node;
 }
 
-/** Inserts `node` (with its whole range) before `ref`. */
+/**
+ * Inserts `node` (with its whole range) before `ref`. A range alone in a fragment of its own (a new
+ * one, built off-document, or a detached one) goes in with that fragment: one insertion, however
+ * many nodes it holds (TASK-522).
+ */
 export function place(parent: Node, node: Node, ref: Node | null): void {
   const end = (node as Partial<RangeStart>).$$end;
   if (end === undefined) {
     parent.insertBefore(node, ref);
+    return;
+  }
+  const holder = node.parentNode;
+  if (
+    holder !== null &&
+    holder !== parent &&
+    holder.nodeType === 11 &&
+    holder.firstChild === node &&
+    holder.lastChild === end
+  ) {
+    parent.insertBefore(holder, ref);
     return;
   }
   let next: Node | null = node;
