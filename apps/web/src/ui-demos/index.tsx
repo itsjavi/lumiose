@@ -59,7 +59,11 @@ import { BoldButton } from "./tooltip-1.tsx";
 
 /** A demo by id: server HTML, or an island that hydrates when it scrolls into view. */
 export function UiDemo(props: { id: string }) {
-  switch (props.id) {
+  return <>{demoById(props.id)}</>;
+}
+
+function demoById(id: string) {
+  switch (id) {
     case "accordion-1":
       return <ShippingFaq />;
     case "accordion-2":
@@ -171,6 +175,6 @@ export function UiDemo(props: { id: string }) {
     case "tooltip-1":
       return <BoldButton />;
     default:
-      throw new Error(`No UI demo "${props.id}": run pnpm --filter @lumiose/web ui:demos.`);
+      throw new Error(`No UI demo "${id}": run pnpm --filter @lumiose/web ui:demos.`);
   }
 }

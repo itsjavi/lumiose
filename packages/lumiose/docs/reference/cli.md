@@ -293,14 +293,17 @@ lumiose agents init --format json   # { files: [{ file, action: "created" | "upd
 
 Makes an existing project agent-ready, as `create-lumiose` does for new ones: a Lumiose section in
 `AGENTS.md` (between `<!-- lumiose:start … -->` and `<!-- lumiose:end -->`, pointing at
-`node_modules/lumiose/docs`, the `.stsx` format, the key rules and `lumiose check`), a `CLAUDE.md`
+`node_modules/lumiose/docs`, the `.stsx` format, the key rules, such as islands for reactive UI
+and `?client` scripts for small behaviour, and `lumiose check`), a `CLAUDE.md`
 that references `@AGENTS.md`, the `lumiose` skill (`.claude/skills/lumiose/SKILL.md`) and the
 `*.stsx linguist-language=TSX` line in `.gitattributes`, and a `tsconfig.json` that extends
 `.lumiose/tsconfig.generated.json` when the project has none (an existing one is left alone).
 When `package.json` depends on `@lumiose/ui`, the Lumiose section gets a UI part (its docs, the
 `ui_components` tool, composing parts, `bind:`, styling and the accessibility rules) and the
 `lumiose-ui` skill (`.claude/skills/lumiose-ui/SKILL.md`) is written too; once the dependency is
-gone, the next run drops the UI part. Re-running it updates only those parts. `--mcp` also
+gone, the next run drops the UI part. Re-running it updates only those parts. The Markdown it
+writes is already formatted as oxfmt formats it, so running oxfmt over the project does not make
+the next run update the files. `--mcp` also
 registers `lumiose mcp` for Claude Code and
 Codex, run with the package manager of the lockfile (see [MCP](mcp.md#register-it)); the JSON
 report then has `mcp: { command, args, note }`.

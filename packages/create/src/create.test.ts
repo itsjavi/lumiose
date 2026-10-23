@@ -20,6 +20,7 @@ import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { format as oxfmt } from "oxfmt";
 import { afterAll, describe, expect, it } from "vitest";
 import { main, type CreateIO } from "./main.ts";
 import { isValidPackageName, packageName, TEMPLATES, UI_PACKAGE } from "./scaffold.ts";
@@ -219,6 +220,10 @@ describe.skipIf(!binding).each(TEMPLATES)("template $name", (template) => {
     expect(read("CLAUDE.md")).toContain("@AGENTS.md");
     expect(read(".claude/skills/lumiose/SKILL.md")).toMatch(/^---\nname: lumiose\n/);
     expect(read("src/routes/page.stsx")).not.toContain("{{name}}");
+    // Formatting the new project leaves its Markdown alone (TASK-503).
+    for (const file of ["AGENTS.md", "CLAUDE.md", ".claude/skills/lumiose/SKILL.md", "README.md"]) {
+      expect((await oxfmt(file, read(file))).code, file).toBe(read(file));
+    }
     link(root);
   });
 

@@ -189,6 +189,7 @@ customElements.define(
     connectedCallback(): void {
       // The server's data, from the attribute the component wrote.
       const text = this.getAttribute("text") ?? "";
+      // On the element itself: clicks bubble from the button, which the parser may add later.
       this.addEventListener("click", () => {
         void navigator.clipboard.writeText(text);
       });
@@ -234,6 +235,15 @@ export function CopyButton(props: { text: string }) {
   its own data, and custom elements upgrade wherever they appear: streamed boundaries, SPA
   navigations, Markdown or CMS HTML. Attribute values are strings, so the script parses numbers,
   booleans and JSON itself.
+- **It can run before the children exist.** The script is async, so on a slow or streamed
+  response, or from the cache, it can define an element before the parser has added the
+  element's children: `connectedCallback` then runs with the attributes but no children. Listen on
+  the element itself, as `copy-button` does (events from later children bubble to it), and while
+  `document.readyState` is `"loading"`, wait for `DOMContentLoaded` before reading or replacing
+  the children.
+- **Elements the script creates are unscoped**: the component's scoped styles do not reach them.
+  Render them on the server, or style them with `:deep()` under an element of the scope
+  ([Web components](../guides/web-components.md#before-the-children-are-parsed)).
 - **Islands and SPA pages** import the script with their own code, before the component runs, and
   the call does nothing there: a page that gets it both ways runs it once.
 - **Keep it free of the runtime.** A script that imports `lumiose` makes its pages load the

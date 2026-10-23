@@ -4027,6 +4027,7 @@ customElements.define(
     connectedCallback(): void {
       // The server's data, from the attribute the component wrote.
       const text = this.getAttribute("text") ?? "";
+      // On the element itself: clicks bubble from the button, which the parser may add later.
       this.addEventListener("click", () => {
         void navigator.clipboard.writeText(text);
       });
@@ -4072,6 +4073,15 @@ export function CopyButton(props: { text: string }) {
   its own data, and custom elements upgrade wherever they appear: streamed boundaries, SPA
   navigations, Markdown or CMS HTML. Attribute values are strings, so the script parses numbers,
   booleans and JSON itself.
+- **It can run before the children exist.** The script is async, so on a slow or streamed
+  response, or from the cache, it can define an element before the parser has added the
+  element's children: `connectedCallback` then runs with the attributes but no children. Listen on
+  the element itself, as `copy-button` does (events from later children bubble to it), and while
+  `document.readyState` is `"loading"`, wait for `DOMContentLoaded` before reading or replacing
+  the children.
+- **Elements the script creates are unscoped**: the component's scoped styles do not reach them.
+  Render them on the server, or style them with `:deep()` under an element of the scope
+  ([Web components](../guides/web-components.md#before-the-children-are-parsed)).
 - **Islands and SPA pages** import the script with their own code, before the component runs, and
   the call does nothing there: a page that gets it both ways runs it once.
 - **Keep it free of the runtime.** A script that imports `lumiose` makes its pages load the
@@ -10160,6 +10170,15 @@ customElements.define(
   "local-time",
   class extends HTMLElement {
     connectedCallback(): void {
+      // Replaces the server's text, which the parser may not have added yet: wait for it.
+      if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", () => this.#format(), { once: true });
+      } else {
+        this.#format();
+      }
+    }
+
+    #format(): void {
       // Attribute values are strings: the script parses them.
       const date = new Date(this.getAttribute("datetime") ?? "");
       if (Number.isNaN(date.getTime())) return;
@@ -10205,6 +10224,83 @@ removes it), so the script converts them back. Pass structured data as JSON
 (`data={JSON.stringify(points)}`) and `JSON.parse` it in the script. An element that also renders
 inside an island gets the same attributes there, unless it defines a property of that name
 ([Properties and attributes](#properties-and-attributes)).
+
+## Before the children are parsed
+
+A `?client` script loads as `<script type="module" async>`, so it can run before the parser
+reaches the elements it defines: on a slow or streamed response, or when the browser has the
+script cached. The parser then upgrades each element as it creates it, and `connectedCallback`
+runs before the element has children: the parser appends them afterwards. The attributes are
+already there, and listening works; reading or replacing the children does not:
+
+- **Listen on the element itself.** Events from children that the parser adds later bubble up to
+  it. Look up the part an event concerns when it fires (`event.target`, `this.querySelector()`),
+  not in `connectedCallback`, as `copy-button` does in
+  [Islands](../concepts/islands.md#concept).
+- **Wait for the parser** to read or change the children: while `document.readyState` is
+  `"loading"`, do that work on `DOMContentLoaded`, as `local-time` does above. Without the wait,
+  `local-time` would set its text and the parser would then append the server's text after it.
+  Elements that connect once the document is parsed (an SPA navigation, an island, `innerHTML`)
+  are inserted with their children.
+
+**Elements the script creates are unscoped.** The component's scoped `<style>` blocks style the
+elements of its templates ([Styles](../concepts/styles.md)), not those the script makes with
+`document.createElement()` or `innerHTML`, and a selector that only they match is `LUM3005`.
+Render the markup on the server and let the script fill, show or hide it, or reach the created
+elements with `:deep()` under an element of the scope:
+
+```ts check file=elements/copy-code.ts
+// src/elements/copy-code.ts: adds a Copy button to the code it wraps
+customElements.define(
+  "copy-code",
+  class extends HTMLElement {
+    #button: HTMLButtonElement | undefined;
+
+    connectedCallback(): void {
+      if (this.#button) return; // connected again after a move
+      this.#button = document.createElement("button");
+      this.#button.type = "button";
+      this.#button.textContent = "Copy";
+      // Looks the code up on click: it may not be parsed yet when the element connects.
+      this.#button.addEventListener("click", () => {
+        void navigator.clipboard.writeText(this.querySelector("code")?.textContent ?? "");
+      });
+      this.prepend(this.#button);
+    }
+  },
+);
+```
+
+```stsx check file=components/CodeBlock.stsx
+// src/components/CodeBlock.stsx
+import defineCopyCode from "../elements/copy-code.ts?client";
+
+declare module "lumiose/jsx-runtime" {
+  namespace JSX {
+    interface IntrinsicElements {
+      "copy-code": JSX.HTMLProps<HTMLElement>;
+    }
+  }
+}
+
+export function CodeBlock(props: { code: string }) {
+  defineCopyCode();
+  // Without JavaScript, the code shows without a button that would do nothing.
+  return (
+    <copy-code class="code-block">
+      <pre>
+        <code>{props.code}</code>
+      </pre>
+      <style>
+        .code-block { display: block; position: relative; }
+        pre { overflow-x: auto; }
+        /* The script's button carries no scope: reach it from an element that does. */
+        .code-block :deep(button) { position: absolute; inset-block-start: 0.5rem; inset-inline-end: 0.5rem; }
+      </style>
+    </copy-code>
+  );
+}
+```
 
 ## Related
 
@@ -14075,14 +14171,17 @@ lumiose agents init --format json   # { files: [{ file, action: "created" | "upd
 
 Makes an existing project agent-ready, as `create-lumiose` does for new ones: a Lumiose section in
 `AGENTS.md` (between `<!-- lumiose:start … -->` and `<!-- lumiose:end -->`, pointing at
-`node_modules/lumiose/docs`, the `.stsx` format, the key rules and `lumiose check`), a `CLAUDE.md`
+`node_modules/lumiose/docs`, the `.stsx` format, the key rules, such as islands for reactive UI
+and `?client` scripts for small behaviour, and `lumiose check`), a `CLAUDE.md`
 that references `@AGENTS.md`, the `lumiose` skill (`.claude/skills/lumiose/SKILL.md`) and the
 `*.stsx linguist-language=TSX` line in `.gitattributes`, and a `tsconfig.json` that extends
 `.lumiose/tsconfig.generated.json` when the project has none (an existing one is left alone).
 When `package.json` depends on `@lumiose/ui`, the Lumiose section gets a UI part (its docs, the
 `ui_components` tool, composing parts, `bind:`, styling and the accessibility rules) and the
 `lumiose-ui` skill (`.claude/skills/lumiose-ui/SKILL.md`) is written too; once the dependency is
-gone, the next run drops the UI part. Re-running it updates only those parts. `--mcp` also
+gone, the next run drops the UI part. Re-running it updates only those parts. The Markdown it
+writes is already formatted as oxfmt formats it, so running oxfmt over the project does not make
+the next run update the files. `--mcp` also
 registers `lumiose mcp` for Claude Code and
 Codex, run with the package manager of the lockfile (see [MCP](mcp.md#register-it)); the JSON
 report then has `mcp: { command, args, note }`.
