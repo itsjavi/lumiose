@@ -77,8 +77,8 @@ jobs:
 
   # The GitHub release of the tag, after a real publish only (a dry run creates none): titled by the
   # tag, with the version's CHANGELOG.md section as notes (the package's own for a package outside
-  # lockstep), a pre-release for x.y.z-* versions. A re-run updates the notes of the release it
-  # created.
+  # lockstep, never marked Latest), a pre-release for x.y.z-* versions. A re-run updates the notes of
+  # the release it created.
   github-release:
     needs: publish
     if: ${{ !cancelled() && needs.publish.result == 'success' && github.event_name == 'push' && vars.LUMIOSE_PUBLISH == 'true' }}
@@ -106,5 +106,7 @@ jobs:
           else
             flags=(--title "$TAG" --notes-file "$notes" --verify-tag)
             if [[ "$version" == *-* ]]; then flags+=(--prerelease); fi
+            # The repository's Latest release stays the newest Lumiose version.
+            if [[ "$TAG" != v* ]]; then flags+=(--latest=false); fi
             gh release create "$TAG" "${flags[@]}"
           fi
