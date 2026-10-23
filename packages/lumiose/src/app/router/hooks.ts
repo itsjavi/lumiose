@@ -1,14 +1,18 @@
 // `beforeNavigate` and `afterNavigate` of `lumiose/router` (decision-50, TASK-296; owner: Spark):
 // SvelteKit's names and semantics. Apart from ./router.ts, so islands on MPA pages that use them
-// ship none of the router: there, `beforeNavigate` sees only `"leave"` (a `beforeunload` listener,
-// added while a hook is registered) and `afterNavigate` fires once with `"enter"`. Inside an SPA the
-// router runs them around its navigations (`runBefore`, `startNavigation`, `endNavigation`) and
-// tells them the committed location (`setRouterLocation`).
+// ship none of the router: there, `beforeNavigate` sees same-origin link clicks as `"link"` (a
+// `click` listener at `window`, after the page's own handlers, which can cancel the click,
+// TASK-549) and everything else that unloads the document as `"leave"` (a `beforeunload`
+// listener), both added while a hook is registered; `afterNavigate` fires once with `"enter"`.
+// Inside an SPA the router runs them around its navigations (`runBefore`, `startNavigation`,
+// `endNavigation`) and tells them the committed location (`setRouterLocation`).
 import { onMount } from "../../core/effect.ts";
 import { getOwner, onCleanup } from "../../core/owner.ts";
 import { DEV } from "../../dom/dev.ts";
+import { normalizeBase, pathBelowBase } from "../routes/href.ts";
 import type { Routes } from "../routes/registry.ts";
 import type { RouteParamValues } from "../server/context.ts";
+import { followedLink } from "./click.ts";
 
 /**
  * What started a navigation: a link click, `navigate()` or `searchParams.set()`, back/forward, or
@@ -38,8 +42,9 @@ interface NavigationBase {
 export interface BeforeNavigate extends NavigationBase {
   type: Exclude<NavigationType, "enter">;
   /**
-   * Stops it. Back/forward the browser cannot cancel returns to the entry it left; for a
-   * navigation that unloads the document (`willUnload`), the browser asks the user instead.
+   * Stops it: a link click or `navigate()` does not happen, one to another document included (the
+   * page stays). Back/forward the browser cannot cancel returns to the entry it left. For
+   * `"leave"`, which the page cannot stop, the browser asks the user instead.
    */
   cancel(): void;
 }
@@ -88,18 +93,24 @@ function register<T>(hooks: Set<T>, hook: T, api: string): void {
   hooks.add(hook);
   onCleanup(() => {
     hooks.delete(hook);
-    if (befores.size === 0) removeEventListener("beforeunload", onBeforeUnload);
+    if (befores.size === 0) {
+      removeEventListener("beforeunload", onBeforeUnload);
+      removeEventListener("click", onClick);
+    }
   });
 }
 
 /**
  * Runs `fn` before each navigation away from the current location, while the calling component is
- * mounted: links and `navigate()` inside the SPA, back/forward, and leaving the document.
- * `navigation.cancel()` stops it.
+ * mounted: links and `navigate()` inside the SPA, back/forward, and leaving the document; on MPA
+ * pages, same-origin link clicks and leaving the document. `navigation.cancel()` stops it.
  */
 export function beforeNavigate(fn: (navigation: BeforeNavigate) => void): void {
   register(befores, (navigation: BeforeNavigate) => fn(navigation), "beforeNavigate()");
-  if (befores.size === 1) addEventListener("beforeunload", onBeforeUnload);
+  if (befores.size === 1) {
+    addEventListener("beforeunload", onBeforeUnload);
+    addEventListener("click", onClick);
+  }
 }
 
 /**
@@ -132,13 +143,37 @@ export function runBefore(navigation: RouterNavigation): boolean {
 }
 
 /**
- * A document navigation is starting (a link out of the SPA, `navigate()` to another document):
- * runs the hooks now, with the destination; `beforeunload` then makes the browser ask if one
- * cancelled, instead of running them again as `"leave"`. Without `navigation`, the router reloads
- * on its own (a module that did not load) and no hook runs.
+ * A document navigation is starting (a link to another document, `navigate()` to one): runs the
+ * hooks now, with the destination, so `beforeunload` does not run them again as `"leave"`; returns
+ * whether one cancelled it. The caller stops a cancelled navigation it can stop (`stoppable`: it
+ * prevents the click or does not load the URL); for another, `beforeunload` makes the browser ask.
+ * Without `navigation`, the router reloads on its own (a module that did not load) and no hook
+ * runs.
  */
-export function leaveTo(navigation?: RouterNavigation): void {
-  unloading = navigation !== undefined && runBefore(navigation) ? 2 : 1;
+export function leaveTo(navigation?: RouterNavigation, stoppable = false): boolean {
+  const cancelled = navigation !== undefined && runBefore(navigation);
+  unloading = !cancelled ? 1 : stoppable ? 0 : 2;
+  return cancelled;
+}
+
+/**
+ * A link click on an MPA page (no router runs; inside an SPA the router reports its own): a
+ * same-origin link that loads another document in this tab runs the hooks as `"link"`, and a
+ * cancel prevents the click, so the page stays without the browser's prompt. Other links (another
+ * origin, `mailto:`) are `"leave"`. Being at `window`, it runs after the page's own handlers and
+ * skips a click one of them prevented.
+ */
+function onClick(event: MouseEvent): void {
+  if (routerLocation !== undefined) return;
+  const url = followedLink(event);
+  if (url === undefined || url.origin !== location.origin) return;
+  const inApp =
+    pathBelowBase(url.pathname, normalizeBase(import.meta.env?.BASE_URL ?? "/")) !== undefined;
+  const to: NavigationTarget | null = inApp ? { url, route: undefined, params: {} } : null;
+  // `leaveTo(…, true)` without its share of an island's bundle.
+  if (runBefore({ type: "link", from: here(), to, willUnload: true })) event.preventDefault();
+  // The hooks ran: `beforeunload` does not run them again as `"leave"`.
+  else unloading = 1;
 }
 
 function onBeforeUnload(event: BeforeUnloadEvent): void {

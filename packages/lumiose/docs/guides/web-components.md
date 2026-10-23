@@ -145,7 +145,8 @@ sets `innerHTML`, `textContent` or `srcdoc`, on any element).
 `on:name` adds a native listener for the event of that exact name, so any casing works:
 `on:rating-change`, `on:sl-change`, `on:valueChanged`, `on:PascalEvent`. Type the handler's event
 yourself, as above. `onClick` and the other camelCase handlers are for the standard DOM events,
-lowercased and delegated: use `on:` for a component's own events.
+lowercased and delegated: use `on:` for a component's own events. Both run inside a batch, so
+what the handler writes is on screen when the component's `dispatchEvent()` returns.
 
 ## Two-way binding
 

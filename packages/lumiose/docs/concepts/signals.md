@@ -9,8 +9,11 @@ inside a tracked scope (a JSX binding, a `computed`, an `effect`) subscribes tha
 the signal marks it dirty and re-runs only what depends on it.
 
 - **Reads are synchronous.** `count()` always returns the current value, even right after a write.
-- **Writes are batched.** Writes inside a delegated event handler are batched for the duration of
-  the handler. Any other write schedules a microtask flush. `flush()` flushes immediately.
+- **Writes are batched.** Writes inside an event handler are batched for the duration of the
+  handler: delegated `onX` handlers, native `on:x` listeners, the direct listeners of non-bubbling
+  events (`onFocus`, `onScroll`) and handlers passed in a spread. They render together when it
+  returns, so the DOM is current right after the event (decision-81). Any other write schedules a
+  microtask flush. `flush()` flushes immediately.
 - **Flush order:** computeds are pulled, then DOM bindings run (parents before children), then user
   effects. The effects queued at that point all run before the DOM bindings that their own writes
   trigger, so effects that measure the DOM and then write share one layout. Then those bindings

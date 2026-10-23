@@ -90,8 +90,9 @@ Runs `fn` without subscribing the current scope to the signals it reads.
 function batch<T>(fn: () => T): T;
 ```
 
-Defers dependents until `fn` returns, so they run once. Delegated event handlers are batched
-automatically.
+Defers dependents until `fn` returns, so they run once. Event handlers are batched automatically:
+`onX` handlers, `on:x` listeners and handlers passed in a spread, so the DOM is current right after
+the event.
 
 ## flush
 

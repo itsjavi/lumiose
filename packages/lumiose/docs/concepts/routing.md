@@ -138,10 +138,11 @@ Routes with `mode = "spa"` use the client router `lumiose/router` ([reference](.
   `<Title>`, else its first `<h1>`), `not-found` for unknown URLs and `notFound()`, `error` for
   errors. See [Behaviour](../reference/router.md#behaviour).
 - Navigation hooks: `beforeNavigate(fn)` runs before each navigation and may `cancel()` it (to
-  confirm leaving unsaved changes; the browser asks for one that unloads the document), and
-  `afterNavigate(fn)` runs after each completed one and once on mount (page views, focus). They
-  belong to the component that calls them during setup, and work in islands of MPA pages too
-  (`"leave"` and `"enter"` only). See [Navigation hooks](../reference/router.md#navigation-hooks).
+  confirm leaving unsaved changes; the page stays, and for `"leave"`, such as closing the tab, the
+  browser asks), and `afterNavigate(fn)` runs after each completed one and once on mount (page
+  views, focus). They belong to the component that calls them during setup, and work in islands of
+  MPA pages too (link clicks, `"leave"` and `"enter"`). See
+  [Navigation hooks](../reference/router.md#navigation-hooks).
 
 ```tsx
 import { signal } from "lumiose";
@@ -151,7 +152,7 @@ export function Editor() {
   const dirty = signal(false);
   beforeNavigate((navigation) => {
     if (!dirty()) return;
-    if (navigation.willUnload) navigation.cancel(); // the browser asks
+    if (navigation.type === "leave") navigation.cancel(); // the browser asks
     else if (!confirm("Discard your changes?")) navigation.cancel();
   });
   afterNavigate((navigation) => console.info("page view", navigation.to?.url.pathname));
@@ -259,9 +260,10 @@ export default function Home() {
 - **Matching `url().pathname` to know which route is showing.** `route() === "/songs/[id]"`
   compares the matched pattern, type-checked against the app's routes.
 - **Route loaders.** There are none: load data in the async page component itself (decision-18).
-- **A custom dialog for leaving the document.** For a navigation that unloads the page
-  (`navigation.willUnload`), `cancel()` makes the browser show its own prompt; a `confirm()` or a
-  modal cannot run there. Ask with your own UI only for navigations inside the SPA.
+- **A custom dialog for `"leave"`.** For closing the tab, a reload, a typed URL or a `POST` form
+  (`navigation.type === "leave"`), `cancel()` makes the browser show its own prompt; a `confirm()`
+  or a modal cannot run there. Ask with your own UI for the rest: links (on MPA pages too) and
+  `navigate()` stay on the page when cancelled.
 - **`mode` that is not a string literal.** `export const mode = getMode()` cannot be read at build
   time (`LUM5002`).
 

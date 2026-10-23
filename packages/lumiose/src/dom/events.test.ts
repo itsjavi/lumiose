@@ -2,7 +2,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { effect, flush, signal } from "../core/index.ts";
 import { createOwner, disposeOwner, runWithOwner } from "../core/internal.ts";
-import { delegateEvents, listen, render, template } from "./index.ts";
+import { delegateEvents, insert, listen, render, spread, template } from "./index.ts";
 import { Portal } from "./public.ts";
 
 type Slots = Record<string, unknown>;
@@ -152,5 +152,66 @@ describe("listen", () => {
     disposeOwner(owner);
     el.dispatchEvent(new Event("scroll"));
     expect(log).toEqual(["scroll"]);
+  });
+
+  it("runs the listener inside a batch: its writes render together, and the DOM is current after the event", () => {
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    const a = signal(0);
+    const b = signal(0);
+    const renders: string[] = [];
+    let el!: HTMLElement;
+    const targets: unknown[] = [];
+    const dispose = render(() => {
+      el = document.createElement("p");
+      insert(el, () => {
+        renders.push(`${a()}-${b()}`);
+        return `${a()}-${b()}`;
+      });
+      listen(el, "rating-change", function (this: unknown) {
+        targets.push(this);
+        a.set(1);
+        b.set(2);
+      });
+      return el;
+    }, container);
+    expect(renders).toEqual(["0-0"]);
+    el.dispatchEvent(new Event("rating-change"));
+    // No flush: the batch ended with the listener.
+    expect(el.textContent).toBe("1-2");
+    expect(renders).toEqual(["0-0", "1-2"]);
+    expect(targets).toEqual([el]);
+    dispose();
+  });
+});
+
+describe("spread handlers", () => {
+  it("run inside a batch, and the listener a spread added is the one it removes", () => {
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    const count = signal(0);
+    const label = signal("a");
+    const bump = (): void => {
+      count.set(count() + 1);
+      label.set(`a${count()}`);
+    };
+    const handler = signal<(() => void) | undefined>(bump);
+    let el!: HTMLElement;
+    const dispose = render(() => {
+      el = document.createElement("p");
+      insert(el, () => `${label()} ${count()}`);
+      spread(el, () => ({ "on:ping": handler(), onPong: handler() }));
+      return el;
+    }, container);
+    el.dispatchEvent(new Event("ping"));
+    expect(el.textContent).toBe("a1 1");
+    el.dispatchEvent(new Event("pong"));
+    expect(el.textContent).toBe("a2 2");
+    handler.set(undefined);
+    flush();
+    el.dispatchEvent(new Event("ping"));
+    el.dispatchEvent(new Event("pong"));
+    expect(count()).toBe(2);
+    dispose();
   });
 });

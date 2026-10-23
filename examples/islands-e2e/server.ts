@@ -35,7 +35,7 @@ async function handle(url: URL, res: ServerResponse): Promise<void> {
     res.end(JSON.stringify(member));
     return;
   }
-  if (url.pathname !== "/") {
+  if (url.pathname !== "/" && url.pathname !== "/draft") {
     res.statusCode = 404;
     res.end("Not found");
     return;
@@ -44,7 +44,7 @@ async function handle(url: URL, res: ServerResponse): Promise<void> {
   delays.slow = Number(url.searchParams.get("slow") ?? 600);
   const { render } = await runner.import<Entry>("/src/entry-server.tsx");
   // `.stsx` modules are Vite import URLs in dev (`?import`), as the island manifest imports them.
-  const shell = await render({ islandUrl: (specifier) => `${specifier}?import` });
+  const shell = await render({ islandUrl: (specifier) => `${specifier}?import` }, url.pathname);
   res.setHeader("content-type", "text/html; charset=utf-8");
   res.write(
     `<!doctype html><html><head><meta charset="utf-8"><title>Islands</title>${shell.head}` +

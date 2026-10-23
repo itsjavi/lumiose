@@ -4,7 +4,8 @@
 // (plus `el.$$nameData` when it lifted row data out of the closure) and registers the event name.
 // One listener per event type at `document` walks from the target to the island or app boundary,
 // calls each handler with `currentTarget` set to its element, and stops when one cancels bubbling.
-// Writes made by handlers are batched until the walk ends.
+// Writes made by handlers are batched until the walk ends. Native listeners (`listen()`, spread
+// handlers) run inside a batch too (decision-81).
 import { endBatch, startBatch } from "../core/internal.ts";
 import { onCleanup } from "../core/owner.ts";
 
@@ -58,13 +59,32 @@ export function delegateEvents(names: readonly string[]): void {
   }
 }
 
-/** Native listener (`on:x`, and `onX` of non-bubbling events), removed with the current owner. */
+/**
+ * `handler` inside a batch, as delegated handlers run (decision-81): what it writes renders
+ * together when it returns, so the DOM is current right after the event.
+ */
+export function batched(handler: EventListener): EventListener {
+  return function (this: unknown, event) {
+    startBatch();
+    try {
+      handler.call(this, event);
+    } finally {
+      endBatch();
+    }
+  };
+}
+
+/**
+ * Native listener (`on:x`, and `onX` of non-bubbling events), removed with the current owner. It
+ * runs `handler` inside a batch (`batched`).
+ */
 export function listen(
   el: EventTarget,
   name: string,
   handler: EventListener,
   options?: AddEventListenerOptions,
 ): void {
-  el.addEventListener(name, handler, options);
-  onCleanup(() => el.removeEventListener(name, handler, options));
+  const listener = batched(handler);
+  el.addEventListener(name, listener, options);
+  onCleanup(() => el.removeEventListener(name, listener, options));
 }

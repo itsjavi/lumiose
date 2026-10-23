@@ -813,16 +813,16 @@ pages, render on the `server` and send `cache-control` headers to a CDN.
 
 ### Navigation
 
-| Next.js                                                                               | Lumiose                                                                                                                                                                     |
-| ------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `next/link`                                                                           | `<a href={href(…)}>`, or `<Link href prefetch>` from `lumiose/router`. MPA pages prefetch on hover by default; `prefetch="viewport"` matches Next.js.                       |
-| Client-side navigation between pages                                                  | On `spa` routes, with persistent layouts. `static` and `server` pages load the next document, with optional View Transitions (`lumiose({ viewTransitions: true })`).        |
-| `useRouter().push(href)`, `.replace(href)`                                            | `navigate(href)`, `navigate(href, { replace: true })` from `lumiose/router`.                                                                                                |
-| `usePathname()`, `useSearchParams()`, `useParams()`                                   | `url().pathname`, `searchParams()` (and `searchParams.set()`), `params()` from `lumiose/router`.                                                                            |
-| `useSelectedLayoutSegment()`                                                          | `route()`, the matched pattern: `route() === "/blog/[slug]"`.                                                                                                               |
-| `onRouterTransitionStart(url, type)`, a `useEffect` on `usePathname()` for page views | `afterNavigate(fn)` from `lumiose/router`: after each completed navigation, and once on mount with `type: "enter"` ([hooks](../reference/router.md#navigation-hooks)).      |
-| A `beforeunload` listener to protect unsaved changes                                  | `beforeNavigate((navigation) => navigation.cancel())`: it also stops SPA links, `navigate()` and back/forward; for a navigation that leaves the document, the browser asks. |
-| `redirect()`, `permanentRedirect()`, `forbidden()`, `unauthorized()`                  | `redirect(to)`, `redirect(to, 308)`, `error(403)`, `error(401)`.                                                                                                            |
+| Next.js                                                                               | Lumiose                                                                                                                                                                                                              |
+| ------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `next/link`                                                                           | `<a href={href(…)}>`, or `<Link href prefetch>` from `lumiose/router`. MPA pages prefetch on hover by default; `prefetch="viewport"` matches Next.js.                                                                |
+| Client-side navigation between pages                                                  | On `spa` routes, with persistent layouts. `static` and `server` pages load the next document, with optional View Transitions (`lumiose({ viewTransitions: true })`).                                                 |
+| `useRouter().push(href)`, `.replace(href)`                                            | `navigate(href)`, `navigate(href, { replace: true })` from `lumiose/router`.                                                                                                                                         |
+| `usePathname()`, `useSearchParams()`, `useParams()`                                   | `url().pathname`, `searchParams()` (and `searchParams.set()`), `params()` from `lumiose/router`.                                                                                                                     |
+| `useSelectedLayoutSegment()`                                                          | `route()`, the matched pattern: `route() === "/blog/[slug]"`.                                                                                                                                                        |
+| `onRouterTransitionStart(url, type)`, a `useEffect` on `usePathname()` for page views | `afterNavigate(fn)` from `lumiose/router`: after each completed navigation, and once on mount with `type: "enter"` ([hooks](../reference/router.md#navigation-hooks)).                                               |
+| A `beforeunload` listener to protect unsaved changes                                  | `beforeNavigate((navigation) => navigation.cancel())`: it also stops link clicks (on MPA pages too), `navigate()` and back/forward, and the page stays; for `"leave"` (closing the tab, a reload), the browser asks. |
+| `redirect()`, `permanentRedirect()`, `forbidden()`, `unauthorized()`                  | `redirect(to)`, `redirect(to, 308)`, `error(403)`, `error(401)`.                                                                                                                                                     |
 
 ### Rendering and deployment
 
@@ -1213,16 +1213,16 @@ folder under `src/routes` is a URL segment, and `page`, `layout`, `route`, `erro
 
 ### Navigation
 
-| React Router                                                | Lumiose                                                                                                                                                                                                                                                          |
-| ----------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `<Link to>`, `<NavLink>`                                    | `<a href={href(…)}>` or `<Link href>` from `lumiose/router`; `<Link>` sets `aria-current="page"` on the active link.                                                                                                                                             |
-| `<Link prefetch="intent">`                                  | `<Link prefetch="hover">`, the default; MPA pages prefetch through speculation rules.                                                                                                                                                                            |
-| `useNavigate()`                                             | `navigate(href, { replace })` from `lumiose/router`.                                                                                                                                                                                                             |
-| `useParams()`                                               | `props.params`, or `params()` from `lumiose/router` (reactive, also on the server).                                                                                                                                                                              |
-| `useSearchParams()`                                         | `searchParams()` and `searchParams.set()` from `lumiose/router`; `url().searchParams` in server code.                                                                                                                                                            |
-| `useLocation()`                                             | `url()` from `lumiose/router`; `route()` is the matched pattern.                                                                                                                                                                                                 |
-| `useBlocker()`, `unstable_usePrompt()`, `useBeforeUnload()` | `beforeNavigate((navigation) => navigation.cancel())` from `lumiose/router`: SPA links, `navigate()` and back/forward; for a navigation that leaves the document (`navigation.willUnload`), the browser asks ([hooks](../reference/router.md#navigation-hooks)). |
-| A `useEffect` on `useLocation()` (page views, focus)        | `afterNavigate(fn)`: after each completed navigation, and once on mount with `type: "enter"`.                                                                                                                                                                    |
+| React Router                                                | Lumiose                                                                                                                                                                                                                                                                |
+| ----------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `<Link to>`, `<NavLink>`                                    | `<a href={href(…)}>` or `<Link href>` from `lumiose/router`; `<Link>` sets `aria-current="page"` on the active link.                                                                                                                                                   |
+| `<Link prefetch="intent">`                                  | `<Link prefetch="hover">`, the default; MPA pages prefetch through speculation rules.                                                                                                                                                                                  |
+| `useNavigate()`                                             | `navigate(href, { replace })` from `lumiose/router`.                                                                                                                                                                                                                   |
+| `useParams()`                                               | `props.params`, or `params()` from `lumiose/router` (reactive, also on the server).                                                                                                                                                                                    |
+| `useSearchParams()`                                         | `searchParams()` and `searchParams.set()` from `lumiose/router`; `url().searchParams` in server code.                                                                                                                                                                  |
+| `useLocation()`                                             | `url()` from `lumiose/router`; `route()` is the matched pattern.                                                                                                                                                                                                       |
+| `useBlocker()`, `unstable_usePrompt()`, `useBeforeUnload()` | `beforeNavigate((navigation) => navigation.cancel())` from `lumiose/router`: link clicks, `navigate()` and back/forward stay on the page; for `"leave"` (closing the tab, a reload, a typed URL), the browser asks ([hooks](../reference/router.md#navigation-hooks)). |
+| A `useEffect` on `useLocation()` (page views, focus)        | `afterNavigate(fn)`: after each completed navigation, and once on mount with `type: "enter"`.                                                                                                                                                                          |
 
 ## What has no equivalent
 
@@ -1560,17 +1560,17 @@ persistent layouts ([Rendering modes](../concepts/rendering-modes.md)).
 
 ### Solid Router
 
-| Solid Router                                     | Lumiose                                                                                                                                                                                          |
-| ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `<Router>` with `<Route path component>`         | File routes; `lumiose routes` lists them.                                                                                                                                                        |
-| `<A href>`, `activeClass`                        | `<Link href>` from `lumiose/router`, with `aria-current="page"` on the active link; `href()` builds typed URLs.                                                                                  |
-| `useNavigate()`, `<Navigate href>`               | `navigate(href, { replace })`; `redirect(to)` while rendering.                                                                                                                                   |
-| `useParams()`, `useLocation()`, `useMatch()`     | `params()`, `url()` and `route()` (the matched pattern) from `lumiose/router`.                                                                                                                   |
-| `useSearchParams()`: `[params, setParams]`       | `searchParams()` and `searchParams.set({ q })`.                                                                                                                                                  |
-| `useIsRouting()`                                 | `isNavigating()`.                                                                                                                                                                                |
-| `useBeforeLeave((e) => e.preventDefault())`      | `beforeNavigate((navigation) => navigation.cancel())`; for a navigation that leaves the document (`navigation.willUnload`), the browser asks ([hooks](../reference/router.md#navigation-hooks)). |
-| A `createEffect` on `useLocation()` (page views) | `afterNavigate(fn)`: after each completed navigation, and once on mount with `type: "enter"`.                                                                                                    |
-| `preload` functions on routes                    | None: data loads where it is awaited, and `<Link prefetch>` loads a page's modules ahead.                                                                                                        |
+| Solid Router                                     | Lumiose                                                                                                                                                                |
+| ------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `<Router>` with `<Route path component>`         | File routes; `lumiose routes` lists them.                                                                                                                              |
+| `<A href>`, `activeClass`                        | `<Link href>` from `lumiose/router`, with `aria-current="page"` on the active link; `href()` builds typed URLs.                                                        |
+| `useNavigate()`, `<Navigate href>`               | `navigate(href, { replace })`; `redirect(to)` while rendering.                                                                                                         |
+| `useParams()`, `useLocation()`, `useMatch()`     | `params()`, `url()` and `route()` (the matched pattern) from `lumiose/router`.                                                                                         |
+| `useSearchParams()`: `[params, setParams]`       | `searchParams()` and `searchParams.set({ q })`.                                                                                                                        |
+| `useIsRouting()`                                 | `isNavigating()`.                                                                                                                                                      |
+| `useBeforeLeave((e) => e.preventDefault())`      | `beforeNavigate((navigation) => navigation.cancel())`; for `"leave"` (closing the tab, a reload), the browser asks ([hooks](../reference/router.md#navigation-hooks)). |
+| A `createEffect` on `useLocation()` (page views) | `afterNavigate(fn)`: after each completed navigation, and once on mount with `type: "enter"`.                                                                          |
+| `preload` functions on routes                    | None: data loads where it is awaited, and `<Link prefetch>` loads a page's modules ahead.                                                                              |
 
 ## What has no equivalent
 
@@ -2292,8 +2292,11 @@ inside a tracked scope (a JSX binding, a `computed`, an `effect`) subscribes tha
 the signal marks it dirty and re-runs only what depends on it.
 
 - **Reads are synchronous.** `count()` always returns the current value, even right after a write.
-- **Writes are batched.** Writes inside a delegated event handler are batched for the duration of
-  the handler. Any other write schedules a microtask flush. `flush()` flushes immediately.
+- **Writes are batched.** Writes inside an event handler are batched for the duration of the
+  handler: delegated `onX` handlers, native `on:x` listeners, the direct listeners of non-bubbling
+  events (`onFocus`, `onScroll`) and handlers passed in a spread. They render together when it
+  returns, so the DOM is current right after the event (decision-81). Any other write schedules a
+  microtask flush. `flush()` flushes immediately.
 - **Flush order:** computeds are pulled, then DOM bindings run (parents before children), then user
   effects. The effects queued at that point all run before the DOM bindings that their own writes
   trigger, so effects that measure the DOM and then write share one layout. Then those bindings
@@ -2795,7 +2798,7 @@ the efficient form:
 | `style`                      | A string, or an object with **kebab-case** keys, including `--custom` properties. Each key updates on its own.                                                                                                                                                                                                                                                                                               |
 | `aria-*`, `spellcheck`, …    | Booleans are written as `"true"`/`"false"` (`aria-pressed={false}` renders `aria-pressed="false"`): `aria-*`, `contenteditable`, `draggable`, `spellcheck` and the other enumerated attributes, static or not. Other attributes: `true` adds the attribute empty (`hidden`); `false`, `null` and `undefined` leave it out.                                                                                   |
 | `onClick`, `onKeyDown`, …    | camelCase handlers. Bubbling events are delegated (one listener per type at `document`); non-bubbling ones (`onFocus`, `onMouseEnter`, `onScroll`) get a direct listener.                                                                                                                                                                                                                                    |
-| `on:click`, `on:my-event`    | A native `addEventListener` listener with the exact event name. Use it for custom and web-component events.                                                                                                                                                                                                                                                                                                  |
+| `on:click`, `on:my-event`    | A native `addEventListener` listener with the exact event name. Use it for custom and web-component events. Like `onX` handlers, it runs inside a batch: its writes render together, and the DOM is current when the event returns.                                                                                                                                                                          |
 | Props of a custom element    | The element's property when it defines one (arrays and objects as they are), else the attribute, as in React 19. See [Web components](../guides/web-components.md).                                                                                                                                                                                                                                          |
 | `bind:value`, `bind:checked` | Two-way binding to a writable signal, on `input`, `select` and `textarea`. `bind:x` also works on components and custom elements (below).                                                                                                                                                                                                                                                                    |
 | `attach={[fn]}`              | Runs `fn(el)` with the element in a tracked scope, once the element is in the document (below); it may return a cleanup.                                                                                                                                                                                                                                                                                     |
@@ -4385,10 +4388,11 @@ Routes with `mode = "spa"` use the client router `lumiose/router` ([reference](.
   `<Title>`, else its first `<h1>`), `not-found` for unknown URLs and `notFound()`, `error` for
   errors. See [Behaviour](../reference/router.md#behaviour).
 - Navigation hooks: `beforeNavigate(fn)` runs before each navigation and may `cancel()` it (to
-  confirm leaving unsaved changes; the browser asks for one that unloads the document), and
-  `afterNavigate(fn)` runs after each completed one and once on mount (page views, focus). They
-  belong to the component that calls them during setup, and work in islands of MPA pages too
-  (`"leave"` and `"enter"` only). See [Navigation hooks](../reference/router.md#navigation-hooks).
+  confirm leaving unsaved changes; the page stays, and for `"leave"`, such as closing the tab, the
+  browser asks), and `afterNavigate(fn)` runs after each completed one and once on mount (page
+  views, focus). They belong to the component that calls them during setup, and work in islands of
+  MPA pages too (link clicks, `"leave"` and `"enter"`). See
+  [Navigation hooks](../reference/router.md#navigation-hooks).
 
 ```tsx
 import { signal } from "lumiose";
@@ -4398,7 +4402,7 @@ export function Editor() {
   const dirty = signal(false);
   beforeNavigate((navigation) => {
     if (!dirty()) return;
-    if (navigation.willUnload) navigation.cancel(); // the browser asks
+    if (navigation.type === "leave") navigation.cancel(); // the browser asks
     else if (!confirm("Discard your changes?")) navigation.cancel();
   });
   afterNavigate((navigation) => console.info("page view", navigation.to?.url.pathname));
@@ -4506,9 +4510,10 @@ export default function Home() {
 - **Matching `url().pathname` to know which route is showing.** `route() === "/songs/[id]"`
   compares the matched pattern, type-checked against the app's routes.
 - **Route loaders.** There are none: load data in the async page component itself (decision-18).
-- **A custom dialog for leaving the document.** For a navigation that unloads the page
-  (`navigation.willUnload`), `cancel()` makes the browser show its own prompt; a `confirm()` or a
-  modal cannot run there. Ask with your own UI only for navigations inside the SPA.
+- **A custom dialog for `"leave"`.** For closing the tab, a reload, a typed URL or a `POST` form
+  (`navigation.type === "leave"`), `cancel()` makes the browser show its own prompt; a `confirm()`
+  or a modal cannot run there. Ask with your own UI for the rest: links (on MPA pages too) and
+  `navigate()` stay on the page when cancelled.
 - **`mode` that is not a string literal.** `export const mode = getMode()` cannot be read at build
   time (`LUM5002`).
 
@@ -6660,7 +6665,8 @@ query by role, label or text (`screen.getByRole("button", { name: "Add" })`), an
 with `@testing-library/user-event`, which types and clicks like a user. Render into a container
 appended to `document.body` (delegated handlers such as `onClick` listen at `document`), and call
 the disposer `render()` returns after each test. `await user.click(…)` returns after the handler's
-updates are applied: a write inside a delegated handler is flushed when the handler ends. For
+updates are applied: a write inside an event handler (`onX` or `on:x`) is flushed when the handler
+ends, and so is one in a listener of `el.dispatchEvent(new CustomEvent(…))`. For
 matchers such as `toBeDisabled()`, add `@testing-library/jest-dom`.
 
 Updates outside handlers are batched: after a write in the test itself (`count.set(3)`), call
@@ -10114,7 +10120,8 @@ sets `innerHTML`, `textContent` or `srcdoc`, on any element).
 `on:name` adds a native listener for the event of that exact name, so any casing works:
 `on:rating-change`, `on:sl-change`, `on:valueChanged`, `on:PascalEvent`. Type the handler's event
 yourself, as above. `onClick` and the other camelCase handlers are for the standard DOM events,
-lowercased and delegated: use `on:` for a component's own events.
+lowercased and delegated: use `on:` for a component's own events. Both run inside a batch, so
+what the handler writes is on screen when the component's `dispatchEvent()` returns.
 
 ## Two-way binding
 
@@ -11619,8 +11626,9 @@ Runs `fn` without subscribing the current scope to the signals it reads.
 function batch<T>(fn: () => T): T;
 ```
 
-Defers dependents until `fn` returns, so they run once. Delegated event handlers are batched
-automatically.
+Defers dependents until `fn` returns, so they run once. Event handlers are batched automatically:
+`onX` handlers, `on:x` listeners and handlers passed in a spread, so the DOM is current right after
+the event.
 
 ## flush
 
@@ -13060,24 +13068,29 @@ interface NavigationTarget {
 Runs before each navigation away from the current location, before the router loads anything.
 `type` is what started it:
 
-| `type`       | Navigation                                                                                   |
-| ------------ | -------------------------------------------------------------------------------------------- |
-| `"link"`     | A link click (or a `GET` form) to a URL of the SPA, or out of it (`willUnload`).             |
-| `"navigate"` | `navigate()` or `searchParams.set()` (a thrown `redirect()` runs no hook: it continues one). |
-| `"popstate"` | Back/forward.                                                                                |
-| `"leave"`    | The document unloads otherwise: closing the tab, typing a URL, a reload, a `POST` form.      |
+| `type`       | Navigation                                                                                                                                                                      |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `"link"`     | A link click (or a `GET` form) to a URL of the SPA, or out of it (`willUnload`). On MPA pages, a click on a same-origin link (`willUnload`).                                    |
+| `"navigate"` | `navigate()` or `searchParams.set()` (a thrown `redirect()` runs no hook: it continues one).                                                                                    |
+| `"popstate"` | Back/forward.                                                                                                                                                                   |
+| `"leave"`    | The document unloads otherwise: closing the tab, typing a URL, a reload, a `POST` form. On MPA pages also `navigate()`, `searchParams.set()`, forms and links to other origins. |
 
 `navigation.cancel()` stops it, and the URL stays the current one:
 
-- Inside the SPA, the navigation does not start. Back/forward that the browser does not let the
-  page cancel happens, then the router returns to the entry it left (without the Navigation API,
-  each history entry the router creates stores its index in `history.state` for that).
-- For a navigation that unloads the document (`willUnload`: `"leave"`, or a link or `navigate()`
-  to a page outside the SPA), the browser shows its own "Leave site?" prompt (`beforeunload`): a
-  custom dialog cannot run there. The browser shows it only after the user interacted with the
-  page.
+- A `"link"` or `"navigate"` navigation does not happen. Inside the SPA the router does not start
+  it; one that would load another document (a page outside the SPA, or a link on an MPA page) is
+  stopped too (the click is prevented), so the page stays as it is, with no prompt. The hook can
+  ask with `confirm()`, or cancel, show its own dialog and follow `navigation.to.url` once the user
+  agrees.
+- Back/forward that the browser does not let the page cancel happens, then the router returns to
+  the entry it left (without the Navigation API, each history entry the router creates stores its
+  index in `history.state` for that).
+- `"leave"` cannot be stopped by the page: the browser shows its own "Leave site?" prompt
+  (`beforeunload`), where a custom dialog cannot run. The browser shows it only after the user
+  interacted with the page.
 
-A change of the URL's `#hash` alone is not a navigation for the hooks.
+So a hook that guards unsaved changes cancels `"leave"` and asks the user itself for the rest (see
+the [Example](#example)). A change of the URL's `#hash` alone is not a navigation for the hooks.
 
 ### afterNavigate
 
@@ -13101,9 +13114,20 @@ component that a navigation created gets that navigation's call instead.
 
 ### On MPA pages
 
-Islands of `static` and `server` pages have no router, and using the hooks loads none: there,
-`beforeNavigate` sees only `"leave"` (a `beforeunload` listener, added while a hook is registered)
-and `afterNavigate` fires once with `"enter"`, with `route` undefined.
+Islands of `static` and `server` pages have no router, and using the hooks loads none of it.
+There, `beforeNavigate` sees a click on a same-origin link as `"link"` (`willUnload`; `route`
+undefined, and `to` is `null` for a URL outside Vite's `base`) and everything else that unloads the
+document as `"leave"`. `afterNavigate` fires once with `"enter"`, with `route` undefined.
+
+- **Which clicks.** The hooks hear every link of the page, inside islands or not, through a `click`
+  listener at `window` and a `beforeunload` listener, both added while a hook is registered.
+  Running at `window`, after the page's own handlers, they skip a click that a handler prevented.
+- **Left to the browser.** These clicks are not reported: a click with a modifier key or another
+  button (a new tab or window), on a link with `target` (other than `_self`) or `download`, to
+  another origin (`mailto:` and `tel:` included), or to a fragment of the current page.
+- **Cancelling** a `"link"` prevents the click, so the page stays with no prompt. An island can
+  show its own dialog, then call `location.assign(navigation.to.url)` once the user agrees
+  (clearing its unsaved state first, or the hook cancels again, as `"leave"`).
 
 ## Route state
 
@@ -13296,7 +13320,7 @@ export default function Settings() {
 
   beforeNavigate((navigation) => {
     if (!dirty()) return;
-    if (navigation.willUnload) navigation.cancel(); // the browser asks
+    if (navigation.type === "leave") navigation.cancel(); // the browser asks
     else if (!confirm("Discard your changes?")) navigation.cancel();
   });
 
@@ -13803,7 +13827,9 @@ stands in for both ([`bind:` on components](../concepts/jsx.md)).
 events are delegated; non-bubbling ones (`focus`, `blur`, `mouseenter`, `mouseleave`,
 `pointerenter`, `pointerleave`, `scroll`, `load`, `error`, media events) get a direct listener.
 `on:name` adds a native listener with the exact name; any `on:${string}` is accepted for custom
-events.
+events. Every handler (delegated, direct or `on:`, and one passed in a spread) runs inside a
+batch: what it writes renders together when it returns, so the DOM is current right after the
+event.
 
 ## Custom elements
 

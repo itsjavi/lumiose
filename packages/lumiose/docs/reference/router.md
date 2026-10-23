@@ -106,24 +106,29 @@ interface NavigationTarget {
 Runs before each navigation away from the current location, before the router loads anything.
 `type` is what started it:
 
-| `type`       | Navigation                                                                                   |
-| ------------ | -------------------------------------------------------------------------------------------- |
-| `"link"`     | A link click (or a `GET` form) to a URL of the SPA, or out of it (`willUnload`).             |
-| `"navigate"` | `navigate()` or `searchParams.set()` (a thrown `redirect()` runs no hook: it continues one). |
-| `"popstate"` | Back/forward.                                                                                |
-| `"leave"`    | The document unloads otherwise: closing the tab, typing a URL, a reload, a `POST` form.      |
+| `type`       | Navigation                                                                                                                                                                      |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `"link"`     | A link click (or a `GET` form) to a URL of the SPA, or out of it (`willUnload`). On MPA pages, a click on a same-origin link (`willUnload`).                                    |
+| `"navigate"` | `navigate()` or `searchParams.set()` (a thrown `redirect()` runs no hook: it continues one).                                                                                    |
+| `"popstate"` | Back/forward.                                                                                                                                                                   |
+| `"leave"`    | The document unloads otherwise: closing the tab, typing a URL, a reload, a `POST` form. On MPA pages also `navigate()`, `searchParams.set()`, forms and links to other origins. |
 
 `navigation.cancel()` stops it, and the URL stays the current one:
 
-- Inside the SPA, the navigation does not start. Back/forward that the browser does not let the
-  page cancel happens, then the router returns to the entry it left (without the Navigation API,
-  each history entry the router creates stores its index in `history.state` for that).
-- For a navigation that unloads the document (`willUnload`: `"leave"`, or a link or `navigate()`
-  to a page outside the SPA), the browser shows its own "Leave site?" prompt (`beforeunload`): a
-  custom dialog cannot run there. The browser shows it only after the user interacted with the
-  page.
+- A `"link"` or `"navigate"` navigation does not happen. Inside the SPA the router does not start
+  it; one that would load another document (a page outside the SPA, or a link on an MPA page) is
+  stopped too (the click is prevented), so the page stays as it is, with no prompt. The hook can
+  ask with `confirm()`, or cancel, show its own dialog and follow `navigation.to.url` once the user
+  agrees.
+- Back/forward that the browser does not let the page cancel happens, then the router returns to
+  the entry it left (without the Navigation API, each history entry the router creates stores its
+  index in `history.state` for that).
+- `"leave"` cannot be stopped by the page: the browser shows its own "Leave site?" prompt
+  (`beforeunload`), where a custom dialog cannot run. The browser shows it only after the user
+  interacted with the page.
 
-A change of the URL's `#hash` alone is not a navigation for the hooks.
+So a hook that guards unsaved changes cancels `"leave"` and asks the user itself for the rest (see
+the [Example](#example)). A change of the URL's `#hash` alone is not a navigation for the hooks.
 
 ### afterNavigate
 
@@ -147,9 +152,20 @@ component that a navigation created gets that navigation's call instead.
 
 ### On MPA pages
 
-Islands of `static` and `server` pages have no router, and using the hooks loads none: there,
-`beforeNavigate` sees only `"leave"` (a `beforeunload` listener, added while a hook is registered)
-and `afterNavigate` fires once with `"enter"`, with `route` undefined.
+Islands of `static` and `server` pages have no router, and using the hooks loads none of it.
+There, `beforeNavigate` sees a click on a same-origin link as `"link"` (`willUnload`; `route`
+undefined, and `to` is `null` for a URL outside Vite's `base`) and everything else that unloads the
+document as `"leave"`. `afterNavigate` fires once with `"enter"`, with `route` undefined.
+
+- **Which clicks.** The hooks hear every link of the page, inside islands or not, through a `click`
+  listener at `window` and a `beforeunload` listener, both added while a hook is registered.
+  Running at `window`, after the page's own handlers, they skip a click that a handler prevented.
+- **Left to the browser.** These clicks are not reported: a click with a modifier key or another
+  button (a new tab or window), on a link with `target` (other than `_self`) or `download`, to
+  another origin (`mailto:` and `tel:` included), or to a fragment of the current page.
+- **Cancelling** a `"link"` prevents the click, so the page stays with no prompt. An island can
+  show its own dialog, then call `location.assign(navigation.to.url)` once the user agrees
+  (clearing its unsaved state first, or the hook cancels again, as `"leave"`).
 
 ## Route state
 
@@ -342,7 +358,7 @@ export default function Settings() {
 
   beforeNavigate((navigation) => {
     if (!dirty()) return;
-    if (navigation.willUnload) navigation.cancel(); // the browser asks
+    if (navigation.type === "leave") navigation.cancel(); // the browser asks
     else if (!confirm("Discard your changes?")) navigation.cancel();
   });
 
