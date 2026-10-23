@@ -15260,6 +15260,16 @@ still warns when its arguments read a signal or a prop (`const day = format.date
 `useId()`, `ref()`, `signal()`, `createContext()` and `getAbortSignal()`, so
 `const context = { id: useId(), open: signal(false) }` is fine.
 
+Copying a signal's value into a constant warns too: `const n = count()` reads `count` once, when
+`count` is a `signal()`, `computed()`, `resource()` or `optimistic()` made in the same file (in the
+component or at the top level). A zero-argument call of an imported function (`const n = total()`)
+is not reported, because the compiler cannot tell a signal of a store module from a plain function
+or a `defineState()` getter (`const cart = useCart()`). Read an imported signal in the JSX all the
+same (`{total()}`).
+
+`count.peek()` and `untrack(…)` read without tracking, so they are never reads for this diagnostic
+(or for [LUM2003](LUM2003.md)): `const start = count.peek()` keeps the first value on purpose.
+
 Destructuring the props object at the top of the body (`const { title, ...rest } = props`) is
 rewritten like a destructured parameter and stays reactive. Destructuring a nested prop
 (`const { name } = props.user`), or bindings you reassign later, still read once and warn.
@@ -15284,18 +15294,28 @@ export default function Book(props: { params: { slug: string } }) {
 export function Counter() {
   const count = signal(1);
   const doubled = count() * 2;
-  return <button onClick={() => count.update((n) => n + 1)}>{doubled}</button>;
+  const n = count();
+  return (
+    <button onClick={() => count.update((n) => n + 1)}>
+      {n} × 2 = {doubled}
+    </button>
+  );
 }
 ```
 
 ## How to fix it
 
-Derive with a function or `computed`, and call it where you need the value:
+Derive with a function or `computed`, and call it where you need the value. A plain copy needs
+neither: call the signal itself in the JSX.
 
 ```tsx
 const doubled = () => count() * 2; // cheap derivations
 const total = computed(() => expensive(count())); // cached
-return <button>{doubled()}</button>;
+return (
+  <button>
+    {count()} × 2 = {doubled()}
+  </button>
+);
 ```
 
 For a spread, make the object a function and call it in the spread: `const attrs = () => ({ title:
@@ -15374,8 +15394,9 @@ through a local declared from one (`const kind = props.kind`): both forms get th
 diagnostic, and a read through a local also points at the local's declaration.
 
 - **A signal read is an error.** A zero-argument call such as `count()`, `store.count()` or an
-  accessor prop (`props.user()`) reads a signal. The component is written to react, and the
-  early return never does.
+  accessor prop (`props.user()`) reads a signal, and so does a local that copies a signal made in
+  the same file (`const n = count()`). The component is written to react, and the early return
+  never does. `count.peek()` reads without tracking, on purpose: it is not a read.
 - **A prop read is a warning.** `props.kind`, a destructured prop, or a method of a prop's value
   (`props.title.trim()`) only goes stale when the component renders in the browser (in an
   island or an SPA page) and a parent passes a value that changes, as in

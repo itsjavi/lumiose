@@ -27,6 +27,12 @@ const _c2 = (h0) => h0 instanceof SSRHtml ? new SSRHtml("<ul>" + h0.t + "</ul>")
 const _s3 = ["<p>Sign in</p>"];
 const _s4 = ["<p>", "</p>"];
 const _c4 = (h0) => typeof h0 === "string" ? new SSRHtml("<p>" + h0 + "</p>") : ssr(_s4, h0);
+const _s5 = [
+	"<button>",
+	" from ",
+	"</button>"
+];
+const _c5 = (h0, h1) => typeof h0 === "string" && typeof h1 === "string" ? new SSRHtml("<button>" + h0 + " from " + h1 + "</button>") : ssr(_s5, h0, h1);
 const shared = signal(0);
 export function Child(props) {
 	const upper = props.name.toUpperCase();
@@ -53,6 +59,14 @@ export function Account(props) {
 	if (!props.user()) return ssr(_s3);
 	return _c4(insertText(props.user()));
 }
+// LUM2001 also reports a signal's value copied into a local (TASK-529); `peek()` reads it once
+// on purpose.
+export function Counter() {
+	const count = signal(0);
+	const n = count();
+	const start = count.peek();
+	return _c5(insert(n), insert(start));
+}
 
 // --- diagnostics ---
 // LUM2001 warning 10:9 `upper` is computed once from a reactive value, so the JSX that uses it never updates
@@ -64,3 +78,4 @@ export function Account(props) {
 // LUM2006 warning 31:26 the list index `i` is read once here, so this value goes stale when rows move
 // LUM2003 warning 42:11 this early return depends on a prop, but a component body runs once: it never updates if a parent passes a changing value
 // LUM2003 error 46:7 this early return depends on a reactive value, but a component body runs once
+// LUM2001 warning 54:9 `n` is computed once from a reactive value, so the JSX that uses it never updates

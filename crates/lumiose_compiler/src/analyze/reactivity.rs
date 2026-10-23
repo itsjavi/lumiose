@@ -131,6 +131,64 @@ const CONTROL_FLOW_APIS: [&str; 3] = ["error", "notFound", "redirect"];
 /// `const context = { id: useId(), open: signal() }` derives nothing reactive (TASK-349).
 const CONSTANT_APIS: [&str; 5] = ["createContext", "getAbortSignal", "ref", "signal", "useId"];
 
+/// `lumiose`'s APIs that return a reactive accessor: a call of the accessor reads its value.
+const ACCESSOR_APIS: [&str; 4] = ["computed", "optimistic", "resource", "signal"];
+
+/// Bindings, anywhere in the module and never reassigned, that hold an accessor made by one of
+/// `lumiose`'s [`ACCESSOR_APIS`] (`const count = signal(0)`). A zero-argument call of one
+/// (`const n = count()`) reads a signal, although it has the shape of a factory call (TASK-529).
+pub fn accessor_bindings(program: &Program<'_>, scoping: &Scoping) -> HashSet<SymbolId> {
+    let mut constructors = HashSet::new();
+    for statement in &program.body {
+        let Statement::ImportDeclaration(import) = statement else {
+            continue;
+        };
+        if import.source.value != "lumiose" {
+            continue;
+        }
+        for specifier in import.specifiers.iter().flatten() {
+            if let ImportDeclarationSpecifier::ImportSpecifier(s) = specifier
+                && ACCESSOR_APIS.contains(&s.imported.name().as_str())
+                && let Some(symbol) = s.local.symbol_id.get()
+            {
+                constructors.insert(symbol);
+            }
+        }
+    }
+    if constructors.is_empty() {
+        return constructors;
+    }
+    let mut finder = AccessorFinder {
+        scoping,
+        constructors,
+        accessors: HashSet::new(),
+    };
+    finder.visit_program(program);
+    finder.accessors
+}
+
+struct AccessorFinder<'s> {
+    scoping: &'s Scoping,
+    constructors: HashSet<SymbolId>,
+    accessors: HashSet<SymbolId>,
+}
+
+impl<'a> Visit<'a> for AccessorFinder<'_> {
+    fn visit_variable_declarator(&mut self, it: &VariableDeclarator<'a>) {
+        if let BindingPattern::BindingIdentifier(id) = &it.id
+            && let Some(Expression::CallExpression(call)) =
+                it.init.as_ref().map(Expression::without_parentheses)
+            && let Expression::Identifier(callee) = call.callee.without_parentheses()
+            && symbol_of(self.scoping, callee).is_some_and(|s| self.constructors.contains(&s))
+            && let Some(symbol) = id.symbol_id.get()
+            && !self.scoping.symbol_is_mutated(symbol)
+        {
+            self.accessors.insert(symbol);
+        }
+        walk::walk_variable_declarator(self, it);
+    }
+}
+
 /// Bindings whose calls never read a signal (TASK-86): `lumiose`'s request, control-flow and
 /// constant APIs, and every import of a server-only module (`is_server_only(specifier)`), which
 /// cannot reach a client graph (LUM4003).
@@ -171,14 +229,15 @@ pub fn reactive_reads(
     expr: &Expression<'_>,
 ) -> Vec<Span> {
     let no_locals = DerivedLocals::new();
-    find_reads(scoping, props, server_only, &no_locals, expr)
+    find_reads(scoping, props, server_only, &no_locals, false, expr)
         .into_iter()
         .map(|read| read.span)
         .collect()
 }
 
 /// The first of the strongest reactive reads in `exprs`, where a reference to one of `locals`
-/// reads what that local derives from.
+/// reads what that local derives from. A `.peek()` call (`count.peek()`) reads without tracking
+/// on purpose, so it is not a read here (TASK-529).
 pub fn strongest_read<'e, 'a: 'e>(
     scoping: &Scoping,
     props: &PropsSymbols,
@@ -188,7 +247,7 @@ pub fn strongest_read<'e, 'a: 'e>(
 ) -> Option<Read> {
     exprs
         .into_iter()
-        .flat_map(|expr| find_reads(scoping, props, server_only, locals, expr))
+        .flat_map(|expr| find_reads(scoping, props, server_only, locals, true, expr))
         .reduce(|strongest, read| {
             if read.kind > strongest.kind {
                 read
@@ -203,6 +262,7 @@ fn find_reads(
     props: &PropsSymbols,
     server_only: &HashSet<SymbolId>,
     locals: &DerivedLocals,
+    peek_untracked: bool,
     expr: &Expression<'_>,
 ) -> Vec<Read> {
     let mut finder = ReadFinder {
@@ -210,6 +270,7 @@ fn find_reads(
         props,
         server_only,
         locals,
+        peek_untracked,
         found: Vec::new(),
     };
     finder.visit_expression(expr);
@@ -221,6 +282,8 @@ struct ReadFinder<'s> {
     props: &'s PropsSymbols,
     server_only: &'s HashSet<SymbolId>,
     locals: &'s DerivedLocals,
+    /// Whether a zero-argument `.peek()` call is not a read.
+    peek_untracked: bool,
     found: Vec<Read>,
 }
 
@@ -246,7 +309,10 @@ impl<'a> Visit<'a> for ReadFinder<'_> {
     fn visit_class(&mut self, _: &Class<'a>) {}
 
     fn visit_call_expression(&mut self, call: &CallExpression<'a>) {
+        let peek = matches!(call.callee.without_parentheses(),
+            Expression::StaticMemberExpression(member) if member.property.name == "peek");
         if call.arguments.is_empty()
+            && !(peek && self.peek_untracked)
             && root_identifier(&call.callee)
                 .and_then(|ident| symbol_of(self.scoping, ident))
                 .is_some_and(|symbol| !self.server_only.contains(&symbol))
