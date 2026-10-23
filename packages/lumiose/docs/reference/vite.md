@@ -205,7 +205,9 @@ What it does:
   `<file>.html?lumiose-script`, without an island. HTML entries (`index.html`, HTML build inputs) and `public/` files
   stay Vite's. See [Markdown and HTML imports](../concepts/content.md).
 - Loads `?client` imports (`./menu.element.ts?client`): client environments get the module itself
-  and a default export that does nothing; server environments get a default export that adds the
+  and a default export that does nothing, or, when the importer only calls the import
+  conditionally (never as a statement of its own), a default export that imports the module on
+  its first call; server environments get a default export that adds the
   module's script to the page being rendered, without running the module. Builds build each script
   that the project scan finds as a chunk of its own: every one of the app's, and those of the
   [Lumiose packages](#lumiose-packages)' modules that the app's modules can use. See

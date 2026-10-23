@@ -7,7 +7,11 @@
 //   export function MenuRoot(props) { defineMenu(); return <lu-menu>…</lu-menu>; }
 //
 // - Client environments: the `?client` module imports the module, so it runs wherever the component's
-//   client code does (islands, SPA pages), and exports a function that does nothing.
+//   client code does (islands, SPA pages), and exports a function that does nothing. When the
+//   importer only calls the import conditionally (`if (openOnHover) hoverScript()`: never as a
+//   statement of its own in a function's body or at the top level, see `conditionalClientScripts`),
+//   its `?client` module instead imports the module the first time the function is called, as
+//   server pages load it, so an island that never makes the call never loads it (TASK-551).
 // - Server environments: the `?client` module exports a function that records the module's client URL,
 //   and the chunks it imports, for the page being rendered (`clientScript()`): the page loads it
 //   once, as a module script. The module itself never runs on the server.
@@ -22,7 +26,7 @@
 
 import { basename, dirname, relative, resolve as resolvePath } from "node:path";
 import type { PackageRoot } from "@lumiose/compiler";
-import { normalizePath, type Plugin, type ResolvedConfig, type Rollup } from "vite";
+import { normalizePath, parseAst, type Plugin, type ResolvedConfig, type Rollup } from "vite";
 import { resolvesByEnvironment } from "./packages.ts";
 import { reachedPackageModules } from "./reachable.ts";
 import { runtimeFile } from "./runtime-files.ts";
@@ -30,8 +34,12 @@ import type { ScannedModule } from "./scan.ts";
 
 export const CLIENT_SCRIPT_QUERY = "?client";
 const PREFIX = "\0lumiose:client-script:";
+/** A client environment's `?client` module that imports its module when first called. */
+const LAZY_PREFIX = "\0lumiose:client-script-lazy:";
 const MARKER = /\?client$/;
-const MARKER_ID = /^\0lumiose:client-script:/;
+const MARKER_ID = /^\0lumiose:client-script(?:-lazy)?:/;
+/** Modules that may import client scripts, as JavaScript by the time a normal plugin sees them. */
+const SCRIPT_MODULE = /\.(?:[cm]?[jt]sx?|stsx)$/;
 
 export interface ClientScriptsOptions {
   /** `lumiose dev` (or any Vite dev server). */
@@ -50,7 +58,7 @@ interface Built {
   preloads: string[];
 }
 
-export function clientScriptsPlugin(options: ClientScriptsOptions): Plugin {
+export function clientScriptsPlugin(options: ClientScriptsOptions): Plugin[] {
   /** Files the client build builds as entries. */
   const emitted = new Set<string>();
   /** Client scripts of package modules that the project's modules cannot run: not built. */
@@ -59,8 +67,10 @@ export function clientScriptsPlugin(options: ClientScriptsOptions): Plugin {
   const warned = new Set<string>();
   /** Files that `?client` modules of a client environment import. */
   const scripts = new Set<string>();
+  /** Client environments: module id → the `?client` specifiers it only calls conditionally. */
+  const conditional = new Map<string, Set<string>>();
 
-  return {
+  const plugin: Plugin = {
     name: "lumiose:client-scripts",
     // Before Vite's resolver, which would resolve `x.ts?client` to the module with a query.
     enforce: "pre",
@@ -78,17 +88,30 @@ export function clientScriptsPlugin(options: ClientScriptsOptions): Plugin {
           },
         );
         if (resolved === null || resolved.external) return null;
-        return PREFIX + resolved.id;
+        const lazy =
+          this.environment.config.consumer === "client" &&
+          importer !== undefined &&
+          conditional.get(importer)?.has(source) === true;
+        return (lazy ? LAZY_PREFIX : PREFIX) + resolved.id;
       },
     },
 
     load: {
       filter: { id: MARKER_ID },
       handler(id) {
-        const file = id.slice(PREFIX.length);
+        const lazy = id.startsWith(LAZY_PREFIX);
+        const file = id.slice((lazy ? LAZY_PREFIX : PREFIX).length);
         const config = this.environment.config;
         if (config.consumer === "client") {
           scripts.add(file);
+          if (lazy) {
+            // The first call imports it; the page may have loaded it already (the same chunk).
+            return `let loading;
+export default function clientScript() {
+  if (loading === undefined) loading = import(${JSON.stringify(file)});
+}
+`;
+          }
           return `import ${JSON.stringify(file)};\nexport default function clientScript() {}\n`;
         }
         let script: Built | undefined;
@@ -165,12 +188,16 @@ export default function clientScript() {
         if (!entry.isEntry || id === null || !emitted.has(id)) continue;
         // When islands or SPA pages import the module too, Rolldown puts it in a chunk they share,
         // and the entry is a facade that only imports that chunk: pages load the chunk itself, the
-        // file islands import, and the facade is not written.
+        // file islands import, and the facade is not written, unless client code that calls the
+        // script conditionally imports it with `import()`.
         let chunk = entry;
         for (const other of chunks.values()) {
           if (other !== entry && other.moduleIds.includes(id)) chunk = other;
         }
-        if (chunk !== entry) {
+        const lazy = [...chunks.values()].some((other) =>
+          other.dynamicImports.includes(entry.fileName),
+        );
+        if (chunk !== entry && !lazy) {
           delete bundle[entry.fileName];
           chunks.delete(entry.fileName);
         }
@@ -189,6 +216,117 @@ export default function clientScript() {
       }
     },
   };
+
+  // Which client scripts a client module only calls conditionally, read from its JavaScript: a
+  // normal plugin, so it runs after the Lumiose compile and TypeScript, and before the module's
+  // imports are resolved (by Rolldown, or by Vite's import analysis in dev).
+  const calls: Plugin = {
+    name: "lumiose:client-script-calls",
+    sharedDuringBuild: true,
+    transform: {
+      filter: { id: SCRIPT_MODULE, code: CLIENT_SCRIPT_QUERY },
+      handler(code, id) {
+        if (this.environment.config.consumer !== "client") return null;
+        let found: string[];
+        try {
+          found = conditionalClientScripts(parseAst(code, { lang: langOf(id) }));
+        } catch {
+          // Not JavaScript this plugin can read: its client scripts load with it.
+          found = [];
+        }
+        if (found.length > 0) conditional.set(id, new Set(found));
+        else conditional.delete(id);
+        return null;
+      },
+    },
+  };
+
+  return [plugin, calls];
+}
+
+function langOf(id: string): "ts" | "tsx" | "jsx" {
+  const path = id.replace(/[?#].*$/, "");
+  if (/\.[cm]?ts$/.test(path)) return "ts";
+  return path.endsWith(".tsx") ? "tsx" : "jsx";
+}
+
+interface Node {
+  type: string;
+  [key: string]: any;
+}
+
+const FUNCTION = /^(?:FunctionDeclaration|FunctionExpression|ArrowFunctionExpression)$/;
+
+/**
+ * The `?client` specifiers whose default import `program` only calls conditionally, so its client
+ * code can load them on the first call (TASK-551). A call is unconditional when it is a statement
+ * of its own at the top level, or in the body of a function (a component: `defineMenu();`); any
+ * other call (under an `if`, in `a && f()` or `(f(), x)`) is conditional. A script whose import is
+ * used otherwise (passed on, re-exported), or imported without a default binding, is not
+ * conditional: it loads with the module, as when its calls cannot be told apart.
+ */
+export function conditionalClientScripts(program: {
+  type: string;
+  body: readonly Node[];
+}): string[] {
+  /** Local name → specifier. */
+  const locals = new Map<string, string>();
+  const eager = new Set<string>();
+  for (const statement of program.body) {
+    if (statement.type !== "ImportDeclaration") continue;
+    const specifier = statement.source.value as string;
+    if (!specifier.endsWith(CLIENT_SCRIPT_QUERY)) continue;
+    for (const imported of statement.specifiers as Node[]) {
+      if (imported.type === "ImportDefaultSpecifier") locals.set(imported.local.name, specifier);
+      else eager.add(specifier);
+    }
+    if (statement.specifiers.length === 0) eager.add(specifier);
+  }
+  if (locals.size === 0) return [];
+
+  /** The nodes from the program down to the one being visited. */
+  const path: Node[] = [];
+  const visit = (node: Node): void => {
+    if (node.type === "ImportDeclaration") return;
+    if (node.type === "Identifier" && locals.has(node.name) && isReference(node, path.at(-1))) {
+      if (!isConditionalCall(node, path)) eager.add(locals.get(node.name)!);
+      return;
+    }
+    path.push(node);
+    for (const value of Object.values(node)) {
+      if (Array.isArray(value)) {
+        for (const item of value) if (isNode(item)) visit(item);
+      } else if (isNode(value)) visit(value);
+    }
+    path.pop();
+  };
+  visit(program);
+  return [...new Set(locals.values())].filter((specifier) => !eager.has(specifier));
+}
+
+function isNode(value: unknown): value is Node {
+  return typeof value === "object" && value !== null && typeof (value as Node).type === "string";
+}
+
+/** Whether `node` reads a binding: not a property name (`a.name`, `{ name: 1 }`). */
+function isReference(node: Node, parent: Node | undefined): boolean {
+  if (parent === undefined) return true;
+  if (parent.type === "MemberExpression") return parent.computed || parent.property !== node;
+  if (/^(?:Property|MethodDefinition|PropertyDefinition)$/.test(parent.type)) {
+    return parent.computed || parent.key !== node || parent.value === node;
+  }
+  return true;
+}
+
+/** Whether `callee` (an import's local name) is called, and not as a statement of its own. */
+function isConditionalCall(callee: Node, path: readonly Node[]): boolean {
+  const [container, statement, call] = path.slice(-3);
+  if (call?.type !== "CallExpression" || call.callee !== callee) return false;
+  const own =
+    statement?.type === "ExpressionStatement" &&
+    (container?.type === "Program" ||
+      (container?.type === "BlockStatement" && FUNCTION.test(path.at(-4)?.type ?? "")));
+  return !own;
 }
 
 /** `lumiose`'s own modules and Node's: no package components there. */

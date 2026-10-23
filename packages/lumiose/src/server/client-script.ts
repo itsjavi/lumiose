@@ -5,7 +5,8 @@
 // version calls `clientScript()` with the module's client URL when the component renders. The page
 // then loads it with a module script, once, in the head or in the chunk of the streamed boundary
 // that rendered it. In the browser the import loads the module itself and the call does nothing,
-// so islands and SPA pages load it with their own code.
+// so islands and SPA pages load it with their own code (or on the first call, when their code only
+// calls it conditionally: TASK-551).
 
 import { currentFrame, resolveUnit } from "./frame.ts";
 import { addPreload } from "./render.ts";

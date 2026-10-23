@@ -30,7 +30,10 @@ upgraded when Lumiose passes it properties. Import the definition with `?client`
 that renders the element, and call the import while it renders ([Islands](../concepts/islands.md),
 "Scripts of server-rendered components"). The definition never runs on the server, where
 `customElements` does not exist. An island imports it before it hydrates, and a page that renders
-the component on the server loads it as a module script of its own, without the island runtime:
+the component on the server loads it as a module script of its own, without the island runtime.
+Make the call a statement of its own at the top of the component, as below: an island loads a
+script that it only calls conditionally (under an `if`) when the call runs, after the component,
+and the element's first properties would then reach it as attributes:
 
 ```ts check file=elements/star-rating.ts
 // src/elements/star-rating.ts: a custom element of your own, or a library's entry point
