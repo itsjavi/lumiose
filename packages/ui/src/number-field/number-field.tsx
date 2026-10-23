@@ -25,6 +25,7 @@ import { formatNumber, formatter } from "./format.ts";
 import type { NumberFieldElement } from "./number-field.script.ts";
 import numberFieldScript from "./number-field.script.ts?client";
 import { batched } from "../batched.ts";
+import { notInside } from "../not-inside.ts";
 
 declare module "lumiose/jsx-runtime" {
   namespace JSX {
@@ -165,7 +166,7 @@ const NumberFieldContext = createContext<NumberFieldContextValue>();
 
 function useNumberField(part: string): NumberFieldContextValue {
   const context = useContext(NumberFieldContext);
-  if (!context) throw new Error(`NumberField.${part} must be inside <NumberField.Root>.`);
+  if (!context) throw notInside(`NumberField.${part}`, "<NumberField.Root>");
   return context;
 }
 

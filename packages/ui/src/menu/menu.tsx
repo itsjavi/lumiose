@@ -22,6 +22,7 @@ import menuScript from "./menu.script.ts?client";
 import { anchorName, placement, withStyle, type Align, type Side } from "../placement/placement.ts";
 import { OUTSIDE_TOOLBAR, ToolbarContext } from "../toolbar/context.ts";
 import { batched } from "../batched.ts";
+import { notInside } from "../not-inside.ts";
 
 declare module "lumiose/jsx-runtime" {
   namespace JSX {
@@ -190,7 +191,7 @@ const RadioContext = createContext<{ value: () => string | undefined }>();
 
 function useMenu(): MenuContextValue {
   const context = useContext(MenuContext);
-  if (!context) throw new Error("Menu parts must be inside <Menu.Root>.");
+  if (!context) throw notInside("Menu parts", "<Menu.Root>");
   return context;
 }
 
@@ -417,7 +418,7 @@ function Group(props: MenuGroupProps) {
 
 function GroupLabel({ children, ...rest }: MenuGroupLabelProps) {
   const group = useContext(GroupContext);
-  if (!group) throw new Error("Menu.GroupLabel must be inside <Menu.Group> or <Menu.RadioGroup>.");
+  if (!group) throw notInside("Menu.GroupLabel", "<Menu.Group> or <Menu.RadioGroup>");
   register(group.labels);
   return (
     <div role="presentation" {...rest} id={group.labelId}>
@@ -467,7 +468,7 @@ function RadioItem({
 }: MenuRadioItemProps) {
   useMenu();
   const radio = useContext(RadioContext);
-  if (!radio) throw new Error("Menu.RadioItem must be inside <Menu.RadioGroup>.");
+  if (!radio) throw notInside("Menu.RadioItem", "<Menu.RadioGroup>");
   return (
     <button
       type="button"

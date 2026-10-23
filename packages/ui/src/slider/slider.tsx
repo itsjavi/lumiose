@@ -14,6 +14,7 @@ import { formatValues } from "./format.ts";
 import type { SliderElement } from "./slider.script.ts";
 import sliderScript from "./slider.script.ts?client";
 import { batched } from "../batched.ts";
+import { notInside } from "../not-inside.ts";
 
 declare module "lumiose/jsx-runtime" {
   namespace JSX {
@@ -156,7 +157,7 @@ const SliderContext = createContext<SliderContextValue>();
 
 function useSlider(part: string): SliderContextValue {
   const context = useContext(SliderContext);
-  if (!context) throw new Error(`Slider.${part} must be inside <Slider.Root>.`);
+  if (!context) throw notInside(`Slider.${part}`, "<Slider.Root>");
   return context;
 }
 

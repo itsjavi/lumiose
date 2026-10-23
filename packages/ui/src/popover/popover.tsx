@@ -28,6 +28,7 @@ import popoverScript from "./popover.script.ts?client";
 import popoverHoverScript from "./popover-hover.script.ts?client";
 import { OUTSIDE_TOOLBAR, ToolbarContext } from "../toolbar/context.ts";
 import { batched } from "../batched.ts";
+import { notInside } from "../not-inside.ts";
 
 /**
  * `Popover.Root` renders no element: it holds the ids its parts share. `bind:open={signal}`
@@ -97,7 +98,7 @@ const PopoverContext = createContext<PopoverContextValue>();
 
 function usePopover(): PopoverContextValue {
   const context = useContext(PopoverContext);
-  if (!context) throw new Error("Popover parts must be inside <Popover.Root>.");
+  if (!context) throw notInside("Popover parts", "<Popover.Root>");
   return context;
 }
 

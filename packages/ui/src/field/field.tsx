@@ -32,6 +32,7 @@ import fieldScript from "./field.script.ts?client";
 import { listenToForm, reportValidity } from "../form/native.ts";
 import { Input, type InputProps } from "../input/input.tsx";
 import { batched } from "../batched.ts";
+import { notInside } from "../not-inside.ts";
 
 declare module "lumiose/jsx-runtime" {
   namespace JSX {
@@ -373,7 +374,7 @@ function Validity({ children }: FieldValidityProps) {
 
 function useFieldPart(part: string): FieldContextValue {
   const field = useContext(FieldContext);
-  if (!field) throw new Error(`Field.${part} must be inside <Field.Root>.`);
+  if (!field) throw notInside(`Field.${part}`, "<Field.Root>");
   return field;
 }
 

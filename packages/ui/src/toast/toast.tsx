@@ -17,6 +17,7 @@ import toastScript from "./toast.script.ts?client";
 import { CLOSE_COMMAND } from "./command.ts";
 import type { LuToastViewport } from "./toast.script.ts";
 import { batched } from "../batched.ts";
+import { notInside } from "../not-inside.ts";
 
 declare module "lumiose/jsx-runtime" {
   namespace JSX {
@@ -255,7 +256,7 @@ const ToastItemContext = createContext<ToastItemContextValue>();
 
 function useToastItem(): ToastItemContextValue {
   const context = useContext(ToastItemContext);
-  if (!context) throw new Error("Toast parts must be inside <Toast.Root>.");
+  if (!context) throw notInside("Toast parts", "<Toast.Root>");
   return context;
 }
 

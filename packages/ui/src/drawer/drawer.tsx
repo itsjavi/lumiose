@@ -13,6 +13,7 @@ import {
   type DialogTriggerProps,
 } from "../dialog/dialog.tsx";
 import drawerScript from "./drawer.script.ts?client";
+import { notInside } from "../not-inside.ts";
 
 /** The direction a swipe closes the drawer in, and the edge of the window it sits against. */
 export type DrawerSwipeDirection = "up" | "down" | "left" | "right";
@@ -68,7 +69,7 @@ function Root(props: DrawerRootProps) {
 
 function Popup({ children, ...rest }: DrawerPopupProps) {
   const drawer = useContext(DrawerContext);
-  if (!drawer) throw new Error("Drawer parts must be inside <Drawer.Root>.");
+  if (!drawer) throw notInside("Drawer parts", "<Drawer.Root>");
   return (
     <Dialog.Popup {...rest} data-swipe-direction={drawer.direction()}>
       {children}

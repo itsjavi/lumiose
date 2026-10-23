@@ -13,6 +13,7 @@ import { onFormReset } from "../form/reset.ts";
 import type { OTPFieldElement, OTPFieldValueDetail } from "./otp-field.script.ts";
 import otpFieldScript from "./otp-field.script.ts?client";
 import { batched } from "../batched.ts";
+import { notInside } from "../not-inside.ts";
 
 declare module "lumiose/jsx-runtime" {
   namespace JSX {
@@ -145,7 +146,7 @@ const OTPFieldContext = createContext<OTPFieldContextValue>();
 
 function useOTPField(part: string): OTPFieldContextValue {
   const context = useContext(OTPFieldContext);
-  if (!context) throw new Error(`OTPField.${part} must be inside <OTPField.Root>.`);
+  if (!context) throw notInside(`OTPField.${part}`, "<OTPField.Root>");
   return context;
 }
 

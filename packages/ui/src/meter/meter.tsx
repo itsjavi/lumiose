@@ -6,6 +6,7 @@
 import { createContext, useContext, useId } from "lumiose";
 import { withStyle } from "../placement/placement.ts";
 import { formatValue, percent } from "../progress/value.ts";
+import { notInside } from "../not-inside.ts";
 
 interface MeterContextValue {
   id: string;
@@ -52,7 +53,7 @@ export type MeterValueProps = Omit<JSX.IntrinsicElements["span"], "children"> & 
 
 function useMeter(part: string): MeterContextValue {
   const context = useContext(MeterContext);
-  if (!context) throw new Error(`Meter.${part} must be inside <Meter.Root>.`);
+  if (!context) throw notInside(`Meter.${part}`, "<Meter.Root>");
   return context;
 }
 

@@ -19,6 +19,7 @@ import selectScript from "./select.script.ts?client";
 import { fieldProps, useField, useFormValues } from "../field/context.ts";
 import { onFormReset } from "../form/reset.ts";
 import { batched } from "../batched.ts";
+import { notInside } from "../not-inside.ts";
 
 declare module "lumiose/jsx-runtime" {
   namespace JSX {
@@ -149,7 +150,7 @@ function Value(props: SelectValueProps) {
 
 function Item({ children, value, label, ...rest }: SelectItemProps) {
   const select = useContext(SelectContext);
-  if (!select) throw new Error("Select parts must be inside <Select.Root>.");
+  if (!select) throw notInside("Select parts", "<Select.Root>");
   // Only items with a label need the script.
   if (untrack(() => label) !== undefined) selectScript();
   return (

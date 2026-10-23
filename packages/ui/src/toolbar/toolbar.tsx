@@ -14,6 +14,7 @@ import { Separator, type SeparatorProps } from "../separator/separator.tsx";
 import { ToolbarContext, type ToolbarContextValue } from "./context.ts";
 import type { ToolbarElement } from "./toolbar.script.ts";
 import toolbarScript from "./toolbar.script.ts?client";
+import { notInside } from "../not-inside.ts";
 
 declare module "lumiose/jsx-runtime" {
   namespace JSX {
@@ -63,7 +64,7 @@ export type ToolbarSeparatorProps = SeparatorProps;
 
 function useToolbar(part: string): ToolbarContextValue {
   const context = useContext(ToolbarContext);
-  if (!context) throw new Error(`Toolbar.${part} must be inside <Toolbar.Root>.`);
+  if (!context) throw notInside(`Toolbar.${part}`, "<Toolbar.Root>");
   return context;
 }
 

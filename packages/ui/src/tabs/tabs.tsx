@@ -20,6 +20,7 @@ import { withStyle } from "../placement/placement.ts";
 import defineTabs from "./tabs.script.ts?client";
 import type { LuTabs } from "./tabs.script.ts";
 import { batched } from "../batched.ts";
+import { notInside } from "../not-inside.ts";
 
 declare module "lumiose/jsx-runtime" {
   namespace JSX {
@@ -114,7 +115,7 @@ const TabsContext = createContext<TabsContextValue>();
 
 function useTabs(): TabsContextValue {
   const context = useContext(TabsContext);
-  if (!context) throw new Error("Tabs parts must be inside <Tabs.Root>.");
+  if (!context) throw notInside("Tabs parts", "<Tabs.Root>");
   return context;
 }
 

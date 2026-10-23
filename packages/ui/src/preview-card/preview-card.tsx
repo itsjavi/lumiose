@@ -8,6 +8,7 @@ import { createContext, effect, ref, useContext, useId } from "lumiose";
 import { anchorName, placement, withStyle, type PlacementProps } from "../placement/placement.ts";
 import previewCardScript from "./preview-card.script.ts?client";
 import { batched } from "../batched.ts";
+import { notInside } from "../not-inside.ts";
 
 /**
  * `PreviewCard.Root` renders no element: it holds the ids its parts share. `bind:open={signal}`
@@ -44,7 +45,7 @@ const PreviewCardContext = createContext<PreviewCardContextValue>();
 
 function usePreviewCard(part: string): PreviewCardContextValue {
   const context = useContext(PreviewCardContext);
-  if (!context) throw new Error(`PreviewCard.${part} must be inside <PreviewCard.Root>.`);
+  if (!context) throw notInside(`PreviewCard.${part}`, "<PreviewCard.Root>");
   return context;
 }
 

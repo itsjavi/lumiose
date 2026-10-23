@@ -51,7 +51,19 @@ are `LUM4002`.
 **Children and JSX props are slots.** They are rendered on the server and stay server components:
 they never ship their own JS. A slot the island rendered on the server is adopted in place when it
 hydrates; one it did not render yet (behind a condition) is sent as `<template data-l-slot="name">`
-and inserted when the island renders it.
+and inserted when the island renders it. A slot renders in the page, before the island runs, so it
+does not see the context the island provides around it. The parts of a compound component
+(`@lumiose/ui`'s `Combobox.Item`, `Tabs.Tab`, …) passed as a slot do not see the `Root` the
+island renders, and the server throws "Combobox parts must be inside <Combobox.Root>". Pass the
+data as a prop and render the parts inside the island:
+
+```tsx
+// Throws: the items render in the page, outside the island's <Combobox.Root>.
+<CityPicker client:load options={cities.map((c) => <Combobox.Item value={c}>{c}</Combobox.Item>)} />
+
+// Works: the island renders the items from a prop.
+<CityPicker client:load cities={cities} />
+```
 
 **What hydration does.** The island's component runs again in the browser, with the props the
 server serialized, and its compiled code claims the server's nodes instead of creating new ones:
