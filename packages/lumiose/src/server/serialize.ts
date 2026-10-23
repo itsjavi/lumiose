@@ -23,14 +23,20 @@ type Fail = (path: string, reason: string) => never;
 /**
  * Field names that look secret (TASK-471). A `FormData` serialized into the page puts every text
  * entry in its HTML, so an action that echoes a whole submission (`values: form`) would put a
- * password there. Development warns, once per name; the entries stay, as in production.
+ * password there. Development warns, once per name; the entries stay, as in production. Tested
+ * on the lowercased name with its camelCase humps split (`passwordConfirm` as `password_confirm`,
+ * TASK-501), so that a word ends where the next one starts.
  */
 const SECRET =
-  /pass(?:word|wd|code|phrase)?(?![a-z])|secret|token|otp|cvc|cvv|card|(?<![a-z])pin(?![a-z])|(?:security|verification|auth)[-_]?code|api[-_]?key|credential/i;
+  /pass(?:word|wd|code|phrase)?(?![a-z])|pwd|secret|token|otp|cvc|cvv|card|(?<![a-z])pin(?![a-z])|(?:security|verification|auth)[-_]?code|api[-_]?key|credential/;
 const warnedSecrets = new Set<string>();
 
+function looksSecret(name: string): boolean {
+  return SECRET.test(name.replace(/([a-z\d])([A-Z])/g, "$1_$2").toLowerCase());
+}
+
 function warnSecret(name: string, path: string): void {
-  if (!SECRET.test(name) || warnedSecrets.has(name)) return;
+  if (!looksSecret(name) || warnedSecrets.has(name)) return;
   warnedSecrets.add(name);
   const at = path === "" ? "" : ` at ${path.replace(/^\./, "")}`;
   console.warn(

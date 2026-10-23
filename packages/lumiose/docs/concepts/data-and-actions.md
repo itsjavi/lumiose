@@ -42,7 +42,8 @@ again with the errors, so the page renders the form filled in and nobody types e
 embedded in the re-rendered page, so a password, a token or a card number in it would sit in the
 HTML, within reach of every script on the page. A `FormData` works too (its text entries; files are
 left out), but it carries every field of the form: in development, Lumiose warns when one carries a
-name that looks secret (`password`, `token`, `otp`, `card`, …).
+name that looks secret (`password`, `pwd`, `token`, `otp`, `card`, …, in camelCase too, such as
+`passwordConfirm`).
 @lumiose/ui's [Form](https://itsjavi.com/lumiose/ui/form/) takes them as `values` and fills its
 controls by name; with your own inputs, use them as `defaultValue`s.
 
