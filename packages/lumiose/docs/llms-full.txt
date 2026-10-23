@@ -13564,9 +13564,11 @@ not. The plugin treats their modules like the app's own, whether the package is 
   `package.json`, `tsconfig.json` or `vite.config.*`). A build builds only the client scripts of
   the package modules the app's modules can run: it follows their imports by name, through
   re-exports, so `import { Tabs } from "@lumiose/ui"` builds the script of Tabs and not those of the
-  other components. A module that runs builds all its scripts, whichever export the app uses. When
-  the imports cannot be followed (a package module with an `import()` of a computed specifier, or
-  `import.meta.glob()`), the build builds every script, as it would without the scan.
+  other components. A module that runs builds all its scripts, whichever export the app uses. A
+  package that may resolve its modules differently in the browser and on the server (`exports` or
+  `imports` conditions such as `browser` or `node`, or a `browser` field) builds all of its
+  scripts. When the imports cannot be followed (a package module with an `import()` of a computed
+  specifier, or `import.meta.glob()`), the build builds every script, as it would without the scan.
 - **One `lumiose`.** They are bundled with the server code (`resolve.noExternal`) and kept out of
   Vite's dependency pre-bundling (`optimizeDeps.exclude`), so their modules and the app's share one
   runtime instance, and Vite never compiles their JSX for React. Their CommonJS dependencies,

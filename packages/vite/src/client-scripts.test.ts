@@ -71,40 +71,42 @@ export function ${name}(props: { children?: JSX.Element }) {
 }
 `;
 
-describe.skipIf(!binding)("client scripts of Lumiose packages", () => {
-  it("builds only those of the components the app imports, through the package's index", async () => {
-    const root = fixture(
-      {
-        "ui/package.json": JSON.stringify({
-          name: "@acme/ui",
-          type: "module",
-          sideEffects: ["**/*.element.ts"],
-          exports: { ".": "./src/index.ts", "./*": "./src/*.tsx" },
-          peerDependencies: { lumiose: "*" },
-        }),
-        "ui/src/index.ts": `export { Menu } from "./menu.tsx";
+/** `@acme/ui`, with three components behind an index, and an app that renders its Menu. */
+const acme = (exports: unknown): Record<string, string> => ({
+  "ui/package.json": JSON.stringify({
+    name: "@acme/ui",
+    type: "module",
+    sideEffects: ["**/*.element.ts"],
+    exports,
+    peerDependencies: { lumiose: "*" },
+  }),
+  "ui/src/index.ts": `export { Menu } from "./menu.tsx";
 export { Dialog } from "./dialog.tsx";
 export * from "./more.ts";
 `,
-        "ui/src/more.ts": `export { Tabs } from "./tabs.tsx";\n`,
-        "ui/src/keys.ts": `export const key = "Enter";\n`,
-        "ui/src/menu.tsx": component("Menu", "lu-menu"),
-        "ui/src/dialog.tsx": component("Dialog", "lu-dialog"),
-        "ui/src/tabs.tsx": component("Tabs", "lu-tabs"),
-        "ui/src/lu-menu.element.ts": element("lu-menu"),
-        "ui/src/lu-dialog.element.ts": element("lu-dialog"),
-        "ui/src/lu-tabs.element.ts": element("lu-tabs"),
-        "app/package.json": JSON.stringify({
-          name: "fixture",
-          type: "module",
-          dependencies: { "@acme/ui": "*" },
-        }),
-        "app/src/routes/page.stsx": `import { Menu } from "@acme/ui";
+  "ui/src/more.ts": `export { Tabs } from "./tabs.tsx";\n`,
+  "ui/src/keys.ts": `export const key = "Enter";\n`,
+  "ui/src/menu.tsx": component("Menu", "lu-menu"),
+  "ui/src/dialog.tsx": component("Dialog", "lu-dialog"),
+  "ui/src/tabs.tsx": component("Tabs", "lu-tabs"),
+  "ui/src/lu-menu.element.ts": element("lu-menu"),
+  "ui/src/lu-dialog.element.ts": element("lu-dialog"),
+  "ui/src/lu-tabs.element.ts": element("lu-tabs"),
+  "app/package.json": JSON.stringify({
+    name: "fixture",
+    type: "module",
+    dependencies: { "@acme/ui": "*" },
+  }),
+  "app/src/routes/page.stsx": `import { Menu } from "@acme/ui";
 export default function Home() { return <main><Menu>Open</Menu></main>; }
 `,
-      },
-      { "@acme/ui": "ui" },
-    );
+});
+
+describe.skipIf(!binding)("client scripts of Lumiose packages", () => {
+  it("builds only those of the components the app imports, through the package's index", async () => {
+    const root = fixture(acme({ ".": "./src/index.ts", "./*": "./src/*.tsx" }), {
+      "@acme/ui": "ui",
+    });
     const warnings = await buildQuietly(root);
     expect(warnings.filter((message) => message.includes("client script"))).toEqual([]);
     const built = assets(root).filter((file) => file.includes(".element-"));
@@ -112,6 +114,18 @@ export default function Home() { return <main><Menu>Open</Menu></main>; }
     const html = readFileSync(join(root, "dist/client/index.html"), "utf8");
     expect(html).toContain("<lu-menu>Open</lu-menu>");
     expect(scripts(html)).toEqual([`/assets/${built[0]}`]);
+  });
+
+  it("builds all of a package's scripts when it may resolve otherwise on the server", async () => {
+    // The client build follows the browser's resolution; pages render with the server's.
+    const root = fixture(acme({ ".": { browser: "./src/index.ts", default: "./src/index.ts" } }), {
+      "@acme/ui": "ui",
+    });
+    await buildQuietly(root);
+    const built = assets(root)
+      .filter((file) => file.includes(".element-"))
+      .map((file) => file.replace(/-[\w-]{8}\.js$/, ""));
+    expect(built).toEqual(["lu-dialog.element", "lu-menu.element", "lu-tabs.element"]);
   });
 
   it("builds one @lumiose/ui script for an app that renders Tabs", async () => {

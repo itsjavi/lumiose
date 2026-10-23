@@ -23,6 +23,7 @@
 import { basename, dirname, relative, resolve as resolvePath } from "node:path";
 import type { PackageRoot } from "@lumiose/compiler";
 import { normalizePath, type Plugin, type ResolvedConfig, type Rollup } from "vite";
+import { resolvesByEnvironment } from "./packages.ts";
 import { reachedPackageModules } from "./reachable.ts";
 import { runtimeFile } from "./runtime-files.ts";
 import type { ScannedModule } from "./scan.ts";
@@ -202,6 +203,10 @@ function inside(file: string, dir: string): boolean {
 /**
  * The package modules the project's modules can run (./reachable.ts), or `null` for all of them:
  * when no package module has client scripts, or when that cannot be told.
+ *
+ * The client build resolves imports as the browser does, but pages render with the server's
+ * modules: a package that may resolve differently on the server (`exports` conditions, a `browser`
+ * field) counts whole.
  */
 async function reachedFromProject(
   context: Rollup.PluginContext,
@@ -210,7 +215,7 @@ async function reachedFromProject(
 ): Promise<Set<string> | null> {
   if (!modules.some((module) => module.package !== undefined && module.clientScripts)) return null;
   const root = normalizePath(context.environment.config.root);
-  return reachedPackageModules(modules, {
+  const reached = await reachedPackageModules(modules, {
     async resolve(specifier, importer) {
       if (NOT_A_COMPONENT_MODULE.test(specifier)) return null;
       // A relative import of a project module: the project's modules all run.
@@ -229,6 +234,12 @@ async function reachedFromProject(
       !id.includes("?") &&
       packages.some((p) => inside(id, p.dir)),
   });
+  if (reached === null) return null;
+  const whole = new Set(packages.filter((p) => resolvesByEnvironment(p.dir)).map((p) => p.name));
+  for (const module of modules) {
+    if (module.package !== undefined && whole.has(module.package)) reached.add(module.file);
+  }
+  return reached;
 }
 
 /** The URL the dev server serves `file` at, as client code imports it. */

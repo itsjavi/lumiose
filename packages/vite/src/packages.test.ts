@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { normalizePath } from "vite";
-import { Packages } from "./packages.ts";
+import { Packages, resolvesByEnvironment } from "./packages.ts";
 
 let base: string;
 let root: string;
@@ -66,5 +66,26 @@ describe("Packages", () => {
   it("leaves out the packages an explicit exclude matches", () => {
     const packages = new Packages(root, /[\\/]node_modules[\\/]/);
     expect(packages.lumiose().map((p) => p.name)).toEqual(["@acme/kit"]);
+  });
+});
+
+describe("resolvesByEnvironment", () => {
+  it("is true for a browser field or environment conditions in exports or imports", () => {
+    const resolves = (manifest: object): boolean => {
+      const dir = `${base}/conditions-${Math.random().toString(36).slice(2)}`;
+      write(`${dir}/package.json`, { name: "pkg", ...manifest });
+      return resolvesByEnvironment(dir);
+    };
+    expect(resolves({ exports: { ".": "./index.ts", "./*": "./src/*.tsx" } })).toBe(false);
+    expect(
+      resolves({ exports: { ".": { types: "./a.d.ts", import: "./a.js", default: "./a.js" } } }),
+    ).toBe(false);
+    expect(resolves({ exports: { ".": { browser: "./a.ts", default: "./b.ts" } } })).toBe(true);
+    expect(resolves({ exports: [{ worker: "./w.ts" }, "./a.ts"] })).toBe(true);
+    expect(resolves({ imports: { "#env": { node: "./node.ts", default: "./web.ts" } } })).toBe(
+      true,
+    );
+    expect(resolves({ browser: { "./server.ts": false } })).toBe(true);
+    expect(resolvesByEnvironment(`${base}/missing`)).toBe(false);
   });
 });
