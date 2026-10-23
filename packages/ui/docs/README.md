@@ -2,9 +2,8 @@
 
 > `@lumiose/ui`: accessible, unstyled UI primitives built on native elements (`<dialog>`, popover, invoker commands, CSS anchor positioning), server-rendered without hydration. Style them with your own CSS or the optional default theme.
 
-**Status:** in development. `@lumiose/ui` keeps its own 0.x versions, apart from the version all
-other Lumiose packages share, and is not on npm yet: today it is used from this repository's
-workspace. The goal for its 1.0 is parity with [Base UI](https://base-ui.com)'s components; the
+**Status:** in development. `@lumiose/ui` is on npm and keeps its own 0.x versions, apart from
+the version all other Lumiose packages share. The goal for its 1.0 is parity with [Base UI](https://base-ui.com)'s components; the
 table below lists them as they land.
 
 These pages ship in the package, in `node_modules/@lumiose/ui/docs`, so they match the installed

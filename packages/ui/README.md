@@ -5,8 +5,8 @@ elements first (`<dialog>`, popover, invoker commands, CSS anchor positioning), 
 elements (`lu-*`) only where the platform falls short, server-rendered without hydration. Parts
 follow [Base UI](https://base-ui.com)'s anatomy; the approach is [Timeless](https://timeless.build)'s.
 
-**In development**: not on npm yet. It keeps its own 0.x versions, apart from the version the other
-Lumiose packages share.
+**In development**, on npm: `pnpm add @lumiose/ui` in a Lumiose app (`lumiose` is its peer
+dependency). It keeps its own 0.x versions, apart from the version the other Lumiose packages share.
 
 ```tsx
 import { Dialog } from "@lumiose/ui";

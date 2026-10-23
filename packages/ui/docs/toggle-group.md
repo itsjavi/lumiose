@@ -3,7 +3,7 @@
 > A set of [Toggles](toggle.md) with one value, after Base UI's ToggleGroup: text alignment (one pressed at a time) or text style (several). `<lu-toggle-group role="group">` presses its toggles and gives the group one tab stop that the arrow keys, Home and End move, following the orientation and the direction, on server pages and in islands. `bind:value` keeps a signal in sync.
 
 ```ts
-import { Toggle, ToggleGroup } from "@lumiose/ui"; // or "@lumiose/ui/toggle-group"
+import { Toggle, ToggleGroup } from "@lumiose/ui"; // or "@lumiose/ui/toggle" and "@lumiose/ui/toggle-group"
 import "@lumiose/ui/themes/default.css"; // optional: the default theme
 ```
 
@@ -54,7 +54,8 @@ Each toggle's `value` is its identity in the group; its `onPressedChange` still 
 ## Example
 
 ```tsx check
-import { Toggle, ToggleGroup } from "@lumiose/ui";
+import { Toggle } from "@lumiose/ui/toggle";
+import { ToggleGroup } from "@lumiose/ui/toggle-group";
 import { signal } from "lumiose";
 
 export function TextAlignment() {

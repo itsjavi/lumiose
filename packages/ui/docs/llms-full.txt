@@ -13,9 +13,8 @@ props, events and styling hooks. The Lumiose docs: `node_modules/lumiose/docs/ll
 
 > `@lumiose/ui`: accessible, unstyled UI primitives built on native elements (`<dialog>`, popover, invoker commands, CSS anchor positioning), server-rendered without hydration. Style them with your own CSS or the optional default theme.
 
-**Status:** in development. `@lumiose/ui` keeps its own 0.x versions, apart from the version all
-other Lumiose packages share, and is not on npm yet: today it is used from this repository's
-workspace. The goal for its 1.0 is parity with [Base UI](https://base-ui.com)'s components; the
+**Status:** in development. `@lumiose/ui` is on npm and keeps its own 0.x versions, apart from
+the version all other Lumiose packages share. The goal for its 1.0 is parity with [Base UI](https://base-ui.com)'s components; the
 table below lists them as they land.
 
 These pages ship in the package, in `node_modules/@lumiose/ui/docs`, so they match the installed
@@ -194,13 +193,13 @@ files' brotli sizes added up.
 
 > Add `@lumiose/ui` to a Lumiose app and import its stylesheets, and the default theme if you want its look. The components then render in server HTML, without an island, and a page loads only the small scripts of the components it renders.
 
-**Status:** `@lumiose/ui` is not on npm yet. In this repository's workspace, an app adds it as
-`"@lumiose/ui": "workspace:*"` in its `dependencies`.
+**Status:** in development, on npm with its own 0.x versions, apart from the version the other
+Lumiose packages share.
 
 ## Add the package
 
 `@lumiose/ui` needs a Lumiose app: it ships its components as TSX, which the app's build compiles
-with the app's own code, and `lumiose` is its peer dependency. Once it is on npm:
+with the app's own code, and `lumiose` is its peer dependency. Install it from npm:
 
 ```sh
 pnpm add @lumiose/ui
@@ -1212,7 +1211,7 @@ browser.
 > A group of checkboxes with one value, the list of the checked ones, after Base UI's CheckboxGroup: a native `<fieldset>` whose checkboxes share a name, so the form submits each checked value and a disabled group disables them all, without JavaScript. A parent checkbox checks them all and shows checked, mixed or unchecked as they are; `bind:value` keeps a signal in sync.
 
 ```ts
-import { CheckboxGroup, Checkbox, Fieldset } from "@lumiose/ui"; // or "@lumiose/ui/checkbox-group"
+import { CheckboxGroup, Checkbox, Fieldset } from "@lumiose/ui"; // or "@lumiose/ui/checkbox-group", "@lumiose/ui/checkbox" and "@lumiose/ui/fieldset"
 import "@lumiose/ui/themes/default.css"; // optional: the default theme
 ```
 
@@ -4954,7 +4953,7 @@ above.
 > A group of radios with one value, after Base UI's RadioGroup and Radio: native radios in a `<fieldset role="radiogroup">`. The browser gives the group one tab stop, arrow keys that move and select (skipping disabled radios), `required`, submission and reset, in server HTML and without JavaScript; a legend names the group. `bind:value` keeps a signal in sync.
 
 ```ts
-import { Radio, RadioGroup, Fieldset } from "@lumiose/ui"; // or "@lumiose/ui/radio-group"
+import { Radio, RadioGroup, Fieldset } from "@lumiose/ui"; // or "@lumiose/ui/radio-group" and "@lumiose/ui/fieldset"
 import "@lumiose/ui/themes/default.css"; // optional: the default theme
 ```
 
@@ -6563,7 +6562,7 @@ group's script presses it on server pages too. For a value a form submits, use a
 > A set of [Toggles](toggle.md) with one value, after Base UI's ToggleGroup: text alignment (one pressed at a time) or text style (several). `<lu-toggle-group role="group">` presses its toggles and gives the group one tab stop that the arrow keys, Home and End move, following the orientation and the direction, on server pages and in islands. `bind:value` keeps a signal in sync.
 
 ```ts
-import { Toggle, ToggleGroup } from "@lumiose/ui"; // or "@lumiose/ui/toggle-group"
+import { Toggle, ToggleGroup } from "@lumiose/ui"; // or "@lumiose/ui/toggle" and "@lumiose/ui/toggle-group"
 import "@lumiose/ui/themes/default.css"; // optional: the default theme
 ```
 
@@ -6614,7 +6613,8 @@ Each toggle's `value` is its identity in the group; its `onPressedChange` still 
 ## Example
 
 ```tsx check
-import { Toggle, ToggleGroup } from "@lumiose/ui";
+import { Toggle } from "@lumiose/ui/toggle";
+import { ToggleGroup } from "@lumiose/ui/toggle-group";
 import { signal } from "lumiose";
 
 export function TextAlignment() {

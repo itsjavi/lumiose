@@ -2,13 +2,13 @@
 
 > Add `@lumiose/ui` to a Lumiose app and import its stylesheets, and the default theme if you want its look. The components then render in server HTML, without an island, and a page loads only the small scripts of the components it renders.
 
-**Status:** `@lumiose/ui` is not on npm yet. In this repository's workspace, an app adds it as
-`"@lumiose/ui": "workspace:*"` in its `dependencies`.
+**Status:** in development, on npm with its own 0.x versions, apart from the version the other
+Lumiose packages share.
 
 ## Add the package
 
 `@lumiose/ui` needs a Lumiose app: it ships its components as TSX, which the app's build compiles
-with the app's own code, and `lumiose` is its peer dependency. Once it is on npm:
+with the app's own code, and `lumiose` is its peer dependency. Install it from npm:
 
 ```sh
 pnpm add @lumiose/ui
