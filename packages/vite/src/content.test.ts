@@ -268,15 +268,17 @@ describe.skipIf(!binding)(".md and .html imports", () => {
       const response = await fetch(`http://127.0.0.1:${port}${path}`);
       return [path, response.status, await response.text()] as const;
     };
+    // Vite's /@fs/ URL of a file: on Windows the path starts with a drive letter (C:/…), not a slash.
+    const fsUrl = `/@fs/${outside.replace(/^\//, "")}`;
     try {
       for (const path of [
-        `/@fs${outside}/notes.md.stsx?import`,
-        `/@fs${outside}/notes.md?import&lumiose-frontmatter`,
-        `/@fs${outside}/notes.md.stsx?import&lumiose&type=style&lang.css`,
-        `/@fs${outside}/page.html.stsx?import`,
-        `/@fs${outside}/page.html?import&lumiose-script`,
-        `/@fs${outside}/page.html?import&lumiose-script&index=0&lang.js`,
-        `/@fs${outside}/styled.stsx?import&lumiose&type=style&lang.css`,
+        `${fsUrl}/notes.md.stsx?import`,
+        `${fsUrl}/notes.md?import&lumiose-frontmatter`,
+        `${fsUrl}/notes.md.stsx?import&lumiose&type=style&lang.css`,
+        `${fsUrl}/page.html.stsx?import`,
+        `${fsUrl}/page.html?import&lumiose-script`,
+        `${fsUrl}/page.html?import&lumiose-script&index=0&lang.js`,
+        `${fsUrl}/styled.stsx?import&lumiose&type=style&lang.css`,
       ]) {
         const [, status, body] = await get(path);
         expect([path, status]).toEqual([path, 403]);
@@ -288,7 +290,7 @@ describe.skipIf(!binding)(".md and .html imports", () => {
         `${root}/render.tsx`,
       );
       expect(resolved!.id).toBe(`${outside}/linked.md.stsx`);
-      const [, status, body] = await get(`/@fs${outside}/linked.md.stsx?import`);
+      const [, status, body] = await get(`${fsUrl}/linked.md.stsx?import`);
       expect(status).toBe(200);
       expect(body).toContain("Linked");
       // Server environments read any file, as Vite's do.
