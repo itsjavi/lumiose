@@ -60,6 +60,7 @@ import { contentOf, contentOptionsOf } from "./content.ts";
 import { clientScriptsPlugin } from "./client-scripts.ts";
 import { CSS_MANIFEST_ID, CssManifest, cssManifestCode, fillManifest } from "./css-manifest.ts";
 import { CustomPropertyCheck, unreadMessage } from "./custom-properties.ts";
+import { assertLoadingAllowed } from "./fs-access.ts";
 import { ISLANDS_ID, IslandRegistry } from "./islands.ts";
 import { projectOptionsOf, type LumioseOptions, type LumiosePluginApi } from "./options.ts";
 import { Packages } from "./packages.ts";
@@ -342,6 +343,13 @@ export default function lumiose(options: LumioseOptions = {}): Plugin<LumiosePlu
           if (serverBuild) return "";
           // `<file>?lumiose&type=style&lang.css`: the file's CSS; Vite's CSS plugin takes it from here.
           const file = cleanId(id);
+          // In dev, the browser gets the CSS of files inside `server.fs.allow` or imported by the
+          // app (./fs-access.ts).
+          if (content?.isModule(file)) {
+            content.assertLoadingAllowed(this.environment, file.replace(/\.stsx$/, ""));
+          } else {
+            assertLoadingAllowed(this.environment, file);
+          }
           let source: string;
           try {
             source = content?.isModule(file) ? content.source(file) : await readFile(file, "utf8");

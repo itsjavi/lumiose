@@ -6067,7 +6067,9 @@ the element from a `.stsx` component with a `?client` script, and pass the data 
 ([Web components](../guides/web-components.md#server-data-in-attributes)).
 
 > **Status:** available in `lumiose dev` and builds, with HMR: an edit re-renders the content and
-> hot-updates its CSS.
+> hot-updates its CSS. The dev server follows Vite's
+> [`server.fs.allow`](https://vite.dev/config/server-options.html#server-fs-allow): the browser
+> gets the modules of files inside it, or of files the app imports, and a 403 for any other file.
 
 ## API
 
