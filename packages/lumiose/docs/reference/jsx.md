@@ -136,7 +136,9 @@ stands in for both ([`bind:` on components](../concepts/jsx.md)).
 events are delegated; non-bubbling ones (`focus`, `blur`, `mouseenter`, `mouseleave`,
 `pointerenter`, `pointerleave`, `scroll`, `load`, `error`, media events) get a direct listener.
 `on:name` adds a native listener with the exact name; any `on:${string}` is accepted for custom
-events.
+events. Every handler (delegated, direct or `on:`, and one passed in a spread) runs inside a
+batch: what it writes renders together when it returns, so the DOM is current right after the
+event.
 
 ## Custom elements
 

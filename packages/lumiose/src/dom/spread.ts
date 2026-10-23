@@ -1,9 +1,13 @@
 // `spread(el, () => props)`: a props object applied to an element (contract doc-2 §2).
 import { renderEffect } from "../core/internal.ts";
 import { applyScope, setAttr, setClass, setProp, setStyle } from "./attributes.ts";
+import { batched } from "./events.ts";
 
 type Props = Record<string, unknown>;
 type Listener = (event: Event) => void;
+
+/** The batched listener of each spread handler (decision-81), so that the same one is removed. */
+const listeners = new WeakMap<Listener, Listener>();
 
 /** Keys written as DOM properties; every other plain key is an attribute (HTML names, spec §4.5). */
 const PROPERTIES = /^(?:value|checked|selected|muted|indeterminate)$/;
@@ -48,12 +52,16 @@ function eventName(key: string): string | undefined {
 function setSpreadProp(el: Element, key: string, value: unknown, prev: unknown): void {
   const event = eventName(key);
   if (event !== undefined) {
-    // Spread handlers are native listeners: the compiler cannot see which events they use.
+    // Spread handlers are native listeners (the compiler cannot see which events they use), batched
+    // as delegated handlers are.
     if (typeof prev === "function") {
-      el.removeEventListener(event, prev as Listener);
+      el.removeEventListener(event, listeners.get(prev as Listener)!);
     }
     if (typeof value === "function") {
-      el.addEventListener(event, value as Listener);
+      let listener = listeners.get(value as Listener);
+      if (listener === undefined)
+        listeners.set(value as Listener, (listener = batched(value as Listener)));
+      el.addEventListener(event, listener);
     }
   } else if (/^on/i.test(key) || CONTENT.test(key)) {
     // A lowercase `onclick` would be an inline handler attribute, a script sink: dropped, as on

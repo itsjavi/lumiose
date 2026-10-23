@@ -27,7 +27,8 @@ query by role, label or text (`screen.getByRole("button", { name: "Add" })`), an
 with `@testing-library/user-event`, which types and clicks like a user. Render into a container
 appended to `document.body` (delegated handlers such as `onClick` listen at `document`), and call
 the disposer `render()` returns after each test. `await user.click(…)` returns after the handler's
-updates are applied: a write inside a delegated handler is flushed when the handler ends. For
+updates are applied: a write inside an event handler (`onX` or `on:x`) is flushed when the handler
+ends, and so is one in a listener of `el.dispatchEvent(new CustomEvent(…))`. For
 matchers such as `toBeDisabled()`, add `@testing-library/jest-dom`.
 
 Updates outside handlers are batched: after a write in the test itself (`count.set(3)`), call

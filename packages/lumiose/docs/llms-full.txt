@@ -2292,8 +2292,11 @@ inside a tracked scope (a JSX binding, a `computed`, an `effect`) subscribes tha
 the signal marks it dirty and re-runs only what depends on it.
 
 - **Reads are synchronous.** `count()` always returns the current value, even right after a write.
-- **Writes are batched.** Writes inside a delegated event handler are batched for the duration of
-  the handler. Any other write schedules a microtask flush. `flush()` flushes immediately.
+- **Writes are batched.** Writes inside an event handler are batched for the duration of the
+  handler: delegated `onX` handlers, native `on:x` listeners, the direct listeners of non-bubbling
+  events (`onFocus`, `onScroll`) and handlers passed in a spread. They render together when it
+  returns, so the DOM is current right after the event (decision-81). Any other write schedules a
+  microtask flush. `flush()` flushes immediately.
 - **Flush order:** computeds are pulled, then DOM bindings run (parents before children), then user
   effects. The effects queued at that point all run before the DOM bindings that their own writes
   trigger, so effects that measure the DOM and then write share one layout. Then those bindings
@@ -2795,7 +2798,7 @@ the efficient form:
 | `style`                      | A string, or an object with **kebab-case** keys, including `--custom` properties. Each key updates on its own.                                                                                                                                                                                                                                                                                               |
 | `aria-*`, `spellcheck`, …    | Booleans are written as `"true"`/`"false"` (`aria-pressed={false}` renders `aria-pressed="false"`): `aria-*`, `contenteditable`, `draggable`, `spellcheck` and the other enumerated attributes, static or not. Other attributes: `true` adds the attribute empty (`hidden`); `false`, `null` and `undefined` leave it out.                                                                                   |
 | `onClick`, `onKeyDown`, …    | camelCase handlers. Bubbling events are delegated (one listener per type at `document`); non-bubbling ones (`onFocus`, `onMouseEnter`, `onScroll`) get a direct listener.                                                                                                                                                                                                                                    |
-| `on:click`, `on:my-event`    | A native `addEventListener` listener with the exact event name. Use it for custom and web-component events.                                                                                                                                                                                                                                                                                                  |
+| `on:click`, `on:my-event`    | A native `addEventListener` listener with the exact event name. Use it for custom and web-component events. Like `onX` handlers, it runs inside a batch: its writes render together, and the DOM is current when the event returns.                                                                                                                                                                          |
 | Props of a custom element    | The element's property when it defines one (arrays and objects as they are), else the attribute, as in React 19. See [Web components](../guides/web-components.md).                                                                                                                                                                                                                                          |
 | `bind:value`, `bind:checked` | Two-way binding to a writable signal, on `input`, `select` and `textarea`. `bind:x` also works on components and custom elements (below).                                                                                                                                                                                                                                                                    |
 | `attach={[fn]}`              | Runs `fn(el)` with the element in a tracked scope, once the element is in the document (below); it may return a cleanup.                                                                                                                                                                                                                                                                                     |
@@ -6650,7 +6653,8 @@ query by role, label or text (`screen.getByRole("button", { name: "Add" })`), an
 with `@testing-library/user-event`, which types and clicks like a user. Render into a container
 appended to `document.body` (delegated handlers such as `onClick` listen at `document`), and call
 the disposer `render()` returns after each test. `await user.click(…)` returns after the handler's
-updates are applied: a write inside a delegated handler is flushed when the handler ends. For
+updates are applied: a write inside an event handler (`onX` or `on:x`) is flushed when the handler
+ends, and so is one in a listener of `el.dispatchEvent(new CustomEvent(…))`. For
 matchers such as `toBeDisabled()`, add `@testing-library/jest-dom`.
 
 Updates outside handlers are batched: after a write in the test itself (`count.set(3)`), call
@@ -10104,7 +10108,8 @@ sets `innerHTML`, `textContent` or `srcdoc`, on any element).
 `on:name` adds a native listener for the event of that exact name, so any casing works:
 `on:rating-change`, `on:sl-change`, `on:valueChanged`, `on:PascalEvent`. Type the handler's event
 yourself, as above. `onClick` and the other camelCase handlers are for the standard DOM events,
-lowercased and delegated: use `on:` for a component's own events.
+lowercased and delegated: use `on:` for a component's own events. Both run inside a batch, so
+what the handler writes is on screen when the component's `dispatchEvent()` returns.
 
 ## Two-way binding
 
@@ -11609,8 +11614,9 @@ Runs `fn` without subscribing the current scope to the signals it reads.
 function batch<T>(fn: () => T): T;
 ```
 
-Defers dependents until `fn` returns, so they run once. Delegated event handlers are batched
-automatically.
+Defers dependents until `fn` returns, so they run once. Event handlers are batched automatically:
+`onX` handlers, `on:x` listeners and handlers passed in a spread, so the DOM is current right after
+the event.
 
 ## flush
 
@@ -13809,7 +13815,9 @@ stands in for both ([`bind:` on components](../concepts/jsx.md)).
 events are delegated; non-bubbling ones (`focus`, `blur`, `mouseenter`, `mouseleave`,
 `pointerenter`, `pointerleave`, `scroll`, `load`, `error`, media events) get a direct listener.
 `on:name` adds a native listener with the exact name; any `on:${string}` is accepted for custom
-events.
+events. Every handler (delegated, direct or `on:`, and one passed in a spread) runs inside a
+batch: what it writes renders together when it returns, so the DOM is current right after the
+event.
 
 ## Custom elements
 
