@@ -89,18 +89,34 @@ export function writeSearchParams(
   return Promise.resolve();
 }
 
-/** A query string from a `searchParams.set()` value: `null` and `undefined` values are left out. */
+/**
+ * Escapes that `URLSearchParams` writes for characters a query holds as they are and its parser
+ * reads as themselves (RFC 3986 sub-delims, `:`, `@`, `/` and `?`, less `&`, `=` and `+`, and `'`,
+ * which the URL parser escapes in http(s) queries).
+ */
+const READABLE = /%(?:2[1489CF]|3[ABF]|40|7E)/g;
+
+/**
+ * A query string from a `searchParams.set()` value: `null` and `undefined` values are left out.
+ * Serialized as `URLSearchParams` does (form encoding: `%`, `&`, `=`, `+`, `#` and what a URL cannot
+ * hold are escaped, spaces become `+`), then `! $ ( ) , / : ; ? @ ~` are unescaped, so that
+ * `sorts=price:desc,name:asc` stays readable (TASK-525). `URLSearchParams` parses both alike, in
+ * the browser and on the server.
+ */
 export function searchString(value: SearchParamsInit): string {
+  let out: URLSearchParams;
   if (typeof value === "string" || value instanceof URLSearchParams) {
-    return new URLSearchParams(value).toString();
+    out = new URLSearchParams(value);
+  } else {
+    out = new URLSearchParams();
+    for (const [key, item] of Object.entries(value)) {
+      if (item === null || item === undefined) continue;
+      if (Array.isArray(item)) for (const one of item) out.append(key, String(one));
+      else out.append(key, String(item));
+    }
   }
-  const out = new URLSearchParams();
-  for (const [key, item] of Object.entries(value)) {
-    if (item === null || item === undefined) continue;
-    if (Array.isArray(item)) for (const one of item) out.append(key, String(one));
-    else out.append(key, String(item));
-  }
-  return out.toString();
+  // Every `%` of the input is escaped (`%25`), so each match is an escape `URLSearchParams` wrote.
+  return out.toString().replace(READABLE, decodeURIComponent);
 }
 
 /** For tests: forgets the shallow query and the router. */

@@ -3839,10 +3839,11 @@ gets per-reader parts through an island in
 
 **Early events cover the island's own elements.** A click, input, submit or key press whose target
 is inside a server-rendered island that has not hydrated yet is held back, starts hydrating the
-island at once (whatever its directive) and is dispatched again once it has. Nothing else is
-replayed: a button outside the island that opens it (through a shared signal or a custom event), a
-keyboard shortcut the island listens for on `document` or `window`, a scroll or a pointer move find
-no listener before hydration, and are lost. For an island that such a trigger opens, a search
+island at once (whatever its directive) and is dispatched again once it has, in the order the
+events came: one that arrives after hydration but before the held ones are dispatched waits behind
+them. Nothing else is replayed: a button outside the island that opens it (through a shared signal
+or a custom event), a keyboard shortcut the island listens for on `document` or `window`, a scroll
+or a pointer move find no listener before hydration, and are lost. For an island that such a trigger opens, a search
 dialog opened from a header button or with Ctrl+K say, use `client:load`, or move the trigger inside
 the island.
 
@@ -12751,7 +12752,9 @@ first wait for it, [Islands](../concepts/islands.md#concept)):
 - imports the island's module and calls `hydrate()`;
 - catches `click`, `input`, `submit` and `keydown` on an island that is not hydrated yet: it
   hydrates that island at once and dispatches the events again on their targets afterwards (an
-  `input` restores the value typed meanwhile).
+  `input` restores the value typed meanwhile). They are dispatched a task after hydration, in the
+  order they came, and the island keeps catching events until then, so a key pressed right after
+  the click that started hydration still runs after that click.
 
 Islands inside slots that an island inserts later are hydrated when they appear.
 
@@ -13001,6 +13004,16 @@ navigates to the current path with a new query, keeping the scroll position; `nu
 `undefined` values are left out. It adds a history entry unless `{ replace: true }`. Inside an
 SPA, `{ shallow: true }` changes nothing: a query change already keeps every layout and page
 mounted.
+
+`searchParams.set()` escapes only what the query needs, so shared URLs stay readable:
+`searchParams.set({ sorts: "price:desc,name:asc" })` writes `?sorts=price:desc,name:asc`. Keys and
+values are written as `URLSearchParams` writes them (letters, digits and `* - . _` as they are,
+spaces as `+`, everything else percent-encoded as UTF-8: `%`, `&`, `=`, `+`, `#`, quotes,
+non-ASCII…), except that `! $ ( ) , / : ; ? @ ~` stay as they are too: a query may hold them, and
+its parser reads them as themselves. `searchParams()` in the browser and on the server, and
+`ctx.url.searchParams` in middleware and endpoints, read every value back unchanged, `&`, `=`, `+`
+and `#` included. A string or a `URLSearchParams` passed to `set()` is parsed first, so
+`set("sorts=price%3Adesc")` writes `?sorts=price:desc`.
 
 In islands of MPA pages (`static` and `server` routes), where no router runs, `searchParams()` is
 the document's query, shared by every island, and `searchParams.set()` loads the page with the new

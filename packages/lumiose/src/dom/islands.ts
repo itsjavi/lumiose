@@ -21,7 +21,9 @@
 //   retried on the next interaction, a failed hydration leaves the server HTML (TASK-305).
 // - Events: `click`, `input`, `submit` and `keydown` targeting an island that is not hydrated yet
 //   are stopped (clicks and submits also held back), hydrate it at once, and are dispatched again
-//   on their target afterwards; an `input` first restores the value typed meanwhile.
+//   on their target afterwards; an `input` first restores the value typed meanwhile. An island
+//   with caught events keeps holding new ones until it has dispatched them, a task after
+//   hydration, so every event runs in the order it came (TASK-508).
 // - Dev: with the in-page inspector on, each step reaches its registry (../core/devtools.ts).
 import type { Component } from "../contract/client.ts";
 import { islandState } from "./devtools.ts";
@@ -53,7 +55,10 @@ interface Island {
   /** The range markers, once found. */
   s?: Comment;
   e?: Comment;
-  /** Undefined until armed, then 0 (armed), 1 (loading) and 2 (hydrated). */
+  /**
+   * Undefined until armed, then 0 (armed), 1 (loading, or hydrated with caught events still to
+   * dispatch) and 2 (hydrated).
+   */
   g?: number;
   /** Waiting for streamed content inside its range. */
   w?: boolean;
@@ -260,10 +265,18 @@ export function loadIslands(manifest: IslandManifest): () => void {
           island.idPrefix,
         );
         if (DEV) island.x = dispose;
-        island.g = 2;
         if (import.meta.env?.DEV && INSPECTED) islandState(island, "hydrated");
-        // Replayed awaits resolve in microtasks: dispatch caught events once they rendered.
-        setTimeout(() => replay(island));
+        if (island.q === undefined) {
+          island.g = 2;
+        } else {
+          // Replayed awaits resolve in microtasks: dispatch caught events once they rendered. Until
+          // then the island keeps holding events, so one that arrives meanwhile (a key pressed
+          // after the click that started hydration) runs after those caught before it (TASK-508).
+          setTimeout(() => {
+            island.g = 2;
+            replay(island);
+          });
+        }
         // Islands inside slots this island inserted are in the document now.
         for (const id in islands) {
           if (islands[id]!.e === undefined) {

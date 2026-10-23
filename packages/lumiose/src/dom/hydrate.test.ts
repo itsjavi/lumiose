@@ -1107,6 +1107,48 @@ describe("island loader", () => {
     expect(defaultPrevented).toBe(false);
   });
 
+  it("dispatches events that arrive before the replay after the held ones, in order (TASK-508)", async () => {
+    const { client, server } = await load(`
+      import { signal } from "lumiose";
+      export function Keys() {
+        const count = signal(0);
+        const log = (globalThis as any).keysLog as string[];
+        return (
+          <button
+            onClick={() => { log.push("click"); count.set(count() + 1); }}
+            onKeyDown={(e) => log.push(\`\${e.key}:\${count()}\`)}
+          >{count()}</button>
+        );
+      }`);
+    await serve(server, [["Keys", {}]]);
+    const log: string[] = [];
+    (globalThis as Record<string, unknown>).keysLog = log;
+    const module = deferred<unknown>();
+    loadIslands({ "/src/case#Keys": () => module.promise });
+    await settle();
+    const button = document.querySelector("button")!;
+    const key = (name: string) =>
+      button.dispatchEvent(new KeyboardEvent("keydown", { key: name, bubbles: true }));
+    // Held while the module loads: the click starts hydration, then a key.
+    button.click();
+    key("a");
+    // The loader hydrated the island in its own callback on the module, registered first; this
+    // one runs right after it, before the held events are replayed (a task later).
+    void module.promise.then(() => {
+      expect(button.textContent).toBe("0");
+      key("F6");
+    });
+    module.resolve(client.Keys);
+    await settle();
+    expect(warn).not.toHaveBeenCalled();
+    expect(log).toEqual(["click", "a:1", "F6:1"]);
+    expect(button.textContent).toBe("1");
+    // Hydrated and replayed: events reach the island directly again.
+    key("b");
+    expect(log.at(-1)).toBe("b:1");
+    delete (globalThis as Record<string, unknown>).keysLog;
+  });
+
   it("reports an island whose chunk fails to load and loads it on the next interaction (TASK-305)", async () => {
     const { client, server } = await load(`
       import { signal } from "lumiose";

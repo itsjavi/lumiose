@@ -26,10 +26,11 @@ gets per-reader parts through an island in
 
 **Early events cover the island's own elements.** A click, input, submit or key press whose target
 is inside a server-rendered island that has not hydrated yet is held back, starts hydrating the
-island at once (whatever its directive) and is dispatched again once it has. Nothing else is
-replayed: a button outside the island that opens it (through a shared signal or a custom event), a
-keyboard shortcut the island listens for on `document` or `window`, a scroll or a pointer move find
-no listener before hydration, and are lost. For an island that such a trigger opens, a search
+island at once (whatever its directive) and is dispatched again once it has, in the order the
+events came: one that arrives after hydration but before the held ones are dispatched waits behind
+them. Nothing else is replayed: a button outside the island that opens it (through a shared signal
+or a custom event), a keyboard shortcut the island listens for on `document` or `window`, a scroll
+or a pointer move find no listener before hydration, and are lost. For an island that such a trigger opens, a search
 dialog opened from a header button or with Ctrl+K say, use `client:load`, or move the trigger inside
 the island.
 

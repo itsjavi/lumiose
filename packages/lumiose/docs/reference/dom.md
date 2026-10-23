@@ -85,7 +85,9 @@ first wait for it, [Islands](../concepts/islands.md#concept)):
 - imports the island's module and calls `hydrate()`;
 - catches `click`, `input`, `submit` and `keydown` on an island that is not hydrated yet: it
   hydrates that island at once and dispatches the events again on their targets afterwards (an
-  `input` restores the value typed meanwhile).
+  `input` restores the value typed meanwhile). They are dispatched a task after hydration, in the
+  order they came, and the island keeps catching events until then, so a key pressed right after
+  the click that started hydration still runs after that click.
 
 Islands inside slots that an island inserts later are hydrated when they appear.
 
