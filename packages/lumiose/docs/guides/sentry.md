@@ -106,8 +106,8 @@ existing OpenTelemetry setup (`skipOpenTelemetrySetup`).
 ## Browser errors
 
 The file's top-level code runs before any island hydrates, so the SDK is ready for hydration
-errors. `onError` receives what Lumiose catches: an island that fails to load or hydrate
-(`"hydrate"`), an async component or an `<ErrorBoundary>` (`"render"`), an effect or binding
+errors. `onError` receives what Lumiose catches: an island that fails to load or hydrate, or an
+event held until it hydrated that throws when replayed (`"hydrate"`), an async component or an `<ErrorBoundary>` (`"render"`), an effect or binding
 (`"effect"`), the SPA router (`"navigate"`) and `submit()` (`"submit"`), with the island's
 module and export. Sentry's own handlers still catch everything else on the page.
 
