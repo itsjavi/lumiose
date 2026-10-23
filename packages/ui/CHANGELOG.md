@@ -2,6 +2,10 @@
 
 @lumiose/ui has its own versions, outside the lockstep version of the other Lumiose packages.
 
+## 0.1.1 (2026-10-23)
+
+No user-facing changes.
+
 ## 0.1.0 (2026-10-23)
 
 ### Features
