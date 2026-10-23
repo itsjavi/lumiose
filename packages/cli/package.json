@@ -52,7 +52,7 @@
     "@lumiose/vite": "workspace:*",
     "@modelcontextprotocol/sdk": "^1.32.1",
     "lumiose": "workspace:*",
-    "zod": "^4.6.5"
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "@opentelemetry/api": "1.9.1",
