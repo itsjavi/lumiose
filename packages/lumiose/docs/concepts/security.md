@@ -36,7 +36,20 @@ default stays off, so a project set up by hand opts in. With `lumiose({ csp: "st
   `Content-Security-Policy: frame-ancestors 'self'` header from your host or `lumiose({ headers })`.
 - **`style` props** render as rules of a nonce'd (or hashed) `<style>` that target a `data-l-v`
   attribute, instead of `style="…"` attributes, which a strict policy refuses. In the browser,
-  styles are set through the CSSOM, which the policy allows.
+  styles are set through the CSSOM, which the policy allows. How the server writes them:
+  - **One rule per distinct style.** Elements with the same declarations share a rule within a
+    response, so a long list whose items repeat a few style values writes a few rules, not one per
+    item.
+  - **Precedence as an inline style.** A rule reads `[data-l-v="3"]:not(#a#b){…}`. `:not(#a#b)`
+    matches every element (none has two ids) and weighs two ids, so the rule wins over your
+    components' scoped rules, `:where()` defaults and most page rules, as an inline style does.
+    Like an inline style, it gives way to `!important` rules, CSS animations, and the styles an
+    island sets once it hydrates. Only a selector with two ids or more can win over it where it
+    would not win over an inline style.
+  - **Isolation.** A value cannot close its rule or the `<style>` element, and a comment, string,
+    `url(` or bracket it leaves open is closed at its end, so it cannot reach other elements'
+    rules. A value with a `url(` right after an identifier character (`éurl(`, `#url(`), which
+    browsers may read differently, gets a `<style>` of its own.
 - **Your own inline scripts and styles** written in JSX get the nonce automatically: a
   `<script innerHTML={…}>` in the document, a JSON-LD block, an SVG `<style>`. An explicit `nonce`
   prop wins. Strings rendered as text are escaped and never become elements, and raw HTML strings

@@ -469,6 +469,22 @@ describe("context frames", () => {
   });
 });
 
+/** The `<style>` elements of a strict-CSP render with one `<p>` per style value. */
+async function styles(...values: string[]): Promise<string> {
+  const shell = await renderToStream(
+    () => ssr(["<p", ">x</p>"], values.map((value) => styleAttr(value)).join("")),
+    { strictStyles: true },
+  );
+  return shell.head;
+}
+
+/** The rules of a render whose values all share one `<style>`, with their selectors shortened. */
+async function rules(...values: string[]): Promise<string> {
+  return (await styles(...values))
+    .replace(/^<style>|<\/style>$/g, "")
+    .replaceAll(":not(#a#b){", "{");
+}
+
 describe("strict CSP styles", () => {
   it("moves style props into nonce'd rules", async () => {
     const options: RenderToStreamOptions = { strictStyles: true, nonce: "abc" };
@@ -478,17 +494,11 @@ describe("strict CSP styles", () => {
     );
     expect(shell.body).toBe('<p data-l-v="0">x</p>');
     expect(shell.head).toBe(
-      `<style nonce="abc">[data-l-v="0"]{color:red;content:'\\7d \\3c x'}</style>`,
+      `<style nonce="abc">[data-l-v="0"]:not(#a#b){color:red;content:'\\7d \\3c x'}</style>`,
     );
   });
+
   it("closes what a style value leaves open, so it cannot swallow the next rules (TASK-472)", async () => {
-    const rules = async (...values: string[]) => {
-      const shell = await renderToStream(
-        () => ssr(["<p", ">x</p>"], values.map((value) => styleAttr(value)).join("")),
-        { strictStyles: true },
-      );
-      return shell.head.replace(/^<style>|<\/style>$/g, "");
-    };
     expect(await rules("color:red /* note", "color:blue")).toBe(
       '[data-l-v="0"]{color:red /* note*/}[data-l-v="1"]{color:blue}',
     );
@@ -512,6 +522,45 @@ describe("strict CSP styles", () => {
       "width:calc((1px + 2px) * 3)",
     ]) {
       expect(await rules(value)).toBe(`[data-l-v="0"]{${value}}`);
+    }
+  });
+
+  it("closes a url( after whitespace or punctuation, as every tokenizer reads it (TASK-497)", async () => {
+    for (const [value, closed] of [
+      ["mask:image-set(url(a.png", "mask:image-set(url(a.png))"],
+      ["--a:var(--b,url(x", "--a:var(--b,url(x))"],
+      ["background:url(a),URL(b", "background:url(a),URL(b)"],
+      ["background:no-repeat url( /*", "background:no-repeat url( /*)"],
+      // Only CSS whitespace comes before the quote of a url() function: \v opens a url token,
+      // which the `)` ends, and the `/*` after it a comment.
+      ['background:url(\v")/*', 'background:url(\v")/**/'],
+      ['background:url( \n"a(")/*', 'background:url( \n"a(")/**/'],
+    ]) {
+      expect(await rules(value!, "color:blue")).toBe(
+        `[data-l-v="0"]{${closed}}[data-l-v="1"]{color:blue}`,
+      );
+    }
+  });
+
+  it("gives a value whose url( may not open a url token a <style> of its own (TASK-497)", async () => {
+    // `éurl(` is a function in every tokenizer and `{url(` (escaped `\7b url(`) one too, so the
+    // `/*` after it opens a comment, which closing a url token would leave open. Tokenizers differ
+    // on others (`×url(`, a WebKit unicode range before `url(`): none shares a `<style>`.
+    for (const [value, written] of [
+      ["--x:éurl(/*", "--x:éurl(/*"],
+      ["--x:{url((", "--x:\\7b url(("],
+      ["--x:\\url(/*", "--x:\\5c url(/*"],
+      ["--x:#url(/*", "--x:#url(/*"],
+      ["--x:@url(/*", "--x:@url(/*"],
+      ["--x:-url(/*", "--x:-url(/*"],
+      ["--x:×url(/*", "--x:×url(/*"],
+      ["--x:U+abcurl(/*", "--x:U+abcurl(/*"],
+      ["--x:1url(/*", "--x:1url(/*"],
+    ]) {
+      expect(await styles("color:red", value!, "color:blue")).toBe(
+        '<style>[data-l-v="0"]:not(#a#b){color:red}[data-l-v="2"]:not(#a#b){color:blue}</style>' +
+          `<style>[data-l-v="1"]:not(#a#b){${written}}</style>`,
+      );
     }
   });
 });

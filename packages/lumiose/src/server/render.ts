@@ -151,6 +151,7 @@ export function renderShell(root: () => unknown, options: ShellOptions = {}): Pr
     nextIsland: 0,
     nextBoundary: 0,
     nextStyle: 0,
+    styleRules: new Map(),
     title: undefined,
     metas: new Map(),
     head: [],
@@ -365,6 +366,7 @@ function unitAssets(render: RenderState, unit: Unit): string {
     out += `<link rel="modulepreload" href="${escapeAttr(url)}"${nonceAttr(render)}>`;
   }
   if (unit.styles.length > 0) out += `<style${nonceAttr(render)}>${unit.styles.join("")}</style>`;
+  for (const rule of unit.isolatedStyles) out += `<style${nonceAttr(render)}>${rule}</style>`;
   return out;
 }
 
@@ -390,6 +392,7 @@ export function createUnit(parent: Unit | undefined): Unit {
     preloads: [],
     scripts: [],
     styles: [],
+    isolatedStyles: [],
     waiting: [],
   };
 }
@@ -412,6 +415,7 @@ export function foldUnit(render: RenderState, unit: Unit): void {
   for (const url of unit.preloads) addPreload(render, target, url);
   for (const url of unit.scripts) if (!target.scripts.includes(url)) target.scripts.push(url);
   target.styles.push(...unit.styles);
+  target.isolatedStyles.push(...unit.isolatedStyles);
   target.waiting.push(...unit.waiting);
 }
 
