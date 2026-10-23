@@ -3,7 +3,7 @@ id: doc-10
 title: Pending decisions for the user
 type: other
 created_date: '2026-10-16 22:28'
-updated_date: '2026-10-23 20:58'
+updated_date: '2026-10-23 21:59'
 ---
 Decisions that need the user, collected while Lux and the workers run unattended (user request, 2026-10-17: "do not block yourself on more questions … postpone them (and their decisions) in a document that can be used later as follow ups").
 
@@ -109,6 +109,13 @@ The review found 1 High, 3 Medium and 14 Low, now TASK-468 to TASK-475. Their fi
   - **Meanwhile:** strict CSP only.
 - **A `pick(form, names)` helper for echoing form values (M3).** The docs will teach an explicit record, which needs no new API: `values: { username: form.get("username") }`.
   - **Recommendation:** no helper for now; revisit if the record form proves verbose in practice.
+
+### P14. Select loads a script for labelled items (TASK-537, for review)
+
+- **Not blocking:** done in @lumiose/ui 0.1.2. The user can reverse it.
+- **Why:** Chromium and WebKit hide an option's content whenever it has a `label` attribute, and CSS cannot override that. The classic select needs the attribute, so no markup works in both.
+- **What changed:** a select with labelled items now loads a 0.19 kB brotli script. In a customizable select, it removes the attribute as the picker opens (classic selects keep it), so the item's content shows. Items without `label` ship no script, as TASK-358 promised for every item.
+- **Alternative:** no script, and the docs say not to use `label` on items whose content starts with an icon.
 
 ## Answered
 
