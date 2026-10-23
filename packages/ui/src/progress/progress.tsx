@@ -6,6 +6,7 @@
 import { createContext, useContext, useId } from "lumiose";
 import { withStyle } from "../placement/placement.ts";
 import { formatValue, percent } from "./value.ts";
+import { notInside } from "../not-inside.ts";
 
 interface ProgressContextValue {
   id: string;
@@ -52,7 +53,7 @@ export type ProgressValueProps = Omit<JSX.IntrinsicElements["span"], "children">
 
 function useProgress(part: string): ProgressContextValue {
   const context = useContext(ProgressContext);
-  if (!context) throw new Error(`Progress.${part} must be inside <Progress.Root>.`);
+  if (!context) throw notInside(`Progress.${part}`, "<Progress.Root>");
   return context;
 }
 

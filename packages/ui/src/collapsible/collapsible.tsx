@@ -7,6 +7,7 @@
 import { createContext, effect, ref, untrack, useContext, useId } from "lumiose";
 import collapsibleScript from "./collapsible.script.ts?client";
 import { batched } from "../batched.ts";
+import { notInside } from "../not-inside.ts";
 
 /**
  * The `<details>` props Root passes on (`class`, `style`, `name`, `data-*`, `aria-*`, events),
@@ -54,7 +55,7 @@ const CollapsibleContext = createContext<CollapsibleContextValue>();
 
 function useCollapsible(): CollapsibleContextValue {
   const context = useContext(CollapsibleContext);
-  if (!context) throw new Error("Collapsible parts must be inside <Collapsible.Root>.");
+  if (!context) throw notInside("Collapsible parts", "<Collapsible.Root>");
   return context;
 }
 

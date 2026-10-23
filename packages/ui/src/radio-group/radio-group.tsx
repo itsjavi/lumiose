@@ -8,6 +8,7 @@ import checkboxScript from "../checkbox/checkbox.script.ts?client";
 import { describedBy, labelledBy, useField, useFormValues } from "../field/context.ts";
 import { onFormReset } from "../form/reset.ts";
 import { batched } from "../batched.ts";
+import { notInside } from "../not-inside.ts";
 
 interface RadioGroupContextValue {
   name: () => string;
@@ -137,7 +138,7 @@ export function RadioGroup({
 
 function Root({ value, ...rest }: RadioRootProps) {
   const group = useContext(RadioGroupContext);
-  if (!group) throw new Error("Radio.Root must be inside <RadioGroup>.");
+  if (!group) throw notInside("Radio.Root", "<RadioGroup>");
   return (
     <input
       required={group.required() || undefined}

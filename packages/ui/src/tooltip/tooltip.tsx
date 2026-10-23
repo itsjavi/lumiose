@@ -9,6 +9,7 @@ import { createContext, effect, ref, useContext, useId } from "lumiose";
 import { anchorName, placement, withStyle, type PlacementProps } from "../placement/placement.ts";
 import tooltipScript from "./tooltip.script.ts?client";
 import { batched } from "../batched.ts";
+import { notInside } from "../not-inside.ts";
 
 /**
  * `Tooltip.Root` renders no element: it holds the ids its parts share. `bind:open={signal}`
@@ -62,7 +63,7 @@ const TooltipContext = createContext<TooltipContextValue>();
 
 function useTooltip(): TooltipContextValue {
   const context = useContext(TooltipContext);
-  if (!context) throw new Error("Tooltip parts must be inside <Tooltip.Root>.");
+  if (!context) throw notInside("Tooltip parts", "<Tooltip.Root>");
   return context;
 }
 

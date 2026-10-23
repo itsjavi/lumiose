@@ -17,6 +17,7 @@ import {
 } from "lumiose";
 import dialogScript from "./dialog.script.ts?client";
 import { batched } from "../batched.ts";
+import { notInside } from "../not-inside.ts";
 
 /**
  * `Dialog.Root` renders no element: it holds the dialog's state and the ids its parts share.
@@ -69,7 +70,7 @@ const DialogContext = createContext<DialogContextValue>();
 
 function useDialog(): DialogContextValue {
   const context = useContext(DialogContext);
-  if (!context) throw new Error("Dialog parts must be inside <Dialog.Root>.");
+  if (!context) throw notInside("Dialog parts", "<Dialog.Root>");
   return context;
 }
 

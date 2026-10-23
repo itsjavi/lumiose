@@ -1,6 +1,7 @@
 // The context the Combobox parts share, with Autocomplete's Root (TASK-377): the same parts work
 // under either Root, which says how the input behaves.
 import { createContext, onCleanup, useContext, type Signal } from "lumiose";
+import { notInside } from "../not-inside.ts";
 
 export interface ComboboxContextValue {
   /** The element's id; the parts' ids and the anchor name derive from it. */
@@ -35,7 +36,7 @@ export const ComboboxContext = createContext<ComboboxContextValue>();
 
 export function useCombobox(): ComboboxContextValue {
   const context = useContext(ComboboxContext);
-  if (!context) throw new Error("Combobox parts must be inside <Combobox.Root>.");
+  if (!context) throw notInside("Combobox parts", "<Combobox.Root>");
   return context;
 }
 

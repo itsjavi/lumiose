@@ -20,6 +20,7 @@ import { anchorName } from "../placement/placement.ts";
 import contextMenuScript from "./context-menu.script.ts?client";
 import type { ContextMenuElement } from "./context-menu.script.ts";
 import { batched } from "../batched.ts";
+import { notInside } from "../not-inside.ts";
 
 declare module "lumiose/jsx-runtime" {
   namespace JSX {
@@ -72,7 +73,7 @@ const ContextMenuContext = createContext<ContextMenuContextValue>();
 
 function useContextMenu(): ContextMenuContextValue {
   const context = useContext(ContextMenuContext);
-  if (!context) throw new Error("ContextMenu parts must be inside <ContextMenu.Root>.");
+  if (!context) throw notInside("ContextMenu parts", "<ContextMenu.Root>");
   return context;
 }
 

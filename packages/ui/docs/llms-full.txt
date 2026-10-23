@@ -42,7 +42,13 @@ Anatomy, API, Example, Styling, Keyboard and focus, Without JavaScript, Browser 
   runtime.
 - **Parts.** Each component is a set of parts named as in Base UI (`Dialog.Root`,
   `Dialog.Trigger`, `Dialog.Popup`, …). Every part that renders an element takes that element's
-  props (`class`, `style`, `aria-*`, events) and passes them through.
+  props (`class`, `style`, `aria-*`, events) and passes them through. A part finds its `Root`
+  through context, so a `Root` and its parts render on the same side of an island boundary, even
+  where the JSX nests them. A part the page passes to an island as a slot (children or a JSX prop)
+  renders in the page, outside the `Root` the island renders, and the server throws "Combobox
+  parts must be inside <Combobox.Root>"; an island inside a `Root` the page renders does not see
+  that `Root` either. Pass the data as props and render the `Root` and its parts inside the
+  island ([Islands](https://itsjavi.com/lumiose/docs/concepts/islands/)).
 - **Signals.** A component's state is a prop and a callback: `open` with `onOpenChange`, `checked`
   with `onCheckedChange`, `value` with `onValueChange`. Pass a signal's value and write it back in
   the callback to keep both in sync, or leave both out and the element keeps its own state. Custom

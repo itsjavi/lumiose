@@ -18,6 +18,7 @@ import {
 import defineAccordion from "./accordion.script.ts?client";
 import type { LuAccordion } from "./accordion.script.ts";
 import { batched } from "../batched.ts";
+import { notInside } from "../not-inside.ts";
 
 declare module "lumiose/jsx-runtime" {
   namespace JSX {
@@ -119,13 +120,13 @@ const HeaderContext = createContext<AccordionHeaderProps>();
 
 function useAccordion(): AccordionContextValue {
   const context = useContext(AccordionContext);
-  if (!context) throw new Error("Accordion parts must be inside <Accordion.Root>.");
+  if (!context) throw notInside("Accordion parts", "<Accordion.Root>");
   return context;
 }
 
 function useItem(): ItemContextValue {
   const context = useContext(ItemContext);
-  if (!context) throw new Error("Accordion parts must be inside an <Accordion.Item>.");
+  if (!context) throw notInside("Accordion parts", "an <Accordion.Item>");
   return context;
 }
 

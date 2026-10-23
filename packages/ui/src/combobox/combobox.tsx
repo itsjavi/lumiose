@@ -28,6 +28,7 @@ import { onFormReset } from "../form/reset.ts";
 import { anchorName, placement, withStyle, type PlacementProps } from "../placement/placement.ts";
 import { ComboboxContext, register, useCombobox, type ComboboxContextValue } from "./context.ts";
 import { batched } from "../batched.ts";
+import { notInside } from "../not-inside.ts";
 
 declare module "lumiose/jsx-runtime" {
   namespace JSX {
@@ -489,7 +490,7 @@ function GroupElement({
 
 function GroupLabel({ children, ...rest }: ComboboxGroupLabelProps) {
   const group = useContext(GroupContext);
-  if (!group) throw new Error("Combobox.GroupLabel must be inside <Combobox.Group>.");
+  if (!group) throw notInside("Combobox.GroupLabel", "<Combobox.Group>");
   register(group.labels);
   return (
     <div role="presentation" {...rest} id={group.labelId}>

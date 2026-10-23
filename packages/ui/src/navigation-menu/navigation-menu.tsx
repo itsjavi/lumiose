@@ -16,6 +16,7 @@ import type {
   NavigationMenuValueChangeDetail,
 } from "./navigation-menu.script.ts";
 import { batched } from "../batched.ts";
+import { notInside } from "../not-inside.ts";
 
 declare module "lumiose/jsx-runtime" {
   namespace JSX {
@@ -100,7 +101,7 @@ const ItemContext = createContext<ItemContextValue>();
 
 function useItem(part: string): ItemContextValue {
   const item = useContext(ItemContext);
-  if (!item) throw new Error(`NavigationMenu.${part} must be inside <NavigationMenu.Item>.`);
+  if (!item) throw notInside(`NavigationMenu.${part}`, "<NavigationMenu.Item>");
   return item;
 }
 
