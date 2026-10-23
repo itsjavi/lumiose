@@ -3,7 +3,7 @@ id: doc-10
 title: Pending decisions for the user
 type: other
 created_date: '2026-10-16 22:28'
-updated_date: '2026-10-23 23:05'
+updated_date: '2026-10-23 23:13'
 ---
 Decisions that need the user, collected while Lux and the workers run unattended (user request, 2026-10-17: "do not block yourself on more questions … postpone them (and their decisions) in a document that can be used later as follow ups").
 
@@ -130,7 +130,7 @@ The review found 1 High, 3 Medium and 14 Low, now TASK-468 to TASK-475. Their fi
   2. Keep only the MPA reporting, and restore the browser prompt for `cancel()` on links that load another document.
   3. Revert TASK-549.
 - **Recommendation:** keep both.
-- **Also in 0.7.0 (no decision needed):** native `on:` listeners run inside `batch()` (TASK-548, decision-81), and the new LUM2001/LUM2003 cases (TASK-529, TASK-536).
+- **Also in 0.7.0 (no decision needed):** native `on:` listeners run inside `batch()` (TASK-548, decision-81); conditionally called `?client` scripts load on their first call in islands (TASK-551, decision-82); and the new LUM2001/LUM2003 cases (TASK-529, TASK-536).
 
 ## Answered
 
