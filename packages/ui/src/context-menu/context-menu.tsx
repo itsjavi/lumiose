@@ -19,6 +19,7 @@ import type { MenuElement, MenuOpenChangeDetail } from "../menu/menu.script.ts";
 import { anchorName } from "../placement/placement.ts";
 import contextMenuScript from "./context-menu.script.ts?client";
 import type { ContextMenuElement } from "./context-menu.script.ts";
+import { batched } from "../batched.ts";
 
 declare module "lumiose/jsx-runtime" {
   namespace JSX {
@@ -126,9 +127,9 @@ function Popup(props: ContextMenuPopupProps) {
   return (
     <lu-menu
       ref={context.host}
-      on:openchange={(event: CustomEvent<MenuOpenChangeDetail>) =>
-        context.onOpenChange(event.detail.open)
-      }
+      on:openchange={batched((event: CustomEvent<MenuOpenChangeDetail>) =>
+        context.onOpenChange(event.detail.open),
+      )}
     >
       {/* The point the popup is anchored to: the script moves it to the pointer. */}
       <span

@@ -25,6 +25,7 @@ import dialogScript from "../dialog/dialog.script.ts?client";
 import { anchorName, placement, withStyle, type PlacementProps } from "../placement/placement.ts";
 import popoverScript from "./popover.script.ts?client";
 import { OUTSIDE_TOOLBAR, ToolbarContext } from "../toolbar/context.ts";
+import { batched } from "../batched.ts";
 
 /**
  * `Popover.Root` renders no element: it holds the ids its parts share. `bind:open={signal}`
@@ -228,7 +229,7 @@ function Popup({
       ref={attach}
       id={popover.popupId}
       closedby="any"
-      on:toggle={toggle}
+      on:toggle={batched(toggle)}
     >
       {isServer ? content : inside()}
     </dialog>
@@ -247,7 +248,7 @@ function Popup({
       id={popover.popupId}
       popover="auto"
       data-trap-focus={popover.trapFocus ? "" : undefined}
-      on:toggle={toggle}
+      on:toggle={batched(toggle)}
     >
       {isServer ? content : inside()}
     </div>

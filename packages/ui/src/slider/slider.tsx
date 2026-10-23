@@ -13,6 +13,7 @@ import { percent } from "../progress/value.ts";
 import { formatValues } from "./format.ts";
 import type { SliderElement } from "./slider.script.ts";
 import sliderScript from "./slider.script.ts?client";
+import { batched } from "../batched.ts";
 
 declare module "lumiose/jsx-runtime" {
   namespace JSX {
@@ -259,12 +260,12 @@ function Root<V extends SliderValue = number>({
         format={format ? JSON.stringify(format) : undefined}
         locale={locale}
         style={withStyle(style, untrack(range))}
-        on:input={() => {
+        on:input={batched(() => {
           const next = current();
           values.set(asList(next, low()));
           onValueChange?.(next);
-        }}
-        on:change={() => onValueCommitted?.(current())}
+        })}
+        on:change={batched(() => onValueCommitted?.(current()))}
       >
         {children}
       </lu-slider>

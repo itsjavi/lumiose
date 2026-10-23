@@ -6,6 +6,7 @@
 // trigger. Ported from Timeless's approach (https://timeless.build).
 import { createContext, effect, ref, untrack, useContext, useId } from "lumiose";
 import collapsibleScript from "./collapsible.script.ts?client";
+import { batched } from "../batched.ts";
 
 /**
  * The `<details>` props Root passes on (`class`, `style`, `name`, `data-*`, `aria-*`, events),
@@ -96,12 +97,12 @@ function Root({
           forwarded?.(element);
         }}
         open={shown}
-        on:toggle={(event: ToggleEvent) => {
+        on:toggle={batched((event: ToggleEvent) => {
           const now = event.newState === "open";
           if (now === shown) return;
           shown = now;
           onOpenChange?.(now);
-        }}
+        })}
       >
         {children}
       </details>

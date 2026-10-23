@@ -27,6 +27,7 @@ import { controlId, describedBy, labelledBy, useField, useFormValues } from "../
 import { onFormReset } from "../form/reset.ts";
 import { anchorName, placement, withStyle, type PlacementProps } from "../placement/placement.ts";
 import { ComboboxContext, register, useCombobox, type ComboboxContextValue } from "./context.ts";
+import { batched } from "../batched.ts";
 
 declare module "lumiose/jsx-runtime" {
   namespace JSX {
@@ -266,14 +267,14 @@ function Root<Multiple extends boolean | undefined = false>({
         disabled={context.disabled()}
         multiple={multiple}
         filter={filter}
-        on:change={() => {
+        on:change={batched(() => {
           const next = host()!.value;
           selected.set(list(next));
           onValueChange?.(next as ComboboxValue<Multiple>);
-        }}
-        on:openchange={(event: CustomEvent<ComboboxOpenChangeDetail>) =>
-          onOpenChange?.(event.detail.open)
-        }
+        })}
+        on:openchange={batched((event: CustomEvent<ComboboxOpenChangeDetail>) =>
+          onOpenChange?.(event.detail.open),
+        )}
       >
         {children}
       </lu-combobox>

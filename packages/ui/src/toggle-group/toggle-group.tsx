@@ -11,6 +11,7 @@ import {
 } from "../toggle/context.ts";
 import type { ToggleGroupElement } from "./toggle-group.script.ts";
 import toggleGroupScript from "./toggle-group.script.ts?client";
+import { batched } from "../batched.ts";
 
 declare module "lumiose/jsx-runtime" {
   namespace JSX {
@@ -107,7 +108,7 @@ export function ToggleGroup({
         multiple={multiple}
         data-orientation={orientation ?? "horizontal"}
         data-loop-focus={loopFocus === false ? "false" : undefined}
-        on:valuechange={() => {
+        on:valuechange={batched(() => {
           const host = element()!;
           const next = host.value;
           values.set(next);
@@ -119,7 +120,7 @@ export function ToggleGroup({
             values.set(held);
             host.value = held;
           }
-        }}
+        })}
       >
         {children}
       </lu-toggle-group>

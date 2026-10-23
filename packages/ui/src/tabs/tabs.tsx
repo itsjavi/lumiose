@@ -19,6 +19,7 @@ import {
 import { withStyle } from "../placement/placement.ts";
 import defineTabs from "./tabs.script.ts?client";
 import type { LuTabs } from "./tabs.script.ts";
+import { batched } from "../batched.ts";
 
 declare module "lumiose/jsx-runtime" {
   namespace JSX {
@@ -166,12 +167,12 @@ function Root({
         ref={element}
         // The anchor the selected tab carries for a Tabs.Indicator (tabs.css).
         style={withStyle(rest.style, { "--lu-tabs-anchor": `--lu-tabs-${id}` })}
-        on:valuechange={() => {
+        on:valuechange={batched(() => {
           const next = element()?.value;
           if (next == null) return;
           selected.set(next);
           onValueChange?.(next);
-        }}
+        })}
       >
         {children}
       </lu-tabs>

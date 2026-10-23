@@ -31,6 +31,7 @@ import {
 import fieldScript from "./field.script.ts?client";
 import { listenToForm, reportValidity } from "../form/native.ts";
 import { Input, type InputProps } from "../input/input.tsx";
+import { batched } from "../batched.ts";
 
 declare module "lumiose/jsx-runtime" {
   namespace JSX {
@@ -288,7 +289,7 @@ function Root({
    * (cleared while it waits): its check runs now, and a synchronous one that fails stops the
    * submission, which the form then reports. An async check still waits for the server.
    */
-  const onSubmit = (event: Event) => {
+  const onSubmit = batched((event: Event) => {
     if (!due) return;
     clearTimeout(timer);
     due();
@@ -297,7 +298,7 @@ function Root({
     event.preventDefault();
     event.stopImmediatePropagation();
     reportValidity(event.currentTarget as HTMLFormElement);
-  };
+  });
   effect(() => {
     if (!validate) return;
     const element = document.getElementById(controlId(field));
@@ -314,13 +315,13 @@ function Root({
     }
   });
   // A submit attempt checks every control (`invalid` does not bubble); a reset clears the checks.
-  const onInvalid = (event: Event) => snapshot(event.target);
-  const onReset = () => {
+  const onInvalid = batched((event: Event) => snapshot(event.target));
+  const onReset = batched(() => {
     checked.set(undefined);
     checking = undefined;
     // The controls take their default values after the event.
     setTimeout(() => run(document.getElementById(controlId(field)), 0, true));
-  };
+  });
   onMount(() => {
     const element = host();
     if (!element) return;
@@ -349,15 +350,15 @@ function Root({
         }}
         id={id}
         validation-mode={validationMode ?? form?.validationMode()}
-        on:input={(event: Event) => {
+        on:input={batched((event: Event) => {
           run(event.target, validationDebounceTime);
           snapshot(event.target);
-        }}
-        on:change={(event: Event) => {
+        })}
+        on:change={batched((event: Event) => {
           run(event.target);
           snapshot(event.target);
-        }}
-        on:focusout={(event: Event) => snapshot(event.target)}
+        })}
+        on:focusout={batched((event: Event) => snapshot(event.target))}
       >
         {children}
       </lu-field>

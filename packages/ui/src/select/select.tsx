@@ -11,6 +11,7 @@
 import { createContext, effect, ref, untrack, useContext } from "lumiose";
 import { fieldProps, useField, useFormValues } from "../field/context.ts";
 import { onFormReset } from "../form/reset.ts";
+import { batched } from "../batched.ts";
 
 declare module "lumiose/jsx-runtime" {
   namespace JSX {
@@ -112,9 +113,9 @@ function Root({ value, defaultValue, onValueChange, children, ...rest }: SelectR
           select(element);
           rest.ref?.(element);
         }}
-        on:change={(event: Event) =>
-          onValueChange?.((event.currentTarget as HTMLSelectElement).value)
-        }
+        on:change={batched((event: Event) =>
+          onValueChange?.((event.currentTarget as HTMLSelectElement).value),
+        )}
       >
         {children}
       </select>

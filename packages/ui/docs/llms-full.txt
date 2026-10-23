@@ -48,7 +48,8 @@ Anatomy, API, Example, Styling, Keyboard and focus, Without JavaScript, Browser 
   with `onCheckedChange`, `value` with `onValueChange`. Pass a signal's value and write it back in
   the callback to keep both in sync, or leave both out and the element keeps its own state. Custom
   elements report changes with lowercase DOM events, like native ones: `openchange`,
-  `checkedchange` and `change`.
+  `checkedchange` and `change`. The callbacks run inside `batch()`, as event handlers do: what
+  they write renders together, and the DOM is current as soon as the event returns.
 - **Keyboard contracts.** Every component follows its WAI-ARIA Authoring Practices pattern, and
   its end-to-end tests check the keyboard paths.
 - **WCAG 2.2 AA.** Every component meets it: the components own semantics, keyboard and

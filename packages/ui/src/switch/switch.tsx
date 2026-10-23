@@ -7,6 +7,7 @@ import { ref, untrack } from "lumiose";
 import checkboxScript from "../checkbox/checkbox.script.ts?client";
 import { fieldProps, useField, useFormValues } from "../field/context.ts";
 import { onFormReset } from "../form/reset.ts";
+import { batched } from "../batched.ts";
 
 /**
  * The native checkbox props Root passes through, without the brand of intrinsic elements' props,
@@ -73,9 +74,9 @@ function Root({
       checked={checked ?? initial}
       aria-readonly={readOnly ? "true" : undefined}
       data-unchecked-value={uncheckedValue}
-      on:change={(event: Event) =>
-        onCheckedChange?.((event.currentTarget as HTMLInputElement).checked)
-      }
+      on:change={batched((event: Event) =>
+        onCheckedChange?.((event.currentTarget as HTMLInputElement).checked),
+      )}
     />
   );
 }

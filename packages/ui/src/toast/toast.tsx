@@ -16,6 +16,7 @@ import { afterAnimations } from "../animation/animation.ts";
 import toastScript from "./toast.script.ts?client";
 import { CLOSE_COMMAND } from "./command.ts";
 import type { LuToastViewport } from "./toast.script.ts";
+import { batched } from "../batched.ts";
 
 declare module "lumiose/jsx-runtime" {
   namespace JSX {
@@ -326,12 +327,12 @@ function Root({ toast, swipeDirection, children, ref: forwarded, ...rest }: Toas
         data-timeout={String(toast.timeout ?? provider?.timeout() ?? DEFAULT_TIMEOUT)}
         data-swipe-directions={(swipeDirection ?? ["down", "right"]).join(" ") || undefined}
         data-ending-style={ending() ? "" : undefined}
-        on:close={(event: Event) => {
+        on:close={batched((event: Event) => {
           // The script closes it: a managed toast leaves through its manager.
           if (!owner) return;
           event.preventDefault();
           owner.close(toast.id!);
-        }}
+        })}
       >
         {children}
       </div>

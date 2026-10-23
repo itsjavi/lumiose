@@ -9,6 +9,7 @@ import { fieldProps, useField, useFormValues } from "../field/context.ts";
 import checkboxScript from "./checkbox.script.ts?client";
 import { CheckboxGroupContext, optionId, type CheckboxGroupContextValue } from "./context.ts";
 import { afterFormReset, onFormReset } from "../form/reset.ts";
+import { batched } from "../batched.ts";
 
 /**
  * The native checkbox props Root passes through (`name`, `required`, `disabled`, `form`, `id`,
@@ -137,9 +138,9 @@ function Root({
       data-parent={parent ? "" : undefined}
       aria-readonly={readOnly ? "true" : undefined}
       data-unchecked-value={uncheckedValue}
-      on:change={(event: Event) =>
-        onCheckedChange?.((event.currentTarget as HTMLInputElement).checked)
-      }
+      on:change={batched((event: Event) =>
+        onCheckedChange?.((event.currentTarget as HTMLInputElement).checked),
+      )}
     />
   );
 }

@@ -8,6 +8,7 @@
 import { createContext, effect, ref, useContext, useId } from "lumiose";
 import { anchorName, placement, withStyle, type PlacementProps } from "../placement/placement.ts";
 import tooltipScript from "./tooltip.script.ts?client";
+import { batched } from "../batched.ts";
 
 /**
  * `Tooltip.Root` renders no element: it holds the ids its parts share. `bind:open={signal}`
@@ -128,7 +129,9 @@ function Popup({
       }}
       id={tooltip.popupId}
       popover="hint"
-      on:toggle={(event: ToggleEvent) => tooltip.props.onOpenChange?.(event.newState === "open")}
+      on:toggle={batched((event: ToggleEvent) =>
+        tooltip.props.onOpenChange?.(event.newState === "open"),
+      )}
     >
       {children}
     </span>

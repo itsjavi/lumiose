@@ -24,6 +24,7 @@ import { onFormReset } from "../form/reset.ts";
 import { formatNumber, formatter } from "./format.ts";
 import type { NumberFieldElement } from "./number-field.script.ts";
 import numberFieldScript from "./number-field.script.ts?client";
+import { batched } from "../batched.ts";
 
 declare module "lumiose/jsx-runtime" {
   namespace JSX {
@@ -260,11 +261,11 @@ function Root({
         locale={locale}
         allow-wheel-scrub={allowWheelScrub}
         allow-out-of-range={allowOutOfRange}
-        on:input={report}
-        on:change={() => {
+        on:input={batched(report)}
+        on:change={batched(() => {
           report();
           onValueCommitted?.(element()?.value ?? null);
-        }}
+        })}
       >
         <input
           type="hidden"

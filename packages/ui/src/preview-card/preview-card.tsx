@@ -7,6 +7,7 @@
 import { createContext, effect, ref, useContext, useId } from "lumiose";
 import { anchorName, placement, withStyle, type PlacementProps } from "../placement/placement.ts";
 import previewCardScript from "./preview-card.script.ts?client";
+import { batched } from "../batched.ts";
 
 /**
  * `PreviewCard.Root` renders no element: it holds the ids its parts share. `bind:open={signal}`
@@ -106,7 +107,7 @@ function Popup({
       id={card.popupId}
       popover="manual"
       data-preview-card-popup=""
-      on:toggle={(event: ToggleEvent) => card.onToggle(event.newState === "open")}
+      on:toggle={batched((event: ToggleEvent) => card.onToggle(event.newState === "open"))}
     >
       {children}
     </div>

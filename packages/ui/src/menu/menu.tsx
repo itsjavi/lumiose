@@ -21,6 +21,7 @@ import type { MenuCheckedChangeDetail, MenuElement, MenuOpenChangeDetail } from 
 import menuScript from "./menu.script.ts?client";
 import { anchorName, placement, withStyle, type Align, type Side } from "../placement/placement.ts";
 import { OUTSIDE_TOOLBAR, ToolbarContext } from "../toolbar/context.ts";
+import { batched } from "../batched.ts";
 
 declare module "lumiose/jsx-runtime" {
   namespace JSX {
@@ -244,9 +245,9 @@ function menuRoot(props: MenuRootProps, submenu: boolean) {
       <lu-menu
         ref={host}
         role={context.menubar ? "none" : undefined}
-        on:openchange={(event: CustomEvent<MenuOpenChangeDetail>) =>
-          props.onOpenChange?.(event.detail.open)
-        }
+        on:openchange={batched((event: CustomEvent<MenuOpenChangeDetail>) =>
+          props.onOpenChange?.(event.detail.open),
+        )}
       >
         {props.children}
       </lu-menu>
@@ -377,9 +378,9 @@ function CheckboxItem({
       {...rest}
       role="menuitemcheckbox"
       aria-checked={checked ?? defaultChecked ?? false}
-      on:checkedchange={(event: CustomEvent<MenuCheckedChangeDetail>) =>
-        onCheckedChange?.(event.detail.checked)
-      }
+      on:checkedchange={batched((event: CustomEvent<MenuCheckedChangeDetail>) =>
+        onCheckedChange?.(event.detail.checked),
+      )}
     >
       {children}
     </button>
@@ -442,12 +443,12 @@ function RadioGroup({
         <GroupElement
           {...rest}
           group={group}
-          on:checkedchange={(event: CustomEvent<MenuCheckedChangeDetail>) => {
+          on:checkedchange={batched((event: CustomEvent<MenuCheckedChangeDetail>) => {
             const item = event.target as HTMLButtonElement;
             if (item.getAttribute("role") === "menuitemradio" && event.detail.checked) {
               onValueChange?.(item.value);
             }
-          }}
+          })}
         >
           {children}
         </GroupElement>
