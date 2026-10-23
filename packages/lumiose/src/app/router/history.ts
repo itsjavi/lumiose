@@ -10,6 +10,7 @@
 // are the browser's, as with the Navigation API (TASK-350): it adds or replaces the entry, fires
 // `popstate` (with a null state), then scrolls to the fragment. That `popstate` only commits the URL
 // and gives the new entry its key.
+import { followedLink } from "./click.ts";
 
 /**
  * A navigation of the router: `run` loads and shows its page (resolves once it is on screen or
@@ -91,34 +92,8 @@ export function listenHistory(route: Route): () => void {
   let restoring = false;
 
   const onClick = (event: MouseEvent): void => {
-    if (
-      event.defaultPrevented ||
-      event.button !== 0 ||
-      event.metaKey ||
-      event.ctrlKey ||
-      event.shiftKey ||
-      event.altKey
-    ) {
-      return;
-    }
-    const link = (event.target as Element | null)?.closest?.("a");
-    if (
-      !(link instanceof HTMLAnchorElement) ||
-      link.href === "" ||
-      (link.target !== "" && link.target !== "_self") ||
-      link.hasAttribute("download")
-    ) {
-      return;
-    }
-    const url = new URL(link.href);
-    // A fragment of this page (`#`, the same one included): the browser's.
-    if (
-      url.href.includes("#") &&
-      url.pathname === location.pathname &&
-      url.search === location.search
-    ) {
-      return;
-    }
+    const url = followedLink(event);
+    if (url === undefined) return;
     const navigation = route(url, "link");
     if (navigation === undefined) return;
     event.preventDefault();

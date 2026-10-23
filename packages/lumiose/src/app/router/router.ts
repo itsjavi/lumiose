@@ -26,7 +26,8 @@
 // - Hooks (./hooks.ts, decision-50): `beforeNavigate` hooks run before a navigation loads anything
 //   and may cancel it; `afterNavigate` hooks run once its page is on screen, scrolled, focused and
 //   announced.
-//   A navigation to a document outside the SPA runs them with `willUnload`, then unloads.
+//   A navigation to a document outside the SPA runs them with `willUnload`, then unloads; a cancel
+//   keeps the page where the page can stop it (a link click, `navigate()`), else the browser asks.
 // - Errors: a render error, a rejected async page or `notFound()` render the nearest `error` or
 //   `not-found` page inside the SPA (`redirect()` navigates); without one, a minimal built-in page.
 // - `invalidate()` bumps a revision that every async component run and resource below the SPA
@@ -798,15 +799,17 @@ function navigateTo(
       history: replace ? "replace" : "auto",
       info: redirect ? REDIRECT : keepScroll ? KEEP_SCROLL : NAVIGATE,
     });
-    return target === undefined
-      ? Promise.resolve()
-      : result.finished.then(
-          () => {},
-          () => {},
-        );
+    // It rejects when a hook cancels it, a document navigation included.
+    const finished = result.finished.then(
+      () => {},
+      () => {},
+    );
+    return target === undefined ? Promise.resolve() : finished;
   }
   if (target === undefined) {
-    if (r?.root !== undefined) leave(r, "navigate", url, redirect);
+    // A hook that cancels it keeps the page.
+    if (r?.root !== undefined && leave(r, "navigate", url, redirect, true))
+      return Promise.resolve();
     if (replace) location.replace(url.href);
     else location.assign(url.href);
     return Promise.resolve();
@@ -882,9 +885,18 @@ function begin(
   return navigation;
 }
 
-/** A navigation to a document outside the SPA starts: its hooks run now (not for a redirect). */
-function leave(r: Router, type: RouterNavigation["type"], url: URL, redirect: boolean): void {
-  leaveTo(redirect ? undefined : navigationTo(r, type, url, true));
+/**
+ * A navigation to a document outside the SPA starts: its hooks run now (not for a redirect).
+ * Returns whether one cancelled it; the caller stops it when `stoppable`, else the browser asks.
+ */
+function leave(
+  r: Router,
+  type: RouterNavigation["type"],
+  url: URL,
+  redirect: boolean,
+  stoppable: boolean,
+): boolean {
+  return leaveTo(redirect ? undefined : navigationTo(r, type, url, true), stoppable);
 }
 
 /**
@@ -981,7 +993,8 @@ function listen(r: Router): () => void {
       const traverse = e.navigationType === "traverse";
       const type = traverse ? "popstate" : info === undefined ? "link" : "navigate";
       if (target === undefined) {
-        leave(r, type, url, info === REDIRECT);
+        // Another document: a cancel keeps the page where the browser lets it, else it asks.
+        if (leave(r, type, url, info === REDIRECT, e.cancelable)) e.preventDefault();
         return;
       }
       const navigation = begin(r, type, url, info === REDIRECT);
@@ -1038,9 +1051,9 @@ const loadHistory = (): Promise<typeof import("./history.ts")> =>
 
 /**
  * The fallback's view of a link click or back/forward to `url`: the navigation that shows it, if
- * the SPA owns it (`null` when a hook cancelled it). A move between fragments of one page (the
- * browser's fragment navigations, back/forward that only changes the hash) is not a navigation for
- * the hooks.
+ * the SPA owns it, `null` when a hook cancelled it (a link click to another document included:
+ * the click is prevented). A move between fragments of one page (the browser's fragment
+ * navigations, back/forward that only changes the hash) is not a navigation for the hooks.
  */
 function routeOf(
   r: Router,
@@ -1049,8 +1062,8 @@ function routeOf(
 ): HistoryNavigation | null | undefined {
   const target = targetOf(r, url);
   if (target === undefined) {
-    leave(r, type, url, false);
-    return undefined;
+    const link = type === "link";
+    return leave(r, type, url, false, link) && link ? null : undefined;
   }
   const shown = untrack(r.current).url;
   const hash =

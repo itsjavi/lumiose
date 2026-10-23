@@ -2,7 +2,7 @@
 // `beforeNavigate` and `afterNavigate` (decision-50, TASK-296): on the History API fallback
 // (happy-dom has no Navigation API), on a stand-in for the Navigation API, and in a component
 // outside any SPA (an island on an MPA page). Components are written in their compiled shape.
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, onTestFinished, vi } from "vitest";
 import type { Component, Renderable } from "../../contract/client.ts";
 import { createComponent, insert, render } from "../../dom/index.ts";
 import type { RouteSegment } from "../routes/segments.ts";
@@ -139,6 +139,44 @@ function click(href: string): void {
   link.href = href;
   container.append(link);
   link.click();
+  link.remove();
+}
+
+/**
+ * The links that clicks make the browser follow, from now until the test ends: a `click` listener
+ * at `window`, after the router's and the hooks', records the links whose click is still allowed,
+ * then prevents it, so happy-dom loads nothing.
+ */
+function followedLinks(): string[] {
+  const followed: string[] = [];
+  const browser = (event: Event): void => {
+    if (!event.defaultPrevented) followed.push((event.target as Element).getAttribute("href")!);
+    event.preventDefault();
+  };
+  addEventListener("click", browser);
+  onTestFinished(() => removeEventListener("click", browser));
+  return followed;
+}
+
+/** Mounts the layout's hooks on an MPA page at `at`; returns the links the browser follows. */
+async function mountMpa(at: string): Promise<string[]> {
+  history.replaceState(null, "", at);
+  container = document.createElement("div");
+  document.body.append(container);
+  dispose = render(() => createComponent(Root, {}), container);
+  await settled();
+  log = [];
+  seen = [];
+  return followedLinks();
+}
+
+/** Clicks a link to `href` with `attrs`, on an MPA page. */
+function clickLink(href: string, init: MouseEventInit = {}, attrs: Record<string, string> = {}) {
+  const link = document.createElement("a");
+  link.href = href;
+  for (const [name, value] of Object.entries(attrs)) link.setAttribute(name, value);
+  container.append(link);
+  link.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true, ...init }));
   link.remove();
 }
 
@@ -281,7 +319,7 @@ describe("router hooks on the History API fallback", () => {
     expect(textAtAfter).toEqual(["about"]);
   });
 
-  it("runs the hooks of navigations to other documents with willUnload; a cancel makes the browser ask", async () => {
+  it("runs the hooks of navigations to other documents with willUnload; a cancel keeps the page", async () => {
     await boot("/");
     const assign = vi.fn();
     vi.stubGlobal("location", {
@@ -302,10 +340,28 @@ describe("router hooks on the History API fallback", () => {
     cancel = () => true;
     await navigate("https://example.com/away");
     expect(log[1]).toBe("before navigate / -> null (unload)");
+    // Not loaded, and the browser does not ask.
+    expect(assign).toHaveBeenCalledTimes(1);
     expect(unload()).toBe(true);
-    // Closing the tab: leave.
-    expect(unload()).toBe(true);
+    // That was closing the tab: leave, and the browser asks.
     expect(log[2]).toBe("before leave / -> null (unload)");
+  });
+
+  it("runs the hooks of link clicks out of the SPA once, and a cancel prevents the click", async () => {
+    await boot("/");
+    log = [];
+    seen = [];
+    const followed = followedLinks();
+    click("/static");
+    expect(log).toEqual(["before link / -> /static (unload)"]);
+    expect(seen[0]!.to?.route).toBe("/static");
+    expect(followed).toEqual(["/static"]);
+    expect(unload()).toBe(false);
+    cancel = () => true;
+    click("/static");
+    expect(log[1]).toBe("before link / -> /static (unload)");
+    expect(followed).toEqual(["/static"]);
+    expect(text()).toBe("home");
   });
 });
 
@@ -483,14 +539,22 @@ describe("router hooks with the Navigation API", () => {
     ]);
   });
 
-  it("runs the hooks of document navigations with willUnload, then beforeunload asks if one cancelled", async () => {
+  it("runs the hooks of document navigations with willUnload; a cancel keeps the page", async () => {
     await bootApi("/");
-    cancel = () => true;
     await navigate("/static");
     expect(api.documents).toEqual([`${location.origin}/static`]);
     expect(log).toEqual(["before navigate / -> /static (unload)"]);
-    expect(unload()).toBe(true);
-    expect(log).toHaveLength(1);
+    // The hooks ran already: `beforeunload` does not run them again as leave.
+    expect(unload()).toBe(false);
+    cancel = () => true;
+    await navigate("/static");
+    await expect(api.click("/static").finished).rejects.toThrow();
+    expect(log.slice(1)).toEqual([
+      "before navigate / -> /static (unload)",
+      "before link / -> /static (unload)",
+    ]);
+    expect(api.documents).toHaveLength(1);
+    expect(text()).toBe("home");
   });
 });
 
@@ -519,6 +583,92 @@ describe("router hooks outside an SPA (an island on an MPA page)", () => {
     dispose = undefined;
     expect(unload()).toBe(false);
     expect(log).toHaveLength(3);
+  });
+
+  it("sees same-origin link clicks as link (unload); a cancel prevents the click", async () => {
+    const followed = await mountMpa("/blog?page=2");
+    clickLink("/about");
+    expect(log).toEqual(["before link /blog?page=2 -> /about (unload)"]);
+    expect(seen[0]!.from).toEqual({
+      url: new URL(`${location.origin}/blog?page=2`),
+      route: undefined,
+      params: {},
+    });
+    expect(seen[0]!.to).toEqual({
+      url: new URL(`${location.origin}/about`),
+      route: undefined,
+      params: {},
+    });
+    expect(followed).toEqual(["/about"]);
+    // The hooks ran already: `beforeunload` does not run them again as leave.
+    expect(unload()).toBe(false);
+    expect(log).toHaveLength(1);
+
+    cancel = () => true;
+    clickLink("/about");
+    expect(log[1]).toBe("before link /blog?page=2 -> /about (unload)");
+    // The page stays, without the browser's prompt; closing the tab later still asks.
+    expect(followed).toEqual(["/about"]);
+    expect(unload()).toBe(true);
+    expect(log[2]).toBe("before leave /blog?page=2 -> null (unload)");
+
+    // Disposed: the click listener goes too.
+    dispose!();
+    dispose = undefined;
+    container.remove();
+    container = document.createElement("div");
+    document.body.append(container);
+    clickLink("/about");
+    expect(log).toHaveLength(3);
+    expect(followed).toEqual(["/about", "/about"]);
+  });
+
+  it("leaves modified clicks, target, download, other origins, fragments and prevented clicks to the browser", async () => {
+    const followed = await mountMpa("/blog");
+    cancel = () => true;
+    clickLink("/a", { ctrlKey: true });
+    clickLink("/b", { metaKey: true });
+    clickLink("/c", { shiftKey: true });
+    clickLink("/d", { altKey: true });
+    clickLink("/e", { button: 1 });
+    clickLink("/f", {}, { target: "_blank" });
+    clickLink("/g", {}, { download: "" });
+    clickLink("https://example.com/h");
+    clickLink("mailto:someone@example.com");
+    clickLink("#comments");
+    clickLink("/blog#comments");
+    container.addEventListener("click", (event) => event.preventDefault(), { once: true });
+    clickLink("/i");
+    expect(log).toEqual([]);
+    expect(followed).toEqual([
+      "/a",
+      "/b",
+      "/c",
+      "/d",
+      "/e",
+      "/f",
+      "/g",
+      "https://example.com/h",
+      "mailto:someone@example.com",
+      "#comments",
+      "/blog#comments",
+    ]);
+    // A link to the current page in this tab loads it again; `target="_self"` stays in the tab.
+    clickLink("/blog", {}, { target: "_self" });
+    expect(log).toEqual(["before link /blog -> /blog (unload)"]);
+    expect(followed).toHaveLength(11);
+  });
+
+  it("gives a same-origin link outside the base a null destination", async () => {
+    vi.stubEnv("BASE_URL", "/docs/");
+    onTestFinished(() => void vi.unstubAllEnvs());
+    await mountMpa("/docs/guide");
+    clickLink("/docs/api");
+    clickLink("/shop");
+    expect(log).toEqual([
+      "before link /docs/guide -> /docs/api (unload)",
+      "before link /docs/guide -> null (unload)",
+    ]);
   });
 
   it("must be called during component setup (dev)", () => {

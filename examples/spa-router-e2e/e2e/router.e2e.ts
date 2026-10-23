@@ -288,9 +288,10 @@ function navigations(page: Page): Promise<string[]> {
 }
 
 /**
- * TASK-296: the editor's beforeNavigate asks with confirm() inside the SPA (links, back/forward)
- * and lets the browser ask (beforeunload) for a link out of it; the layout's afterNavigate sees
- * each completed navigation once, and enter on the first load.
+ * TASK-296, TASK-549: the editor's beforeNavigate asks with confirm() for links (out of the SPA
+ * too, where a cancel prevents the click) and back/forward, and lets the browser ask
+ * (beforeunload) for "leave"; the layout's afterNavigate sees each completed navigation once, and
+ * enter on the first load.
  */
 async function guardsUnsavedChanges(page: Page): Promise<void> {
   await page.goto("/");
@@ -308,11 +309,15 @@ async function guardsUnsavedChanges(page: Page): Promise<void> {
   await page.getByRole("link", { name: "User 1", exact: true }).click();
   await page.evaluate(() => history.back());
   await page.getByRole("link", { name: "Static page" }).click();
-  await expect.poll(() => dialogs).toEqual(["confirm", "confirm", "beforeunload"]);
+  await expect.poll(() => dialogs).toEqual(["confirm", "confirm", "confirm"]);
   await expect(page).toHaveURL(/\/editor$/);
   await expect(page.locator("#editor")).toBeVisible();
   expect(await sameDocument(page)).toBe(true);
   expect(await navigations(page)).toEqual(["enter /", "link /editor"]);
+  // Closing the tab is "leave": the browser asks.
+  await page.close({ runBeforeUnload: true });
+  await expect.poll(() => dialogs).toEqual(["confirm", "confirm", "confirm", "beforeunload"]);
+  expect(page.isClosed()).toBe(false);
 
   page.removeAllListeners("dialog");
   page.once("dialog", (dialog) => void dialog.accept());
