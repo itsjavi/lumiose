@@ -3,7 +3,7 @@ id: doc-11
 title: Port scorecards
 type: other
 created_date: '2026-10-20 21:23'
-updated_date: '2026-10-23 20:58'
+updated_date: '2026-10-23 22:13'
 ---
 Every port of a real project records a scorecard against its original stack here (decision-70). Lumiose's public claims come from these scorecards and the benchmarks, so a port where Lumiose is not clearly better on something that matters is written down as plainly as a win, and its gaps become tasks.
 
@@ -193,6 +193,64 @@ Every port of a real project records a scorecard against its original stack here
   - the item picker is not paginated.
 - **Gaps found:** TASK-537 to TASK-545.
 
-### The same app: forms, actions and auth (later)
+### The same app: forms, actions and auth
 
-TASK-493.
+- **Stacks:**
+  - Original: the same React Router app, whose pages call its own REST API, a separate Fastify server, for every read and write.
+    - It runs on Postgres and Valkey, and its own email-code sign-in uses a captcha.
+  - Lumiose: 0.6.0 and @lumiose/ui 0.1.1 from npm.
+    - `server` routes, form actions and one island, with middleware guards.
+    - Better Auth 1.7 with its email one-time-code plugin (instead of the app's own sign-in).
+    - Prisma 7 on `prisma dev`, Prisma's local Postgres.
+- **Date and machine:** 2026-10-24, the same machine.
+- **Port:** the same private folder (TASK-493).
+- **Scope:**
+  - sign-in by email code;
+  - the onboarding form (profile fields with a live username check, and the first collection);
+  - a collection tracker page:
+    - a virtualized grid of a few hundred toggles, server-rendered first;
+    - a local draft with undo, saved in chunks;
+    - the view state in the URL;
+    - a settings menu, a floating top bar and a leave dialog;
+    - read-only for other users.
+  - Route guards redirect as the original's do.
+- **Method:**
+  - The original ran locally against a second `prisma dev` with the same user and data, signed in with a seeded session because its sign-in needs the captcha.
+  - Same throttling profile and brotli proxy as above; the 1-minute load average stayed under 3.
+
+| Metric                                              |                    Original |                     Lumiose | Notes                                                                                   |
+| --------------------------------------------------- | --------------------------: | --------------------------: | --------------------------------------------------------------------------------------- |
+| JavaScript (brotli)                                 |          388.3 kB, 112 files |           32.4 kB, 12 files | Lumiose: the runtime, the tracker island and the ui scripts it uses                     |
+| CSS / HTML (brotli)                                 |              34.1 / 12.9 kB |                5.8 / 17.6 kB | The port renders more of the first screen in the HTML                                   |
+| Data after load                                     |     334.3 kB in 26 requests |                        none | The original fetches its catalog after hydration                                        |
+| Requests / total                                    |             287 / 2,973 kB |              157 / 2,259 kB | Mostly the same images                                                                  |
+| Server response (median)                            |                       80 ms |                       26 ms | The original's page server calls its API server; the port reads the database itself     |
+| Slow 4G + 4x CPU: shows / LCP / interactive         |      1.65 / 8.16 / 10.37 s |        0.66 / 2.62 / 2.08 s |                                                                                         |
+| Toggle one item, 4x CPU (DOM / next frame)          |                 13 / 19 ms |                    4 / 8 ms |                                                                                         |
+| Search / clear search                               |                37 / 57 ms |                   8 / 24 ms |                                                                                         |
+| Hide the checked items                              |                       52 ms |                       20 ms |                                                                                         |
+| Save, until stored                                  |                       46 ms |                       36 ms |                                                                                         |
+| Build / type check                                  | 27.8 s / 2.1–3.0 s (whole app) | 1.0–1.2 s (+0.8 s client generation) / 0.9 s | Not the same scope                                               |
+| Source lines                                        |           6,065 in 53 files |           5,545 in 34 files | The original's pure draft, entries and id modules were copied unchanged, with their tests |
+| Runtime dependencies                                |   68 (web) + 13 (API server) |                           8 |                                                                                         |
+| Parity                                              |                             |                             | First screen differs by 1.0% of pixels on desktop and 1.7% on phone; the same scripted steps pass on both; 8/8 new e2e tests |
+
+**Easier in Lumiose:**
+- Form actions replaced the original's API calls for sign-in, onboarding, saving and settings. Each page and its writes live in one route folder, behind a folder middleware guard.
+- Better Auth mounted on one catch-all API route; the middleware puts the session on `locals`, and the guards redirect from there.
+- A server-rendered first screen with one island taking it over: the page shows in 0.66 s instead of 1.65 s and is interactive in 2.1 s instead of 10.4 s on slow 4G.
+- `submit()` to an action from the island, with chunked saves.
+- The original's pure TypeScript modules and their tests ran unchanged.
+
+**Harder in Lumiose:**
+- `beforeNavigate` reports only "leave" on MPA pages, so the leave dialog needed a hand-written link listener (TASK-549).
+- Compound ui parts cannot be rendered in a page and passed into an island that renders their Root (TASK-550).
+- A Toggle or a menu trigger cannot carry a ui Tooltip (TASK-544).
+
+**Not ported or different:**
+- The captcha, passkeys and OAuth sign-in.
+- The code is 6 digits instead of the original's longer one, and there is no code link in the email.
+- Auto-derived registrations (the slice stores no items).
+- Translations and the original's feature flag.
+
+**Status:** measured on 0.6.0 with @lumiose/ui 0.1.1. The port stays local and private.

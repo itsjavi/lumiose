@@ -5,6 +5,7 @@ status: To Do
 assignee:
   - Lux
 created_date: '2026-10-23 20:56'
+updated_date: '2026-10-23 22:13'
 labels:
   - ui
   - proposal
@@ -23,3 +24,9 @@ From a port's @lumiose/ui pass (2026-10-23). Tooltip.Trigger always renders a <b
 <!-- AC:BEGIN -->
 - [ ] #1 The user chose an API (or declined), recorded in a decision
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Another case (2026-10-24, the same port): a Toggle or a Menu.Trigger cannot carry a Tooltip either, since Tooltip.Trigger is its own button.
+<!-- SECTION:NOTES:END -->

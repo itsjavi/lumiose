@@ -1,11 +1,11 @@
 ---
 id: TASK-493
 title: 'Private app: forms, actions and auth port, with a scorecard'
-status: To Do
+status: Done
 assignee:
   - '@Lux'
 created_date: '2026-10-20 21:23'
-updated_date: '2026-10-23 20:08'
+updated_date: '2026-10-23 22:13'
 labels: []
 milestone: m-13
 dependencies:
@@ -22,8 +22,8 @@ decision-70, later: port a forms, actions and auth slice of the same private app
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Sign-in by email code, onboarding and the ported pages work end to end
-- [ ] #2 doc-11 holds the scorecard (stacks and numbers only); gaps become tasks
+- [x] #1 Sign-in by email code, onboarding and the ported pages work end to end
+- [x] #2 doc-11 holds the scorecard (stacks and numbers only); gaps become tasks
 <!-- AC:END -->
 
 ## Implementation Notes
@@ -37,4 +37,6 @@ Plan (Lux, 2026-10-23), after the list and detail port's 0.6 + @lumiose/ui pass,
 3. The tracker page: a server route reads the save and its registrations; an island holds the local draft (marks, undo, chunked save through an action), the view state in the URL and the settings menu (@lumiose/ui).
 4. Database: `prisma dev` with only the models the slice needs.
 5. Parity and numbers against the original where it can run locally; gaps become tasks. doc-11 gets stacks and numbers only.
+
+Done (Nova, 2026-10-24, recorded by Lux): sign-in by email code with Better Auth, onboarding as a form action and the tracker page work end to end in the local port, with 8 new e2e tests; the original ran locally for parity. doc-11 holds the scorecard. Gaps: TASK-549, TASK-550, and a new case for TASK-544.
 <!-- SECTION:NOTES:END -->
