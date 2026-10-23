@@ -46,3 +46,16 @@ export function Account(props: { user: () => string | null; kind: string }) {
   if (!props.user()) return <p>Sign in</p>;
   return <p>{props.user()}</p>;
 }
+
+// LUM2001 also reports a signal's value copied into a local (TASK-529); `peek()` reads it once
+// on purpose.
+export function Counter() {
+  const count = signal(0);
+  const n = count();
+  const start = count.peek();
+  return (
+    <button onClick={() => count.update((c) => c + 1)}>
+      {n} from {start}
+    </button>
+  );
+}

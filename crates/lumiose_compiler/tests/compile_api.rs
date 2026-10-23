@@ -941,6 +941,56 @@ export function Toasts(props: { date: Date; name: string }) {
 }
 
 #[test]
+fn zero_argument_calls_of_accessors_are_stale_copies() {
+    let source = r#"import { computed, resource, signal, untrack } from "lumiose";
+import { total } from "./cart.ts";
+import { useCart } from "./state.ts";
+export function Counter() {
+  const count = signal(1);
+  const doubled = computed(() => count() * 2);
+  const user = resource(() => fetch("/me"));
+  const n = count();
+  const d = (doubled());
+  const u = user();
+  const s = shared();
+  const first = untrack(count);
+  const start = count.peek();
+  const label = `from ${count.peek()}`;
+  const t = total();
+  const cart = useCart();
+  if (n > 9) return null;
+  if (count.peek() > 99) return null;
+  return <p>{n}{d}{u}{s}{first}{start}{label}{t}{cart.id}</p>;
+}
+const shared = signal(0);
+"#;
+    let result = compile(source, "/src/Counter.tsx", &CompileOptions::default());
+    let found = |code: Code| -> Vec<&str> {
+        result
+            .diagnostics
+            .iter()
+            .filter(|d| d.code == code)
+            .map(|d| &source[d.span.start as usize..d.span.end as usize])
+            .collect()
+    };
+    // TASK-529: a signal, computed or resource made in the module (above or below the component)
+    // read once into a local. Imported functions are not known to be accessors: `total()` may be
+    // a signal of a store module or a plain function, and `useCart()` a `defineState` getter.
+    // `untrack(count)` and `count.peek()` read once on purpose.
+    assert_eq!(
+        found(Code::StaleDerivedValue),
+        [
+            "n = count()",
+            "d = (doubled())",
+            "u = user()",
+            "s = shared()"
+        ]
+    );
+    // LUM2003 follows the same derived locals (decision-77).
+    assert_eq!(found(Code::ReactiveEarlyReturn), ["n > 9"]);
+}
+
+#[test]
 fn stable_list_sources_keep_the_index_without_lum2006() {
     let source = r#"import { signal } from "lumiose";
 const CHANNELS = [{ name: "pulse" }, { name: "wave" }] as const;

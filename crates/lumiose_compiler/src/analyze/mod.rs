@@ -18,8 +18,8 @@ use oxc_syntax::symbol::SymbolId;
 
 pub use components::{is_component_name, is_jsx_like, property_key_name};
 use reactivity::{
-    DerivedLocals, PropsSymbols, ReadKind, is_import_member, server_only_imports, strongest_read,
-    symbol_of,
+    DerivedLocals, PropsSymbols, ReadKind, accessor_bindings, is_import_member,
+    server_only_imports, strongest_read, symbol_of,
 };
 
 use crate::codegen::client::{
@@ -105,6 +105,7 @@ pub fn analyze(
         component_imports: HashSet::new(),
         signals: HashSet::new(),
         server_only: server_only_imports(program, is_server_only),
+        accessors: accessor_bindings(program, scoping),
         component_calls: Vec::new(),
         server_route,
         default_name: server_route.then(|| default_export_name(program)).flatten(),
@@ -267,6 +268,9 @@ struct Analyzer<'s> {
     signals: HashSet<SymbolId>,
     /// Imports whose calls are never reactive reads (see [`server_only_imports`]).
     server_only: HashSet<SymbolId>,
+    /// Bindings holding an accessor made in the module (`signal(…)`, `computed(…)`, see
+    /// [`accessor_bindings`]).
+    accessors: HashSet<SymbolId>,
     component_calls: Vec<(Span, SymbolId, String)>,
     /// See [`analyze`].
     server_route: bool,
@@ -509,6 +513,15 @@ impl<'s> Analyzer<'s> {
                 if symbol_of(self.scoping, ident).is_some_and(|s| props.is_props_object(s)));
         if destructures_props {
             return Some(ReadKind::Prop);
+        }
+        // A zero-argument call of an accessor made in the module copies its value
+        // (`const n = count()`, TASK-529), although it has the shape of a factory call.
+        if let Expression::CallExpression(call) = inner
+            && call.arguments.is_empty()
+            && let Expression::Identifier(callee) = call.callee.without_parentheses()
+            && symbol_of(self.scoping, callee).is_some_and(|s| self.accessors.contains(&s))
+        {
+            return Some(ReadKind::Signal);
         }
         // Factory calls (`signal(props.start)`, `computed(…)`) read their arguments on purpose;
         // method calls (`props.name.toUpperCase()`) derive a value.

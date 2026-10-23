@@ -3,12 +3,13 @@
 // twice, LUM2006 reactive index read in row setup.
 import { signal } from "lumiose";
 import { Card } from "./Card.stsx";
-import { template, bind, setAttr, insert, insertText, list } from "lumiose/dom";
+import { template, bind, setAttr, insert, insertText, list, delegateEvents } from "lumiose/dom";
 const _t0 = /* @__PURE__ */ template(`<div><!><!><span> `);
 const _t1 = /* @__PURE__ */ template(`<li>: `);
 const _t2 = /* @__PURE__ */ template(`<ul>`);
 const _t3 = /* @__PURE__ */ template(`<p>Sign in`);
 const _t4 = /* @__PURE__ */ template(`<p> `);
+const _t5 = /* @__PURE__ */ template(`<button> from `);
 const _a0 = (el, v) => setAttr(el, "data-name", v);
 const _a1 = (el, v) => setAttr(el, "data-once", v);
 const _a2 = (el, v) => setAttr(el, "data-i", v);
@@ -54,6 +55,19 @@ export function Account(props) {
 	insertText(_text3, () => props.user());
 	return _el4;
 }
+// LUM2001 also reports a signal's value copied into a local (TASK-529); `peek()` reads it once
+// on purpose.
+export function Counter() {
+	const count = signal(0);
+	const n = count();
+	const start = count.peek();
+	const _el5 = _t5(), _text4 = _el5.firstChild;
+	_el5.$$click = () => count.update((c) => c + 1);
+	insert(_el5, n, _text4);
+	insert(_el5, start);
+	return _el5;
+}
+delegateEvents(["click"]);
 
 // --- diagnostics ---
 // LUM2001 warning 10:9 `upper` is computed once from a reactive value, so the JSX that uses it never updates
@@ -65,3 +79,4 @@ export function Account(props) {
 // LUM2006 warning 31:26 the list index `i` is read once here, so this value goes stale when rows move
 // LUM2003 warning 42:11 this early return depends on a prop, but a component body runs once: it never updates if a parent passes a changing value
 // LUM2003 error 46:7 this early return depends on a reactive value, but a component body runs once
+// LUM2001 warning 54:9 `n` is computed once from a reactive value, so the JSX that uses it never updates
