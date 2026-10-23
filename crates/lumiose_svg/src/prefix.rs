@@ -9,8 +9,11 @@
 //! names the file uses, so a class the page adds (`<Icon class="spin" />`) still matches.
 //!
 //! The same pass drops the CSS references to resources outside the file (decision-69): a
-//! `url()` or `src()` whose target is not a fragment (`#id`), and an `image-set()` holding a URL,
-//! become `none`, and `@import` rules go. Fragment references stay.
+//! `url()` or `src()` whose target is not a fragment (`#id`), a bad URL, and an `image-set()`
+//! holding a URL, become `none`, and `@import` rules go. Fragment references stay. It fails
+//! closed (TASK-499): URLs go in every context, selectors and at-rule preludes included, but the
+//! prelude of a top-level `@namespace` (it names a namespace, it loads nothing), and what is
+//! nested too deep to read goes too.
 
 use std::collections::HashSet;
 
@@ -29,8 +32,8 @@ const ARIA_ID_REFS: [&str; 8] = [
     "aria-owns",
 ];
 
-/// Blocks nested deeper than this in a `<style>` are left as they are (no stack overflow on
-/// hostile input).
+/// Blocks nested deeper than this in a `<style>` or a value lose their content: what the filter
+/// does not read does not reach the page (TASK-499), and hostile input cannot overflow the stack.
 const MAX_CSS_DEPTH: usize = 64;
 
 pub(crate) struct Prefixer<'a> {
@@ -156,6 +159,8 @@ impl<'a> Prefixer<'a> {
                         self.walk(css, parser, mode, depth + 1, out);
                         Ok(())
                     });
+                } else {
+                    drop_content(css, parser, out);
                 }
             };
             match mode {
@@ -199,54 +204,38 @@ impl<'a> Prefixer<'a> {
                     }
                     _ => {
                         prelude_started = true;
-                        if at_rule.is_some() {
+                        if depth == 0 && at_rule.as_deref() == Some("namespace") {
                             // `@namespace svg url(…)` names a namespace, it loads nothing.
-                            if is_block(&token) && at_rule.as_deref() != Some("namespace") {
+                        } else if self.resource(css, parser, &token, start, depth, out) {
+                            after_dot = false;
+                        } else if at_rule.is_some() {
+                            if is_block(&token) {
                                 nested(parser, Mode::Values, out);
                             }
                         } else {
                             after_dot = self.selector_token(&token, start, after_dot, out);
-                            if let Token::Function(_) | Token::ParenthesisBlock = token {
+                            // Every block, `[…]` too: what is not read does not stay unread.
+                            if is_block(&token) {
                                 nested(parser, Mode::Selector, out);
                             }
                         }
                     }
                 },
                 Mode::Selector => {
-                    after_dot = self.selector_token(&token, start, after_dot, out);
-                    if let Token::Function(_) | Token::ParenthesisBlock = token {
-                        nested(parser, Mode::Selector, out);
+                    if self.resource(css, parser, &token, start, depth, out) {
+                        after_dot = false;
+                    } else {
+                        after_dot = self.selector_token(&token, start, after_dot, out);
+                        if is_block(&token) {
+                            nested(parser, Mode::Selector, out);
+                        }
                     }
                 }
-                Mode::Values => match &token {
-                    Token::UnquotedUrl(url) => {
-                        if let Some(id) = url.strip_prefix('#') {
-                            if self.ids.contains(id) {
-                                let raw = &css[start..parser.position().byte_index()];
-                                if let Some(hash) = raw.find('#') {
-                                    out.push(Edit::insert(start + hash + 1, self.mark()));
-                                }
-                            }
-                        } else {
-                            out.push(Edit::replace(start, parser.position().byte_index(), "none"));
-                        }
+                Mode::Values => {
+                    if !self.resource(css, parser, &token, start, depth, out) && is_block(&token) {
+                        nested(parser, Mode::Values, out);
                     }
-                    Token::Function(name)
-                        if name.eq_ignore_ascii_case("url") || name.eq_ignore_ascii_case("src") =>
-                    {
-                        self.url_function(css, parser, start, out);
-                    }
-                    Token::Function(name)
-                        if name.eq_ignore_ascii_case("image-set")
-                            || name.eq_ignore_ascii_case("-webkit-image-set") =>
-                    {
-                        if holds_url(parser) {
-                            out.push(Edit::replace(start, parser.position().byte_index(), "none"));
-                        }
-                    }
-                    _ if is_block(&token) => nested(parser, Mode::Values, out),
-                    _ => {}
-                },
+                }
             }
         }
         // An `@import` without its `;`, at the end of the stylesheet or block.
@@ -260,14 +249,65 @@ impl<'a> Prefixer<'a> {
         format!("{}__", self.prefix)
     }
 
+    /// Records the edit for `token` when it can name a resource, and returns whether it can: a
+    /// URL token, a bad URL, a `url()` or `src()` (see [`Self::url_function`]), or an
+    /// `image-set()`, which becomes `none` when it holds a URL at any depth.
+    fn resource(
+        &self,
+        css: &str,
+        parser: &mut Parser,
+        token: &Token,
+        start: usize,
+        depth: usize,
+        out: &mut Vec<Edit>,
+    ) -> bool {
+        match token {
+            Token::UnquotedUrl(url) => {
+                if let Some(id) = url.strip_prefix('#') {
+                    if self.ids.contains(id) {
+                        let raw = &css[start..parser.position().byte_index()];
+                        if let Some(hash) = raw.find('#') {
+                            out.push(Edit::insert(start + hash + 1, self.mark()));
+                        }
+                    }
+                } else {
+                    out.push(Edit::replace(start, parser.position().byte_index(), "none"));
+                }
+            }
+            // `url(a b)`: browsers load nothing, but what they read there is not worth keeping.
+            Token::BadUrl(_) => {
+                out.push(Edit::replace(start, parser.position().byte_index(), "none"));
+            }
+            Token::Function(name)
+                if name.eq_ignore_ascii_case("url") || name.eq_ignore_ascii_case("src") =>
+            {
+                self.url_function(css, parser, start, out);
+            }
+            Token::Function(name)
+                if name.eq_ignore_ascii_case("image-set")
+                    || name.eq_ignore_ascii_case("-webkit-image-set") =>
+            {
+                if holds_url(parser, depth + 1) {
+                    out.push(Edit::replace(start, parser.position().byte_index(), "none"));
+                }
+            }
+            _ => return false,
+        }
+        true
+    }
+
     /// Records the edit for a `url("…")` or `src(…)`, from after its name: a reference to an id of
-    /// the file gets the prefix, other fragments stay, and anything else becomes `none`.
+    /// the file gets the prefix, other fragments stay, and anything else becomes `none`, a string
+    /// followed by modifiers this filter does not read (`url("#a" …)`) included.
     fn url_function(&self, css: &str, parser: &mut Parser, start: usize, out: &mut Vec<Edit>) {
         let mut target = None;
         let _ = parser.parse_nested_block(|parser| -> Result<(), ParseError<()>> {
             let at = parser.position().byte_index();
             if let Ok(Token::QuotedString(url)) = parser.next() {
-                target = Some((at, url.to_string()));
+                let url = url.to_string();
+                if parser.is_exhausted() {
+                    target = Some((at, url));
+                }
             }
             Ok(())
         });
@@ -349,24 +389,48 @@ fn is_fragment(url: &str) -> bool {
     url.trim_start_matches(|c: char| c <= ' ').starts_with('#')
 }
 
-/// Whether the arguments of the function `parser` is at (an `image-set()`) name an image by URL:
-/// a string, a `url()` or a `src()`, or a `var()`, `env()` or `attr()` that could hold one.
-fn holds_url(parser: &mut Parser) -> bool {
+/// Whether the arguments of the function `parser` is at (an `image-set()`, its content at
+/// `depth`) name an image by URL, at any depth (`image-set(cross-fade(url(…)) 1x)`): a string, a
+/// `url()` or a `src()`, or a `var()`, `env()` or `attr()` that could hold one. Too deep to read
+/// counts as a URL.
+fn holds_url(parser: &mut Parser, depth: usize) -> bool {
     parser
         .parse_nested_block(|parser| -> Result<bool, ParseError<()>> {
-            let mut found = false;
             while let Ok(token) = parser.next() {
-                found |= match token {
+                let token = token.clone();
+                let found = match &token {
                     Token::QuotedString(_) | Token::UnquotedUrl(_) | Token::BadUrl(_) => true,
-                    Token::Function(name) => ["url", "src", "var", "env", "attr"]
-                        .iter()
-                        .any(|each| name.eq_ignore_ascii_case(each)),
+                    Token::Function(name)
+                        if ["url", "src", "var", "env", "attr"]
+                            .iter()
+                            .any(|each| name.eq_ignore_ascii_case(each)) =>
+                    {
+                        true
+                    }
+                    _ if is_block(&token) => depth >= MAX_CSS_DEPTH || holds_url(parser, depth + 1),
                     _ => false,
                 };
+                if found {
+                    return Ok(true);
+                }
             }
-            Ok(found)
+            Ok(false)
         })
         .unwrap_or(true)
+}
+
+/// Records the edit that empties the block `parser` is at, nested too deep to read: `{…}` becomes
+/// `{}` (closed even where the text ended inside it), so the CSS around it reads the same.
+fn drop_content(css: &str, parser: &mut Parser, out: &mut Vec<Edit>) {
+    let from = parser.position().byte_index();
+    let _ = parser.parse_nested_block(|_| -> Result<(), ParseError<()>> { Ok(()) });
+    // The opener is the last character of the block's token: `{`, `[`, `(` or `name(`.
+    let closer = match css.as_bytes()[from - 1] {
+        b'{' => "}",
+        b'[' => "]",
+        _ => ")",
+    };
+    out.push(Edit::replace(from, parser.position().byte_index(), closer));
 }
 
 fn is_block(token: &Token) -> bool {

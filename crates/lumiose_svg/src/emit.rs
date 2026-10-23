@@ -294,8 +294,9 @@ fn node(out: &mut String, prefixer: &Prefixer, node: Node, depth: usize, text_co
     if name == "style" {
         // Native SVG CSS: raw text, which the `.stsx` scanner keeps verbatim.
         let css: String = node.children().filter_map(|child| child.text()).collect();
-        let css = prefixer.stylesheet(&css);
-        let _ = writeln!(out, ">{}</style>", style_text(&css));
+        // Escaped first: the filter reads the text the page gets (TASK-499).
+        let css = prefixer.stylesheet(&style_text(&css));
+        let _ = writeln!(out, ">{css}</style>");
         return;
     }
     out.push_str(">\n");
@@ -309,8 +310,28 @@ fn node(out: &mut String, prefixer: &Prefixer, node: Node, depth: usize, text_co
 /// CSS text for a `<style>` inside an inline `<svg>`, which an HTML parser reads as markup
 /// (foreign content), not as raw text: `<` and `&` become CSS escapes (`\3c `, `\26 `), which mean
 /// the same in strings and identifiers but cannot open a tag or an entity.
+///
+/// An escape is one unit: `\<` (an escaped `<`) becomes `\3c `, not `\\3c `, which CSS reads as
+/// an escaped backslash before `3c` (TASK-499), and in `\\<` the `<` is a character of its own.
 fn style_text(css: &str) -> String {
-    css.replace('<', "\\3c ").replace('&', "\\26 ")
+    let escape = |ch| if ch == '<' { "\\3c " } else { "\\26 " };
+    let mut out = String::with_capacity(css.len());
+    let mut chars = css.chars();
+    while let Some(ch) = chars.next() {
+        match ch {
+            '\\' => match chars.next() {
+                Some(next @ ('<' | '&')) => out.push_str(escape(next)),
+                Some(next) => {
+                    out.push('\\');
+                    out.push(next);
+                }
+                None => out.push('\\'),
+            },
+            '<' | '&' => out.push_str(escape(ch)),
+            ch => out.push(ch),
+        }
+    }
+    out
 }
 
 /// `name="value"`, or `name={"value"}` when a JSX string could not hold the value as is

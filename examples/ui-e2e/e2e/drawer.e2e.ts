@@ -8,6 +8,14 @@ import { axe, clipped, focusRing, SCHEMES, smallTargets, TEXT_SPACING } from "./
 
 const drawer = (page: Page, name: string) => page.getByRole("dialog", { name });
 const button = (page: Page, name: string) => page.getByRole("button", { name, exact: true });
+/** Whether the page fits the window, so it has no scrollbar. */
+const fits = (page: Page) =>
+  page.evaluate(
+    () => document.documentElement.scrollHeight <= document.documentElement.clientHeight,
+  );
+/** The width of the page's root box, which the scroll lock's gutter narrows (TASK-507). */
+const rootWidth = (page: Page) =>
+  page.evaluate(() => document.documentElement.getBoundingClientRect().width);
 
 /** Drags with the mouse from `from` (relative to `target`'s box) by `dx`, `dy`, in `steps`. */
 async function drag(page: Page, target: Locator, toX: number, toY: number, steps = 10) {
@@ -47,14 +55,44 @@ test.describe("without JavaScript", () => {
     const box = (await filters.boundingBox())!;
     const viewport = page.viewportSize()!;
     expect(Math.round(box.y + box.height)).toBe(viewport.height);
-    // As wide as the page: the scroll lock (dialog.css) keeps a stable scrollbar gutter, 15px of
-    // the viewport with Linux's classic scrollbars and none with macOS's overlay ones (TASK-507).
-    const width = await page.evaluate(() => document.documentElement.getBoundingClientRect().width);
-    expect(Math.round(box.width)).toBe(Math.round(width));
+    // As wide as the page: the scroll lock (dialog.css) keeps a scrollbar's gutter where the page
+    // overflows, 15px of the viewport with Linux's classic scrollbars and none with macOS's overlay
+    // ones, and in Firefox, which has no scroll timelines, on this page too (TASK-507).
+    expect(Math.round(box.width)).toBe(Math.round(await rootWidth(page)));
     await page.keyboard.press("Escape");
     await expect(filters).toBeHidden();
   });
+
+  test("on a page that fits the window the drawer spans it: no gutter (TASK-507)", async ({
+    page,
+    browserName,
+  }) => {
+    test.skip(browserName === "firefox", "no scroll timelines: the gutter stays (dialog.md)");
+    await spansAPageThatFits(page);
+  });
 });
+
+test("on a page that fits the window the drawer spans it: no gutter (TASK-507)", async ({
+  page,
+}) => {
+  await spansAPageThatFits(page);
+});
+
+/**
+ * Opens the Filters drawer on /drawer, a page that fits the window: the scroll lock adds no gutter,
+ * so with classic scrollbars (Linux) neither the page nor a drawer across it loses 15px.
+ */
+async function spansAPageThatFits(page: Page) {
+  await page.goto("/drawer");
+  expect(await fits(page)).toBe(true);
+  await button(page, "Filters").click();
+  const filters = drawer(page, "Filters");
+  await expect(filters).toBeVisible();
+  await expect(page.locator("html")).toHaveCSS("scrollbar-gutter", "auto");
+  const viewport = page.viewportSize()!;
+  expect(Math.round(await rootWidth(page))).toBe(viewport.width);
+  expect(Math.round((await filters.boundingBox())!.width)).toBe(viewport.width);
+}
 
 test.describe("swipe", () => {
   test("past 40% of its height a swipe closes it; short of it, it springs back", async ({

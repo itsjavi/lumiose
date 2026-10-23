@@ -51,8 +51,11 @@ The query is the switch, so it works the same for your files and for packages:
     animation values) a `url()` to another file, which becomes `none`, an `image-set()` with a
     URL, and `@import` rules. Fragment references (`url(#gradient)`, `href="#shape"`) stay. To
     show an outside image, render the `<svg>` markup in a component of your own, or point an
-    `<img>` at the file.
-  - Elements nested more than 128 levels deep make the file an error.
+    `<img>` at the file. The filter reads the CSS exactly as the page gets it, escapes
+    included, and fails closed: a URL goes wherever it appears (selectors too), except in an
+    `@namespace` rule, which loads nothing.
+  - Elements nested more than 128 levels deep make the file an error. CSS blocks nested more
+    than 64 levels deep stay but lose their content.
 
   Comments and editor metadata go too, and redundant markup when optimising. Ids get a per-file
   prefix, and so do the references to them (`href="#id"`, `url(#id)`, `<style>` selectors);

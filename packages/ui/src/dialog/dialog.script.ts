@@ -16,7 +16,8 @@
 // - Focus return: when closing leaves focus nowhere (WebKit does not focus a clicked trigger, or the
 //   trigger is gone), focus goes to the opener, else to a trigger of the dialog, without scrolling.
 // - Scroll lock (dialog.css locks <html> and keeps its scrollbar's gutter): a <body> that scrolls is
-//   locked too, and a page without a scrollbar gets no empty gutter.
+//   locked too, and only a page that overflows keeps a gutter, measured before the dialog opens,
+//   so a page without a scrollbar gets no empty one.
 // - A dialog that closes closes the popovers and dialogs open inside it, innermost first, so none
 //   outlives it (TASK-436 M1; Chromium would keep a popover showing without its dialog).
 // - One Escape closes one layer (TASK-427): an Escape that nothing above took closes the topmost
@@ -56,8 +57,11 @@ function lockScroll() {
   const { documentElement: html, body } = document;
   const { scrollbarGutter } = html.style;
   const { overflowY } = body.style;
-  if (getComputedStyle(html).scrollbarGutter === "auto" && html.scrollHeight <= html.clientHeight) {
-    html.style.scrollbarGutter = "auto";
+  // The gutter only where the page overflows, so has a scrollbar (TASK-507): set either way, so
+  // this does not depend on dialog.css's scroll timeline (Firefox has none, and a page's own
+  // `animation` on the root would cancel it).
+  if (getComputedStyle(html).scrollbarGutter === "auto") {
+    html.style.scrollbarGutter = html.scrollHeight > html.clientHeight ? "stable" : "auto";
   }
   if (
     /auto|scroll/.test(getComputedStyle(body).overflowY) &&

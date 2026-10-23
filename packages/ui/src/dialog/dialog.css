@@ -11,4 +11,25 @@
     overflow: hidden;
     scrollbar-gutter: stable;
   }
+
+  /*
+   * The gutter only where the page overflows, so had a scrollbar (TASK-507, decision-79): a scroll
+   * timeline is active only then, so this animation sets it only then, with no script. Elsewhere
+   * a short page would lose 15px at its inline end to an empty gutter with classic scrollbars.
+   * Without scroll timelines (Firefox) the gutter stays, and Dialog's script measures the page.
+   */
+  @supports (animation-timeline: scroll()) {
+    :root:has(dialog:modal) {
+      scrollbar-gutter: auto;
+      animation: lu-dialog-gutter linear both;
+      animation-timeline: scroll(root block);
+    }
+  }
+
+  @keyframes lu-dialog-gutter {
+    from,
+    to {
+      scrollbar-gutter: stable;
+    }
+  }
 }
