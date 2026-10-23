@@ -3,7 +3,7 @@ id: doc-11
 title: Port scorecards
 type: other
 created_date: '2026-10-20 21:23'
-updated_date: '2026-10-23 22:13'
+updated_date: '2026-10-23 22:45'
 ---
 Every port of a real project records a scorecard against its original stack here (decision-70). Lumiose's public claims come from these scorecards and the benchmarks, so a port where Lumiose is not clearly better on something that matters is written down as plainly as a win, and its gaps become tasks.
 
@@ -192,6 +192,11 @@ Every port of a real project records a scorecard against its original stack here
   - the site menu has no arrow keys;
   - the item picker is not paginated.
 - **Gaps found:** TASK-537 to TASK-545.
+- **@lumiose/ui 0.1.2 (2026-10-24):**
+  - The port dropped its ui workarounds: the toggle group release handler, the extra `batch()` calls and the omitted `label`s.
+  - The detail page went from 22.7 to 22.0 kB of JavaScript, because its popovers no longer load the hover module. The list page went from 38.7 to 39.3 kB: the labelled-select script, the batch helper, and the hover script an island still loads (TASK-551).
+  - Filter off went from 225 to 203 ms timed from the DOM change; the other interactions moved by 1–2 ms.
+  - The forms slice's islands share code with the list's, so the list now loads 38.7 kB in 18 files instead of 35.5 kB in 12.
 
 ### The same app: forms, actions and auth
 
