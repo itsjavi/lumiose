@@ -91,15 +91,16 @@ export function writeSearchParams(
 
 /**
  * Escapes that `URLSearchParams` writes for characters a query holds as they are and its parser
- * reads as themselves (RFC 3986 sub-delims, `:`, `@`, `/` and `?`, less `&`, `=` and `+`, and `'`,
- * which the URL parser escapes in http(s) queries).
+ * reads as themselves (RFC 3986 sub-delims, `:`, `@`, `/` and `?`, less `&`, `=` and `+`, `'`,
+ * which the URL parser escapes in http(s) queries, and `;`, which some servers and caches still
+ * split a query on).
  */
-const READABLE = /%(?:2[1489CF]|3[ABF]|40|7E)/g;
+const READABLE = /%(?:2[1489CF]|3[AF]|40|7E)/g;
 
 /**
  * A query string from a `searchParams.set()` value: `null` and `undefined` values are left out.
  * Serialized as `URLSearchParams` does (form encoding: `%`, `&`, `=`, `+`, `#` and what a URL cannot
- * hold are escaped, spaces become `+`), then `! $ ( ) , / : ; ? @ ~` are unescaped, so that
+ * hold are escaped, spaces become `+`), then `! $ ( ) , / : ? @ ~` are unescaped, so that
  * `sorts=price:desc,name:asc` stays readable (TASK-525). `URLSearchParams` parses both alike, in
  * the browser and on the server.
  */

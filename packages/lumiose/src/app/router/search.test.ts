@@ -124,7 +124,8 @@ describe("the query searchParams.set() writes (TASK-525)", () => {
       by: "me@example.com",
       more: "~!$()*;._-",
     };
-    const query = "sorts=price:desc,name:asc&next=/orders?page&by=me@example.com&more=~!$()*;._-";
+    // `;` stays escaped: some servers and caches still split a query on it.
+    const query = "sorts=price:desc,name:asc&next=/orders?page&by=me@example.com&more=~!$()*%3B._-";
     await searchParams.set(values);
     expect(assign).toHaveBeenCalledWith(`${location.origin}/products?${query}#top`);
     await searchParams.set(values, shallow);

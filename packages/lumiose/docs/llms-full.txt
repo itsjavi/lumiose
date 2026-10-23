@@ -13062,8 +13062,9 @@ mounted.
 `searchParams.set({ sorts: "price:desc,name:asc" })` writes `?sorts=price:desc,name:asc`. Keys and
 values are written as `URLSearchParams` writes them (letters, digits and `* - . _` as they are,
 spaces as `+`, everything else percent-encoded as UTF-8: `%`, `&`, `=`, `+`, `#`, quotes,
-non-ASCII…), except that `! $ ( ) , / : ; ? @ ~` stay as they are too: a query may hold them, and
-its parser reads them as themselves. `searchParams()` in the browser and on the server, and
+non-ASCII…), except that `! $ ( ) , / : ? @ ~` stay as they are too: a query may hold them, and
+its parser reads them as themselves. `;` stays escaped, because some servers and caches still split
+a query on it. `searchParams()` in the browser and on the server, and
 `ctx.url.searchParams` in middleware and endpoints, read every value back unchanged, `&`, `=`, `+`
 and `#` included. A string or a `URLSearchParams` passed to `set()` is parsed first, so
 `set("sorts=price%3Adesc")` writes `?sorts=price:desc`.
