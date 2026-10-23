@@ -3,7 +3,7 @@ id: doc-11
 title: Port scorecards
 type: other
 created_date: '2026-10-20 21:23'
-updated_date: '2026-10-21 07:24'
+updated_date: '2026-10-23 08:22'
 ---
 Every port of a real project records a scorecard against its original stack here (decision-70). Lumiose's public claims come from these scorecards and the benchmarks, so a port where Lumiose is not clearly better on something that matters is written down as plainly as a win, and its gaps become tasks.
 
@@ -109,9 +109,50 @@ Every port of a real project records a scorecard against its original stack here
 
 **Gaps found:** TASK-515.
 
-### A private app: list and detail (planned)
+### A private app: list and detail
 
-TASK-492. The scorecard names the stacks and the numbers, not the app.
+- Original: React Router 8.4 in framework mode (server rendering on Express), React 19.3 with the React Compiler, Tailwind 4.3 with a Radix-based component kit, a URL-state library, Vite 8.3. Lumiose: 0.5.0 from npm (`server` routes on the Node adapter, two islands, native popovers and dialogs). Date: 2026-10-23. Machine: Apple M1 Max, macOS 27, Node 26.8.1.
+- Port: a private folder next to the app, not deployed; its FINDINGS.md holds the full tables and its comparison, visual-diff and behaviour scripts. Task: TASK-492.
+- Scope: a large catalog list page (search, filters, a multi-column sort and a view switch kept in the URL, a virtual grid, a virtual table and a grouped view) and an item detail page (data tables, two graphs with popovers, a filterable gallery dialog and two small interactive controls), with the site's menu bar and footer. The collection section, which needs a session, is left out. Both sides read the same public data package.
+- Method: production builds on this machine; the original's server ran with placeholder settings, since these pages need no database. Sizes are brotli (quality 11) of each response, on first load at 1280×800 without scrolling, with the data each page fetches. The timed loads go through the same streaming brotli proxy for both. Images come from the same CDN on both sides.
+
+| Metric                              |                                                                    Original |                                              Lumiose | Notes                                                                                                                                                                                                                                                         |
+| ----------------------------------- | --------------------------------------------------------------------------: | ---------------------------------------------------: | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| JavaScript per page (brotli)        |                                                list 390.4 kB, detail 423.8 kB |                                     22.4 kB, 13.7 kB | Original: 105 and 98 files (the framework and the app's shared providers). Lumiose: the 10.5 kB runtime, the list island (7.4 kB) and two shared chunks; on the detail page the header island (0.9 kB)                                                         |
+| CSS per page (brotli)               |                                                             34.1 kB, 34.3 kB |                                       5.2 kB, 6.0 kB | The original sends the app's whole Tailwind build                                                                                                                                                                                                             |
+| HTML per page (brotli)              |                                                             39.1 kB, 20.0 kB |                                      30.6 kB, 8.0 kB | Both render every list item on the server. The original's HTML also carries its route data (14 and 76 kB raw)                                                                                                                                                 |
+| Data on first load (brotli)         |                                                        328.9 kB on both pages |                            list 111.7 kB, detail none | The original fetches its whole catalog (5.3 MB raw) after hydration; the port's endpoint holds only the list's fields. An app decision the original could also make                                                                                           |
+| Requests per page                   |                                                          list 224, detail 157 |                                list 122, detail 58 | The same images (112 and 48); own-origin requests 112 vs 10 and 109 vs 10                                                                                                                                                                                     |
+| Total per page, first load          |                                                          2,526 kB, 1,274 kB |                                   1,904 kB, 492 kB | Images are 1,696 and 406 kB of it on both sides                                                                                                                                                                                                               |
+| First load, slow 4G + 4x CPU        | list: shows 1.41 s, interactive 8.43 s; detail: shows 1.56 s, LCP 4.26 s, interactive 7.49 s | list: 0.51 s, 3.58 s; detail: 0.53 s, LCP 0.82 s, 1.08 s | 390×844, medians of 3. Interactive: hydrated, and on the list its data loaded so filtering works                                                                                                                                                              |
+| Interactions, 4x CPU                |                       search 243 ms, clear 284 ms, filter on and off 185/188 ms |                                269, 539, 251/252 ms | Until the results paint, medians of 7, with a 125 ms debounce in both. Lumiose inserts new grid rows node by node (TASK-522)                                                                                                                                  |
+| Build time, cold / warm             |                                                                30.2 / 30.3 s |                                        0.56 / 0.54 s | Not the same scope: the original builds its whole app (97 route files), the port 3 routes. Medians of 3                                                                                                                                                      |
+| Type check                          |                                                                    2.1–3.0 s |                                               0.7 s | `tsc` on the whole app vs `lumiose check` on the port                                                                                                                                                                                                         |
+| Source lines (code + styles)        |                                                          9,365 in 72 files |                                    6,591 in 27 files | Original: the files that implement the same features (pages 4,572, catalog UI 971, component kit 2,162, shell 658, global stylesheet 1,002). Lumiose: 2,628 of its lines are CSS in `<style>` blocks, one declaration per line, where the original writes utility classes. Domain code copied unchanged (4,580 lines) is left out on both sides. Tests not counted: the port's comparison scripts are 718 lines |
+| Runtime dependencies                |                                                 12 for the slice (68 in the app) |                                                    3 | Slice: React, React DOM, the router and its Node and Express adapters, Express, the URL-state library, Radix, three class-name helpers and a media hook. Lumiose: lumiose, the Node adapter and the data package                                                 |
+| Parity                              |                                                                             |                                                      | 14 screenshot pairs (list, table, search, grouped view and three detail pages, on desktop and phone; the app is dark only) differ by 0.03–0.3% of pixels, 1.4–1.8% on the grouped view (native radios, text wrap); equal heights. 11/11 behaviour checks pass |
+
+**Easier in Lumiose:**
+- Server-first pages: both are `server` routes, and the detail page ships 13.7 kB of JavaScript (its header island and the runtime) where the original hydrates the whole page, so on slow 4G it shows in 0.5 s and responds in 1.1 s instead of 1.6 s and 7.5 s.
+- An island with a slot: the server renders every result as the island's children (no JavaScript for them, crawlable, no copy of the data in the page); the island fetches the list's JSON once hydrated and swaps in its virtual grid, with nothing to reconcile.
+- URL state: `searchParams()` and `searchParams.set(…, { shallow: true })` replaced the URL-state library, with one set of parsers shared by the server page and the island; back and forward work.
+- The platform instead of a component kit: `popover` with `popovertarget` and implicit anchors, `<dialog>`, `<details>` and `<select>`. The graphs' popovers ship no JavaScript.
+- Scoped styles with build-time tokens replaced Tailwind with 5–6 kB of CSS per page instead of 34 kB.
+- Toolchain: 3 runtime dependencies and a 0.7 s `lumiose check`.
+
+**Harder in Lumiose:**
+- List interactions are slower: replacing the virtual grid's 80 visible cards takes about twice as long at 4x CPU (TASK-522), and measuring rows in `attach` forced a layout per row until the port moved it to a ResizeObserver.
+- Strict CSP, the template's default, writes style props as attribute-selector rules that lose to scoped classes, and one rule per element in long lists (TASK-521); the port moved those values into its stylesheets.
+- Scoping only a selector's last part caused a real hover bug (TASK-282); LUM2003 errors and 19 LUM2001 warnings in server-only components (TASK-523, TASK-290).
+- `@lumiose/ui` is not on npm yet (TASK-389), so the port built its tabs, switches, segmented toggles, popovers and dialog on native elements; native `<select>` replaces the original's styled listboxes, a visible difference when open.
+- Translating utility classes by hand: line heights, and paddings where one utility silently wins over another, found only through a pixel diff of every page.
+- Papercuts: `<meta property>` and `focusable` are not typed (TASK-524); `searchParams.set()` percent-encodes `:` and `,` in shared URLs (TASK-525); files in `public/` revalidate on every use, so the icon sprites moved to `?url` imports to get hashed names.
+
+**Gaps found:** TASK-521, TASK-522, TASK-523, TASK-524, TASK-525, and existing ones hit again: TASK-282, TASK-290, TASK-389.
+
+**Not measured:** Firefox and Safari (the native popovers use implicit anchor positioning), dev server start, and the original behind its production proxy. The menu bar's live counter and account menu were not ported.
+
+**Status:** measured on 0.5.0. The port stays local and private.
 
 ### The same app: forms, actions and auth (later)
 

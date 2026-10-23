@@ -7,7 +7,7 @@ status: To Do
 assignee:
   - '@Lux'
 created_date: '2026-10-14 03:30'
-updated_date: '2026-10-14 03:47'
+updated_date: '2026-10-23 08:17'
 labels:
   - proposal
   - css
@@ -27,3 +27,9 @@ Found in the itsjavi.com port to Lumiose 0.4.0 (the port's FINDINGS.md), gap 5. 
 <!-- AC:BEGIN -->
 - [ ] #1 A decision is recorded, and styles.md documents the behaviour either way
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Nova (2026-10-23), from the private-app port (TASK-492): a real bug from this. A card component's rule .card:hover .tile was scoped only on .tile, so the tiles of every card in a graph took their hover style (highlighted and scaled) whenever the pointer was over the graph's section, which another component also styles as .card. The port renamed its classes to unique ones. Scoping each compound, or at least each class of a descendant selector, would have prevented it.
+<!-- SECTION:NOTES:END -->
