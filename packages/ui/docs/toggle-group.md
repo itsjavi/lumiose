@@ -27,7 +27,7 @@ import "@lumiose/ui/themes/default.css"; // optional: the default theme
 
 | Prop            | Type                           | Default        |                                                                            |
 | --------------- | ------------------------------ | -------------- | -------------------------------------------------------------------------- |
-| `value`         | `string[]`                     |                | Presses these toggles when it changes. Pair it with `onValueChange`.       |
+| `value`         | `string[]`                     |                | The pressed toggles. Pair it with `onValueChange`, which updates it.       |
 | `defaultValue`  | `string[]`                     | `[]`           | The toggles pressed at first.                                              |
 | `onValueChange` | `(value: string[]) => void`    |                | Called after the user presses or releases a toggle.                        |
 | `bind:value`    | `Signal<string[]>`             |                | Stands in for `value` and `onValueChange`.                                 |
@@ -38,6 +38,11 @@ import "@lumiose/ui/themes/default.css"; // optional: the default theme
 
 Every other prop passes through to `<lu-toggle-group>`: `aria-label`, `aria-labelledby`, `id`,
 `class`. Name the group with one of the first two.
+
+With `value`, the group is controlled: after the user presses or releases a toggle, the toggles
+show `value` again, so a press shows only once `onValueChange` has updated `value` with it. One
+that leaves `value` as it was keeps the toggles as they were: an `onValueChange` that ignores an
+empty array keeps one toggle pressed. Setting `value` to the toggles already pressed does nothing.
 
 Each toggle's `value` is its identity in the group; its `onPressedChange` still fires. A
 `pressedchange` event (`detail.pressed`) bubbles from a toggle before it changes, and

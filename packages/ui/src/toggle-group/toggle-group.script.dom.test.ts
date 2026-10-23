@@ -77,6 +77,24 @@ it("sets the value without events, and keeps one tab stop on a pressed toggle", 
   expect(changes).not.toHaveBeenCalled();
 });
 
+it("does nothing for a value equal to the current one: no write, no layout (TASK-539)", async () => {
+  const group = mount({ pressed: ["a"] });
+  await settle();
+  // The tab stop's `checkVisibility()` forces a layout in a browser.
+  const measure = vi.fn(() => true);
+  for (const each of group.items) each.checkVisibility = measure;
+  const writes = new MutationObserver(() => {});
+  writes.observe(group, { subtree: true, attributes: true });
+  group.value = ["a"];
+  expect(writes.takeRecords()).toEqual([]);
+  expect(measure).not.toHaveBeenCalled();
+  group.value = ["b"];
+  const pressed = writes.takeRecords().filter((each) => each.attributeName === "aria-pressed");
+  expect(pressed.map((each) => (each.target as HTMLButtonElement).value)).toEqual(["a", "b"]);
+  expect(measure).toHaveBeenCalled();
+  writes.disconnect();
+});
+
 it("moves focus with the arrows, Home and End, looping and skipping disabled toggles", async () => {
   mount({ disabled: ["b"] });
   await settle();

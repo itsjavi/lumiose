@@ -51,16 +51,24 @@ export class ToggleGroupElement extends HTMLElement {
     );
   }
 
-  /** The pressed toggles' values. Setting it presses those toggles, without events. */
+  /**
+   * The pressed toggles' values. Setting it presses those toggles, without events; a value equal
+   * to the current one changes nothing and measures nothing (TASK-539).
+   */
   get value(): string[] {
     return this.items.filter(pressed).map((item) => item.value);
   }
 
   set value(next: readonly string[] | null | undefined) {
     const values = next ?? [];
-    for (const item of this.items)
-      item.setAttribute("aria-pressed", String(values.includes(item.value)));
-    this.#rove();
+    let changed = false;
+    for (const item of this.items) {
+      const on = String(values.includes(item.value));
+      if (item.getAttribute("aria-pressed") === on) continue;
+      item.setAttribute("aria-pressed", on);
+      changed = true;
+    }
+    if (changed) this.#rove();
   }
 
   /** Whether several toggles can be pressed; reflects the `multiple` attribute. */

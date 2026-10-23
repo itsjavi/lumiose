@@ -76,3 +76,71 @@ it("keeps a signal in sync with a group's bind:value", () => {
   expect(a!.getAttribute("aria-pressed")).toBe("true");
   expect(b!.getAttribute("aria-pressed")).toBe("false");
 });
+
+it("shows a controlled value again when onValueChange keeps it, and still switches (TASK-538)", () => {
+  // One toggle always pressed: the callback ignores the empty value of a release.
+  const view = signal("a");
+  const container = mount(() => (
+    <ToggleGroup
+      aria-label="View"
+      value={[view()]}
+      onValueChange={(next) => {
+        if (next[0]) view.set(next[0]);
+      }}
+    >
+      <Toggle value="a">A</Toggle>
+      <Toggle value="b">B</Toggle>
+    </ToggleGroup>
+  ));
+  const [a, b] = container.querySelectorAll("button");
+  const pressed = () => [a!, b!].map((each) => each.getAttribute("aria-pressed"));
+  a!.click();
+  flush();
+  expect(view()).toBe("a");
+  expect(pressed()).toEqual(["true", "false"]);
+  // Pressing B releases A (a cancelable `pressedchange` on A) and the callback takes B.
+  b!.click();
+  flush();
+  expect(view()).toBe("b");
+  expect(pressed()).toEqual(["false", "true"]);
+});
+
+it("undoes a press that a controlled onValueChange does not take", () => {
+  const changes = vi.fn();
+  const container = mount(() => (
+    <ToggleGroup aria-label="View" value={["a"]} onValueChange={changes}>
+      <Toggle value="a">A</Toggle>
+      <Toggle value="b">B</Toggle>
+    </ToggleGroup>
+  ));
+  const [a, b] = container.querySelectorAll("button");
+  b!.click();
+  flush();
+  expect(changes).toHaveBeenCalledWith(["b"]);
+  expect([a!.getAttribute("aria-pressed"), b!.getAttribute("aria-pressed")]).toEqual([
+    "true",
+    "false",
+  ]);
+});
+
+it("switches an uncontrolled group, reporting each value", () => {
+  const changes = vi.fn();
+  const container = mount(() => (
+    <ToggleGroup aria-label="View" defaultValue={["a"]} onValueChange={changes}>
+      <Toggle value="a">A</Toggle>
+      <Toggle value="b">B</Toggle>
+    </ToggleGroup>
+  ));
+  const [a, b] = container.querySelectorAll("button");
+  b!.click();
+  flush();
+  expect(changes).toHaveBeenLastCalledWith(["b"]);
+  expect([a!.getAttribute("aria-pressed"), b!.getAttribute("aria-pressed")]).toEqual([
+    "false",
+    "true",
+  ]);
+  b!.click();
+  flush();
+  expect(changes).toHaveBeenLastCalledWith([]);
+  expect(b!.getAttribute("aria-pressed")).toBe("false");
+});
