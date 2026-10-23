@@ -2,6 +2,39 @@
 
 All Lumiose packages share one version, except those released outside lockstep (@lumiose/ui), which keep their own changelog in their directory.
 
+## 0.5.1 (2026-10-23)
+
+### Features
+
+- **compiler:** LUM2003 warns on prop reads and sees locals and switch (TASK-523, decision-77) (a6cd6985)
+- **site:** the showcase links the Dotmatrix apps' own pages, and their old URLs redirect there (TASK-490, decision-73) (9675270e)
+
+### Fixes
+
+- **svg:** fail closed on deep CSS and on escapes that hid a url() (TASK-499) (6be4fb1e)
+- **server:** strict-CSP style rules weigh two ids, share one rule per block and isolate uncertain url( (TASK-521, TASK-497) (71a16df3)
+- **router:** searchParams.set() leaves : , / @ and other query-safe characters readable (TASK-525) (05800254)
+- **dom:** island loader runs events that arrive before the replay after the held ones (TASK-508) (eebdf4c5)
+- **server:** clones of a bounded request keep the body limit for json() and text() (TASK-500) (d7bd6c5d)
+- **vite:** dev content and style loads respect server.fs.allow (TASK-498) (a86cca36)
+- **server:** secret-name warning splits camelCase names and knows pwd (TASK-501) (afd9cd1e)
+- **jsx:** type <meta property> and focusable on SVG elements (TASK-524) (13d818bd)
+- page titles and the docs' prev/next links break long words at 320 px (TASK-505) (45194365)
+
+### Performance
+
+- **dom:** a new row that renders several nodes goes in with one insertion (TASK-522) (68ed5a16)
+### Scale
+
+The large-app benchmark (1,500 routes, 5,000 components), working tree against v0.5.0 (13be67c4), medians of 3 rounds on Apple M1 Max (10 cores, 32 GB, darwin 27.0.0 arm64, Node v26.8.1). The release gate stops at a ratio above 1.2.
+
+| Metric | Previous | This release | Ratio |
+| ------ | -------- | ------------ | ----- |
+| Production build (ms) | 27592.1 | 27912.1 | 1.012 |
+| Dev cold start (ms) | 963.8 | 933.7 | 0.969 |
+| HMR latency (ms) | 80 | 81.7 | 1.022 |
+| Server memory, peak RSS (MB) | 528.5 | 528 | 0.999 |
+
 ## 0.5.0 (2026-10-21)
 
 ### Features
