@@ -526,7 +526,7 @@ export default function lumiose(options: LumioseOptions = {}): Plugin<LumiosePlu
     // LUM4003: server-only modules never enter a client graph (./server-only.ts).
     serverOnlyPlugin(),
     // Client scripts of server-rendered components (./client-scripts.ts).
-    clientScriptsPlugin({
+    ...clientScriptsPlugin({
       serve: () => serve,
       scan: project,
       hasServerBuild,

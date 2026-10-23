@@ -257,7 +257,15 @@ export function CopyButton(props: { text: string }) {
   Render them on the server, or style them with `:deep()` under an element of the scope
   ([Web components](../guides/web-components.md#before-the-children-are-parsed)).
 - **Islands and SPA pages** import the script with their own code, before the component runs, and
-  the call does nothing there: a page that gets it both ways runs it once.
+  the call does nothing there: a page that gets it both ways runs it once. That takes a call that
+  is a statement of its own, at the top of a function's body as `defineCopyButton()` above (or at
+  the module's top level). A script that the module only calls conditionally, under an `if`, in
+  `a && f()`, `a ? f() : b` or `(f(), x)`, loads when the call runs, after the component, as on a
+  server page: an island that never makes the call never loads it, so `if (hover) hoverScript()`
+  costs nothing until `hover` is set. A call after an early `return` still counts as its own
+  statement. A custom element that an island passes properties to must be defined before the
+  component runs: call its definition as a statement of its own
+  ([Web components](../guides/web-components.md#define-the-elements-in-the-browser)).
 - **Keep it free of the runtime.** A script that imports `lumiose` makes its pages load the
   runtime. It is client code: only `PUBLIC_*` env reaches it, and importing server-only code is
   `LUM4003`.

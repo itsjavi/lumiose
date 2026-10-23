@@ -6,71 +6,80 @@
 //! Fixtures are compiled as `/src/<name>` with the root `/`; imported constants are read from
 //! `tests/fixtures/client/modules` (`./tokens.ts` → `modules/tokens.ts`). Every output must parse
 //! as a JavaScript module.
+//!
+//! One test compiles each fixture for both targets: the `.css` golden is shared, so a client and
+//! a server test running in parallel would race on it in update mode (TASK-547).
 
 mod support;
 
 use std::fmt::Write as _;
 
-use lumiose_compiler::{CompileOptions, Target};
+use lumiose_compiler::{CompileOptions, CompileResult, Target};
 use oxc_allocator::Allocator;
 use oxc_parser::Parser;
 use oxc_span::SourceType;
 
 #[test]
-fn client_goldens() {
-    goldens(Target::Client, "js");
-}
-
-#[test]
-fn server_goldens() {
-    goldens(Target::Server, "server.js");
-}
-
-fn goldens(target: Target, extension: &str) {
+fn codegen_goldens() {
     let files = support::fixtures("client");
     assert!(!files.is_empty());
     for path in files {
         let name = path.file_name().unwrap().to_str().unwrap().to_owned();
         let source = std::fs::read_to_string(&path).unwrap();
-        let options = CompileOptions {
-            target,
-            root: Some("/".to_owned()),
-            ..CompileOptions::default()
-        };
-        let id = format!("/src/{name}");
-        let result = support::compile_with_modules(&source, &id, options);
-        assert!(!result.code.is_empty(), "{name}: no output");
-        assert_parses_as_js(&name, &result.code);
-        let mut output = result.code.clone();
-        if !result.diagnostics.is_empty() {
-            output.push_str("\n// --- diagnostics ---\n");
-            for diagnostic in &result.diagnostics {
-                let (line, column) = line_column(&source, diagnostic.span.start);
-                writeln!(
-                    output,
-                    "// {} {} {line}:{column} {}",
-                    diagnostic.code,
-                    diagnostic.severity.as_str(),
-                    diagnostic.message
-                )
-                .unwrap();
-            }
-        }
         let stem = name
             .rsplit_once('.')
             .map_or(name.as_str(), |(stem, _)| stem);
-        support::assert_golden(&path.with_file_name(format!("{stem}.{extension}")), &output);
+        let client = compile(&name, &source, Target::Client);
+        let server = compile(&name, &source, Target::Server);
+        support::assert_golden(&path.with_file_name(format!("{stem}.js")), &client.0);
+        support::assert_golden(&path.with_file_name(format!("{stem}.server.js")), &server.0);
+        assert_eq!(
+            client.1, server.1,
+            "{name}: server CSS differs from client CSS"
+        );
         let css_path = path.with_file_name(format!("{stem}.css"));
-        match &result.css {
-            Some(css) if target == Target::Client => support::assert_golden(&css_path, css),
-            Some(css) => assert_eq!(
-                Some(css.as_str()),
-                std::fs::read_to_string(&css_path).ok().as_deref(),
-                "{name}: server CSS differs from client CSS"
-            ),
+        match &client.1 {
+            Some(css) => support::assert_golden(&css_path, css),
+            None if std::env::var_os("UPDATE_GOLDEN").is_some() && css_path.exists() => {
+                std::fs::remove_file(&css_path).unwrap();
+            }
             None => assert!(!css_path.exists(), "{name}: no CSS but {css_path:?} exists"),
         }
     }
+}
+
+/// Compiles a fixture for `target`: its golden output (code, then diagnostics as comments) and
+/// its CSS.
+fn compile(name: &str, source: &str, target: Target) -> (String, Option<String>) {
+    let options = CompileOptions {
+        target,
+        root: Some("/".to_owned()),
+        ..CompileOptions::default()
+    };
+    let CompileResult {
+        code,
+        css,
+        diagnostics,
+        ..
+    } = support::compile_with_modules(source, &format!("/src/{name}"), options);
+    assert!(!code.is_empty(), "{name}: no output");
+    assert_parses_as_js(name, &code);
+    let mut output = code;
+    if !diagnostics.is_empty() {
+        output.push_str("\n// --- diagnostics ---\n");
+        for diagnostic in &diagnostics {
+            let (line, column) = line_column(source, diagnostic.span.start);
+            writeln!(
+                output,
+                "// {} {} {line}:{column} {}",
+                diagnostic.code,
+                diagnostic.severity.as_str(),
+                diagnostic.message
+            )
+            .unwrap();
+        }
+    }
+    (output, css)
 }
 
 fn assert_parses_as_js(name: &str, code: &str) {

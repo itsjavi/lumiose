@@ -175,13 +175,16 @@ function Trigger({
       ? { command: "show-modal", commandfor: popover.popupId, "aria-expanded": "false" as const }
       : { popovertarget: popover.popupId };
   // A function, so hover opening and its delays follow the props: the script reads them from
-  // the trigger at each hover (TASK-477).
-  const hover = () =>
-    openOnHover && !popover.modal && !off
-      ? { "data-open-on-hover": "", "data-delay": delay, "data-close-delay": closeDelay }
-      : {};
-  // Only a hover trigger loads the hover timing on a server page (TASK-541).
-  if (untrack(() => openOnHover)) popoverHoverScript();
+  // the trigger at each hover (TASK-477). Only a hover trigger loads the hover timing (TASK-541),
+  // on a server page or in an island, once `openOnHover` is on: the call is conditional, so an
+  // island loads the script when it is made (TASK-551).
+  const hover = () => {
+    if (openOnHover && !popover.modal && !off) {
+      popoverHoverScript();
+      return { "data-open-on-hover": "", "data-delay": delay, "data-close-delay": closeDelay };
+    }
+    return {};
+  };
   return (
     <button
       type="button"

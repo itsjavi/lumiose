@@ -4098,7 +4098,15 @@ export function CopyButton(props: { text: string }) {
   Render them on the server, or style them with `:deep()` under an element of the scope
   ([Web components](../guides/web-components.md#before-the-children-are-parsed)).
 - **Islands and SPA pages** import the script with their own code, before the component runs, and
-  the call does nothing there: a page that gets it both ways runs it once.
+  the call does nothing there: a page that gets it both ways runs it once. That takes a call that
+  is a statement of its own, at the top of a function's body as `defineCopyButton()` above (or at
+  the module's top level). A script that the module only calls conditionally, under an `if`, in
+  `a && f()`, `a ? f() : b` or `(f(), x)`, loads when the call runs, after the component, as on a
+  server page: an island that never makes the call never loads it, so `if (hover) hoverScript()`
+  costs nothing until `hover` is set. A call after an early `return` still counts as its own
+  statement. A custom element that an island passes properties to must be defined before the
+  component runs: call its definition as a statement of its own
+  ([Web components](../guides/web-components.md#define-the-elements-in-the-browser)).
 - **Keep it free of the runtime.** A script that imports `lumiose` makes its pages load the
   runtime. It is client code: only `PUBLIC_*` env reaches it, and importing server-only code is
   `LUM4003`.
@@ -10005,7 +10013,10 @@ upgraded when Lumiose passes it properties. Import the definition with `?client`
 that renders the element, and call the import while it renders ([Islands](../concepts/islands.md),
 "Scripts of server-rendered components"). The definition never runs on the server, where
 `customElements` does not exist. An island imports it before it hydrates, and a page that renders
-the component on the server loads it as a module script of its own, without the island runtime:
+the component on the server loads it as a module script of its own, without the island runtime.
+Make the call a statement of its own at the top of the component, as below: an island loads a
+script that it only calls conditionally (under an `if`) when the call runs, after the component,
+and the element's first properties would then reach it as attributes:
 
 ```ts check file=elements/star-rating.ts
 // src/elements/star-rating.ts: a custom element of your own, or a library's entry point
@@ -13557,7 +13568,9 @@ What it does:
   `<file>.html?lumiose-script`, without an island. HTML entries (`index.html`, HTML build inputs) and `public/` files
   stay Vite's. See [Markdown and HTML imports](../concepts/content.md).
 - Loads `?client` imports (`./menu.element.ts?client`): client environments get the module itself
-  and a default export that does nothing; server environments get a default export that adds the
+  and a default export that does nothing, or, when the importer only calls the import
+  conditionally (never as a statement of its own), a default export that imports the module on
+  its first call; server environments get a default export that adds the
   module's script to the page being rendered, without running the module. Builds build each script
   that the project scan finds as a chunk of its own: every one of the app's, and those of the
   [Lumiose packages](#lumiose-packages)' modules that the app's modules can use. See
