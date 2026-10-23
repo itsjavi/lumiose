@@ -9,8 +9,8 @@
 //! names the file uses, so a class the page adds (`<Icon class="spin" />`) still matches.
 //!
 //! The same pass drops the CSS references to resources outside the file (decision-69): a
-//! `url()` or `src()` whose target is not a fragment (`#id`), a bad URL, and an `image-set()`
-//! holding a URL, become `none`, and `@import` rules go. Fragment references stay. It fails
+//! `url()` or `src()` whose target is not a fragment (`#id`), a bad URL, and an `image-set()` or
+//! `image()` holding a URL, become `none`, and `@import` rules go. Fragment references stay. It fails
 //! closed (TASK-499): URLs go in every context, selectors and at-rule preludes included, but the
 //! prelude of a top-level `@namespace` (it names a namespace, it loads nothing), and what is
 //! nested too deep to read goes too.
@@ -251,7 +251,7 @@ impl<'a> Prefixer<'a> {
 
     /// Records the edit for `token` when it can name a resource, and returns whether it can: a
     /// URL token, a bad URL, a `url()` or `src()` (see [`Self::url_function`]), or an
-    /// `image-set()`, which becomes `none` when it holds a URL at any depth.
+    /// `image-set()` or `image()`, which becomes `none` when it holds a URL at any depth.
     fn resource(
         &self,
         css: &str,
@@ -283,10 +283,7 @@ impl<'a> Prefixer<'a> {
             {
                 self.url_function(css, parser, start, out);
             }
-            Token::Function(name)
-                if name.eq_ignore_ascii_case("image-set")
-                    || name.eq_ignore_ascii_case("-webkit-image-set") =>
-            {
+            Token::Function(name) if is_image_function(name) => {
                 if holds_url(parser, depth + 1) {
                     out.push(Edit::replace(start, parser.position().byte_index(), "none"));
                 }
@@ -389,10 +386,19 @@ fn is_fragment(url: &str) -> bool {
     url.trim_start_matches(|c: char| c <= ' ').starts_with('#')
 }
 
-/// Whether the arguments of the function `parser` is at (an `image-set()`, its content at
-/// `depth`) name an image by URL, at any depth (`image-set(cross-fade(url(…)) 1x)`): a string, a
-/// `url()` or a `src()`, or a `var()`, `env()` or `attr()` that could hold one. Too deep to read
-/// counts as a URL.
+/// Whether `name` is a CSS function that takes an image as a string (`image-set("a.png" 1x)`,
+/// `image("a.png")`), not only as a `url()`. No shipping browser implements `image()` yet; it is
+/// read the same way so that it fails closed when one does (TASK-532).
+fn is_image_function(name: &str) -> bool {
+    ["image-set", "-webkit-image-set", "image"]
+        .iter()
+        .any(|each| name.eq_ignore_ascii_case(each))
+}
+
+/// Whether the arguments of the function `parser` is at (an `image-set()` or `image()`, its
+/// content at `depth`) name an image by URL, at any depth (`image-set(cross-fade(url(…)) 1x)`):
+/// a string, a `url()` or a `src()`, or a `var()`, `env()` or `attr()` that could hold one. Too
+/// deep to read counts as a URL.
 fn holds_url(parser: &mut Parser, depth: usize) -> bool {
     parser
         .parse_nested_block(|parser| -> Result<bool, ParseError<()>> {

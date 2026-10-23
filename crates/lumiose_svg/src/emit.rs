@@ -292,8 +292,14 @@ fn node(out: &mut String, prefixer: &Prefixer, node: Node, depth: usize, text_co
         return;
     }
     if name == "style" {
-        // Native SVG CSS: raw text, which the `.stsx` scanner keeps verbatim.
-        let css: String = node.children().filter_map(|child| child.text()).collect();
+        // Native SVG CSS: raw text, which the `.stsx` scanner keeps verbatim. Only text children
+        // (CDATA included) are CSS, as in a browser: `text()` also returns a comment's content and
+        // an element's first text, which would bring commented-out rules back (TASK-533).
+        let css: String = node
+            .children()
+            .filter(|child| child.is_text())
+            .filter_map(|child| child.text())
+            .collect();
         // Escaped first: the filter reads the text the page gets (TASK-499).
         let css = prefixer.stylesheet(&style_text(&css));
         let _ = writeln!(out, ">{css}</style>");

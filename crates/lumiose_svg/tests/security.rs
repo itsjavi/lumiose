@@ -348,6 +348,29 @@ fn style_text(source: &str) -> &str {
     &source[source.find("<style>").unwrap() + 7..source.find("</style>").unwrap()]
 }
 
+/// 0.6.0 delta review (TASK-533): the CSS of a `<style>` is its text children, as a browser reads
+/// it. XML comments (and the text of child elements) were read as CSS, so commented-out rules
+/// came alive.
+#[test]
+fn comments_inside_style_are_not_css() {
+    let source = component(&format!(
+        "<svg {NS}><style>.a{{fill:red}}<!-- .b{{fill:blue}} -->.c{{fill:<!-- olive -->green}}\
+         <x>.d{{fill:gray}}</x><![CDATA[.e{{fill:teal}}]]></style><rect class=\"a b c d e\"/></svg>"
+    ));
+    let style = style_text(&source);
+    for absent in ["blue", "olive", "gray"] {
+        assert!(!style.contains(absent), "{absent} in\n{style}");
+    }
+    for kept in ["__a{fill:red}", "__c{fill:green}", "__e{fill:teal}"] {
+        assert!(style.contains(kept), "{kept} not in\n{style}");
+    }
+    // A `<style>` holding only a comment stays, empty.
+    let source = component(&format!(
+        "<svg {NS}><style><!-- .a{{fill:red}} --></style><rect class=\"a\"/></svg>"
+    ));
+    assert_eq!(style_text(&source), "", "{source}");
+}
+
 /// Delta review C2 (TASK-499): blocks nested past the filter's depth limit kept their `url()`s.
 /// Their content goes now; the blocks around it stay, so the CSS still reads the same.
 #[test]
@@ -435,18 +458,58 @@ fn urls_go_in_every_context_but_a_namespace_prelude() {
     );
 }
 
+/// 0.6.0 delta review (TASK-532): `image()` takes an image as a string, like `image-set()`. No
+/// shipping browser implements it yet; it fails closed all the same, so an `image()` that holds
+/// a URL at any depth becomes `none`, and one that holds a color alone stays.
+#[test]
+fn image_function_with_a_url_becomes_none() {
+    let values = "background-image:image(\"https://evil.example/a.png\");\
+         mask-image:IMAGE(ltr \"https://evil.example/b.svg\" , red);\
+         border-image-source:image(var(--u));\
+         list-style-image:cross-fade(image(\"https://evil.example/c.png\"),red 50%);\
+         --i:image(rtl url(https://evil.example/d.png));\
+         background:image(red)";
+    let source = component(&format!(
+        "<svg {NS}><style>.a{{{values}}}</style><rect class=\"a\" style='{values}'/></svg>"
+    ));
+    assert!(!source.contains("evil"), "{source}");
+    assert_eq!(invariants::external_reference(&source), None, "{source}");
+    for kept in [
+        "background-image:none;",
+        "mask-image:none;",
+        "border-image-source:none;",
+        "list-style-image:cross-fade(none,red 50%);",
+        "--i:none;",
+        "background:image(red)",
+    ] {
+        assert_eq!(
+            source.matches(kept).count(),
+            2,
+            "{kept} not twice in\n{source}"
+        );
+    }
+    // The invariant reads `image()` too: the same output with a URL put back is a breach.
+    let breach = invariants::external_reference(&source.replacen(
+        "background:image(red)",
+        "background:image(\"https://evil.example/e.png\")",
+        1,
+    ));
+    assert_eq!(breach.as_deref(), Some("<style>: image() with a URL"));
+}
+
 /// A property test (TASK-499): random CSS made of nesting, escapes, markup characters, URLs in
 /// every form and rule starts, in `<style>` text and in a `style` attribute, never emits a
 /// reference outside the file.
 #[test]
 fn no_emitted_css_references_a_resource_outside_the_file() {
-    const PIECES: [&str; 40] = [
+    const PIECES: [&str; 41] = [
         "@media all{",
         "@supports (a:b){",
         ".a{",
         ".b:is(",
         "calc(",
         "image-set(",
+        "image(",
         "-webkit-cross-fade(",
         "(",
         "[",
