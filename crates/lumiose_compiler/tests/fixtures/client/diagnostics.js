@@ -7,6 +7,8 @@ import { template, bind, setAttr, insert, insertText, list } from "lumiose/dom";
 const _t0 = /* @__PURE__ */ template(`<div><!><!><span> `);
 const _t1 = /* @__PURE__ */ template(`<li>: `);
 const _t2 = /* @__PURE__ */ template(`<ul>`);
+const _t3 = /* @__PURE__ */ template(`<p>Sign in`);
+const _t4 = /* @__PURE__ */ template(`<p> `);
 const _a0 = (el, v) => setAttr(el, "data-name", v);
 const _a1 = (el, v) => setAttr(el, "data-once", v);
 const _a2 = (el, v) => setAttr(el, "data-i", v);
@@ -40,12 +42,26 @@ export function Rows(props) {
 	});
 	return _el3;
 }
+// LUM2003 is an error on a signal or accessor read and a warning on a prop read (decision-77),
+// also through a derived local and in a `switch`.
+export function Account(props) {
+	const kind = props.kind;
+	switch (kind) {
+		case "guest": return null;
+	}
+	if (!props.user()) return _t3();
+	const _el4 = _t4(), _text3 = _el4.firstChild;
+	insertText(_text3, () => props.user());
+	return _el4;
+}
 
 // --- diagnostics ---
 // LUM2001 warning 10:9 `upper` is computed once from a reactive value, so the JSX that uses it never updates
 // LUM2002 error 13:3 `shared` is written while the component renders
-// LUM2003 error 14:7 this early return depends on a reactive value, but a component body runs once
+// LUM2003 warning 14:7 this early return depends on a prop, but a component body runs once: it never updates if a parent passes a changing value
 // LUM2005 warning 20:7 `children` is inserted more than once; children are created lazily and can only be placed once
 // LUM2004 error 21:8 the component `Card` is called as a function
 // LUM2002 error 22:14 `shared` is written while the component renders
 // LUM2006 warning 31:26 the list index `i` is read once here, so this value goes stale when rows move
+// LUM2003 warning 42:11 this early return depends on a prop, but a component body runs once: it never updates if a parent passes a changing value
+// LUM2003 error 46:7 this early return depends on a reactive value, but a component body runs once

@@ -24,6 +24,9 @@ const _s1 = [
 const _c1 = (h0, h1, h2) => typeof h0 === "string" && typeof h1 === "string" && typeof h2 === "string" ? new SSRHtml("<li" + h0 + ">" + h1 + ": " + h2 + "</li>") : ssr(_s1, h0, h1, h2);
 const _s2 = ["<ul>", "</ul>"];
 const _c2 = (h0) => h0 instanceof SSRHtml ? new SSRHtml("<ul>" + h0.t + "</ul>") : ssr(_s2, h0);
+const _s3 = ["<p>Sign in</p>"];
+const _s4 = ["<p>", "</p>"];
+const _c4 = (h0) => typeof h0 === "string" ? new SSRHtml("<p>" + h0 + "</p>") : ssr(_s4, h0);
 const shared = signal(0);
 export function Child(props) {
 	const upper = props.name.toUpperCase();
@@ -40,12 +43,24 @@ export function Rows(props) {
 		return _c1(attr("data-i", i()), insert(position), insert(item));
 	}));
 }
+// LUM2003 is an error on a signal or accessor read and a warning on a prop read (decision-77),
+// also through a derived local and in a `switch`.
+export function Account(props) {
+	const kind = props.kind;
+	switch (kind) {
+		case "guest": return null;
+	}
+	if (!props.user()) return ssr(_s3);
+	return _c4(insertText(props.user()));
+}
 
 // --- diagnostics ---
 // LUM2001 warning 10:9 `upper` is computed once from a reactive value, so the JSX that uses it never updates
 // LUM2002 error 13:3 `shared` is written while the component renders
-// LUM2003 error 14:7 this early return depends on a reactive value, but a component body runs once
+// LUM2003 warning 14:7 this early return depends on a prop, but a component body runs once: it never updates if a parent passes a changing value
 // LUM2005 warning 20:7 `children` is inserted more than once; children are created lazily and can only be placed once
 // LUM2004 error 21:8 the component `Card` is called as a function
 // LUM2002 error 22:14 `shared` is written while the component renders
 // LUM2006 warning 31:26 the list index `i` is read once here, so this value goes stale when rows move
+// LUM2003 warning 42:11 this early return depends on a prop, but a component body runs once: it never updates if a parent passes a changing value
+// LUM2003 error 46:7 this early return depends on a reactive value, but a component body runs once

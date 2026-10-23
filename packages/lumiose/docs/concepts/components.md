@@ -133,7 +133,9 @@ file has one, after its components ([Styles](styles.md)).
   is computed once. Use a function or `computed`: `const doubled = () => count() * 2`. The compiler
   warns with `LUM2001`.
 - **Returning early on reactive state.** `if (!user()) return <Login />` runs once. Put the
-  condition in the JSX: `{user() ? <Profile /> : <Login />}` (`LUM2003`).
+  condition in the JSX: `{user() ? <Profile /> : <Login />}` (`LUM2003`, an error). An early
+  return on a prop (`if (props.kind === "a")`) only goes stale when a parent passes a changing
+  value, so it is a warning, and fine in a component that only renders on the server.
 - **Calling a component as a function.** `{Card({ title })}` skips the component's owner and
   props handling. Write `<Card title={title} />` (`LUM2004`).
 - **Inserting `children` twice.** The second insert moves or re-creates the nodes. Take a render

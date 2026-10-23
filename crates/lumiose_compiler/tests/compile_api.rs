@@ -744,6 +744,151 @@ export { Book as default, Helper };
     assert_eq!(stale(named, true), ["twice = props.n * 2"]);
 }
 
+/// LUM2003 (decision-77): `(condition, severity, labels)` of each reactive early return.
+fn early_returns(source: &str, server_route: bool) -> Vec<(String, &'static str, Vec<String>)> {
+    let options = CompileOptions {
+        server_route,
+        ..CompileOptions::default()
+    };
+    let text = |span: lumiose_compiler::span::Span| {
+        source[span.start as usize..span.end as usize].to_owned()
+    };
+    compile(source, "/src/Card.tsx", &options)
+        .diagnostics
+        .iter()
+        .filter(|d| d.code == Code::ReactiveEarlyReturn)
+        .map(|d| {
+            let labels = d
+                .labels
+                .iter()
+                .map(|l| format!("{}: {}", l.message, text(l.span)));
+            (text(d.span), d.severity.as_str(), labels.collect())
+        })
+        .collect()
+}
+
+#[test]
+fn early_returns_on_props_warn_in_every_form() {
+    // TASK-523: the direct form and the local-variable form get the same diagnostic.
+    let direct = r#"export function Card(props: { kind: "a" | "b" }) {
+  if (props.kind === "a") return <A />;
+  return <B />;
+}
+"#;
+    let local = r#"export function Card(props: { kind: "a" | "b" }) {
+  const kind = props.kind;
+  switch (kind) {
+    case "a":
+      return <A />;
+  }
+  return <B />;
+}
+"#;
+    let direct_switch = r#"export function Card(props: { kind: "a" | "b" }) {
+  switch (props.kind) {
+    case "a":
+      return <A />;
+    default:
+      return <B />;
+  }
+}
+"#;
+    let derived_twice = r#"export function Card({ kind, title }: { kind: string; title: string }) {
+  const isA = kind === "a";
+  const ready = isA && title.trim();
+  if (!ready) return null;
+  return <B />;
+}
+"#;
+    assert_eq!(
+        early_returns(direct, false),
+        [(
+            r#"props.kind === "a""#.to_owned(),
+            "warning",
+            vec!["prop read: props.kind".to_owned()]
+        )]
+    );
+    assert_eq!(
+        early_returns(local, false),
+        [(
+            "kind".to_owned(),
+            "warning",
+            vec![
+                "prop read: kind".to_owned(),
+                "derived here: kind = props.kind".to_owned()
+            ]
+        )]
+    );
+    assert_eq!(
+        early_returns(direct_switch, false),
+        [(
+            "props.kind".to_owned(),
+            "warning",
+            vec!["prop read: props.kind".to_owned()]
+        )]
+    );
+    // Destructured props, a method of a prop's value and locals derived from locals.
+    assert_eq!(
+        early_returns(derived_twice, false),
+        [(
+            "!ready".to_owned(),
+            "warning",
+            vec![
+                "prop read: ready".to_owned(),
+                "derived here: ready = isA && title.trim()".to_owned()
+            ]
+        )]
+    );
+    // Server routes' own props are plain values: no diagnostic.
+    let page = direct.replace("export function Card", "export default function Card");
+    assert_eq!(early_returns(&page, true), []);
+}
+
+#[test]
+fn early_returns_on_signals_are_errors_in_every_form() {
+    let source = r#"import { signal } from "lumiose";
+export function Account(props: { user: () => string | null; kind: string }) {
+  const open = signal(false);
+  if (!props.user()) return <Login />;
+  const isOpen = open() === true;
+  if (!isOpen) return null;
+  switch (props.kind) {
+    case open() ? "a" : "b":
+      return <A />;
+  }
+  return <Profile />;
+}
+export async function Later(props: { user: () => string | null }) {
+  if (!props.user()) return null;
+  return <Profile />;
+}
+"#;
+    assert_eq!(
+        early_returns(source, false),
+        [
+            (
+                "!props.user()".to_owned(),
+                "error",
+                vec!["reactive read: props.user()".to_owned()]
+            ),
+            (
+                "!isOpen".to_owned(),
+                "error",
+                vec![
+                    "reactive read: isOpen".to_owned(),
+                    "derived here: isOpen = open() === true".to_owned()
+                ]
+            ),
+            // The strongest read wins: the case test's signal over the discriminant's prop.
+            (
+                "props.kind".to_owned(),
+                "error",
+                vec!["reactive read: open()".to_owned()]
+            ),
+        ]
+    );
+}
+
 #[test]
 fn control_flow_apis_are_not_reactive_reads() {
     let source = r#"import { signal, notFound, error, params } from "lumiose";
