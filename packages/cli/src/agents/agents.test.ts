@@ -2,6 +2,7 @@
 import { mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { format as oxfmt } from "oxfmt";
 import { afterAll, describe, expect, it } from "vitest";
 import { main } from "../main.ts";
 import {
@@ -32,6 +33,20 @@ async function agentsInit(root: string) {
     code,
     json: JSON.parse(stdout) as { ok: boolean; files: { file: string; action: string }[] },
   };
+}
+
+/** `text` as oxfmt formats it, with the repository's default options. */
+async function formatted(file: string, text: string): Promise<string> {
+  const { code, errors } = await oxfmt(file, text);
+  expect(errors).toEqual([]);
+  return code;
+}
+
+/** The planned `AGENTS.md` of a project whose only file is that `AGENTS.md`. */
+function agentsMd(content: string) {
+  return planAgentFiles((file) => (file === "AGENTS.md" ? content : undefined), {
+    name: "shop",
+  })[0]!;
 }
 
 describe("agent files", () => {
@@ -189,6 +204,44 @@ describe("agent files", () => {
     writeFileSync(join(root, "package.json"), "{}");
     await agentsInit(root);
     expect(readFileSync(join(root, "AGENTS.md"), "utf8")).not.toContain("lumiose-ui");
+  });
+
+  it("teaches ?client scripts for small behaviour and islands for reactive UI (TASK-518)", () => {
+    const files = planAgentFiles(() => undefined, { name: "shop" });
+    const content = Object.fromEntries(files.map((file) => [file.file, file.content]));
+    for (const text of [content["AGENTS.md"]!, content[SKILL_FILE]!]) {
+      expect(text).not.toContain("Only islands ship");
+      expect(text).toContain("?client");
+      expect(text).toContain("JSX.IntrinsicElements");
+      expect(text).toMatch(/reactive UI (\([^)]*\) )?is an\s+island/);
+    }
+    expect(content[SKILL_FILE]).toContain(
+      "node_modules/lumiose/docs/guides/web-components.md#server-data-in-attributes",
+    );
+  });
+
+  it("writes Markdown that oxfmt leaves alone, and updates it after oxfmt (TASK-503)", async () => {
+    const manifest = JSON.stringify({ dependencies: { "@lumiose/ui": "^0.1.0" } });
+    for (const ui of [false, true]) {
+      const read = (file: string) => (ui && file === "package.json" ? manifest : undefined);
+      const markdown = planAgentFiles(read, { name: "shop" }).filter((planned) =>
+        planned.file.endsWith(".md"),
+      );
+      for (const { file, content } of markdown) {
+        expect(await formatted(file, content), `${file} (ui: ${ui})`).toBe(content);
+      }
+    }
+
+    // An older section, formatted with oxfmt, updates to the current one and stays formatted.
+    const old = await formatted(
+      "AGENTS.md",
+      `# Shop\n\nOur rules.\n\n${AGENTS_START}\n## Lumiose\n\nold text\n${AGENTS_END}\n\nMore rules.\n`,
+    );
+    const updated = agentsMd(old);
+    expect(updated.action).toBe("updated");
+    expect(updated.content).toContain(agentsSection().trimEnd());
+    expect(await formatted("AGENTS.md", updated.content)).toBe(updated.content);
+    expect(agentsMd(updated.content).action).toBe("unchanged");
   });
 
   it("detects the package manager from the lockfile, then package.json", () => {

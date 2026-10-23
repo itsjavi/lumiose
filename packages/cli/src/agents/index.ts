@@ -61,9 +61,14 @@ dialogs, drawers, menus, context menus, popovers, tabs, accordions or toasts, an
 `;
 }
 
-/** The Lumiose section of `AGENTS.md`, markers included (with the UI part when `ui`). */
+/**
+ * The Lumiose section of `AGENTS.md`, markers included (with the UI part when `ui`). Blank lines
+ * around the markers keep it as oxfmt formats Markdown, so formatting the file does not make the
+ * next run see a changed section (TASK-503).
+ */
 export function agentsSection(options: { ui?: boolean } = {}): string {
   return `${AGENTS_START}
+
 ## Lumiose
 
 This project uses Lumiose, a web framework for everything from static sites and SPAs to full-stack apps:
@@ -114,8 +119,12 @@ docs instead of guessing.
 - Route types take the route pattern literal: \`PageProps<"/blog/[slug]">\`,
   \`LayoutProps<"/blog">\`, \`ActionContext<"/blog/[slug]">\`, \`Endpoint<"/api/posts">\`. Never cast
   action results: \`actionData<typeof actions>()\` and \`submit<typeof actions.save>(form)\` infer them.
-- Only islands ship JS in \`static\`/\`server\` pages: \`<Counter client:load />\` or
+- JavaScript in \`static\`/\`server\` pages: reactive UI is an island, \`<Counter client:load />\` or
   \`client:visible\`, with exported components and serializable props (\`LUM4001\`, \`LUM4002\`).
+  A small script of a server-rendered component (a copy button, a theme toggle) is not: import it
+  with \`?client\` (\`import defineCopy from "./copy-button.ts?client"\`) and call it while
+  rendering. It defines a custom element that reads the server's data from attributes typed in
+  \`JSX.IntrinsicElements\`, and loads without the island runtime.
 - Server-only code lives in \`*.server.ts\` modules or \`src/server/\`; never import it into islands
   (\`LUM4003\`). Secrets come from \`env("NAME")\`, not \`import.meta.env\`.
 - Any other file in \`src/routes\` is a colocated module, never a route, and \`_name\` folders are
@@ -127,6 +136,7 @@ Run \`npx lumiose check\` (types, routes and Lumiose diagnostics; \`--format jso
 \`{ command, ok, diagnostics }\` report) and fix every error, then \`npx lumiose lint\` and
 \`npx lumiose fmt\`. \`npx lumiose routes\` lists the routes with their modes. Every CLI command takes
 \`--format json\` and exits 0 on success, 1 when it finds problems, 2 when it cannot run.
+
 ${AGENTS_END}
 `;
 }
@@ -135,7 +145,7 @@ ${AGENTS_END}
 export function skillFile(): string {
   return `---
 name: lumiose
-description: Build, change and fix Lumiose apps (.stsx components with TSX and raw-CSS <style> blocks, signals, file routes in src/routes, islands, form actions). Use for any edit to .stsx/.tsx components, routes, endpoints or lumiose() options in vite.config.ts, and whenever lumiose check reports LUMxxxx diagnostics.
+description: Build, change and fix Lumiose apps (.stsx components with TSX and raw-CSS <style> blocks, signals, file routes in src/routes, islands, ?client scripts, form actions). Use for any edit to .stsx/.tsx components, routes, endpoints or lumiose() options in vite.config.ts, and whenever lumiose check reports LUMxxxx diagnostics.
 ---
 
 # Lumiose
@@ -159,8 +169,15 @@ Follow the Lumiose section of \`AGENTS.md\`. This skill is the workflow.
 - Form: export \`actions = { name(ctx: ActionContext<"/path">) {…} }\` from the page, post to
   \`?/name\`, read the result with \`actionData<typeof actions>()\`; return \`fail(status, data)\`
   or call \`redirect()\`.
-- Interactivity in a \`static\`/\`server\` page: an exported component in \`src/components\`, used
-  with \`client:load\` or \`client:visible\` and plain-data props.
+- Interactivity in a \`static\`/\`server\` page: reactive UI (signals, \`bind:\`, event props) is an
+  island, an exported component in \`src/components\` used with \`client:load\` or
+  \`client:visible\` and plain-data props.
+- A small script (copy button, theme toggle, local date) needs no island: a \`.ts\` file that
+  defines a custom element, imported with \`?client\` by the component that renders the element
+  and called while it renders. The component writes the server's data as attributes, typed in
+  \`JSX.IntrinsicElements\`; the script reads them. Listen on the element itself, and wait for
+  \`DOMContentLoaded\` before reading or replacing its children: the script can run before they
+  are parsed. Docs: \`node_modules/lumiose/docs/guides/web-components.md#server-data-in-attributes\`.
 - Styles: one \`<style>\` block at the end of the file, shared by its components (scoped to the
   file); a block nested in an element only to scope its subtree or read a component \`const\`;
   \`<style global>\` for globals, \`$constant\` for top-level values,
