@@ -21,6 +21,17 @@ const nested = (levels: number): Owner => {
   return owner;
 };
 
+/** A binding that copies `s` into `dom.value` and logs each later apply into `log`. */
+const bound = (s: () => number, log: string[] = []) => {
+  const dom = { value: "" };
+  renderEffect(dom, s, (target, v) => {
+    log.push(`render ${v}`);
+    target.value = String(v);
+  });
+  log.length = 0;
+  return dom;
+};
+
 describe("effect", () => {
   it("defers its first run to the next flush", () => {
     const log: string[] = [];
@@ -361,20 +372,181 @@ describe("render effects", () => {
     });
     expect(log).toEqual(["child 0:0", "parent 0", "child 1:1", "parent 1"]);
   });
+});
 
-  it("render effects updated by a user effect run before the next user effect", () => {
+describe("user effects in one flush (decision-80)", () => {
+  it("a later effect of the same pass sees the new signal value but the old DOM", () => {
     const s = signal(0);
-    const text = { value: "" };
-    renderEffect(text, s, (t, v) => (t.value = String(v)));
+    const dom = bound(s);
     const seen: string[] = [];
     effect(() => {
       if (s() === 0) s.set(1);
     });
     effect(() => {
-      seen.push(text.value);
+      seen.push(`${s()} ${dom.value}`);
     });
     flush();
-    expect(seen).toEqual(["1"]);
+    expect(seen).toEqual(["1 0"]);
+    expect(dom.value).toBe("1");
+  });
+
+  it("runs every queued effect before the render work their writes trigger, once", () => {
+    const log: string[] = [];
+    const sources = [signal(0), signal(0), signal(0)];
+    const doms = sources.map((s) => bound(s, log));
+    sources.forEach((s, i) =>
+      effect(() => {
+        log.push(`effect ${i} sees ${doms.map((dom) => dom.value).join("")}`);
+        s.set(1);
+      }),
+    );
+    flush();
+    expect(log).toEqual([
+      "effect 0 sees 000",
+      "effect 1 sees 000",
+      "effect 2 sees 000",
+      "render 1",
+      "render 1",
+      "render 1",
+    ]);
+  });
+
+  it("an effect that depends on the written signal sees the new DOM in the next pass", () => {
+    const trigger = signal(0);
+    const s = signal(0);
+    const dom = bound(s);
+    const log: string[] = [];
+    effect(() => {
+      if (trigger() > 0) s.set(trigger());
+    });
+    effect(() => {
+      log.push(`dependent ${s()} ${dom.value}`);
+    });
+    effect(() => {
+      log.push(`later ${trigger()} ${s.peek()} ${dom.value}`);
+    });
+    flush();
+    log.length = 0;
+    trigger.set(1);
+    flush();
+    expect(log).toEqual(["later 1 1 0", "dependent 1 1"]);
+  });
+
+  it("render bindings still run before user effects within an update", () => {
+    const s = signal(0);
+    const dom = bound(s);
+    const seen: string[] = [];
+    effect(() => {
+      seen.push(`${s()} ${dom.value}`);
+    });
+    flush();
+    s.set(1);
+    flush();
+    expect(seen).toEqual(["0 0", "1 1"]);
+  });
+
+  it("flush() and batch() inside an effect do not apply its writes before the pass ends", () => {
+    const a = signal(0);
+    const b = signal(0);
+    const domA = bound(a);
+    const domB = bound(b);
+    const seen: string[] = [];
+    effect(() => {
+      batch(() => a.set(1));
+      flush();
+      seen.push(`first ${domA.value}`);
+    });
+    effect(() => {
+      b.set(1);
+      seen.push(`second ${domA.value}${domB.value}`);
+    });
+    flush();
+    expect(seen).toEqual(["first 0", "second 00"]);
+    expect(`${domA.value}${domB.value}`).toBe("11");
+  });
+
+  it("a batch outside a flush queues its effects into one pass", () => {
+    const a = signal(0);
+    const b = signal(0);
+    const x = signal(0);
+    const y = signal(0);
+    const log: string[] = [];
+    bound(x, log);
+    bound(y, log);
+    effect(() => {
+      x.set(a());
+      log.push(`effect a ${a()}`);
+    });
+    effect(() => {
+      y.set(b());
+      log.push(`effect b ${b()}`);
+    });
+    flush();
+    log.length = 0;
+    batch(() => {
+      a.set(1);
+      batch(() => b.set(2));
+    });
+    expect(log).toEqual(["effect a 1", "effect b 2", "render 1", "render 2"]);
+  });
+
+  it("an effect in a subtree that an earlier effect's write replaces does not run", () => {
+    const show = signal(true);
+    const x = signal(0);
+    const log: string[] = [];
+    effect(() => {
+      if (x() > 0) show.set(false);
+    });
+    flush();
+    const root = createOwner(undefined);
+    let branch: Owner | undefined;
+    runWithOwner(root, () =>
+      renderEffect(null, show, (_, visible) => {
+        if (branch) disposeOwner(branch);
+        branch = createOwner(getOwner());
+        if (visible) {
+          runWithOwner(branch, () =>
+            effect(() => {
+              log.push(`inner ${x()}`);
+              return () => log.push("inner cleanup");
+            }),
+          );
+        }
+      }),
+    );
+    flush();
+    // Both effects are queued; the first one's write hides the second one's subtree.
+    x.set(1);
+    flush();
+    expect(log).toEqual(["inner 0", "inner cleanup"]);
+    disposeOwner(root);
+  });
+
+  it("an effect still runs when the pending binding above it turns out unchanged", () => {
+    const s = signal(1);
+    const x = signal(0);
+    const positive = computed(() => s() > 0);
+    const log: string[] = [];
+    let applies = 0;
+    effect(() => {
+      if (x() > 0) s.set(2);
+    });
+    flush();
+    const root = createOwner(undefined);
+    runWithOwner(root, () =>
+      renderEffect(null, positive, () => {
+        applies++;
+        effect(() => {
+          log.push(`inner ${x()}`);
+        });
+      }),
+    );
+    flush();
+    x.set(1);
+    flush();
+    expect(log).toEqual(["inner 0", "inner 1"]);
+    expect(applies).toBe(1);
+    disposeOwner(root);
   });
 });
 

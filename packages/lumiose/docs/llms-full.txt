@@ -560,7 +560,7 @@ same component is static on one page and interactive on another.
 | `useCallback(fn, deps)`, `React.memo(Component)`        | Not needed: functions are created once and components don't re-render.                                                                                                                                 |
 | `useEffect(fn, [deps])`                                 | `effect(fn)`: it tracks what it reads. Return a cleanup, as in React.                                                                                                                                  |
 | `useEffect(fn, [])`                                     | `onMount(fn)`: runs once, untracked, after mount. It may return a cleanup.                                                                                                                             |
-| `useLayoutEffect(fn, deps)`                             | `effect(fn)` or `onMount(fn)`: there is one kind of effect, and it runs after the DOM writes of the same flush.                                                                                        |
+| `useLayoutEffect(fn, deps)`                             | `effect(fn)` or `onMount(fn)`: there is one kind of effect, and it runs after the DOM writes of the same flush. As with layout effects, its writes render once every effect of that flush has run.     |
 | Cleanup returned from `useEffect`, `AbortController`    | `onCleanup(fn)`, and `getAbortSignal()`, aborted when the owner is disposed or the effect re-runs.                                                                                                     |
 | `useRef<HTMLInputElement>(null)`                        | `const input = ref<HTMLInputElement>()`, then `<input ref={input} />` and `input()?.focus()`.                                                                                                          |
 | `useRef(value)` for a mutable value                     | A `let` variable in the component body: the body runs once.                                                                                                                                            |
@@ -2295,7 +2295,12 @@ the signal marks it dirty and re-runs only what depends on it.
 - **Writes are batched.** Writes inside a delegated event handler are batched for the duration of
   the handler. Any other write schedules a microtask flush. `flush()` flushes immediately.
 - **Flush order:** computeds are pulled, then DOM bindings run (parents before children), then user
-  effects.
+  effects. The effects queued at that point all run before the DOM bindings that their own writes
+  trigger, so effects that measure the DOM and then write share one layout. Then those bindings
+  run, then the effects that the writes scheduled. A later effect of the same pass reads the new
+  signal values, but the DOM does not show them yet. A conditional or list around a queued effect
+  that such a write changed still updates first, so an effect never runs inside content that an
+  earlier effect's write removed.
 - **Owners.** Every component, effect and root is an _owner_. Owners scope cleanups
   (`onCleanup`), context (`<Ctx value>`/`useContext`), error handling and `getAbortSignal()`. Disposing an owner
   disposes everything created under it.
@@ -2374,6 +2379,9 @@ function ThemeLabel() {
   an extra flush. Use `computed(() => a() * 2)`.
 - **Expecting an effect to run synchronously.** Effects run after the DOM updates. In tests, call
   `flush()` after a write before asserting.
+- **Measuring, in one effect, what another effect's write renders.** Effects of the same pass all
+  run before their writes reach the DOM, so the second effect measures the previous layout. Read the
+  written signal in the effect that measures: it re-runs once the DOM shows the write.
 - **Module-scope signals in server code.** On the server, a signal at module scope is shared by
   every request. Keep request data in components or context (`LUM4008`).
 - **Posting a store to a worker.** `postMessage()` and `structuredClone()` throw on proxies: send
@@ -2807,10 +2815,14 @@ list row goes into the document complete, with its nested lists, conditionals an
 one insertion, and only then do the attachments inside it run. The exception is content that a
 `<Suspense>` holds back while it shows its fallback: it waits in a fragment, so its attachments run
 before it is in the document (`el.isConnected` is `false`), and do not run again when it appears.
-Each attachment's writes reach the DOM before the next attachment runs: an attachment that measures
-(`getBoundingClientRect`) and then sets a signal the page renders makes the next one's measurement
-force a new layout, once per element. To measure many elements, observe them with a
-`ResizeObserver` instead, which reads every size before its callback writes anything.
+
+The attachments and effects that one update queues all run before the DOM shows their own writes.
+When each attachment measures (`getBoundingClientRect`) and then sets a signal the page renders,
+every measurement reads the same layout, and the writes reach the DOM together after the last
+attachment has run: N elements cost one layout, not N. Reading the signal still returns the new
+value at once; only the DOM lags. To measure what such a write renders, read the signal in an
+effect (it re-runs once the DOM shows the write), or measure in the next frame or in a
+`ResizeObserver`.
 
 **`bind:` on components and custom elements.** `bind:x={signal}` works on any component with an
 `x` prop and an `onXChange` callback, like `bind:value` on inputs: `bind:open` on `Dialog.Root`,
@@ -11447,6 +11459,11 @@ type EffectFn = () => void | (() => void);
 Runs `fn` after the DOM updates, then again whenever a signal it read changes. A returned function
 is a cleanup, run before the next run and on disposal. Returns a disposer. Owned by the current
 owner, so it is disposed with the component.
+
+The effects queued in a flush all run before the DOM bindings that their writes trigger; those
+writes then render together, and the effects they schedule run after that, in the same flush. So
+an effect sees the current value of a signal that an earlier effect of the same pass wrote, but
+not yet its DOM.
 
 ## onMount
 

@@ -2,7 +2,10 @@
 //
 // Flush order: computeds are pulled lazily while effects check their
 // dependencies; render effects (DOM bindings and async runs) run parents first,
-// by owner depth; user effects run last, after the DOM is up to date.
+// by owner depth; user effects run last, after the DOM is up to date. The user
+// effects queued when a pass starts all run before the render work their writes
+// trigger (decision-80), so N effects that measure and then write share one
+// layout; the effects those writes schedule run in the next pass.
 import {
   abortLifetime,
   addCleanup,
@@ -121,9 +124,17 @@ export function flush(): void {
       if (renderQueue.length !== 0) {
         runRenderPass();
       } else if (userIndex < userQueue.length) {
-        const node = userQueue[userIndex]!;
-        userQueue[userIndex++] = undefined;
-        runSafely(node);
+        // A pass runs the user effects queued so far. Their writes apply to signals at once, but
+        // the render work they queue waits for the pass to end, and the effects they schedule
+        // join the next pass (decision-80).
+        for (const end = userQueue.length; userIndex < end;) {
+          const node = userQueue[userIndex]!;
+          userQueue[userIndex++] = undefined;
+          if (renderQueue.length !== 0) {
+            runPendingAncestors(node.parent);
+          }
+          runSafely(node);
+        }
       } else {
         break;
       }
@@ -165,6 +176,21 @@ function runRenderPass(): void {
     }
   }
   queue.length = 0;
+}
+
+/**
+ * Runs the queued render work among `owner` and its ancestors, top-down, before a user effect
+ * under them runs: a binding about to replace the subtree disposes the effect instead of letting
+ * it run in content that an earlier effect's write removed. Other render work still waits.
+ */
+function runPendingAncestors(owner: Owner | undefined): void {
+  if (owner !== undefined) {
+    runPendingAncestors(owner.parent);
+    // Plain owners have no `kind`, and `undefined > USER` is false.
+    if ((owner as EffectNode).kind > USER && (owner as EffectNode).flags & (DIRTY | PENDING)) {
+      runSafely(owner as EffectNode);
+    }
+  }
 }
 
 function runSafely(node: EffectNode): void {

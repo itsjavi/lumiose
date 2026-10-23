@@ -2,7 +2,7 @@
 import { describe, expect, it } from "vitest";
 import { effect, flush, signal } from "../core/index.ts";
 import { createOwner, disposeOwner, runWithOwner, type Owner } from "../core/internal.ts";
-import { attach, bindChecked, bindProperty, bindValue, template, useRef } from "./index.ts";
+import { attach, bind, bindChecked, bindProperty, bindValue, template, useRef } from "./index.ts";
 import { ref } from "./public.ts";
 
 function root(fn: () => void): Owner {
@@ -183,6 +183,44 @@ describe("attach", () => {
     tooltip.set(true);
     flush();
     expect(log).toEqual(["focus", "focus cleanup", "focus", "tooltip"]);
+  });
+
+  it("N attachments that measure, then write, share one render pass (decision-80)", () => {
+    const container = document.createElement("div");
+    document.body.append(container);
+    const log: string[] = [];
+    const rows = Array.from({ length: 5 }, () => signal(10));
+    const owner = root(() =>
+      rows.forEach((height, i) => {
+        const el = document.createElement("div");
+        container.append(el);
+        bind(el, height, (node, value) => {
+          log.push(`write ${i}`);
+          node.style.height = `${value}px`;
+        });
+        attach(el, () => [
+          (node) => {
+            // What a measurement would see: how many rows already show their new height.
+            const updated = [...container.children].filter(
+              (row) => (row as HTMLElement).style.height === "20px",
+            );
+            log.push(`measure ${i} ${(node as HTMLElement).style.height} ${updated.length}`);
+            height.set(20);
+          },
+        ]);
+      }),
+    );
+    log.length = 0;
+    flush();
+    expect(log).toEqual([
+      ...rows.map((_, i) => `measure ${i} 10px 0`),
+      ...rows.map((_, i) => `write ${i}`),
+    ]);
+    expect([...container.children].map((row) => (row as HTMLElement).style.height)).toEqual(
+      rows.map(() => "20px"),
+    );
+    disposeOwner(owner);
+    container.remove();
   });
 });
 
