@@ -314,22 +314,38 @@ test.describe("toasts in overlays and focus (TASK-436)", () => {
     await page.goto("/toast/island");
     await button(page, "Add an error").click();
     await expect(toast(page, "Payment failed")).toBeVisible();
+    // The stack's height becomes the page's scroll padding in the viewport's ResizeObserver, at
+    // the next rendering update, so a toast can show before it. Tabs that run before it leave
+    // the steps at the bottom under the toast; a run under load counted one (TASK-530).
+    await expect
+      .poll(() =>
+        page.evaluate(() => {
+          const padding = getComputedStyle(document.documentElement).scrollPaddingBlockEnd;
+          const stack = document.querySelector("lu-toast-viewport")!.getBoundingClientRect();
+          return parseFloat(padding) >= stack.height;
+        }),
+      )
+      .toBe(true);
     await button(page, "Step 1").focus();
-    let covered = 0;
-    for (let i = 0; i < 39; i++) {
+    const covered: string[] = [];
+    for (let step = 2; step <= 40; step++) {
       await page.keyboard.press("Tab");
-      covered += await page.evaluate(() => {
+      await expect(button(page, `Step ${step}`)).toBeFocused();
+      // Read after a frame: the page as rendered once the focus has scrolled it.
+      const under = await page.evaluate(async () => {
+        await new Promise(requestAnimationFrame);
         const active = document.activeElement!.getBoundingClientRect();
         const stack = document.querySelector("lu-toast-viewport")!.getBoundingClientRect();
-        const under =
-          active.top >= stack.top &&
+        return active.top >= stack.top &&
           active.bottom <= stack.bottom &&
           active.left >= stack.left &&
-          active.right <= stack.right;
-        return under ? 1 : 0;
+          active.right <= stack.right
+          ? `${Math.round(active.top)}-${Math.round(active.bottom)} under ${Math.round(stack.top)}`
+          : "";
       });
+      if (under) covered.push(`Step ${step}: ${under}`);
     }
-    expect(covered).toBe(0);
+    expect(covered).toEqual([]);
   });
 });
 
