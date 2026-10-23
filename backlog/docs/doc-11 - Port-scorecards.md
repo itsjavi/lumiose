@@ -3,7 +3,7 @@ id: doc-11
 title: Port scorecards
 type: other
 created_date: '2026-10-20 21:23'
-updated_date: '2026-10-23 08:22'
+updated_date: '2026-10-23 20:58'
 ---
 Every port of a real project records a scorecard against its original stack here (decision-70). Lumiose's public claims come from these scorecards and the benchmarks, so a port where Lumiose is not clearly better on something that matters is written down as plainly as a win, and its gaps become tasks.
 
@@ -125,7 +125,7 @@ Every port of a real project records a scorecard against its original stack here
 | Requests per page                   |                                                          list 224, detail 157 |                                list 122, detail 58 | The same images (112 and 48); own-origin requests 112 vs 10 and 109 vs 10                                                                                                                                                                                     |
 | Total per page, first load          |                                                          2,526 kB, 1,274 kB |                                   1,904 kB, 492 kB | Images are 1,696 and 406 kB of it on both sides                                                                                                                                                                                                               |
 | First load, slow 4G + 4x CPU        | list: shows 1.41 s, interactive 8.43 s; detail: shows 1.56 s, LCP 4.26 s, interactive 7.49 s | list: 0.51 s, 3.58 s; detail: 0.53 s, LCP 0.82 s, 1.08 s | 390×844, medians of 3. Interactive: hydrated, and on the list its data loaded so filtering works                                                                                                                                                              |
-| Interactions, 4x CPU                |                       search 243 ms, clear 284 ms, filter on and off 185/188 ms |                                269, 539, 251/252 ms | Until the results paint, medians of 7, with a 125 ms debounce in both. Lumiose inserts new grid rows node by node (TASK-522)                                                                                                                                  |
+| Interactions, 4x CPU                |                       search 243 ms, clear 284 ms, filter on and off 185/188 ms |                                269, 539, 251/252 ms | Until the results paint, medians of 7, with a 125 ms debounce in both. TASK-522 ruled out row insertion; see the 0.6 pass below                                                                                                                                  |
 | Build time, cold / warm             |                                                                30.2 / 30.3 s |                                        0.56 / 0.54 s | Not the same scope: the original builds its whole app (97 route files), the port 3 routes. Medians of 3                                                                                                                                                      |
 | Type check                          |                                                                    2.1–3.0 s |                                               0.7 s | `tsc` on the whole app vs `lumiose check` on the port                                                                                                                                                                                                         |
 | Source lines (code + styles)        |                                                          9,365 in 72 files |                                    6,591 in 27 files | Original: the files that implement the same features (pages 4,572, catalog UI 971, component kit 2,162, shell 658, global stylesheet 1,002). Lumiose: 2,628 of its lines are CSS in `<style>` blocks, one declaration per line, where the original writes utility classes. Domain code copied unchanged (4,580 lines) is left out on both sides. Tests not counted: the port's comparison scripts are 718 lines |
@@ -144,7 +144,7 @@ Every port of a real project records a scorecard against its original stack here
 - List interactions are slower: replacing the virtual grid's 80 visible cards takes about twice as long at 4x CPU (TASK-522), and measuring rows in `attach` forced a layout per row until the port moved it to a ResizeObserver.
 - Strict CSP, the template's default, writes style props as attribute-selector rules that lose to scoped classes, and one rule per element in long lists (TASK-521); the port moved those values into its stylesheets.
 - Scoping only a selector's last part caused a real hover bug (TASK-282); LUM2003 errors and 19 LUM2001 warnings in server-only components (TASK-523, TASK-290).
-- `@lumiose/ui` is not on npm yet (TASK-389), so the port built its tabs, switches, segmented toggles, popovers and dialog on native elements; native `<select>` replaces the original's styled listboxes, a visible difference when open.
+- At 0.5.0, `@lumiose/ui` was not on npm yet (TASK-389), so the port built its tabs, switches, segmented toggles, popovers and dialog on native elements; native `<select>` replaces the original's styled listboxes, a visible difference when open. The 0.6 pass below replaced them.
 - Translating utility classes by hand: line heights, and paddings where one utility silently wins over another, found only through a pixel diff of every page.
 - Papercuts: `<meta property>` and `focusable` are not typed (TASK-524); `searchParams.set()` percent-encodes `:` and `,` in shared URLs (TASK-525); files in `public/` revalidate on every use, so the icon sprites moved to `?url` imports to get hashed names.
 
@@ -152,7 +152,46 @@ Every port of a real project records a scorecard against its original stack here
 
 **Not measured:** Firefox and Safari (the native popovers use implicit anchor positioning), dev server start, and the original behind its production proxy. The menu bar's live counter and account menu were not ported.
 
-**Status:** measured on 0.5.0. The port stays local and private.
+**Status:** measured on 0.5.0, then on 0.6.0 with @lumiose/ui (below). The port stays local and private.
+
+#### The 0.6 + @lumiose/ui pass (2026-10-23)
+
+- Lumiose 0.6.0 and @lumiose/ui 0.1.1 from npm, same machine. The upgrade broke nothing: `lumiose check` reports no errors, and the 11 behaviour checks pass.
+- **What ui replaced:**
+  - the filter listboxes, now a customizable select with icons, which closes the known visible difference;
+  - the switches, the mode tabs, the view toggle and the grouped view's radios;
+  - the filters popover and the item picker;
+  - the gallery dialog, and the detail graphs' requirement popovers, which now move focus in and back as the original's do.
+- **Kept native:**
+  - the site menu: Menu would add 2.6 kB to every page for arrow keys in a list of links;
+  - link tooltips: a Tooltip trigger is always a button (TASK-544);
+  - one toggle button and the reference sections.
+
+| Metric (4x CPU, medians of 7)                                   |                    Original |                  0.5.0 |                  0.6.0 |              0.6.0 + ui |
+| --------------------------------------------------------------- | --------------------------: | ---------------------: | ---------------------: | ----------------------: |
+| JavaScript per page (brotli), list / detail                    |          390.4 / 423.8 kB |        22.4 / 13.7 kB |        22.6 / 13.8 kB |         35.5 / 20.0 kB |
+| Slow 4G, list: shows / interactive                             |             1.38 / 8.22 s |          0.50 / 2.88 s |          0.50 / 2.90 s |           0.52 / 3.16 s |
+| Slow 4G, detail: shows / LCP / interactive                     |      1.53 / 4.28 / 7.36 s |   0.51 / 0.80 / 1.06 s |   0.50 / 0.79 / 1.05 s |    0.56 / 0.84 / 1.09 s |
+| Search, clear, filter on / off, until the results paint        | 224, 259, 142 / 148 ms |  244, 467, 209 / 201 ms |  243, 468, 205 / 208 ms |   241, 468, 203 / 231 ms |
+| The same, timed from the DOM change                            | 218, 234, 113 / 124 ms |  218, 310, 203 / 213 ms |  218, 313, 206 / 203 ms |   215, 310, 208 / 215 ms |
+
+- **Method:** all four builds were measured in one session, with the interaction runs alternating.
+- **Interactions:**
+  - "Clear" takes 467 ms on 0.5.0 and 468 ms on 0.6.0. The 539 ms in the first table came from the machine's state then, so 0.6.0 does not change this case.
+  - The "until the results paint" timing counts one extra frame for updates that land after the event (timers, schedulers, microtasks).
+  - Timed from the DOM change, the port clears in 310 ms and the original in 234 ms.
+- **Cost of ui:** list JavaScript 22.6 → 35.5 kB and detail 13.8 → 20.0 kB, with 8 and 5 more script requests and about 1.3 kB more CSS.
+  - The first build put a filter switch at about 381 ms; it went back to 205 ms with a stable ToggleGroup `value` and `batch()` around the list's update (TASK-539, TASK-540).
+- **Parity:**
+  - The 14 screenshot pairs differ by 0.03–0.3% of pixels; the grouped view went from 1.4–1.8% to 0.03–0.28%.
+  - 19/19 behaviour checks pass. 8 of them are new for the ui controls, and the 0.6.0 build without ui fails 7 of those.
+- **Still different:**
+  - the listbox picker has no scroll arrows and does not scroll to the selected item, and Firefox shows a classic select;
+  - popups sit half a pixel off;
+  - on radios, the original's first arrow key after a click only moves focus;
+  - the site menu has no arrow keys;
+  - the item picker is not paginated.
+- **Gaps found:** TASK-537 to TASK-545.
 
 ### The same app: forms, actions and auth (later)
 
