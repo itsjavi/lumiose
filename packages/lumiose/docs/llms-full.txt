@@ -6985,7 +6985,10 @@ read pass the limit; nothing buffers an unbounded body. The limits hold for form
 bounded body) and middleware alike, in every deployment. The client's `Content-Type` picks the
 limit, except that `json()` and `text()` keep the 1 MB one: declaring `multipart/form-data` does
 not raise a JSON endpoint's limit. `formData()` and raw reads (`arrayBuffer()`, `request.body`, for
-a multipart parser of your own) of a multipart body get the upload limit. Raise or lower them for the app with
+a multipart parser of your own) of a multipart body get the upload limit. A `request.clone()` keeps
+these limits; a request re-wrapped with `new Request(request)` keeps the Content-Type's limit only,
+so its `json()` and `text()` read a body declared multipart up to the upload limit: call them on
+the request itself or a clone. Raise or lower the limits for the app with
 `lumiose({ limits: { body: "2mb", upload: "50mb" } })`, and for one route with
 `export const limits = { upload: "200mb" }` in its page or endpoint file.
 

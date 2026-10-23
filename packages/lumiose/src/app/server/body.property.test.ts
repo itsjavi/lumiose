@@ -163,18 +163,21 @@ describe("bounded bodies", () => {
     );
   });
 
-  it("keep the body limit for json() and text() of a body declared multipart (TASK-472)", async () => {
+  it("keep the body limit for json() and text() of a body declared multipart, clones too (TASK-472, TASK-500)", async () => {
     await fc.assert(
       fc.asyncProperty(
         fc.uint8Array({ maxLength: 6000 }),
         fc.array(fc.nat(), { maxLength: 4 }),
         limitsArb,
         fc.constantFrom("json", "text", "arrayBuffer"),
-        async (bytes, cuts, limits, read) => {
-          const request = boundedRequest(
+        fc.nat({ max: 2 }),
+        async (bytes, cuts, limits, read, clones) => {
+          let request = boundedRequest(
             chunked(bytes, cuts, "multipart/form-data; boundary=x"),
             () => limits,
           );
+          // Read through a clone (of a clone): `request.clone().json()` in middleware.
+          for (let i = 0; i < clones; i++) request = request.clone();
           const result = await settle(
             request[read]().then(
               () => "read",

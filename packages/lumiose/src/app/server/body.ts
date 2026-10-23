@@ -95,34 +95,48 @@ export function checkContentLength(headers: Headers, limits: BodyLimits): void {
  * never parse multipart, keep `body` even for a body declared `multipart/form-data` (TASK-472):
  * declaring it must not raise a JSON endpoint's limit to `upload`. `formData()` and raw reads
  * (`arrayBuffer()`, the stream, for a parser of your own) of a multipart body get `upload`.
+ * `clone()` keeps this (TASK-500); a request re-wrapped with `new Request(request)` has the plain
+ * `json()` and `text()`, which read its multipart body under `upload` (documented).
  */
 export function boundedRequest(request: Request, limits: () => BodyLimits): Request {
   if (request.body === null) return request;
   let total = 0;
-  let plain = false;
+  const reads = { plain: false };
   const body = request.body.pipeThrough(
     new TransformStream<Uint8Array, Uint8Array>({
       transform(chunk, controller) {
         total += chunk.byteLength;
-        const limit = plain ? limits().body : limitOf(request.headers, limits());
+        const limit = reads.plain ? limits().body : limitOf(request.headers, limits());
         if (total > limit) controller.error(payloadTooLarge(limit));
         else controller.enqueue(chunk);
       },
     }),
   );
-  const bounded = new Request(request, { body, duplex: "half" } as RequestInit);
+  return withPlainReads(new Request(request, { body, duplex: "half" } as RequestInit), reads);
+}
+
+/**
+ * `request` whose `json()` and `text()` switch the shared body to the `body` limit, and whose
+ * clones do the same: a clone's body is a branch of the bounded stream, so a read through any of
+ * them bounds all of them.
+ */
+function withPlainReads(request: Request, reads: { plain: boolean }): Request {
   for (const name of ["json", "text"] as const) {
     const read = Request.prototype[name];
-    Object.defineProperty(bounded, name, {
-      configurable: true,
-      writable: true,
-      value(this: Request) {
-        plain = true;
-        return read.call(this);
-      },
+    own(request, name, function (this: Request) {
+      reads.plain = true;
+      return read.call(this);
     });
   }
-  return bounded;
+  const clone = Request.prototype.clone;
+  own(request, "clone", function (this: Request) {
+    return withPlainReads(clone.call(this), reads);
+  });
+  return request;
+}
+
+function own(request: Request, name: string, value: (this: Request) => unknown): void {
+  Object.defineProperty(request, name, { configurable: true, writable: true, value });
 }
 
 /**
