@@ -1,7 +1,6 @@
 {
   "name": "@lumiose/ui",
-  "version": "0.1.0",
-  "private": true,
+  "version": "0.0.0",
   "description": "Accessible, unstyled UI primitives for Lumiose: native elements first (dialog, popover, invoker commands, anchor positioning), light-DOM custom elements only where the platform falls short.",
   "license": "MIT",
   "repository": {
