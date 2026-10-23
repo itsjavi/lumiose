@@ -390,7 +390,9 @@ export function planRelease(
   const scopes = new Set([...INDEPENDENT_PACKAGES].map(packageScope));
   const commits = commitsSince(repo, options.since).filter((c) => !scopes.has(c.scope ?? ""));
   let changelog = renderChangelog(version, date, commits);
-  if (options.scale !== undefined) changelog += renderScale(options.scale);
+  if (options.scale !== undefined) {
+    changelog = `${changelog.trimEnd()}\n\n${renderScale(options.scale)}`;
+  }
   const changelogPath = join(repo, "CHANGELOG.md");
   const previous = existsSync(changelogPath) ? readFileSync(changelogPath, "utf8") : undefined;
   files.set(changelogPath, prependChangelog(previous, changelog));

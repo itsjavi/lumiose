@@ -290,7 +290,7 @@ describe("release", () => {
     assert.match(latest, /a crash/);
     assert.doesNotMatch(latest, /signals/);
     // The scale gate's numbers are the release notes' last section.
-    assert.match(latest, /### Scale\n\nThe large-app benchmark/);
+    assert.match(latest, /\S\n\n### Scale\n\nThe large-app benchmark/);
     assert.match(latest, /\| Server memory, peak RSS \(MB\) \| 100 \| 120 \| 1\.200 \|/);
     // The first release had nothing to compare with.
     assert.match(changelog, /## 0\.1\.0[\s\S]*Not measured: there is no previous release/);
