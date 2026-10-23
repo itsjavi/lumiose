@@ -44,12 +44,13 @@ The query is the switch, so it works the same for your files and for packages:
     closed: every spelling of those attributes counts, in any letter case or namespace, so a
     second `attributename="fill"` cannot vouch for an `attributeName="href"`.
   - **`<style>` text** keeps its CSS, with `<` and `&` written as CSS escapes (`\3c `, `\26 `):
-    in a page, an inline SVG's `<style>` is parsed as markup, where they could open a tag.
+    in a page, an inline SVG's `<style>` is parsed as markup, where they could open a tag. Only
+    its text (and CDATA) is CSS, as in a browser: XML comments and elements inside it go.
   - **References outside the file** are dropped, so an icon never makes the page load anything
     (decision-69): an `href` that is not a fragment (`#id`) on `<use>`, `<image>`, `<feImage>`
     or any element but a link `<a>`, and in CSS (`<style>`, `style` and presentation attributes,
-    animation values) a `url()` to another file, which becomes `none`, an `image-set()` with a
-    URL, and `@import` rules. Fragment references (`url(#gradient)`, `href="#shape"`) stay. To
+    animation values) a `url()` to another file, which becomes `none`, an `image-set()` or
+    `image()` with a URL, and `@import` rules. Fragment references (`url(#gradient)`, `href="#shape"`) stay. To
     show an outside image, render the `<svg>` markup in a component of your own, or point an
     `<img>` at the file. The filter reads the CSS exactly as the page gets it, escapes
     included, and fails closed: a URL goes wherever it appears (selectors too), except in an

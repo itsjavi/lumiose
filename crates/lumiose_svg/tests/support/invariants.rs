@@ -71,8 +71,9 @@ const MAX_CSS_DEPTH: usize = 128;
 /// - an `href` that is not a fragment (`#id`), on any element but a link `<a>`;
 /// - in the CSS a browser reads (`<style>` text, and every attribute but `id`, `class`, `href`,
 ///   `begin`, `end` and `aria-*`): a URL token, `url()` or `src()` that names anything but a
-///   fragment (a `url("…")` holds its string alone), a bad URL, an `image-set()` that holds a
-///   string, a URL or a `var()`, `env()` or `attr()` at any depth, or an `@import` rule;
+///   fragment (a `url("…")` holds its string alone), a bad URL, an `image-set()` or `image()`
+///   that holds a string, a URL or a `var()`, `env()` or `attr()` at any depth, or an `@import`
+///   rule;
 /// - a CSS block nested deeper than [`MAX_CSS_DEPTH`] that holds anything.
 ///
 /// The prelude of a top-level `@namespace` names a namespace and loads nothing. `<style>` text
@@ -187,7 +188,9 @@ fn breach_in(parser: &mut Parser, depth: usize, top_level: bool) -> Option<Strin
             Token::UnquotedUrl(url) if !is_fragment(url) => Some(format!("url({url})")),
             Token::BadUrl(url) => Some(format!("a bad url({url})")),
             Token::Function(name) if is_one_of(name, &["url", "src"]) => url_breach(parser, name),
-            Token::Function(name) if is_one_of(name, &["image-set", "-webkit-image-set"]) => {
+            Token::Function(name)
+                if is_one_of(name, &["image-set", "-webkit-image-set", "image"]) =>
+            {
                 holds_url(parser, depth + 1).then(|| format!("{name}() with a URL"))
             }
             _ if is_block(&token) => nested_breach(parser, depth + 1),
