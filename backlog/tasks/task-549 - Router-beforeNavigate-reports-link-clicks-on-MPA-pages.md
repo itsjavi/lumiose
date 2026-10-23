@@ -1,11 +1,11 @@
 ---
 id: TASK-549
 title: 'Router: beforeNavigate reports link clicks on MPA pages'
-status: In Progress
+status: Done
 assignee:
   - Spark
 created_date: '2026-10-23 22:12'
-updated_date: '2026-10-23 22:56'
+updated_date: '2026-10-23 23:03'
 labels:
   - router
   - dx
@@ -68,3 +68,15 @@ Docs: reference/router.md (the type table, the cancel semantics, On MPA pages, t
 
 Follow-up idea, not filed: navigate() and searchParams.set() in MPA islands still unload as "leave". They are app-initiated, so the app can check its own state before calling them.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+On MPA pages, beforeNavigate now reports a click on a same-origin link as "link" (willUnload) and a cancel prevents the click. The listener is a click listener at window; the link checks are shared with the History fallback (router/click.ts). Inside an SPA, a cancelled link or navigate() to another document now keeps the page too, and the browser asks only for "leave". This is a decision-50 amendment, to be confirmed by the user, with a BREAKING CHANGE footer in commit 8ae15985.
+
+Size: an island that uses beforeNavigate loads +303 B brotli (+189 B with href()); no router code is added. SPA boot: +76 B.
+
+Tests: hooks.test.ts (MPA and SPA), a new islands-e2e spec (navigation-hooks.e2e.ts) and the updated spa-router-e2e guard.
+
+Validation: pnpm check green; islands-e2e 10/10; spa-router-e2e 38/38.
+<!-- SECTION:FINAL_SUMMARY:END -->
