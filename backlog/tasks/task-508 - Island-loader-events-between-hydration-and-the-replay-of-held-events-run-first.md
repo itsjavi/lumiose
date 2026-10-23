@@ -3,10 +3,11 @@ id: TASK-508
 title: >-
   Island loader: events between hydration and the replay of held events run
   first
-status: To Do
+status: In Progress
 assignee:
   - '@Spark'
 created_date: '2026-10-21 04:57'
+updated_date: '2026-10-23 08:52'
 labels:
   - runtime
 dependencies: []
@@ -22,6 +23,14 @@ Found while diagnosing the toast F6 e2e flake (TASK-509). packages/lumiose/src/d
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Events that reach an island after hydration but before its held events are replayed are dispatched after them, in order
-- [ ] #2 A DOM test covers a click held during loading followed by a keydown before the replay
+- [x] #1 Events that reach an island after hydration but before its held events are replayed are dispatched after them, in order
+- [x] #2 A DOM test covers a click held during loading followed by a keydown before the replay
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Spark (0.5.1 batch, worktree branch): claimed and started.
+
+2026-10-23 (Spark): fix in packages/lumiose/src/dom/islands.ts. An island hydrated with caught events stays in the holding state (g = 1) until its replay task runs, which marks it hydrated (g = 2) and dispatches the queue; an island hydrated with no caught events is marked hydrated at once as before. Events that arrive in that window join the queue behind the held ones. Regression test: hydrate.test.ts 'dispatches events that arrive before the replay after the held ones, in order (TASK-508)' (click and key held while loading, F6 dispatched right after the loader's hydration callback, before the replay task): fails on the old loader with ['F6:0', 'click', 'a:1'], passes with the fix. Browser check (scratch spec, not committed): ui-e2e /toast/island with the island module held back until after the click and 0 ms timers stretched to 400 ms, F6 100 ms after the module arrived: old loader 5 of 6 fail with 'Received: inactive' (the CI symptom), fixed loader 6 of 6 pass (dev, build); click and F6 both held before hydration: 6 of 6 pass. The TASK-509 wait in toast.e2e.ts is no longer needed: removed it, with a comment pointing here; toast.e2e.ts 5 repeats in dev and build: 225 passed, 5 skipped. Docs: concepts/islands.md and reference/dom.md state the order.
+<!-- SECTION:NOTES:END -->

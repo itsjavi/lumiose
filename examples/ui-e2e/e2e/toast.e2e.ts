@@ -134,9 +134,9 @@ test.describe("toasts from an island's manager", () => {
     await page.goto("/toast/island");
     await button(page, "Add an error").click();
     await expect(button(page, "Add an error")).toBeFocused();
-    // F6 goes to a region that shows a toast. A click before the island hydrates is replayed a
-    // task after hydration, and an F6 pressed in between finds no toast (TASK-508): wait for it.
-    await expect(toast(page, "Payment failed")).toBeVisible();
+    // F6 goes to a region that shows a toast. No wait for it: a click caught before the island
+    // hydrated runs before an F6 that follows it, even one pressed before the click's replay
+    // (TASK-508).
     await page.keyboard.press("F6");
     await expect(viewport(page)).toBeFocused();
     await page.keyboard.press("Escape");
