@@ -76,9 +76,17 @@ jobs:
         if: steps.browsers.outputs.cache-hit != 'true'
         run: pnpm --filter @lumiose-examples/ui-e2e exec playwright install --with-deps firefox webkit
 
+      # The apt packages take about 30 s. A slow Ubuntu mirror once stalled this step for the job's
+      # whole 30 minutes, so it gets 5 minutes and one retry (a named network flake, decision-76).
       - name: Firefox and WebKit system dependencies
         if: steps.browsers.outputs.cache-hit == 'true'
-        run: pnpm --filter @lumiose-examples/ui-e2e exec playwright install-deps firefox webkit
+        run: |
+          for attempt in 1 2; do
+            timeout 5m pnpm --filter @lumiose-examples/ui-e2e exec playwright install-deps firefox webkit && exit 0
+            echo "::warning::attempt $attempt of the system dependencies failed or took over 5 minutes"
+            sudo dpkg --configure -a || true
+          done
+          exit 1
 
       - name: ui-e2e in Firefox and WebKit
         working-directory: examples/ui-e2e

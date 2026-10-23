@@ -28,7 +28,9 @@ Retries would have turned most of these green while hiding them. Five were real 
 
 Orchestrator decision (delegated to Beacon by Lux, 2026-10-21, for TASK-502 and TASK-504 to TASK-514).
 
-- **No retries for tests.** No Playwright `retries` and no Vitest `retry` in CI. A failing or flaky test gets its cause found and fixed in the test or the code: wait on the condition the behaviour needs, not on time, and compare with what the platform renders. If a cause can be named but not removed, a retry is allowed next to it, with the reason. Today that is only the registry's network: `pack:check` installs with `--fetch-retries=5` (TASK-511).
+- **No retries for tests.** No Playwright `retries` and no Vitest `retry` in CI. A failing or flaky test gets its cause found and fixed in the test or the code: wait on the condition the behaviour needs, not on time, and compare with what the platform renders. If a cause can be named but not removed, a retry is allowed next to it, with the reason. Today that is the network in two places:
+  - the registry: `pack:check` installs with `--fetch-retries=5` (TASK-511);
+  - the Ubuntu mirror: UI browsers gives Firefox and WebKit's apt packages 5 minutes and one retry. A slow mirror once stalled them for the job's whole timeout (Lux, 2026-10-23).
 - **Linux e2e in two jobs.** CI's Linux e2e runs as two jobs of about 15 minutes each, each with its own results artifact:
   - `site`: apps/web, with the WebAssembly toolchain for the playground;
   - `examples`: every examples/* suite, vite-counter first.
