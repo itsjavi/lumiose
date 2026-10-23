@@ -250,6 +250,55 @@ describe.skipIf(!binding)(".md and .html imports", () => {
     }
   });
 
+  it("answers 403 for files outside server.fs.allow, as Vite does for its own (TASK-498)", async () => {
+    // The fixture's fs.allow is the app's root: its parent directory is outside.
+    const outside = `${dirname(root)}/outside`;
+    mkdirSync(outside, { recursive: true });
+    writeFileSync(`${outside}/notes.md`, `---\ntitle: Secret\n---\n# Secret notes\n`);
+    writeFileSync(`${outside}/page.html`, `<p>Secret</p><script>secret()</script>\n`);
+    writeFileSync(`${outside}/linked.md`, `# Linked\n`);
+    writeFileSync(
+      `${outside}/styled.stsx`,
+      `export default () => <p>Styled</p>;\n<style>p{}</style>\n`,
+    );
+    const http = createHttpServer(server.middlewares);
+    await new Promise<void>((done) => http.listen(0, "127.0.0.1", done));
+    const { port } = http.address() as AddressInfo;
+    const get = async (path: string) => {
+      const response = await fetch(`http://127.0.0.1:${port}${path}`);
+      return [path, response.status, await response.text()] as const;
+    };
+    try {
+      for (const path of [
+        `/@fs${outside}/notes.md.stsx?import`,
+        `/@fs${outside}/notes.md?import&lumiose-frontmatter`,
+        `/@fs${outside}/notes.md.stsx?import&lumiose&type=style&lang.css`,
+        `/@fs${outside}/page.html.stsx?import`,
+        `/@fs${outside}/page.html?import&lumiose-script`,
+        `/@fs${outside}/page.html?import&lumiose-script&index=0&lang.js`,
+        `/@fs${outside}/styled.stsx?import&lumiose&type=style&lang.css`,
+      ]) {
+        const [, status, body] = await get(path);
+        expect([path, status]).toEqual([path, 403]);
+        expect(body).not.toMatch(/Secret|secret\(\)/);
+      }
+      // A file the app imports loads, as Vite's imported modules do (a linked package's file).
+      const resolved = await server.environments.client.pluginContainer.resolveId(
+        `${outside}/linked.md`,
+        `${root}/render.tsx`,
+      );
+      expect(resolved!.id).toBe(`${outside}/linked.md.stsx`);
+      const [, status, body] = await get(`/@fs${outside}/linked.md.stsx?import`);
+      expect(status).toBe(200);
+      expect(body).toContain("Linked");
+      // Server environments read any file, as Vite's do.
+      const ssr = await server.environments.ssr.transformRequest(`${outside}/notes.md.stsx`);
+      expect(ssr!.code).toContain("Secret notes");
+    } finally {
+      await new Promise((done) => http.close(done));
+    }
+  });
+
   it("fingerprints the assets in client and server builds", async () => {
     for (const ssr of [false, true]) {
       const result = (await build({

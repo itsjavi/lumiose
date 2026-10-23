@@ -34,3 +34,15 @@ export function Rows(props: { items: string[] }) {
     </ul>
   );
 }
+
+// LUM2003 is an error on a signal or accessor read and a warning on a prop read (decision-77),
+// also through a derived local and in a `switch`.
+export function Account(props: { user: () => string | null; kind: string }) {
+  const kind = props.kind;
+  switch (kind) {
+    case "guest":
+      return null;
+  }
+  if (!props.user()) return <p>Sign in</p>;
+  return <p>{props.user()}</p>;
+}

@@ -18,13 +18,14 @@ use oxc_syntax::symbol::SymbolId;
 
 pub use components::{is_component_name, is_jsx_like, property_key_name};
 use reactivity::{
-    PropsSymbols, first_reactive_read, is_import_member, server_only_imports, symbol_of,
+    DerivedLocals, PropsSymbols, ReadKind, is_import_member, server_only_imports, strongest_read,
+    symbol_of,
 };
 
 use crate::codegen::client::{
     has_content, is_intrinsic, is_written_content, tag_name, takes_markup,
 };
-use crate::diagnostics::{Code, Diagnostic};
+use crate::diagnostics::{Code, Diagnostic, Severity};
 use crate::scanner::{Placement, StyleBlock};
 use crate::span::Span;
 
@@ -244,6 +245,8 @@ struct Frame {
     jsx_refs: HashSet<SymbolId>,
     /// LUM2001 candidates: (symbols, span, name).
     stale: Vec<(Vec<SymbolId>, Span, String)>,
+    /// Locals declared from a reactive value, for LUM2003 (component frames only).
+    derived: DerivedLocals,
     /// LUM2005: spans of children inserts.
     children_inserts: Vec<Span>,
 }
@@ -461,11 +464,41 @@ impl<'s> Analyzer<'s> {
         let Some(init) = &declarator.init else {
             return;
         };
-        let (props, plain) = self.reactive_context();
         let (symbols, name) = binding_symbols(&declarator.id);
         if symbols.is_empty() {
             return;
         }
+        // LUM2001 looks at the declarator's own reads; LUM2003 also follows the derived locals it
+        // reads (`const isA = kind === "a"`).
+        let stale = self
+            .derivation(declarator, init, &DerivedLocals::new())
+            .is_some();
+        let derived = self
+            .frames
+            .last()
+            .and_then(|frame| self.derivation(declarator, init, &frame.derived));
+        let Some(frame) = self.frames.last_mut() else {
+            return;
+        };
+        if let Some(kind) = derived {
+            for &symbol in &symbols {
+                frame.derived.insert(symbol, (kind, declarator.span.into()));
+            }
+        }
+        if stale {
+            frame.stale.push((symbols, declarator.span.into(), name));
+        }
+    }
+
+    /// The strongest kind of reactive read a declarator's value derives from, if it derives one
+    /// (LUM2001's rules); a reference to one of `locals` reads what that local derives from.
+    fn derivation(
+        &self,
+        declarator: &VariableDeclarator<'_>,
+        init: &Expression<'_>,
+        locals: &DerivedLocals,
+    ) -> Option<ReadKind> {
+        let (props, plain) = self.reactive_context();
         let inner = init.without_parentheses();
         let rewritten = self
             .current_component()
@@ -474,71 +507,80 @@ impl<'s> Analyzer<'s> {
             && !matches!(declarator.id, BindingPattern::BindingIdentifier(_))
             && matches!(inner, Expression::Identifier(ident)
                 if symbol_of(self.scoping, ident).is_some_and(|s| props.is_props_object(s)));
+        if destructures_props {
+            return Some(ReadKind::Prop);
+        }
         // Factory calls (`signal(props.start)`, `computed(…)`) read their arguments on purpose;
         // method calls (`props.name.toUpperCase()`) derive a value.
         let factory_call = matches!(inner, Expression::CallExpression(call)
             if matches!(call.callee.without_parentheses(), Expression::Identifier(_)));
-        // So are calls on an imported module object (`Toast.createToastManager()`), unless their
-        // arguments read a reactive value (`format.date(props.date)`) (TASK-401).
-        let module_call = match inner {
+        let read = match inner {
+            // So are calls on an imported module object (`Toast.createToastManager()`), unless
+            // their arguments read a reactive value (`format.date(props.date)`) (TASK-401).
             Expression::CallExpression(call) if is_import_member(self.scoping, &call.callee) => {
-                Some(call)
-            }
-            _ => None,
-        };
-        let derived = if let Some(call) = module_call {
-            call.arguments.iter().any(|argument| {
-                let expr = match argument {
+                let arguments = call.arguments.iter().map(|argument| match argument {
                     Argument::SpreadElement(spread) => &spread.argument,
                     argument => argument.to_expression(),
-                };
-                first_reactive_read(self.scoping, &props, &plain, expr).is_some()
-            })
-        } else {
-            !factory_call
-                && !matches!(
-                    inner,
-                    Expression::NewExpression(_)
-                        | Expression::AwaitExpression(_)
-                        | Expression::ArrowFunctionExpression(_)
-                        | Expression::FunctionExpression(_)
-                        | Expression::ClassExpression(_)
-                        | Expression::JSXElement(_)
-                        | Expression::JSXFragment(_)
-                )
-                && first_reactive_read(self.scoping, &props, &plain, init).is_some()
+                });
+                strongest_read(self.scoping, &props, &plain, locals, arguments)
+            }
+            Expression::NewExpression(_)
+            | Expression::AwaitExpression(_)
+            | Expression::ArrowFunctionExpression(_)
+            | Expression::FunctionExpression(_)
+            | Expression::ClassExpression(_)
+            | Expression::JSXElement(_)
+            | Expression::JSXFragment(_) => None,
+            _ if factory_call => None,
+            _ => strongest_read(self.scoping, &props, &plain, locals, [init]),
         };
-        if (destructures_props || derived)
-            && let Some(frame) = self.frames.last_mut()
-        {
-            frame.stale.push((symbols, declarator.span.into(), name));
-        }
+        read.map(|read| read.kind)
     }
 
-    fn check_early_return(&mut self, it: &IfStatement<'_>) {
+    /// LUM2003: an `if` or `switch` whose branches return early, in a sync component, decided by
+    /// `conditions`. A signal read is an error; a prop read is a warning, since it only goes
+    /// stale when the component renders in the browser and a parent passes a changing value,
+    /// which the compiler cannot see from the component (decision-77).
+    fn check_early_return<'e, 'a: 'e>(
+        &mut self,
+        span: oxc_span::Span,
+        conditions: impl IntoIterator<Item = &'e Expression<'a>>,
+    ) {
         let Some(component) = self.current_component() else {
             return;
         };
         if component.is_async {
             return;
         }
-        let returns = statement_returns(&it.consequent)
-            || it.alternate.as_ref().is_some_and(statement_returns);
-        if !returns {
+        let Some(frame) = self.frames.last() else {
             return;
-        }
+        };
         let (props, plain) = self.reactive_context();
-        if let Some(read) = first_reactive_read(self.scoping, &props, &plain, &it.test) {
-            self.analysis.diagnostics.push(
-                Diagnostic::new(
-                    Code::ReactiveEarlyReturn,
-                    it.test.span().into(),
-                    "this early return depends on a reactive value, but a component body runs once",
-                )
-                .with_label(read, "reactive read")
-                .with_help("Move the condition into the returned JSX: `{cond() ? <A /> : <B />}`."),
-            );
+        let Some(read) = strongest_read(self.scoping, &props, &plain, &frame.derived, conditions)
+        else {
+            return;
+        };
+        let mut diagnostic = match read.kind {
+            ReadKind::Signal => Diagnostic::new(
+                Code::ReactiveEarlyReturn,
+                span.into(),
+                "this early return depends on a reactive value, but a component body runs once",
+            )
+            .with_label(read.span, "reactive read")
+            .with_help("Move the condition into the returned JSX: `{cond() ? <A /> : <B />}`."),
+            ReadKind::Prop => Diagnostic::new(
+                Code::ReactiveEarlyReturn,
+                span.into(),
+                "this early return depends on a prop, but a component body runs once: it never updates if a parent passes a changing value",
+            )
+            .with_severity(Severity::Warning)
+            .with_label(read.span, "prop read")
+            .with_help("Move the condition into the returned JSX (`{props.kind === \"a\" ? <A /> : <B />}`), unless the component only renders on the server or its props never change."),
+        };
+        if let Some(local) = read.local {
+            diagnostic = diagnostic.with_label(local, "derived here");
         }
+        self.analysis.diagnostics.push(diagnostic);
     }
 
     fn check_signal_write(&mut self, call: &CallExpression<'_>) {
@@ -730,8 +772,28 @@ impl<'a> Visit<'a> for Analyzer<'_> {
     }
 
     fn visit_if_statement(&mut self, it: &IfStatement<'a>) {
-        self.check_early_return(it);
+        if statement_returns(&it.consequent) || it.alternate.as_ref().is_some_and(statement_returns)
+        {
+            self.check_early_return(it.test.span(), [&it.test]);
+        }
         walk::walk_if_statement(self, it);
+    }
+
+    /// `switch (props.kind) { case "a": return <A />; … }` is an early return on its
+    /// discriminant and case tests, like the equivalent `if` chain.
+    fn visit_switch_statement(&mut self, it: &SwitchStatement<'a>) {
+        if it
+            .cases
+            .iter()
+            .any(|case| case.consequent.iter().any(statement_returns))
+        {
+            let tests = it.cases.iter().filter_map(|case| case.test.as_ref());
+            self.check_early_return(
+                it.discriminant.span(),
+                std::iter::once(&it.discriminant).chain(tests),
+            );
+        }
+        walk::walk_switch_statement(self, it);
     }
 
     fn visit_conditional_expression(&mut self, it: &ConditionalExpression<'a>) {

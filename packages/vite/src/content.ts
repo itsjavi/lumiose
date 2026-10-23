@@ -17,12 +17,15 @@
 //   scripts (inline ones as `?lumiose-script&index=N&lang.js`); on the server it is empty. An edit
 //   to such a file reloads the page (scripts such as `customElements.define` cannot run twice).
 // - HTML entries (the root `index.html`, HTML build inputs) and files in `public/` stay Vite's.
+// - In dev, the browser only gets the modules of files inside `server.fs.allow`, or of files the
+//   app imports (Vite's rule for the files it reads itself, TASK-498): other requests get a 403.
 
 import { existsSync, readFileSync } from "node:fs";
 import { isAbsolute, resolve } from "node:path";
 import { contentSource, type ContentSource, type Diagnostic } from "@lumiose/compiler";
-import { normalizePath, type Plugin, type ResolvedConfig } from "vite";
+import { normalizePath, type Environment, type Plugin, type ResolvedConfig } from "vite";
 import { parse as parseYaml } from "yaml";
+import { assertLoadingAllowed } from "./fs-access.ts";
 
 /** `lumiose({ md })`: Markdown imports. */
 export interface MarkdownOptions {
@@ -93,6 +96,11 @@ export class Content {
   #entries = new Set<string>();
   /** Vite's public directory (`<dir>/`): static files, never components. */
   #publicDir: string | null = null;
+  /**
+   * Content files the app's modules import: the browser may load them outside `server.fs.allow`,
+   * as Vite lets it load the modules that imports resolve to (a linked package's files).
+   */
+  readonly #imported = new Set<string>();
   /** Ids of the Lumiose modules of content files (`<file>.md.stsx`). */
   readonly moduleFilter: RegExp;
 
@@ -125,6 +133,14 @@ export class Content {
   /** Whether the build scan compiles `file` (a content file that is not an HTML entry). */
   scans(file: string): boolean {
     return this.#kind(file) !== null;
+  }
+
+  /**
+   * Throws Vite's 403 error when the dev server's browser requests a module of `file` (a content
+   * file) outside `server.fs.allow` that no module imports (./fs-access.ts).
+   */
+  assertLoadingAllowed(environment: Environment, file: string): void {
+    if (!this.#imported.has(file)) assertLoadingAllowed(environment, file);
   }
 
   /** The `.stsx` source of a content module (reads the file). */
@@ -185,6 +201,7 @@ export class Content {
           if (resolved === null || resolved.external || content.#kind(resolved.id) === null) {
             return null;
           }
+          content.#imported.add(resolved.id);
           return content.moduleId(resolved.id);
         },
       },
@@ -195,6 +212,7 @@ export class Content {
           if (MODULE.test(id)) {
             if (!content.isModule(id)) return null;
             const file = sourceFile(id);
+            content.assertLoadingAllowed(this.environment, file);
             this.addWatchFile(file);
             const result = content.#convert(file);
             // A `<script>` in Markdown (LUM1008): the file is its own error's location.
@@ -213,6 +231,7 @@ export class Content {
           }
           const file = id.replace(/\?.*$/, "");
           if (content.#kind(file) === null) return null;
+          content.assertLoadingAllowed(this.environment, file);
           let result: ContentSource;
           try {
             result = content.#convert(file);
