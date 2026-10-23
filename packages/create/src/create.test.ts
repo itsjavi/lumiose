@@ -97,8 +97,8 @@ describe("create-lumiose CLI", () => {
     expect(existsSync(join(dir, "src/routes/page.stsx"))).toBe(true);
   });
 
-  it("asks for the directory and template in a terminal", async () => {
-    const answers = ["asked-app", "3"];
+  it("asks for the directory, the template and @lumiose/ui in a terminal", async () => {
+    const answers = ["asked-app", "3", "n"];
     const asked = io();
     asked.io.ask = async () => answers.shift()!;
     asked.io.userAgent = "npm/11.0.0 node/v24.0.0";

@@ -1,10 +1,11 @@
 ---
 id: TASK-389
 title: Make @lumiose/ui public once it is on main
-status: To Do
+status: Done
 assignee:
   - '@Halo'
 created_date: '2026-10-15 17:24'
+updated_date: '2026-10-23 19:40'
 labels:
   - ui
   - release
@@ -24,6 +25,12 @@ TASK-333 made release:version, publish.ts and pack:check support @lumiose/ui out
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 packages/ui/package.json is not private and pnpm pack:check passes with it
-- [ ] #2 A dry run of pnpm release:version <x.y.z> --package @lumiose/ui shows its first release
+- [x] #1 packages/ui/package.json is not private and pnpm pack:check passes with it
+- [x] #2 A dry run of pnpm release:version <x.y.z> --package @lumiose/ui shows its first release
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+The user dropped private, released 0.1.0 with release:version and published it by hand (2026-10-23). 0.1.1 then went out through release.yml with trusted publishing and provenance, which proves the publisher. Publishing turned on create-lumiose's @lumiose/ui question (UI_PACKAGE.published), so Lux updated the terminal test that answered only two questions, and the docs README's status row.
+<!-- SECTION:NOTES:END -->

@@ -120,17 +120,17 @@ Lumiose is pre-1.0, so APIs may change in any minor version ([Stability](stabili
 designed API; where this version does not implement something yet, the page says so in a
 **Status** note. In short:
 
-| Area                                                                                  | Status                                                                     |
-| ------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
-| Signals, components, JSX compilation, client rendering (`lumiose/dom`)                | Available                                                                  |
-| Async components, `<Suspense>`, `<ErrorBoundary>`                                     | Available                                                                  |
-| Server rendering (`renderToStream`), shell-first streaming, head                      | Available                                                                  |
-| File routes, typegen, request handler, middleware, actions, `fetchJSON`               | Available, with `lumiose dev`, `lumiose build` and `@lumiose/adapter-node` |
-| `<style>` blocks                                                                      | Available                                                                  |
-| Islands hydration and the island loader                                               | Available                                                                  |
-| SPA mode and the SPA router (`lumiose/router`)                                        | Available, with `lumiose dev` and `lumiose build`                          |
-| `lumiose check`, `lint`, `fmt`, `docs`, `explain`, language server, VS Code extension | Available                                                                  |
-| `lumiose mcp`                                                                         | Available                                                                  |
-| `create-lumiose` (templates `minimal`, `static`, `ssr`, `spa`), `lumiose agents init` | Available                                                                  |
-| Testing: Vitest, Testing Library and Playwright                                       | Available, with stock tools (no adapter package)                           |
-| `@lumiose/ui`                                                                         | In development, not on npm yet (its docs: `lumiose docs ui`)               |
+| Area                                                                                  | Status                                                                      |
+| ------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| Signals, components, JSX compilation, client rendering (`lumiose/dom`)                | Available                                                                   |
+| Async components, `<Suspense>`, `<ErrorBoundary>`                                     | Available                                                                   |
+| Server rendering (`renderToStream`), shell-first streaming, head                      | Available                                                                   |
+| File routes, typegen, request handler, middleware, actions, `fetchJSON`               | Available, with `lumiose dev`, `lumiose build` and `@lumiose/adapter-node`  |
+| `<style>` blocks                                                                      | Available                                                                   |
+| Islands hydration and the island loader                                               | Available                                                                   |
+| SPA mode and the SPA router (`lumiose/router`)                                        | Available, with `lumiose dev` and `lumiose build`                           |
+| `lumiose check`, `lint`, `fmt`, `docs`, `explain`, language server, VS Code extension | Available                                                                   |
+| `lumiose mcp`                                                                         | Available                                                                   |
+| `create-lumiose` (templates `minimal`, `static`, `ssr`, `spa`), `lumiose agents init` | Available                                                                   |
+| Testing: Vitest, Testing Library and Playwright                                       | Available, with stock tools (no adapter package)                            |
+| `@lumiose/ui`                                                                         | Available (0.x, its own versions; `create-lumiose --ui`, `lumiose docs ui`) |
