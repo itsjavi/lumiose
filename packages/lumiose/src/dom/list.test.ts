@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import type { Renderable } from "../contract/client.ts";
 import { flush, onCleanup, reconcile, signal, store, type Signal } from "../core/index.ts";
 import { createOwner, disposeOwner, runWithOwner, type Owner } from "../core/internal.ts";
-import { bind, list, setText, template } from "./index.ts";
+import { attach, bind, branch, insert, list, listValue, setText, template } from "./index.ts";
 import { longestIncreasingSubsequence } from "./list.ts";
 
 interface Item {
@@ -47,6 +47,26 @@ function spyMutations(parent: Node): { inserts: number; removes: number; clears:
     },
   });
   return counts;
+}
+
+/**
+ * What `update` does to `parent`: the MutationObserver records under it, and the nodes passed to
+ * each `insertBefore` on it (happy-dom reports a fragment's insertion as one record per node, where
+ * browsers report one record).
+ */
+function observe(parent: Node, update: () => void) {
+  const inserted: Node[] = [];
+  const insertBefore = parent.insertBefore.bind(parent);
+  parent.insertBefore = <T extends Node>(node: T, ref: Node | null): T => {
+    inserted.push(node);
+    return insertBefore(node, ref);
+  };
+  const observer = new MutationObserver(() => {});
+  observer.observe(parent, { childList: true, subtree: true });
+  update();
+  const records = observer.takeRecords();
+  observer.disconnect();
+  return { records, inserted };
 }
 
 function items(...ids: number[]): Item[] {
@@ -172,6 +192,115 @@ describe("list", () => {
     source.set(source().filter((i) => i.id !== 3));
     flush();
     expect(counts).toEqual({ inserts: 0, removes: 1, clears: 0 });
+  });
+
+  describe("rows with nested dynamic content (TASK-522)", () => {
+    interface Card {
+      id: number;
+      tag: boolean;
+    }
+    interface GridRow {
+      cards: Card[];
+    }
+    const tGrid = template(`<div><hr><hr>`);
+    const tRow = template(`<div>`);
+    const tCard = template(`<article> <!>`);
+    const tTag = template(`<b>`);
+
+    // A card with a conditional; a row's cards are a nested keyed list inside a range (what a
+    // fragment or a component's children compile to).
+    function card(c: Card): Node {
+      const el = tCard();
+      el.firstChild!.nodeValue = String(c.id);
+      branch(el, el.lastChild, () => c.tag, tTag);
+      return el;
+    }
+    const cards = (row: GridRow) =>
+      listValue(
+        () => row.cards,
+        card,
+        (c) => c.id,
+      );
+
+    let nextId = 0;
+    function rows(count: number): GridRow[] {
+      return Array.from({ length: count }, () => ({
+        cards: Array.from({ length: 4 }, () => ({ id: nextId++, tag: nextId % 2 === 0 })),
+      }));
+    }
+
+    /** Renders `render`'s rows between two spacers (so the list never owns its parent). */
+    function mount(render: (row: GridRow) => Node) {
+      const grid = tGrid();
+      const source = signal(rows(3));
+      root(() => list(grid, grid.lastChild, source, render));
+      return { grid, source };
+    }
+
+    it("inserts and removes each row with a root once", () => {
+      const { grid, source } = mount((row) => {
+        const el = tRow();
+        insert(el, cards(row));
+        return el;
+      });
+      const before = Array.from(grid.childNodes).slice(1, -1);
+      const { records, inserted } = observe(grid, () => {
+        source.set(rows(3));
+        flush();
+      });
+      // Nothing is written inside a row in the document: each new row was complete when inserted.
+      expect(records.every((record) => record.target === grid)).toBe(true);
+      expect(inserted.map((node) => node.nodeName)).toEqual(["DIV", "DIV", "DIV"]);
+      expect(records.flatMap((record) => Array.from(record.removedNodes))).toEqual(before);
+      expect(grid.textContent).toBe(
+        source()
+          .flatMap((row) => row.cards.map((c) => c.id))
+          .join(""),
+      );
+    });
+
+    it("inserts each row that renders several nodes with one insertion", () => {
+      const { grid, source } = mount(cards);
+      const before = Array.from(grid.childNodes).slice(1, -1);
+      const { records, inserted } = observe(grid, () => {
+        source.set(rows(3));
+        flush();
+      });
+      expect(records.every((record) => record.target === grid)).toBe(true);
+      // One insertion per row, the fragment holding the whole row: its range's markers and its 4
+      // cards. A row without a root of its own still leaves node by node.
+      expect(inserted.map((node) => node.nodeType)).toEqual([11, 11, 11]);
+      expect(records.filter((record) => record.addedNodes.length > 0)).toHaveLength(18);
+      expect(records.flatMap((record) => Array.from(record.removedNodes))).toEqual(before);
+      expect(grid.querySelectorAll("article")).toHaveLength(12);
+      expect(grid.querySelectorAll("b")).toHaveLength(6);
+      expect(grid.textContent).toBe(
+        source()
+          .flatMap((row) => row.cards.map((c) => c.id))
+          .join(""),
+      );
+    });
+
+    it("runs a row's attachments once every new row is in the document (docs: JSX)", () => {
+      const seen: string[] = [];
+      const { grid, source } = mount((row) => {
+        const el = tRow();
+        insert(el, cards(row));
+        attach(el, () => [
+          (node) => {
+            seen.push(`${node.isConnected} ${grid.querySelectorAll("article").length}`);
+          },
+        ]);
+        return el;
+      });
+      document.body.append(grid);
+      flush();
+      seen.length = 0;
+      source.set(rows(3));
+      flush();
+      expect(seen).toEqual(["true 12", "true 12", "true 12"]);
+      grid.remove();
+    });
   });
 
   it("creates the index signal only when render declares it, and keeps it current", () => {

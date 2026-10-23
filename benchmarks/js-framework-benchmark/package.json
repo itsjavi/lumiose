@@ -10,6 +10,7 @@
     "bench:jsfb": "node scripts/jsfb.ts",
     "bench:jsfb:ab": "node scripts/jsfb-ab.ts",
     "bench:jsfb:upstream": "node scripts/jsfb-upstream.ts",
+    "bench:grid:ab": "node scripts/grid-ab.ts",
     "typecheck": "tsc -p tsconfig.json"
   },
   "dependencies": {

@@ -2790,7 +2790,7 @@ the efficient form:
 | `on:click`, `on:my-event`    | A native `addEventListener` listener with the exact event name. Use it for custom and web-component events.                                                                                                                                                                                                                                                                                                  |
 | Props of a custom element    | The element's property when it defines one (arrays and objects as they are), else the attribute, as in React 19. See [Web components](../guides/web-components.md).                                                                                                                                                                                                                                          |
 | `bind:value`, `bind:checked` | Two-way binding to a writable signal, on `input`, `select` and `textarea`. `bind:x` also works on components and custom elements (below).                                                                                                                                                                                                                                                                    |
-| `attach={[fn]}`              | Runs `fn(el)` with the element in a tracked scope; it may return a cleanup.                                                                                                                                                                                                                                                                                                                                  |
+| `attach={[fn]}`              | Runs `fn(el)` with the element in a tracked scope, once the element is in the document (below); it may return a cleanup.                                                                                                                                                                                                                                                                                     |
 | `ref={fn}`                   | Called with the element. `ref<T>()` makes a callback you can read like a signal.                                                                                                                                                                                                                                                                                                                             |
 | `innerHTML`                  | Sets unescaped HTML. The lint rule `no-unsafe-html` warns. Only as a written prop: a spread drops `innerHTML`, `textContent` and `srcdoc`, on the server and the client, so an object from JSON cannot inject markup. Written next to a spread (`<div {...rest} innerHTML={html} />`), they apply as written, and replace the spread's `children`.                                                           |
 | `key`                        | Allowed on intrinsic elements and components (list identity).                                                                                                                                                                                                                                                                                                                                                |
@@ -2800,6 +2800,17 @@ the efficient form:
 
 Handlers receive the **native** event, with `currentTarget` typed as the element. There are no
 synthetic events.
+
+**When `attach` runs.** An attachment is an effect: it runs after the update that created its
+element has written all of its DOM, so the element is already inserted and can be measured. A new
+list row goes into the document complete, with its nested lists, conditionals and components, in
+one insertion, and only then do the attachments inside it run. The exception is content that a
+`<Suspense>` holds back while it shows its fallback: it waits in a fragment, so its attachments run
+before it is in the document (`el.isConnected` is `false`), and do not run again when it appears.
+Each attachment's writes reach the DOM before the next attachment runs: an attachment that measures
+(`getBoundingClientRect`) and then sets a signal the page renders makes the next one's measurement
+force a new layout, once per element. To measure many elements, observe them with a
+`ResizeObserver` instead, which reads every size before its callback writes anything.
 
 **`bind:` on components and custom elements.** `bind:x={signal}` works on any component with an
 `x` prop and an `onXChange` callback, like `bind:value` on inputs: `bind:open` on `Dialog.Root`,
