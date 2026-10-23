@@ -18,8 +18,8 @@ use oxc_syntax::symbol::SymbolId;
 
 pub use components::{is_component_name, is_jsx_like, property_key_name};
 use reactivity::{
-    DerivedLocals, PropsSymbols, ReadKind, accessor_bindings, is_import_member,
-    server_only_imports, strongest_read, symbol_of,
+    DerivedLocals, PropsSymbols, ReadKind, RouterAccessors, accessor_bindings, is_import_member,
+    router_accessors, server_only_imports, strongest_read, symbol_of,
 };
 
 use crate::codegen::client::{
@@ -106,6 +106,7 @@ pub fn analyze(
         signals: HashSet::new(),
         server_only: server_only_imports(program, is_server_only),
         accessors: accessor_bindings(program, scoping),
+        router: router_accessors(program),
         component_calls: Vec::new(),
         server_route,
         default_name: server_route.then(|| default_export_name(program)).flatten(),
@@ -271,6 +272,8 @@ struct Analyzer<'s> {
     /// Bindings holding an accessor made in the module (`signal(…)`, `computed(…)`, see
     /// [`accessor_bindings`]).
     accessors: HashSet<SymbolId>,
+    /// The accessors imported from `lumiose/router` (see [`router_accessors`]).
+    router: RouterAccessors,
     component_calls: Vec<(Span, SymbolId, String)>,
     /// See [`analyze`].
     server_route: bool,
@@ -322,8 +325,9 @@ impl<'s> Analyzer<'s> {
     }
 
     /// The current component's props bindings, as reactive reads, and the bindings whose calls
-    /// are not reads: server-only imports, plus the props of a `server_props` component (plain
-    /// values: `props.slug.toUpperCase()` derives nothing reactive).
+    /// are not reads: server-only imports, plus, in a `server_props` component, its props and
+    /// `lumiose/router`'s accessors (plain values: `props.slug.toUpperCase()` and `url().pathname`
+    /// derive nothing reactive, TASK-536).
     fn reactive_context(&self) -> (PropsSymbols, Cow<'_, HashSet<SymbolId>>) {
         let component = self.current_component();
         let props = component.and_then(|c| c.props.clone()).unwrap_or_default();
@@ -334,6 +338,7 @@ impl<'s> Analyzer<'s> {
         plain.extend(props.object);
         plain.extend(props.rest);
         plain.extend(props.destructured.iter().copied());
+        plain.extend(self.router.all.iter().copied());
         (PropsSymbols::default(), Cow::Owned(plain))
     }
 
@@ -514,12 +519,18 @@ impl<'s> Analyzer<'s> {
         if destructures_props {
             return Some(ReadKind::Prop);
         }
-        // A zero-argument call of an accessor made in the module copies its value
-        // (`const n = count()`, TASK-529), although it has the shape of a factory call.
+        // A zero-argument call of an accessor copies its value, although it has the shape of a
+        // factory call: one made in the module (`const n = count()`, TASK-529), a destructured
+        // prop (`const v = value()`, read like `props.value()`) and `lumiose/router`'s `url()`,
+        // `searchParams()` and `isNavigating()` (TASK-536).
         if let Expression::CallExpression(call) = inner
             && call.arguments.is_empty()
             && let Expression::Identifier(callee) = call.callee.without_parentheses()
-            && symbol_of(self.scoping, callee).is_some_and(|s| self.accessors.contains(&s))
+            && let Some(symbol) = symbol_of(self.scoping, callee)
+            && !plain.contains(&symbol)
+            && (self.accessors.contains(&symbol)
+                || props.destructured.contains(&symbol)
+                || self.router.changing.contains(&symbol))
         {
             return Some(ReadKind::Signal);
         }

@@ -991,6 +991,74 @@ const shared = signal(0);
 }
 
 #[test]
+fn accessor_props_and_changing_router_accessors_are_stale_copies() {
+    let source = r#"import { isNavigating, locale, params, route, searchParams, url } from "lumiose/router";
+export default function Search({ value, onPick }: { value: () => string; onPick: () => void }) {
+  const v = value();
+  const u = url();
+  const q = searchParams();
+  const busy = isNavigating();
+  const p = params();
+  const { id } = params();
+  const r = route();
+  const l = locale();
+  const path = url().pathname;
+  if (busy) return null;
+  return (
+    <p onClick={() => onPick()}>
+      {v}{u.href}{q.get("q")}{p.id}{id}{r}{l}{path}
+    </p>
+  );
+}
+export function Field(props: { value: () => string }) {
+  const { value } = props;
+  const copy = value();
+  return <input value={copy} />;
+}
+"#;
+    let found = |code: Code, server_route: bool| -> Vec<(&str, &'static str)> {
+        let options = CompileOptions {
+            server_route,
+            ..CompileOptions::default()
+        };
+        compile(source, "/src/routes/search/page.tsx", &options)
+            .diagnostics
+            .iter()
+            .filter(|d| d.code == code)
+            .map(|d| {
+                (
+                    &source[d.span.start as usize..d.span.end as usize],
+                    d.severity.as_str(),
+                )
+            })
+            .collect()
+    };
+    // TASK-536: a destructured accessor prop copied like `props.value()`, and the router accessors
+    // whose value changes while a page stays (the URL and its query, `isNavigating()`). A page
+    // with other params, another pattern or another locale is a new page, so copies of
+    // `params()`, `route()` and `locale()` are left alone; `url().pathname` already reported.
+    assert_eq!(
+        found(Code::StaleDerivedValue, false),
+        [
+            ("v = value()", "warning"),
+            ("u = url()", "warning"),
+            ("q = searchParams()", "warning"),
+            ("path = url().pathname", "warning"),
+            ("copy = value()", "warning"),
+        ]
+    );
+    // An early return through such a copy is an error, as on the call itself (decision-77).
+    assert_eq!(found(Code::ReactiveEarlyReturn, false), [("busy", "error")]);
+    // A page rendered only on the server reads the request: its props and the router's values are
+    // plain. `Field` is not the page and keeps the rule.
+    assert_eq!(
+        found(Code::StaleDerivedValue, true),
+        [("copy = value()", "warning")]
+    );
+    assert_eq!(found(Code::ReactiveEarlyReturn, true), []);
+}
+
+#[test]
 fn stable_list_sources_keep_the_index_without_lum2006() {
     let source = r#"import { signal } from "lumiose";
 const CHANNELS = [{ name: "pulse" }, { name: "wave" }] as const;

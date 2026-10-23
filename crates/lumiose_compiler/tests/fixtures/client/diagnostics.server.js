@@ -2,6 +2,7 @@
 // reactive early return, LUM2004 component called as a function, LUM2005 children inserted
 // twice, LUM2006 reactive index read in row setup.
 import { signal } from "lumiose";
+import { params, url } from "lumiose/router";
 import { Card } from "./Card.stsx";
 import { ssr, SSRHtml, insert, insertText, attr, list } from "lumiose/server";
 const _s0 = [
@@ -33,6 +34,13 @@ const _s5 = [
 	"</button>"
 ];
 const _c5 = (h0, h1) => typeof h0 === "string" && typeof h1 === "string" ? new SSRHtml("<button>" + h0 + " from " + h1 + "</button>") : ssr(_s5, h0, h1);
+const _s6 = [
+	"<p>",
+	" in ",
+	" of ",
+	"</p>"
+];
+const _c6 = (h0, h1, h2) => typeof h0 === "string" && typeof h1 === "string" && typeof h2 === "string" ? new SSRHtml("<p>" + h0 + " in " + h1 + " of " + h2 + "</p>") : ssr(_s6, h0, h1, h2);
 const shared = signal(0);
 export function Child(props) {
 	const upper = props.name.toUpperCase();
@@ -67,15 +75,25 @@ export function Counter() {
 	const start = count.peek();
 	return _c5(insert(n), insert(start));
 }
+// And a destructured accessor prop or the router's URL copied into a local (TASK-536). A page
+// with other params is a new page, so a copy of `params()` is left alone.
+export function Results(props) {
+	const q = props.query();
+	const u = url();
+	const p = params();
+	return _c6(insert(q), insert(u.search), insert(p.id));
+}
 
 // --- diagnostics ---
-// LUM2001 warning 10:9 `upper` is computed once from a reactive value, so the JSX that uses it never updates
-// LUM2002 error 13:3 `shared` is written while the component renders
-// LUM2003 warning 14:7 this early return depends on a prop, but a component body runs once: it never updates if a parent passes a changing value
-// LUM2005 warning 20:7 `children` is inserted more than once; children are created lazily and can only be placed once
-// LUM2004 error 21:8 the component `Card` is called as a function
-// LUM2002 error 22:14 `shared` is written while the component renders
-// LUM2006 warning 31:26 the list index `i` is read once here, so this value goes stale when rows move
-// LUM2003 warning 42:11 this early return depends on a prop, but a component body runs once: it never updates if a parent passes a changing value
-// LUM2003 error 46:7 this early return depends on a reactive value, but a component body runs once
-// LUM2001 warning 54:9 `n` is computed once from a reactive value, so the JSX that uses it never updates
+// LUM2001 warning 11:9 `upper` is computed once from a reactive value, so the JSX that uses it never updates
+// LUM2002 error 14:3 `shared` is written while the component renders
+// LUM2003 warning 15:7 this early return depends on a prop, but a component body runs once: it never updates if a parent passes a changing value
+// LUM2005 warning 21:7 `children` is inserted more than once; children are created lazily and can only be placed once
+// LUM2004 error 22:8 the component `Card` is called as a function
+// LUM2002 error 23:14 `shared` is written while the component renders
+// LUM2006 warning 32:26 the list index `i` is read once here, so this value goes stale when rows move
+// LUM2003 warning 43:11 this early return depends on a prop, but a component body runs once: it never updates if a parent passes a changing value
+// LUM2003 error 47:7 this early return depends on a reactive value, but a component body runs once
+// LUM2001 warning 55:9 `n` is computed once from a reactive value, so the JSX that uses it never updates
+// LUM2001 warning 67:9 `q` is computed once from a reactive value, so the JSX that uses it never updates
+// LUM2001 warning 68:9 `u` is computed once from a reactive value, so the JSX that uses it never updates
