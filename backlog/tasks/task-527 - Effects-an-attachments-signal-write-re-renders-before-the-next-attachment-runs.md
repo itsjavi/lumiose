@@ -4,15 +4,17 @@ title: >-
   Effects: an attachment's signal write re-renders before the next attachment
   runs
 status: To Do
-assignee: []
+assignee:
+  - '@Spark'
 created_date: '2026-10-23 09:05'
+updated_date: '2026-10-23 13:53'
 labels:
   - performance
   - core
   - needs-decision
 milestone: m-13
 dependencies: []
-priority: medium
+priority: high
 ordinal: 520000
 ---
 
@@ -28,3 +30,9 @@ Found while measuring TASK-522. When several attachments (or effects) run in one
 - [ ] #2 If they do: an in-process browser A/B of N attachments that measure and then write shows one forced layout instead of N, and the effect ordering tests stay green
 - [ ] #3 The JSX docs (When attach runs) match the behaviour
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+2026-10-23 (Lux): the user accepted the proposal (batch: queued user effects run before the render work their writes trigger), to ship in 0.6.0 as a documented behaviour change. Decision recorded as decision-80.
+<!-- SECTION:NOTES:END -->
