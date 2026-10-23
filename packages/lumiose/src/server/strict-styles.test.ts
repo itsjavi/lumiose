@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-// Strict-CSP style rules (decision-77): their precedence against the page's rules, and one rule per
+// Strict-CSP style rules (decision-78): their precedence against the page's rules, and one rule per
 // distinct declaration block, across streamed boundaries (TASK-521).
 import { describe, expect, it } from "vitest";
 import { Suspense } from "./components.ts";

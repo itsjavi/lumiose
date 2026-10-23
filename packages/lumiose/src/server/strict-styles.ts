@@ -1,4 +1,4 @@
-// `style` props under `lumiose({ csp: "strict" })` (spec §7.4, decision-77): a strict policy refuses
+// `style` props under `lumiose({ csp: "strict" })` (spec §7.4, decision-78): a strict policy refuses
 // `style="…"` attributes, so the server writes each style prop as a rule of a nonce'd `<style>`,
 // `[data-l-v="N"]:not(#a#b){…}`, and the element gets ` data-l-v="N"`.
 //

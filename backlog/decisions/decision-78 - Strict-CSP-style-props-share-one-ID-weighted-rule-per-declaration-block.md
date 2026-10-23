@@ -1,5 +1,5 @@
 ---
-id: decision-77
+id: decision-78
 title: Strict-CSP style props share one ID-weighted rule per declaration block
 date: '2026-10-23 08:54'
 status: accepted
