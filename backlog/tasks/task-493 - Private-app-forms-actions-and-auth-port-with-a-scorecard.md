@@ -5,7 +5,7 @@ status: To Do
 assignee:
   - '@Lux'
 created_date: '2026-10-20 21:23'
-updated_date: '2026-10-21 02:01'
+updated_date: '2026-10-23 19:46'
 labels: []
 milestone: m-13
 dependencies:
@@ -25,3 +25,9 @@ decision-70, later: port a forms, actions and auth slice of the same private app
 - [ ] #1 Sign-in by email code, onboarding and the ported pages work end to end
 - [ ] #2 doc-11 holds the scorecard (stacks and numbers only); gaps become tasks
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+User, 2026-10-23: no Postgres server is needed. Use `prisma dev` (Prisma's local Postgres on PGlite) for the database.
+<!-- SECTION:NOTES:END -->

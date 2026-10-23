@@ -3,7 +3,7 @@ id: doc-10
 title: Pending decisions for the user
 type: other
 created_date: '2026-10-16 22:28'
-updated_date: '2026-10-21 03:56'
+updated_date: '2026-10-23 19:46'
 ---
 Decisions that need the user, collected while Lux and the workers run unattended (user request, 2026-10-17: "do not block yourself on more questions … postpone them (and their decisions) in a document that can be used later as follow ups").
 
@@ -21,39 +21,14 @@ Nothing here is decided until the user answers. Answered items move to the Answe
 
 ### P1. Push main to origin
 
-- **Pushed on 2026-10-21** with the user's approval: main at 13be67c4 and the tag v0.5.0 (21 commits after 3d17ea32). The history below is kept for reference until the next push.
-- **Waiting:** local commits after 4bfc013a (the last push, which the user approved on 2026-10-16). Pushing runs CI, which costs money, so every push needs the user's OK (AGENTS.md).
-- **Recommendation:** push now, in one push. The checks on local main were green on 2026-10-17: pnpm check, cargo fmt and clippy, ui-e2e (Chromium 1018; Firefox and WebKit 1030), apps/web (179), pack smoke and nine example suites.
-- **Meanwhile:** commits stay local. Lux keeps the list of what each push would carry under this item.
-- **What the push carries (58 commits after 4bfc013a, at 45486aba plus backlog):**
-  - the final M12 follow-ups (TASK-458 to TASK-465);
-  - Photon's compiler and packaging fixes (TASK-347, 348, 349, 289 and 466; decision-67);
-  - Nova's shared route-group CSS (TASK-285; decision-68) and parallel precompression (TASK-288);
-  - the security review's fixes (TASK-468 to TASK-476 and TASK-479 to TASK-480; decision-69);
-  - the static-file handle leak (TASK-476);
-  - TASK-477 (spread objects in @lumiose/ui follow their props) and TASK-478 (a written innerHTML or textContent next to a spread).
-- **Checks at 45486aba (2026-10-17):** all green: pnpm check, cargo fmt and clippy, ui-e2e (Chromium 1018; Firefox and WebKit 1030), apps/web 179, pack smoke and nine example suites.
+- Every push needs the user's OK, because it runs CI, which costs money (AGENTS.md).
+- For the unattended run that started on 2026-10-23, the user allowed batched pushes of main (see Answered).
+- **Meanwhile:** outside that run, commits stay local until the user approves a push.
 
 ### P2. The screen reader pass (TASK-361)
 
 - **Waiting:** the user, who chose on 2026-10-16 to run VoiceOver and NVDA themselves. The per-component checklist is in TASK-361's notes. It also covers Prism's M23 (the announcements of Combobox's Empty and Status).
-- **Meanwhile:** nothing blocks on it except publishing (P3).
-
-### P3. Publish @lumiose/ui 0.1.0 (TASK-389)
-
-- **Waiting:** the user's go. Publishing and tagging always need explicit permission (AGENTS.md).
-- **Order the user chose on 2026-10-16:**
-  1. Prism's review (done, TASK-386);
-  2. the screen reader pass (P2);
-  3. then publishing.
-- **Recommendation:** publish 0.1.0 after P2. Run `pnpm release:version 0.1.0 --package @lumiose/ui` once the pre-release security review (see P4) shows no open High finding.
-- **Meanwhile:** Lux prepares the release: the security review, the changelog and the package checks. Lux doesn't tag or publish.
-
-### P4. The security review before the first @lumiose/ui release
-
-- **Not a question:** listed so that the user sees it.
-- AGENTS.md asks for an app-security-review before each lumiose minor release. TASK-430 changed form actions (lumiose's action data now carries `FormData`), so Lux runs that review unattended before P3 and records its findings as tasks.
-- **Status (2026-10-17): done.** Prism found 1 High, 3 Medium and 14 Low (TASK-468 to TASK-475). All are fixed and merged, and the merged checks pass. No High is open, so P3 waits only on P2 and the user's go. Two items need the user's call: P13.
+- **Meanwhile:** nothing blocks on it.
 
 ### P5. The spa template: what it renders (TASK-276)
 
@@ -133,6 +108,15 @@ The review found 1 High, 3 Medium and 14 Low, now TASK-468 to TASK-475. Their fi
   - **Recommendation:** no helper for now; revisit if the record form proves verbose in practice.
 
 ## Answered
+
+### 2026-10-23: @lumiose/ui on npm, and the unattended run
+
+- **Publishing (was P3 and P4):** the user published @lumiose/ui 0.1.0 by hand. 0.1.1 then went out through release.yml with trusted publishing and provenance, which proves the publisher (TASK-389, Done). The screen reader pass (P2) no longer gates it.
+- **GitHub's Latest release** stays the newest Lumiose version: release.yml creates package releases with `--latest=false`, and v0.6.0 is Latest again.
+- **Unattended run:**
+  - Lux pushes main after each finished, green batch, never backlog-only commits.
+  - Patch releases of Lumiose 0.6.x and @lumiose/ui 0.1.x go through `pnpm release:version`, with their tags pushed. No minor releases.
+- **Next work:** the private app's list and detail port on the latest Lumiose with @lumiose/ui, then its forms, actions and auth port (TASK-493).
 
 ### 2026-10-20: what Lumiose is for (grilling session)
 
