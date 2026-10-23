@@ -2,6 +2,18 @@
 
 @lumiose/ui has its own versions, outside the lockstep version of the other Lumiose packages.
 
+## 0.1.2 (2026-10-23)
+
+### Fixes
+
+- **ui:** Select's picker shows labelled items' content (TASK-537) (6fc06a11)
+- **ui:** run the components' listeners and callbacks inside batch() (TASK-540) (dadcf620)
+- **ui:** a controlled ToggleGroup shows its value again; an equal value does nothing (TASK-538, TASK-539) (884d1791)
+
+### Performance
+
+- **ui:** only hover triggers load Popover's hover timing; sizes as a build ships (TASK-541) (1505dcbd)
+
 ## 0.1.1 (2026-10-23)
 
 No user-facing changes.
