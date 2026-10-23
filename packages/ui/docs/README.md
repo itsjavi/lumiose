@@ -71,7 +71,7 @@ custom properties, named as in shadcn/ui, are listed in [Theming](theming.md#the
 | [Tooltip](tooltip.md)                 | Available: native hint popover, opened by its script                                      |
 | [Menu](menu.md)                       | Available: popover menu, opens without JavaScript                                         |
 | [Combobox](combobox.md)               | Available: `<lu-combobox>`, a form control that filters its options                       |
-| [Select](select.md)                   | Available: native `<select>`, customizable where supported, no script                     |
+| [Select](select.md)                   | Available: native `<select>`, customizable where supported, no script but for `label`s    |
 | [Tabs](tabs.md)                       | Available: server HTML with the full state, `<lu-tabs>` adds the keys                     |
 | [Field](field.md)                     | Available: label, description, errors; native validation in the field                     |
 | [Fieldset](fieldset.md)               | Available: native `<fieldset>` and `<legend>`, no script                                  |

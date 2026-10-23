@@ -1,9 +1,9 @@
 import { Dialog, Select } from "@lumiose/ui";
 import { Title } from "lumiose";
 
-// Server-rendered, no island and no script: Select is a native `<select>`, a customizable select in
-// Chromium. The selects sit in a form that submits to this page (GET), so the submitted values show
-// in the URL. Styled with the default theme.
+// Server-rendered, no island: Select is a native `<select>`, a customizable select in Chromium, and
+// its only script is for items with a `label` (TASK-537). The selects sit in a form that submits to
+// this page (GET), so the submitted values show in the URL. Styled with the default theme.
 export default function SelectPage() {
   return (
     <>
@@ -79,6 +79,24 @@ export default function SelectPage() {
             </footer>
           </Dialog.Popup>
         </Dialog.Root>
+      </section>
+
+      <section aria-labelledby="classic-heading">
+        <h2 id="classic-heading">Classic, labelled items</h2>
+        {/* No Trigger and no theme class: the classic select in every browser, which shows the
+            items' `label` (TASK-537). */}
+        <label for="color">Color</label>
+        <Select.Root id="color" defaultValue="green">
+          <Select.Item value="red" label="Red">
+            <span aria-hidden="true">🟥</span> Red
+          </Select.Item>
+          <Select.Item value="green" label="Green">
+            <span aria-hidden="true">🟩</span> Green
+          </Select.Item>
+          <Select.Item value="blue" label="Blue">
+            <span aria-hidden="true">🟦</span> Blue
+          </Select.Item>
+        </Select.Root>
       </section>
     </>
   );

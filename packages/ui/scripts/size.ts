@@ -71,7 +71,8 @@ const COMPONENTS: Component[] = [
   {
     name: "select",
     module: "select/select.tsx",
-    scripts: [],
+    // Only for items with a `label` (TASK-537).
+    scripts: ["select/select.script.ts"],
     css: "select/select.css",
   },
   {

@@ -56,4 +56,25 @@ describe("Select on the server", () => {
     expect(attrs(controlled, "option", (a) => a.value === "apple")).toHaveProperty("selected");
     expect(attrs(controlled, "option", (a) => a.value === "lemon")).not.toHaveProperty("selected");
   });
+
+  it("names a labelled item: its label, aria-label and a hidden copy first (TASK-537)", async () => {
+    const html = await renderToString(() => (
+      <Select.Root aria-label="Shape">
+        <Select.Item value="star" label="Star">
+          <b>★</b>Star
+        </Select.Item>
+        <Select.Item value="dot">Dot</Select.Item>
+      </Select.Root>
+    ));
+    expect(attrs(html, "option", (a) => a.value === "star")).toMatchObject({
+      label: "Star",
+      "aria-label": "Star",
+    });
+    // Typeahead matches the copy once select.script.ts removes the attribute.
+    expect(html).toMatch(
+      /<option [^>]*value="star"[^>]*><span hidden data-label="">Star<\/span><b>/,
+    );
+    expect(attrs(html, "option", (a) => a.value === "dot")).not.toHaveProperty("label");
+    expect(html).toMatch(/value="dot"[^>]*>Dot<\/option>/);
+  });
 });

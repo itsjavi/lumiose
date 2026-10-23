@@ -82,7 +82,7 @@ custom properties, named as in shadcn/ui, are listed in [Theming](theming.md#the
 | [Tooltip](tooltip.md)                 | Available: native hint popover, opened by its script                                      |
 | [Menu](menu.md)                       | Available: popover menu, opens without JavaScript                                         |
 | [Combobox](combobox.md)               | Available: `<lu-combobox>`, a form control that filters its options                       |
-| [Select](select.md)                   | Available: native `<select>`, customizable where supported, no script                     |
+| [Select](select.md)                   | Available: native `<select>`, customizable where supported, no script but for `label`s    |
 | [Tabs](tabs.md)                       | Available: server HTML with the full state, `<lu-tabs>` adds the keys                     |
 | [Field](field.md)                     | Available: label, description, errors; native validation in the field                     |
 | [Fieldset](fieldset.md)               | Available: native `<fieldset>` and `<legend>`, no script                                  |
@@ -5218,7 +5218,7 @@ supported browser.
 
 # Select
 
-> A native `<select>` for picking one value from a list: it works with no JavaScript, submits with its form and keeps the platform's keyboard, typeahead and mobile pickers. Where the browser has customizable select (`appearance: base-select`, Chrome 135, Safari 26), `Select.Trigger` and `Select.Value` shape the button, the picker is styleable and options may hold more than text; elsewhere it is the classic select. No script; `bind:value` keeps a signal in sync in islands.
+> A native `<select>` for picking one value from a list: it works with no JavaScript, submits with its form and keeps the platform's keyboard, typeahead and mobile pickers. Where the browser has customizable select (`appearance: base-select`, Chrome 135, Safari 26), `Select.Trigger` and `Select.Value` shape the button, the picker is styleable and options may hold more than text; elsewhere it is the classic select. No script, but a tiny one for items with a `label`; `bind:value` keeps a signal in sync in islands.
 
 ```ts
 import { Select } from "@lumiose/ui"; // or "@lumiose/ui/select"
@@ -5274,11 +5274,17 @@ handlers. Name it with a `<label for>` pointing at its `id`, or `aria-label`, or
 
 ### Select.Item
 
-| Prop       | Type      | Default |                                                                                                                       |
-| ---------- | --------- | ------- | --------------------------------------------------------------------------------------------------------------------- |
-| `value`    | `string`  |         | Required: the value the select takes, and submits, when selected.                                                     |
-| `disabled` | `boolean` | `false` | The option cannot be selected; the arrow keys skip it.                                                                |
-| `label`    | `string`  |         | The option's text for typeahead and the classic select, when its content starts with an icon or holds more than text. |
+| Prop       | Type      | Default |                                                                                                                                              |
+| ---------- | --------- | ------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| `value`    | `string`  |         | Required: the value the select takes, and submits, when selected.                                                                            |
+| `disabled` | `boolean` | `false` | The option cannot be selected; the arrow keys skip it.                                                                                       |
+| `label`    | `string`  |         | The option's name, for typeahead, assistive technology and the classic select, when its content starts with an icon or holds more than text. |
+
+A customizable select's picker shows each item's content, with or without `label`. The classic
+select, which shows text only, shows the `label`. An item with a `label` renders the `<option>`'s
+`label` and `aria-label`, and a hidden copy of it first in its content (`<span hidden
+data-label>`), which typeahead matches: so `option.text`, and `<selectedcontent>`'s
+`textContent`, start with the label, while the rendered text does not.
 
 ### Select.Group
 
@@ -5293,7 +5299,7 @@ handlers. Name it with a `<label for>` pointing at its `id`, or `aria-label`, or
 
 **Differences from Base UI's Select.** Select is the native control, chosen over the listbox
 pattern because it works without JavaScript, carries forms, autofill, validation and the mobile
-pickers, and ships no script. So it has no `open`, `onOpenChange` or `modal` (the platform fires no
+pickers, and needs no script. So it has no `open`, `onOpenChange` or `modal` (the platform fires no
 event when the picker opens; style `:open` instead), no `Label` (use `<label for>`), no `multiple`
 (use [Combobox](combobox.md) with `multiple`), no `alignItemWithTrigger` (the picker opens below the
 control and flips), no `Portal`, `Positioner`, `Popup`, `List`, `Icon`, `ItemText`,
@@ -5422,13 +5428,22 @@ A click on a `<label for>` focuses the select without opening it. A click on the
 picker; a click on an option selects it; a click outside closes the picker. Other browsers keep
 their own select keyboard and pickers, which differ by platform.
 
-## Without JavaScript
+## Without JavaScript, and the client script
 
 Select needs none: it is a native control, in server HTML and with JavaScript off, on every
 browser. It submits under its `name`, is validated (`required`), resets with its form, takes the
 browser's autofill and is disabled by a disabled `<fieldset>`. `value`, `onValueChange` and
 `bind:value` need the component to run in the browser, in an island; there `value` sets the
 control's value when it changes, and its `change` event calls `onValueChange`.
+
+Items with a `label` are the exception. A customizable select's picker shows an `<option>`'s
+`label` attribute instead of its content, through the browser's own style, which no CSS
+overrides. So a page whose selects have such items loads a 0.2 kB (brotli) script once, without
+the Lumiose runtime (an island loads the same module). When a customizable select is pressed or
+takes focus, before its picker opens, the script removes the attribute from its items: the picker
+shows their content, typeahead matches the label's hidden copy, and `aria-label` keeps their name.
+A classic select keeps the attribute, which it shows. Without the script, the customizable
+picker shows the labels alone.
 
 ## Browser support
 
@@ -5440,8 +5455,8 @@ control's value when it changes, and its `change` event calls `onValueChange`.
   `Trigger`). Older browsers without customizable select drop them from server HTML, so an
   island's select falls back to rendering on the client there
   ([LUM4006](https://itsjavi.com/lumiose/docs/errors/LUM4006/)).
-- **Typeahead** matches an option's text, or its `label`: give options that start with an icon a
-  `label`.
+- **Typeahead** matches an option's text, or its `label`: give options whose content starts with
+  an icon (an emoji, a symbol) a `label`.
 - **`:open`** comes with customizable select.
 
 ## Related
