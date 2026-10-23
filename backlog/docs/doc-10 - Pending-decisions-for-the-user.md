@@ -3,7 +3,7 @@ id: doc-10
 title: Pending decisions for the user
 type: other
 created_date: '2026-10-16 22:28'
-updated_date: '2026-10-23 19:46'
+updated_date: '2026-10-23 20:58'
 ---
 Decisions that need the user, collected while Lux and the workers run unattended (user request, 2026-10-17: "do not block yourself on more questions … postpone them (and their decisions) in a document that can be used later as follow ups").
 
@@ -65,6 +65,9 @@ These are syntax, DX or API proposals. Each task holds the proposal; nothing is 
 - TASK-282: warn on scoped descendant selectors that match other files' elements.
 - TASK-286: an option to skip precompressed copies in static builds.
 - TASK-287: sitemap and redirects options for static sites.
+- TASK-519: inline or combine small `?client` scripts.
+- TASK-544: a tooltip on a link (`Tooltip.Trigger` with `render` or `as`).
+- TASK-545: per-component theme stylesheets in @lumiose/ui.
 
 ### P9. Agent eval runs (TASK-185, 207, 208, 209, 243)
 
