@@ -151,13 +151,18 @@ function Value(props: SelectValueProps) {
 function Item({ children, value, label, ...rest }: SelectItemProps) {
   const select = useContext(SelectContext);
   if (!select) throw notInside("Select parts", "<Select.Root>");
-  // Only items with a label need the script.
-  if (untrack(() => label) !== undefined) selectScript();
+  // Only items with a label need the script. Read where the attribute is, so a label that appears
+  // after an island's first render still loads it (TASK-552; the call is conditional, so an island
+  // loads the script when it is made, TASK-551).
+  const labelled = () => {
+    if (label !== undefined) selectScript();
+    return label;
+  };
   return (
     <option
       aria-label={label}
       {...rest}
-      label={label}
+      label={labelled()}
       value={value}
       selected={select.initial === value || undefined}
     >
