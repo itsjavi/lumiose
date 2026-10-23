@@ -124,7 +124,17 @@ export function flush(): void {
       if (renderQueue.length !== 0) {
         runRenderPass();
       } else if (userIndex < userQueue.length) {
-        runUserPass();
+        // A pass runs the user effects queued so far. Their writes apply to signals at once, but
+        // the render work they queue waits for the pass to end, and the effects they schedule
+        // join the next pass (decision-80).
+        for (const end = userQueue.length; userIndex < end;) {
+          const node = userQueue[userIndex]!;
+          userQueue[userIndex++] = undefined;
+          if (renderQueue.length !== 0) {
+            runPendingAncestors(node.parent);
+          }
+          runSafely(node);
+        }
       } else {
         break;
       }
@@ -169,38 +179,16 @@ function runRenderPass(): void {
 }
 
 /**
- * Runs the user effects queued so far. Their writes apply to signals at once, but the render
- * work those writes queue waits for the pass to end, and the effects they schedule join the
- * next pass (decision-80).
+ * Runs the queued render work among `owner` and its ancestors, top-down, before a user effect
+ * under them runs: a binding about to replace the subtree disposes the effect instead of letting
+ * it run in content that an earlier effect's write removed. Other render work still waits.
  */
-function runUserPass(): void {
-  const end = userQueue.length;
-  while (userIndex < end) {
-    const node = userQueue[userIndex]!;
-    userQueue[userIndex++] = undefined;
-    if (renderQueue.length !== 0) {
-      runPendingAncestors(node);
-    }
-    runSafely(node);
-  }
-}
-
-/**
- * Runs the queued render work that owns `node`, top-down, before `node` runs: a binding that
- * is about to replace the subtree disposes `node` instead of letting it run in a subtree that
- * an earlier effect's write has already removed. Other render work still waits for the pass.
- */
-function runPendingAncestors(node: EffectNode): void {
-  let ancestors: EffectNode[] | undefined;
-  for (let owner = node.parent; owner !== undefined; owner = owner.parent) {
-    const kind = (owner as EffectNode).kind;
-    if (kind !== undefined && kind !== USER && (owner as EffectNode).flags & (DIRTY | PENDING)) {
-      (ancestors ??= []).push(owner as EffectNode);
-    }
-  }
-  if (ancestors !== undefined) {
-    for (let i = ancestors.length - 1; i >= 0; i--) {
-      runSafely(ancestors[i]!);
+function runPendingAncestors(owner: Owner | undefined): void {
+  if (owner !== undefined) {
+    runPendingAncestors(owner.parent);
+    // Plain owners have no `kind`, and `undefined > USER` is false.
+    if ((owner as EffectNode).kind > USER && (owner as EffectNode).flags & (DIRTY | PENDING)) {
+      runSafely(owner as EffectNode);
     }
   }
 }
