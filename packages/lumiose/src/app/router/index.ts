@@ -86,10 +86,11 @@ export interface SearchParams {
   (): URLSearchParams;
   /**
    * Navigates to the current path with a new query: `searchParams.set({ q, page: 2 })`,
-   * `searchParams.set((current) => …)`. `null`/`undefined` values are left out. Adds a history
-   * entry unless `{ replace: true }`. Inside an SPA the router navigates, keeping the scroll
-   * position; in islands of MPA pages the page loads, unless `{ shallow: true }`, which only
-   * updates the URL and `searchParams()` (the server-rendered HTML stays as it is).
+   * `searchParams.set((current) => …)`. `null`/`undefined` values are left out, and only what the
+   * query needs is escaped (`?sorts=price:desc,name:asc`). Adds a history entry unless
+   * `{ replace: true }`. Inside an SPA the router navigates, keeping the scroll position; in
+   * islands of MPA pages the page loads, unless `{ shallow: true }`, which only updates the URL
+   * and `searchParams()` (the server-rendered HTML stays as it is).
    */
   set(
     next: SearchParamsInit | ((current: URLSearchParams) => SearchParamsInit),

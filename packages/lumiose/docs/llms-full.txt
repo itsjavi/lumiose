@@ -13005,6 +13005,16 @@ navigates to the current path with a new query, keeping the scroll position; `nu
 SPA, `{ shallow: true }` changes nothing: a query change already keeps every layout and page
 mounted.
 
+`searchParams.set()` escapes only what the query needs, so shared URLs stay readable:
+`searchParams.set({ sorts: "price:desc,name:asc" })` writes `?sorts=price:desc,name:asc`. Keys and
+values are written as `URLSearchParams` writes them (letters, digits and `* - . _` as they are,
+spaces as `+`, everything else percent-encoded as UTF-8: `%`, `&`, `=`, `+`, `#`, quotes,
+non-ASCII…), except that `! $ ( ) , / : ; ? @ ~` stay as they are too: a query may hold them, and
+its parser reads them as themselves. `searchParams()` in the browser and on the server, and
+`ctx.url.searchParams` in middleware and endpoints, read every value back unchanged, `&`, `=`, `+`
+and `#` included. A string or a `URLSearchParams` passed to `set()` is parsed first, so
+`set("sorts=price%3Adesc")` writes `?sorts=price:desc`.
+
 In islands of MPA pages (`static` and `server` routes), where no router runs, `searchParams()` is
 the document's query, shared by every island, and `searchParams.set()` loads the page with the new
 query, like `navigate()` there. With `{ shallow: true }` it loads nothing: it writes the URL with

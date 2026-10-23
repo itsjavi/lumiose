@@ -4,7 +4,9 @@
 // own tests cover it (./router.test.ts).
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { effect } from "../../core/index.ts";
+import { runInRequestScope, type RequestScope } from "../server/scope.ts";
 import { searchParams } from "./index.ts";
+import { searchParams as serverSearchParams } from "./index.server.ts";
 import { resetSearch, setRouterSearch } from "./search.ts";
 
 // User effects run after the current task.
@@ -103,6 +105,54 @@ describe("searchParams in islands of MPA pages", () => {
     await settled();
     expect(seen).toEqual(["shoes", "hats", "shoes"]);
     stop();
+  });
+});
+
+/** What the server's `searchParams()` reads from a request for `href`. */
+const onServer = (href: string): [string, string][] => [
+  ...runInRequestScope({ ctx: { url: new URL(href), locals: {} } } as unknown as RequestScope, () =>
+    serverSearchParams(),
+  ),
+];
+
+describe("the query searchParams.set() writes (TASK-525)", () => {
+  it("leaves characters that mean nothing to the query readable: sorts=price:desc,name:asc", async () => {
+    const assign = vi.spyOn(location, "assign").mockImplementation(() => {});
+    const values = {
+      sorts: "price:desc,name:asc",
+      next: "/orders?page",
+      by: "me@example.com",
+      more: "~!$()*;._-",
+    };
+    const query = "sorts=price:desc,name:asc&next=/orders?page&by=me@example.com&more=~!$()*;._-";
+    await searchParams.set(values);
+    expect(assign).toHaveBeenCalledWith(`${location.origin}/products?${query}#top`);
+    await searchParams.set(values, shallow);
+    expect(location.search).toBe(`?${query}`);
+    expect(Object.fromEntries(searchParams())).toEqual(values);
+    expect(Object.fromEntries(onServer(location.href))).toEqual(values);
+  });
+
+  it("encodes what the query would read otherwise, so every value round-trips", async () => {
+    const entries: [string, string][] = [
+      ["q", "a&b=c+d #e %f 50%25"],
+      ["k=y&z", "v"],
+      ["name", "Zoë 'quoted' \"double\" <tag> [x] {y} |\\^`"],
+      ["lines", "one\ntwo\ttab"],
+      ["empty", ""],
+    ];
+    await searchParams.set(new URLSearchParams(entries), shallow);
+    expect(location.search).toBe(
+      "?q=a%26b%3Dc%2Bd+%23e+%25f+50%2525&k%3Dy%26z=v" +
+        "&name=Zo%C3%AB+%27quoted%27+%22double%22+%3Ctag%3E+%5Bx%5D+%7By%7D+%7C%5C%5E%60" +
+        "&lines=one%0Atwo%09tab&empty=",
+    );
+    expect(location.hash).toBe("#top");
+    expect([...searchParams()]).toEqual(entries);
+    expect(onServer(location.href)).toEqual(entries);
+    // A string is read as a query first: escapes of readable characters come out readable.
+    await searchParams.set("sorts=price%3Adesc%2Cname%3Aasc&q=a%26b", shallow);
+    expect(location.search).toBe("?sorts=price:desc,name:asc&q=a%26b");
   });
 });
 

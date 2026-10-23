@@ -318,6 +318,14 @@ describe("lumiose/router", () => {
     expect(searchParams().get("q")).toBe("b");
   });
 
+  it("writes a readable query that reads back the same (TASK-525)", async () => {
+    await boot("/search?q=a", "src/routes/search/page.tsx");
+    await searchParams.set({ q: "x&y=z+1 #2", sorts: "price:desc,name:asc" });
+    expect(location.search).toBe("?q=x%26y%3Dz%2B1+%232&sorts=price:desc,name:asc");
+    expect(text()).toBe("path /searchq=x&y=z+1 #2");
+    expect(searchParams().get("sorts")).toBe("price:desc,name:asc");
+  });
+
   it("shows a page's own <Suspense> fallback instead of holding the old page", async () => {
     await boot("/");
     await navigate("/slow");
