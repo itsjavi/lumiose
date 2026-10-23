@@ -962,6 +962,31 @@ function deferred<T>(): { promise: Promise<T>; resolve: (value: T) => void } {
   return { promise, resolve: settled };
 }
 
+/** An island with a file input, a text input and a button that log their events (TASK-534). */
+const UPLOAD = `
+  export function Upload() {
+    const log = (globalThis as any).uploadLog as string[];
+    return (
+      <form>
+        <input type="file" onInput={(e) => log.push(\`file:\${e.currentTarget.files[0].name}\`)} />
+        <input onInput={(e) => log.push(\`title:\${e.currentTarget.value}\`)} />
+        <button type="button" onClick={() => log.push("click")}>ok</button>
+      </form>
+    );
+  }`;
+
+/** Picks two files, types a title and clicks in `UPLOAD`, before the island hydrates. */
+function interact(): void {
+  const [file, title] = document.querySelectorAll("input");
+  for (const name of ["a.png", "b.png"]) {
+    file!.files = [new File(["x"], name)] as unknown as FileList;
+    file!.dispatchEvent(new Event("input", { bubbles: true }));
+  }
+  title!.value = "t";
+  title!.dispatchEvent(new Event("input", { bubbles: true }));
+  document.querySelector("button")!.click();
+}
+
 describe("island loader", () => {
   it("waits for streamed Suspense content and its appended await records", async () => {
     const { client, server } = await load(`
@@ -1147,6 +1172,61 @@ describe("island loader", () => {
     key("b");
     expect(log.at(-1)).toBe("b:1");
     delete (globalThis as Record<string, unknown>).keysLog;
+  });
+
+  it("dispatches the held events after one that cannot run again, and reports it (TASK-534)", async () => {
+    const { client, server } = await load(UPLOAD);
+    await serve(server, [["Upload", {}]]);
+    const log: string[] = [];
+    (globalThis as Record<string, unknown>).uploadLog = log;
+    const error = vi.spyOn(console, "error").mockImplementation(() => {});
+    const module = deferred<unknown>();
+    loadIslands({ "/src/case#Upload": () => module.promise });
+    await settle();
+    interact();
+    module.resolve(client.Upload);
+    await settle();
+    // The first file's value cannot be restored (the input holds the second one): that event is
+    // reported, and the others run in order. The second file's value is unchanged, so not set.
+    expect(log).toEqual(["file:b.png", "title:t", "click"]);
+    expect(error).toHaveBeenCalledTimes(1);
+    expect(error).toHaveBeenCalledWith(
+      "Lumiose: hydrate error in island /src/case#Upload",
+      expect.objectContaining({ name: "InvalidStateError" }),
+    );
+    error.mockRestore();
+    delete (globalThis as Record<string, unknown>).uploadLog;
+  });
+
+  it("loads a failed island again after a held event that cannot run again (TASK-534)", async () => {
+    const { client, server } = await load(UPLOAD);
+    await serve(server, [["Upload", {}]]);
+    const log: string[] = [];
+    (globalThis as Record<string, unknown>).uploadLog = log;
+    const error = vi.spyOn(console, "error").mockImplementation(() => {});
+    const failed = new TypeError("Failed to fetch dynamically imported module");
+    let reject!: (error: unknown) => void;
+    const chunk = new Promise((_, no) => (reject = no));
+    let loads = 0;
+    loadIslands({
+      "/src/case#Upload": () => (++loads === 1 ? chunk : Promise.resolve(client.Upload)),
+    });
+    await settle();
+    interact();
+    reject(failed);
+    await settle();
+    // Reported with the chunk's error; the island is armed again, so a click loads it.
+    expect(error).toHaveBeenCalledTimes(2);
+    expect(error).toHaveBeenLastCalledWith(
+      "Lumiose: hydrate error in island /src/case#Upload",
+      expect.objectContaining({ name: "InvalidStateError" }),
+    );
+    document.querySelector("button")!.click();
+    await settle();
+    expect(loads).toBe(2);
+    expect(log).toEqual(["click"]);
+    error.mockRestore();
+    delete (globalThis as Record<string, unknown>).uploadLog;
   });
 
   it("reports an island whose chunk fails to load and loads it on the next interaction (TASK-305)", async () => {

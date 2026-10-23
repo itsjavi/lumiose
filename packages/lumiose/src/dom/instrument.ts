@@ -27,7 +27,8 @@ export type ClientErrorPhase = "hydrate" | "render" | "effect" | "navigate" | "s
 /** What `onError(error, info)` of `src/instrumentation.client.ts` receives with each error. */
 export interface ClientErrorInfo {
   /**
-   * `"hydrate"`: loading an island's module or hydrating it; `"render"`: an async component of an
+   * `"hydrate"`: loading an island's module, hydrating it, or dispatching again an event it caught
+   * before (a file input whose files changed meanwhile); `"render"`: an async component of an
    * island, or an error an `<ErrorBoundary>` caught; `"effect"`: an effect or binding of an island
    * after it hydrated; `"navigate"`: the SPA router (a page that throws, a module that does not
    * load); `"submit"`: a `submit()` that rejects.

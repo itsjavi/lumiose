@@ -87,7 +87,9 @@ first wait for it, [Islands](../concepts/islands.md#concept)):
   hydrates that island at once and dispatches the events again on their targets afterwards (an
   `input` restores the value typed meanwhile). They are dispatched a task after hydration, in the
   order they came, and the island keeps catching events until then, so a key pressed right after
-  the click that started hydration still runs after that click.
+  the click that started hydration still runs after that click. An event that cannot be dispatched
+  again (a file input whose files changed meanwhile, a submit whose submitter left its form) is
+  reported like a failed hydration, below, and the events after it still run.
 
 Islands inside slots that an island inserts later are hydrated when they appear.
 

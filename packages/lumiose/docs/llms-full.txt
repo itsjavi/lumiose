@@ -3995,7 +3995,8 @@ export const instrumentations: ClientInstrumentation[] = [
 ```
 
 - **`onError(error, info)`** receives errors of islands, `"hydrate"` (the island's module did not
-  load or its hydration threw), `"render"` (an async component, or what an `<ErrorBoundary>`
+  load, its hydration threw, or an event caught before it hydrated could not be dispatched
+  again), `"render"` (an async component, or what an `<ErrorBoundary>`
   caught) and `"effect"` (an effect or binding after hydration), of the SPA router, `"navigate"`
   (a page that throws or whose module does not load), and of `submit()`, `"submit"` (a rejection;
   not an abort). `info` is `{ phase, route, island }`: the SPA route (undefined on MPA pages) and
@@ -12807,7 +12808,9 @@ first wait for it, [Islands](../concepts/islands.md#concept)):
   hydrates that island at once and dispatches the events again on their targets afterwards (an
   `input` restores the value typed meanwhile). They are dispatched a task after hydration, in the
   order they came, and the island keeps catching events until then, so a key pressed right after
-  the click that started hydration still runs after that click.
+  the click that started hydration still runs after that click. An event that cannot be dispatched
+  again (a file input whose files changed meanwhile, a submit whose submitter left its form) is
+  reported like a failed hydration, below, and the events after it still run.
 
 Islands inside slots that an island inserts later are hydrated when they appear.
 
