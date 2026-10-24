@@ -33,3 +33,7 @@ export function RowKeys() {
 		return _c4(insertText(entry.index));
 	}));
 }
+
+// --- diagnostics ---
+// LUM2001 warning 22:15 `id` is read once from the row's item, so the JSX that uses it keeps the first value when the item changes in place
+// LUM2003 warning 28:13 this early return depends on the row's item, but a keyed row renders once: it does not re-run when the item changes in place

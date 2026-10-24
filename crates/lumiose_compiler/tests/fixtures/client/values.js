@@ -39,7 +39,7 @@ export function Values(props) {
 		return [_el2, listValue(items, (item, i) => {
 			const _el3 = _t5(), _text2 = _el3.firstChild;
 			insert(_el3, () => i(), _text2);
-			insert(_el3, () => item.name);
+			insert(_el3, () => item.v.name);
 			return _el3;
 		}, (item) => item.id)];
 	} }), _marker4);

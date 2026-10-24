@@ -22,6 +22,7 @@ export {
   isRun,
   pauseRun,
   renderEffect,
+  rerun,
   resumeRun,
   startBatch,
   type RenderEffect,

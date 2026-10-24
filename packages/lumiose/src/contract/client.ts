@@ -95,16 +95,26 @@ export interface ClientRuntime {
    */
   insertText(node: Text, value: Renderable): void;
   /**
-   * Keyed list for compiled `.map()`. `render` receives the item and, only when declared
-   * (render.length > 1), a reactive index accessor. Items are keyed by `key(item)` or by reference.
-   * Reconciliation: prefix/suffix trim, append/remove/clear/swap fast paths, LIS for moves.
+   * Keyed list for compiled `.map()`. Without `key`, items are keyed by reference and `render`
+   * receives the item. With `key(item, index)`, the key alone decides whether a row is kept
+   * (decision-83): `render` receives the row, whose `v` reads its current item reactively (only
+   * when it declares the parameter, render.length > 0), and a kept row whose item changed keeps
+   * its nodes while what reads `v` re-runs. Only when declared (render.length > 1), `render`
+   * also receives a reactive index accessor. Reconciliation: prefix/suffix trim,
+   * append/remove/clear/swap fast paths, LIS for moves.
    */
   list<T>(
     parent: Node,
     marker: Node | null,
     source: () => readonly T[] | null | undefined,
     render: (item: T, index: () => number) => Renderable,
-    key?: (item: T) => unknown,
+  ): void;
+  list<T>(
+    parent: Node,
+    marker: Node | null,
+    source: () => readonly T[] | null | undefined,
+    render: (row: { readonly v: T }, index: () => number) => Renderable,
+    key: (item: T, index: number) => unknown,
   ): void;
   /** Memoised branch for ternaries / `&&`: re-renders only when `!!cond()` flips. `whenFalse` may be omitted. */
   branch(
@@ -124,7 +134,11 @@ export interface ClientRuntime {
   listValue<T>(
     source: () => readonly T[] | null | undefined,
     render: (item: T, index: () => number) => Renderable,
-    key?: (item: T) => unknown,
+  ): Renderable;
+  listValue<T>(
+    source: () => readonly T[] | null | undefined,
+    render: (row: { readonly v: T }, index: () => number) => Renderable,
+    key: (item: T, index: number) => unknown,
   ): Renderable;
   /** Parentless `insert` (dynamic items of fragments and component children): a range that `insert` places as one node; under hydration it claims the server's `insert` block. */
   insertValue(value: Renderable): Renderable;

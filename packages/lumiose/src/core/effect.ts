@@ -55,6 +55,11 @@ export interface RenderEffect<T = unknown, E = unknown> extends EffectNode {
   apply: (target: E, value: T) => void;
   target: E;
   value: T | undefined;
+  /**
+   * The next binding that read a keyed row's item untracked while the row was created (list.ts,
+   * decision-83), `undefined` at the end of that row's list, `null` when in none.
+   */
+  n: RenderEffect | null | undefined;
 }
 
 /**
@@ -371,6 +376,7 @@ export function renderEffect<E, T>(
     apply,
     target,
     value: undefined,
+    n: null,
   };
   attachOwner(node, getOwner());
   if (import.meta.env?.DEV && INSPECTED) nodeCreated(node, "binding", undefined, target);
@@ -378,6 +384,19 @@ export function renderEffect<E, T>(
     runBinding(node, true);
   }
   return node;
+}
+
+/**
+ * Queues a binding to run again, as if something it read had changed (unless it is disposed or
+ * already queued). A keyed row's bindings read its item untracked while the row is created; when
+ * the item first changes in place, this re-runs them, and from then on they track it (list.ts,
+ * decision-83).
+ */
+export function rerun(node: RenderEffect): void {
+  if (!(node.state & DISPOSED) && node.flags & WATCHING) {
+    node.flags = (node.flags & ~WATCHING) | DIRTY;
+    enqueue(node);
+  }
 }
 
 function runRender(node: RenderEffect): void {

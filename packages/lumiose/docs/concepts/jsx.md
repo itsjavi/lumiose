@@ -105,9 +105,28 @@ export function Faq() {
 ### Lists and keys
 
 `{items().map((item, i) => …)}` compiles to a list that reconciles its rows when the array changes:
-it keeps, moves, creates and removes rows instead of rendering them all again. With a `key` on the
-element the callback returns, rows are matched by key; without one, by item reference (a row is
-kept while its item is the same object).
+it keeps, moves, creates and removes rows instead of rendering them all again.
+
+- **With a `key`** on the element the callback returns, the key alone decides whether a row is
+  kept, as in React, Vue or Svelte. A kept row whose item is a new object (a refetch, an array
+  derived again) keeps its DOM, its components with their local state, and its effects; the item
+  updates in place. Reads of the item in JSX, in props passed to components and in effects re-run,
+  as reads of props do, and so do reads of a destructured item (`({ id, name }) => …`).
+- **Without a key**, rows match by item reference: a row is kept while its item is the same
+  object, and a new object makes a new row.
+
+The callback itself runs once per row. A value it reads from the item at the top, outside JSX and
+functions, is a copy taken when the row was created: `const label = format(item.name)` keeps the
+first name when the item changes in place, which [LUM2001](../errors/LUM2001.md) reports where the
+JSX uses it (and [LUM2003](../errors/LUM2003.md) an early return on the item). Read the item where
+it is used instead (`{format(item.name)}`), or derive lazily (`const label = () => format(item.name)`,
+called as `label()`). Copies of the key are fine (`const id = item.id` with `key={item.id}`): a
+different id is a different row. To make a new row when some field changes (to reset a row's state,
+or for setup code that must run again), put that field in the key:
+`key={`${item.id}:${item.version}`}`.
+
+The index stays reactive (`i` is compiled to `i()`), and a row keyed by its index
+(`key={i}`) keeps its place while its item changes, like Solid's `<Index>`.
 
 The compiler moves the key into a function that the list calls for every item, so the key may
 read the item (or the bindings of its destructuring pattern), the index, bindings it declares
@@ -120,10 +139,17 @@ compiler cannot use, such as one that reads a value computed in the row, is
 ```tsx
 <section class="grid">
   {entries().map(({ row, index }) => (
-    <div key={`${index}:${row.map((card) => card.id).join("|")}`}>…</div>
+    <div key={`${index}:${row.map((card) => card.id).join("|")}`}>
+      {row.map((card) => (
+        <Card key={card.id} card={card} />
+      ))}
+    </div>
   ))}
 </section>
 ```
+
+Here a refetch that returns new card objects with the same ids keeps every row and every `Card`:
+only the bindings whose values changed write to the DOM.
 
 ## API
 
@@ -207,12 +233,16 @@ export function TodoList() {
 - **Using the index outside the row.** The `i` of `.map((item, i) => …)` is a reactive index that
   belongs to its row; storing it in an outer variable or closure that outlives the row is
   `LUM2006`.
+- **Reading the item once in a keyed row.** `const name = item.name` at the top of the callback
+  keeps the first name when a same-key item replaces it (`LUM2001`). Read `item.name` in the JSX,
+  or put the field in the key to make a new row when it changes.
 - **Wrapping lists in helper components.** `{items().map(…)}` already compiles to a keyed list;
   there is no `<For>`.
 - **`innerHTML` with user input.** It is not escaped. Prefer text children.
 
 ## Related diagnostics
 
+- [LUM2001](../errors/LUM2001.md): stale derived value (also a keyed row's setup copy of its item).
 - [LUM2004](../errors/LUM2004.md): component called as a function.
 - [LUM2005](../errors/LUM2005.md): children inserted twice.
 - [LUM2006](../errors/LUM2006.md): reactive index escapes its callback.

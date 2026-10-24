@@ -1088,6 +1088,83 @@ export function Mixer() {
 }
 
 #[test]
+fn keyed_rows_report_setup_copies_of_the_item_and_early_returns_on_it() {
+    // TASK-554 (decision-83): a kept row's item changes in place, so a setup copy that the JSX
+    // uses is LUM2001 and an early return on the item is LUM2003 (a warning, as for props).
+    let source = r#"import { signal } from "lumiose";
+const format = (s: string) => s;
+export function Rows() {
+  const rows = signal<Array<{ id: number; name: string; done: boolean; meta: { id: number } }>>([]);
+  return (
+    <div>
+      {rows().map((row) => {
+        const id = row.id;
+        const label = `#${row.id.toFixed(0)}`;
+        const name = format(row.name);
+        const open = signal(row.done);
+        const later = () => row.name;
+        const shown = row.name;
+        const handled = row.name;
+        const keyed = row.meta.id;
+        const done = row.done;
+        if (done) return <s key={row.id}>{id}</s>;
+        return (
+          <p key={row.id} data-k={keyed} onClick={() => alert(handled)}>
+            {id}{label}{name}{open()}{later()}{shown}
+          </p>
+        );
+      })}
+      {rows().map(({ id, name }) => {
+        const copy = id;
+        const title = name;
+        return <b key={id}>{copy}{title}</b>;
+      })}
+      {rows().map((row) => {
+        const name = row.name;
+        return <i>{name}</i>;
+      })}
+    </div>
+  );
+}
+"#;
+    let found = |code: Code| -> Vec<String> {
+        compile(source, "/src/Rows.tsx", &CompileOptions::default())
+            .diagnostics
+            .iter()
+            .filter(|d| d.code == code)
+            .map(|d| source[d.span.start as usize..d.span.end as usize].to_owned())
+            .collect()
+    };
+    // Copies of the key (`row.id`, `id`) are fine, as are lumiose factories (`signal(row.done)`),
+    // functions, values only handlers read, and unkeyed rows.
+    assert_eq!(
+        found(Code::StaleDerivedValue),
+        [
+            "name = format(row.name)",
+            "shown = row.name",
+            "keyed = row.meta.id",
+            "title = name",
+        ]
+    );
+    let early = compile(source, "/src/Rows.tsx", &CompileOptions::default())
+        .diagnostics
+        .into_iter()
+        .find(|d| d.code == Code::ReactiveEarlyReturn)
+        .expect("LUM2003");
+    assert_eq!(early.severity, lumiose_compiler::Severity::Warning);
+    assert_eq!(
+        &source[early.span.start as usize..early.span.end as usize],
+        "done"
+    );
+    let labels: Vec<&str> = early
+        .labels
+        .iter()
+        .map(|l| &source[l.span.start as usize..l.span.end as usize])
+        .collect();
+    assert_eq!(labels, ["done", "done = row.done"]);
+}
+
+#[test]
 fn row_keys_that_cannot_compile_warn_with_lum2008_on_both_targets() {
     // TASK-553: a key is never dropped without a word. These lists match rows by reference.
     let source = r#"import { signal } from "lumiose";

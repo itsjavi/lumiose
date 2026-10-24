@@ -9,6 +9,7 @@ use oxc_syntax::operator::BinaryOperator;
 use oxc_syntax::scope::{ScopeFlags, ScopeId};
 use oxc_syntax::symbol::SymbolId;
 
+use super::row_items::ItemAccess;
 use super::rows::RowParams;
 use super::{Codegen, Compiled};
 use crate::analyze::is_jsx_like;
@@ -25,6 +26,8 @@ pub struct MapCtx<'a> {
     pub row_consts: Vec<SymbolId>,
     /// Hoisted selectors: (source text, variable, `selector(...)` argument).
     selectors: Vec<(String, String, Expression<'a>)>,
+    /// How the row reads its item: an accessor in keyed rows on the client (row_items.rs).
+    pub access: ItemAccess<'a>,
 }
 
 /// A compiled `list(…)` call.
@@ -142,30 +145,52 @@ impl<'a> Codegen<'a, '_> {
         if let Some(index) = index.filter(|_| index_used && !stable_rows) {
             self.check_index_escape(&callback, index);
         }
+        if let Some(plan) = &plan {
+            self.check_row_reads(&callback, &row_params, plan);
+        }
         // Rows are never reconciled on the server; the `key` attribute is skipped there.
         let key = match &plan {
             Some(plan) if !self.server() => Some(self.take_key(&mut callback, plan, &row_consts)),
             _ => None,
         };
+        // A keyed row gets an accessor of its current item (decision-83).
+        let access = if key.is_some() {
+            self.item_access(&mut callback)
+        } else {
+            ItemAccess::Plain
+        };
+        let item_refs: usize = row_params
+            .item
+            .iter()
+            .map(|&symbol| self.scoping.get_resolved_reference_ids(symbol).len())
+            .sum();
+        let item_used = item_refs > plan.as_ref().map_or(0, |plan| plan.item_refs);
+        // A render that reads neither the item (outside the key) nor the index takes no
+        // parameters, so the list allocates no item accessor.
+        let unused_item = key.is_some()
+            && !item_used
+            && !index_used
+            && matches!(access, ItemAccess::Accessor(_) | ItemAccess::Paths { .. });
         self.maps.push(MapCtx {
             item,
             index: index.filter(|_| index_used),
             scope,
             row_consts,
             selectors: Vec::new(),
+            access,
         });
         self.row_callback = true;
         self.visit_expression_in_place(&mut callback);
         self.row_callback = false;
         let map = self.maps.pop().expect("pushed above");
 
-        if index.is_some() && !index_used {
+        if (index.is_some() && !index_used) || unused_item {
             let params = match &mut callback {
                 Expression::ArrowFunctionExpression(arrow) => &mut arrow.params,
                 Expression::FunctionExpression(function) => &mut function.params,
                 _ => unreachable!("checked by is_list"),
             };
-            params.items.truncate(1);
+            params.items.truncate(if unused_item { 0 } else { 1 });
         }
         let mut setup = Vec::new();
         for (_, var, source) in map.selectors {

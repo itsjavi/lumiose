@@ -16,10 +16,10 @@ export function RowData() {
 	const _el2 = _t1(), _tbody = _el2.firstChild;
 	const _isSelected = selector(selected);
 	list(_tbody, null, rows, (row) => {
-		const id = row.id;
+		const id = row.v.id;
 		const key = id;
-		const { name, label: text } = row;
-		const upper = row.name.toUpperCase();
+		const { name, label: text } = row.v;
+		const upper = row.v.name.toUpperCase();
 		const _el = _t0(), _td = _el.firstChild, _text = _td.firstChild, _td2 = _td.nextSibling, _text2 = _td2.firstChild, _td3 = _td2.nextSibling, _text3 = _td3.firstChild, _td4 = _td3.nextSibling, _td5 = _td4.nextSibling;
 		bind(_el, () => _isSelected(key), _a0);
 		insertText(_text, id);
@@ -29,10 +29,13 @@ export function RowData() {
 		_td3.$$click = _onClick2;
 		_td3.$$clickData = text;
 		insertText(_text3, text);
-		_td4.$$click = () => log(row, id);
+		_td4.$$click = () => log(row.v, id);
 		_td5.$$click = () => log(upper);
 		return _el;
 	}, (row) => row.id);
 	return _el2;
 }
 delegateEvents(["click"]);
+
+// --- diagnostics ---
+// LUM2001 warning 19:15 `name, text` is read once from the row's item, so the JSX that uses it keeps the first value when the item changes in place

@@ -27,3 +27,6 @@ export function RowData() {
 		return _c0(classAttr({ danger: _isSelected(key) }), insertText(id), insertText(name), insertText(text()));
 	}));
 }
+
+// --- diagnostics ---
+// LUM2001 warning 19:15 `name, text` is read once from the row's item, so the JSX that uses it keeps the first value when the item changes in place

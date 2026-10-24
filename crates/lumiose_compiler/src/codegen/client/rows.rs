@@ -53,6 +53,9 @@ impl RowParams {
     }
 }
 
+/// An item field path: an item binding and the static keys read from it (`row.meta.id`).
+pub type ItemPath = (SymbolId, Vec<String>);
+
 /// A row key that compiles (see [`Codegen::check_row_key`]).
 pub struct KeyPlan {
     /// The key expression of the first keyed root (the others are the same text).
@@ -61,6 +64,11 @@ pub struct KeyPlan {
     pub reads_index: bool,
     /// References to the index parameter inside the roots' keys.
     pub index_refs: usize,
+    /// References to the item's bindings inside the roots' keys.
+    pub item_refs: usize,
+    /// The item path the key is, when it is one (`key={row.id}`, `key={id}` with `({ id })` or
+    /// `const id = row.id`): a kept row's value there never changes (decision-83).
+    pub stable: Option<ItemPath>,
 }
 
 /// A `key` attribute in a row callback's JSX.
@@ -78,8 +86,11 @@ struct FoundKey {
 #[derive(Default)]
 struct KeyRefs {
     index_refs: usize,
+    item_refs: usize,
     /// The first binding it reads that a key function cannot get.
     local: Option<(String, Span)>,
+    /// The item path the expression is, if it is one.
+    stable: Option<ItemPath>,
 }
 
 pub(super) fn callback_params<'b, 'a>(callback: &'b Expression<'a>) -> &'b FormalParameters<'a> {
@@ -101,11 +112,13 @@ impl<'a> Codegen<'a, '_> {
         params: &RowParams,
         row_consts: &[SymbolId],
     ) -> Option<KeyPlan> {
+        let const_paths = row_const_paths(self, callback, &params.item, row_consts);
         let mut finder = KeyFinder {
             codegen: self,
             scope,
             params,
             row_consts,
+            const_paths: &const_paths,
             found: Vec::new(),
         };
         match callback {
@@ -162,6 +175,7 @@ impl<'a> Codegen<'a, '_> {
             }
         }
         let mut index_refs = 0;
+        let mut item_refs = 0;
         for root in &roots {
             let refs = root.refs.as_ref().expect("root keys are checked");
             if let Some((name, span)) = &refs.local {
@@ -173,12 +187,15 @@ impl<'a> Codegen<'a, '_> {
                 return None;
             }
             index_refs += refs.index_refs;
+            item_refs += refs.item_refs;
         }
-        let reads_index = first.refs.as_ref().is_some_and(|refs| refs.index_refs > 0);
+        let refs = first.refs.as_ref();
         Some(KeyPlan {
             expr,
-            reads_index,
+            reads_index: refs.is_some_and(|refs| refs.index_refs > 0),
             index_refs,
+            item_refs,
+            stable: refs.and_then(|refs| refs.stable.clone()),
         })
     }
 
@@ -266,6 +283,8 @@ struct KeyFinder<'c, 'a, 's> {
     scope: Option<ScopeId>,
     params: &'c RowParams,
     row_consts: &'c [SymbolId],
+    /// The item paths that row consts copy.
+    const_paths: &'c HashMap<SymbolId, ItemPath>,
     found: Vec<FoundKey>,
 }
 
@@ -327,7 +346,17 @@ impl<'a> KeyFinder<'_, 'a, '_> {
             refs: KeyRefs::default(),
         };
         checker.visit_expression(expr);
-        checker.refs
+        let mut refs = checker.refs;
+        refs.stable = match expr.without_parentheses() {
+            Expression::Identifier(ident) => self
+                .codegen
+                .symbol_of(ident)
+                .and_then(|symbol| self.const_paths.get(&symbol))
+                .cloned(),
+            _ => None,
+        }
+        .or_else(|| item_path(self.codegen, expr, &self.params.item));
+        refs
     }
 }
 
@@ -382,10 +411,11 @@ impl<'a> Visit<'a> for KeyRefChecker<'_, 'a, '_> {
             self.refs.index_refs += 1;
             return;
         }
-        if self.params.item.contains(&symbol)
-            || self.own.contains(&symbol)
-            || self.row_consts.contains(&symbol)
-        {
+        if self.params.item.contains(&symbol) {
+            self.refs.item_refs += 1;
+            return;
+        }
+        if self.own.contains(&symbol) || self.row_consts.contains(&symbol) {
             return;
         }
         let declared = self.codegen.scoping.symbol_scope_id(symbol);
@@ -444,6 +474,103 @@ impl<'a> VisitMut<'a> for KeyTaker<'a> {
             self.returned(argument);
         }
     }
+}
+
+/// The item path `expr` is: an item binding, or a static member chain rooted at one.
+pub fn item_path(
+    codegen: &Codegen<'_, '_>,
+    expr: &Expression<'_>,
+    item: &[SymbolId],
+) -> Option<ItemPath> {
+    let mut keys = Vec::new();
+    let mut expr = expr.without_parentheses();
+    loop {
+        match expr {
+            Expression::StaticMemberExpression(member) if !member.optional => {
+                keys.push(member.property.name.to_string());
+                expr = member.object.without_parentheses();
+            }
+            Expression::Identifier(ident) => {
+                let symbol = codegen.symbol_of(ident).filter(|s| item.contains(s))?;
+                keys.reverse();
+                return Some((symbol, keys));
+            }
+            _ => return None,
+        }
+    }
+}
+
+/// The item paths that the callback's row consts copy (`const id = row.id`, `const { id } = row`,
+/// `const key = id`).
+fn row_const_paths(
+    codegen: &Codegen<'_, '_>,
+    callback: &Expression<'_>,
+    item: &[SymbolId],
+    row_consts: &[SymbolId],
+) -> HashMap<SymbolId, ItemPath> {
+    let mut paths: HashMap<SymbolId, ItemPath> = HashMap::new();
+    if row_consts.is_empty() {
+        return paths;
+    }
+    let body = match callback {
+        Expression::ArrowFunctionExpression(arrow) => match &arrow.body {
+            ArrowFunctionBody::FunctionBody(body) => &**body,
+            _ => return paths,
+        },
+        Expression::FunctionExpression(function) => match &function.body {
+            Some(body) => &**body,
+            None => return paths,
+        },
+        _ => return paths,
+    };
+    let path_of = |paths: &HashMap<SymbolId, ItemPath>, init: &Expression<'_>| {
+        if let Expression::Identifier(ident) = init.without_parentheses()
+            && let Some(path) = codegen.symbol_of(ident).and_then(|s| paths.get(&s))
+        {
+            return Some(path.clone());
+        }
+        item_path(codegen, init, item)
+    };
+    for statement in &body.statements {
+        let Statement::VariableDeclaration(declaration) = statement else {
+            continue;
+        };
+        for declarator in &declaration.declarations {
+            let Some(init) = &declarator.init else {
+                continue;
+            };
+            match &declarator.id {
+                BindingPattern::BindingIdentifier(ident) => {
+                    if let Some(symbol) = ident.symbol_id.get().filter(|s| row_consts.contains(s))
+                        && let Some(path) = path_of(&paths, init)
+                    {
+                        paths.insert(symbol, path);
+                    }
+                }
+                BindingPattern::ObjectPattern(object) => {
+                    let Some(base) = path_of(&paths, init) else {
+                        continue;
+                    };
+                    for property in &object.properties {
+                        let (Some(key), BindingPattern::BindingIdentifier(ident)) =
+                            (property_key_name(&property.key), &property.value)
+                        else {
+                            continue;
+                        };
+                        if let Some(symbol) =
+                            ident.symbol_id.get().filter(|s| row_consts.contains(s))
+                        {
+                            let mut path = base.clone();
+                            path.1.push(key.to_owned());
+                            paths.insert(symbol, path);
+                        }
+                    }
+                }
+                _ => {}
+            }
+        }
+    }
+    paths
 }
 
 /// The values of the row consts declared at the top of the callback body: `row.id` for

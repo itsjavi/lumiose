@@ -22,6 +22,7 @@ mod html;
 mod idioms;
 mod islands;
 mod props;
+mod row_items;
 mod rows;
 mod ssr;
 mod template;
@@ -891,7 +892,8 @@ impl<'a> Visit<'a> for PropRefFinder<'_, 'a, '_> {
                 .components
                 .iter()
                 .any(|c| c.props.contains_key(&symbol))
-                || self.codegen.maps.iter().any(|m| m.index == Some(symbol)))
+                || self.codegen.maps.iter().any(|m| m.index == Some(symbol))
+                || self.codegen.reads_item(symbol))
         {
             self.found = true;
         }

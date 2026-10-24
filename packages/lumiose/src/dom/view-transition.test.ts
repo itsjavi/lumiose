@@ -178,7 +178,7 @@ describe("<ViewTransition>", () => {
         ul,
         null,
         () => rows(),
-        (row: string) => named({ enter: "in", exit: "out" }, "li", row),
+        (row: { v: string }) => named({ enter: "in", exit: "out" }, "li", row.v),
         (row: string) => row,
       );
       return ul;

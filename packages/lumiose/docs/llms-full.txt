@@ -552,41 +552,41 @@ same component is static on one page and interactive on another.
 
 ## From React to Lumiose
 
-| React                                                   | Lumiose                                                                                                                                                                                                |
-| ------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `const [count, setCount] = useState(0)`                 | `const count = signal(0)`: read `count()`, write `count.set(1)` or `count.update((n) => n + 1)`.                                                                                                       |
-| `useReducer(reducer, init)`                             | A `store()` plus the functions that change it ([a store with actions](../concepts/state.md#a-store-with-actions-zustand-style)).                                                                       |
-| `useMemo(() => a * b, [a, b])`                          | `computed(() => a() * b())`, or a plain function `() => a() * b()` for cheap derivations.                                                                                                              |
-| `useCallback(fn, deps)`, `React.memo(Component)`        | Not needed: functions are created once and components don't re-render.                                                                                                                                 |
-| `useEffect(fn, [deps])`                                 | `effect(fn)`: it tracks what it reads. Return a cleanup, as in React.                                                                                                                                  |
-| `useEffect(fn, [])`                                     | `onMount(fn)`: runs once, untracked, after mount. It may return a cleanup.                                                                                                                             |
-| `useLayoutEffect(fn, deps)`                             | `effect(fn)` or `onMount(fn)`: there is one kind of effect, and it runs after the DOM writes of the same flush. As with layout effects, its writes render once every effect of that flush has run.     |
-| Cleanup returned from `useEffect`, `AbortController`    | `onCleanup(fn)`, and `getAbortSignal()`, aborted when the owner is disposed or the effect re-runs.                                                                                                     |
-| `useRef<HTMLInputElement>(null)`                        | `const input = ref<HTMLInputElement>()`, then `<input ref={input} />` and `input()?.focus()`.                                                                                                          |
-| `useRef(value)` for a mutable value                     | A `let` variable in the component body: the body runs once.                                                                                                                                            |
-| `<Ctx value={v}>` (`<Ctx.Provider>`), `useContext(Ctx)` | `<Ctx value={v}>`, `useContext(Ctx)`. The provider reads `value` once: provide a signal or a store for state that changes.                                                                             |
-| `use(Context)`                                          | `useContext(Ctx)`, which may be called in conditions too.                                                                                                                                              |
-| `use(promise)`, fetching in `useEffect`, TanStack Query | An `async` component that awaits `fetchJSON()` or `query()` ([Async components](../concepts/async.md)), or [`@lumiose/query`](../reference/query.md) for client-side polling and retries.              |
-| `<Suspense>`, error boundary classes                    | `<Suspense fallback={…}>` and `<ErrorBoundary fallback={(error, reset) => …}>`.                                                                                                                        |
-| `useTransition`, `isPending`                            | A re-run of an async component keeps the old UI until it resolves: `isPending()` inside it, and `isBusy()` for anything in flight.                                                                     |
-| Server Components                                       | Every component, on `static` and `server` routes: it may be `async` and read server-only modules (`*.server.ts`).                                                                                      |
-| `"use client"`                                          | A `client:*` directive where the component is used (`client:load`, `client:idle`, `client:visible`, …), or an `spa` route. Props must be serializable, as in React.                                    |
-| `"use server"` functions, `<form action={fn}>`          | Form actions: `export const actions = { save(ctx) {…} }` in the page and `<form method="post" action="?/save">`, which works without JavaScript ([Data and actions](../concepts/data-and-actions.md)). |
-| `useActionState(fn, initial)`                           | `actionData<typeof actions>()`, the last result of the page's actions, or the result that `await submit(event)` resolves to.                                                                           |
-| `useActionState` per form instance                      | `submission<typeof actions.save>()` in the form's component: its own `isSubmitting()`, `result()` and `error()`, with `onSubmit={save.submit}` ([Data and actions](../concepts/data-and-actions.md)).  |
-| `useFormStatus()`                                       | `isSubmitting()`, or `isSubmitting("save")` for one named action.                                                                                                                                      |
-| `useOptimistic(state, update)`                          | `optimistic(source)`, with `.update(fn, submit(event))` ([optimistic updates](../concepts/data-and-actions.md)).                                                                                       |
-| `<title>`, `<meta>`, `<link>` rendered in a component   | `<Title>`, `<Meta>` and `<Head>`: the deepest wins, and they work in server components too ([Head and document](../concepts/head.md)).                                                                 |
-| `<ViewTransition>`, `startTransition` around it         | `<ViewTransition name? enter? exit?>`, and the update in `viewTransition(() => …)` ([reference](../reference/components.md#viewtransition)).                                                           |
-| `useId()`, `identifierPrefix`                           | `useId()`, and `idPrefix` on `render()` and `renderToStream()` ([useId](../reference/reactivity.md#useid)).                                                                                            |
-| `useSyncExternalStore(subscribe, get)`                  | A signal set from the store's `subscribe` ([an external store](../concepts/state.md#an-external-store-zustandvanilla-a-jotai-store-redux)).                                                            |
-| `createPortal(children, node)`                          | `<Portal mount={node}>`.                                                                                                                                                                               |
-| `createRoot(el).render(<App />)`, `hydrateRoot`         | `render(() => <App />, el)` from `lumiose/dom`; islands and `spa` routes hydrate on their own ([`lumiose/dom`](../reference/dom.md)).                                                                  |
-| `{items.map((item) => <Row key={item.id} />)}`          | The same, with `items()`. It compiles to a keyed list; `key` is optional ([JSX](../concepts/jsx.md)).                                                                                                  |
-| `className`, `htmlFor`, `style={{ fontWeight: 600 }}`   | `class`, `for`, `style={{ "font-weight": 600 }}` (kebab-case keys).                                                                                                                                    |
-| `dangerouslySetInnerHTML={{ __html: html }}`            | `innerHTML={html}`.                                                                                                                                                                                    |
-| `onChange` on a text input (fires on every keystroke)   | `onInput`, or `bind:value={signal}`. Handlers get native events, so `onChange` fires when the value is committed.                                                                                      |
-| CSS Modules, CSS-in-JS                                  | A `<style>` block in the `.stsx` file, scoped by where it is placed ([Styles](../concepts/styles.md)).                                                                                                 |
+| React                                                   | Lumiose                                                                                                                                                                                                                                      |
+| ------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `const [count, setCount] = useState(0)`                 | `const count = signal(0)`: read `count()`, write `count.set(1)` or `count.update((n) => n + 1)`.                                                                                                                                             |
+| `useReducer(reducer, init)`                             | A `store()` plus the functions that change it ([a store with actions](../concepts/state.md#a-store-with-actions-zustand-style)).                                                                                                             |
+| `useMemo(() => a * b, [a, b])`                          | `computed(() => a() * b())`, or a plain function `() => a() * b()` for cheap derivations.                                                                                                                                                    |
+| `useCallback(fn, deps)`, `React.memo(Component)`        | Not needed: functions are created once and components don't re-render.                                                                                                                                                                       |
+| `useEffect(fn, [deps])`                                 | `effect(fn)`: it tracks what it reads. Return a cleanup, as in React.                                                                                                                                                                        |
+| `useEffect(fn, [])`                                     | `onMount(fn)`: runs once, untracked, after mount. It may return a cleanup.                                                                                                                                                                   |
+| `useLayoutEffect(fn, deps)`                             | `effect(fn)` or `onMount(fn)`: there is one kind of effect, and it runs after the DOM writes of the same flush. As with layout effects, its writes render once every effect of that flush has run.                                           |
+| Cleanup returned from `useEffect`, `AbortController`    | `onCleanup(fn)`, and `getAbortSignal()`, aborted when the owner is disposed or the effect re-runs.                                                                                                                                           |
+| `useRef<HTMLInputElement>(null)`                        | `const input = ref<HTMLInputElement>()`, then `<input ref={input} />` and `input()?.focus()`.                                                                                                                                                |
+| `useRef(value)` for a mutable value                     | A `let` variable in the component body: the body runs once.                                                                                                                                                                                  |
+| `<Ctx value={v}>` (`<Ctx.Provider>`), `useContext(Ctx)` | `<Ctx value={v}>`, `useContext(Ctx)`. The provider reads `value` once: provide a signal or a store for state that changes.                                                                                                                   |
+| `use(Context)`                                          | `useContext(Ctx)`, which may be called in conditions too.                                                                                                                                                                                    |
+| `use(promise)`, fetching in `useEffect`, TanStack Query | An `async` component that awaits `fetchJSON()` or `query()` ([Async components](../concepts/async.md)), or [`@lumiose/query`](../reference/query.md) for client-side polling and retries.                                                    |
+| `<Suspense>`, error boundary classes                    | `<Suspense fallback={…}>` and `<ErrorBoundary fallback={(error, reset) => …}>`.                                                                                                                                                              |
+| `useTransition`, `isPending`                            | A re-run of an async component keeps the old UI until it resolves: `isPending()` inside it, and `isBusy()` for anything in flight.                                                                                                           |
+| Server Components                                       | Every component, on `static` and `server` routes: it may be `async` and read server-only modules (`*.server.ts`).                                                                                                                            |
+| `"use client"`                                          | A `client:*` directive where the component is used (`client:load`, `client:idle`, `client:visible`, …), or an `spa` route. Props must be serializable, as in React.                                                                          |
+| `"use server"` functions, `<form action={fn}>`          | Form actions: `export const actions = { save(ctx) {…} }` in the page and `<form method="post" action="?/save">`, which works without JavaScript ([Data and actions](../concepts/data-and-actions.md)).                                       |
+| `useActionState(fn, initial)`                           | `actionData<typeof actions>()`, the last result of the page's actions, or the result that `await submit(event)` resolves to.                                                                                                                 |
+| `useActionState` per form instance                      | `submission<typeof actions.save>()` in the form's component: its own `isSubmitting()`, `result()` and `error()`, with `onSubmit={save.submit}` ([Data and actions](../concepts/data-and-actions.md)).                                        |
+| `useFormStatus()`                                       | `isSubmitting()`, or `isSubmitting("save")` for one named action.                                                                                                                                                                            |
+| `useOptimistic(state, update)`                          | `optimistic(source)`, with `.update(fn, submit(event))` ([optimistic updates](../concepts/data-and-actions.md)).                                                                                                                             |
+| `<title>`, `<meta>`, `<link>` rendered in a component   | `<Title>`, `<Meta>` and `<Head>`: the deepest wins, and they work in server components too ([Head and document](../concepts/head.md)).                                                                                                       |
+| `<ViewTransition>`, `startTransition` around it         | `<ViewTransition name? enter? exit?>`, and the update in `viewTransition(() => …)` ([reference](../reference/components.md#viewtransition)).                                                                                                 |
+| `useId()`, `identifierPrefix`                           | `useId()`, and `idPrefix` on `render()` and `renderToStream()` ([useId](../reference/reactivity.md#useid)).                                                                                                                                  |
+| `useSyncExternalStore(subscribe, get)`                  | A signal set from the store's `subscribe` ([an external store](../concepts/state.md#an-external-store-zustandvanilla-a-jotai-store-redux)).                                                                                                  |
+| `createPortal(children, node)`                          | `<Portal mount={node}>`.                                                                                                                                                                                                                     |
+| `createRoot(el).render(<App />)`, `hydrateRoot`         | `render(() => <App />, el)` from `lumiose/dom`; islands and `spa` routes hydrate on their own ([`lumiose/dom`](../reference/dom.md)).                                                                                                        |
+| `{items.map((item) => <Row key={item.id} />)}`          | The same, with `items()`. It compiles to a keyed list: as in React, a row with the same key is kept and gets the new item, with its state. `key` is optional; without it rows match by reference ([JSX](../concepts/jsx.md#lists-and-keys)). |
+| `className`, `htmlFor`, `style={{ fontWeight: 600 }}`   | `class`, `for`, `style={{ "font-weight": 600 }}` (kebab-case keys).                                                                                                                                                                          |
+| `dangerouslySetInnerHTML={{ __html: html }}`            | `innerHTML={html}`.                                                                                                                                                                                                                          |
+| `onChange` on a text input (fires on every keystroke)   | `onInput`, or `bind:value={signal}`. Handlers get native events, so `onChange` fires when the value is committed.                                                                                                                            |
+| CSS Modules, CSS-in-JS                                  | A `<style>` block in the `.stsx` file, scoped by where it is placed ([Styles](../concepts/styles.md)).                                                                                                                                       |
 
 ## What has no equivalent
 
@@ -672,21 +672,22 @@ export default function ClockPage() {
 
 ## Common mistakes
 
-| React habit                                                 | What happens in Lumiose                                 | Instead                                                                                       |
-| ----------------------------------------------------------- | ------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
-| `const doubled = count() * 2` in the body                   | Computed once, never updates.                           | `const doubled = () => count() * 2`, or `computed` ([LUM2001](../errors/LUM2001.md)).         |
-| `if (!user()) return <Login />`                             | Checked once, at setup.                                 | `{user() ? <Profile /> : <Login />}` in the JSX ([LUM2003](../errors/LUM2003.md)).            |
-| `count.set(…)` in the body                                  | A write during render.                                  | Write in handlers and effects ([LUM2002](../errors/LUM2002.md)).                              |
-| `effect(() => b.set(a() * 2))` to sync state                | A frame of staleness and an extra flush.                | `const b = computed(() => a() * 2)`.                                                          |
-| Reading a signal in an effect only to use its current value | The effect re-runs whenever that signal changes.        | `untrack(() => s())` or `s.peek()` reads without subscribing.                                 |
-| Asserting right after a write in a test                     | Effects run after the DOM updates, not synchronously.   | Call `flush()` before asserting.                                                              |
-| `{Card({ title })}`                                         | Skips the component's owner and props handling.         | `<Card title={title} />` ([LUM2004](../errors/LUM2004.md)).                                   |
-| `{children}` inserted twice                                 | The second insert moves or re-creates the nodes.        | Take a render prop such as `renderItem: () => JSX.Element` ([LUM2005](../errors/LUM2005.md)). |
-| A signal created and read in an async component's body      | The read re-runs the body, which re-creates the signal. | Read it in JSX, handlers or effects ([LUM2007](../errors/LUM2007.md)).                        |
-| A module-scope signal written on the server                 | Shared by every request.                                | Component state, context or `defineState` ([LUM4008](../errors/LUM4008.md)).                  |
-| An interactive component on a page without `client:*`       | It renders on the server, and its handlers never run.   | Add a directive at the usage site, or make the route `spa`.                                   |
-| Passing a function or a class instance to an island         | Island props are serialized into the page.              | Pass plain data, and keep handlers inside the island ([LUM4002](../errors/LUM4002.md)).       |
-| Setting `document.title` in an effect                       | It fights with `<Title>`.                               | Render `<Title>`.                                                                             |
+| React habit                                                 | What happens in Lumiose                                                                  | Instead                                                                                       |
+| ----------------------------------------------------------- | ---------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| `const doubled = count() * 2` in the body                   | Computed once, never updates.                                                            | `const doubled = () => count() * 2`, or `computed` ([LUM2001](../errors/LUM2001.md)).         |
+| `if (!user()) return <Login />`                             | Checked once, at setup.                                                                  | `{user() ? <Profile /> : <Login />}` in the JSX ([LUM2003](../errors/LUM2003.md)).            |
+| `const name = item.name` at the top of a `.map()` row       | Read once: a same-key item updates the row in place, and the copy keeps the first value. | Read `item.name` in the JSX, or put the field in the key ([LUM2001](../errors/LUM2001.md)).   |
+| `count.set(…)` in the body                                  | A write during render.                                                                   | Write in handlers and effects ([LUM2002](../errors/LUM2002.md)).                              |
+| `effect(() => b.set(a() * 2))` to sync state                | A frame of staleness and an extra flush.                                                 | `const b = computed(() => a() * 2)`.                                                          |
+| Reading a signal in an effect only to use its current value | The effect re-runs whenever that signal changes.                                         | `untrack(() => s())` or `s.peek()` reads without subscribing.                                 |
+| Asserting right after a write in a test                     | Effects run after the DOM updates, not synchronously.                                    | Call `flush()` before asserting.                                                              |
+| `{Card({ title })}`                                         | Skips the component's owner and props handling.                                          | `<Card title={title} />` ([LUM2004](../errors/LUM2004.md)).                                   |
+| `{children}` inserted twice                                 | The second insert moves or re-creates the nodes.                                         | Take a render prop such as `renderItem: () => JSX.Element` ([LUM2005](../errors/LUM2005.md)). |
+| A signal created and read in an async component's body      | The read re-runs the body, which re-creates the signal.                                  | Read it in JSX, handlers or effects ([LUM2007](../errors/LUM2007.md)).                        |
+| A module-scope signal written on the server                 | Shared by every request.                                                                 | Component state, context or `defineState` ([LUM4008](../errors/LUM4008.md)).                  |
+| An interactive component on a page without `client:*`       | It renders on the server, and its handlers never run.                                    | Add a directive at the usage site, or make the route `spa`.                                   |
+| Passing a function or a class instance to an island         | Island props are serialized into the page.                                               | Pass plain data, and keep handlers inside the island ([LUM4002](../errors/LUM4002.md)).       |
+| Setting `document.title` in an effect                       | It fights with `<Title>`.                                                                | Render `<Title>`.                                                                             |
 
 Destructuring props is fine: `({ title })` and `const { title, ...rest } = props` compile to reads
 of `props.title`, which stay reactive. Copying a signal's value into a variable is what freezes it.
@@ -1512,26 +1513,26 @@ persistent layouts ([Rendering modes](../concepts/rendering-modes.md)).
 
 ### Components and JSX
 
-| Solid                                                            | Lumiose                                                                                                                 |
-| ---------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| `splitProps(props, ["a"])`, `mergeProps(defaults, props)`        | `({ a, size = "md", ...rest })`: destructuring with defaults and rest stays reactive.                                   |
-| `children(() => props.children)`                                 | Insert `children` once where it goes; take a render prop to render content several times.                               |
-| `<Show when={user()} fallback={<Login />}>`                      | `{user() ? <Profile /> : <Login />}`, or `{user() && <Profile />}`.                                                     |
-| `<Show when={user()} keyed>{(u) => …}</Show>`                    | `{user() ? <Profile user={user()!} /> : null}`: the branch switches when the condition flips, and the prop stays live.  |
-| `<For each={items()}>{(item, i) => …}</For>`                     | `{items().map((item, i) => …)}`, keyed by reference or `key`; `i` is a reactive index, used as a number (`i + 1`).      |
-| `<Index each={items()}>`                                         | No index-keyed list: keep objects in a `store` and change their properties, so rows update in place.                    |
-| `<Switch>` and `<Match>`                                         | A chain of ternaries, or a function that returns JSX: `{view()}` with `const view = () => { switch (status()) { … } }`. |
-| `<Dynamic component={…}>`, `<Portal mount={…}>`                  | The same: `<Dynamic component={…}>` and `<Portal mount={…}>`.                                                           |
-| `<ErrorBoundary fallback={(err, reset) => …}>`, `<Suspense>`     | The same.                                                                                                               |
-| `let el; <div ref={el} />`                                       | `const el = ref<HTMLDivElement>()`, `<div ref={el} />` and `el()`; or a callback `ref={(node) => …}`.                   |
-| `use:tooltip={text}`                                             | `attach={[tooltip(text)]}`, where `tooltip(text)` returns `(el) => cleanup`.                                            |
-| `classList={{ active: on() }}`                                   | `class={{ active: on() }}`; `class` also takes strings and arrays.                                                      |
-| `style={{ "font-weight": 600 }}`, `on:click`, `onClick`          | The same: kebab-case style keys, native `on:` listeners and delegated `onX` handlers.                                   |
-| `lazy(() => import("./Chart"))`                                  | No `lazy()`: islands load their module when they hydrate, and `spa` routes load a chunk per page and layout.            |
-| `render(() => <App />, el)`, `hydrate`                           | `render(() => <App />, el)` from `lumiose/dom`; islands and `spa` routes hydrate on their own.                          |
-| `renderToString`, `renderToStream`                               | The same names from `lumiose/server` ([reference](../reference/server.md)).                                             |
-| CSS files, CSS Modules, `solid-styled`                           | A `<style>` block in the `.stsx` file, scoped by placement; `<style global>` for global rules.                          |
-| `@solidjs/meta`: `<Title>`, `<Meta>`, `<Link>`, `<MetaProvider>` | `<Title>`, `<Meta>` and `<Head>` from `lumiose`, with no provider ([Head and document](../concepts/head.md)).           |
+| Solid                                                            | Lumiose                                                                                                                                                                                      |
+| ---------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `splitProps(props, ["a"])`, `mergeProps(defaults, props)`        | `({ a, size = "md", ...rest })`: destructuring with defaults and rest stays reactive.                                                                                                        |
+| `children(() => props.children)`                                 | Insert `children` once where it goes; take a render prop to render content several times.                                                                                                    |
+| `<Show when={user()} fallback={<Login />}>`                      | `{user() ? <Profile /> : <Login />}`, or `{user() && <Profile />}`.                                                                                                                          |
+| `<Show when={user()} keyed>{(u) => …}</Show>`                    | `{user() ? <Profile user={user()!} /> : null}`: the branch switches when the condition flips, and the prop stays live.                                                                       |
+| `<For each={items()}>{(item, i) => …}</For>`                     | `{items().map((item, i) => …)}`: keyed by reference, as `<For>`, or by `key`, which keeps a same-key row and updates its item in place. `i` is a reactive index, used as a number (`i + 1`). |
+| `<Index each={items()}>`                                         | `{items().map((item, i) => <li key={i}>…</li>)}`: rows keyed by position keep their place and get each new item in place.                                                                    |
+| `<Switch>` and `<Match>`                                         | A chain of ternaries, or a function that returns JSX: `{view()}` with `const view = () => { switch (status()) { … } }`.                                                                      |
+| `<Dynamic component={…}>`, `<Portal mount={…}>`                  | The same: `<Dynamic component={…}>` and `<Portal mount={…}>`.                                                                                                                                |
+| `<ErrorBoundary fallback={(err, reset) => …}>`, `<Suspense>`     | The same.                                                                                                                                                                                    |
+| `let el; <div ref={el} />`                                       | `const el = ref<HTMLDivElement>()`, `<div ref={el} />` and `el()`; or a callback `ref={(node) => …}`.                                                                                        |
+| `use:tooltip={text}`                                             | `attach={[tooltip(text)]}`, where `tooltip(text)` returns `(el) => cleanup`.                                                                                                                 |
+| `classList={{ active: on() }}`                                   | `class={{ active: on() }}`; `class` also takes strings and arrays.                                                                                                                           |
+| `style={{ "font-weight": 600 }}`, `on:click`, `onClick`          | The same: kebab-case style keys, native `on:` listeners and delegated `onX` handlers.                                                                                                        |
+| `lazy(() => import("./Chart"))`                                  | No `lazy()`: islands load their module when they hydrate, and `spa` routes load a chunk per page and layout.                                                                                 |
+| `render(() => <App />, el)`, `hydrate`                           | `render(() => <App />, el)` from `lumiose/dom`; islands and `spa` routes hydrate on their own.                                                                                               |
+| `renderToString`, `renderToStream`                               | The same names from `lumiose/server` ([reference](../reference/server.md)).                                                                                                                  |
+| CSS files, CSS Modules, `solid-styled`                           | A `<style>` block in the `.stsx` file, scoped by placement; `<style global>` for global rules.                                                                                               |
+| `@solidjs/meta`: `<Title>`, `<Meta>`, `<Link>`, `<MetaProvider>` | `<Title>`, `<Meta>` and `<Head>` from `lumiose`, with no provider ([Head and document](../concepts/head.md)).                                                                                |
 
 ### SolidStart
 
@@ -2872,9 +2873,28 @@ export function Faq() {
 ### Lists and keys
 
 `{items().map((item, i) => …)}` compiles to a list that reconciles its rows when the array changes:
-it keeps, moves, creates and removes rows instead of rendering them all again. With a `key` on the
-element the callback returns, rows are matched by key; without one, by item reference (a row is
-kept while its item is the same object).
+it keeps, moves, creates and removes rows instead of rendering them all again.
+
+- **With a `key`** on the element the callback returns, the key alone decides whether a row is
+  kept, as in React, Vue or Svelte. A kept row whose item is a new object (a refetch, an array
+  derived again) keeps its DOM, its components with their local state, and its effects; the item
+  updates in place. Reads of the item in JSX, in props passed to components and in effects re-run,
+  as reads of props do, and so do reads of a destructured item (`({ id, name }) => …`).
+- **Without a key**, rows match by item reference: a row is kept while its item is the same
+  object, and a new object makes a new row.
+
+The callback itself runs once per row. A value it reads from the item at the top, outside JSX and
+functions, is a copy taken when the row was created: `const label = format(item.name)` keeps the
+first name when the item changes in place, which [LUM2001](../errors/LUM2001.md) reports where the
+JSX uses it (and [LUM2003](../errors/LUM2003.md) an early return on the item). Read the item where
+it is used instead (`{format(item.name)}`), or derive lazily (`const label = () => format(item.name)`,
+called as `label()`). Copies of the key are fine (`const id = item.id` with `key={item.id}`): a
+different id is a different row. To make a new row when some field changes (to reset a row's state,
+or for setup code that must run again), put that field in the key:
+`key={`${item.id}:${item.version}`}`.
+
+The index stays reactive (`i` is compiled to `i()`), and a row keyed by its index
+(`key={i}`) keeps its place while its item changes, like Solid's `<Index>`.
 
 The compiler moves the key into a function that the list calls for every item, so the key may
 read the item (or the bindings of its destructuring pattern), the index, bindings it declares
@@ -2887,10 +2907,17 @@ compiler cannot use, such as one that reads a value computed in the row, is
 ```tsx
 <section class="grid">
   {entries().map(({ row, index }) => (
-    <div key={`${index}:${row.map((card) => card.id).join("|")}`}>…</div>
+    <div key={`${index}:${row.map((card) => card.id).join("|")}`}>
+      {row.map((card) => (
+        <Card key={card.id} card={card} />
+      ))}
+    </div>
   ))}
 </section>
 ```
+
+Here a refetch that returns new card objects with the same ids keeps every row and every `Card`:
+only the bindings whose values changed write to the DOM.
 
 ## API
 
@@ -2974,12 +3001,16 @@ export function TodoList() {
 - **Using the index outside the row.** The `i` of `.map((item, i) => …)` is a reactive index that
   belongs to its row; storing it in an outer variable or closure that outlives the row is
   `LUM2006`.
+- **Reading the item once in a keyed row.** `const name = item.name` at the top of the callback
+  keeps the first name when a same-key item replaces it (`LUM2001`). Read `item.name` in the JSX,
+  or put the field in the key to make a new row when it changes.
 - **Wrapping lists in helper components.** `{items().map(…)}` already compiles to a keyed list;
   there is no `<For>`.
 - **`innerHTML` with user input.** It is not escaped. Prefer text children.
 
 ## Related diagnostics
 
+- [LUM2001](../errors/LUM2001.md): stale derived value (also a keyed row's setup copy of its item).
 - [LUM2004](../errors/LUM2004.md): component called as a function.
 - [LUM2005](../errors/LUM2005.md): children inserted twice.
 - [LUM2006](../errors/LUM2006.md): reactive index escapes its callback.
@@ -15471,6 +15502,35 @@ Destructuring the props object at the top of the body (`const { title, ...rest }
 rewritten like a destructured parameter and stays reactive. Destructuring a nested prop
 (`const { name } = props.user`), or bindings you reassign later, still read once and warn.
 
+**In a keyed row.** A `.map()` callback with a `key` runs once per row, and the row stays when a
+new item with the same key replaces its item: the item updates in place (see
+[Lists and keys](../concepts/jsx.md#lists-and-keys)). A value the callback reads from the item
+outside JSX and functions is a copy taken when the row was created, so the compiler reports it
+where the JSX uses it: `const name = item.name`, `const label = format(item.price)`, or bindings
+destructured from the item with a rest element (`({ id, ...rest }) => …`). In a row, calls of your
+own functions count as reads too (a formatter of a field goes stale like the field). Not
+reported: copies of the key (`const id = item.id` with `key={item.id}`, or anything read from
+`item.id`), calls of `lumiose`'s APIs (`const open = signal(item.open)` keeps the first value on
+purpose, as do `untrack(() => …)` and functions), values only an event handler reads, and rows
+without a key, which a new item replaces.
+
+```tsx
+<ul>
+  {products().map((item) => {
+    const price = formatPrice(item.price); // LUM2001: the row keeps the first price
+    return (
+      <li key={item.id}>
+        {item.name}: {price}
+      </li>
+    );
+  })}
+</ul>
+```
+
+Read the item where it is used (`{formatPrice(item.price)}`), derive lazily
+(`const price = () => formatPrice(item.price)`, called as `price()`), or put the field in the key
+(`key={`${item.id}:${item.price}`}`) to make a new row when it changes.
+
 Pages and layouts whose route mode is `static` or `server` render once per request (or build), so
 their own props are plain values too: deriving from them is fine. Routes in `spa` mode, islands
 and other components re-render with new props and still get the warning. `@lumiose/vite`,
@@ -15607,6 +15667,12 @@ The default export of a page or layout whose route mode is `static` or `server` 
 diagnostic for its own props, nor for `lumiose/router`'s accessors, which read the request there:
 it renders once per request or build, so they never change (as for [LUM2001](LUM2001.md)).
 
+**In a keyed row** the `.map()` callback runs once per row too, and a kept row's item changes in
+place when a same-key item replaces it (see [Lists and keys](../concepts/jsx.md#lists-and-keys)).
+An early return on the item (`if (!item.visible) return null;`) is a warning, as for a prop: it
+keeps its first branch while the row stays. A condition on the key itself
+(`if (!item.id) …` with `key={item.id}`) is fine.
+
 ## Example
 
 ```tsx
@@ -15650,6 +15716,19 @@ export function Account(props: { user: () => User | null }) {
 export function Badge(props: { kind: "new" | "sale" }) {
   return <>{props.kind === "new" ? <New /> : <Sale />}</>;
 }
+```
+
+In a keyed row, move the condition into the returned element, or put the field in the key so a
+change makes a new row:
+
+```tsx
+<ul>
+  {items().map((item) => (
+    <li key={item.id} hidden={!item.visible}>
+      {item.name}
+    </li>
+  ))}
+</ul>
 ```
 
 For a warning on a component that only renders on the server, or whose props never change, the
