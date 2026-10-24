@@ -108,6 +108,10 @@ const containerRef = (virtualizer: Virtualizer, shown: () => unknown, measure?: 
 
 const px = (value: number) => `${value}px`;
 
+/** The container's style: the caller's (an object) with the component's properties over it. */
+const styled = (style: unknown, own: Record<string, string | undefined>) =>
+  style !== null && typeof style === "object" ? { ...style, ...own } : own;
+
 /** `VirtualList`'s props: a `<ul>`'s, and the shared ones. */
 export type VirtualListProps<T> = Omit<JSX.IntrinsicElements["ul"], symbol | "children"> &
   VirtualProps<T> & {
@@ -141,6 +145,7 @@ export function VirtualList<T>({
   keepFocused,
   virtualizer,
   itemProps,
+  style,
   ...rest
 }: VirtualListProps<T>) {
   const list = createVirtualizer({
@@ -159,11 +164,12 @@ export function VirtualList<T>({
       {...rest}
       ref={containerRef(list, shown, measure)}
       data-mounted={list.mounted() ? "" : undefined}
-      style={
+      style={styled(
+        style,
         list.mounted()
           ? { position: "relative", height: px(list.total()) }
-          : { "padding-block-end": px(list.after()) }
-      }
+          : { "padding-block-end": px(list.after()) },
+      )}
     >
       {shown().map((item, position) => {
         const index = () => list.items()[position]!;
@@ -210,8 +216,8 @@ export type VirtualGridProps<T> = Omit<JSX.IntrinsicElements["ul"], symbol | "ch
 
 /**
  * A `<ul>` whose items are placed in rows of columns, each an `<li>` as wide as a column. Before
- * mount the items are in flow: lay them out with CSS (`:not([data-mounted])`), such as a grid with
- * the same columns.
+ * mount the items are in flow: lay them out with its `style` or with CSS (`:not([data-mounted])`),
+ * such as a grid with the same columns.
  *
  * @example
  * <VirtualGrid items={cards()} itemKey={(c) => c.id} minItemWidth={192} gap={16} size={160} measure>
@@ -235,6 +241,7 @@ export function VirtualGrid<T>({
   keepFocused,
   virtualizer,
   itemProps,
+  style,
   ...rest
 }: VirtualGridProps<T>) {
   const grid = createVirtualizer({
@@ -261,7 +268,10 @@ export function VirtualGrid<T>({
       {...rest}
       ref={containerRef(grid, shown, measure)}
       data-mounted={grid.mounted() ? "" : undefined}
-      style={grid.mounted() ? { position: "relative", height: px(grid.total()) } : undefined}
+      // Before mount, the caller's style may lay out the server's cells (a CSS grid, say).
+      style={
+        grid.mounted() ? styled(style, { position: "relative", height: px(grid.total()) }) : style
+      }
     >
       {shown().map((item, position) => {
         const index = () => grid.items()[position]!;

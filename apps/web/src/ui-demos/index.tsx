@@ -56,6 +56,9 @@ import { PinToggle } from "./toggle-1.tsx";
 import { TextAlignment } from "./toggle-group-1.tsx";
 import { FormattingToolbar } from "./toolbar-1.tsx";
 import { BoldButton } from "./tooltip-1.tsx";
+import { EntryGrid } from "./virtual-grid-1.tsx";
+import { PeopleList } from "./virtual-list-1.tsx";
+import { ReleaseTable } from "./virtual-table-1.tsx";
 
 /** A demo by id: server HTML, or an island that hydrates when it scrolls into view. */
 export function UiDemo(props: { id: string }) {
@@ -174,6 +177,12 @@ function demoById(id: string) {
       return <FormattingToolbar />;
     case "tooltip-1":
       return <BoldButton />;
+    case "virtual-grid-1":
+      return <EntryGrid client:visible />;
+    case "virtual-list-1":
+      return <PeopleList client:visible />;
+    case "virtual-table-1":
+      return <ReleaseTable client:visible />;
     default:
       throw new Error(`No UI demo "${id}": run pnpm --filter @lumiose/web ui:demos.`);
   }

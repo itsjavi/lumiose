@@ -62,6 +62,7 @@ it("VirtualList places keyed rows and keeps them, and their state, as their item
     <VirtualList
       class="box"
       aria-label="People"
+      style={{ "list-style": "none" }}
       items={items()}
       itemKey={(person) => person.id}
       size={50}
@@ -78,6 +79,7 @@ it("VirtualList places keyed rows and keeps them, and their state, as their item
   expect(list.hasAttribute("data-mounted")).toBe(true);
   expect(list.getAttribute("aria-label")).toBe("People");
   expect(list.style.height).toBe("5000px");
+  expect(list.style.listStyle).toBe("none");
   expect(rows()).toHaveLength(11);
   const third = rows()[2]!;
   expect(third.getAttribute("aria-posinset")).toBe("3");

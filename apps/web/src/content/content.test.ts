@@ -98,7 +98,13 @@ describe("docs", () => {
       label: "Introduction",
     });
     expect(uiNav().map((section) => section.title)).toEqual(["Overview", "Components"]);
-    expect(uiNav()[0]!.pages.map((page) => page.path)).toEqual(["", "installation", "theming"]);
+    // The guides: the virtualizer's primitive is one (decision-84), its components are components.
+    expect(uiNav()[0]!.pages.map((page) => page.path)).toEqual([
+      "",
+      "installation",
+      "theming",
+      "virtualizer",
+    ]);
     const components = uiNav().find((section) => section.title === "Components")!.pages;
     for (const name of [
       "accordion",

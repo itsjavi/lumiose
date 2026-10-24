@@ -186,7 +186,7 @@ export function Releases(props: { releases: Release[] }) {
       tabindex={0}
       style={{ height: "16rem", overflow: "auto" }}
     >
-      <table aria-rowcount={props.releases.length + 1}>
+      <table aria-rowcount={props.releases.length + 1} style={{ "border-collapse": "collapse" }}>
         <thead>
           <tr aria-rowindex={1}>
             <th scope="col">Version</th>

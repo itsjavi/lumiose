@@ -58,9 +58,13 @@ Every other `<table>` prop passes through: `class`, `aria-label`, `id`.
 ```tsx check
 import { VirtualTable } from "@lumiose/ui";
 
-type Release = { id: string; version: string; downloads: number };
+const RELEASES = Array.from({ length: 2000 }, (_, i) => ({
+  id: `r${i + 1}`,
+  version: `1.${Math.floor(i / 10)}.${i % 10}`,
+  downloads: (i * 7919) % 10007,
+}));
 
-export function Releases(props: { releases: Release[] }) {
+export function ReleaseTable() {
   let box: HTMLDivElement | undefined;
   return (
     <div
@@ -68,10 +72,11 @@ export function Releases(props: { releases: Release[] }) {
       role="region"
       aria-label="Releases"
       tabindex={0}
-      style={{ "max-block-size": "20rem", overflow: "auto" }}
+      style={{ "inline-size": "100%", "max-block-size": "20rem", overflow: "auto" }}
     >
       <VirtualTable
-        items={props.releases}
+        style={{ "border-collapse": "collapse" }}
+        items={RELEASES}
         itemKey={(release) => release.id}
         size={32}
         scroller={() => box}
@@ -85,6 +90,7 @@ export function Releases(props: { releases: Release[] }) {
             </tr>
           </thead>
         }
+        rowProps={() => ({ style: "block-size: 32px" })}
         empty={
           <tr>
             <td colspan={2}>No releases yet.</td>
@@ -106,7 +112,9 @@ export function Releases(props: { releases: Release[] }) {
 ## Styling
 
 Unstyled. Rows stay in the table's flow, so the table lays out its columns as usual; set the rows'
-height in CSS to match `size` (`block-size` on the rows, or a custom property that `size` reads).
+height in CSS to match `size` (`block-size` on the rows, or a custom property that `size` reads),
+and collapse the borders (`border-collapse: collapse`), or the default `border-spacing` puts 2px
+between rows that `size` does not count.
 The spacer rows (`[data-spacer]`) have no padding or border. The rows are the component's `<tr>`s:
 reach them from the table's class with `:deep()`, as in `.releases :deep(tr[data-row])`. The cells
 you render are yours to style; a sticky `<thead>` works as in any scroller.

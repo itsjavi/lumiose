@@ -41,38 +41,59 @@ import { VirtualGrid } from "@lumiose/ui"; // or "@lumiose/ui/virtualizer"
 | `itemProps`    | `(item: T, index: number) => li props`  |         | Attributes of each `<li>`. Not `style`, which places the cell.                                                                        |
 | `virtualizer`  | `(virtualizer: Virtualizer) => void`    |         | Receives the [virtualizer](virtualizer.md): `scrollToIndex()`, `itemWidth()`, `columns()`.                                            |
 
-Every other `<ul>` prop passes through. A `style` is replaced once mounted.
+Every other `<ul>` prop passes through. A `style` lays out the server's cells before mount (a
+CSS grid); once mounted, a `style` object stays under the grid's own position and height.
 
 ## Example
+
+1,200 entries in a scroll box. The server renders the first 48 in a CSS grid of the same columns
+(the `style`, kept until the grid mounts), and the island places the same cells:
 
 ```tsx check
 import { VirtualGrid } from "@lumiose/ui";
 
-type Entry = { id: string; label: string };
+const ENTRIES = Array.from({ length: 1200 }, (_, i) => ({ id: `e${i + 1}`, label: `#${i + 1}` }));
 
-// The server's first 48 cells sit in the CSS grid below; the island places the same cells.
-export function Entries(props: { entries: Entry[] }) {
+export function EntryGrid() {
+  let box: HTMLDivElement | undefined;
   return (
-    <VirtualGrid
-      class="entries"
+    <div
+      ref={(el) => (box = el)}
+      role="region"
       aria-label="Entries"
-      items={props.entries}
-      itemKey={(entry) => entry.id}
-      minItemWidth={96}
-      minColumns={2}
-      gap={8}
-      size={64}
-      initial={48}
+      tabindex={0}
+      style={{ "inline-size": "100%", "max-block-size": "18rem", overflow: "auto" }}
     >
-      {(cell) => (
-        <button type="button" class="entry">
-          {cell.item.label}
-        </button>
-      )}
-    </VirtualGrid>
+      <VirtualGrid
+        aria-label="Entries"
+        style={{
+          margin: "0",
+          padding: "0",
+          "list-style": "none",
+          display: "grid",
+          "grid-template-columns": "repeat(auto-fill, minmax(96px, 1fr))",
+          gap: "8px",
+        }}
+        items={ENTRIES}
+        itemKey={(entry) => entry.id}
+        minItemWidth={96}
+        gap={8}
+        size={64}
+        initial={48}
+        scroller={() => box}
+      >
+        {(cell) => (
+          <button type="button" style={{ "inline-size": "100%", "block-size": "64px" }}>
+            {cell.item.label}
+          </button>
+        )}
+      </VirtualGrid>
+    </div>
   );
 }
 ```
+
+The same server layout in CSS, for a grid whose columns change at breakpoints:
 
 ```css
 .entries:not([data-mounted]) {
@@ -80,16 +101,12 @@ export function Entries(props: { entries: Entry[] }) {
   grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
   gap: 8px;
 }
-.entry {
-  inline-size: 100%;
-  block-size: 64px;
-}
 ```
 
 ## Styling
 
-Unstyled. Before mount the cells are in flow: lay them out with a CSS grid under
-`:not([data-mounted])`, with the columns and gaps the grid computes (`repeat(auto-fill,
+Unstyled. Before mount the cells are in flow: lay them out with a CSS grid, in the grid's `style`
+or under `:not([data-mounted])`, with the columns and gaps the grid computes (`repeat(auto-fill,
 minmax(<minItemWidth>px, 1fr))` and `gap`), and the cells take the same places once mounted.
 Mounted, the `<ul>` gets `data-mounted`, `position: relative` and its total height, and each `<li>`
 `position: absolute`, its column as `left`, the column's width, its row as a `translateY`, and with

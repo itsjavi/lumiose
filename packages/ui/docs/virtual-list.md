@@ -38,36 +38,52 @@ import { VirtualList } from "@lumiose/ui"; // or "@lumiose/ui/virtualizer"
 | `virtualizer` | `(virtualizer: Virtualizer) => void`   |         | Receives the [virtualizer](virtualizer.md), for `scrollToIndex()` and `range()`.                               |
 
 Every other `<ul>` prop passes through: `class`, `aria-label`, `aria-labelledby`, `id`. A `style`
-is replaced: the list sets its own.
+object applies too, with the list's own properties (its padding, position and height) over it.
 
 ## Example
+
+A thousand people in a scroll box, the first 20 in the server's HTML:
 
 ```tsx check
 import { VirtualList, type Virtualizer } from "@lumiose/ui";
 
-type Person = { id: string; name: string };
+const PEOPLE = Array.from({ length: 1000 }, (_, i) => ({
+  id: `p${i + 1}`,
+  name: `Person ${i + 1}`,
+}));
 
-export function People(props: { people: Person[] }) {
+export function PeopleList() {
+  let box: HTMLDivElement | undefined;
   let list: Virtualizer | undefined;
   return (
     <>
-      <button type="button" onClick={() => list?.scrollToIndex(0)}>
-        Back to the top
+      <button type="button" onClick={() => list?.scrollToIndex(499, { align: "start" })}>
+        Go to person 500
       </button>
-      <VirtualList
+      <div
+        ref={(el) => (box = el)}
+        role="region"
         aria-label="People"
-        items={props.people}
-        itemKey={(person) => person.id}
-        size={40}
-        initial={20}
-        virtualizer={(v) => (list = v)}
+        tabindex={0}
+        style={{ "inline-size": "100%", "max-block-size": "16rem", overflow: "auto" }}
       >
-        {(row) => (
-          <a href={`/people/${row.item.id}`}>
-            {row.index + 1}. {row.item.name}
-          </a>
-        )}
-      </VirtualList>
+        <VirtualList
+          aria-label="People"
+          style={{ margin: "0", padding: "0", "list-style": "none" }}
+          items={PEOPLE}
+          itemKey={(person) => person.id}
+          size={40}
+          initial={20}
+          scroller={() => box}
+          virtualizer={(v) => (list = v)}
+        >
+          {(row) => (
+            <span>
+              {row.index + 1}. {row.item.name}
+            </span>
+          )}
+        </VirtualList>
+      </div>
     </>
   );
 }

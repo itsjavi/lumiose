@@ -44,9 +44,10 @@ describe("the virtualizer's components on the server", () => {
     expect(html).toContain("<span>2: Person 2</span>");
   });
 
-  it("VirtualGrid renders its first items unplaced, for the page's CSS to lay out", async () => {
+  it("VirtualGrid renders its first items unplaced, in the page's style or CSS", async () => {
     const html = await renderToString(() => (
       <VirtualGrid
+        style={{ display: "grid" }}
         items={people(50)}
         itemKey={(person) => person.id}
         minItemWidth={96}
@@ -57,7 +58,7 @@ describe("the virtualizer's components on the server", () => {
         {(cell) => cell.item.name}
       </VirtualGrid>
     ));
-    expect(attrs(html, "ul")).toEqual({});
+    expect(attrs(html, "ul")).toEqual({ style: "display:grid" });
     // 5 items in rows of `minColumns` (2) make 3 rows: 6 items.
     expect([...html.matchAll(/<li\b/g)]).toHaveLength(6);
     expect(attrs(html, "li", (a) => a["aria-posinset"] === "6")).toEqual({
