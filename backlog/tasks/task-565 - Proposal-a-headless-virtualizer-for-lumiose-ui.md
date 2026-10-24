@@ -1,15 +1,14 @@
 ---
 id: TASK-565
 title: 'Proposal: a headless virtualizer for @lumiose/ui'
-status: In Progress
+status: Done
 assignee:
   - Halo
 created_date: '2026-10-24 15:40'
-updated_date: '2026-10-24 17:47'
+updated_date: '2026-10-24 17:53'
 labels:
   - ui
   - proposal
-  - needs-decision
 dependencies: []
 priority: medium
 ordinal: 557000
@@ -26,7 +25,7 @@ A headless virtualizer for @lumiose/ui, from a port's three hand-written virtual
 - [x] #1 The proposal records the API sketch, the alternatives (primitive, components, both) and their trade-offs
 - [x] #2 A prototype with unit and ui-e2e tests and a draft docs page sits on Halo's worktree branch, unmerged
 - [x] #3 The port's three virtualizations run on the prototype on a local branch, with its checks green and a matrix against the hand-written versions and the original
-- [ ] #4 The user chose an API (or declined), recorded in a decision
+- [x] #4 The user chose an API (or declined), recorded in a decision
 <!-- AC:END -->
 
 ## Implementation Plan
@@ -120,4 +119,12 @@ Port trial with the components (local branch `virtualizer-trial`, def9307 and 49
   - Slow 4G tracker works: 10.38; 2.08; 2.55; 2.65 s, the shared chunk's place in the island's import waterfall, as before (TASK-566).
 
 Recommendations for the user's sign-off: keep `data-row` (the virtualizer's unit is the row; a grid's cells carry their row, which measuring and keepFocused need; the components write it themselves); keepFocused defaults to true on VirtualList and VirtualGrid (placed rows), false on the primitive (it cannot know the layout), and VirtualTable has none (rows in flow); in the MCP ui catalog the three components are component pages and the primitive a guide page.
+
+Halo, 2026-10-24: the user approved the components' API as sketched and the three details (data-row, keepFocused on by default for VirtualList and VirtualGrid and off for the primitive, none on VirtualTable; the components as component pages in the MCP ui catalog and the primitive as a guide), recorded by Lux in decision-84. The docs, demos and sources drop their proposal wording and cite decision-84 (60e752db). Done on Halo's branch, unmerged: Lux merges after the 0.7.1 fixes TASK-567 and TASK-568, and the components' workarounds for them go in a follow-up.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+createVirtualizer() and VirtualList, VirtualGrid and VirtualTable on it, in @lumiose/ui/virtualizer (decision-84): headless windowing for the window or an element, fixed, estimated or measured rows, auto-fill grids, server-rendered first windows the islands take over, and list and table ARIA. Brotli: 1.56 kB primitive, 2.18 to 2.26 kB with a component. Unit and ui-e2e tests in Chromium, Firefox and WebKit, four docs pages. In the port's local trial branch the components replace three hand-written virtualizations (251 lines added, 501 removed) with every check green, and its list interactions run faster than the hand-written grids in an alternating matrix.
+<!-- SECTION:FINAL_SUMMARY:END -->
