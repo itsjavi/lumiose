@@ -7,9 +7,11 @@ import {
   getOwner,
   onError,
   renderEffect,
+  rerun,
   runWithOwner,
   startBatch,
   type Owner,
+  type RenderEffect,
 } from "./internal.ts";
 
 /** Creates `levels` nested owners and returns the deepest. */
@@ -371,6 +373,74 @@ describe("render effects", () => {
       p.set(1);
     });
     expect(log).toEqual(["child 0:0", "parent 0", "child 1:1", "parent 1"]);
+  });
+});
+
+/**
+ * A binding at depth 3 that shows `count` (a computed of `items`) next to a value it reads
+ * untracked, and a shallower binding on `source` that reruns it, the way a keyed list reruns the
+ * bindings that read a row's item untracked (list.ts, decision-83).
+ */
+function rerunCase(source: () => unknown) {
+  const items = signal([1]);
+  const count = computed(() => items().length);
+  const state = { untracked: "a", computes: 0 };
+  const target = { text: "" };
+  let binding: RenderEffect | undefined;
+  runWithOwner(nested(1), () =>
+    renderEffect(null, source, () => {
+      if (binding !== undefined) rerun(binding);
+    }),
+  );
+  runWithOwner(nested(3), () => {
+    binding = renderEffect<unknown, unknown>(
+      null,
+      () => {
+        state.computes++;
+        return `${count()}-${state.untracked}`;
+      },
+      (_, value) => {
+        target.text = value as string;
+      },
+    );
+  });
+  return { items, state, target };
+}
+
+describe("rerun", () => {
+  it("queues a binding that nothing else queued", () => {
+    const tick = signal(0);
+    const { state, target } = rerunCase(tick);
+    state.untracked = "b";
+    tick.set(1);
+    flush();
+    expect(target.text).toBe("1-b");
+    expect(state.computes).toBe(2);
+  });
+
+  it("runs a queued binding whose computed stays the same (TASK-567)", () => {
+    const source = signal(0);
+    const { items, state, target } = rerunCase(source);
+    state.untracked = "b";
+    // `count` stays 1, so the binding is queued as only maybe stale before it is rerun.
+    batch(() => {
+      items.set([2]);
+      source.set(1);
+    });
+    expect(target.text).toBe("1-b");
+    expect(state.computes).toBe(2);
+  });
+
+  it("runs a queued binding that is also stale once", () => {
+    const source = signal(0);
+    const { items, state, target } = rerunCase(source);
+    state.untracked = "b";
+    batch(() => {
+      items.set([2, 3]);
+      source.set(1);
+    });
+    expect(target.text).toBe("2-b");
+    expect(state.computes).toBe(2);
   });
 });
 
