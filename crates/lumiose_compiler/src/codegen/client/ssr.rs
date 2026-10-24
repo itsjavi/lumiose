@@ -339,13 +339,13 @@ impl<'a> Codegen<'a, '_> {
             (None, None) => self.ssr_children(out, &tag, children),
         }
         self.namespaces.pop();
-        if let Some(object) = spread_children {
+        if let Some((object, nullable)) = spread_children {
             // `"children" in props ? insert(props.children) : ""`, the client's guarded insert.
             let children = self
                 .ast
                 .member(span, clone_expression(self.ast, &object), "children");
             let insert = self.helper_call("insert", [children], span);
-            let test = self.has_children_key(object, span);
+            let test = self.has_children_key(object, nullable, span);
             let hole = self
                 .ast
                 .conditional(span, test, insert, self.ast.string(span, ""));
@@ -596,8 +596,8 @@ impl<'a> Codegen<'a, '_> {
             .iter()
             .any(|a| matches!(a, JSXAttributeItem::SpreadAttribute(_)))
         {
-            // As on the client, every attribute but `bind:` and written content goes through the
-            // spread, in order.
+            // As on the client, every attribute but `bind:`, `attach` and written content goes
+            // through the spread, in order ([`take_written`]).
             let written = take_written(self.ast, &mut attributes);
             let props = self.props_expression(attributes, None, span);
             let hole = if is_custom_element(tag) {

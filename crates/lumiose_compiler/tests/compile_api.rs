@@ -77,6 +77,37 @@ fn server_attributes_of_custom_elements_leave_objects_to_the_client() {
 }
 
 #[test]
+fn attach_next_to_a_spread_never_goes_through_it() {
+    // TASK-568: in either order, `attach` compiles to its own `attach()` call after the spread on
+    // the client, and the server drops it, as without a spread. It used to go into the merged
+    // props, where the spread wrote it as an attribute holding the function's source.
+    let source = r#"export function A(props: { attrs: object; i: number }) {
+  return (
+    <ul>
+      <li {...props.attrs} data-row={props.i} attach={[(el) => el.focus()]} />
+      <li attach={[(el) => el.focus()]} {...props.attrs} />
+    </ul>
+  );
+}
+"#;
+    for target in [Target::Client, Target::Server] {
+        let options = CompileOptions {
+            target,
+            ..CompileOptions::default()
+        };
+        let result = compile(source, "/src/a.tsx", &options);
+        assert!(result.diagnostics.is_empty(), "{:?}", result.diagnostics);
+        let code = result.code;
+        assert!(!code.contains("attach:"), "{target:?}: {code}");
+        let calls = code.matches("attach(").count();
+        match target {
+            Target::Client => assert_eq!(calls, 2, "{code}"),
+            _ => assert_eq!(calls, 0, "{code}"),
+        }
+    }
+}
+
+#[test]
 fn syntax_errors_use_lum1001_with_spans() {
     let source = "export const A = () => <div>;\n";
     let result = compile(source, "/src/a.tsx", &CompileOptions::default());

@@ -37,7 +37,7 @@ export function Field(props) {
 		id: "last",
 		onClick: () => {}
 	}));
-	"children" in props.rest && insert(_b, () => props.rest.children);
+	"children" in (props.rest || {}) && insert(_b, () => props.rest.children);
 	return _el;
 }
 delegateEvents(["input"]);

@@ -32,7 +32,7 @@ export function Field(props) {
 }
 export function Dynamic(props) {
 	const attrs = props.attrs;
-	return _c2(spreadAttrs(mergeProps({ role: "note" }, attrs())), "children" in attrs() ? insert(attrs().children) : "");
+	return _c2(spreadAttrs(mergeProps({ role: "note" }, attrs())), "children" in (attrs() || {}) ? insert(attrs().children) : "");
 }
 
 // --- diagnostics ---

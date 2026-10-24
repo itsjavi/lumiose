@@ -262,11 +262,12 @@ impl<'a> Codegen<'a, '_> {
                 None => self.build_children(template, Some(node), children, child_namespace),
             }
         }
-        if let Some(object) = spread_children {
+        if let Some((object, nullable)) = spread_children {
             template.push(Op::SpreadChildren {
                 span,
                 parent: node,
                 object,
+                nullable,
             });
         }
         if !deferred.is_empty() {
@@ -860,13 +861,14 @@ impl<'a> Codegen<'a, '_> {
     /// written one on both targets. With spreads only, returns the (visited) props object: the
     /// caller inserts its `children` only when the object has that key, on both targets, so an
     /// element whose spreads carry none leaves its content to scripts and the browser
-    /// (`<selectedcontent>`, a list a script fills before the island hydrates).
+    /// (`<selectedcontent>`, a list a script fills before the island hydrates). The flag is
+    /// whether the object may be nullish or `false` ([`Self::has_children_key`]).
     pub(super) fn props_children(
         &mut self,
         tag: &str,
         attributes: &mut oxc_allocator::ArenaVec<'a, JSXAttributeItem<'a>>,
         children: &mut oxc_allocator::ArenaVec<'a, JSXChild<'a>>,
-    ) -> Option<Expression<'a>> {
+    ) -> Option<(Expression<'a>, bool)> {
         let mut sources = Vec::new();
         // A spread that awaits is not read twice: its await site would run twice.
         let mut suspends = false;
@@ -929,12 +931,15 @@ impl<'a> Codegen<'a, '_> {
         };
         let value = match last {
             ChildrenSource::Spread(object) if sources.is_empty() => {
-                return Some(self.visited(object));
+                // The component's props and its `...rest` are objects; any other spread may be
+                // nullish or `false`.
+                let nullable = !self.is_props_object(&object);
+                return Some((self.visited(object), nullable));
             }
             last if spreads_only => {
                 sources.push(last);
                 let object = merged(self, sources);
-                return Some(self.visited(object));
+                return Some((self.visited(object), false));
             }
             // A later `children` attribute wins over every spread before it.
             ChildrenSource::Value(value) => value,
@@ -955,10 +960,33 @@ impl<'a> Codegen<'a, '_> {
 
     /// `"children" in props`: whether a spread's props object carries `children`
     /// ([`Self::props_children`]). Its keys are fixed once created, like the props it spreads.
-    pub(super) fn has_children_key(&self, object: Expression<'a>, span: Span) -> Expression<'a> {
+    /// A `nullable` one is checked as `props || {}`: a spread may be nullish or `false`
+    /// (`{...props.extra}`, `{...props.itemProps?.(item)}`, `{...(open && attrs)}`), which `in`
+    /// throws on (TASK-569).
+    pub(super) fn has_children_key(
+        &self,
+        object: Expression<'a>,
+        nullable: bool,
+        span: Span,
+    ) -> Expression<'a> {
         let key = self.ast.string(span, "children");
+        let object = if nullable {
+            self.ast.or(span, object, self.ast.object(span, []))
+        } else {
+            object
+        };
         self.ast
             .binary(span, key, oxc_syntax::operator::BinaryOperator::In, object)
+    }
+
+    /// Whether `expr` is the component's props object or its `...rest`, whose keys are fixed.
+    fn is_props_object(&self, expr: &Expression<'a>) -> bool {
+        let Some(component) = self.component() else {
+            return false;
+        };
+        matches!(expr.without_parentheses(), Expression::Identifier(ident)
+            if crate::analyze::reactivity::symbol_of(self.scoping, ident)
+                .is_some_and(|symbol| component.props_objects.contains(&symbol)))
     }
 }
 
@@ -989,9 +1017,10 @@ pub fn takes_markup(tag: &str) -> bool {
 }
 
 /// Takes the attributes out of a list with spreads that apply after the spread instead of going
-/// through it: `bind:` two-way bindings, which are not props, a written `innerHTML` or
-/// `textContent` ([`is_written_content`]), and a written `srcdoc`, which a spread never writes
-/// either (TASK-496).
+/// through it: `bind:` two-way bindings and `attach` attachments, which are not props (an
+/// attachment runs with the element as without a spread, and adds to the spread's own, TASK-568),
+/// a written `innerHTML` or `textContent` ([`is_written_content`]), and a written `srcdoc`, which a
+/// spread never writes either (TASK-496).
 pub(super) fn take_written<'a>(
     ast: &super::super::ast::Ast<'a>,
     attributes: &mut oxc_allocator::ArenaVec<'a, JSXAttributeItem<'a>>,
@@ -1001,8 +1030,8 @@ pub(super) fn take_written<'a>(
     while index < attributes.len() {
         let is_binding = matches!(&attributes[index], JSXAttributeItem::Attribute(attribute)
             if attribute_name(&attribute.name).starts_with("bind:")
-                || is_written_content(&attribute.name)
-                || attribute_name(&attribute.name) == "srcdoc");
+                || matches!(attribute_name(&attribute.name).as_str(), "attach" | "srcdoc")
+                || is_written_content(&attribute.name));
         if is_binding {
             bindings.push(attributes.remove(index));
         } else {

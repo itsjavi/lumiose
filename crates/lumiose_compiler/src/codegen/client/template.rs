@@ -64,11 +64,13 @@ pub enum Op<'a> {
     /// Statements emitted as they are (selector setup).
     Statements(Vec<Statement<'a>>),
     /// `"children" in object && insert(parent, () => object.children)`: the `children` of an
-    /// element's spreads, appended only when they carry the key (TASK-347).
+    /// element's spreads, appended only when they carry the key (TASK-347). `nullable`: the
+    /// object may be nullish or `false` (`CodeGen::has_children_key`).
     SpreadChildren {
         span: Span,
         parent: usize,
         object: Expression<'a>,
+        nullable: bool,
     },
     /// `insert(parent, value, marker)`
     Insert {
@@ -530,6 +532,7 @@ impl<'t, 'a, 'c> Emitter<'t, 'a, 'c> {
                 span,
                 parent,
                 object,
+                nullable,
             } => {
                 let children = ast.member(span, super::clone_expression(ast, &object), "children");
                 let callee = self.cg.runtime("insert", span);
@@ -538,7 +541,7 @@ impl<'t, 'a, 'c> Emitter<'t, 'a, 'c> {
                     callee,
                     [self.node_expr(parent), ast.arrow(span, &[], children)],
                 );
-                let test = self.cg.has_children_key(object, span);
+                let test = self.cg.has_children_key(object, nullable, span);
                 out.push(ast.expr_stmt(span, ast.and(span, test, insert)));
             }
             Op::Insert {

@@ -27,7 +27,7 @@ export function Dynamic(props) {
 	const attrs = props.attrs;
 	const _el3 = _t2();
 	spread(_el3, () => mergeProps({ role: "note" }, attrs()));
-	"children" in attrs() && insert(_el3, () => attrs().children);
+	"children" in (attrs() || {}) && insert(_el3, () => attrs().children);
 	return _el3;
 }
 

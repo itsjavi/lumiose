@@ -390,6 +390,90 @@ describe.skipIf(!binding)("compiled output runs on lumiose/dom", () => {
   });
 });
 
+/** Attributes named `attach`, or holding a function's source, anywhere under `root`. */
+function functionAttributes(root: Element): string[] {
+  return Array.from(root.querySelectorAll("*")).flatMap((el) =>
+    Array.from(el.attributes)
+      .filter((a) => a.name === "attach" || a.value.includes("=>"))
+      .map((a) => `${el.localName} ${a.name}="${a.value}"`),
+  );
+}
+
+describe.skipIf(!binding)("directives next to a spread (TASK-568)", () => {
+  it("runs attach, ref, bind:value and handlers written next to a spread, in either order", async (ctx) => {
+    const { module, missing } = await load(`
+      import { signal } from "lumiose";
+      export const name = signal("Ada");
+      export const extra = signal<Record<string, unknown>>({ title: "a" });
+      export const log: string[] = [];
+      const mark = (label: string) => (el: Element) => { log.push(label + " " + el.localName); };
+      export function Row(props: { item: string; i: number; itemProps?: (item: string) => object }) {
+        return <li {...props.itemProps?.(props.item)} data-row={props.i} attach={[(el) => mark("row")(el)]} />;
+      }
+      export function Form() {
+        return (
+          <input attach={[mark("before")]} {...extra()} ref={(el) => log.push("ref " + el.localName)}
+            bind:value={name} onClick={() => log.push("click")} on:custom-event={() => log.push("custom")} />
+        );
+      }`);
+    if (!module) return ctx.skip(`lumiose/dom lacks ${missing.join(", ")}`);
+    const row = render(module.Row, {
+      item: "a",
+      i: 0,
+      itemProps: (item: string) => ({ id: item }),
+    });
+    // Without `itemProps` the spread is undefined: nothing to apply, and no throw (TASK-569).
+    const bare = render(module.Row, { item: "b", i: 1 });
+    const form = render(module.Form);
+    lumiose.flush(); // attachments run as effects, after render
+    expect(row.innerHTML).toBe('<li id="a" data-row="0"></li>');
+    expect(bare.innerHTML).toBe('<li data-row="1"></li>');
+    const input = form.querySelector("input")!;
+    expect(module.log).toEqual(["ref input", "row li", "row li", "before input"]);
+    expect(input.value).toBe("Ada");
+    expect(input.title).toBe("a");
+    input.value = "Grace";
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+    expect(module.name()).toBe("Grace");
+    input.click();
+    input.dispatchEvent(new Event("custom-event"));
+    expect(module.log.slice(4)).toEqual(["click", "custom"]);
+    // A spread update leaves the written attachment alone.
+    module.extra.set({ title: "b" });
+    lumiose.flush();
+    expect(input.title).toBe("b");
+    expect(module.log.filter((entry: string) => entry === "before input")).toHaveLength(1);
+    for (const root of [row, bare, form]) expect(functionAttributes(root)).toEqual([]);
+  });
+
+  it("applies a spread's own attach, next to a written one, and never as an attribute", async (ctx) => {
+    const { module, missing } = await load(`
+      import { signal } from "lumiose";
+      export const log: string[] = [];
+      export const on = signal(true);
+      const mark = (label: string) => (el: Element) => {
+        log.push(label + " " + el.localName);
+        return () => log.push("stop " + label);
+      };
+      function Item(props: Record<string, unknown>) {
+        return <p {...props} attach={[mark("own")]} data-cb={() => 1} />;
+      }
+      export function Page() {
+        return <Item id="f" attach={on() ? [mark("forwarded")] : undefined} />;
+      }`);
+    if (!module) return ctx.skip(`lumiose/dom lacks ${missing.join(", ")}`);
+    const app = render(module.Page);
+    lumiose.flush();
+    expect(app.innerHTML).toBe('<p id="f"></p>');
+    expect(module.log.toSorted()).toEqual(["forwarded p", "own p"]);
+    // The forwarded list going away stops its attachments; the written one keeps running.
+    module.on.set(false);
+    lumiose.flush();
+    expect(module.log.slice(2)).toEqual(["stop forwarded"]);
+    expect(functionAttributes(app)).toEqual([]);
+  });
+});
+
 describe.skipIf(!binding)("bind: on components and custom elements (TASK-360)", () => {
   it("passes x and onXChange to a component, and calls an onXChange written next to it", async (ctx) => {
     const { module, missing } = await load(`

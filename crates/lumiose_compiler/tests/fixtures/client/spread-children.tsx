@@ -30,6 +30,17 @@ export function Merged(props: { a: object; b: object; label: string }) {
   );
 }
 
+// A spread may be nullish or `false`, which `in` throws on, so it is checked as `object || {}`
+// (TASK-569). The component's props, its `...rest` and merged spreads are always objects.
+export function Optional(props: { extra?: object; open: boolean; attrs: object }) {
+  return (
+    <div>
+      <p {...props.extra} />
+      <p {...(props.open && props.attrs)} />
+    </div>
+  );
+}
+
 export function Written(props: { children?: JSX.Element; [key: string]: unknown }) {
   return (
     <div>

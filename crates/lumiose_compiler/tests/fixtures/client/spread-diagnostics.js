@@ -27,7 +27,7 @@ export function Live(props) {
 	const attrs = () => ({ title: props.label });
 	const _el3 = _t1();
 	spread(_el3, () => attrs());
-	"children" in attrs() && insert(_el3, () => attrs().children);
+	"children" in (attrs() || {}) && insert(_el3, () => attrs().children);
 	return _el3;
 }
 export function Twice(props) {
