@@ -633,10 +633,16 @@ Nothing is styled: the virtualizer only computes. Lay the rows out one of two wa
   be placed), and it is the simplest server-rendered list: the same layout before and after mount.
   In a CSS grid, use a padding: a spacer element would add a gap.
 
-`size` must match the CSS: a fixed size is the row's height plus nothing (gaps are `gap`), and an
-estimate only has to be close (measured rows correct it). Give rows that read a CSS size, such as
-a custom property that a breakpoint changes, a signal that a ResizeObserver updates, and return it
-from `size`.
+Measured rows are placed in the frame they are measured in, before it paints: the observer's
+callback writes their sizes and the rows move at once, so they never show at their estimates. A
+row rendered by that move (the window grew) is measured in the next frame, which browsers report
+as an `error` event, "ResizeObserver loop completed with undelivered notifications". It is
+harmless, and error trackers ignore it.
+
+`size` must match the CSS: a fixed size is exactly the row's height, without the gap (that is
+`gap`), and an estimate only has to be close (measured rows correct it). When the CSS sets the
+height, such as a custom property that a breakpoint changes, keep it in a signal that a
+ResizeObserver updates, and return that from `size`.
 
 ## Server rendering
 
