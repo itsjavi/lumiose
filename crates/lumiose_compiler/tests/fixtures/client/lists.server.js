@@ -55,3 +55,6 @@ export function Lists(props) {
 		return _c1(attr("data-selected", _isSelected3(item.id)), text(label));
 	}), list(items(), (row) => _c3(list(row.tags, (tag) => _c2(insertText(tag))))), text(items().map((item) => item.name).join(", ")), list(items(), (item) => createComponent(Row, { item })), list(items(), (item) => active() > 0 ? branchArm(true, _c4(insertText(item.name))) : branchArm(false, ssr(_s5))), list(items(), (item, i) => _c6(insertText(item.name), insertText(i()))));
 }
+
+// --- diagnostics ---
+// LUM2001 warning 27:17 `label` is read once from the row's item, so the JSX that uses it keeps the first value when the item changes in place

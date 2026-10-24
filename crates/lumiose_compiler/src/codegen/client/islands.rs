@@ -121,6 +121,11 @@ impl ModuleBindings {
         bindings.imports = imports;
         bindings
     }
+
+    /// The module specifier `symbol` is imported from, if it is an import binding.
+    pub fn import_source(&self, symbol: SymbolId) -> Option<&str> {
+        self.imports.get(&symbol).map(|(source, _)| source.as_str())
+    }
 }
 
 /// A `client:*` directive.

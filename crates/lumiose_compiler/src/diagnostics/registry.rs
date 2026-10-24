@@ -65,6 +65,7 @@ registry! {
     ChildrenInsertedTwice = "LUM2005", Warning, "Children inserted twice";
     ReactiveIndexEscapes = "LUM2006", Warning, "Reactive index escapes its callback";
     OwnSignalReadInAsyncBody = "LUM2007", Warning, "Own signal read in an async body";
+    UnsupportedListKey = "LUM2008", Warning, "Unsupported list key";
     // 3xxx styles
     UnusedSelector = "LUM3005", Warning, "Unused scoped selector";
     NonConstantStyleRef = "LUM3008", Error, "Non-constant `$` reference";

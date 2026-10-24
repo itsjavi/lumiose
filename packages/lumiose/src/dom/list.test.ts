@@ -1,7 +1,16 @@
 // @vitest-environment happy-dom
 import { describe, expect, it } from "vitest";
 import type { Renderable } from "../contract/client.ts";
-import { flush, onCleanup, reconcile, signal, store, type Signal } from "../core/index.ts";
+import {
+  computed,
+  effect,
+  flush,
+  onCleanup,
+  reconcile,
+  signal,
+  store,
+  type Signal,
+} from "../core/index.ts";
 import { createOwner, disposeOwner, runWithOwner, type Owner } from "../core/internal.ts";
 import { attach, bind, branch, insert, list, listValue, setText, template } from "./index.ts";
 import { longestIncreasingSubsequence } from "./list.ts";
@@ -218,7 +227,7 @@ describe("list", () => {
     const cards = (row: GridRow) =>
       listValue(
         () => row.cards,
-        card,
+        (c) => card(c.v),
         (c) => c.id,
       );
 
@@ -357,12 +366,61 @@ describe("list", () => {
     expect(binding.firstChild).toBeUndefined();
   });
 
-  it("keys by key(item) and re-renders a row whose item changed under the same key", () => {
+  it("keeps a row whose item changed under its key and updates it in place (decision-83)", () => {
     const ul = document.createElement("ul");
     const source = signal([
-      { id: 1, v: "a" },
-      { id: 2, v: "b" },
+      { id: 1, name: "a" },
+      { id: 2, name: "b" },
     ]);
+    const log: string[] = [];
+    let renders = 0;
+    root(() =>
+      list(
+        ul,
+        null,
+        source,
+        (item) => {
+          renders++;
+          const li = tLi();
+          const count = signal(0);
+          bind(li.firstChild as Text, () => `${item.v.name}${count()}`, setText);
+          // Setup reads the first item; the binding and the cleanup see the current one.
+          const first = item.v.name;
+          onCleanup(() => log.push(`${first}>${item.v.name}`));
+          return li;
+        },
+        (item) => item.id,
+      ),
+    );
+    const [li1, li2] = [ul.children[0], ul.children[1]];
+    const mutations = spyMutations(ul);
+    source.set([source()[0]!, { id: 2, name: "B" }]);
+    flush();
+    expect(text(ul)).toEqual(["a0", "B0"]);
+    expect([ul.children[0], ul.children[1]]).toEqual([li1, li2]);
+    expect(renders).toBe(2);
+    expect(log).toEqual([]);
+    expect(mutations).toEqual({ inserts: 0, removes: 0, clears: 0 });
+
+    // New objects for every row, moved: the same nodes, reordered, with the new items.
+    source.set([
+      { id: 2, name: "B2" },
+      { id: 1, name: "A2" },
+    ]);
+    flush();
+    expect(text(ul)).toEqual(["B20", "A20"]);
+    expect([ul.children[0], ul.children[1]]).toEqual([li2, li1]);
+    expect(renders).toBe(2);
+    source.set([{ id: 1, name: "A3" }]);
+    flush();
+    expect(log).toEqual(["b>B2"]);
+  });
+
+  it("updates a kept row's computeds, effects and later-created bindings, change after change", () => {
+    const ul = document.createElement("ul");
+    const source = signal([{ id: 1, name: "a" }]);
+    const show = signal(false);
+    const seen: string[] = [];
     root(() =>
       list(
         ul,
@@ -370,17 +428,114 @@ describe("list", () => {
         source,
         (item) => {
           const li = tLi();
-          li.firstChild!.nodeValue = item.v;
+          const upper = computed(() => item.v.name.toUpperCase());
+          bind(li.firstChild as Text, () => upper(), setText);
+          effect(() => {
+            seen.push(item.v.name);
+          });
+          branch(li, null, show, () => () => `+${item.v.name}`);
           return li;
         },
         (item) => item.id,
       ),
     );
-    const first = ul.firstChild;
-    source.set([source()[0]!, { id: 2, v: "B" }]);
     flush();
-    expect(text(ul)).toEqual(["a", "B"]);
-    expect(ul.firstChild).toBe(first);
+    for (const v of ["b", "c"]) {
+      source.set([{ id: 1, name: v }]);
+      flush();
+    }
+    expect(ul.textContent).toBe("C");
+    expect(seen).toEqual(["a", "b", "c"]);
+    show.set(true);
+    flush();
+    source.set([{ id: 1, name: "d" }]);
+    flush();
+    expect(ul.textContent).toBe("D+d");
+  });
+
+  it("passes the key function the index; a keyed render without parameters needs no accessor", () => {
+    const ul = document.createElement("ul");
+    const source = signal(["x", "y"]);
+    const seen: unknown[] = [];
+    root(() =>
+      list(
+        ul,
+        null,
+        source,
+        (...args: unknown[]) => {
+          seen.push(typeof args[0]);
+          return tLi();
+        },
+        (item, i) => `${i}:${item}`,
+      ),
+    );
+    expect(seen).toEqual(["string", "string"]);
+    // Keyed by position: both rows stay.
+    const [li1, li2] = [ul.children[0], ul.children[1]];
+    source.set(["x", "y"]);
+    flush();
+    expect([ul.children[0], ul.children[1]]).toEqual([li1, li2]);
+    source.set(["y", "x"]);
+    flush();
+    expect(ul.children.length).toBe(2);
+    expect(ul.children[0]).not.toBe(li1);
+  });
+
+  it("matches unkeyed rows by reference: a new object makes a new row", () => {
+    const ul = document.createElement("ul");
+    const source = signal(items(1, 2));
+    root(() => list(ul, null, source, renderItem));
+    const [li1, li2] = [ul.children[0], ul.children[1]];
+    source.set([source()[0]!, { id: 2 }]);
+    flush();
+    expect(text(ul)).toEqual(["1", "2"]);
+    expect(ul.children[0]).toBe(li1);
+    expect(ul.children[1]).not.toBe(li2);
+  });
+
+  it("updates a nested keyed list when its row's item changes in place", () => {
+    interface Group {
+      id: number;
+      cards: Item[];
+    }
+    const div = document.createElement("div");
+    const source = signal<Group[]>([{ id: 1, cards: items(1, 2) }]);
+    let rows = 0;
+    let cards = 0;
+    root(() =>
+      list(
+        div,
+        null,
+        source,
+        (group) => {
+          rows++;
+          const ul = document.createElement("ul");
+          list(
+            ul,
+            null,
+            () => group.v.cards,
+            (card) => {
+              cards++;
+              const li = tLi();
+              bind(li.firstChild as Text, () => card.v.id, setText);
+              return li;
+            },
+            (card) => card.id,
+          );
+          return ul;
+        },
+        (group) => group.id,
+      ),
+    );
+    const ul = div.firstChild;
+    const li1 = ul!.firstChild;
+    // A refetch: new objects with the same ids, one card more.
+    source.set([{ id: 1, cards: items(1, 2, 3) }]);
+    flush();
+    expect(div.firstChild).toBe(ul);
+    expect(ul!.firstChild).toBe(li1);
+    expect(text(ul!)).toEqual(["1", "2", "3"]);
+    expect([rows, cards]).toEqual([1, 3]);
   });
 
   it("supports rows that render several nodes, text or dynamic content", () => {
@@ -428,7 +583,7 @@ describe("list", () => {
         ol,
         null,
         () => state.rows,
-        renderItem,
+        (item) => renderItem(item.v),
         (i) => i.id,
       ),
     );

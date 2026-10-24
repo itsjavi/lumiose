@@ -1088,6 +1088,153 @@ export function Mixer() {
 }
 
 #[test]
+fn keyed_rows_report_setup_copies_of_the_item_and_early_returns_on_it() {
+    // TASK-554 (decision-83): a kept row's item changes in place, so a setup copy that the JSX
+    // uses is LUM2001 and an early return on the item is LUM2003 (a warning, as for props).
+    let source = r#"import { signal } from "lumiose";
+const format = (s: string) => s;
+export function Rows() {
+  const rows = signal<Array<{ id: number; name: string; done: boolean; meta: { id: number } }>>([]);
+  return (
+    <div>
+      {rows().map((row) => {
+        const id = row.id;
+        const label = `#${row.id.toFixed(0)}`;
+        const name = format(row.name);
+        const open = signal(row.done);
+        const later = () => row.name;
+        const shown = row.name;
+        const handled = row.name;
+        const keyed = row.meta.id;
+        const done = row.done;
+        if (done) return <s key={row.id}>{id}</s>;
+        return (
+          <p key={row.id} data-k={keyed} onClick={() => alert(handled)}>
+            {id}{label}{name}{open()}{later()}{shown}
+          </p>
+        );
+      })}
+      {rows().map(({ id, name }) => {
+        const copy = id;
+        const title = name;
+        return <b key={id}>{copy}{title}</b>;
+      })}
+      {rows().map((row) => {
+        const name = row.name;
+        return <i>{name}</i>;
+      })}
+    </div>
+  );
+}
+"#;
+    let found = |code: Code| -> Vec<String> {
+        compile(source, "/src/Rows.tsx", &CompileOptions::default())
+            .diagnostics
+            .iter()
+            .filter(|d| d.code == code)
+            .map(|d| source[d.span.start as usize..d.span.end as usize].to_owned())
+            .collect()
+    };
+    // Copies of the key (`row.id`, `id`) are fine, as are lumiose factories (`signal(row.done)`),
+    // functions, values only handlers read, and unkeyed rows.
+    assert_eq!(
+        found(Code::StaleDerivedValue),
+        [
+            "name = format(row.name)",
+            "shown = row.name",
+            "keyed = row.meta.id",
+            "title = name",
+        ]
+    );
+    let early = compile(source, "/src/Rows.tsx", &CompileOptions::default())
+        .diagnostics
+        .into_iter()
+        .find(|d| d.code == Code::ReactiveEarlyReturn)
+        .expect("LUM2003");
+    assert_eq!(early.severity, lumiose_compiler::Severity::Warning);
+    assert_eq!(
+        &source[early.span.start as usize..early.span.end as usize],
+        "done"
+    );
+    let labels: Vec<&str> = early
+        .labels
+        .iter()
+        .map(|l| &source[l.span.start as usize..l.span.end as usize])
+        .collect();
+    assert_eq!(labels, ["done", "done = row.done"]);
+}
+
+#[test]
+fn row_keys_that_cannot_compile_warn_with_lum2008_on_both_targets() {
+    // TASK-553: a key is never dropped without a word. These lists match rows by reference.
+    let source = r#"import { signal } from "lumiose";
+const format = (s: string) => s;
+export function Keys() {
+  const entries = signal<Array<{ key: string; index: number }>>([]);
+  return (
+    <div>
+      {entries().map((entry) => { const label = format(entry.key); return <em key={label}>{label}</em>; })}
+      {entries().map((entry) => (entry.index ? <a key={entry.key}>x</a> : <a key={entry.key}>y</a>))}
+      {entries().map((entry) => { if (entry.index < 0) return <s key={entry.index} />; return <u key={entry.key} />; })}
+      {entries().map((entry) => <li key="x">{entry.key}</li>)}
+      {entries().map((entry) => <li key={entry.key}><span key={entry.index} /></li>)}
+    </div>
+  );
+}
+"#;
+    let warned = |target: Target| -> Vec<(String, String)> {
+        let options = CompileOptions {
+            target,
+            ..CompileOptions::default()
+        };
+        compile(source, "/src/Keys.tsx", &options)
+            .diagnostics
+            .iter()
+            .filter(|d| d.code == Code::UnsupportedListKey)
+            .map(|d| {
+                let words = d.message.split(", so").next().unwrap_or_default();
+                (
+                    source[d.span.start as usize..d.span.end as usize].to_owned(),
+                    words.to_owned(),
+                )
+            })
+            .collect()
+    };
+    let client = warned(Target::Client);
+    assert_eq!(
+        client,
+        [
+            (
+                "label",
+                "this `key` reads `label`, a value computed in the row callback"
+            ),
+            (
+                "key={entry.key}",
+                "this `key` is not on the element the `.map()` callback returns"
+            ),
+            (
+                "key={entry.key}",
+                "this `key` is not on the element the `.map()` callback returns"
+            ),
+            (
+                "key={entry.key}",
+                "the elements this `.map()` callback returns have different keys"
+            ),
+            ("key=\"x\"", "this `key` is a constant"),
+            (
+                "key={entry.index}",
+                "this `key` is not on the element the `.map()` callback returns"
+            ),
+        ]
+        .map(|(a, b)| (a.to_owned(), b.to_owned()))
+    );
+    assert_eq!(warned(Target::Server), client);
+    let code = compile(source, "/src/Keys.tsx", &CompileOptions::default()).code;
+    // Only the last list keeps its (root) key.
+    assert_eq!(code.matches("(entry) => entry.key)").count(), 1, "{code}");
+}
+
+#[test]
 fn strict_csp_applies_static_styles_through_the_cssom_and_nonces_inline_elements() {
     let source = r#"export function Logo(props: { n: number }) {
   return (

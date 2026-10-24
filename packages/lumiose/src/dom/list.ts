@@ -7,15 +7,29 @@
 //
 // Rows are setup-once. A row's owner is lazy (allocated only when the row registers a cleanup, an
 // effect or a child owner), and its index signal exists only when `render` declares the parameter.
-// A row whose key matches but whose item changed (possible only with a `key` function) is
-// re-rendered in place, so it never shows a stale item.
+// With a `key` function the key alone decides whether a row is kept (decision-83): `render` gets the
+// row, whose `v` getter reads its current item, and a kept row whose item is a new object keeps its
+// DOM, components and state while what reads the item re-runs. Without one, rows match by reference.
+//
+// Tracking the item costs a dependency per binding, which most rows never use. So while a row is
+// created, the bindings that read its item only join a list on the row, through their `n` field
+// (effects, computeds and later reads track it), and when the item first changes in place, those
+// bindings run again and track it from then on (once for nothing, if a conditional read stopped
+// reading the item meanwhile).
 import type { Renderable } from "../contract/client.ts";
 import {
+  activeSub,
   disposeOwner,
   getOwner,
+  MUTABLE,
   renderEffect,
+  rerun,
   runWithLazyOwner,
+  track,
+  trigger,
   type Owner,
+  type RenderEffect,
+  type TriggerNode,
 } from "../core/internal.ts";
 import { signal, type Signal } from "../core/signal.ts";
 import { hydrator } from "./hydration.ts";
@@ -32,16 +46,58 @@ interface Row<T> {
   index: Signal<number> | undefined;
 }
 
+/**
+ * A row of a keyed list whose `render` reads the item: `render` gets the row itself and reads `v`,
+ * so a row allocates no accessor. The row is also the trigger node that `v` tracks.
+ */
+class ItemRow<T> implements Row<T>, TriggerNode {
+  // `declare`: the constructor defines the fields, in this order (one hidden class).
+  declare item: T;
+  declare key: unknown;
+  declare node: Node;
+  declare owner: Owner | undefined;
+  declare index: Signal<number> | undefined;
+  declare subs: TriggerNode["subs"];
+  declare subsTail: TriggerNode["subsTail"];
+  declare flags: number;
+  /** The bindings that read the item while the row was created (through `n`), until it changes. */
+  declare r: RenderEffect | undefined;
+
+  constructor(item: T, key: unknown, index: Signal<number> | undefined) {
+    this.item = item;
+    this.key = key;
+    this.index = index;
+    this.subs = this.subsTail = this.r = undefined;
+    this.flags = MUTABLE;
+    // `owner` and `node` are set by `createRow`, always in that order.
+  }
+
+  /** The row's current item: tracked, except by the bindings created with the row (`r`). */
+  get v(): T {
+    // Only bindings have `n`; `null` while in no row's list.
+    const sub = activeSub as RenderEffect | undefined;
+    if (this !== creating || sub?.n === undefined) {
+      track(this);
+    } else if (sub.n === null) {
+      sub.n = this.r;
+      this.r = sub;
+    }
+    return this.item;
+  }
+}
+
 interface ListState<T> {
   parent: Node;
   marker: Node | null;
   /** The rows. Short internal names (`r`, `f`, `x`) keep the runtime small (TASK-176). */
   r: Row<T>[];
-  /** The row render function. */
-  f: (item: T, index: () => number) => Renderable;
-  key: ((item: T) => unknown) | undefined;
+  /** The row render function: it gets the item, or with `v` the row. */
+  f: (item: any, index: () => number) => Renderable;
+  key: ((item: T, index: number) => unknown) | undefined;
   /** Whether `f` takes the index. */
   x: boolean;
+  /** Whether `f` takes the row and reads `v` (keyed lists whose `render` declares the item). */
+  v: boolean;
   /** The list's binding: the parent of the row owners. */
   owner: Owner | undefined;
 }
@@ -54,6 +110,8 @@ let rowState: ListState<any> | undefined;
 let rowItem: unknown;
 let rowIndex: Signal<number> | undefined;
 let rowNode: Node | undefined;
+/** The keyed row being created, whose bindings read its item untracked. */
+let creating: ItemRow<any> | undefined;
 
 function renderRow(): void {
   const state = rowState!;
@@ -70,12 +128,21 @@ function createRow<T>(state: ListState<T>, item: T, key: unknown, i: number): Ro
   const index = state.x ? signal(i) : undefined;
   if (import.meta.env?.DEV && INSPECTED && index !== undefined)
     labelValue(index, "list index", true);
+  const outer = creating;
+  const row = state.v ? (creating = new ItemRow(item, key, index)) : undefined;
   rowState = state;
-  rowItem = item;
+  rowItem = row ?? item;
   rowIndex = index;
   const owner = runWithLazyOwner(state.owner, renderRow);
-  const row: Row<T> = { item, key, node: rowNode!, owner, index };
+  // Not restored when the render throws: the row is dropped, and reads of it only skip tracking.
+  creating = outer;
+  const node = rowNode!;
   rowState = rowItem = rowIndex = rowNode = undefined;
+  if (row === undefined) {
+    return { item, key, node, owner, index };
+  }
+  row.owner = owner;
+  row.node = node;
   return row;
 }
 
@@ -247,13 +314,21 @@ function reconcile<T>(state: ListState<T>, items: readonly T[]): void {
     reconcileMiddle(state, parent, a, b, items, keys, aStart, aEnd, bStart, bEnd);
   }
 
-  if (keyOf !== undefined) {
+  if (state.v) {
+    // A kept row whose item changed under its key gets the new item through its accessor.
     for (let j = 0; j < bLen; j++) {
-      const row = b[j]!;
+      const row = b[j] as ItemRow<T>;
       if (row.item !== items[j]) {
-        const fresh = (b[j] = createRow(state, items[j]!, keys[j], j));
-        insertRow(parent, fresh, row.node);
-        removeRow(parent, row);
+        row.item = items[j]!;
+        trigger(row);
+        let reader = row.r;
+        row.r = undefined;
+        while (reader !== undefined) {
+          const next = reader.n;
+          reader.n = null;
+          rerun(reader);
+          reader = next!;
+        }
       }
     }
   }
@@ -357,12 +432,29 @@ function copyItems<T>(items: readonly T[] | null | undefined): readonly T[] {
   return items == null ? EMPTY : items.slice();
 }
 
+/**
+ * The keyed list of a compiled `.map()`. Without `key`, `render` gets the item and rows match by
+ * reference; with `key`, it gets the row, whose `v` reads its current item (decision-83).
+ */
 export function list<T>(
   parent: Node,
   marker: Node | null,
   source: () => readonly T[] | null | undefined,
   render: (item: T, index: () => number) => Renderable,
-  key?: (item: T) => unknown,
+): void;
+export function list<T>(
+  parent: Node,
+  marker: Node | null,
+  source: () => readonly T[] | null | undefined,
+  render: (row: { readonly v: T }, index: () => number) => Renderable,
+  key: (item: T, index: number) => unknown,
+): void;
+export function list<T>(
+  parent: Node,
+  marker: Node | null,
+  source: () => readonly T[] | null | undefined,
+  render: (item: any, index: () => number) => Renderable,
+  key?: (item: T, index: number) => unknown,
 ): void {
   const state: ListState<T> = {
     parent,
@@ -371,6 +463,7 @@ export function list<T>(
     f: render,
     key,
     x: render.length > 1,
+    v: key !== undefined && render.length > 0,
     owner: undefined,
   };
   const h = hydrator;
@@ -392,10 +485,19 @@ export function list<T>(
 export function listValue<T>(
   source: () => readonly T[] | null | undefined,
   render: (item: T, index: () => number) => Renderable,
-  key?: (item: T) => unknown,
+): RangeStart;
+export function listValue<T>(
+  source: () => readonly T[] | null | undefined,
+  render: (row: { readonly v: T }, index: () => number) => Renderable,
+  key: (item: T, index: number) => unknown,
+): RangeStart;
+export function listValue<T>(
+  source: () => readonly T[] | null | undefined,
+  render: (item: any, index: () => number) => Renderable,
+  key?: (item: T, index: number) => unknown,
 ): RangeStart {
   const start = createRange(1);
   const end = start.$$end;
-  list(end.parentNode!, end, source, render, key);
+  list(end.parentNode!, end, source, render, key!);
   return start;
 }

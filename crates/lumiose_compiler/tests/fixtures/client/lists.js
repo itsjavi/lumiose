@@ -21,10 +21,10 @@ export function Lists(props) {
 	const _isSelected = selector(active);
 	list(_ul, null, items, (item, i) => {
 		const _el = _t0(), _text = _el.firstChild;
-		bind(_el, () => _isSelected(item.id), _a0);
+		bind(_el, () => _isSelected(item.v.id), _a0);
 		bind(_el, () => i() === 0, _a1);
 		insert(_el, () => i() + 1, _text);
-		insert(_el, () => item.name);
+		insert(_el, () => item.v.name);
 		return _el;
 	}, (item) => item.id);
 	const _isSelected2 = selector(active);
@@ -36,9 +36,9 @@ export function Lists(props) {
 	});
 	const _isSelected3 = selector(() => props.selectedId);
 	list(_ol2, null, () => props.items, function(item) {
-		const label = item.name.toUpperCase();
+		const label = item.v.name.toUpperCase();
 		const _el3 = _t1(), _text3 = _el3.firstChild;
-		bind(_el3, () => _isSelected3(item.id), _a2);
+		bind(_el3, () => _isSelected3(item.v.id), _a2);
 		_text3.data = label;
 		return _el3;
 	}, (item) => item.id);
@@ -52,7 +52,9 @@ export function Lists(props) {
 		return _el5;
 	});
 	bind(_text8, () => items().map((item) => item.name).join(", "), setText);
-	list(_el7, _marker, items, (item) => createComponent(Row, { item }), (item) => item.id);
+	list(_el7, _marker, items, (item) => createComponent(Row, { get item() {
+		return item.v;
+	} }), (item) => item.id);
 	list(_el7, _marker2, items, (item) => branchValue(() => active() > 0, () => {
 		const _el6 = _t4(), _text5 = _el6.firstChild;
 		insertText(_text5, () => item.name);
@@ -66,3 +68,6 @@ export function Lists(props) {
 	});
 	return _el7;
 }
+
+// --- diagnostics ---
+// LUM2001 warning 27:17 `label` is read once from the row's item, so the JSX that uses it keeps the first value when the item changes in place

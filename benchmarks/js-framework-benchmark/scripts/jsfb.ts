@@ -5,7 +5,8 @@
 // Steps: check out a pinned krausest commit (sparse, shallow) into .krausest/, install its server
 // and runner, build the reference frameworks and the local ones (frameworks/keyed/<name>: krausest
 // layout, copied into the checkout), build this package (Vite, production) into
-// .krausest/frameworks/keyed/lumiose (and lumiose-hand), start the krausest server, run the benchmarks, summarize.
+// .krausest/frameworks/keyed/lumiose (and lumiose-hand; lumiose-keyed, the app with keyed rows, only
+// when listed), start the krausest server, run the benchmarks, summarize.
 //
 // Options:
 //   --frameworks lumiose,vanillajs,...  default: lumiose, lumiose-hand, every reference and local framework
@@ -255,6 +256,8 @@ function installLocal(name: string, dest: string): void {
 const LUMIOSE: Record<string, { mode: string; outDir: string }> = {
   // src/App.stsx compiled by @lumiose/vite: the implementation.
   lumiose: { mode: "production", outDir: "dist" },
+  // The same app with `key={row.id}` on its rows, for A/Bs of keyed lists (not in RESULTS.md).
+  "lumiose-keyed": { mode: "keyed", outDir: "dist-keyed" },
   // The hand-compiled reference written from the compiler-runtime contract (src/hand-compiled.js).
   "lumiose-hand": { mode: "hand", outDir: "dist-hand" },
 };

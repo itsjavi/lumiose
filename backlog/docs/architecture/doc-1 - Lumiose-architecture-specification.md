@@ -3,7 +3,7 @@ id: doc-1
 title: Lumiose architecture specification
 type: specification
 created_date: '2026-10-08 10:28'
-updated_date: '2026-10-15 07:44'
+updated_date: '2026-10-24 11:03'
 tags:
   - architecture
   - spec
@@ -333,7 +333,7 @@ Replay validates the key. On a mismatch, it evaluates `e`, and reports `LUM4006`
 
 | Source | Compiled |
 |---|---|
-| `{xs().map((x, i) => <Row key={x.id}/>)}` | Keyed list. `key` is optional (items are keyed by reference otherwise). `i` becomes a reactive index only if it is used |
+| `{xs().map((x, i) => <Row key={x.id}/>)}` | Keyed list. `key` is optional (items are keyed by reference otherwise). With a key, the key alone decides whether a row is kept and a kept row's item updates in place, read reactively like a prop (decision-83). `i` becomes a reactive index only if it is used |
 | `item.key === sig()` or `sig() === item.key` (also `!==`) inside `.map` | O(1) `selector()` |
 | `{c() ? <A/> : <B/>}`, `{c() && <A/>}` | Memoised branch |
 | `{fn()}` returning nodes, arrays or text | Dynamic insert |

@@ -34,6 +34,7 @@ fix?, docs }`; `lumiose check --format json` prints them.
 | [LUM2005](LUM2005.md) | warning  | Children inserted twice             |
 | [LUM2006](LUM2006.md) | warning  | Reactive index escapes its callback |
 | [LUM2007](LUM2007.md) | warning  | Own signal read in an async body    |
+| [LUM2008](LUM2008.md) | warning  | Unsupported list key                |
 
 ## Styles (3xxx)
 

@@ -61,26 +61,26 @@ persistent layouts ([Rendering modes](../concepts/rendering-modes.md)).
 
 ### Components and JSX
 
-| Solid                                                            | Lumiose                                                                                                                 |
-| ---------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| `splitProps(props, ["a"])`, `mergeProps(defaults, props)`        | `({ a, size = "md", ...rest })`: destructuring with defaults and rest stays reactive.                                   |
-| `children(() => props.children)`                                 | Insert `children` once where it goes; take a render prop to render content several times.                               |
-| `<Show when={user()} fallback={<Login />}>`                      | `{user() ? <Profile /> : <Login />}`, or `{user() && <Profile />}`.                                                     |
-| `<Show when={user()} keyed>{(u) => …}</Show>`                    | `{user() ? <Profile user={user()!} /> : null}`: the branch switches when the condition flips, and the prop stays live.  |
-| `<For each={items()}>{(item, i) => …}</For>`                     | `{items().map((item, i) => …)}`, keyed by reference or `key`; `i` is a reactive index, used as a number (`i + 1`).      |
-| `<Index each={items()}>`                                         | No index-keyed list: keep objects in a `store` and change their properties, so rows update in place.                    |
-| `<Switch>` and `<Match>`                                         | A chain of ternaries, or a function that returns JSX: `{view()}` with `const view = () => { switch (status()) { … } }`. |
-| `<Dynamic component={…}>`, `<Portal mount={…}>`                  | The same: `<Dynamic component={…}>` and `<Portal mount={…}>`.                                                           |
-| `<ErrorBoundary fallback={(err, reset) => …}>`, `<Suspense>`     | The same.                                                                                                               |
-| `let el; <div ref={el} />`                                       | `const el = ref<HTMLDivElement>()`, `<div ref={el} />` and `el()`; or a callback `ref={(node) => …}`.                   |
-| `use:tooltip={text}`                                             | `attach={[tooltip(text)]}`, where `tooltip(text)` returns `(el) => cleanup`.                                            |
-| `classList={{ active: on() }}`                                   | `class={{ active: on() }}`; `class` also takes strings and arrays.                                                      |
-| `style={{ "font-weight": 600 }}`, `on:click`, `onClick`          | The same: kebab-case style keys, native `on:` listeners and delegated `onX` handlers.                                   |
-| `lazy(() => import("./Chart"))`                                  | No `lazy()`: islands load their module when they hydrate, and `spa` routes load a chunk per page and layout.            |
-| `render(() => <App />, el)`, `hydrate`                           | `render(() => <App />, el)` from `lumiose/dom`; islands and `spa` routes hydrate on their own.                          |
-| `renderToString`, `renderToStream`                               | The same names from `lumiose/server` ([reference](../reference/server.md)).                                             |
-| CSS files, CSS Modules, `solid-styled`                           | A `<style>` block in the `.stsx` file, scoped by placement; `<style global>` for global rules.                          |
-| `@solidjs/meta`: `<Title>`, `<Meta>`, `<Link>`, `<MetaProvider>` | `<Title>`, `<Meta>` and `<Head>` from `lumiose`, with no provider ([Head and document](../concepts/head.md)).           |
+| Solid                                                            | Lumiose                                                                                                                                                                                      |
+| ---------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `splitProps(props, ["a"])`, `mergeProps(defaults, props)`        | `({ a, size = "md", ...rest })`: destructuring with defaults and rest stays reactive.                                                                                                        |
+| `children(() => props.children)`                                 | Insert `children` once where it goes; take a render prop to render content several times.                                                                                                    |
+| `<Show when={user()} fallback={<Login />}>`                      | `{user() ? <Profile /> : <Login />}`, or `{user() && <Profile />}`.                                                                                                                          |
+| `<Show when={user()} keyed>{(u) => …}</Show>`                    | `{user() ? <Profile user={user()!} /> : null}`: the branch switches when the condition flips, and the prop stays live.                                                                       |
+| `<For each={items()}>{(item, i) => …}</For>`                     | `{items().map((item, i) => …)}`: keyed by reference, as `<For>`, or by `key`, which keeps a same-key row and updates its item in place. `i` is a reactive index, used as a number (`i + 1`). |
+| `<Index each={items()}>`                                         | `{items().map((item, i) => <li key={i}>…</li>)}`: rows keyed by position keep their place and get each new item in place.                                                                    |
+| `<Switch>` and `<Match>`                                         | A chain of ternaries, or a function that returns JSX: `{view()}` with `const view = () => { switch (status()) { … } }`.                                                                      |
+| `<Dynamic component={…}>`, `<Portal mount={…}>`                  | The same: `<Dynamic component={…}>` and `<Portal mount={…}>`.                                                                                                                                |
+| `<ErrorBoundary fallback={(err, reset) => …}>`, `<Suspense>`     | The same.                                                                                                                                                                                    |
+| `let el; <div ref={el} />`                                       | `const el = ref<HTMLDivElement>()`, `<div ref={el} />` and `el()`; or a callback `ref={(node) => …}`.                                                                                        |
+| `use:tooltip={text}`                                             | `attach={[tooltip(text)]}`, where `tooltip(text)` returns `(el) => cleanup`.                                                                                                                 |
+| `classList={{ active: on() }}`                                   | `class={{ active: on() }}`; `class` also takes strings and arrays.                                                                                                                           |
+| `style={{ "font-weight": 600 }}`, `on:click`, `onClick`          | The same: kebab-case style keys, native `on:` listeners and delegated `onX` handlers.                                                                                                        |
+| `lazy(() => import("./Chart"))`                                  | No `lazy()`: islands load their module when they hydrate, and `spa` routes load a chunk per page and layout.                                                                                 |
+| `render(() => <App />, el)`, `hydrate`                           | `render(() => <App />, el)` from `lumiose/dom`; islands and `spa` routes hydrate on their own.                                                                                               |
+| `renderToString`, `renderToStream`                               | The same names from `lumiose/server` ([reference](../reference/server.md)).                                                                                                                  |
+| CSS files, CSS Modules, `solid-styled`                           | A `<style>` block in the `.stsx` file, scoped by placement; `<style global>` for global rules.                                                                                               |
+| `@solidjs/meta`: `<Title>`, `<Meta>`, `<Link>`, `<MetaProvider>` | `<Title>`, `<Meta>` and `<Head>` from `lumiose`, with no provider ([Head and document](../concepts/head.md)).                                                                                |
 
 ### SolidStart
 

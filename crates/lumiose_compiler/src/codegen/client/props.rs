@@ -240,23 +240,29 @@ impl<'a> Codegen<'a, '_> {
         ok
     }
 
-    /// True when `ident` is a destructured prop or a list index that is rewritten.
+    /// True when `ident` is a destructured prop, a list index or a keyed row's item that is
+    /// rewritten.
     pub(super) fn rewrites_identifier(&self, ident: &IdentifierReference<'a>) -> bool {
         self.symbol_of(ident).is_some_and(|symbol| {
             self.components
                 .iter()
                 .any(|c| c.props.contains_key(&symbol))
                 || self.maps.iter().any(|m| m.index == Some(symbol))
+                || self.reads_item(symbol)
         })
     }
 
-    /// `a` → `props.a` (with defaults); a list index `i` → `i()`.
+    /// `a` → `props.a` (with defaults); a list index `i` → `i()`; a keyed row's item `item` →
+    /// `item.v` (row_items.rs).
     pub(super) fn rewrite_identifier(
         &mut self,
         ident: &IdentifierReference<'a>,
     ) -> Option<Expression<'a>> {
         let symbol = self.symbol_of(ident)?;
         let span = ident.span;
+        if let Some(read) = self.rewrite_item_read(symbol, ident) {
+            return Some(read);
+        }
         if self.maps.iter().any(|m| m.index == Some(symbol)) {
             let callee = self.ast.ident(span, &ident.name);
             return Some(self.ast.call(span, callee, []));
