@@ -213,6 +213,8 @@ const COMPONENTS: Component[] = [
     scripts: ["navigation-menu/navigation-menu.script.ts"],
     css: "navigation-menu/navigation-menu.css",
   },
+  // A primitive for islands (TASK-565): no script, no CSS.
+  { name: "virtualizer", module: "virtualizer/virtualizer.ts", scripts: [] },
 ];
 
 const CLIENT_SCRIPT = /\?client$/;

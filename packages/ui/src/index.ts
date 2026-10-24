@@ -259,3 +259,10 @@ export type {
   NavigationMenuRootProps,
   NavigationMenuTriggerProps,
 } from "./navigation-menu/navigation-menu.tsx";
+export { createVirtualizer } from "./virtualizer/virtualizer.ts";
+export type {
+  Virtualizer,
+  VirtualizerOptions,
+  VirtualizerScrollOptions,
+  VirtualizerValue,
+} from "./virtualizer/virtualizer.ts";
