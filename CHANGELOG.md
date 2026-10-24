@@ -2,6 +2,51 @@
 
 All Lumiose packages share one version, except those released outside lockstep (@lumiose/ui), which keep their own changelog in their directory.
 
+## 0.7.0 (2026-10-24)
+
+### Breaking changes
+
+- **dom,compiler:** keyed rows keep their DOM when the item changes; the key decides identity (TASK-554) (62f6d919)
+- **vite:** islands load a ?client script they only call conditionally on the first call (TASK-551) (13f24aed)
+- **dom:** native listeners run inside a batch, as delegated handlers do (TASK-548) (4cc94ccd)
+- **router:** beforeNavigate reports link clicks on MPA pages, and a cancel keeps the page (TASK-549) (8ae15985)
+
+### Features
+
+- **compiler:** row keys read destructured params, the index and nested arrows; LUM2008 for keys it cannot compile (TASK-553) (54f885e0)
+- **compiler:** LUM2001 reports copies of accessor props and of the router's URL (TASK-536) (9a0b344b)
+- **cli:** agent files teach ?client scripts and stay oxfmt-stable (TASK-518, TASK-503) (945247d3)
+
+### Fixes
+
+- **deps:** fast-uri 3.1.9 in the CLI's tree (TASK-557) (f45b9b9c)
+- **release:** a blank line before the changelog's Scale section (d9cb641f)
+- **deps:** zod 4.6.7, ip-address 10.7.4 and body-parser 2.4.0 for three advisories in the CLI's dependencies (75f7c446)
+- **vite:** build all client scripts of a package that resolves by environment (TASK-542) (b852ec65)
+- **vite:** build only the client scripts of package modules the app uses (TASK-542) (d46b0487)
+- **create:** the terminal test answers the @lumiose/ui question now that it is on npm (TASK-389) (350467cc)
+- **svg:** drop XML comments in <style> and URLs in CSS image() (TASK-532, TASK-533) (5f6f238a)
+- **compiler:** LUM2001 reports a signal's value copied into a local (TASK-529) (8e039d1e)
+- **dom:** drop the strict-CSP style hook on hydration so removed properties unset (TASK-526) (92ad33d6)
+- **dom:** replay each held island event on its own (TASK-534) (3571ebd0)
+- **server:** warn for privateKey, passwords, ssn, iban and sessionId FormData names (TASK-535) (df14a88c)
+- **web:** UiDemo branches in its JSX, no LUM2003 (TASK-528) (e4cb2ee2)
+
+### Performance
+
+- **bench:** rows A/B of re-derived keyed rows and a keyed jsfb variant (TASK-555) (2d5d62ad)
+
+### Scale
+
+The large-app benchmark (1,500 routes, 5,000 components), working tree against v0.6.0 (fcbf8cf6), medians of 3 rounds on Apple M1 Max (10 cores, 32 GB, darwin 27.0.0 arm64, Node v26.8.1). The release gate stops at a ratio above 1.2.
+
+| Metric | Previous | This release | Ratio |
+| ------ | -------- | ------------ | ----- |
+| Production build (ms) | 28357.7 | 28391.8 | 1.001 |
+| Dev cold start (ms) | 951.8 | 948.1 | 0.996 |
+| HMR latency (ms) | 85.4 | 83.3 | 0.976 |
+| Server memory, peak RSS (MB) | 524.5 | 524.1 | 0.999 |
+
 ## 0.6.0 (2026-10-23)
 
 ### Breaking changes
