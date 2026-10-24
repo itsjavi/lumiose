@@ -3,10 +3,11 @@ id: TASK-567
 title: >-
   Keyed rows: a binding that also reads an unchanged computed misses its item's
   in-place update
-status: To Do
+status: Done
 assignee:
   - Spark
 created_date: '2026-10-24 17:02'
+updated_date: '2026-10-24 18:23'
 labels:
   - runtime
   - bug
@@ -48,3 +49,9 @@ The virtualizer components route each row's item through a computed as a workaro
 - [ ] #1 A keyed row's binding that reads its item and a computed the same write leaves unchanged shows the new item, with a regression test
 - [ ] #2 The virtualizer components' workaround (a computed per row) is removed, or kept with a measured reason
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Lux, 2026-10-24: merged into main (db3c77e4). AC #2 (the virtualizer dropping its per-row computed) moved to the follow-up task for dropping the virtual components' workarounds once ui requires lumiose 0.7.1, since ui 0.2.0 must still work on 0.7.0.
+<!-- SECTION:NOTES:END -->
