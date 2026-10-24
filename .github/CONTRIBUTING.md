@@ -211,7 +211,9 @@ own 0.x versions until its own 1.0 ([below](#packages-outside-lockstep)).
    internal dependencies that are not `workspace:` to it (pnpm pins `workspace:*` when packing),
    prepends the release to `CHANGELOG.md` from the Conventional Commits since the last `v*` tag
    (breaking changes, `feat`, `fix`, `perf`; `--since <rev>` picks another start), commits
-   `chore(release): vX.Y.Z` and creates the annotated tag `vX.Y.Z`. It pushes nothing.
+   `chore(release): vX.Y.Z` and creates the annotated tag `vX.Y.Z`. It pushes nothing. A commit
+   that is already pushed without its `!` is listed as breaking when a later commit carries a
+   `Breaks: <hash>` trailer naming it, so history is not rewritten.
 
    Before it writes anything, the **scale gate** (decision-55) runs the large-app benchmark as an
    A/B of the last `v*` tag and the working tree

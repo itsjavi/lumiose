@@ -193,20 +193,38 @@ function git(repo: string, args: string[]): string {
   return execFileSync("git", args, { cwd: repo, encoding: "utf8", stdio: "pipe" }).trim();
 }
 
+/**
+ * The hashes that `Breaks: <hash>` trailers name: a later commit marks an earlier, already pushed
+ * one as breaking when that one lacked the `!`, without rewriting history.
+ */
+export function brokenHashes(messages: string[]): string[] {
+  return messages.flatMap((message) =>
+    [...message.matchAll(/^Breaks: ([0-9a-f]{7,40})$/gm)].map((match) => match[1]!),
+  );
+}
+
 /** The Conventional Commits after `since` (default: the last tag matching `match`; none: every commit). */
 export function commitsSince(repo: string, since?: string, match = "v*"): Commit[] {
   const from = since ?? lastTag(repo, match);
   const range = from === undefined ? "HEAD" : `${from}..HEAD`;
   const log = git(repo, ["log", "--no-merges", "--format=%h%x1f%B%x1e", range]);
-  return log
+  const entries = log
     .split("\x1e")
     .map((entry) => entry.trim())
     .filter(Boolean)
     .map((entry) => {
       const [hash = "", message = ""] = entry.split("\x1f");
-      return parseCommit(hash, message.trim());
-    })
-    .filter((commit): commit is Commit => commit !== undefined);
+      return { hash, message: message.trim() };
+    });
+  const broken = brokenHashes(entries.map((entry) => entry.message));
+  return entries
+    .map(({ hash, message }) => parseCommit(hash, message))
+    .filter((commit): commit is Commit => commit !== undefined)
+    .map((commit) =>
+      broken.some((other) => other.startsWith(commit.hash) || commit.hash.startsWith(other))
+        ? { ...commit, breaking: true }
+        : commit,
+    );
 }
 
 /** The Cargo workspace's crates (crates/<name>/Cargo.toml). */

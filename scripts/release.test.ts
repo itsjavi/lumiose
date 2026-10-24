@@ -275,6 +275,10 @@ describe("release", () => {
     writeFileSync(join(repo, "packages/lumiose/fix.ts"), "export {};\n");
     git(repo, "add", "-A");
     git(repo, "commit", "-q", "-m", "fix(dom): a crash");
+    // A later commit's `Breaks:` trailer marks an earlier, pushed commit as breaking.
+    git(repo, "commit", "-q", "--allow-empty", "-m", "feat(dom): keyed rows");
+    const keyed = git(repo, "rev-parse", "--short", "HEAD");
+    git(repo, "commit", "-q", "--allow-empty", "-m", "chore: notes", "-m", `Breaks: ${keyed}`);
     const runs: string[] = [];
     release(repo, "0.1.1", {
       date: "2026-10-11",
@@ -288,6 +292,8 @@ describe("release", () => {
     const changelog = readFileSync(join(repo, "CHANGELOG.md"), "utf8");
     const latest = changelog.slice(changelog.indexOf("## 0.1.1"), changelog.indexOf("## 0.1.0"));
     assert.match(latest, /a crash/);
+    assert.match(latest, /### Breaking changes\n\n- \*\*dom:\*\* keyed rows/);
+    assert.doesNotMatch(latest, /### Features/);
     assert.doesNotMatch(latest, /signals/);
     // The scale gate's numbers are the release notes' last section.
     assert.match(latest, /\S\n\n### Scale\n\nThe large-app benchmark/);
