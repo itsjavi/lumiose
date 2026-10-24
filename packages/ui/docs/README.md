@@ -107,6 +107,7 @@ custom properties, named as in shadcn/ui, are listed in [Theming](theming.md#the
 | [Avatar](avatar.md)                   | Available: an image over its fallback, `<lu-avatar>` follows its loading status           |
 | [Menubar](menubar.md)                 | Available: Menus in a `role="menubar"`, `<lu-menubar>` moves between them                 |
 | [Navigation Menu](navigation-menu.md) | Available: a `<nav>` whose triggers open panels of links, works without JavaScript        |
+| [Virtualizer](virtualizer.md)         | Proposal (TASK-565): `createVirtualizer()`, headless rows near the viewport, in islands   |
 
 ## Ids
 
