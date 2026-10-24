@@ -12,6 +12,7 @@
     "bench:jsfb:upstream": "node scripts/jsfb-upstream.ts",
     "bench:grid:ab": "node scripts/grid-ab.ts",
     "bench:measure:ab": "node scripts/measure-ab.ts",
+    "bench:rows:ab": "node scripts/rows-ab.ts",
     "typecheck": "tsc -p tsconfig.json"
   },
   "dependencies": {
