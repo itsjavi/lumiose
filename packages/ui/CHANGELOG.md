@@ -2,6 +2,17 @@
 
 @lumiose/ui has its own versions, outside the lockstep version of the other Lumiose packages.
 
+## 0.2.0 (2026-10-24)
+
+### Features
+
+- **ui:** VirtualList, VirtualGrid and VirtualTable on createVirtualizer (TASK-565) (13a09ab8)
+- **ui:** createVirtualizer prototype, a headless virtualizer for lists, tables and grids (TASK-565) (49914839)
+
+### Fixes
+
+- **ui:** VirtualGrid places a cell's column with left, as a CSS grid lays it out (TASK-565) (52b3501f)
+
 ## 0.1.3 (2026-10-24)
 
 ### Fixes
