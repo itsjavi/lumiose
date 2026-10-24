@@ -3,7 +3,7 @@ id: doc-10
 title: Pending decisions for the user
 type: other
 created_date: '2026-10-16 22:28'
-updated_date: '2026-10-24 12:08'
+updated_date: '2026-10-24 15:40'
 ---
 Decisions that need the user, collected while Lux and the workers run unattended (user request, 2026-10-17: "do not block yourself on more questions … postpone them (and their decisions) in a document that can be used later as follow ups").
 
@@ -68,6 +68,10 @@ These are syntax, DX or API proposals. Each task holds the proposal; nothing is 
 - TASK-519: inline or combine small `?client` scripts.
 - TASK-544: a tooltip on a link (`Tooltip.Trigger` with `render` or `as`).
 - TASK-545: per-component theme stylesheets in @lumiose/ui.
+- TASK-565: a headless virtualizer in @lumiose/ui (Halo is prototyping it, to show it working before you decide).
+- TASK-564: typed URL state (search param schemas) in lumiose/router.
+- TASK-560: a Dock and sticky-bar primitive in @lumiose/ui.
+- TASK-561: SVG icon sprites (site-kit or a Vite option).
 
 ### P9. Agent eval runs (TASK-185, 207, 208, 209, 243)
 
