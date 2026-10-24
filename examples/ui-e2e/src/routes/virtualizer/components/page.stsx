@@ -1,0 +1,72 @@
+import { Title } from "lumiose";
+import { VirtualComponents } from "../../../islands/VirtualComponents.tsx";
+
+// The virtualizer's components in an island (TASK-565): VirtualTable in its own scroller and
+// VirtualList on the window. The server renders the first rows of each.
+export default function VirtualComponentsPage() {
+  return (
+    <>
+      <Title>Virtualizer components</Title>
+      <h1>Virtualizer components</h1>
+      <VirtualComponents client:load />
+    </>
+  );
+}
+
+<style>
+  :global(.actions) {
+    display: flex;
+    gap: 0.5rem;
+    margin-block-end: 0.75rem;
+  }
+  :global(.people) {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  :global(.person) {
+    block-size: 100%;
+    inline-size: 100%;
+    padding-inline: 0.75rem;
+    border: 0;
+    border-block-end: 1px solid var(--lu-border);
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    text-align: start;
+  }
+  :global(.person[aria-pressed="true"]) {
+    font-weight: 600;
+  }
+  :global(.person:focus-visible) {
+    outline: 2px solid var(--lu-ring);
+    outline-offset: -2px;
+  }
+  :global(.releases) {
+    block-size: 16rem;
+    overflow: auto;
+    margin-block-end: 2rem;
+    border: 1px solid var(--lu-border);
+    scroll-padding-block-start: 32px;
+  }
+  :global(.releases:focus-visible) {
+    outline: 2px solid var(--lu-ring);
+    outline-offset: 2px;
+  }
+  :global(.releases table) {
+    inline-size: 100%;
+    border-collapse: collapse;
+  }
+  :global(.releases thead) {
+    position: sticky;
+    inset-block-start: 0;
+    background: var(--lu-background);
+  }
+  :global(.releases tr) {
+    block-size: 32px;
+  }
+  :global(.releases :is(th, td)) {
+    padding: 0 0.75rem;
+    text-align: start;
+  }
+</style>

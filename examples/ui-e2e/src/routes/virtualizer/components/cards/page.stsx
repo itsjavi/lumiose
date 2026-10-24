@@ -1,0 +1,33 @@
+import { Title } from "lumiose";
+import { VirtualCards } from "../../../../islands/VirtualCards.tsx";
+
+// A measured VirtualGrid (TASK-565): cards of different heights, each row as tall as its tallest.
+export default function VirtualCardsPage() {
+  return (
+    <>
+      <Title>Virtualizer cards</Title>
+      <h1>Virtualizer cards</h1>
+      <VirtualCards client:load />
+    </>
+  );
+}
+
+<style>
+  :global(.cards) {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  :global(.card) {
+    padding: 0.75rem;
+    border: 1px solid var(--lu-border);
+    border-radius: var(--lu-radius);
+  }
+  :global(.card h3) {
+    margin: 0 0 0.25rem;
+    font-size: 1rem;
+  }
+  :global(.card p) {
+    margin: 0;
+  }
+</style>
