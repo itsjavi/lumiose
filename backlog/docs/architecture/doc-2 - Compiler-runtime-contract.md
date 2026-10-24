@@ -3,7 +3,7 @@ id: doc-2
 title: Compiler-runtime contract
 type: specification
 created_date: '2026-10-08 12:27'
-updated_date: '2026-10-24 11:03'
+updated_date: '2026-10-24 18:36'
 tags:
   - architecture
   - contract
@@ -97,7 +97,7 @@ Imported only by code compiled with the `hot` option in `lumiose dev`; never par
 | `selector(source)` | Evaluated once |
 | `branchArm(active, out?)` | Closure-free server branch (Photon, TASK-78): the compiler evaluates the condition and renders the chosen side in place, and `branchArm` emits the island markers for it (`<!--[-->` for the active side, `<!--[!-->` for the inactive one). Outside islands it returns `out` unwrapped |
 | `createComponent(C, props)` | Runs in a context frame (owner-like: context, request scope, boundary, island flag). Async components return promises |
-| `island(ref, C, props, strategy, strategyValue?, slots?)` | Emits island markers, inline slot markers for the slots the island renders, `<template data-l-slot>` for the others, the serialized record, and the `modulepreload` hint for `load` |
+| `island(ref, C, props, strategy, strategyValue?, slots?)` | Emits island markers, inline slot markers for the slots the island renders, `<template data-l-slot>` for the others, the serialized record, and the `modulepreload` hints for `load` and `only` (the chunk and its static import closure, TASK-566) |
 | `$await(thunk, site)`, `$leave()` | Same shape as the client (§4). Awaits. Inside an island it records `{ [instancePath:site:occurrence]: value }`, which must be plain data or it raises `LUM4007` |
 
 **Public server variants** come from `lumiose` under the `node` condition, with the same names: `renderToStream`, `renderToString`, `Suspense`, `ErrorBoundary`, `Head`/`Title`/`Meta`, and request accessors.

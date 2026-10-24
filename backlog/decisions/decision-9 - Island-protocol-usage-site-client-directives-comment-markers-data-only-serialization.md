@@ -39,7 +39,7 @@ The React Flight remote code execution vulnerability (CVE-2025-55182) showed the
 **Loader**
 - An external loader of about 1 kB arms the triggers, imports the island's module and hydrates it.
 - It captures and replays early events.
-- `client:load` islands get a `modulepreload` hint.
+- `client:load` islands get a `modulepreload` hint. Since TASK-566 (0.7.1), `client:only` islands get one too, and the hints cover the island chunk's whole static import closure, so shared chunks load in parallel instead of in a second wave.
 
 **Serialization**
 - Data-only: JSON, or seroval in JSON mode. Nothing is evaluated during deserialization.
