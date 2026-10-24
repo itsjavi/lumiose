@@ -82,6 +82,9 @@ export default function Home() {
         <li>
           <a href="/scroll-area">Scroll Area</a> (<a href="/scroll-area/island">in an island</a>)
         </li>
+        <li>
+          <a href="/virtualizer">Virtualizer</a> (<a href="/virtualizer/grid">a measured grid</a>)
+        </li>
       </ul>
     </article>
   );
