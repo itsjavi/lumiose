@@ -5,6 +5,7 @@
 //
 // - Rows are the unit: a list is a grid of one column. Each row's size is fixed or estimated
 //   (`size`), and measured once a rendered row carries `attach={[v.measure]}` and `data-row`.
+//   Several measured elements may share a row (a grid's cells): the row is the tallest.
 // - One ResizeObserver measures every row, and one observer callback writes all its sizes at once:
 //   a size per row, or a write per row, would render the list once per row.
 // - `rows()` and `items()` are arrays of indexes that keep their identity while the window does
@@ -36,7 +37,7 @@ export interface VirtualizerOptions {
   /** The px between columns, for `columns: { minWidth }` and `itemWidth()`. Default `gap`. */
   columnGap?: VirtualizerValue<number>;
   /** Rows rendered past each edge of the viewport. Default 4. */
-  overscan?: number;
+  overscan?: VirtualizerValue<number>;
   /** The scrolling element, read once mounted. Default: the window. */
   scroller?: () => Element | null | undefined;
   /**
@@ -63,6 +64,7 @@ export interface Virtualizer {
   container: (element: HTMLElement) => void;
   /**
    * `attach={[v.measure]}` on a row element with `data-row={row}`: its size replaces the estimate.
+   * Several elements may carry the same row (a grid's cells): the row is as tall as the tallest.
    */
   measure: (element: HTMLElement) => () => void;
   /** Whether the virtualizer runs in the browser yet (`false` on the server and while hydrating). */
@@ -108,6 +110,9 @@ const viewport = (scroller: Element | undefined) =>
 const rowOf = (node: EventTarget | null) =>
   Number((node as Element | null)?.closest?.("[data-row]")?.getAttribute("data-row") ?? -1);
 
+/** The `data-row` of a measured element, or NaN without one. */
+const rowAt = (element: Element) => Number(element.getAttribute("data-row") ?? Number.NaN);
+
 /**
  * Creates a virtualizer in a component: call it in the component's body, give the rows'
  * container `ref={v.container}`, and render `v.rows()` (or `v.items()`) keyed by the record's id.
@@ -123,13 +128,13 @@ const rowOf = (node: EventTarget | null) =>
  * </ul>
  */
 export function createVirtualizer(options: VirtualizerOptions): Virtualizer {
-  const overscan = options.overscan ?? 4;
   let element: HTMLElement | undefined;
   let observer: ResizeObserver | undefined;
   let frame = 0;
   /** Measured sizes by row; `version` changes once per observer callback that changed any. */
   const measured: number[] = [];
-  const observed = new Set<Element>();
+  /** The measured elements and their last sizes. */
+  const observed = new Map<Element, number>();
   let measuredColumns = 0;
   const version = signal(0);
   const mounted = signal(false);
@@ -158,7 +163,7 @@ export function createVirtualizer(options: VirtualizerOptions): Virtualizer {
       // rendered rows are observed again, so the ones that stay report their sizes too.
       measuredColumns = perRow;
       measured.length = 0;
-      for (const row of observed) {
+      for (const row of observed.keys()) {
         observer!.unobserve(row);
         observer!.observe(row);
       }
@@ -192,6 +197,7 @@ export function createVirtualizer(options: VirtualizerOptions): Virtualizer {
         return low;
       };
       const [top, bottom] = view();
+      const overscan = read(options.overscan ?? 4);
       return [Math.max(0, find(top!) - 1 - overscan), Math.min(rows, find(bottom!) + overscan)];
     },
     { equals: same },
@@ -276,19 +282,25 @@ export function createVirtualizer(options: VirtualizerOptions): Virtualizer {
     },
     measure: (el) => {
       observer ??= new ResizeObserver((entries) => {
-        let changed = false;
+        const touched = new Set<number>();
         for (const { target, borderBoxSize } of entries) {
-          const row = Number(target.getAttribute("data-row") ?? Number.NaN);
-          const value = borderBoxSize[0]!.blockSize;
-          if (row >= 0 && !(Math.abs((measured[row] ?? -1) - value) < 0.5)) {
-            measured[row] = value;
+          observed.set(target, borderBoxSize[0]!.blockSize);
+          touched.add(rowAt(target));
+        }
+        let changed = false;
+        for (const row of touched) {
+          let tallest = 0;
+          for (const [target, height] of observed)
+            if (rowAt(target) === row) tallest = Math.max(tallest, height);
+          if (row >= 0 && !(Math.abs((measured[row] ?? -1) - tallest) < 0.5)) {
+            measured[row] = tallest;
             changed = true;
           }
         }
         if (changed) version.set(version.peek() + 1);
       });
       observer.observe(el);
-      observed.add(el);
+      observed.set(el, 0);
       return () => {
         observer!.unobserve(el);
         observed.delete(el);

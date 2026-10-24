@@ -25,6 +25,8 @@ interface Component {
   name: string;
   /** The module that exports the component's parts; none for a variant's row. */
   module?: string;
+  /** Only these of the module's exports, as an app that imports them alone loads them. */
+  exports?: string[];
   /** Its client scripts: element definitions or gap scripts (decision-63). */
   scripts: string[];
   /** Its stylesheet; native components (Fieldset, Checkbox, …) need none. */
@@ -213,8 +215,26 @@ const COMPONENTS: Component[] = [
     scripts: ["navigation-menu/navigation-menu.script.ts"],
     css: "navigation-menu/navigation-menu.css",
   },
-  // A primitive for islands (TASK-565): no script, no CSS.
+  // A primitive for islands, and the components on it (TASK-565): no script, no CSS.
   { name: "virtualizer", module: "virtualizer/virtualizer.ts", scripts: [] },
+  {
+    name: "virtual-list",
+    module: "virtualizer/virtual.tsx",
+    exports: ["VirtualList"],
+    scripts: [],
+  },
+  {
+    name: "virtual-grid",
+    module: "virtualizer/virtual.tsx",
+    exports: ["VirtualGrid"],
+    scripts: [],
+  },
+  {
+    name: "virtual-table",
+    module: "virtualizer/virtual.tsx",
+    exports: ["VirtualTable"],
+    scripts: [],
+  },
 ];
 
 const CLIENT_SCRIPT = /\?client$/;
@@ -357,8 +377,9 @@ console.log("@lumiose/ui, min / gzip / brotli in kB (the lumiose runtime is not 
 console.log("| Component | Client script (server pages) | Component JS (islands) | CSS |");
 console.log("| --- | --- | --- | --- |");
 for (const component of COMPONENTS) {
+  const exported = component.exports ? `{ ${component.exports.join(", ")} }` : "*";
   const componentJs = component.module
-    ? cell(await bundle(`export * from "${src}${component.module}";`, "js"))
+    ? cell(await bundle(`export ${exported} from "${src}${component.module}";`, "js"))
     : "";
   const componentCss = component.css ? await css([component.css]) : component.module ? "none" : "";
   console.log(

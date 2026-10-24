@@ -6,44 +6,12 @@
 import { effect, flush } from "lumiose";
 import { render } from "lumiose/dom";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
+import { frame, installLayout, observers } from "../test/layout.ts";
 import { createVirtualizer, type Virtualizer } from "./virtualizer.ts";
 
-class FakeObserver {
-  callback: ResizeObserverCallback;
-  targets = new Set<Element>();
-  constructor(callback: ResizeObserverCallback) {
-    this.callback = callback;
-    observers.push(this);
-  }
-  observe(target: Element) {
-    this.targets.add(target);
-  }
-  unobserve(target: Element) {
-    this.targets.delete(target);
-  }
-  disconnect() {
-    this.targets.clear();
-  }
-  /** Reports `targets` at `size` px tall. */
-  fire(targets: Element[], size: number) {
-    const entries = targets.map((target) => ({ target, borderBoxSize: [{ blockSize: size }] }));
-    this.callback(entries as unknown as ResizeObserverEntry[], this as unknown as ResizeObserver);
-  }
-}
-
-let observers: FakeObserver[] = [];
-let frames: FrameRequestCallback[] = [];
 let dispose: (() => void) | undefined;
 /** The container's box on screen. */
 const box = { top: 100, width: 600 };
-
-/** Runs the pending animation frames, then renders. */
-function frame() {
-  const pending = frames;
-  frames = [];
-  for (const callback of pending) callback(0);
-  flush();
-}
 
 /** Scrolls the window so that the container's top is at `top` on screen. */
 function scrollTo(top: number) {
@@ -68,17 +36,9 @@ const shown = (root: HTMLElement) =>
   [...root.querySelectorAll("[data-row]")].map((el) => Number(el.getAttribute("data-row")));
 
 beforeEach(() => {
-  observers = [];
-  frames = [];
   box.top = 100;
   box.width = 600;
-  vi.stubGlobal("ResizeObserver", FakeObserver);
-  vi.stubGlobal("requestAnimationFrame", (callback: FrameRequestCallback) => {
-    frames.push(callback);
-    return frames.length;
-  });
-  vi.stubGlobal("cancelAnimationFrame", () => {});
-  vi.stubGlobal("innerHeight", 500);
+  installLayout();
 });
 
 afterEach(() => {

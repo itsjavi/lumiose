@@ -80,7 +80,7 @@
     "./menubar.css": "./src/menubar/menubar.css",
     "./navigation-menu": "./src/navigation-menu/navigation-menu.tsx",
     "./navigation-menu.css": "./src/navigation-menu/navigation-menu.css",
-    "./virtualizer": "./src/virtualizer/virtualizer.ts",
+    "./virtualizer": "./src/virtualizer/virtual.tsx",
     "./themes/default.css": "./src/themes/default.css",
     "./package.json": "./package.json"
   },
@@ -148,7 +148,7 @@
       "./menubar.css": "./dist/menubar/menubar.css",
       "./navigation-menu": "./dist/navigation-menu/navigation-menu.tsx",
       "./navigation-menu.css": "./dist/navigation-menu/navigation-menu.css",
-      "./virtualizer": "./dist/virtualizer/virtualizer.ts",
+      "./virtualizer": "./dist/virtualizer/virtual.tsx",
       "./themes/default.css": "./dist/themes/default.css",
       "./package.json": "./package.json"
     }
