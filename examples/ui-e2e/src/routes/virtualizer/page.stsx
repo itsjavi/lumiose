@@ -2,7 +2,7 @@ import { Title } from "lumiose";
 import { VirtualizerList } from "../../islands/VirtualizerList.tsx";
 import { VirtualizerTable } from "../../islands/VirtualizerTable.tsx";
 
-// The virtualizer in islands (TASK-565, a proposal): a table in its own scroller and a
+// The virtualizer in islands (TASK-565): a table in its own scroller and a
 // window-scrolled list. The server renders the first rows of each; the islands take them over.
 export default function VirtualizerPage() {
   return (

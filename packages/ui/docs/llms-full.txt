@@ -118,10 +118,10 @@ custom properties, named as in shadcn/ui, are listed in [Theming](theming.md#the
 | [Avatar](avatar.md)                   | Available: an image over its fallback, `<lu-avatar>` follows its loading status           |
 | [Menubar](menubar.md)                 | Available: Menus in a `role="menubar"`, `<lu-menubar>` moves between them                 |
 | [Navigation Menu](navigation-menu.md) | Available: a `<nav>` whose triggers open panels of links, works without JavaScript        |
-| [Virtual List](virtual-list.md)       | Proposal (TASK-565): a `<ul>` that renders the rows near the viewport, in islands         |
-| [Virtual Grid](virtual-grid.md)       | Proposal (TASK-565): cells in auto-fill columns, fixed or measured rows, in islands       |
-| [Virtual Table](virtual-table.md)     | Proposal (TASK-565): table rows between spacer rows, `aria-rowcount` and `aria-rowindex`  |
-| [Virtualizer](virtualizer.md)         | Not released (TASK-565): `createVirtualizer()`, the headless primitive under the three    |
+| [Virtual List](virtual-list.md)       | Available: a `<ul>` that renders the rows near the viewport, in islands                   |
+| [Virtual Grid](virtual-grid.md)       | Available: cells in auto-fill columns, fixed or measured rows, in islands                 |
+| [Virtual Table](virtual-table.md)     | Available: table rows between spacer rows, with `aria-rowcount` and `aria-rowindex`       |
+| [Virtualizer](virtualizer.md)         | Available: `createVirtualizer()`, the headless primitive under the three, in islands      |
 
 ## Ids
 
@@ -404,7 +404,7 @@ Each component's page has an example stylesheet to start from.
 
 # Virtualizer
 
-> **Not released yet (TASK-565).** A headless virtualizer for long lists, tables and grids in islands: `createVirtualizer()` computes which rows are near the viewport and where they go, and your component renders, places and styles them. The window or an element scrolls; rows have a fixed or an estimated size, or are measured as they render (one ResizeObserver for all of them); grids fit their columns to the container's width. The server renders the first items, and the island takes those same keyed rows over. 1.6 kB brotli, no script and no CSS of its own. For a list, a grid of cells or a table, start with [Virtual List](virtual-list.md), [Virtual Grid](virtual-grid.md) or [Virtual Table](virtual-table.md), which run on it.
+> A headless virtualizer for long lists, tables and grids in islands: `createVirtualizer()` computes which rows are near the viewport and where they go, and your component renders, places and styles them. The window or an element scrolls; rows have a fixed or an estimated size, or are measured as they render (one ResizeObserver for all of them); grids fit their columns to the container's width. The server renders the first items, and the island takes those same keyed rows over. 1.6 kB brotli, no script and no CSS of its own. For a list, a grid of cells or a table, start with [Virtual List](virtual-list.md), [Virtual Grid](virtual-grid.md) or [Virtual Table](virtual-table.md), which run on it.
 
 ```ts
 import { createVirtualizer } from "@lumiose/ui"; // or "@lumiose/ui/virtualizer"
@@ -412,7 +412,7 @@ import { createVirtualizer } from "@lumiose/ui"; // or "@lumiose/ui/virtualizer"
 
 ## Usage
 
-A virtualizer works in rows: a list is a grid of one column, where each item is a row. Call it in a
+A virtualizer works in rows (decision-84): a list is a grid of one column, where each item is a row. Call it in a
 component's body, give the element that holds the rows `ref={v.container}`, and render the rows it
 lists, keyed by the record's id:
 
@@ -7279,7 +7279,7 @@ in browsers without CSS anchor positioning.
 
 # Virtual Grid
 
-> **A proposal (TASK-565)**: its API waits for the user's sign-off. A long grid that renders only the rows near the viewport, in islands: a `<ul>` of `<li>` cells placed in rows of as many columns as the width fits (`minItemWidth`, like CSS's `auto-fill`) or of `columns`, by [createVirtualizer](virtualizer.md). Rows have a fixed height, or each is as tall as its tallest measured cell. The server renders the first `initial` cells in flow for your CSS grid to lay out, and the island takes those same keyed cells over. 2.3 kB brotli with the virtualizer.
+> A long grid that renders only the rows near the viewport, in islands: a `<ul>` of `<li>` cells placed in rows of as many columns as the width fits (`minItemWidth`, like CSS's `auto-fill`) or of `columns`, by [createVirtualizer](virtualizer.md). Rows have a fixed height, or each is as tall as its tallest measured cell. The server renders the first `initial` cells in flow for your CSS grid to lay out, and the island takes those same keyed cells over. 2.3 kB brotli with the virtualizer.
 
 ```ts
 import { VirtualGrid } from "@lumiose/ui"; // or "@lumiose/ui/virtualizer"
@@ -7379,7 +7379,7 @@ are the component's elements: reach them from the grid's class with `:deep()`
 ## Keyboard and focus
 
 Cells are in DOM order, row by row, so Tab moves through them and the window follows. The row of
-the focused cell stays rendered while the grid scrolls away (`keepFocused`). Cells are keyed by
+the focused cell stays rendered while the grid scrolls away (`keepFocused`, on by default, decision-84). Cells are keyed by
 the record, so focus and state stay with their record through a filter, a sort or a refetch.
 
 ## Without JavaScript
@@ -7401,7 +7401,7 @@ right.
 
 # Virtual List
 
-> **A proposal (TASK-565)**: its API waits for the user's sign-off. A long list that renders only the rows near the viewport, in islands: a `<ul>` whose rows are `<li>`s placed by [createVirtualizer](virtualizer.md), each keyed by `itemKey` and carrying `aria-posinset` and `aria-setsize`. The children function renders a row's content once; a row kept under its key keeps its DOM and state while its item updates in place. The server renders the first `initial` rows in flow. 2.2 kB brotli with the virtualizer.
+> A long list that renders only the rows near the viewport, in islands: a `<ul>` whose rows are `<li>`s placed by [createVirtualizer](virtualizer.md), each keyed by `itemKey` and carrying `aria-posinset` and `aria-setsize`. The children function renders a row's content once; a row kept under its key keeps its DOM and state while its item updates in place. The server renders the first `initial` rows in flow. 2.2 kB brotli with the virtualizer.
 
 ```ts
 import { VirtualList } from "@lumiose/ui"; // or "@lumiose/ui/virtualizer"
@@ -7486,7 +7486,7 @@ reaches them with `:deep()`, as in `.people :deep(li)`. The content you render i
 ## Keyboard and focus
 
 The rows are in DOM order, so Tab moves through them, and the browser scrolls the next one into
-view. A focused row stays rendered while the list scrolls away from it (`keepFocused`), so focus
+view. A focused row stays rendered while the list scrolls away from it (`keepFocused`, on by default for placed rows, decision-84), so focus
 never falls back to the page. Rows are keyed by the record: a row's focus, typed text or toggled
 state stays with its record when items are added, removed, reordered or fetched again.
 
@@ -7509,7 +7509,7 @@ ResizeObserver (for `measure`): every supported browser.
 
 # Virtual Table
 
-> **A proposal (TASK-565)**: its API waits for the user's sign-off. A long table that renders only the rows near its scroller's viewport, in islands: a `<table>` with `aria-rowcount`, your head, and a body whose `<tr aria-rowindex>` rows sit between two spacer rows, by [createVirtualizer](virtualizer.md). The children function renders a row's cells once; a row kept under its key updates in place. The server renders the first `initial` rows and a spacer for the rest. 2.3 kB brotli with the virtualizer.
+> A long table that renders only the rows near its scroller's viewport, in islands: a `<table>` with `aria-rowcount`, your head, and a body whose `<tr aria-rowindex>` rows sit between two spacer rows, by [createVirtualizer](virtualizer.md). The children function renders a row's cells once; a row kept under its key updates in place. The server renders the first `initial` rows and a spacer for the rest. 2.3 kB brotli with the virtualizer.
 
 ```ts
 import { VirtualTable } from "@lumiose/ui"; // or "@lumiose/ui/virtualizer"
@@ -7624,7 +7624,7 @@ you render are yours to style; a sticky `<thead>` works as in any scroller.
 
 Focus the scroller (`tabindex="0"`) and the arrow keys, Page Up and Down, Home and End scroll it; the
 rows follow. Rows are keyed by the record, so a link focused in a row keeps focus through a sort or
-a refetch while it stays in the window. The table has no `keepFocused`: a row outside the window
+a refetch while it stays in the window. The table has no `keepFocused` (decision-84): a row outside the window
 cannot sit between the spacers.
 
 ## Without JavaScript

@@ -1,4 +1,4 @@
-// Virtualizer (TASK-565, a proposal): the server renders the first rows, which the islands take
+// Virtualizer (TASK-565): the server renders the first rows, which the islands take
 // over without a hydration warning, a lost row or a layout jump; scrolling renders the rows near the
 // viewport, for the window and for an element; the focused row stays rendered; scrollToIndex; a
 // table keeps its row count and indexes; measured grid rows never overlap. WCAG 2.2 AA with the

@@ -1,6 +1,6 @@
 # Virtual List
 
-> **A proposal (TASK-565)**: its API waits for the user's sign-off. A long list that renders only the rows near the viewport, in islands: a `<ul>` whose rows are `<li>`s placed by [createVirtualizer](virtualizer.md), each keyed by `itemKey` and carrying `aria-posinset` and `aria-setsize`. The children function renders a row's content once; a row kept under its key keeps its DOM and state while its item updates in place. The server renders the first `initial` rows in flow. 2.2 kB brotli with the virtualizer.
+> A long list that renders only the rows near the viewport, in islands: a `<ul>` whose rows are `<li>`s placed by [createVirtualizer](virtualizer.md), each keyed by `itemKey` and carrying `aria-posinset` and `aria-setsize`. The children function renders a row's content once; a row kept under its key keeps its DOM and state while its item updates in place. The server renders the first `initial` rows in flow. 2.2 kB brotli with the virtualizer.
 
 ```ts
 import { VirtualList } from "@lumiose/ui"; // or "@lumiose/ui/virtualizer"
@@ -85,7 +85,7 @@ reaches them with `:deep()`, as in `.people :deep(li)`. The content you render i
 ## Keyboard and focus
 
 The rows are in DOM order, so Tab moves through them, and the browser scrolls the next one into
-view. A focused row stays rendered while the list scrolls away from it (`keepFocused`), so focus
+view. A focused row stays rendered while the list scrolls away from it (`keepFocused`, on by default for placed rows, decision-84), so focus
 never falls back to the page. Rows are keyed by the record: a row's focus, typed text or toggled
 state stays with its record when items are added, removed, reordered or fetched again.
 

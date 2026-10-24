@@ -1,4 +1,4 @@
-// Virtualizer (TASK-565, a proposal): renders only the rows of a long list, table or grid that are
+// Virtualizer (TASK-565, decision-84): renders only the rows of a long list, table or grid that are
 // near the viewport. Headless: it computes which rows to render and where they go; the component
 // renders them, places them (absolutely from `start(row)`, or in flow between `before()` and
 // `after()`), and styles them.

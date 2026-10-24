@@ -107,10 +107,10 @@ custom properties, named as in shadcn/ui, are listed in [Theming](theming.md#the
 | [Avatar](avatar.md)                   | Available: an image over its fallback, `<lu-avatar>` follows its loading status           |
 | [Menubar](menubar.md)                 | Available: Menus in a `role="menubar"`, `<lu-menubar>` moves between them                 |
 | [Navigation Menu](navigation-menu.md) | Available: a `<nav>` whose triggers open panels of links, works without JavaScript        |
-| [Virtual List](virtual-list.md)       | Proposal (TASK-565): a `<ul>` that renders the rows near the viewport, in islands         |
-| [Virtual Grid](virtual-grid.md)       | Proposal (TASK-565): cells in auto-fill columns, fixed or measured rows, in islands       |
-| [Virtual Table](virtual-table.md)     | Proposal (TASK-565): table rows between spacer rows, `aria-rowcount` and `aria-rowindex`  |
-| [Virtualizer](virtualizer.md)         | Not released (TASK-565): `createVirtualizer()`, the headless primitive under the three    |
+| [Virtual List](virtual-list.md)       | Available: a `<ul>` that renders the rows near the viewport, in islands                   |
+| [Virtual Grid](virtual-grid.md)       | Available: cells in auto-fill columns, fixed or measured rows, in islands                 |
+| [Virtual Table](virtual-table.md)     | Available: table rows between spacer rows, with `aria-rowcount` and `aria-rowindex`       |
+| [Virtualizer](virtualizer.md)         | Available: `createVirtualizer()`, the headless primitive under the three, in islands      |
 
 ## Ids
 

@@ -1,6 +1,6 @@
 # Virtual Grid
 
-> **A proposal (TASK-565)**: its API waits for the user's sign-off. A long grid that renders only the rows near the viewport, in islands: a `<ul>` of `<li>` cells placed in rows of as many columns as the width fits (`minItemWidth`, like CSS's `auto-fill`) or of `columns`, by [createVirtualizer](virtualizer.md). Rows have a fixed height, or each is as tall as its tallest measured cell. The server renders the first `initial` cells in flow for your CSS grid to lay out, and the island takes those same keyed cells over. 2.3 kB brotli with the virtualizer.
+> A long grid that renders only the rows near the viewport, in islands: a `<ul>` of `<li>` cells placed in rows of as many columns as the width fits (`minItemWidth`, like CSS's `auto-fill`) or of `columns`, by [createVirtualizer](virtualizer.md). Rows have a fixed height, or each is as tall as its tallest measured cell. The server renders the first `initial` cells in flow for your CSS grid to lay out, and the island takes those same keyed cells over. 2.3 kB brotli with the virtualizer.
 
 ```ts
 import { VirtualGrid } from "@lumiose/ui"; // or "@lumiose/ui/virtualizer"
@@ -100,7 +100,7 @@ are the component's elements: reach them from the grid's class with `:deep()`
 ## Keyboard and focus
 
 Cells are in DOM order, row by row, so Tab moves through them and the window follows. The row of
-the focused cell stays rendered while the grid scrolls away (`keepFocused`). Cells are keyed by
+the focused cell stays rendered while the grid scrolls away (`keepFocused`, on by default, decision-84). Cells are keyed by
 the record, so focus and state stay with their record through a filter, a sort or a refetch.
 
 ## Without JavaScript

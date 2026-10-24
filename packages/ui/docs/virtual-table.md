@@ -1,6 +1,6 @@
 # Virtual Table
 
-> **A proposal (TASK-565)**: its API waits for the user's sign-off. A long table that renders only the rows near its scroller's viewport, in islands: a `<table>` with `aria-rowcount`, your head, and a body whose `<tr aria-rowindex>` rows sit between two spacer rows, by [createVirtualizer](virtualizer.md). The children function renders a row's cells once; a row kept under its key updates in place. The server renders the first `initial` rows and a spacer for the rest. 2.3 kB brotli with the virtualizer.
+> A long table that renders only the rows near its scroller's viewport, in islands: a `<table>` with `aria-rowcount`, your head, and a body whose `<tr aria-rowindex>` rows sit between two spacer rows, by [createVirtualizer](virtualizer.md). The children function renders a row's cells once; a row kept under its key updates in place. The server renders the first `initial` rows and a spacer for the rest. 2.3 kB brotli with the virtualizer.
 
 ```ts
 import { VirtualTable } from "@lumiose/ui"; // or "@lumiose/ui/virtualizer"
@@ -115,7 +115,7 @@ you render are yours to style; a sticky `<thead>` works as in any scroller.
 
 Focus the scroller (`tabindex="0"`) and the arrow keys, Page Up and Down, Home and End scroll it; the
 rows follow. Rows are keyed by the record, so a link focused in a row keeps focus through a sort or
-a refetch while it stays in the window. The table has no `keepFocused`: a row outside the window
+a refetch while it stays in the window. The table has no `keepFocused` (decision-84): a row outside the window
 cannot sit between the spacers.
 
 ## Without JavaScript

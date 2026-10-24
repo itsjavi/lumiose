@@ -1,7 +1,7 @@
-// VirtualList, VirtualGrid and VirtualTable (TASK-565): thin components on createVirtualizer for
-// the three layouts a long collection takes, each rendering its container and one element per
-// item, which carries the item's key, its place and its ARIA; the children function renders the
-// element's content.
+// VirtualList, VirtualGrid and VirtualTable (TASK-565, decision-84): thin components on
+// createVirtualizer for the three layouts a long collection takes, each rendering its container
+// and one element per item, which carries the item's key, its place and its ARIA; the children
+// function renders the element's content.
 //
 // - Rows are keyed by `itemKey`, so a kept row keeps its DOM and its components while its item
 //   updates in place (decision-83): the children function runs once per row, with an item whose

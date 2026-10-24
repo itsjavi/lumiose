@@ -1,6 +1,6 @@
 # Virtualizer
 
-> **Not released yet (TASK-565).** A headless virtualizer for long lists, tables and grids in islands: `createVirtualizer()` computes which rows are near the viewport and where they go, and your component renders, places and styles them. The window or an element scrolls; rows have a fixed or an estimated size, or are measured as they render (one ResizeObserver for all of them); grids fit their columns to the container's width. The server renders the first items, and the island takes those same keyed rows over. 1.6 kB brotli, no script and no CSS of its own. For a list, a grid of cells or a table, start with [Virtual List](virtual-list.md), [Virtual Grid](virtual-grid.md) or [Virtual Table](virtual-table.md), which run on it.
+> A headless virtualizer for long lists, tables and grids in islands: `createVirtualizer()` computes which rows are near the viewport and where they go, and your component renders, places and styles them. The window or an element scrolls; rows have a fixed or an estimated size, or are measured as they render (one ResizeObserver for all of them); grids fit their columns to the container's width. The server renders the first items, and the island takes those same keyed rows over. 1.6 kB brotli, no script and no CSS of its own. For a list, a grid of cells or a table, start with [Virtual List](virtual-list.md), [Virtual Grid](virtual-grid.md) or [Virtual Table](virtual-table.md), which run on it.
 
 ```ts
 import { createVirtualizer } from "@lumiose/ui"; // or "@lumiose/ui/virtualizer"
@@ -8,7 +8,7 @@ import { createVirtualizer } from "@lumiose/ui"; // or "@lumiose/ui/virtualizer"
 
 ## Usage
 
-A virtualizer works in rows: a list is a grid of one column, where each item is a row. Call it in a
+A virtualizer works in rows (decision-84): a list is a grid of one column, where each item is a row. Call it in a
 component's body, give the element that holds the rows `ref={v.container}`, and render the rows it
 lists, keyed by the record's id:
 
