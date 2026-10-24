@@ -24,7 +24,7 @@ User decision, 2026-10-15. SvelteKit's names and semantics (decision-32):
 - The History fallback starts storing an entry index in `history.state` (it stores only a scroll key today), so a cancelled back/forward can return.
 - A `retry()` on cancelled navigations, for async custom dialogs, can be added later if needed.
 - Implemented in TASK-296. The types `BeforeNavigate`, `AfterNavigate`, `NavigationTarget` and `NavigationType` (SvelteKit's names) were confirmed by the user on 2026-10-15.
-- Amendment (TASK-549, 2026-10-24, Spark; to be confirmed by the user). Two refinements, with no change to the API shape:
+- Amendment (TASK-549, 2026-10-24, Spark; confirmed by the user on 2026-10-24, both parts, for 0.7.0). Two refinements, with no change to the API shape:
   - In islands on MPA pages, `beforeNavigate` also sees clicks on same-origin links as `"link"` (`willUnload: true`), through a `click` listener at `window`. Clicks the browser handles itself (modifier keys, `target`, `download`, other origins, fragments) stay `"leave"` or are not navigations. A port needed this to show its own dialog (doc-11).
   - `cancel()` on a `"link"` or `"navigate"` navigation that would load another document now stops it: the click is prevented, or the URL is not loaded, and the page stays. This covers links out of the SPA, `navigate()` to such a page and links on MPA pages. TASK-296 had made the browser ask (`beforeunload`) for these.
   - The browser prompt stays for `"leave"`, which the page cannot stop. This follows the decision's own wording ("for `"leave"`, `cancel()` makes the browser show its own prompt") and SvelteKit, which prevents a cancelled click on an external link.
