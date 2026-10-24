@@ -2,6 +2,13 @@
 
 @lumiose/ui has its own versions, outside the lockstep version of the other Lumiose packages.
 
+## 0.1.3 (2026-10-24)
+
+### Fixes
+
+- **ui:** a Select.Item label that appears later loads the label script (TASK-552) (5e6f1868)
+- **ui:** parts outside their Root point at an island in between, and the docs explain slots (TASK-550) (cde6a9b6)
+
 ## 0.1.2 (2026-10-23)
 
 ### Fixes
