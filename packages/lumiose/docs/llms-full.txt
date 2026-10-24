@@ -4461,7 +4461,8 @@ Routes with `mode = "spa"` use the client router `lumiose/router` ([reference](.
   browser asks), and `afterNavigate(fn)` runs after each completed one and once on mount (page
   views, focus). They belong to the component that calls them during setup, and work in islands of
   MPA pages too (link clicks, `"leave"` and `"enter"`). See
-  [Navigation hooks](../reference/router.md#navigation-hooks).
+  [Navigation hooks](../reference/router.md#navigation-hooks), and
+  [Unsaved changes](../reference/router.md#unsaved-changes) for a guard with your own dialog.
 
 ```tsx
 import { signal } from "lumiose";
@@ -13162,7 +13163,8 @@ Runs before each navigation away from the current location, before the router lo
   interacted with the page.
 
 So a hook that guards unsaved changes cancels `"leave"` and asks the user itself for the rest (see
-the [Example](#example)). A change of the URL's `#hash` alone is not a navigation for the hooks.
+[Unsaved changes](#unsaved-changes)). A change of the URL's `#hash` alone is not a navigation for
+the hooks.
 
 ### afterNavigate
 
@@ -13200,6 +13202,80 @@ document as `"leave"`. `afterNavigate` fires once with `"enter"`, with `route` u
 - **Cancelling** a `"link"` prevents the click, so the page stays with no prompt. An island can
   show its own dialog, then call `location.assign(navigation.to.url)` once the user agrees
   (clearing its unsaved state first, or the hook cancels again, as `"leave"`).
+
+### Unsaved changes
+
+While the page holds unsaved work, the hook cancels every navigation, then asks with the page's own
+dialog where the page can. The same hook works in an SPA and in an island of a `static` or
+`server` page:
+
+- **`"link"` and `"navigate"`**: the page stays, with no prompt. Keep `navigation.to.url` and open
+  your dialog. `to` is `null` for a URL outside the app (another origin in an SPA, or outside
+  Vite's `base`), which the dialog could not follow: ask with `confirm()` there.
+- **`"leave"`** (closing the tab, a reload, a typed URL, a `POST` form): the browser shows its own
+  prompt, and no page code runs.
+- **`"popstate"`** (back/forward, in an SPA): the router returns to the page.
+
+The dialog's **Leave** button sets a flag that the hook checks first, then follows the URL:
+`location.assign(url)` on an MPA page, where islands that use the hooks load no router, and
+`navigate(url)` in an SPA. Without the flag the hook cancels again (on an MPA page as `"leave"`, so
+the browser asks).
+
+```tsx check
+// An island of a server page that edits a note; in an SPA, the same component as a page
+import { signal } from "lumiose";
+import { beforeNavigate } from "lumiose/router";
+
+export function NoteEditor() {
+  const dirty = signal(false);
+  /** Where a cancelled link or navigate() was going; the dialog shows while it is set. */
+  const pending = signal<URL | null>(null);
+  let leaving = false;
+
+  beforeNavigate((navigation) => {
+    if (leaving || !dirty()) return;
+    if (navigation.type === "leave") {
+      navigation.cancel(); // the browser asks
+    } else if (navigation.to === null) {
+      // Outside the app: the dialog could not follow it.
+      if (!confirm("Discard your changes?")) navigation.cancel();
+    } else {
+      navigation.cancel(); // the page stays
+      if (navigation.type !== "popstate") pending.set(navigation.to.url);
+    }
+  });
+
+  function leave(url: URL) {
+    leaving = true; // the hook lets this navigation through
+    location.assign(url); // in an SPA: void navigate(url)
+  }
+
+  return (
+    // Saving posts the form, which unloads the page too ("leave"): it is not unsaved work then.
+    <form method="post" onSubmit={() => dirty.set(false)}>
+      <textarea name="text" onInput={() => dirty.set(true)} />
+      <button>Save</button>
+      {pending() !== null && (
+        <p role="alert">
+          Your changes are not saved.{" "}
+          <button type="button" onClick={() => pending.set(null)}>
+            Stay
+          </button>{" "}
+          <button type="button" onClick={() => leave(pending()!)}>
+            Leave
+          </button>
+        </p>
+      )}
+    </form>
+  );
+}
+```
+
+Any dialog works in place of the `<p role="alert">`, such as @lumiose/ui's
+[alert dialog](https://itsjavi.com/lumiose/ui/dialog/) bound to `pending() !== null`. When the
+unsaved work sits in the rows of a list (an editable table), key the rows by the record's id
+([Lists and keys](../concepts/jsx.md#lists-and-keys)): a row keyed by its index keeps its typed
+value after a sort or a filter, next to another record.
 
 ## Route state
 

@@ -142,7 +142,8 @@ Routes with `mode = "spa"` use the client router `lumiose/router` ([reference](.
   browser asks), and `afterNavigate(fn)` runs after each completed one and once on mount (page
   views, focus). They belong to the component that calls them during setup, and work in islands of
   MPA pages too (link clicks, `"leave"` and `"enter"`). See
-  [Navigation hooks](../reference/router.md#navigation-hooks).
+  [Navigation hooks](../reference/router.md#navigation-hooks), and
+  [Unsaved changes](../reference/router.md#unsaved-changes) for a guard with your own dialog.
 
 ```tsx
 import { signal } from "lumiose";
