@@ -22,6 +22,7 @@ mod html;
 mod idioms;
 mod islands;
 mod props;
+mod rows;
 mod ssr;
 mod template;
 mod text;

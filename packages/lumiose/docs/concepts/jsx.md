@@ -16,7 +16,7 @@ the efficient form:
 
 | Source                                              | Compiled to                                                                                                                                                                                                                           |
 | --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `{items().map((item, i) => <Row key={item.id} />)}` | A keyed list. `key` is optional (items are keyed by reference otherwise). `i` becomes a reactive index only if you use it.                                                                                                            |
+| `{items().map((item, i) => <Row key={item.id} />)}` | A keyed list. `key` is optional (items are keyed by reference otherwise). `i` becomes a reactive index only if you use it. See [Lists and keys](#lists-and-keys).                                                                     |
 | `item.id === selected()` inside `.map`              | An O(1) selector: a selection change touches two rows.                                                                                                                                                                                |
 | `{c() ? <A /> : <B />}`, `{c() && <A />}`           | A memoised branch: switches only when the condition flips.                                                                                                                                                                            |
 | `{count() * 2}`, ``{`#${id}`}``, `{String(x)}`      | Provably text: a text node of the template, updated with `setText` (written once when nothing reactive is read). Applies to sole children and to children between elements; a `const` initialised with such an expression counts too. |
@@ -100,6 +100,29 @@ export function Faq() {
     </>
   );
 }
+```
+
+### Lists and keys
+
+`{items().map((item, i) => …)}` compiles to a list that reconciles its rows when the array changes:
+it keeps, moves, creates and removes rows instead of rendering them all again. With a `key` on the
+element the callback returns, rows are matched by key; without one, by item reference (a row is
+kept while its item is the same object).
+
+The compiler moves the key into a function that the list calls for every item, so the key may
+read the item (or the bindings of its destructuring pattern), the index, bindings it declares
+itself (`key={row.map((p) => p.id).join("|")}`), `const`s at the top of the callback that copy item
+fields (`const id = item.id`), and anything declared outside the callback. A callback that returns
+in several places keeps its key when every returned element carries the same one. A key the
+compiler cannot use, such as one that reads a value computed in the row, is
+[LUM2008](../errors/LUM2008.md), and the list matches rows by reference.
+
+```tsx
+<section class="grid">
+  {entries().map(({ row, index }) => (
+    <div key={`${index}:${row.map((card) => card.id).join("|")}`}>…</div>
+  ))}
+</section>
 ```
 
 ## API
@@ -193,6 +216,7 @@ export function TodoList() {
 - [LUM2004](../errors/LUM2004.md): component called as a function.
 - [LUM2005](../errors/LUM2005.md): children inserted twice.
 - [LUM2006](../errors/LUM2006.md): reactive index escapes its callback.
+- [LUM2008](../errors/LUM2008.md): unsupported list key.
 - [LUM1001](../errors/LUM1001.md): syntax error.
 
 See also: [Components](components.md), [Styles](styles.md), [reference: JSX types](../reference/jsx.md).

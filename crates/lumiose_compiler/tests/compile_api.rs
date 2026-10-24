@@ -1088,6 +1088,76 @@ export function Mixer() {
 }
 
 #[test]
+fn row_keys_that_cannot_compile_warn_with_lum2008_on_both_targets() {
+    // TASK-553: a key is never dropped without a word. These lists match rows by reference.
+    let source = r#"import { signal } from "lumiose";
+const format = (s: string) => s;
+export function Keys() {
+  const entries = signal<Array<{ key: string; index: number }>>([]);
+  return (
+    <div>
+      {entries().map((entry) => { const label = format(entry.key); return <em key={label}>{label}</em>; })}
+      {entries().map((entry) => (entry.index ? <a key={entry.key}>x</a> : <a key={entry.key}>y</a>))}
+      {entries().map((entry) => { if (entry.index < 0) return <s key={entry.index} />; return <u key={entry.key} />; })}
+      {entries().map((entry) => <li key="x">{entry.key}</li>)}
+      {entries().map((entry) => <li key={entry.key}><span key={entry.index} /></li>)}
+    </div>
+  );
+}
+"#;
+    let warned = |target: Target| -> Vec<(String, String)> {
+        let options = CompileOptions {
+            target,
+            ..CompileOptions::default()
+        };
+        compile(source, "/src/Keys.tsx", &options)
+            .diagnostics
+            .iter()
+            .filter(|d| d.code == Code::UnsupportedListKey)
+            .map(|d| {
+                let words = d.message.split(", so").next().unwrap_or_default();
+                (
+                    source[d.span.start as usize..d.span.end as usize].to_owned(),
+                    words.to_owned(),
+                )
+            })
+            .collect()
+    };
+    let client = warned(Target::Client);
+    assert_eq!(
+        client,
+        [
+            (
+                "label",
+                "this `key` reads `label`, a value computed in the row callback"
+            ),
+            (
+                "key={entry.key}",
+                "this `key` is not on the element the `.map()` callback returns"
+            ),
+            (
+                "key={entry.key}",
+                "this `key` is not on the element the `.map()` callback returns"
+            ),
+            (
+                "key={entry.key}",
+                "the elements this `.map()` callback returns have different keys"
+            ),
+            ("key=\"x\"", "this `key` is a constant"),
+            (
+                "key={entry.index}",
+                "this `key` is not on the element the `.map()` callback returns"
+            ),
+        ]
+        .map(|(a, b)| (a.to_owned(), b.to_owned()))
+    );
+    assert_eq!(warned(Target::Server), client);
+    let code = compile(source, "/src/Keys.tsx", &CompileOptions::default()).code;
+    // Only the last list keeps its (root) key.
+    assert_eq!(code.matches("(entry) => entry.key)").count(), 1, "{code}");
+}
+
+#[test]
 fn strict_csp_applies_static_styles_through_the_cssom_and_nonces_inline_elements() {
     let source = r#"export function Logo(props: { n: number }) {
   return (

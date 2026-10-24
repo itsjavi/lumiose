@@ -1,7 +1,7 @@
 //! Compiled JSX idioms (decision-7, spec §4.5): `.map()` → keyed `list`, `item.key === sel()`
 //! → `selector`, `cond ? <A/> : <B/>` / `cond && <A/>` → memoised `branch`.
 
-use oxc_allocator::{CloneIn, TakeIn};
+use oxc_allocator::TakeIn;
 use oxc_ast::ast::*;
 use oxc_ast_visit::{Visit, walk};
 use oxc_span::{GetSpan, Span};
@@ -9,8 +9,8 @@ use oxc_syntax::operator::BinaryOperator;
 use oxc_syntax::scope::{ScopeFlags, ScopeId};
 use oxc_syntax::symbol::SymbolId;
 
-use super::element::attribute_name;
-use super::{Codegen, Compiled, clone_expression};
+use super::rows::RowParams;
+use super::{Codegen, Compiled};
 use crate::analyze::is_jsx_like;
 use crate::diagnostics::{Code, Diagnostic};
 
@@ -133,18 +133,20 @@ impl<'a> Codegen<'a, '_> {
             BindingPattern::BindingIdentifier(ident) => ident.symbol_id.get(),
             _ => None,
         });
-        let index_used = index.is_some_and(|i| !self.scoping.symbol_is_unused(i));
+        let row_params = RowParams::of(&callback);
+        let row_consts = self.row_consts(&callback, scope, &row_params.item);
+        let plan = self.check_row_key(&callback, scope, &row_params, &row_consts);
+        // The index is used when the row reads it outside the key.
+        let index_refs = index.map_or(0, |i| self.scoping.get_resolved_reference_ids(i).len());
+        let index_used = index_refs > plan.as_ref().map_or(0, |plan| plan.index_refs);
         if let Some(index) = index.filter(|_| index_used && !stable_rows) {
             self.check_index_escape(&callback, index);
         }
         // Rows are never reconciled on the server; the `key` attribute is skipped there.
-        let key = if self.server() {
-            None
-        } else {
-            self.take_key(&mut callback, scope, item)
+        let key = match &plan {
+            Some(plan) if !self.server() => Some(self.take_key(&mut callback, plan, &row_consts)),
+            _ => None,
         };
-
-        let row_consts = self.row_consts(&callback, scope, item);
         self.maps.push(MapCtx {
             item,
             index: index.filter(|_| index_used),
@@ -186,12 +188,12 @@ impl<'a> Codegen<'a, '_> {
         &self,
         callback: &Expression<'a>,
         scope: Option<ScopeId>,
-        item: Option<SymbolId>,
+        item: &[SymbolId],
     ) -> Vec<SymbolId> {
         let mut found = Vec::new();
-        let Some(item) = item else {
+        if item.is_empty() {
             return found;
-        };
+        }
         let body = match callback {
             Expression::ArrowFunctionExpression(arrow) => match &arrow.body {
                 ArrowFunctionBody::FunctionBody(body) => &**body,
@@ -232,107 +234,6 @@ impl<'a> Codegen<'a, '_> {
 
     fn visit_expression_in_place(&mut self, expr: &mut Expression<'a>) {
         oxc_ast_visit::VisitMut::visit_expression(self, expr);
-    }
-
-    /// Removes `key={…}` from the callback's root element and returns `(item) => key`, when the
-    /// key only reads the item and outer bindings.
-    fn take_key(
-        &mut self,
-        callback: &mut Expression<'a>,
-        scope: Option<ScopeId>,
-        item: Option<SymbolId>,
-    ) -> Option<Expression<'a>> {
-        let (params, root) = match callback {
-            Expression::ArrowFunctionExpression(arrow) => {
-                let arrow = &mut **arrow;
-                let root = match &mut arrow.body {
-                    ArrowFunctionBody::FunctionBody(body) => single_return(body),
-                    body => body.as_expression_mut(),
-                };
-                (&arrow.params, root)
-            }
-            Expression::FunctionExpression(function) => {
-                let function = &mut **function;
-                let root = function.body.as_mut().and_then(|b| single_return(b));
-                (&function.params, root)
-            }
-            _ => return None,
-        };
-        let Some(Expression::JSXElement(element)) = root.map(|r| strip_parens_mut(r)) else {
-            return None;
-        };
-        let attributes = &mut element.opening_element.attributes;
-        let position = attributes.iter().position(|a| {
-            matches!(a, JSXAttributeItem::Attribute(attr) if attribute_name(&attr.name) == "key")
-        })?;
-        let JSXAttributeItem::Attribute(attribute) = &attributes[position] else {
-            return None;
-        };
-        let Some(JSXAttributeValue::ExpressionContainer(container)) = &attribute.value else {
-            return None;
-        };
-        let expression = container.expression.as_expression()?;
-        if !self.only_item_and_outer(expression, scope, item) {
-            return None;
-        }
-        let key = clone_expression(self.ast, expression);
-        attributes.remove(position);
-        let pattern = params
-            .items
-            .first()?
-            .pattern
-            .clone_in_with_semantic_ids(oxc_allocator::GetAllocator::allocator(self.ast));
-        let span = key.span();
-        let body = self.visited(key);
-        let param = FormalParameter::new(
-            span,
-            self.ast.vec(),
-            pattern,
-            None,
-            None,
-            false,
-            None,
-            false,
-            false,
-            self.ast,
-        );
-        let params = FormalParameters::boxed(
-            span,
-            FormalParameterKind::ArrowFormalParameters,
-            self.ast.vec_from([param]),
-            None,
-            self.ast,
-        );
-        Some(Expression::new_arrow_function_expression(
-            span,
-            false,
-            None,
-            params,
-            None,
-            ArrowFunctionBody::from(body),
-            self.ast,
-        ))
-    }
-
-    /// True when every reference in `expr` is the item, a global, or a binding outside the
-    /// callback.
-    fn only_item_and_outer(
-        &self,
-        expr: &Expression<'a>,
-        scope: Option<ScopeId>,
-        item: Option<SymbolId>,
-    ) -> bool {
-        let mut checker = RefChecker {
-            codegen: self,
-            scope,
-            item,
-            row_data: &[],
-            uses_item: false,
-            uses_local: false,
-            calls: false,
-        };
-        checker.visit_expression(expr);
-        !checker.uses_local
     }
 
     /// LUM2006: the index is read in the row's setup code (outside JSX and closures), so the value
@@ -606,34 +507,12 @@ impl<'a> Codegen<'a, '_> {
     }
 }
 
-fn single_return<'b, 'a>(body: &'b mut FunctionBody<'a>) -> Option<&'b mut Expression<'a>> {
-    let returns = body
-        .statements
-        .iter()
-        .filter(|s| matches!(s, Statement::ReturnStatement(_)))
-        .count();
-    if returns != 1 {
-        return None;
-    }
-    body.statements.iter_mut().find_map(|s| match s {
-        Statement::ReturnStatement(ret) => ret.argument.as_mut(),
-        _ => None,
-    })
-}
-
-fn strip_parens_mut<'b, 'a>(expr: &'b mut Expression<'a>) -> &'b mut Expression<'a> {
-    match expr {
-        Expression::ParenthesizedExpression(paren) => strip_parens_mut(&mut paren.expression),
-        other => other,
-    }
-}
-
 /// Classifies the references of an expression relative to a `.map()` callback scope.
 struct RefChecker<'c, 'a, 's> {
     codegen: &'c Codegen<'a, 's>,
     scope: Option<ScopeId>,
     item: Option<SymbolId>,
-    /// Row consts counted as the item (selector keys; not `key` functions, which only get the item).
+    /// Row consts counted as the item (selector keys).
     row_data: &'c [SymbolId],
     uses_item: bool,
     uses_local: bool,
@@ -665,11 +544,12 @@ impl<'a> Visit<'a> for RefChecker<'_, 'a, '_> {
 }
 
 /// Whether a row const's initialiser is row data: no calls, writes or functions; references to the
-/// item, earlier row consts or bindings outside the callback (not the index or other locals).
+/// item (or the bindings of its pattern), earlier row consts or bindings outside the callback (not
+/// the index or other locals).
 struct RowData<'c, 'a, 's> {
     codegen: &'c Codegen<'a, 's>,
     scope: Option<ScopeId>,
-    item: SymbolId,
+    item: &'c [SymbolId],
     row_consts: &'c [SymbolId],
     plain: bool,
 }
@@ -679,7 +559,7 @@ impl<'a> Visit<'a> for RowData<'_, 'a, '_> {
         let Some(symbol) = self.codegen.symbol_of(it) else {
             return;
         };
-        if symbol == self.item || self.row_consts.contains(&symbol) {
+        if self.item.contains(&symbol) || self.row_consts.contains(&symbol) {
             return;
         }
         let declared = self.codegen.scoping.symbol_scope_id(symbol);

@@ -2783,7 +2783,7 @@ the efficient form:
 
 | Source                                              | Compiled to                                                                                                                                                                                                                           |
 | --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `{items().map((item, i) => <Row key={item.id} />)}` | A keyed list. `key` is optional (items are keyed by reference otherwise). `i` becomes a reactive index only if you use it.                                                                                                            |
+| `{items().map((item, i) => <Row key={item.id} />)}` | A keyed list. `key` is optional (items are keyed by reference otherwise). `i` becomes a reactive index only if you use it. See [Lists and keys](#lists-and-keys).                                                                     |
 | `item.id === selected()` inside `.map`              | An O(1) selector: a selection change touches two rows.                                                                                                                                                                                |
 | `{c() ? <A /> : <B />}`, `{c() && <A />}`           | A memoised branch: switches only when the condition flips.                                                                                                                                                                            |
 | `{count() * 2}`, ``{`#${id}`}``, `{String(x)}`      | Provably text: a text node of the template, updated with `setText` (written once when nothing reactive is read). Applies to sole children and to children between elements; a `const` initialised with such an expression counts too. |
@@ -2867,6 +2867,29 @@ export function Faq() {
     </>
   );
 }
+```
+
+### Lists and keys
+
+`{items().map((item, i) => …)}` compiles to a list that reconciles its rows when the array changes:
+it keeps, moves, creates and removes rows instead of rendering them all again. With a `key` on the
+element the callback returns, rows are matched by key; without one, by item reference (a row is
+kept while its item is the same object).
+
+The compiler moves the key into a function that the list calls for every item, so the key may
+read the item (or the bindings of its destructuring pattern), the index, bindings it declares
+itself (`key={row.map((p) => p.id).join("|")}`), `const`s at the top of the callback that copy item
+fields (`const id = item.id`), and anything declared outside the callback. A callback that returns
+in several places keeps its key when every returned element carries the same one. A key the
+compiler cannot use, such as one that reads a value computed in the row, is
+[LUM2008](../errors/LUM2008.md), and the list matches rows by reference.
+
+```tsx
+<section class="grid">
+  {entries().map(({ row, index }) => (
+    <div key={`${index}:${row.map((card) => card.id).join("|")}`}>…</div>
+  ))}
+</section>
 ```
 
 ## API
@@ -2960,6 +2983,7 @@ export function TodoList() {
 - [LUM2004](../errors/LUM2004.md): component called as a function.
 - [LUM2005](../errors/LUM2005.md): children inserted twice.
 - [LUM2006](../errors/LUM2006.md): reactive index escapes its callback.
+- [LUM2008](../errors/LUM2008.md): unsupported list key.
 - [LUM1001](../errors/LUM1001.md): syntax error.
 
 See also: [Components](components.md), [Styles](styles.md), [reference: JSX types](../reference/jsx.md).
@@ -15838,6 +15862,93 @@ value should survive re-runs, create the signal in a parent and pass it down.
 
 - [Async components](../concepts/async.md)
 
+<!-- source: errors/LUM2008.md -->
+
+<!-- Generated from crates/lumiose_compiler/src/diagnostics/registry.rs by packages/lumiose/scripts/gen-error-docs.ts. Edit the explanation below the end marker. -->
+
+# LUM2008: Unsupported list key
+
+**Severity:** warning · **Category:** reactivity (2xxx)
+
+<!-- end of generated header -->
+
+> The `key` of a `.map()` row cannot be compiled, so the list ignores it and matches rows by
+> reference.
+
+**Reported by:** the compiler. A warning.
+
+## What it means
+
+`{items().map((item) => <li key={item.id}>…</li>)}` compiles to a keyed list: the compiler moves
+the `key` into a key function, `(item) => item.id`, that the list calls for every item. The key
+function runs outside the row, so it gets only what the row callback receives: the item and the
+index. A key compiles when it reads only:
+
+- the item parameter, or the bindings of its destructuring pattern (`({ id }) => <li key={id}>`);
+- the index parameter (`(item, i) => <li key={`${i}:${item.id}`}>`);
+- bindings it declares itself, such as a nested arrow's parameters
+  (`key={row.map((p) => p.id).join("|")}`);
+- `const`s at the top of the callback that copy item fields without calls (`const id = item.id`,
+  `const { id } = item`), which the compiler inlines;
+- anything declared outside the callback.
+
+A callback may return in several places, as long as every element it returns carries the same
+key (`if (!item.visible) return <li key={item.id} hidden />; return <li key={item.id}>…</li>`).
+
+The warning reports a key the compiler cannot use:
+
+- a key that reads another value computed in the callback (`const label = format(item.name)`
+  then `key={label}`);
+- returned elements with different keys;
+- a constant key (`key="row"`), which every row would share;
+- a `key` on an element the callback does not return: inside a conditional
+  (`item.done ? <A key={item.id} /> : <B key={item.id} />`), a fragment, or a child of the row.
+
+Without a key, the list matches rows by reference: a row is kept only while its item is the same
+object, so new objects (a refetch, re-derived row data) rebuild their rows.
+
+## Example
+
+```tsx
+export function Products(props: { items: Product[] }) {
+  return (
+    <ul>
+      {props.items.map((item) => {
+        const slug = slugify(item.name);
+        return <li key={slug}>{item.name}</li>;
+      })}
+    </ul>
+  );
+}
+```
+
+## How to fix it
+
+Compute the key from the item and the index, in the `key` itself, or call a function declared
+outside the callback:
+
+```tsx
+<ul>
+  {props.items.map((item) => (
+    <li key={slugify(item.name)}>{item.name}</li>
+  ))}
+</ul>
+```
+
+For a conditional row, return one element with the key and move the condition inside it:
+
+```tsx
+<ul>
+  {items().map((item) => (
+    <li key={item.id}>{item.done ? <Done item={item} /> : <Todo item={item} />}</li>
+  ))}
+</ul>
+```
+
+## Related
+
+- [JSX: lists and keys](../concepts/jsx.md#lists-and-keys)
+
 <!-- source: errors/LUM3005.md -->
 
 <!-- Generated from crates/lumiose_compiler/src/diagnostics/registry.rs by packages/lumiose/scripts/gen-error-docs.ts. Edit the explanation below the end marker. -->
@@ -17673,6 +17784,7 @@ fix?, docs }`; `lumiose check --format json` prints them.
 | [LUM2005](LUM2005.md) | warning  | Children inserted twice             |
 | [LUM2006](LUM2006.md) | warning  | Reactive index escapes its callback |
 | [LUM2007](LUM2007.md) | warning  | Own signal read in an async body    |
+| [LUM2008](LUM2008.md) | warning  | Unsupported list key                |
 
 ## Styles (3xxx)
 

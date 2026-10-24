@@ -111,6 +111,7 @@ These docs match lumiose 0.6.0. Installed projects have them in `node_modules/lu
 - [LUM2005: Children inserted twice](errors/LUM2005.md)
 - [LUM2006: Reactive index escapes its callback](errors/LUM2006.md)
 - [LUM2007: Own signal read in an async body](errors/LUM2007.md)
+- [LUM2008: Unsupported list key](errors/LUM2008.md)
 - [LUM3005: Unused scoped selector](errors/LUM3005.md)
 - [LUM3008: Non-constant `$` reference](errors/LUM3008.md)
 - [LUM3009: Hyphenated `$` reference](errors/LUM3009.md)
