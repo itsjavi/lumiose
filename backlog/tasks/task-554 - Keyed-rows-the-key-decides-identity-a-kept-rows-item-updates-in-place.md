@@ -1,11 +1,11 @@
 ---
 id: TASK-554
 title: 'Keyed rows: the key decides identity, a kept row''s item updates in place'
-status: In Progress
+status: Done
 assignee:
   - Spark
 created_date: '2026-10-24 08:01'
-updated_date: '2026-10-24 11:00'
+updated_date: '2026-10-24 11:03'
 labels:
   - runtime
   - compiler
@@ -29,10 +29,10 @@ Approved by the user as F1 (2026-10-24). packages/lumiose/src/dom/list.ts rebuil
 - [x] #1 In a keyed list a kept row whose item is a new object keeps its DOM, components, local state and effects, and its item updates reactively; unkeyed lists are unchanged
 - [x] #2 The compiler makes reads of a keyed row callback's item parameter reactive, destructured item params included
 - [x] #3 Setup-time reads of the item in a keyed row that JSX uses are reported by LUM2001 (and early returns on the item by LUM2003, as a warning per decision-77), with docs on reading the item in JSX/effects or putting the changing field in the key
-- [ ] #4 decision-83 recorded (accepted, approved by the user on 2026-10-24), comparing React/Vue/Svelte/Angular/Lit and Solid 1.x <For>
+- [x] #4 decision-83 recorded (accepted, approved by the user on 2026-10-24), comparing React/Vue/Svelte/Angular/Lit and Solid 1.x <For>
 - [x] #5 Docs (lists and keys, LUM2001/LUM2003 pages) updated, llms-full regenerated, docs:check green; @lumiose/ui and apps/web list callbacks checked
 - [x] #6 pnpm check, cargo test/fmt/clippy, islands-e2e, spa-router-e2e and ui tests green
-- [ ] #7 The js-framework-benchmark in-process A/B (unkeyed and keyed) shows no cost beyond noise on any operation; the rows microbenchmark (before/after, React as reference) and the size deltas are reported
+- [x] #7 The js-framework-benchmark in-process A/B (unkeyed and keyed) shows no cost beyond noise on any operation; the rows microbenchmark (before/after, React as reference) and the size deltas are reported
 <!-- AC:END -->
 
 ## Implementation Notes
@@ -55,3 +55,9 @@ Docs: concepts/jsx.md (Lists and keys, common mistakes, related diagnostics), er
 
 Evidence: see decision-83 Consequences and TASK-555 (rows A/B: re-derive 11.9 → 0.1 ms script, refetch 12.4 → 1.7 ms, replace +1.2 ms; jsfb A/B unkeyed and keyed: every operation within noise). Size: typical imports 6.24 → 6.38 kB brotli (over the 6.25 kB soft target), islands page 9.40 → 9.59 kB (cap 10), whole runtime 13.78 → 13.96 kB (cap 15), list.ts 1552 → 1726 B brotli.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Keyed rows keep their DOM, components, state and effects when their item is a new object with the same key; the item updates in place, read reactively like a prop (row.v; the compiler rewrites item reads, destructured params included). Creating rows costs no extra links: bindings created with a row read the item untracked and re-run on its first in-place change. LUM2001/LUM2003 report setup copies and early returns on the item. Recorded as decision-83 (accepted, approved by the user on 2026-10-24); doc-1 and doc-2 updated. Rows A/B: re-derive 11.9 to 0.1 ms script, refetch 12.4 to 1.7 ms, replace +1.2 ms; jsfb A/B unkeyed and keyed within noise on every operation; typical runtime +0.14 kB brotli (6.38 kB, over the 6.25 kB soft target). pnpm check, cargo fmt/clippy/test, islands-e2e, spa-router-e2e and ui tests green.
+<!-- SECTION:FINAL_SUMMARY:END -->

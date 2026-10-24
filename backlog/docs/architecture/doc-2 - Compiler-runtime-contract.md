@@ -3,7 +3,7 @@ id: doc-2
 title: Compiler-runtime contract
 type: specification
 created_date: '2026-10-08 12:27'
-updated_date: '2026-10-17 01:24'
+updated_date: '2026-10-24 11:03'
 tags:
   - architecture
   - contract
@@ -47,10 +47,10 @@ tags:
 | `setNonce(el)` | Under `csp: "strict"` (compile option `strictCsp`), sets the page's nonce from `<meta property="csp-nonce">` on a JSX-authored `<script>`/`<style>` without an explicit `nonce` (decision-27); static `style="…"` strings are applied through the CSSOM instead of the attribute |
 | `insert(parent, value, marker?)` | Renders `Renderable` before `marker`. Functions and signals are tracked and reconciled. Arrays are flattened. Nodes are moved, not cloned. Strings become text nodes. `null`, `undefined` and booleans render nothing |
 | `insertText(node: Text, value)` | A child that may be text, at a template text node. Strings and numbers set its data; nullish values and booleans empty it; a function is bound once and its values are applied the same way. Other values (nodes, arrays, nested functions) render like `insert()` in a region before the text node (TASK-90) |
-| `list(parent, marker, source, render, key?)` | Keyed reconciliation (spec §6.3). `render.length > 1` means the index is used, so a per-row index signal is created. Each row's owner is created lazily |
+| `list(parent, marker, source, render, key?)` | Keyed reconciliation (spec §6.3). `render.length > 1` means the index is used, so a per-row index signal is created. Each row's owner is created lazily. Without `key`, rows match by reference and `render(item, index)` gets the item. With `key(item, index)`, the key alone decides whether a row is kept (decision-83): `render` gets the row, whose `v` getter returns its current item (when `render.length > 0`), and a kept row whose item is a new object keeps its nodes while what reads `v` re-runs. The bindings that read `v` while the row is created only join a list on the row (their `n` field); the row's first in-place change re-runs them, and they track `v` from then on. **Codegen** (TASK-553, TASK-554): the key of the element(s) the callback returns becomes `(itemPattern, indexPattern?) => key` (row consts inlined, the index only when read; LUM2008 when it cannot compile), and in keyed rows reads of the item become `item.v` and destructured bindings `_item.v.path` |
 | `branch(parent, marker, cond, whenTrue, whenFalse?)` | Memoised on `!!cond()`. Disposes the inactive branch's owner |
 | `branchValue(cond, whenTrue, whenFalse?)` | `branch` without a parent: returns a `Renderable` range that `insert` places as one node. Memoised on `!!cond()`; disposes the inactive owner on a flip. Used for conditionals in component children, fragments and nested ternaries |
-| `listValue(source, render, key?)` | `list` without a parent: a `Renderable` range with the same keyed reconciliation and index rule. Clears remove rows one by one. **Codegen:** keep `branch`/`list` when the expression is a child of a template element (cheaper); use the value variants elsewhere, e.g. `get children() { return listValue(…) }`. Under hydration, TASK-18 maps the server `<!--[-->…<!--]-->` region onto the range |
+| `listValue(source, render, key?)` | `list` without a parent: a `Renderable` range with the same keyed reconciliation, index and item rules. Clears remove rows one by one. **Codegen:** keep `branch`/`list` when the expression is a child of a template element (cheaper); use the value variants elsewhere, e.g. `get children() { return listValue(…) }`. Under hydration, TASK-18 maps the server `<!--[-->…<!--]-->` region onto the range |
 | `insertValue(value)` | `insert` without a parent: a `Renderable` range that `insert` places as one node, rendering `value` tracked like `insert`. **Codegen** (Photon, TASK-234): in an array of renderables (a fragment or component children with more than one item), every dynamic item that is not a reactive conditional, a list, a component or JSX becomes `insertValue(…)`, so that it claims the server's `insert` block under hydration. So does a fragment's single such item (TASK-415) |
 | `selector(source)` | Returns `isSelected(key)`. Only the previous and the next key re-notify |
 | `createComponent(C, props)` | New owner, untracked call. A native `async function` takes the async path (§4) |

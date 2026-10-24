@@ -3,11 +3,11 @@ id: TASK-553
 title: >-
   Compiler keeps list keys that read destructured params, the index or nested
   arrows; a key it cannot compile warns
-status: In Progress
+status: Done
 assignee:
   - Spark
 created_date: '2026-10-24 08:01'
-updated_date: '2026-10-24 08:18'
+updated_date: '2026-10-24 11:03'
 labels:
   - compiler
   - diagnostics
@@ -42,3 +42,9 @@ Spark (standalone worker for Lux; Lux granted the compiler's list codegen for th
 - Docs: errors/LUM2008.md, concepts/jsx.md 'Lists and keys' (h3 inside Concept: concept pages keep their five sections), llms regenerated.
 - Checks: cargo test -p lumiose_compiler, cargo test --workspace, clippy -D warnings, docs:check, vitest packages/compiler, cli, lumiose dom/docs/scripts.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Keys that read the item's pattern bindings, the index, nested arrows' parameters or plain row consts compile to (item, index?) => key; a callback with several returns keeps the key its returned elements share; any other key is the LUM2008 warning (docs page errors/LUM2008.md) and the list matches rows by reference. Validated with the codegen goldens (row-keys.tsx), compile_api, cargo test --workspace, clippy, docs:check and pnpm check (run with TASK-554).
+<!-- SECTION:FINAL_SUMMARY:END -->

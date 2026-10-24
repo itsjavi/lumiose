@@ -123,7 +123,7 @@ it is used instead (`{format(item.name)}`), or derive lazily (`const label = () 
 called as `label()`). Copies of the key are fine (`const id = item.id` with `key={item.id}`): a
 different id is a different row. To make a new row when some field changes (to reset a row's state,
 or for setup code that must run again), put that field in the key:
-`key={`${item.id}:${item.version}`}`.
+``key={`${item.id}:${item.version}`}``.
 
 The index stays reactive (`i` is compiled to `i()`), and a row keyed by its index
 (`key={i}`) keeps its place while its item changes, like Solid's `<Index>`.

@@ -2891,7 +2891,7 @@ it is used instead (`{format(item.name)}`), or derive lazily (`const label = () 
 called as `label()`). Copies of the key are fine (`const id = item.id` with `key={item.id}`): a
 different id is a different row. To make a new row when some field changes (to reset a row's state,
 or for setup code that must run again), put that field in the key:
-`key={`${item.id}:${item.version}`}`.
+``key={`${item.id}:${item.version}`}``.
 
 The index stays reactive (`i` is compiled to `i()`), and a row keyed by its index
 (`key={i}`) keeps its place while its item changes, like Solid's `<Index>`.
@@ -15529,7 +15529,7 @@ without a key, which a new item replaces.
 
 Read the item where it is used (`{formatPrice(item.price)}`), derive lazily
 (`const price = () => formatPrice(item.price)`, called as `price()`), or put the field in the key
-(`key={`${item.id}:${item.price}`}`) to make a new row when it changes.
+(``key={`${item.id}:${item.price}`}``) to make a new row when it changes.
 
 Pages and layouts whose route mode is `static` or `server` render once per request (or build), so
 their own props are plain values too: deriving from them is fine. Routes in `spa` mode, islands
@@ -15964,7 +15964,7 @@ function runs outside the row, so it gets only what the row callback receives: t
 index. A key compiles when it reads only:
 
 - the item parameter, or the bindings of its destructuring pattern (`({ id }) => <li key={id}>`);
-- the index parameter (`(item, i) => <li key={`${i}:${item.id}`}>`);
+- the index parameter (``(item, i) => <li key={`${i}:${item.id}`}>``);
 - bindings it declares itself, such as a nested arrow's parameters
   (`key={row.map((p) => p.id).join("|")}`);
 - `const`s at the top of the callback that copy item fields without calls (`const id = item.id`,
