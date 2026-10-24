@@ -3,7 +3,7 @@ id: doc-11
 title: Port scorecards
 type: other
 created_date: '2026-10-20 21:23'
-updated_date: '2026-10-24 11:34'
+updated_date: '2026-10-24 20:18'
 ---
 Every port of a real project records a scorecard against its original stack here (decision-70). Lumiose's public claims come from these scorecards and the benchmarks, so a port where Lumiose is not clearly better on something that matters is written down as plainly as a win, and its gaps become tasks.
 
@@ -210,6 +210,16 @@ Every port of a real project records a scorecard against its original stack here
   - **Result:** the port now beats the original on every comparable metric. Search until settled is a near-tie (168 against 157 ms), and the tracker's HTML is larger (17.6 against 13.0 kB), because the port renders its first screen on the server and fetches no data after load.
   - **App fix:** one ResizeObserver for all rows (A2) removed the tail on 0.6.0 (1456 to 380 ms until settled) but adds nothing on top of decision-83.
   - **Other gains on main:** the list loads 37.6 kB of JavaScript in 16 files instead of 39.4 kB in 21, and the tracker works on slow 4G in 2.05 s instead of 2.54 s.
+- **0.7.1 and @lumiose/ui 0.2.0 from npm (2026-10-24; decision-84, TASK-566):**
+  - The port replaced its three hand-written virtualizations with VirtualGrid and VirtualTable: 251 lines added, 501 removed.
+  - **Parity:** 19/19 behaviour checks, the same visual diff, and the row-placement probe all pass.
+  - **List, against 0.7.0 in the same session:**
+    - clear and filter on / off: 213, 97 / 89 ms to 186, 59 / 53 ms from the DOM change (the original: 233, 120 / 116);
+    - until settled: 151, 40 / 34 ms, with no long tasks;
+    - slow-4G interactive: 3.43 s instead of 4.32 s (the original: 8.30 s).
+  - **Tracker:** LCP 2.44 s instead of 2.74 s; island chunks now load in parallel (TASK-566).
+  - **Costs:** +1.6 kB of JavaScript on the list, +2.2 kB on the tracker and +0.6 kB of tracker HTML; a few tracker interactions take 2–3 ms longer.
+  - **Result:** the port beats the original on every comparable metric. The exceptions are the tracker's HTML (larger by design) and search until settled (a tie: 162 against 160 ms).
 
 ### The same app: forms, actions and auth
 
