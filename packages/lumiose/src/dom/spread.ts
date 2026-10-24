@@ -1,6 +1,7 @@
 // `spread(el, () => props)`: a props object applied to an element (contract doc-2 §2).
 import { renderEffect } from "../core/internal.ts";
 import { applyScope, setAttr, setClass, setProp, setStyle } from "./attributes.ts";
+import { applyAttachments, type Attachment, type AttachState } from "./element.ts";
 import { batched } from "./events.ts";
 
 type Props = Record<string, unknown>;
@@ -18,10 +19,18 @@ const PROPERTIES = /^(?:value|checked|selected|muted|indeterminate)$/;
  * attribute names are (TASK-496).
  */
 const CONTENT = /^(?:innerHTML|textContent)$|^srcdoc$/i;
+/**
+ * Lowercase `on*` names (an inline handler attribute is a script sink: dropped, as on the server
+ * and in React) and `bind:`/`client:` directives, which are not props: never attributes, as in the
+ * server's `spreadAttrs`.
+ */
+const NOT_ATTRIBUTE = /^on|^(?:bind|client):/i;
 
 interface SpreadState {
   el: Element;
   prev: Props;
+  /** The attachments of an `attach` key, once there was one. */
+  attach: AttachState | undefined;
 }
 
 /** Reads every value (tracked). `children` is left to the caller, `key` is compile-time only. */
@@ -49,7 +58,8 @@ function eventName(key: string): string | undefined {
   return undefined;
 }
 
-function setSpreadProp(el: Element, key: string, value: unknown, prev: unknown): void {
+function setSpreadProp(state: SpreadState, key: string, value: unknown, prev: unknown): void {
+  const el = state.el;
   const event = eventName(key);
   if (event !== undefined) {
     // Spread handlers are native listeners (the compiler cannot see which events they use), batched
@@ -63,15 +73,22 @@ function setSpreadProp(el: Element, key: string, value: unknown, prev: unknown):
         listeners.set(value as Listener, (listener = batched(value as Listener)));
       el.addEventListener(event, listener);
     }
-  } else if (/^on/i.test(key) || CONTENT.test(key)) {
-    // A lowercase `onclick` would be an inline handler attribute, a script sink: dropped, as on
-    // the server and in React. Content keys too (above).
+  } else if (NOT_ATTRIBUTE.test(key) || CONTENT.test(key)) {
+    // Dropped (above).
   } else if (key === "class") {
     setClass(el, value);
   } else if (key === "style") {
     setStyle(el as HTMLElement, value);
   } else if (key === "ref") {
     (value as ((el: Element) => void) | undefined)?.(el);
+  } else if (key === "attach") {
+    // As `attach={[…]}` (./element.ts): restarted when the list changes, stopped when the key
+    // goes away; never an attribute (TASK-568). A written `attach` next to the spread runs on
+    // its own, so both apply.
+    applyAttachments(
+      (state.attach ??= { el, owner: undefined }),
+      Array.isArray(value) ? value : [value as Attachment],
+    );
   } else if (key === "$$scope") {
     applyScope(el, value as string | undefined);
   } else if (PROPERTIES.test(key)) {
@@ -82,27 +99,31 @@ function setSpreadProp(el: Element, key: string, value: unknown, prev: unknown):
 }
 
 function applySpread(state: SpreadState, next: Props): void {
-  const { el, prev } = state;
+  const { prev } = state;
   for (const key in prev) {
     if (!(key in next)) {
-      setSpreadProp(el, key, undefined, prev[key]);
+      setSpreadProp(state, key, undefined, prev[key]);
     }
   }
   for (const key in next) {
     const value = next[key];
     const old = prev[key];
     if (value !== old) {
-      setSpreadProp(el, key, value, old);
+      setSpreadProp(state, key, value, old);
     }
   }
   state.prev = next;
 }
 
 /**
- * Applies attributes, properties, `class`, `style`, events (`onX`, `on:x`), `ref` and `$$scope`
- * from `props()`. Tracked: when a read value changes, only the keys that changed are written, and
- * keys that disappeared are removed.
+ * Applies attributes, properties, `class`, `style`, events (`onX`, `on:x`), `ref`, `attach` and
+ * `$$scope` from `props()`. Tracked: when a read value changes, only the keys that changed are
+ * written, and keys that disappeared are removed.
  */
 export function spread(el: Element, props: () => Props): void {
-  renderEffect<SpreadState, Props>({ el, prev: {} }, () => readProps(props()), applySpread);
+  renderEffect<SpreadState, Props>(
+    { el, prev: {}, attach: undefined },
+    () => readProps(props()),
+    applySpread,
+  );
 }

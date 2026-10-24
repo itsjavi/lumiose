@@ -148,6 +148,11 @@ impl<'a> Ast<'a> {
         Expression::new_logical_expression(span, left, LogicalOperator::And, right, self)
     }
 
+    /// `left || right`.
+    pub fn or(&self, span: Span, left: Expression<'a>, right: Expression<'a>) -> Expression<'a> {
+        Expression::new_logical_expression(span, left, LogicalOperator::Or, right, self)
+    }
+
     /// `typeof value === "string"`.
     pub fn is_string(&self, span: Span, value: Expression<'a>) -> Expression<'a> {
         let kind = Expression::new_unary_expression(span, UnaryOperator::Typeof, value, self);

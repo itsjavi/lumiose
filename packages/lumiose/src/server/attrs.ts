@@ -170,9 +170,14 @@ const ATTRIBUTE_NAME = /^[^\s"'<>/=\p{Cc}]+$/u;
 
 /**
  * `{...props}` on an element. Event handlers, directives and invalid names are skipped; `custom`
- * as in `attr()`.
+ * as in `attr()`. A nullish spread (`{...props.extra}`) renders nothing, as on the client
+ * (TASK-569).
  */
-export function spreadAttrs(props: Record<string, unknown>, custom?: boolean): string {
+export function spreadAttrs(
+  props: Record<string, unknown> | null | undefined,
+  custom?: boolean,
+): string {
+  if (props == null) return "";
   let out = "";
   for (const key of Object.keys(props)) {
     if (SKIPPED.has(key) || NOT_ATTRIBUTE.test(key) || SRCDOC.test(key)) continue;

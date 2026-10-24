@@ -29,11 +29,19 @@ const _s3 = [
 const _c3 = (h0, h1, h2, h3, h4, h5) => typeof h0 === "string" && typeof h1 === "string" && typeof h2 === "string" && typeof h3 === "string" && typeof h4 === "string" && typeof h5 === "string" ? new SSRHtml("<section><p" + h0 + ">" + h1 + "</p><p" + h2 + ">" + h3 + "</p><p" + h4 + ">" + h5 + "</p><p>text</p></section>") : ssr(_s3, h0, h1, h2, h3, h4, h5);
 const _s4 = [
 	"<div><p",
+	">",
+	"</p><p",
+	">",
+	"</p></div>"
+];
+const _c4 = (h0, h1, h2, h3) => typeof h0 === "string" && typeof h1 === "string" && typeof h2 === "string" && typeof h3 === "string" ? new SSRHtml("<div><p" + h0 + ">" + h1 + "</p><p" + h2 + ">" + h3 + "</p></div>") : ssr(_s4, h0, h1, h2, h3);
+const _s5 = [
+	"<div><p",
 	">own</p><p>own</p><input",
 	"><textarea",
 	"></textarea></div>"
 ];
-const _c4 = (h0, h1, h2) => typeof h0 === "string" && typeof h1 === "string" && typeof h2 === "string" ? new SSRHtml("<div><p" + h0 + ">own</p><p>own</p><input" + h1 + "><textarea" + h2 + "></textarea></div>") : ssr(_s4, h0, h1, h2);
+const _c5 = (h0, h1, h2) => typeof h0 === "string" && typeof h1 === "string" && typeof h2 === "string" ? new SSRHtml("<div><p" + h0 + ">own</p><p>own</p><input" + h1 + "><textarea" + h2 + "></textarea></div>") : ssr(_s5, h0, h1, h2);
 // An element without content of its own renders the `children` of its spreads and `children`
 // attribute, as in React and Solid (TASK-347): the last source that has `children` wins, written
 // content wins over all of them. Spreads alone insert `children` only when their props object has
@@ -54,6 +62,11 @@ export function Merged(props) {
 		return props.label;
 	} }, props.b).children));
 }
+// A spread may be nullish or `false`, which `in` throws on, so it is checked as `object || {}`
+// (TASK-569). The component's props, its `...rest` and merged spreads are always objects.
+export function Optional(props) {
+	return _c4(spreadAttrs(props.extra), "children" in (props.extra || {}) ? insert(props.extra.children) : "", spreadAttrs(props.open && props.attrs), "children" in (props.open && props.attrs || {}) ? insert((props.open && props.attrs).children) : "");
+}
 export function Written(props) {
-	return _c4(spreadAttrs(props), spreadAttrs(props), spreadAttrs(props));
+	return _c5(spreadAttrs(props), spreadAttrs(props), spreadAttrs(props));
 }

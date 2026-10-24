@@ -38,7 +38,8 @@ export function setText(node: Text, value: unknown): void {
 }
 
 /**
- * Sets or removes an attribute. Nullish and `false` remove it and `true` sets "", except for
+ * Sets or removes an attribute. Nullish, `false` and functions remove it (a function's source is
+ * never an attribute, as the server's `attr` leaves it out, TASK-568) and `true` sets "", except for
  * `aria-*` and enumerated attributes, where booleans are written as "true"/"false". On a custom
  * element that defines a property of that name (not one every element has), the value goes to the
  * property as it is, as in React 19: arrays, objects and booleans reach the element (TASK-326).
@@ -49,7 +50,7 @@ export function setAttr(el: Element, name: string, value: unknown): void {
     (el as unknown as Slots)[name] = typeof value === "string" ? safeAttrValue(name, value) : value;
   } else if (typeof value === "boolean" && BOOLEANISH.test(name)) {
     el.setAttribute(name, String(value));
-  } else if (value == null || value === false) {
+  } else if (value == null || value === false || typeof value === "function") {
     el.removeAttribute(name);
   } else {
     // Unsafe URLs in URL attributes become a placeholder (./url.ts).

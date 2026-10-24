@@ -133,6 +133,8 @@ const ATTRIBUTE_VALUES: unknown[] = [
   1,
   -1.5,
   Number.NaN,
+  // A function's source is never an attribute (TASK-568).
+  () => "source",
 ];
 
 describe("attribute parity", () => {
@@ -287,6 +289,30 @@ describe("spread parity", () => {
     expect(parsed(`<iframe${spreadAttrs(props)}></iframe>`)).toBe(written(iframe));
     expect(spreadAttrs(props)).toBe(' title="kept"');
     expect(iframe.hasAttribute("srcdoc")).toBe(false);
+  });
+
+  it("never writes attach, bind:/client: keys or functions as attributes (TASK-568)", () => {
+    const fn = (): void => {};
+    const props = {
+      attach: [fn],
+      "bind:value": fn,
+      "client:load": true,
+      "data-cb": fn,
+      title: "kept",
+    };
+    const div = document.createElement("div");
+    render(() => (spread(div, () => props), div), document.createElement("main"));
+    expect(parsed(`<div${spreadAttrs(props)}></div>`)).toBe(written(div));
+    expect(spreadAttrs(props)).toBe(' title="kept"');
+  });
+
+  it("renders nothing for a nullish spread (TASK-569)", () => {
+    for (const props of [undefined, null]) {
+      const div = document.createElement("div");
+      render(() => (spread(div, () => props as never), div), document.createElement("main"));
+      expect(spreadAttrs(props)).toBe("");
+      expect(written(div)).toBe("<div></div>");
+    }
   });
 
   it("renders DOM properties as the attributes that give the same initial state", () => {

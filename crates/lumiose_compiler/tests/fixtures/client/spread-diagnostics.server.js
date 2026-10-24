@@ -39,7 +39,7 @@ export function Stale(props) {
 }
 export function Live(props) {
 	const attrs = () => ({ title: props.label });
-	return _c1(spreadAttrs(attrs()), "children" in attrs() ? insert(attrs().children) : "");
+	return _c1(spreadAttrs(attrs()), "children" in (attrs() || {}) ? insert(attrs().children) : "");
 }
 export function Twice(props) {
 	return _c2(spreadAttrs(props), "children" in props ? insert(props.children) : "", insertText(props.children));

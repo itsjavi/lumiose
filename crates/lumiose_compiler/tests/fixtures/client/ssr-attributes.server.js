@@ -34,5 +34,5 @@ export function Field(props) {
 	}), "<i>" + props.size + "</i>", escape(name()), escape(name()), spreadAttrs(mergeProps(props.rest, {
 		id: "last",
 		onClick: () => {}
-	})), "children" in props.rest ? insert(props.rest.children) : "");
+	})), "children" in (props.rest || {}) ? insert(props.rest.children) : "");
 }
