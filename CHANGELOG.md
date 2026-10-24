@@ -2,6 +2,30 @@
 
 All Lumiose packages share one version, except those released outside lockstep (@lumiose/ui), which keep their own changelog in their directory.
 
+## 0.7.1 (2026-10-24)
+
+### Fixes
+
+- **ui,web:** live demos for VirtualList, VirtualGrid and VirtualTable; their containers keep the caller's style (TASK-565) (ff5a9436)
+- **core:** a keyed row's in-place change reruns a binding already queued as maybe stale (TASK-567) (9922eddc)
+- **compiler:** attach next to a spread applies on its own; guard nullish spreads (2f260c71)
+- **dom:** spreads run attach and never write functions as attributes (a0a91af1)
+
+### Performance
+
+- **islands:** preload the chunks islands import, after the stylesheets (TASK-566) (5c5ccb9b)
+
+### Scale
+
+The large-app benchmark (1,500 routes, 5,000 components), working tree against v0.7.0 (fc8f673c), medians of 3 rounds on Apple M1 Max (10 cores, 32 GB, darwin 27.0.0 arm64, Node v26.8.1). The release gate stops at a ratio above 1.2.
+
+| Metric | Previous | This release | Ratio |
+| ------ | -------- | ------------ | ----- |
+| Production build (ms) | 36734.7 | 31228.1 | 0.850 |
+| Dev cold start (ms) | 1025.6 | 1146.5 | 1.118 |
+| HMR latency (ms) | 81.3 | 78.6 | 0.967 |
+| Server memory, peak RSS (MB) | 525.9 | 523.9 | 0.996 |
+
 ## 0.7.0 (2026-10-24)
 
 ### Breaking changes

@@ -1,6 +1,6 @@
 {
   "name": "lumiose",
-  "version": "0.7.0",
+  "version": "0.7.1",
   "description": "Feels like React. Runs like vanilla JS. Lumiose is a web framework for everything from static sites and SPAs to full-stack apps: TSX with scoped CSS built in, signals, and 0 kB of JavaScript until a page needs it.",
   "license": "MIT",
   "repository": {
