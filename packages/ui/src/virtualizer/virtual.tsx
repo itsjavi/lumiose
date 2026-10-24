@@ -277,10 +277,12 @@ export function VirtualGrid<T>({
                 ? {
                     position: "absolute",
                     top: "0",
-                    left: "0",
+                    // The column by layout (`left`), which snaps fractional px as a CSS grid's
+                    // tracks do; a translated x would blur the cell's edges.
+                    left: left(index()),
                     width: px(grid.itemWidth()),
                     height: measure ? undefined : px(grid.size(rowAt(index()))),
-                    transform: `translate(${left(index())}, ${px(grid.start(rowAt(index())))})`,
+                    transform: `translateY(${px(grid.start(rowAt(index())))})`,
                   }
                 : undefined
             }

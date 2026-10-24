@@ -150,7 +150,8 @@ it("VirtualGrid fits columns, places its cells, and measures a row as its talles
   expect(seventh.getAttribute("data-id")).toBe("p6");
   expect(seventh.getAttribute("data-row")).toBe("1");
   expect(seventh.style.width).toBe("112px");
-  expect(seventh.style.transform).toBe("translate(122px, 130px)");
+  expect(seventh.style.left).toBe("122px");
+  expect(seventh.style.transform).toBe("translateY(130px)");
 
   // Row 0's cells measure 80 to 104px: the row is 104px tall.
   const first: Element[] = cells().slice(0, 5);
@@ -158,7 +159,7 @@ it("VirtualGrid fits columns, places its cells, and measures a row as its talles
     first.includes(cell) ? 80 + first.indexOf(cell) * 6 : 120,
   );
   flush();
-  expect(seventh.style.transform).toBe("translate(122px, 114px)");
+  expect(seventh.style.transform).toBe("translateY(114px)");
 
   // Narrower: 3 columns, the measured sizes start over.
   box.width = 330;
@@ -166,7 +167,8 @@ it("VirtualGrid fits columns, places its cells, and measures a row as its talles
   window.dispatchEvent(new Event("resize"));
   frame();
   expect(seventh.getAttribute("data-row")).toBe("2");
-  expect(seventh.style.transform).toBe("translate(0px, 260px)");
+  expect(seventh.style.left).toBe("0px");
+  expect(seventh.style.transform).toBe("translateY(260px)");
 });
 
 it("VirtualTable renders its window between spacer rows, with the table's row count and indexes", () => {
