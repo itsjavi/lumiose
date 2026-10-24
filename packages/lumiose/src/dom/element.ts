@@ -107,9 +107,9 @@ export function bindProperty(el: Element, name: string, signal: WritableSource<u
   }
 }
 
-type Attachment = ((el: Element) => void | (() => void)) | false | null | undefined;
+export type Attachment = ((el: Element) => void | (() => void)) | false | null | undefined;
 
-interface AttachState {
+export interface AttachState {
   el: Element;
   owner: Owner | undefined;
 }
@@ -126,7 +126,11 @@ function runAttachments(): void {
   }
 }
 
-function applyAttachments(state: AttachState, attachments: readonly Attachment[]): void {
+/**
+ * Starts `attachments` on `state.el` under the current owner, after stopping the ones it started
+ * before. Also used by `spread` for an `attach` key (./spread.ts).
+ */
+export function applyAttachments(state: AttachState, attachments: readonly Attachment[]): void {
   const prev = state.owner;
   if (prev !== undefined) {
     state.owner = undefined;

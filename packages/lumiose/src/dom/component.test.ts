@@ -192,6 +192,39 @@ describe("spread", () => {
     expect(el.getAttributeNames()).toEqual(["id"]);
   });
 
+  it("runs an attach key as attachments, never as an attribute (TASK-568)", () => {
+    const el = document.createElement("li");
+    const log: string[] = [];
+    const mark = (label: string) => (node: Element) => {
+      log.push(`${label} ${node.localName}`);
+      return () => log.push(`stop ${label}`);
+    };
+    const first = [mark("a"), false, mark("b")];
+    const props = signal<Record<string, unknown>>({ attach: first, id: "x" });
+    const owner = root(() => spread(el, () => props()));
+    flush(); // attachments are effects
+    expect(log).toEqual(["a li", "b li"]);
+    expect(el.getAttributeNames()).toEqual(["id"]);
+    // The same list: nothing restarts.
+    props.set({ attach: first, id: "y" });
+    flush();
+    expect(log).toEqual(["a li", "b li"]);
+    // A new list restarts them (cleanups in reverse order); a single function counts as a list
+    // of one.
+    props.set({ attach: mark("c"), id: "y" });
+    flush();
+    expect(log.slice(2)).toEqual(["stop b", "stop a", "c li"]);
+    // The key going away stops them, as does disposal.
+    props.set({ id: "y" });
+    flush();
+    expect(log.slice(5)).toEqual(["stop c"]);
+    props.set({ attach: [mark("d")] });
+    flush();
+    disposeOwner(owner);
+    expect(log.slice(6)).toEqual(["d li", "stop d"]);
+    expect(el.hasAttribute("attach")).toBe(false);
+  });
+
   it("applies attributes, properties, class, style, events, ref and $$scope, and diffs updates", () => {
     const el = document.createElement("input");
     const clicks: string[] = [];
