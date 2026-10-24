@@ -5,7 +5,7 @@ status: In Progress
 assignee:
   - Halo
 created_date: '2026-10-24 15:40'
-updated_date: '2026-10-24 16:45'
+updated_date: '2026-10-24 17:47'
 labels:
   - ui
   - proposal
@@ -99,4 +99,25 @@ Port trial (local branch `virtualizer-trial` of the port, commits a5d21bc and 5c
   - The tracker's +0.45 s: the mount costs the same (5-run probe: marker 2.05 against 2.30 s, long tasks 161 against 151 ms); the virtualizer is a chunk shared by two islands that arrives last in the island's import waterfall (2.20 s against 1.88 s). The island's imports start loading only after its own chunk (a waterfall): a possible framework or chunking task (Nova), not a virtualizer cost.
 
 User decisions (2026-10-24): createVirtualizer, in @lumiose/ui (`@lumiose/ui/virtualizer`); rows() returns index arrays; rows are measured in the same frame; and ship components now too, on top of the primitive (Virtual.List / Virtual.Grid / Virtual.Table or similar). The components' API shape and the remaining details (data-row vs data-index, keepFocused's default) come back to the user before merging.
+
+Halo, 2026-10-24 (components, after the user's decisions): VirtualList, VirtualGrid and VirtualTable on createVirtualizer, on Halo's worktree branch (commits 13a09ab8, c209bed7, 52b3501f, 93105a15), not merged. Their API waits for the user's sign-off.
+
+- API: `<VirtualList|VirtualGrid|VirtualTable items itemKey size [measure] [overscan] [scroller] [initial] [virtualizer]>{(row) => …}</…>`; the list adds `gap`, `keepFocused` (default true), `itemProps`; the grid adds `minItemWidth` / `minColumns` or `columns`, `gap`, `columnGap`, `keepFocused` (default true), `itemProps`; the table adds `head`, `headerRows` (default 1), `colSpan`, `empty`, `rowProps`. Each renders its container (ul, ul, table) and one element per item (li, li, tr) with the key, the place, data-row and the ARIA (aria-posinset/aria-setsize; aria-rowcount on the table, aria-rowindex on its rows); the children function renders the content once per row, with `row.item` and `row.index` as getters. Rows are keyed by itemKey against the window's items (an array of the items, not of indexes), so decision-83's identity holds.
+- Primitive changes: `overscan` takes an accessor; several measured elements of one row (a grid's cells) make the row as tall as the tallest.
+- Sizes (brotli, with the primitive): virtualizer 1.56, VirtualList 2.18, VirtualGrid 2.25, VirtualTable 2.26 kB.
+- Two Lumiose bugs found, with tasks and workarounds in the components: TASK-567 (Spark) a keyed row's binding that reads the item and an unchanged computed misses the in-place update (each row's item goes through a computed); TASK-568 (Photon) `attach` next to a spread becomes an attribute and never runs (measured rows are observed from the container).
+- Tests: ui unit 645/645 (16 for the virtualizer and components); ui typecheck; docs examples and contract 10/10; docs:check. ui-e2e (virtualizer and components suites) 83 passed and 1 skipped (macOS WebKit's Tab, which Linux CI runs) in Chromium dev and build, Firefox and WebKit, axe in both schemes included.
+- Docs: virtual-list.md, virtual-grid.md, virtual-table.md as component pages (the MCP ui catalog lists them as "Virtual List.VirtualList" and so on, like "Toggle Group.ToggleGroup"); virtualizer.md stays a guide for the primitive and points at them.
+- Demos: the ui-e2e fixture's /virtualizer/components (list and table), /virtualizer/components/cells (server-rendered fixed cells) and /virtualizer/components/cards (measured).
+
+Port trial with the components (local branch `virtualizer-trial`, def9307 and 497f59d; main untouched): the list's measured grid and the tracker's fixed grid are VirtualGrid, the table is VirtualTable (the port has no plain list, so VirtualList is covered by ui-e2e only).
+- Diff against the hand-written grids (82f4a12): 251 added, 501 removed (primitive trial: 109 / 297).
+- Checks: lumiose check 0 errors (the 24 old warnings), lint, build, unit 30/30, the tracker's e2e 9/9, behaviour 19/19, visual diff equal to 0.7.0's on all 14 pairs once cells take their column as `left` (52b3501f; a translated x blurred the cards' edges, 0.22 to 0.32% on the desktop list), the row-placement probe, and the tracker's first server cell kept after mount.
+- Matrix (one session, builds alternating, all on Lumiose packed at 52b3501f; data in docs/parity/matrix/2026-10-24-virtual-components/), original / hand-written / primitive / components:
+  - JS list / detail / tracker: 390.4 / 423.8 / 388.3; 37.5 / 22.3 / 32.9; 38.2 / 22.4 / 34.1; 38.9 / 22.3 / 34.9 kB. Tracker HTML 13.0; 17.6; 17.6; 18.1 kB (each server cell gains its li with data-row and the aria attributes).
+  - List search, clear, filter on / off from the DOM change: 221, 238, 119 / 114; 216, 214, 106 / 88; 208, 186, 65 / 55; 202, 194, 55 / 48 ms. Settled: 159, 265, 157 / 154; 174, 187, 80 / 70; 160, 152, 42 / 38; 159, 155, 36 / 31 ms. Long tasks: 0, 81, 80 / 81; 0, 0, 68 / 60; 0, 0, 0 / 0; 0, 0, 0 / 0 ms.
+  - Components against the primitive: the runs overlap on every list and tracker interaction (no difference claimed). Both beat the hand-written grids on clear and the filter switch, without overlap.
+  - Slow 4G tracker works: 10.38; 2.08; 2.55; 2.65 s, the shared chunk's place in the island's import waterfall, as before (TASK-566).
+
+Recommendations for the user's sign-off: keep `data-row` (the virtualizer's unit is the row; a grid's cells carry their row, which measuring and keepFocused need; the components write it themselves); keepFocused defaults to true on VirtualList and VirtualGrid (placed rows), false on the primitive (it cannot know the layout), and VirtualTable has none (rows in flow); in the MCP ui catalog the three components are component pages and the primitive a guide page.
 <!-- SECTION:NOTES:END -->
