@@ -56,6 +56,11 @@ export interface BuiltApp extends BuiltAppConfig {
   islands: Readonly<Record<string, string>>;
   /** URL of the island loader chunk (with `base`); absent when the app has no islands. */
   loader?: string;
+  /**
+   * The loader's and each island's chunk URL → the URLs of the chunks it imports statically (with
+   * `base`), which pages modulepreload with the loader and with islands that hydrate at once.
+   */
+  chunkImports?: Readonly<Record<string, readonly string[]>>;
   /** URL of the SPA entry chunk (with `base`); absent when the app has no `spa` pages. */
   spa?: string;
   /**
@@ -95,12 +100,16 @@ export type AppHandlerOptions = Pick<
 
 /** The production request handler of a built app (`export default { fetch }`). */
 export function createAppHandler(app: BuiltApp, options: AppHandlerOptions = {}): RequestHandler {
+  const { chunkImports } = app;
   return createRequestHandler({
     ...options,
     manifest: app.manifest,
     loadModule: app.loadModule,
     render: createServerRenderer({
       islandUrl: (specifier) => app.islands[specifier] ?? specifier,
+      ...(chunkImports === undefined
+        ? {}
+        : { chunkImports: (url: string) => chunkImports[url] ?? [] }),
       ...(app.loader === undefined ? {} : { loaderUrl: app.loader }),
     }),
     ...(app.middleware === undefined ? {} : { middleware: app.middleware }),

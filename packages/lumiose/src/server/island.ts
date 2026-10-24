@@ -66,7 +66,14 @@ export function island<P>(
   const unit = resolveUnit(parent.unit);
   const state: IslandState = { id, ref, record, unit };
   unit.islands.push(state);
-  if (strategy === "load") addPreload(render, unit, render.moduleUrl(specifierOf(ref)));
+  if (strategy === "load" || strategy === "only") {
+    // An island that hydrates at once: its chunk and every chunk it imports load in parallel with
+    // the loader, not one after the other (TASK-566). The loader preloads those of the other
+    // islands when they trigger.
+    const url = render.moduleUrl(specifierOf(ref));
+    addPreload(render, unit, url);
+    for (const imported of render.chunkImports(url)) addPreload(render, unit, imported);
+  }
 
   // Slots are static server HTML from the call site's frame (not hydrated as part of the island).
   const rendered: Record<string, Html> = {};

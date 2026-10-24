@@ -302,6 +302,29 @@ stylesheets (and waits for them, skipping those the page already holds in its me
 styles), module preloads and the CSP nonce of `<meta property="csp-nonce">`, but dispatches no `vite:preloadError` event (the router loads the
 URL with a document navigation when a page's module does not load).
 
+**How island chunks load.** In a build, an island's chunk imports other chunks: code it shares
+with other islands (a component, a helper, a `?client` script), and the runtime chunk. A browser
+finds a chunk's imports only once the chunk itself has loaded, so each step down the import chain
+would wait for the one before it. Lumiose starts the whole chain at once instead, and only for the
+islands that are due:
+
+- `client:load` and `client:only` islands hydrate as soon as the loader runs. The page gets a
+  `<link rel="modulepreload">` for the island's chunk and for every chunk it reaches through static
+  imports, next to the loader's `<script>` (in the `<head>` for the shell, after the page's
+  stylesheets, which block the first paint and so go first; in the streamed chunk for an island
+  inside `<Suspense>`), so they all load in parallel with the loader. A chunk that several islands
+  import is preloaded once, and so are the chunks the loader itself imports.
+- `client:idle`, `client:visible` and `client:media` islands load nothing before their trigger
+  fires. Then the loader adds module preloads for the island's chunk and every chunk it imports in
+  one go (and links its stylesheets the page does not hold yet), and imports it.
+- A dynamic `import()` inside an island loads when it runs, as usual.
+
+In `lumiose dev`, modules are served one by one as Vite transforms them: an island that hydrates at
+once gets a `modulepreload` for its own module only. With `lumiose({ csp: "strict" })`, the
+preloads carry the response's nonce on pages rendered per request, and prerendered pages allow them
+as `'self'` ([Security](security.md)). `spa` pages preload their layouts and page the same way
+([Rendering modes](rendering-modes.md)).
+
 **Islands from other packages.** Components of a
 [Lumiose package](../reference/vite.md#lumiose-packages), linked (`"@acme/ui": "workspace:*"`) or
 installed from npm, can be or render islands too. Island records name modules without
@@ -309,7 +332,7 @@ build-machine paths: root-relative inside the project
 (`/src/components/LikeButton.stsx#LikeButton`), package-relative in a package
 (`@acme/ui/src/Nav.stsx#Nav`, also for one installed under the project's `node_modules`), or by
 the import's bare name (`import { Nav } from "@acme/ui"` gives `@acme/ui#Nav`). Either way, the
-`modulepreload` hint of a `client:load` island points at its chunk in a build and at Vite's URL of
+`modulepreload` hint of a `client:load` or `client:only` island points at its chunk in a build and at Vite's URL of
 the module in dev. Builds also look for island call sites in the Lumiose packages, so each of
 their islands gets its chunk even when only server code renders it. Folders inside a linked
 package that are projects of their own (with a `package.json`, `tsconfig.json` or

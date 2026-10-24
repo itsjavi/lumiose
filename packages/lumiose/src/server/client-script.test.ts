@@ -42,7 +42,7 @@ async function render(root: () => unknown, resolveAll = false) {
   const parts: ShellParts = await renderShell(root, { resolveAll });
   let stream = "";
   if (parts.stream !== null) for await (const chunk of parts.stream) stream += chunk;
-  return { head: parts.head, html: parts.html, stream };
+  return { head: parts.head + parts.assets, html: parts.html, stream };
 }
 
 describe("clientScript()", () => {

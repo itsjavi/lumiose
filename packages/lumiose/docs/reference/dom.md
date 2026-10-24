@@ -82,7 +82,9 @@ first wait for it, [Islands](../concepts/islands.md#concept)):
   (the value is the `rootMargin`), `client:media` when the query matches;
 - waits for an island whose range still holds a streamed `<Suspense>` fallback until its content
   (and the await records sent with it) arrives;
-- imports the island's module and calls `hydrate()`;
+- imports the island's module and calls `hydrate()`; in a build, it first adds module preloads for
+  the island's chunk and the chunks it imports, which then load in parallel
+  ([How island chunks load](../concepts/islands.md#concept));
 - catches `click`, `input`, `submit` and `keydown` on an island that is not hydrated yet: it
   hydrates that island at once and dispatches the events again on their targets afterwards (an
   `input` restores the value typed meanwhile). They are dispatched a task after hydration, in the

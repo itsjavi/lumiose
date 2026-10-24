@@ -265,6 +265,17 @@ describe("default server renderer", () => {
         );
       });
 
+      it(`${kind} document: the page's stylesheets come before the loader and module preloads (TASK-566)`, async () => {
+        const html = await (
+          await fetchPage(() => ssr(["", ""], counter(3)), {
+            headAssets: () => '<link rel="stylesheet" href="/a.css">',
+          })
+        ).text();
+        expect(html).toContain(
+          `<link rel="stylesheet" href="/a.css">${LOADER}<link rel="modulepreload" href="/src/Counter.stsx"></head>`,
+        );
+      });
+
       it(`${kind} document: a streamed island brings the loader and its records inside the body`, async () => {
         const html = await (
           await fetchPage(() =>

@@ -59,6 +59,12 @@ export interface ShellOptions extends RenderToStreamOptions {
   /** Each streamed boundary, with a promise that settles once its content is ready or failed. */
   onBoundary?: (settled: Promise<unknown>) => void;
   /**
+   * A build's client chunk URL (an island's, the loader's) → the URLs of the chunks it imports
+   * statically, directly or not. They are modulepreloaded with the chunk, so they load in parallel
+   * with it instead of once it has loaded (TASK-566). Default: none (dev).
+   */
+  chunkImports?: (url: string) => readonly string[];
+  /**
    * Whether the response still streams (`response().setStreaming()`, decision-58), read at each
    * boundary and when the shell completes: once false, boundaries render into the shell, and those
    * already streaming are waited for and inlined. Ignored with `resolveAll`.
@@ -79,7 +85,14 @@ export interface ShellOptions extends RenderToStreamOptions {
 
 /** A rendered shell whose island records are kept apart from its HTML (see `renderShell`). */
 export interface ShellParts {
+  /** The collected `<Title>`/`<Meta>`/`<Head>` HTML, then the shell's strict-mode styles. */
   head: string;
+  /**
+   * The shell's island loader, client scripts and module preloads, which `renderToStream` appends
+   * to `head`. The request handler puts them after the page's stylesheets, so that the
+   * stylesheets, which block the first paint, are requested first.
+   */
+  assets: string;
   /** The shell's HTML, without its island records. */
   html: string;
   /** The shell's island records script, or "". It must precede the stream, inside `<body>`. */
@@ -104,8 +117,8 @@ export function renderToStream(
   const { onError } = options;
   const shellOptions =
     onError === undefined ? options : { ...options, onError: (error: unknown) => onError(error) };
-  return renderShell(root, shellOptions).then(({ head, html, records, stream }) => ({
-    head,
+  return renderShell(root, shellOptions).then(({ head, assets, html, records, stream }) => ({
+    head: head + assets,
     body: html + records,
     stream,
   }));
@@ -133,6 +146,7 @@ export function renderShell(root: () => unknown, options: ShellOptions = {}): Pr
     nonce: options.nonce,
     strictStyles: options.strictStyles === true,
     moduleUrl: options.islandUrl ?? ((specifier) => specifier),
+    chunkImports: options.chunkImports ?? (() => []),
     loaderUrl: options.loaderUrl,
     loaderSent: false,
     sentScripts: new Set(),
@@ -228,11 +242,12 @@ export async function renderToString(
 function completeShell(render: RenderState, html: string, signal?: AbortSignal): ShellParts {
   render.shellDone = true;
   const shell = render.shell;
-  const head = headHtml(render) + unitAssets(render, shell);
+  const assets = unitScripts(render, shell);
+  const head = headHtml(render) + unitStyles(render, shell);
   const records = statePayload(render, shell) + islandRecords(shell);
   if (render.pending === 0) {
     finish(render);
-    return { head, html, records, stream: null };
+    return { head, assets, html, records, stream: null };
   }
   const stream = new ReadableStream<string>({
     start(controller) {
@@ -251,7 +266,7 @@ function completeShell(render: RenderState, html: string, signal?: AbortSignal):
   });
   // A disconnected client ends the stream quietly; `getAbortSignal()` aborts pending work.
   signal?.addEventListener("abort", () => render.close?.(), { once: true });
-  return { head, html, records, stream };
+  return { head, assets, html, records, stream };
 }
 
 /**
@@ -350,11 +365,18 @@ function headHtml(render: RenderState): string {
   return out + render.head.join("");
 }
 
+/** A unit's scripts and module preloads, then its strict-mode styles. */
 function unitAssets(render: RenderState, unit: Unit): string {
+  return unitScripts(render, unit) + unitStyles(render, unit);
+}
+
+/** The island loader (with the first unit that has islands), client scripts and module preloads. */
+function unitScripts(render: RenderState, unit: Unit): string {
   let out = "";
   if (!render.loaderSent && render.loaderUrl !== undefined && unit.islands.length > 0) {
     render.loaderSent = true;
     out += `<script type="module" async src="${escapeAttr(render.loaderUrl)}"${nonceAttr(render)}></script>`;
+    for (const url of render.chunkImports(render.loaderUrl)) addPreload(render, unit, url);
   }
   for (const url of unit.scripts) {
     // A boundary streamed earlier may have sent it already.
@@ -365,6 +387,12 @@ function unitAssets(render: RenderState, unit: Unit): string {
   for (const url of unit.preloads) {
     out += `<link rel="modulepreload" href="${escapeAttr(url)}"${nonceAttr(render)}>`;
   }
+  return out;
+}
+
+/** The rules of a unit's `style` props in strict mode (./strict-styles.ts). */
+function unitStyles(render: RenderState, unit: Unit): string {
+  let out = "";
   if (unit.styles.length > 0) out += `<style${nonceAttr(render)}>${unit.styles.join("")}</style>`;
   for (const rule of unit.isolatedStyles) out += `<style${nonceAttr(render)}>${rule}</style>`;
   return out;

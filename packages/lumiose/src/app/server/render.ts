@@ -68,6 +68,12 @@ export interface RenderedShell {
   /** HTML collected from `<Head>`, `<Title>` and `<Meta>` while rendering the shell. */
   head: string;
   /**
+   * The shell's island loader, client scripts and module preloads, which the handler places after
+   * the page's stylesheets: those block the first paint, so they are requested first (over HTTP/1.1
+   * a browser opens six connections per host, TASK-566). Absent when none.
+   */
+  assets?: string;
+  /**
    * Body HTML of the shell, with Suspense fallbacks in place (the whole custom document, if any).
    * Anything that must precede the stream, such as island records, ends the page body: before
    * `BODY_SLOT` in a custom document.
@@ -129,6 +135,8 @@ export interface ServerRendererOptions {
   strictStyles?: boolean;
   /** Maps island module specifiers to URLs for `modulepreload` hints (the build's manifest). */
   islandUrl?: (specifier: string) => string;
+  /** A build's client chunk URL → the chunks it imports statically, preloaded with it. */
+  chunkImports?: (url: string) => readonly string[];
   /** URL of the island loader script, added to pages with islands (`lumiose/dom/loader`). */
   loaderUrl?: string;
   /**
@@ -157,7 +165,7 @@ export function createServerRenderer(options: ServerRendererOptions = {}): PageR
       sanitizeErrors,
     },
   ) => {
-    const { head, html, records, stream } = await renderShell(
+    const { head, assets, html, records, stream } = await renderShell(
       composePageTree(tree, createComponent, rawHtml),
       {
         ...options,
@@ -174,7 +182,12 @@ export function createServerRenderer(options: ServerRendererOptions = {}): PageR
         ...(csp?.nonce === undefined ? {} : { nonce: csp.nonce }),
       },
     );
-    return { head, body: placeRecords(html, records, tree.document !== undefined), stream };
+    return {
+      head,
+      ...(assets === "" ? {} : { assets }),
+      body: placeRecords(html, records, tree.document !== undefined),
+      stream,
+    };
   };
 }
 

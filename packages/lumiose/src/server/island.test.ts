@@ -16,6 +16,7 @@ import {
   ssr,
   text,
 } from "./index.ts";
+import { renderShell } from "./render.ts";
 import { decodeData } from "./serialize.ts";
 
 type Props = any;
@@ -41,6 +42,13 @@ function records(html: string): any[] {
   }
   return all;
 }
+
+/** A build's island chunk URL for a module specifier. */
+const islandUrl = (specifier: string) => `/assets${specifier.replace(".stsx", ".js")}`;
+
+/** `<link rel="modulepreload">` for each URL. */
+const links = (...urls: string[]) =>
+  urls.map((url) => `<link rel="modulepreload" href="${url}">`).join("");
 
 function TeamPanel(props: Props) {
   return ssr(["<section>", "", "</section>"], text(props.ids.join(",")), insert(props.children));
@@ -151,7 +159,7 @@ describe("island()", () => {
     expect(shell.head).toBe('<link rel="modulepreload" href="/src/Counter.stsx">');
   });
 
-  it("maps modulepreload URLs and only preloads client:load islands", async () => {
+  it("maps modulepreload URLs and preloads no client:idle island", async () => {
     const shell = await renderToStream(
       () =>
         ssr(
@@ -164,6 +172,80 @@ describe("island()", () => {
     );
     expect(shell.head).toBe('<link rel="modulepreload" href="/assets/src/Counter-abc.js">');
     expect(records(shell.body).map((record) => record.id)).toEqual([0, 1, 2]);
+  });
+
+  describe("the chunks islands import (TASK-566)", () => {
+    const imports: Record<string, string[]> = {
+      "/assets/loader.js": ["/assets/runtime.js"],
+      "/assets/src/A.js": ["/assets/shared.js", "/assets/runtime.js", "/assets/a.js"],
+      "/assets/src/B.js": ["/assets/shared.js"],
+      "/assets/src/C.js": ["/assets/c.js"],
+    };
+    const chunkImports = (url: string) => imports[url] ?? [];
+
+    it("preloads them with islands that hydrate at once, not with those that wait", async () => {
+      const shell = await renderShell(
+        () =>
+          ssr(
+            ["", "", "", ""],
+            island("/src/A.stsx#A", Counter, {}, "load"),
+            island("/src/B.stsx#B", Counter, {}, "only"),
+            island("/src/C.stsx#C", Counter, {}, "visible"),
+          ),
+        { islandUrl, chunkImports },
+      );
+      expect(shell.assets).toBe(
+        links(
+          "/assets/src/A.js",
+          "/assets/shared.js",
+          "/assets/runtime.js",
+          "/assets/a.js",
+          "/assets/src/B.js",
+        ),
+      );
+    });
+
+    it("preloads the loader's with it, once, with the nonce", async () => {
+      const shell = await renderShell(
+        () =>
+          ssr(
+            ["", "", ""],
+            island("/src/C.stsx#C", Counter, {}, "idle"),
+            island("/src/A.stsx#A", Counter, {}, "load"),
+          ),
+        { islandUrl, chunkImports, loaderUrl: "/assets/loader.js", nonce: "n1" },
+      );
+      expect(shell.assets).toBe(
+        '<script type="module" async src="/assets/loader.js" nonce="n1"></script>' +
+          ["/assets/src/A.js", "/assets/shared.js", "/assets/runtime.js", "/assets/a.js"]
+            .map((url) => `<link rel="modulepreload" href="${url}" nonce="n1">`)
+            .join(""),
+      );
+    });
+
+    it("preloads those of a streamed island in its chunk, without the shell's again", async () => {
+      const shell = await renderShell(
+        () =>
+          ssr(
+            ["", "", ""],
+            island("/src/B.stsx#B", Counter, {}, "load"),
+            createComponent(Suspense, {
+              get fallback() {
+                return ssr(["…"]);
+              },
+              get children() {
+                return island("/src/A.stsx#A", Late, { value: "late" }, "load");
+              },
+            }),
+          ),
+        { islandUrl, chunkImports },
+      );
+      expect(shell.assets).toBe(links("/assets/src/B.js", "/assets/shared.js"));
+      let chunks = "";
+      for await (const chunk of shell.stream!) chunks += chunk;
+      expect(chunks).toContain(links("/assets/src/A.js", "/assets/runtime.js", "/assets/a.js"));
+      expect(chunks).not.toContain("shared.js");
+    });
   });
 
   it("adds the island loader once: in the head for shell islands, else with the first chunk", async () => {

@@ -40,6 +40,7 @@ import {
   projectOptions,
   realProjectRoot,
 } from "../project.ts";
+import { clientFiles, clientTable } from "lumiose/internal/app/router/table.ts";
 import { DEFAULT_ROUTES_DIR, type RouteMode } from "lumiose/internal/app/routes/manifest.ts";
 import type { TrailingSlash } from "lumiose/internal/app/server/handler.ts";
 import { typegen } from "../typegen/index.ts";
@@ -161,6 +162,12 @@ export async function build(options: BuildOptions = {}): Promise<BuildResult> {
   for (const [module, fileName] of Object.entries(state.islandChunks)) {
     state.islands[module] = client.config.base + fileName;
   }
+  // The pages rendering an SPA preload its layouts and pages with `spaPreloads` already.
+  const spaTable = clientTable(manifest);
+  for (const file of spaTable === undefined ? [] : clientFiles(spaTable)) {
+    const url = state.islands[`/${file}`];
+    if (url !== undefined) delete state.chunkImports?.[url];
+  }
 
   const ssr = builder.environments.ssr!;
   const serverDir = resolve(root, ssr.config.build.outDir);
@@ -268,6 +275,10 @@ async function unhashedAssets(
  * lists, per SPA layout and page, its chunk and the chunks it imports statically: the server
  * modulepreloads them so that a deep link does not wait for the entry to run first (TASK-123).
  * `clientEntry` is the chunk of `src/instrumentation.client.ts` and the chunks it imports.
+ * `chunkImports` lists the chunks the loader and each island import statically: a browser finds a
+ * chunk's imports only once the chunk has loaded, so the server modulepreloads them with the
+ * loader and with the islands that hydrate at once (TASK-566). The loader's map preloads them for
+ * the other islands when they trigger (Vite's `__vitePreload` deps).
  */
 async function islandUrls(
   output: Awaited<ReturnType<Awaited<ReturnType<typeof createBuilder>>["build"]>>,
@@ -277,6 +288,7 @@ async function islandUrls(
 ): Promise<{
   islands: Record<string, string>;
   loader: string | undefined;
+  chunkImports: Record<string, string[]>;
   spa: string | undefined;
   spaPreloads: Record<string, string[]>;
   clientEntry?: { url: string; preloads: string[] };
@@ -317,25 +329,43 @@ async function islandUrls(
     const path = normalizePath(relative(root, chunk.facadeModuleId));
     if (!path.startsWith("../")) islands[`/${path}`] = base + chunk.fileName;
   }
+  const byFile = new Map(chunks.map((chunk) => [chunk.fileName, chunk]));
+  /** The URLs of the chunks `from` reach through static imports, without those of `skip`. */
+  const closure = (from: readonly string[], skip: readonly string[]): string[] => {
+    const seen = new Set(skip);
+    const urls: string[] = [];
+    const visit = (name: string): void => {
+      if (seen.has(name)) return;
+      seen.add(name);
+      urls.push(base + name);
+      for (const imported of byFile.get(name)?.imports ?? []) visit(imported);
+    };
+    for (const name of from) visit(name);
+    return urls;
+  };
+  // The loader is a <script> of every page with islands: the islands' lists leave it out, and the
+  // chunks it imports have their own list.
+  const chunkImports: Record<string, string[]> = {};
+  const loaderChunk = chunks.find((chunk) => chunk.isEntry && chunk.name === "loader");
+  if (loader !== undefined && loaderChunk !== undefined) {
+    const add = (chunk: Rollup.OutputChunk | undefined): void => {
+      if (chunk === undefined) return;
+      const urls = closure(chunk.imports, [chunk.fileName, loaderChunk.fileName]);
+      if (urls.length > 0) chunkImports[base + chunk.fileName] = urls;
+    };
+    add(loaderChunk);
+    for (const fileName of manifest?.dynamicImports ?? []) add(byFile.get(fileName));
+  }
   const spaPreloads: Record<string, string[]> = {};
   const spaEntry = chunks.find((chunk) => chunk.isEntry && chunk.name === "spa");
   if (spa !== undefined && spaEntry !== undefined) {
-    const byFile = new Map(chunks.map((chunk) => [chunk.fileName, chunk]));
     for (const fileName of spaModule?.dynamicImports ?? []) {
       const chunk = byFile.get(fileName);
       if (chunk?.facadeModuleId == null) continue;
       const path = normalizePath(relative(root, chunk.facadeModuleId));
       if (path.startsWith("../")) continue;
       // The entry itself is already a <script> of the page.
-      const closure = new Set<string>([spaEntry.fileName]);
-      const visit = (name: string): void => {
-        if (closure.has(name)) return;
-        closure.add(name);
-        for (const imported of byFile.get(name)?.imports ?? []) visit(imported);
-      };
-      visit(fileName);
-      closure.delete(spaEntry.fileName);
-      spaPreloads[path] = [...closure].map((name) => base + name);
+      spaPreloads[path] = closure([fileName], [spaEntry.fileName]);
     }
   }
   // `src/instrumentation.client.ts` (decision-49): its chunk and those it imports statically, which
@@ -343,23 +373,15 @@ async function islandUrls(
   const instrumentation = chunks.find((chunk) => chunk.isEntry && chunk.name === "instrumentation");
   let clientEntry: { url: string; preloads: string[] } | undefined;
   if (instrumentation !== undefined) {
-    const byFile = new Map(chunks.map((chunk) => [chunk.fileName, chunk]));
-    const closure = new Set<string>();
-    const visit = (name: string): void => {
-      if (closure.has(name)) return;
-      closure.add(name);
-      for (const imported of byFile.get(name)?.imports ?? []) visit(imported);
-    };
-    for (const imported of instrumentation.imports) visit(imported);
-    closure.delete(instrumentation.fileName);
     clientEntry = {
       url: base + instrumentation.fileName,
-      preloads: [...closure].map((name) => base + name),
+      preloads: closure(instrumentation.imports, [instrumentation.fileName]),
     };
   }
   return {
     islands,
     loader,
+    chunkImports,
     spa,
     spaPreloads,
     ...(clientEntry === undefined ? {} : { clientEntry }),
