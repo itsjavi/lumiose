@@ -1018,11 +1018,13 @@ export function createRequestHandler(options: RequestHandlerOptions): RequestHan
       const meta = scope.nonce === undefined ? "" : nonceMeta(scope.nonce);
       const pages = addNonce(navigation.pages, nonce);
       // The client entry first: the island loader or SPA entry in the shell's head looks it up.
+      // The stylesheets before the shell's scripts and module preloads (TASK-566).
       const head =
         meta +
         addNonce(clientHead + extraHead, nonce) +
         shell.head +
         assets +
+        (shell.assets ?? "") +
         pages +
         rules.head +
         action;

@@ -114,6 +114,8 @@ export interface BuildState {
   islandChunks: Record<string, string>;
   /** URL of the island loader chunk; undefined when the app has no islands. */
   loader?: string;
+  /** The loader's and each island's chunk URL → the URLs of the chunks it imports statically. */
+  chunkImports?: Record<string, string[]>;
   /** URL of the SPA entry chunk; undefined when the app has no `spa` pages. */
   spa?: string;
   /** SPA layout or page (project-relative) → the chunk URLs to modulepreload with it. */
@@ -544,6 +546,9 @@ export function serverEntryCode(state: BuildState, config: ResolvedConfig): stri
     ...(state.prefetch === "none" ? {} : { prefetch: state.prefetch }),
     islands: state.islands,
     ...(state.loader === undefined ? {} : { loader: state.loader }),
+    ...(state.chunkImports === undefined || Object.keys(state.chunkImports).length === 0
+      ? {}
+      : { chunkImports: state.chunkImports }),
     ...(state.clientEntry === undefined ? {} : { clientEntry: state.clientEntry }),
     ...(state.spa === undefined ? {} : { spa: state.spa }),
     ...(state.spaPreloads === undefined || Object.keys(state.spaPreloads).length === 0

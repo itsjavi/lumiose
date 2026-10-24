@@ -112,6 +112,8 @@ export interface RenderState {
   readonly nonce: string | undefined;
   readonly strictStyles: boolean;
   readonly moduleUrl: (specifier: string) => string;
+  /** The chunks a client chunk imports statically (a build's), preloaded with it. */
+  readonly chunkImports: (url: string) => readonly string[];
   /** URL of the island loader script; sent once, with the first island records. */
   readonly loaderUrl: string | undefined;
   loaderSent: boolean;

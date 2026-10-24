@@ -184,6 +184,20 @@ export function ${name}(props: { children?: JSX.Element }) {
 `;
 /** A client script's tag (TASK-354). */
 const scriptTag = (url: string) => `<script type="module" async src="${url}"></script>`;
+/** An island `name` that renders through the function of `src/lib/<lib>.ts`. */
+const libIsland = (name: string, lib: string) => `import { signal } from "lumiose";
+import { ${lib} } from "../lib/${lib}.ts";
+export function ${name}(props: { value: number }) {
+  const value = signal(props.value);
+  return <button onClick={() => value.update((n) => n + 1)}>{${lib}(value())}</button>;
+}
+`;
+/** The URLs the first group of `pattern` matches in `html`, relative to the base `/sub/`. */
+const underSub = (html: string, pattern: RegExp) =>
+  [...html.matchAll(pattern)].map((match) => match[1]!.replace(/^\/sub\//, ""));
+/** The modulepreloads of a page under the base `/sub/`, in order. */
+const preloadsOf = (html: string) =>
+  underSub(html, /<link rel="modulepreload" href="([^"]+)"[^>]*>/g);
 /** The module scripts of a page, in order. */
 const moduleScripts = (html: string) =>
   [...html.matchAll(/<script type="module"[^>]*src="([^"]+)"/g)].map((match) => match[1]);
@@ -390,6 +404,88 @@ export default function Home() { return <main><Toggle client:load /></main>; }
     expect(scripts.length).toBeGreaterThan(0);
     for (const file of scripts) {
       expect(read(root, `assets/${file}`), file).not.toMatch(/^(?:\s|\/\*\s*empty css\s*\*\/)*$/);
+    }
+  });
+
+  it("modulepreloads the chunks a client:load island imports; the loader's map those of a client:visible one (TASK-566)", async () => {
+    // Price and Total import format.ts, which imports units.ts; Weight imports units.ts too. So
+    // format.ts and units.ts go to chunks of their own, the second one imported by the first.
+    // Under a base, with csp.
+    const root = project({
+      "vite.config.ts": `import lumiose from "@lumiose/vite";
+export default { base: "/sub/", plugins: [lumiose({ csp: "strict" })] };
+`,
+      "src/lib/units.ts": `export const units = (n: number) => n + " kg";\n`,
+      "src/lib/format.ts": `import { units } from "./units.ts";\nexport const format = (n: number) => units(Number(n.toFixed(2)));\n`,
+      "src/components/Price.stsx": libIsland("Price", "format"),
+      "src/components/Total.stsx": libIsland("Total", "format"),
+      "src/components/Weight.stsx": libIsland("Weight", "units"),
+      "src/app.css": "main { margin: 0; }\n",
+      "src/routes/page.stsx": `import "../app.css";
+import { Price } from "../components/Price.stsx";
+import { Total } from "../components/Total.stsx";
+export default function Home() { return <main><Price client:load value={1} /><Total client:visible value={2} /></main>; }
+`,
+      "src/routes/weight/page.stsx": `import { Weight } from "../../components/Weight.stsx";
+export default function Scale() { return <main><Weight client:idle value={3} /></main>; }
+`,
+      "src/routes/live/page.stsx": `import { Price } from "../../components/Price.stsx";
+export const mode = "server";
+export default function Live() { return <main><Price client:load value={3} /></main>; }
+`,
+      "src/routes/plain/page.stsx": `export default function Plain() { return <h1>Plain</h1>; }\n`,
+    });
+    const result = await build({ root, ...quiet() });
+    /** The chunks `file` imports statically, directly or not, but the loader. */
+    const imports = (file: string, loader: string, seen = new Set<string>()): Set<string> => {
+      for (const [, name] of read(root, file).matchAll(
+        /(?:from|import)\s*["']\.\/([^"']+\.js)["']/g,
+      )) {
+        const path = `assets/${name}`;
+        if (path === loader || seen.has(path)) continue;
+        seen.add(path);
+        imports(path, loader, seen);
+      }
+      return seen;
+    };
+
+    const home = read(root, "index.html");
+    const [loader] = underSub(home, /<script type="module" async src="([^"]+loader[^"]+)"/g);
+    const preloads = preloadsOf(home);
+    // After the page's stylesheet, which blocks the first paint and so is requested first.
+    expect(home.indexOf('<link rel="stylesheet"')).toBeGreaterThan(-1);
+    expect(home.indexOf('<link rel="stylesheet"')).toBeLessThan(home.indexOf("modulepreload"));
+    const price = preloads[0]!;
+    expect(price).toMatch(/^assets\/Price-[\w-]+\.js$/);
+    // Every chunk Price reaches through static imports, the format.ts and units.ts chunks, each
+    // once, and nothing else.
+    const reached = imports(price, loader!);
+    expect([...reached].some((file) => /^assets\/format-[\w-]+\.js$/.test(file))).toBe(true);
+    expect([...reached].some((file) => /^assets\/units-[\w-]+\.js$/.test(file))).toBe(true);
+    expect(preloads.slice(1).toSorted()).toEqual([...reached].toSorted());
+    for (const file of preloads) expect(existsSync(join(result.clientDir, file))).toBe(true);
+    // Not Total, which waits until it is visible: the loader preloads its chunk and the chunks it
+    // imports together when it triggers (Vite's preload deps in the island map).
+    const total = clientAssets(root, false).find((file) => /^Total-[\w-]+\.js$/.test(file))!;
+    expect(preloads).not.toContain(`assets/${total}`);
+    const deps = /__vite__mapDeps=[\s\S]*?\[([^\]]*)\]/.exec(read(root, loader!))![1]!;
+    for (const file of [`assets/${total}`, ...imports(`assets/${total}`, loader!)]) {
+      expect(deps).toContain(`"${file}"`);
+    }
+    // A prerendered page carries no nonce: its policy allows them as 'self'.
+    expect(home).toMatch(/<meta http-equiv="Content-Security-Policy" content="script-src 'self'/);
+    expect(home).not.toContain("nonce=");
+    // A page without islands preloads nothing.
+    expect(read(root, "plain/index.html")).not.toContain("modulepreload");
+
+    // A server-rendered page preloads the same chunks, each with the response's nonce.
+    const entry = await entryOf(root);
+    const response = await entry.default.fetch(new Request("http://app.test/sub/live"));
+    const nonce = /'nonce-([^']+)'/.exec(response.headers.get("content-security-policy")!)![1]!;
+    const live = await response.text();
+    expect(preloadsOf(live)).toEqual(preloads);
+    for (const link of live.match(/<link rel="modulepreload"[^>]*>/g)!) {
+      expect(link).toContain(` nonce="${nonce}"`);
     }
   });
 

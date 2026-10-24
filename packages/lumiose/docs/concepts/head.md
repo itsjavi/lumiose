@@ -22,7 +22,9 @@ previous value comes back, or the head default (below) when the last one of a ke
 **Document.** By default Lumiose renders the HTML document. `src/document.stsx` takes over
 `<html>`, `<head>` and `<body>`: it receives `{ head, body }` and must render each once. It renders
 like any component, so it can provide context to pages. `{props.head}` also carries the page's
-stylesheets, preload hints and island loader. `{props.body}` is followed by the page's island records
+stylesheets, then its island loader, client scripts and module preloads: the stylesheets block the
+first paint, so the browser requests them first (over HTTP/1.1 it opens only six connections per
+host). `{props.body}` is followed by the page's island records
 and its streamed `<Suspense>` content, so the whole page stays inside `<body>` with either document.
 
 **Head defaults.** The `<title>` and `<meta>` tags the document writes in its `<head>` are defaults,
