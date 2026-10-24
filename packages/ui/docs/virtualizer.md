@@ -1,6 +1,6 @@
 # Virtualizer
 
-> **A proposal (TASK-565)**: its API waits for approval and may change before it ships. A headless virtualizer for long lists, tables and grids in islands: `createVirtualizer()` computes which rows are near the viewport and where they go, and your component renders, places and styles them. The window or an element scrolls; rows have a fixed or an estimated size, or are measured as they render (one ResizeObserver for all of them); grids fit their columns to the container's width. The server renders the first items, and the island takes those same keyed rows over. 1.5 kB brotli, no script and no CSS of its own.
+> **Not released yet (TASK-565).** A headless virtualizer for long lists, tables and grids in islands: `createVirtualizer()` computes which rows are near the viewport and where they go, and your component renders, places and styles them. The window or an element scrolls; rows have a fixed or an estimated size, or are measured as they render (one ResizeObserver for all of them); grids fit their columns to the container's width. The server renders the first items, and the island takes those same keyed rows over. 1.6 kB brotli, no script and no CSS of its own. For a list, a grid of cells or a table, start with [Virtual List](virtual-list.md), [Virtual Grid](virtual-grid.md) or [Virtual Table](virtual-table.md), which run on it.
 
 ```ts
 import { createVirtualizer } from "@lumiose/ui"; // or "@lumiose/ui/virtualizer"
@@ -27,14 +27,14 @@ const v = createVirtualizer({ count: () => items().length, size: 48 });
 </ul>;
 ```
 
-| Piece                       | What it is                                                                                             |
-| --------------------------- | ------------------------------------------------------------------------------------------------------ |
-| `ref={v.container}`         | The element that holds the rows. Its top is where row 0 starts; its width sets `{ minWidth }` columns. |
-| `v.rows()`, `v.items()`     | The indexes to render: rows (for a row element around several items) or items, in order.               |
-| `v.start(row)`, `v.total()` | Placed rows: each row's offset from the container's top, and the container's height.                   |
-| `v.before()`, `v.after()`   | Rows in flow: the px of the rows before and after the window, for spacers or a padding.                |
-| `data-row={row}`            | On a row element that is measured, or that `keepFocused` keeps: the row's index.                       |
-| `attach={[v.measure]}`      | On a measured row: its size replaces the estimate.                                                     |
+| Piece                       | What it is                                                                                                                                                                    |
+| --------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ref={v.container}`         | The element that holds the rows. Its top is where row 0 starts; its width sets `{ minWidth }` columns.                                                                        |
+| `v.rows()`, `v.items()`     | The indexes to render: rows (for a row element around several items) or items, in order.                                                                                      |
+| `v.start(row)`, `v.total()` | Placed rows: each row's offset from the container's top, and the container's height.                                                                                          |
+| `v.before()`, `v.after()`   | Rows in flow: the px of the rows before and after the window, for spacers or a padding.                                                                                       |
+| `data-row={row}`            | On a row element that is measured, or that `keepFocused` keeps: the row's index. Several elements may share a row (a grid's cells): a measured row is as tall as its tallest. |
+| `attach={[v.measure]}`      | On a measured row: its size replaces the estimate.                                                                                                                            |
 
 ## API
 
@@ -50,7 +50,7 @@ that reads signals or props recomputes the window when they change.
 | `columns`     | `Value<number> \| { minWidth: Value<number>; min?: number }` | `1`     | Items per row. `{ minWidth }` fits as many items of at least `minWidth` px as the container's width does, with `columnGap` between them, and at least `min` (default 1), like CSS's `repeat(auto-fill, minmax(…))`. |
 | `gap`         | `Value<number>`                                              | `0`     | The px between rows.                                                                                                                                                                                                |
 | `columnGap`   | `Value<number>`                                              | `gap`   | The px between columns, for `{ minWidth }` and `itemWidth()`.                                                                                                                                                       |
-| `overscan`    | `number`                                                     | `4`     | Rows rendered past each edge of the viewport.                                                                                                                                                                       |
+| `overscan`    | `Value<number>`                                              | `4`     | Rows rendered past each edge of the viewport.                                                                                                                                                                       |
 | `scroller`    | `() => Element \| null \| undefined`                         | window  | The element that scrolls, read once mounted.                                                                                                                                                                        |
 | `initial`     | `Value<number>`                                              | `0`     | How many items render before the virtualizer mounts: in the server's HTML and while the island hydrates (see [Server rendering](#server-rendering)).                                                                |
 | `keepFocused` | `boolean`                                                    | `false` | Keeps the row that holds focus rendered while the window scrolls away from it. For placed rows only (see [Keyboard and focus](#keyboard-and-focus)).                                                                |
@@ -300,5 +300,7 @@ scrolls along the block axis only (vertical in horizontal writing modes).
 
 ## Related
 
+- [Virtual List](virtual-list.md), [Virtual Grid](virtual-grid.md) and
+  [Virtual Table](virtual-table.md): the three layouts as components on this primitive.
 - [Scroll Area](scroll-area.md): custom scrollbars over a scroller; give its `Viewport` as `scroller`.
 - [Lists and keys](https://itsjavi.com/lumiose/docs/concepts/jsx/#lists-and-keys): how keyed rows update in place.
