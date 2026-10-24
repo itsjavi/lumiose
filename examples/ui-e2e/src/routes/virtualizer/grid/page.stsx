@@ -1,0 +1,29 @@
+import { Title } from "lumiose";
+import { VirtualizerGrid } from "../../../islands/VirtualizerGrid.tsx";
+
+// The virtualizer's grid (TASK-565): auto-fill columns from the container's width and rows of
+// different heights, measured as they render. Rendered in the browser only.
+export default function VirtualizerGridPage() {
+  return (
+    <>
+      <Title>Virtualizer grid</Title>
+      <h1>Virtualizer grid</h1>
+      <VirtualizerGrid client:load />
+    </>
+  );
+}
+
+<style>
+  :global(.card) {
+    padding: 0.75rem;
+    border: 1px solid var(--lu-border);
+    border-radius: var(--lu-radius);
+  }
+  :global(.card h3) {
+    margin: 0 0 0.25rem;
+    font-size: 1rem;
+  }
+  :global(.card p) {
+    margin: 0;
+  }
+</style>

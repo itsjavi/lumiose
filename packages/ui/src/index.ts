@@ -259,3 +259,20 @@ export type {
   NavigationMenuRootProps,
   NavigationMenuTriggerProps,
 } from "./navigation-menu/navigation-menu.tsx";
+export {
+  createVirtualizer,
+  VirtualGrid,
+  VirtualList,
+  VirtualTable,
+} from "./virtualizer/virtual.tsx";
+export type {
+  Virtualizer,
+  VirtualizerOptions,
+  VirtualizerScrollOptions,
+  VirtualizerValue,
+  VirtualGridProps,
+  VirtualItem,
+  VirtualListProps,
+  VirtualProps,
+  VirtualTableProps,
+} from "./virtualizer/virtual.tsx";

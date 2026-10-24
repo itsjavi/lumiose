@@ -1,0 +1,45 @@
+import { Title } from "lumiose";
+import { VirtualCells } from "../../../../islands/VirtualCells.tsx";
+
+// VirtualGrid's fixed cells (TASK-565): the server's first cells in a CSS grid with the columns the
+// island computes, which then places the same cells.
+export default function VirtualCellsPage() {
+  return (
+    <>
+      <Title>Virtualizer cells</Title>
+      <h1>Virtualizer cells</h1>
+      <VirtualCells client:load />
+      <button type="button" class="lu-button">
+        After the entries
+      </button>
+    </>
+  );
+}
+
+<style>
+  :global(.cells) {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  /* The server's layout: the columns and gaps the island computes from minItemWidth and gap. */
+  :global(.cells:not([data-mounted])) {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+    gap: 8px;
+  }
+  :global(.cell) {
+    display: block;
+    inline-size: 100%;
+    block-size: 64px;
+    border: 1px solid var(--lu-border);
+    border-radius: var(--lu-radius);
+    background: transparent;
+    color: inherit;
+    font: inherit;
+  }
+  :global(.cell:focus-visible) {
+    outline: 2px solid var(--lu-ring);
+    outline-offset: 2px;
+  }
+</style>

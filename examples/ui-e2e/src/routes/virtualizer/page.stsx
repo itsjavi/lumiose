@@ -1,0 +1,77 @@
+import { Title } from "lumiose";
+import { VirtualizerList } from "../../islands/VirtualizerList.tsx";
+import { VirtualizerTable } from "../../islands/VirtualizerTable.tsx";
+
+// The virtualizer in islands (TASK-565): a table in its own scroller and a
+// window-scrolled list. The server renders the first rows of each; the islands take them over.
+export default function VirtualizerPage() {
+  return (
+    <>
+      <Title>Virtualizer</Title>
+      <h1>Virtualizer</h1>
+      <VirtualizerTable client:load />
+      <VirtualizerList client:load />
+    </>
+  );
+}
+
+<style>
+  :global(.actions) {
+    display: flex;
+    gap: 0.5rem;
+    margin-block-end: 0.75rem;
+  }
+  :global(.people) {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  :global(.people > li) {
+    block-size: 40px;
+  }
+  :global(.person) {
+    block-size: 100%;
+    inline-size: 100%;
+    padding-inline: 0.75rem;
+    border: 0;
+    border-block-end: 1px solid var(--lu-border);
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    text-align: start;
+  }
+  :global(.person:focus-visible) {
+    outline: 2px solid var(--lu-ring);
+    outline-offset: -2px;
+  }
+  :global(.releases) {
+    block-size: 16rem;
+    overflow: auto;
+    margin-block-end: 2rem;
+    border: 1px solid var(--lu-border);
+    scroll-padding-block-start: 32px;
+  }
+  :global(.releases:focus-visible) {
+    outline: 2px solid var(--lu-ring);
+    outline-offset: 2px;
+  }
+  :global(.releases table) {
+    inline-size: 100%;
+    border-collapse: collapse;
+  }
+  :global(.releases thead) {
+    position: sticky;
+    inset-block-start: 0;
+    background: var(--lu-background);
+  }
+  :global(.releases tr) {
+    block-size: 32px;
+  }
+  :global(.releases :is(th, td)) {
+    padding: 0 0.75rem;
+    text-align: start;
+  }
+  :global(.releases .spacer > td) {
+    padding: 0;
+  }
+</style>

@@ -82,6 +82,14 @@ export default function Home() {
         <li>
           <a href="/scroll-area">Scroll Area</a> (<a href="/scroll-area/island">in an island</a>)
         </li>
+        <li>
+          <a href="/virtualizer">Virtualizer</a> (<a href="/virtualizer/grid">a measured grid</a>)
+        </li>
+        <li>
+          <a href="/virtualizer/components">Virtual List and Table</a>, Virtual Grid (
+          <a href="/virtualizer/components/cells">cells</a>,{" "}
+          <a href="/virtualizer/components/cards">measured cards</a>)
+        </li>
       </ul>
     </article>
   );
