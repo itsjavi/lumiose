@@ -235,6 +235,32 @@ describe("keyed rows", () => {
     }
   });
 
+  it("update bindings that also read a computed the same write leaves unchanged (TASK-567)", async () => {
+    const module = await load(`
+      import { computed, signal } from "lumiose";
+      export const items = signal([{ id: "a", name: "A" }]);
+      const count = computed(() => items().length);
+      export function App() {
+        return (
+          <ul>
+            {items().map((item, i) => (
+              <li key={item.id}>
+                <b>{\`\${count()}-\${item.name}\`}</b>
+                <i>{\`\${i}-\${item.name}\`}</i>
+                <u>{item.name}</u>
+              </li>
+            ))}
+          </ul>
+        );
+      }`);
+    const root = mount(module);
+    for (const name of ["A2", "A3"]) {
+      module.items.set([{ id: "a", name }]);
+      flush();
+      expect(root.textContent).toBe(`1-${name}0-${name}${name}`);
+    }
+  });
+
   it("leave unkeyed lists matching by reference", async () => {
     const module = await load(`
       import { signal } from "lumiose";

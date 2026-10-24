@@ -387,15 +387,20 @@ export function renderEffect<E, T>(
 }
 
 /**
- * Queues a binding to run again, as if something it read had changed (unless it is disposed or
- * already queued). A keyed row's bindings read its item untracked while the row is created; when
- * the item first changes in place, this re-runs them, and from then on they track it (list.ts,
- * decision-83).
+ * Makes a binding run again, as if something it read had changed (unless it is disposed). A keyed
+ * row's bindings read its item untracked while the row is created; when the item first changes in
+ * place, this re-runs them, and from then on they track it (list.ts, decision-83).
  */
 export function rerun(node: RenderEffect): void {
-  if (!(node.state & DISPOSED) && node.flags & WATCHING) {
-    node.flags = (node.flags & ~WATCHING) | DIRTY;
-    enqueue(node);
+  const flags = node.flags;
+  if (!(node.state & DISPOSED)) {
+    // Stale even when already queued (no WATCHING): it may be queued only as maybe stale, and the
+    // check of its tracked dependencies, which miss the untracked read, would skip it when they
+    // turn out unchanged (TASK-567).
+    node.flags = (flags & ~WATCHING) | DIRTY;
+    if (flags & WATCHING) {
+      enqueue(node);
+    }
   }
 }
 

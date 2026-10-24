@@ -453,6 +453,31 @@ describe("list", () => {
     expect(ul.textContent).toBe("D+d");
   });
 
+  it("updates a kept row's binding that also reads a computed the same write leaves unchanged (TASK-567)", () => {
+    const ul = document.createElement("ul");
+    const source = signal([{ id: 1, name: "a" }]);
+    const count = computed(() => source().length);
+    root(() =>
+      list(
+        ul,
+        null,
+        source,
+        (item) => {
+          const li = tLi();
+          bind(li.firstChild as Text, () => `${count()}-${item.v.name}`, setText);
+          return li;
+        },
+        (item) => item.id,
+      ),
+    );
+    // The first change reruns the binding, which tracks the item from then on.
+    for (const name of ["b", "c"]) {
+      source.set([{ id: 1, name }]);
+      flush();
+      expect(ul.textContent).toBe(`1-${name}`);
+    }
+  });
+
   it("passes the key function the index; a keyed render without parameters needs no accessor", () => {
     const ul = document.createElement("ul");
     const source = signal(["x", "y"]);
