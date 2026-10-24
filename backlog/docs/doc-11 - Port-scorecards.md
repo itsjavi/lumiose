@@ -3,7 +3,7 @@ id: doc-11
 title: Port scorecards
 type: other
 created_date: '2026-10-20 21:23'
-updated_date: '2026-10-23 22:45'
+updated_date: '2026-10-24 11:34'
 ---
 Every port of a real project records a scorecard against its original stack here (decision-70). Lumiose's public claims come from these scorecards and the benchmarks, so a port where Lumiose is not clearly better on something that matters is written down as plainly as a win, and its gaps become tasks.
 
@@ -141,7 +141,7 @@ Every port of a real project records a scorecard against its original stack here
 - Toolchain: 3 runtime dependencies and a 0.7 s `lumiose check`.
 
 **Harder in Lumiose:**
-- List interactions are slower: replacing the virtual grid's 80 visible cards takes about twice as long at 4x CPU (TASK-522), and measuring rows in `attach` forced a layout per row until the port moved it to a ResizeObserver.
+- List interactions were slower until keyed rows updated in place (decision-83, below). A list rebuilt every row whose item was a new object, even with a matching key, and the compiler silently dropped the port's key. Each rebuilt row's own ResizeObserver then triggered another rebuild, about 1.5 s of follow-up renders after a clear.
 - Strict CSP, the template's default, writes style props as attribute-selector rules that lose to scoped classes, and one rule per element in long lists (TASK-521); the port moved those values into its stylesheets.
 - Scoping only a selector's last part caused a real hover bug (TASK-282); LUM2003 errors and 19 LUM2001 warnings in server-only components (TASK-523, TASK-290).
 - At 0.5.0, `@lumiose/ui` was not on npm yet (TASK-389), so the port built its tabs, switches, segmented toggles, popovers and dialog on native elements; native `<select>` replaces the original's styled listboxes, a visible difference when open. The 0.6 pass below replaced them.
@@ -197,6 +197,19 @@ Every port of a real project records a scorecard against its original stack here
   - The detail page went from 22.7 to 22.0 kB of JavaScript, because its popovers no longer load the hover module. The list page went from 38.7 to 39.3 kB: the labelled-select script, the batch helper, and the hover script an island still loads (TASK-551).
   - Filter off went from 225 to 203 ms timed from the DOM change; the other interactions moved by 1–2 ms.
   - The forms slice's islands share code with the list's, so the list now loads 38.7 kB in 18 files instead of 35.5 kB in 12.
+- **Keyed rows update in place (Lumiose main, 2026-10-24; TASK-553, TASK-554, decision-83):**
+  - **Cause:** the list rebuilt every row whose item was a new object, even when its key matched, and the compiler dropped the key. js-framework-benchmark never has "same key, new object", so it did not show this. A microbenchmark with this row shape did: 11.9 ms against React's 0.6 ms, now 0.1 ms.
+  - **Measured:** the matrix measured the original and the port at the same commit on 0.6.0 and on packed builds of main, in one session (4x CPU, medians of 7). Main's builds also carry lazy conditional scripts (TASK-551).
+
+| List (search, clear, filter on, off) | Original | Port, 0.6.0 | Port, main |
+| --- | --- | --- | --- |
+| From the DOM change, ms | 213, 228, 104, 99 | 217, 310, 185, 190 | 205, 207, 90, 77 |
+| Until settled, ms | 157, 257, 140, 134 | 250, 1456, 1363, 1270 | 168, 182, 68, 63 |
+| Long tasks after the event, ms | 0, 73, 70, 70 | 0, 1187, 1251, 1222 | 0, 0, 60, 55 |
+
+  - **Result:** the port now beats the original on every comparable metric. Search until settled is a near-tie (168 against 157 ms), and the tracker's HTML is larger (17.6 against 13.0 kB), because the port renders its first screen on the server and fetches no data after load.
+  - **App fix:** one ResizeObserver for all rows (A2) removed the tail on 0.6.0 (1456 to 380 ms until settled) but adds nothing on top of decision-83.
+  - **Other gains on main:** the list loads 37.6 kB of JavaScript in 16 files instead of 39.4 kB in 21, and the tracker works on slow 4G in 2.05 s instead of 2.54 s.
 
 ### The same app: forms, actions and auth
 
