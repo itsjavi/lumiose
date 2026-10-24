@@ -128,6 +128,12 @@ or for setup code that must run again), put that field in the key:
 The index stays reactive (`i` is compiled to `i()`), and a row keyed by its index
 (`key={i}`) keeps its place while its item changes, like Solid's `<Index>`.
 
+Key rows that hold user state by the record's id, never by the index or position. That state might
+be a checked box, a typed value, an expanded panel or an open menu. A kept row keeps its DOM state
+when another record arrives under its key. A "delete selected" form whose rows are keyed by index
+would still have a box checked after a filter or a sort, now next to a different record. React and
+Vue behave the same way.
+
 The compiler moves the key into a function that the list calls for every item, so the key may
 read the item (or the bindings of its destructuring pattern), the index, bindings it declares
 itself (`key={row.map((p) => p.id).join("|")}`), `const`s at the top of the callback that copy item
