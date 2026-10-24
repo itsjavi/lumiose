@@ -7,7 +7,7 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { describe, expect, it } from "vitest";
+import { beforeAll, describe, expect, it } from "vitest";
 
 const root = fileURLToPath(new URL("..", import.meta.url));
 const docs = join(root, "docs");
@@ -56,6 +56,13 @@ const stylesheets = pages.flatMap(({ page, text }) =>
 );
 
 describe("the docs' imports", () => {
+  // The first import of an entry transforms the package's sources, which takes seconds in a busy
+  // `pnpm check`: load every entry once here, with its own budget, so each case only reads exports.
+  beforeAll(async () => {
+    const files = new Set(claims.flatMap((claim) => claim.from.map(fileOf)));
+    for (const file of files) if (file !== undefined) await import(join(root, file));
+  }, 60_000);
+
   it("are found", () => {
     expect(claims.length).toBeGreaterThan(40);
     expect(stylesheets.length).toBeGreaterThan(20);
