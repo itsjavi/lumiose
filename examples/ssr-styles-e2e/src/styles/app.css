@@ -10,7 +10,7 @@
   padding: 3px;
 }
 
-/* The same specificity as the layout's scoped `.order` rule (`.order[data-l-…]`): the rule that
+/* The same specificity as the layout's scoped `.order` rule (`.order[data-lum-…]`): the rule that
    comes later in the cascade wins. */
 .order[data-order] {
   color: rgb(255, 0, 0);

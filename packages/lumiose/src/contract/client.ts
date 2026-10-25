@@ -158,7 +158,7 @@ export interface ClientRuntime {
   mergeProps<P extends object>(...sources: P[]): P;
   /** Spreads a props object onto an element (attributes, class, style, events, ref, $$scope). */
   spread(el: Element, props: () => Record<string, unknown>): void;
-  /** Applies hidden scope tokens (`$$scope`, space-separated `data-l-*` names) as attributes; class passthrough (spec §4.6.2). */
+  /** Applies hidden scope tokens (`$$scope`: attribute names, or `.name` classes with the class strategy, decision-85); class passthrough (spec §4.6.2). */
   applyScope(el: Element, tokens: string | undefined): void;
 
   // ---- events ---------------------------------------------------------------------------------------

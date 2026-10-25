@@ -36,7 +36,7 @@ describe("Badge", () => {
   it("builds scoped CSS with the token colors", () => {
     const css = buildCss().toLowerCase();
     for (const hex of ["#2563eb", "#d97706", "#dc2626"]) expect(css).toContain(hex);
-    expect(css).toMatch(/\.badge-warning\[data-l-[a-z0-9]+\]/);
+    expect(css).toMatch(/\.badge-warning\[data-lum-[a-z0-9]+\]/);
     expect(css).toContain("999px");
   });
 });

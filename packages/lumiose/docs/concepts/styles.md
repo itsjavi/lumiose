@@ -90,11 +90,13 @@ Everything else goes in the file-level block. Moving a block from a component's 
 of the file widens its scope to every component in the file: check that its selectors (bare
 element selectors in particular) do not start matching another component's elements.
 
-**How scoping works.** Each scope with styles gets a token `data-l-<hash>`, a stable hash of the
-file path plus the component name, with one token per style-bearing element. Every element in the
-scope carries the token: the whole file for top-level blocks, and the enclosing element's lexical
-subtree for blocks inside a component. The last compound of each selector gets `[data-l-<hash>]`,
-a +0,1,0 specificity bump. Dynamic classes always work, because no element is pruned.
+**How scoping works.** Each scope with styles gets a token, a stable hash of the file path plus
+the component name, with one token per style-bearing element. Every element in the scope carries
+the token as a marker, `data-lum-<hash>` by default: the whole file for top-level blocks, and the
+enclosing element's lexical subtree for blocks inside a component. The last compound of each
+selector gets `[data-lum-<hash>]`, a +0,1,0 specificity bump. Dynamic classes always work, because
+no element is pruned. `scopedStyles` changes the marker and the bump (see "Choosing the scope
+marker" below).
 
 - `:global(.sel)` leaves a selector unscoped; `:deep(.sel)` scopes only the part before it.
 - `@keyframes` names are scoped, and `animation` references are rewritten. A block sees its own
@@ -117,6 +119,38 @@ a +0,1,0 specificity bump. Dynamic classes always work, because no element is pr
   the classes of the blocks that apply there (innermost first), then the project's global classes
   (`<style global>` blocks and imported global `.css` files), never a sibling subtree's.
   `var(--…)` offers every custom property declared in the project, with its value.
+
+**Choosing the scope marker** (`scopedStyles`, decision-85). One app-wide option of `lumiose()`
+decides how elements carry their scope and how scoped selectors match it:
+
+```ts
+lumiose({
+  scopedStyles: {
+    strategy: "attribute", // or "class"
+    specificity: "default", // or "zero"
+    namespace: "lum", // the start of the marker name
+  },
+});
+```
+
+| `strategy`            | `specificity` | Element                     | `.note` becomes                    |
+| --------------------- | ------------- | --------------------------- | ---------------------------------- |
+| `attribute` (default) | `default`     | `data-lum-a1b2c3d4`         | `.note[data-lum-a1b2c3d4]`         |
+| `attribute`           | `zero`        | `data-lum-a1b2c3d4`         | `.note:where([data-lum-a1b2c3d4])` |
+| `class`               | `default`     | `class="note lum-a1b2c3d4"` | `.note.lum-a1b2c3d4`               |
+| `class`               | `zero`        | `class="note lum-a1b2c3d4"` | `.note:where(.lum-a1b2c3d4)`       |
+
+- **`strategy: "class"`** puts the marker in the element's `class`, next to its own classes, on the
+  client and in server-rendered HTML. Class handling never removes it. Pick it when attributes
+  get in the way, for example when HTML is post-processed by a tool that strips `data-*`.
+- **`specificity: "zero"`** wraps the marker in `:where()`, so the scope adds nothing: a scoped
+  `.note` ties with a global `.note`, and the one that comes later wins. Pick it when global styles
+  or utility classes should override component styles without `!important`. It needs `:where()`
+  support (every evergreen browser).
+- **`namespace`** starts with a lowercase letter and holds lowercase letters, digits and hyphens.
+  Change it to avoid clashes with another library's markers.
+- Class passthrough, `:global()`, `:deep()`, `@keyframes` scoping and placement work the same in
+  every combination.
 
 **Blocks are plain CSS:** no Sass, no `lang`, `media` or other attributes (only `global`). For CSS
 that is not a component's own (a reset, theme tokens, a stylesheet from another project, Tailwind),
@@ -276,12 +310,12 @@ export function Meter(props: { label: string; value: number }) {
 }
 ```
 
-The compiler's CSS output for that file (`data-l-lw1tegds` is the component's scope token). Every
+The compiler's CSS output for that file (`data-lum-lw1tegds` is the component's scope token). Every
 `$` reference and every constant `calc()` is gone; only the runtime `var(--value)` and the
 `%`-relative width are left to the browser:
 
 ```css
-.meter[data-l-lw1tegds] {
+.meter[data-lum-lw1tegds] {
   --pad: 16px;
   padding: var(--pad);
   border: 1px solid;
@@ -290,20 +324,20 @@ The compiler's CSS output for that file (`data-l-lw1tegds` is the component's sc
   display: grid;
 }
 
-.track[data-l-lw1tegds] {
+.track[data-lum-lw1tegds] {
   border-radius: 4px;
   block-size: 8px;
   box-shadow: 0 1px 2px #0003;
 }
 
-.fill[data-l-lw1tegds] {
+.fill[data-lum-lw1tegds] {
   inline-size: var(--value);
   background: currentColor;
   block-size: 100%;
 }
 
 @media (width < 40rem) {
-  .meter[data-l-lw1tegds] {
+  .meter[data-lum-lw1tegds] {
     max-inline-size: calc(100% - 32px);
   }
 }

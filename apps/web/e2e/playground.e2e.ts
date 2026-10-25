@@ -35,7 +35,7 @@ test("compiles in the browser and runs the preview", async ({ page }) => {
     'from "lumiose/server"',
   );
   await page.getByRole("tab", { name: "CSS" }).click();
-  await expect(page.getByRole("tabpanel", { name: "CSS" })).toContainText("[data-l-");
+  await expect(page.getByRole("tabpanel", { name: "CSS" })).toContainText("[data-lum-");
 });
 
 test("reports diagnostics in the editor and the Diagnostics tab", async ({ page }) => {
@@ -161,7 +161,7 @@ test.describe("without JavaScript", () => {
     await expect(js).toContainText('from "lumiose/dom"');
     await expect(source).toBeHidden();
     await demo.getByText("CSS output").click();
-    await expect(css).toContainText("[data-l-");
+    await expect(css).toContainText("[data-lum-");
   });
 });
 
@@ -180,7 +180,7 @@ test("screenshots", async ({ page }) => {
   await page.emulateMedia({ colorScheme: "light" });
   await page.getByLabel("Sample").selectOption("scoped");
   await page.getByRole("tab", { name: "CSS" }).click();
-  await expect(page.getByRole("tabpanel", { name: "CSS" })).toContainText(".badge[data-l-");
+  await expect(page.getByRole("tabpanel", { name: "CSS" })).toContainText(".badge[data-lum-");
   await page.screenshot({ path: out("css") });
   await page.getByRole("tab", { name: "Client JS" }).click();
   await page.screenshot({ path: out("client") });

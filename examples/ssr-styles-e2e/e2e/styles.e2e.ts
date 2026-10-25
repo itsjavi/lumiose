@@ -35,7 +35,7 @@ test.describe("without JavaScript", () => {
     page,
   }) => {
     await page.goto("/");
-    // app.css's `.order[data-order]` and the layout's `.order[data-l-…]` have the same specificity:
+    // app.css's `.order[data-order]` and the layout's `.order[data-lum-…]` have the same specificity:
     // the style block comes after the stylesheet the file imports.
     expect(await computed(page, ".order", "color")).toBe("rgb(0, 0, 255)");
     // Utilities are in `@layer utilities`: unlayered CSS wins unless the utility is important.

@@ -11,6 +11,7 @@ import type { HeadersOption } from "lumiose/internal/app/headers.ts";
 import type { CsrfOptions } from "lumiose/internal/app/server/csrf.ts";
 import type { LimitsOption } from "lumiose/internal/app/server/body.ts";
 import type { StreamTimeoutOption } from "lumiose/internal/app/server/stream-timeout.ts";
+import type { ScopedStylesOption } from "../scoped-styles.ts";
 import type { TrailingSlash } from "lumiose/internal/app/server/handler.ts";
 import type { Prefetch } from "lumiose/internal/app/server/navigation.ts";
 import type { Adapter } from "./production/adapter.ts";
@@ -96,6 +97,7 @@ export interface ProjectOptions {
   viewTransitions?: boolean;
   prefetch?: Prefetch;
   csp?: "strict";
+  scopedStyles?: ScopedStylesOption;
   headers?: HeadersOption;
   limits?: LimitsOption;
   streamTimeout?: StreamTimeoutOption;

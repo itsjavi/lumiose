@@ -86,6 +86,7 @@ export type {
   MarkdownOptions,
   ProjectOptions,
   RouteMode,
+  ScopedStylesOption,
   SvgOptions,
   TrailingSlash,
 } from "./options.ts";
@@ -198,6 +199,8 @@ export default function lumiose(options: LumioseOptions = {}): Plugin<LumiosePlu
     packages: packages.for(cleanId(file)),
     // Static `style` strings through the CSSOM, nonces on JSX scripts and styles (TASK-142).
     ...(api.options.csp === "strict" ? { strictCsp: true } : {}),
+    // Markers and selectors per `scopedStyles` (decision-85).
+    ...(api.options.scopedStyles === undefined ? {} : { scopedStyles: api.options.scopedStyles }),
     // Component-level hot updates in dev (TASK-146; the compiler applies it to client code), not
     // under Vitest, whose modules are not hot-updated.
     ...(serve && process.env["VITEST"] === undefined ? { hot: true } : {}),

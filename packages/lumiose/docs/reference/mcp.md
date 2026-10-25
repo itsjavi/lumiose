@@ -73,7 +73,8 @@ exist. stdout carries the protocol; console output of app code goes to stderr an
 - **Components** list each component's `name`, `exported`, `async`, `location`, `props` and
   `styleScopes`. `props` is the first parameter as written (`{ parameter: "props: CardProps" }`),
   plus the `type` declaration when the props type is an interface or type alias of the same file;
-  it is `null` for a component without props. `styleScopes` are the `data-l-*` attributes of the
+  it is `null` for a component without props. `styleScopes` are the scope markers (`data-lum-*` attributes, or `lum-*` classes with
+  `scopedStyles.strategy: "class"`) of the
   elements that hold `<style>` blocks. `islands` are the file's `client:*` call sites with their
   `ref`, `module`, `export` and `strategy`.
 - **`compile`** takes the file's text from `source` when given (the file need not exist), and

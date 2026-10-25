@@ -40,6 +40,12 @@ interface LumioseOptions {
   prefetch?: "hover" | "viewport" | "none"; // default "hover"
   /** A strict Content Security Policy: nonces per response, hashes for prerendered pages. */
   csp?: "strict";
+  /** How scoped <style> blocks mark and match their elements (decision-85). */
+  scopedStyles?: {
+    strategy?: "attribute" | "class"; // default "attribute": data-lum-<hash>; "class": lum-<hash>
+    specificity?: "default" | "zero"; // default "default": +0,1,0; "zero": :where(), +0
+    namespace?: string; // default "lum"
+  };
   /** Response headers: a record for every response, or rules by path (below base). */
   headers?: Record<string, string> | { path: string; headers: Record<string, string> }[];
   /** Request body limits, in bytes or "512kb"/"1mb": larger requests get 413. */
@@ -71,6 +77,12 @@ described in [Security](../concepts/security.md): nonces on every inline script 
 writes and on those written in JSX, static `style` strings as nonce'd rules, a `Content-Security-Policy` header for pages rendered per request, and a hash policy
 `<meta>` in prerendered pages. `allowedOrigins` takes full
 origins such as `"https://app.example.com"`, without a path or trailing slash.
+
+**Scope markers** (`scopedStyles`, decision-85). How elements carry the scope of `<style>` blocks
+and how scoped selectors match it: `data-lum-<hash>` attributes with a +0,1,0 bump by default;
+`strategy: "class"` uses `lum-<hash>` classes merged into each element's `class`, `specificity:
+"zero"` wraps the marker in `:where()`, and `namespace` replaces `lum`. Every compile of the app
+uses it, so templates and CSS agree. See [Choosing the scope marker](../concepts/styles.md).
 
 **Response headers** (`headers`). Declare them once: a record applies to every response; rules
 apply to the paths they match, below Vite's `base` (`*` matches one segment, `**` any number,

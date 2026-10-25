@@ -55,9 +55,30 @@ describe("lumiose() project options", () => {
       'lumiose({ include }): expected a RegExp, got "*.stsx".',
     );
     expect(create({ moed: "spa" })).toThrow(
-      "lumiose({ moed }): unknown option. Known options: include, exclude, mode, ssr, prerender, trailingSlash, csrf, svg, md, html, viewTransitions, prefetch, csp, headers, limits, streamTimeout, adapter, i18n, site, inspector.",
+      "lumiose({ moed }): unknown option. Known options: include, exclude, mode, ssr, prerender, trailingSlash, csrf, svg, md, html, viewTransitions, prefetch, csp, scopedStyles, headers, limits, streamTimeout, adapter, i18n, site, inspector.",
     );
     expect(create(null)).toThrow("lumiose(): expected an options object, got null.");
+  });
+
+  it("validates scopedStyles (decision-85)", () => {
+    expect(
+      apiOf({ scopedStyles: { strategy: "class", specificity: "zero", namespace: "app" } }),
+    ).toEqual({ scopedStyles: { strategy: "class", specificity: "zero", namespace: "app" } });
+    expect(create({ scopedStyles: { strategy: "id" } })).toThrow(
+      'lumiose({ scopedStyles.strategy }): expected "attribute" or "class", got "id".',
+    );
+    expect(create({ scopedStyles: { specificity: 0 } })).toThrow(
+      'lumiose({ scopedStyles.specificity }): expected "default" or "zero", got 0.',
+    );
+    expect(create({ scopedStyles: { namespace: "1x" } })).toThrow(
+      /lumiose\(\{ scopedStyles\.namespace \}\): `1x`: it must start with a lowercase letter/,
+    );
+    expect(create({ scopedStyles: { prefix: "x" } })).toThrow(
+      "lumiose({ scopedStyles.prefix }): unknown option. Known options: strategy, specificity, namespace.",
+    );
+    expect(create({ scopedStyles: "class" })).toThrow(
+      "lumiose({ scopedStyles }): expected { strategy?, specificity?, namespace? }.",
+    );
   });
 
   it("validates inspector (decision-59)", () => {

@@ -24,7 +24,7 @@ describe("Notice styles", () => {
   it("scopes every notice rule", () => {
     expect(notice.length).toBeGreaterThan(0);
     for (const rule of notice)
-      for (const selector of rule.selectors) expect(selector).toMatch(/\[data-l-[a-z0-9]+\]/);
+      for (const selector of rule.selectors) expect(selector).toMatch(/\[data-lum-[a-z0-9]+\]/);
   });
 
   it("uses a scoped style block, not a global one", () => {

@@ -19,7 +19,7 @@ describe("class passthrough", () => {
   });
 
   it("applies the page's scoped .cta rule to the Sign up button", () => {
-    const rule = /\.cta(\[data-l-[a-z0-9]+\])\s*\{[^}]*#16a34a/i.exec(css);
+    const rule = /\.cta(\[data-lum-[a-z0-9]+\])\s*\{[^}]*#16a34a/i.exec(css);
     expect(rule, "a scoped .cta rule with the green background").not.toBeNull();
     const token = rule![1]!.slice(1, -1);
     const signUp = buttons.find((b) => b.includes("Sign up"))!;

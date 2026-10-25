@@ -22,6 +22,7 @@ import type { MarkdownOptions } from "./content.ts";
 import { isAdapter, type Adapter } from "./app/production/adapter.ts";
 import type { Rollup } from "vite";
 import type { SvgOptions } from "./svg.ts";
+import { scopedStylesProblem, type ScopedStylesOption } from "./scoped-styles.ts";
 
 export type {
   Adapter,
@@ -32,6 +33,7 @@ export type {
   MarkdownOptions,
   ProjectOptions,
   RouteMode,
+  ScopedStylesOption,
   SvgOptions,
   TrailingSlash,
 };
@@ -120,6 +122,17 @@ export interface LumioseOptions {
    * @example lumiose({ csp: "strict" })
    */
   csp?: "strict";
+  /**
+   * How scoped `<style>` blocks mark their elements and match them (decision-85). `strategy`:
+   * `"attribute"` (`data-lum-<hash>`) or `"class"` (`lum-<hash>`, which also lets parent styles
+   * reach a child through the `class` it forwards). `specificity`: `"default"` (the scope adds
+   * (0,1,0) to each selector) or `"zero"` (`:where()`, it adds nothing, so a scoped `.note` ties
+   * with a global `.note`). `namespace`: the start of the marker name. Default:
+   * `{ strategy: "attribute", specificity: "default", namespace: "lum" }`.
+   *
+   * @example lumiose({ scopedStyles: { strategy: "class", namespace: "app" } })
+   */
+  scopedStyles?: ScopedStylesOption;
   /**
    * Response headers, declared once: a record for every response, or `{ path, headers }` rules
    * for the paths that match (below `base`; `*` is one segment, `**` any depth; later rules win).
@@ -227,6 +240,7 @@ const KNOWN = [
   "viewTransitions",
   "prefetch",
   "csp",
+  "scopedStyles",
   "headers",
   "limits",
   "streamTimeout",
@@ -284,6 +298,11 @@ export function projectOptionsOf(options: LumioseOptions): ProjectOptions {
   }
   if (prefetch !== undefined) project.prefetch = oneOf("prefetch", prefetch, PREFETCH);
   if (options.csp !== undefined) project.csp = oneOf("csp", options.csp, ["strict"] as const);
+  if (options.scopedStyles !== undefined) {
+    const problem = scopedStylesProblem(options.scopedStyles);
+    if (problem !== undefined) fail(`scopedStyles${problem[0]}`, problem[1]);
+    project.scopedStyles = { ...options.scopedStyles };
+  }
   if (headers !== undefined) project.headers = headersOption(headers);
   if (options.limits !== undefined) {
     try {
