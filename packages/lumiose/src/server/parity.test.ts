@@ -281,6 +281,26 @@ describe("spread parity", () => {
     expect(parsed(`<div${spreadAttrs(props)}></div>`)).toBe(written(div));
   });
 
+  it("skips scope tokens the compiler never writes, on both sides (TASK-590)", () => {
+    const props = {
+      class: "own",
+      $$scope: 'data-lum-p1 .lum-c1 . .a\tb .A on\tclick onclick 1x data-x"y <b> data-lum-p2',
+    };
+    const div = document.createElement("div");
+    expect(() =>
+      render(() => (spread(div, () => props), div), document.createElement("main")),
+    ).not.toThrow();
+    expect(parsed(`<div${spreadAttrs(props)}></div>`)).toBe(written(div));
+    expect(spreadAttrs(props)).toBe(' class="own lum-c1" data-lum-p1 data-lum-p2');
+    for (const scope of [5, {}, ". .."]) {
+      const el = document.createElement("div");
+      expect(() =>
+        render(() => (spread(el, () => ({ $$scope: scope })), el), document.createElement("main")),
+      ).not.toThrow();
+      expect(el.attributes.length).toBe(0);
+    }
+  });
+
   it("drops srcdoc in any case, on both sides (TASK-496)", () => {
     const html = "<script>parent.alert(1)</script>";
     const props = { srcdoc: html, srcDoc: html, SRCDOC: html, title: "kept" };

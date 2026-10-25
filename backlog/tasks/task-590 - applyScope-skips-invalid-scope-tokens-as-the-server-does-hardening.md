@@ -1,10 +1,11 @@
 ---
 id: TASK-590
 title: applyScope skips invalid scope tokens as the server does (hardening)
-status: To Do
+status: Done
 assignee:
   - '@Spark'
 created_date: '2026-10-25 03:02'
+updated_date: '2026-10-25 03:14'
 labels:
   - security
   - hardening
@@ -23,5 +24,17 @@ Fix: skip invalid tokens on the client as the server does, with a test for both 
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 A malformed $$scope token is skipped on the client as on the server, without throwing; a test covers both renderers
+- [x] #1 A malformed $$scope token is skipped on the client as on the server, without throwing; a test covers both renderers
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+2026-10-25 (Lux, solo takeover before 0.8.0): new packages/lumiose/src/dom/scope.ts with the token forms the compiler writes, data-<namespace>-<hash> and .<namespace>-<hash> (isScopeAttribute, isScopeClass). The client's applyScope and the server's scopeClasses and spreadAttrs use them, so both skip any other token (and applyScope ignores a value that is not a string). Test in src/server/parity.test.ts: a spread with malformed tokens (., whitespace, uppercase, on*, quotes, <b>, a digit first) renders the same DOM on both sides without throwing (InvalidCharacterError before the fix), and non-string values set nothing.
+<!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Client and server apply only the scope tokens the compiler writes (data-<namespace>-<hash>, .<namespace>-<hash>) and skip the rest alike; the client no longer throws on a malformed token. Tested in the client/server parity test.
+<!-- SECTION:FINAL_SUMMARY:END -->

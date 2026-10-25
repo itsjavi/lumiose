@@ -1,6 +1,7 @@
 // Pure DOM writers, usable as `bind` apply functions (contract doc-2 §2, spec §4.5, §4.6.2).
 
 import { hydrator } from "./hydration.ts";
+import { isScopeAttribute, isScopeClass } from "./scope.ts";
 import { safeAttrValue } from "./url.ts";
 
 type Slots = Record<string, unknown>;
@@ -196,14 +197,15 @@ export function setStyle(el: HTMLElement | SVGElement, value: unknown): void {
 
 /**
  * Class passthrough (spec §4.6.2): applies each scope token, an attribute name (`data-lum-a1`) as
- * an empty attribute, a `.name` (the class strategy, decision-85) as a class.
+ * an empty attribute, a `.name` (the class strategy, decision-85) as a class. Other tokens are
+ * skipped, as on the server (./scope.ts).
  */
 export function applyScope(el: Element, tokens: string | undefined): void {
-  if (tokens) {
+  if (typeof tokens === "string") {
     for (const token of tokens.split(" ")) {
-      if (token[0] === ".") {
+      if (isScopeClass(token)) {
         el.classList.add(token.slice(1));
-      } else if (token) {
+      } else if (isScopeAttribute(token)) {
         el.setAttribute(token, "");
       }
     }

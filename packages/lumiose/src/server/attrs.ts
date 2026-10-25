@@ -4,6 +4,7 @@
 import { currentFrame, resolveUnit } from "./frame.ts";
 import { escapeAttr } from "./node.ts";
 import { strictStyle } from "./strict-styles.ts";
+import { isScopeAttribute, isScopeClass } from "../dom/scope.ts";
 import { safeAttrValue } from "../dom/url.ts";
 
 /**
@@ -62,7 +63,7 @@ function scopeClasses(scope: unknown): string[] {
   const classes: string[] = [];
   if (typeof scope === "string") {
     for (const token of scope.split(" ")) {
-      if (token.length > 1 && token[0] === ".") classes.push(token.slice(1));
+      if (isScopeClass(token)) classes.push(token.slice(1));
     }
   }
   return classes;
@@ -213,7 +214,7 @@ export function spreadAttrs(
   if (!classWritten && classes.length > 0) out += classOf(classes);
   if (typeof passed === "string") {
     for (const token of passed.split(" ")) {
-      if (token !== "" && token[0] !== "." && ATTRIBUTE_NAME.test(token)) out += ` ${token}`;
+      if (isScopeAttribute(token)) out += ` ${token}`;
     }
   }
   return out;

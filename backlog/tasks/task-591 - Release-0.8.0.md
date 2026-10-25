@@ -5,7 +5,7 @@ status: In Progress
 assignee:
   - '@Lux'
 created_date: '2026-10-25 03:02'
-updated_date: '2026-10-25 03:05'
+updated_date: '2026-10-25 03:14'
 labels: []
 milestone: m-14
 dependencies: []
@@ -21,7 +21,7 @@ Release M14 (@lumiose/stsx's first release, the scopedStyles option) and the fix
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
 - [ ] #1 The user published the @lumiose/stsx placeholder and set its trusted publisher
-- [ ] #2 The delta security review ran and its findings are tasks; those fixed before the release are named in the notes
+- [x] #2 The delta security review ran and its findings are tasks; those fixed before the release are named in the notes
 - [x] #3 pnpm check and pnpm pack:check pass
 - [ ] #4 The user approved the release and the push in chat; pnpm release:version 0.8.0 ran and the release is published
 <!-- AC:END -->
@@ -43,4 +43,6 @@ Release M14 (@lumiose/stsx's first release, the scopedStyles option) and the fix
 - Not re-reviewed: the body parsing, form actions, Origin check and sanitizers, which have no changes since v0.7.0.
 
 2026-10-25 (Lux): pnpm check green (vitest 2670 passed, 2 skipped; cargo and scripts ok). pnpm pack:check packs 16 packages, @lumiose/stsx included (25 files). node scripts/release.ts 0.8.0 --dry-run: 0.7.1 -> 0.8.0, every lockstep package.json including packages/stsx, the generated loader and llms files, and a CHANGELOG section with the M14 features and fixes. Waiting for the user: the placeholder publish and trusted publisher, whether TASK-588 is fixed before the release, then approval to release and push.
+
+2026-10-25 (Lux): fixed before the release at the user's request: TASK-588, TASK-589 and TASK-590. Affected suites green after the fixes: lumiose 1222, @lumiose/vite 265, @lumiose/stsx 26, the stsx examples 8; typecheck and lint clean (existing warnings only).
 <!-- SECTION:NOTES:END -->
