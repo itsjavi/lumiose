@@ -3,11 +3,11 @@ id: TASK-593
 title: >-
   CI on main after the 0.8.0 push: playground e2e, stsx tests on Windows,
   ssr-styles island
-status: In Progress
+status: Done
 assignee:
   - '@Lux'
 created_date: '2026-10-25 04:58'
-updated_date: '2026-10-25 05:02'
+updated_date: '2026-10-25 05:24'
 labels:
   - ci
   - tests
@@ -26,7 +26,7 @@ CI run 40158676773 on main (712e509f, v0.8.0) failed in three jobs. 1) e2e site:
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
 - [x] #1 The playground e2e edits the current landing sample
-- [ ] #2 The stsx tests pass on Windows: the cause of each failure is found and fixed
+- [x] #2 The stsx tests pass on Windows: the cause of each failure is found and fixed
 - [x] #3 The cause of the ssr-styles island failure is found and fixed
 <!-- AC:END -->
 
@@ -55,4 +55,12 @@ Locally the 26 stsx tests pass from a clean cache. The drive hypothesis cannot b
 - Reproduced locally by delaying the loader by 1.5 s: the old flow fails as in CI (aria-pressed stays "false"), and waiting for hydration passes.
 - The test now waits for the island's delegated handler (`$$click`) before clicking. Not a product bug: no JavaScript has run to catch the click. Event replay before hydration stays covered by the island tests (TASK-508, TASK-534).
 - The suite passes 10/10 locally. No other test uses this hold-and-release pattern.
+
+2026-10-25 (Lux): the user approved the push; main 3ec0b2f4 pushed. CI run 40164221799 is green in every job, check (windows-latest) and both e2e jobs included; Pages deployed.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+CI on main is green again. The playground e2e edits the current landing sample. The stsx tests copy fixtures inside the package with their own Vite cache, with no cross-drive junction, and run tsc through Node, and they pass on Windows. The ssr-styles island test waits for hydration, after a reproduced race with the island's modulepreload.
+<!-- SECTION:FINAL_SUMMARY:END -->
