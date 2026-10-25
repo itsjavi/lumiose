@@ -1,6 +1,6 @@
 {
   "name": "@lumiose/cli",
-  "version": "0.7.1",
+  "version": "0.8.0",
   "description": "The lumiose command: dev, build, preview, check, lint, fmt, docs and the MCP server.",
   "license": "MIT",
   "repository": {

@@ -2,6 +2,39 @@
 
 All Lumiose packages share one version, except those released outside lockstep (@lumiose/ui), which keep their own changelog in their directory.
 
+## 0.8.0 (2026-10-25)
+
+### Features
+
+- **web:** an STSX docs section between Docs and UI, with its own llms.txt (TASK-585) (ce6b59d7)
+- **language-server:** stsx mode for projects that use @lumiose/stsx without Lumiose (TASK-582) (dad8599c)
+- **stsx:** stsx typegen and plugin-written shadows for tsc (TASK-581) (76787568)
+- **stsx:** @lumiose/stsx, a Vite plugin for .stsx files in React, React Router and Solid (TASK-578) (f1e0e032)
+- **compiler:** compileTsx emits .stsx as TSX and CSS for other JSX frameworks (TASK-577) (3356e80c)
+- **vite:** lumiose({ scopedStyles }) chooses the scope marker, specificity and namespace (TASK-576) (d58aee38)
+- **runtime:** apply class-strategy scope tokens on the client and the server (TASK-574) (b5984a74)
+- **compiler:** scope markers per scopedStyles, attribute or class (TASK-573) (58d9eca4)
+- **css:** scope selectors per strategy, specificity and namespace (TASK-572) (e1a6e5c1)
+
+### Fixes
+
+- **runtime:** apply only the scope tokens the compiler writes, on the client as on the server (TASK-590) (1d657555)
+- **stsx:** honour server.fs.allow in dev, and keep shadows inside the shadow directory (TASK-588, TASK-589) (6e90cbad)
+- **stsx:** reject .stsx React Router route modules by their route exports, with regression tests (TASK-578) (ad5476f7)
+- **stsx:** source maps resolve to the .stsx source in dev and production (TASK-580) (13bb0e1c)
+- **stsx:** one hot update per save, CSS-only for style and constant edits (TASK-579) (d88fa42a)
+
+### Scale
+
+The large-app benchmark (1,500 routes, 5,000 components), working tree against v0.7.1 (13e9c9c6), medians of 3 rounds on Apple M1 Max (10 cores, 32 GB, darwin 27.0.0 arm64, Node v26.8.1). The release gate stops at a ratio above 1.2.
+
+| Metric | Previous | This release | Ratio |
+| ------ | -------- | ------------ | ----- |
+| Production build (ms) | 30724.7 | 30709.1 | 0.999 |
+| Dev cold start (ms) | 1088.9 | 1045.5 | 0.960 |
+| HMR latency (ms) | 79.2 | 80.1 | 1.012 |
+| Server memory, peak RSS (MB) | 480.4 | 475.4 | 0.990 |
+
 ## 0.7.1 (2026-10-24)
 
 ### Fixes

@@ -1,6 +1,6 @@
 {
   "name": "@lumiose/adapter-node",
-  "version": "0.7.1",
+  "version": "0.8.0",
   "description": "Serve a Lumiose build with Node: dist/client statics with caching headers, then the app's fetch handler.",
   "license": "MIT",
   "repository": {
