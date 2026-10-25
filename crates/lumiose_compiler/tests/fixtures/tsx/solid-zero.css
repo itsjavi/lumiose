@@ -1,0 +1,11 @@
+.list:where(.app-7nclu0up) {
+  padding: 0;
+}
+
+.active:where(.app-7nclu0up) {
+  font-weight: bold;
+}
+
+.missing:where(.app-7nclu0up) {
+  color: red;
+}

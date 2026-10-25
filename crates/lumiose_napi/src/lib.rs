@@ -985,3 +985,140 @@ pub fn compile_svg(
         }),
     )
 }
+
+/// Options of [`compile_tsx`] (`@lumiose/stsx`, decision-86).
+#[napi(object)]
+pub struct TsxOptions {
+    /// The attribute that holds classes: `"className"` (React, Preact) or `"class"` (Solid).
+    pub class_attribute: String,
+    /// How elements carry scope tokens (decision-85). Default: `data-lum-<token>` attributes.
+    pub scoped_styles: Option<ScopedStyles>,
+    /// `import "<styleImport>";` goes first when the file has CSS. Default: none.
+    pub style_import: Option<String>,
+    /// Source maps for the TSX and the CSS. Default `true`.
+    pub source_map: Option<bool>,
+    /// Browserslist queries for CSS lowering and prefixes. Default: modern syntax is kept.
+    pub css_targets: Option<Vec<String>>,
+    /// Minify `css`. Default `false`.
+    pub css_minify: Option<bool>,
+    /// The project root: scope tokens hash the root-relative path.
+    pub root: Option<String>,
+    /// Linked packages outside `root`: scope tokens name their modules package-relatively.
+    pub packages: Option<Vec<PackageRoot>>,
+    /// Modules answering earlier `moduleRequests`.
+    pub modules: Option<Vec<HostModule>>,
+}
+
+#[napi(object)]
+pub struct TsxResult {
+    /// The TSX for the framework's JSX transform; empty when the source could not be parsed.
+    pub code: String,
+    /// Source map v3 JSON from `code` to the source.
+    pub map: Option<String>,
+    /// The file's stylesheet; `null` without style blocks or while `moduleRequests` is not empty.
+    pub css: Option<String>,
+    pub css_map: Option<String>,
+    /// Ids of the modules imported constants were folded from.
+    pub css_deps: Vec<String>,
+    /// Modules needed to fold imported constants; compile again with them in `modules`.
+    pub module_requests: Vec<ModuleRequest>,
+    /// Scanner, syntax and style (`LUM3xxx`) diagnostics.
+    pub diagnostics: Vec<Diagnostic>,
+    /// The markers stamped per scope.
+    pub scope_tokens: ScopeTokens,
+}
+
+/// Compiles a `.stsx` module to TSX and CSS for another JSX framework (`@lumiose/stsx`,
+/// decision-86): style blocks removed, scope markers stamped, the framework's JSX left as is.
+/// Spans are UTF-16 offsets into `source`. Throws on invalid `cssTargets` or `scopedStyles`.
+#[napi]
+pub fn compile_tsx(
+    source: String,
+    filename: String,
+    options: TsxOptions,
+) -> napi::Result<TsxResult> {
+    let targets = match options.css_targets {
+        Some(queries) if !queries.is_empty() => lumiose_css::browserslist_targets(&queries)
+            .map_err(|error| napi::Error::from_reason(format!("invalid cssTargets: {error}")))?,
+        _ => lumiose_compiler::CssTargets::default(),
+    };
+    let options = lumiose_compiler::TsxOptions {
+        css: lumiose_compiler::CssOptions {
+            targets,
+            minify: options.css_minify.unwrap_or(false),
+            scoped: scoped_styles(options.scoped_styles)?,
+        },
+        source_map: options.source_map.unwrap_or(true),
+        root: options.root,
+        packages: options
+            .packages
+            .unwrap_or_default()
+            .into_iter()
+            .map(|package| lumiose_compiler::PackageRoot {
+                name: package.name,
+                dir: package.dir,
+            })
+            .collect(),
+        modules: options
+            .modules
+            .unwrap_or_default()
+            .into_iter()
+            .map(|module| lumiose_compiler::HostModule {
+                importer: module.importer,
+                specifier: module.specifier,
+                resolved: module
+                    .resolved
+                    .map(|resolved| lumiose_compiler::ResolvedModule {
+                        id: resolved.id,
+                        source: resolved.source,
+                    }),
+            })
+            .collect(),
+        class_attribute: options.class_attribute,
+        style_import: options.style_import,
+    };
+    let mut result =
+        on_large_stack(|| lumiose_compiler::compile_tsx(&source, &filename, &options))?;
+    let index = Utf16Index::new(&source);
+    if !index.is_identity() {
+        result.map_spans(&|offset| index.to_utf16(offset));
+    }
+    Ok(TsxResult {
+        code: result.code,
+        map: result.map,
+        css: result.css,
+        css_map: result.css_map,
+        css_deps: result.css_deps,
+        module_requests: result
+            .module_requests
+            .into_iter()
+            .map(|request| ModuleRequest {
+                importer: request.importer,
+                specifier: request.specifier,
+            })
+            .collect(),
+        diagnostics: result
+            .diagnostics
+            .into_iter()
+            .map(convert_diagnostic)
+            .collect(),
+        scope_tokens: ScopeTokens {
+            file: result.scope_tokens.file,
+            components: result
+                .scope_tokens
+                .components
+                .into_iter()
+                .map(|(name, subtrees)| {
+                    let subtrees = subtrees
+                        .into_iter()
+                        .map(|subtree| SubtreeScope {
+                            attribute: subtree.attribute,
+                            span: span(subtree.span),
+                        })
+                        .collect();
+                    (name, subtrees)
+                })
+                .collect(),
+        },
+    })
+}

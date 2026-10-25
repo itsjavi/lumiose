@@ -232,10 +232,13 @@ impl ScopePlan {
 }
 
 /// Collects the element inventories of every scope token from the (type-stripped) program.
+/// `class_attribute` is the attribute that holds classes: `class` in Lumiose, `className` for
+/// React through `@lumiose/stsx` (decision-86).
 pub fn inventories(
     program: &Program<'_>,
     analysis: &Analysis,
     plan: &ScopePlan,
+    class_attribute: &str,
 ) -> Vec<ElementInventory> {
     if plan.bare.is_empty() {
         return Vec::new();
@@ -243,6 +246,7 @@ pub fn inventories(
     let mut collector = InventoryCollector {
         analysis,
         tokens: &plan.tokens,
+        class_attribute,
         components: Vec::new(),
         inventories: BTreeMap::new(),
     };
@@ -431,6 +435,7 @@ impl<'a> Visit<'a> for ElementSpans {
 struct InventoryCollector<'o> {
     analysis: &'o Analysis,
     tokens: &'o ScopeTokens,
+    class_attribute: &'o str,
     /// Names of the components being visited (innermost last).
     components: Vec<String>,
     /// By marker (`data-lum-…` or `lum-…`).
@@ -514,7 +519,9 @@ impl<'a> Visit<'a> for InventoryCollector<'_> {
                         continue;
                     };
                     match name.name.as_str() {
-                        "class" => {
+                        // Solid's `classList` toggles classes at runtime.
+                        "classList" => contribution.dynamic_classes = true,
+                        class if class == self.class_attribute => {
                             let mut classes = Vec::new();
                             let dynamic = !static_classes(attribute.value.as_ref(), &mut classes);
                             contribution.dynamic_classes |= dynamic;

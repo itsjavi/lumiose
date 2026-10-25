@@ -8,7 +8,8 @@ use std::path::{Path, PathBuf};
 
 use lumiose_compiler::scanner::{AttributeValue, Placement, ScanResult};
 use lumiose_compiler::{
-    CompileOptions, CompileResult, HostModule, ResolvedModule, Span, Utf16Index, compile,
+    CompileOptions, CompileResult, HostModule, ResolvedModule, Span, TsxOptions, TsxResult,
+    Utf16Index, compile, compile_tsx,
 };
 use oxc_allocator::Allocator;
 use oxc_parser::Parser;
@@ -39,6 +40,31 @@ pub fn compile_with_modules(source: &str, id: &str, mut options: CompileOptions)
     let modules_dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/client/modules");
     for _ in 0..8 {
         let result = compile(source, id, &options);
+        if result.module_requests.is_empty() {
+            return result;
+        }
+        for request in result.module_requests {
+            let resolved = resolve(&request.importer, &request.specifier).and_then(|path| {
+                let file = modules_dir.join(path.trim_start_matches("/src/"));
+                std::fs::read_to_string(file)
+                    .ok()
+                    .map(|source| ResolvedModule { id: path, source })
+            });
+            options.modules.push(HostModule {
+                importer: request.importer,
+                specifier: request.specifier,
+                resolved,
+            });
+        }
+    }
+    panic!("{id}: module requests did not settle");
+}
+
+/// [`compile_with_modules`] for [`compile_tsx`].
+pub fn compile_tsx_with_modules(source: &str, id: &str, mut options: TsxOptions) -> TsxResult {
+    let modules_dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/client/modules");
+    for _ in 0..8 {
+        let result = compile_tsx(source, id, &options);
         if result.module_requests.is_empty() {
             return result;
         }

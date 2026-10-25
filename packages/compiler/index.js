@@ -908,6 +908,7 @@ const {
   compile,
   compileSvg,
   CompileTarget,
+  compileTsx,
   ContentKind,
   contentSource,
   ContractKind,
@@ -927,6 +928,7 @@ export { AttributeValueKind };
 export { compile };
 export { compileSvg };
 export { CompileTarget };
+export { compileTsx };
 export { ContentKind };
 export { contentSource };
 export { ContractKind };

@@ -1,0 +1,24 @@
+// @tsx class class zero app
+// Solid: `class`, `classList` (dynamic classes for the unused-selector check), zero specificity
+// and a custom namespace.
+import { createSignal, For } from "solid-js";
+
+export function List(props: { items: string[] }) {
+  const [active, setActive] = createSignal(0);
+  return (
+    <ul class="list">
+      <For each={props.items}>
+        {(item, i) => (
+          <li classList={{ active: active() === i() }} onClick={() => setActive(i())}>
+            {item}
+          </li>
+        )}
+      </For>
+      <style>
+        .list { padding: 0; }
+        .active { font-weight: bold; }
+        .missing { color: red; }
+      </style>
+    </ul>
+  );
+}

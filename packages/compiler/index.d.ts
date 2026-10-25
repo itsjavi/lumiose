@@ -140,6 +140,17 @@ export declare function compileSvg(
 
 export type CompileTarget = "client" | "server";
 
+/**
+ * Compiles a `.stsx` module to TSX and CSS for another JSX framework (`@lumiose/stsx`,
+ * decision-86): style blocks removed, scope markers stamped, the framework's JSX left as is.
+ * Spans are UTF-16 offsets into `source`. Throws on invalid `cssTargets` or `scopedStyles`.
+ */
+export declare function compileTsx(
+  source: string,
+  filename: string,
+  options: TsxOptions,
+): TsxResult;
+
 export interface ComponentMeta {
   name: string;
   span: Span;
@@ -440,6 +451,46 @@ export interface SvgCompileOptions {
 export interface TextEdit {
   span: Span;
   text: string;
+}
+
+/** Options of [`compile_tsx`] (`@lumiose/stsx`, decision-86). */
+export interface TsxOptions {
+  /** The attribute that holds classes: `"className"` (React, Preact) or `"class"` (Solid). */
+  classAttribute: string;
+  /** How elements carry scope tokens (decision-85). Default: `data-lum-<token>` attributes. */
+  scopedStyles?: ScopedStyles;
+  /** `import "<styleImport>";` goes first when the file has CSS. Default: none. */
+  styleImport?: string;
+  /** Source maps for the TSX and the CSS. Default `true`. */
+  sourceMap?: boolean;
+  /** Browserslist queries for CSS lowering and prefixes. Default: modern syntax is kept. */
+  cssTargets?: Array<string>;
+  /** Minify `css`. Default `false`. */
+  cssMinify?: boolean;
+  /** The project root: scope tokens hash the root-relative path. */
+  root?: string;
+  /** Linked packages outside `root`: scope tokens name their modules package-relatively. */
+  packages?: Array<PackageRoot>;
+  /** Modules answering earlier `moduleRequests`. */
+  modules?: Array<HostModule>;
+}
+
+export interface TsxResult {
+  /** The TSX for the framework's JSX transform; empty when the source could not be parsed. */
+  code: string;
+  /** Source map v3 JSON from `code` to the source. */
+  map?: string;
+  /** The file's stylesheet; `null` without style blocks or while `moduleRequests` is not empty. */
+  css?: string;
+  cssMap?: string;
+  /** Ids of the modules imported constants were folded from. */
+  cssDeps: Array<string>;
+  /** Modules needed to fold imported constants; compile again with them in `modules`. */
+  moduleRequests: Array<ModuleRequest>;
+  /** Scanner, syntax and style (`LUM3xxx`) diagnostics. */
+  diagnostics: Array<Diagnostic>;
+  /** The markers stamped per scope. */
+  scopeTokens: ScopeTokens;
 }
 
 /** Validates a `scopedStyles.namespace`: the error message, or `null` when it is valid. */

@@ -1,0 +1,41 @@
+// @tsx className attribute default
+// React with attribute markers: file-level, component-level and global blocks, `$name`
+// constants, and an SVG block that stays.
+import { useState } from "react";
+import { palette, radius } from "./tokens.ts";
+
+export function Counter({ label }: { label: string }) {
+  const [count, setCount] = useState(0);
+  return (
+    <div className="counter">
+      <style>
+        .counter { display: flex; gap: 8px; }
+        button { border-radius: $radius.lg; }
+      </style>
+      <button onClick={() => setCount((n) => n + 1)}>{label}</button>
+      <output className="value">{count}</output>
+      <svg viewBox="0 0 10 10">
+        <style>{`circle { fill: red; }`}</style>
+        <circle cx="5" cy="5" r="4" />
+      </svg>
+    </div>
+  );
+}
+
+export default function App() {
+  return (
+    <main className="page">
+      <Counter label="+1" />
+      {[1, 2].map((n) => <p key={n} className="row">{n}</p>)}
+    </main>
+  );
+}
+
+<style>
+  .page { color: $palette.text; }
+  .row { margin: 0; }
+</style>
+
+<style global>
+  body { margin: 0; }
+</style>

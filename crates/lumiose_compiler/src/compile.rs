@@ -330,7 +330,7 @@ pub fn compile(source: &str, filename: &str, options: &CompileOptions) -> Compil
     );
     let emit_css = options.emit_css && scopes.has_css() && style.is_complete();
     let inventories = if emit_css {
-        css::inventories(&program, &analysis, &scopes)
+        css::inventories(&program, &analysis, &scopes, "class")
     } else {
         Vec::new()
     };
@@ -454,7 +454,7 @@ pub fn compile(source: &str, filename: &str, options: &CompileOptions) -> Compil
 /// The module path that scope tokens hash: relative to `root` (without a leading `/`) or
 /// package-relative, whichever directory is innermost (`module_id::base`), otherwise the id as
 /// given (without its query).
-fn scope_path(filename: &str, root: Option<&str>, packages: &[PackageRoot]) -> String {
+pub(crate) fn scope_path(filename: &str, root: Option<&str>, packages: &[PackageRoot]) -> String {
     let id = module_id::clean_id(filename);
     match module_id::base(&id, root, packages) {
         Some(module_id::Base::Root(rest)) => rest[1..].to_owned(),
