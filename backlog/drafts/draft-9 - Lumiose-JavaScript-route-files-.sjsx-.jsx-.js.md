@@ -1,17 +1,18 @@
 ---
-id: TASK-596
+id: DRAFT-9
 title: 'Lumiose: JavaScript route files (.sjsx, .jsx, .js)'
-status: To Do
+status: Draft
 assignee:
   - '@Nova'
 created_date: '2026-10-25 04:12'
+updated_date: '2026-10-25 04:35'
 labels:
   - sjsx
   - routing
 milestone: m-15
 dependencies:
-  - TASK-593
-  - TASK-595
+  - DRAFT-6
+  - DRAFT-8
 priority: medium
 ordinal: 588000
 ---

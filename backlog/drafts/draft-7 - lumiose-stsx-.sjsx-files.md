@@ -1,16 +1,17 @@
 ---
-id: TASK-594
+id: DRAFT-7
 title: '@lumiose/stsx: .sjsx files'
-status: To Do
+status: Draft
 assignee:
   - '@Photon'
 created_date: '2026-10-25 04:12'
+updated_date: '2026-10-25 04:35'
 labels:
   - sjsx
   - stsx
 milestone: m-15
 dependencies:
-  - TASK-593
+  - DRAFT-6
 priority: medium
 ordinal: 586000
 ---

@@ -1,20 +1,21 @@
 ---
-id: TASK-600
+id: DRAFT-13
 title: 'Docs and examples: Styled JSX and JavaScript route files'
-status: To Do
+status: Draft
 assignee:
   - '@Beacon'
 created_date: '2026-10-25 04:12'
+updated_date: '2026-10-25 04:35'
 labels:
   - sjsx
   - docs
 milestone: m-15
 dependencies:
-  - TASK-594
-  - TASK-596
-  - TASK-597
-  - TASK-598
-  - TASK-599
+  - DRAFT-7
+  - DRAFT-9
+  - DRAFT-10
+  - DRAFT-11
+  - DRAFT-12
 priority: medium
 ordinal: 592000
 ---

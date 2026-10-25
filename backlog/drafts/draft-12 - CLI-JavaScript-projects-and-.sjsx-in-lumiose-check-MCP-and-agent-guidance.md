@@ -1,18 +1,19 @@
 ---
-id: TASK-599
+id: DRAFT-12
 title: 'CLI: JavaScript projects and .sjsx in lumiose check, MCP and agent guidance'
-status: To Do
+status: Draft
 assignee:
   - '@Beacon'
 created_date: '2026-10-25 04:12'
+updated_date: '2026-10-25 04:35'
 labels:
   - sjsx
   - cli
 milestone: m-15
 dependencies:
-  - TASK-593
-  - TASK-595
-  - TASK-596
+  - DRAFT-6
+  - DRAFT-8
+  - DRAFT-9
 priority: medium
 ordinal: 591000
 ---

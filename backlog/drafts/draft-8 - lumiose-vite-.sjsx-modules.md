@@ -1,16 +1,17 @@
 ---
-id: TASK-595
+id: DRAFT-8
 title: '@lumiose/vite: .sjsx modules'
-status: To Do
+status: Draft
 assignee:
   - '@Photon'
 created_date: '2026-10-25 04:12'
+updated_date: '2026-10-25 04:35'
 labels:
   - sjsx
   - vite
 milestone: m-15
 dependencies:
-  - TASK-593
+  - DRAFT-6
 priority: medium
 ordinal: 587000
 ---

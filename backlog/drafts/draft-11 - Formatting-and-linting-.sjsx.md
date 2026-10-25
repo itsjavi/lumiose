@@ -1,16 +1,17 @@
 ---
-id: TASK-598
+id: DRAFT-11
 title: 'Formatting and linting: .sjsx'
-status: To Do
+status: Draft
 assignee:
   - '@Beacon'
 created_date: '2026-10-25 04:12'
+updated_date: '2026-10-25 04:35'
 labels:
   - sjsx
   - tooling
 milestone: m-15
 dependencies:
-  - TASK-593
+  - DRAFT-6
 priority: medium
 ordinal: 590000
 ---

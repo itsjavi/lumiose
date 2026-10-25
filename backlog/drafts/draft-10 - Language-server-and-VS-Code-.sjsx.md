@@ -1,18 +1,19 @@
 ---
-id: TASK-597
+id: DRAFT-10
 title: 'Language server and VS Code: .sjsx'
-status: To Do
+status: Draft
 assignee:
   - '@Beacon'
 created_date: '2026-10-25 04:12'
+updated_date: '2026-10-25 04:35'
 labels:
   - sjsx
   - editor
 milestone: m-15
 dependencies:
-  - TASK-593
-  - TASK-594
-  - TASK-595
+  - DRAFT-6
+  - DRAFT-7
+  - DRAFT-8
 priority: medium
 ordinal: 589000
 ---

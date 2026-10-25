@@ -55,5 +55,6 @@ The docs call the format Styled JSX next to Styled TSX, and STSX names both wher
 
 - **Who it is for.** JavaScript React, React Router and Solid apps can use scoped style blocks without TypeScript, and Lumiose apps can be written in JavaScript.
 - **Cost.** Every place that names `.stsx` today learns `.sjsx`. The work is in M15, split by owner area (TASK-592's follow-ups).
+- **Deferred (2026-10-25).** The user has no need for JavaScript support yet, so the M15 work is kept as drafts, DRAFT-6 to DRAFT-13, with their dependencies. The name and scope above stand; promote the drafts when the need comes.
 - **Search.** Searches for "Styled JSX" also find Vercel's styled-jsx. The docs say early on that this is a different thing: style blocks scoped by placement, compiled by Lumiose's compiler.
 - **Unchanged.** Existing `.stsx`, `.tsx` and `.ts` projects need no changes.

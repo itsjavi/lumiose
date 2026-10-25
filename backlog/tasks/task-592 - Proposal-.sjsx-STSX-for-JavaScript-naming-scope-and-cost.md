@@ -5,7 +5,7 @@ status: Done
 assignee:
   - '@Lux'
 created_date: '2026-10-25 04:05'
-updated_date: '2026-10-25 04:13'
+updated_date: '2026-10-25 04:35'
 labels:
   - proposal
   - stsx
@@ -56,6 +56,8 @@ Proposal requested by the user on 2026-10-25; not approved for implementation. A
 2026-10-25 (Lux): naming chosen by the user: option 1. `.sjsx` is Styled JSX, the counterpart of Styled TSX ("STSX for JS is misleading"), accepting the overlap with Vercel's styled-jsx. Still open: the scope (@lumiose/stsx only, or Lumiose too) and the go-ahead to implement.
 
 2026-10-25 (Lux): scope chosen by the user: @lumiose/stsx and Lumiose, including JavaScript route files. Recorded as decision-88; the work is M15: TASK-593 (compiler), TASK-594 (@lumiose/stsx), TASK-595 (@lumiose/vite modules), TASK-596 (JavaScript route files), TASK-597 (language server and VS Code), TASK-598 (fmt and lint), TASK-599 (CLI, MCP, agent guidance), TASK-600 (docs and examples). Not implemented yet, at the user's request.
+
+2026-10-25 (Lux): deferred by the user (no need for JavaScript support yet). TASK-593 to TASK-600 are now drafts: DRAFT-6 (compiler), DRAFT-7 (@lumiose/stsx), DRAFT-8 (@lumiose/vite modules), DRAFT-9 (JavaScript route files), DRAFT-10 (language server and VS Code), DRAFT-11 (fmt and lint), DRAFT-12 (CLI, MCP, agent guidance), DRAFT-13 (docs and examples), with their dependencies.
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary
