@@ -8,6 +8,20 @@ Language support for Lumiose `.stsx` files (TSX plus raw-CSS `<style>` blocks):
   CSS features inside `<style>` blocks and in the outline, `$name` hovers and Lumiose diagnostics
   (scanner and compiler). A crashed TypeScript server is restarted automatically.
 
+## Install
+
+Lumiose releases after 0.8.0 publish the extension as `itsjavi.lumiose-vscode`, with the version of
+the other Lumiose packages:
+
+- VS Code: search for **Lumiose** in the Extensions view, or run
+  `code --install-extension itsjavi.lumiose-vscode` (VS Code Marketplace);
+- Cursor, VSCodium and other forks: the same, from Open VSX;
+- any of them: download the `.vsix` of your platform from the
+  [GitHub release](https://github.com/itsjavi/lumiose/releases) and run **Extensions: Install from
+  VSIX…** from the command palette.
+
+Until then, or to try unreleased changes, see Installing a local build.
+
 ## Editor features
 
 | Where                    | What you get                                                                                                                                                                                                                                                                                                                        |
@@ -60,8 +74,8 @@ platform's `compiler.<platform>.node` next to `server/bin.mjs`:
 Limits:
 
 - A target can only be packaged where its compiler binary exists: `pnpm build:compiler` builds the
-  binary for the machine it runs on, so release packaging runs on one CI runner per target (or
-  cross-compiles the binaries first).
+  binary for the machine it runs on. The release workflow packages every target on one runner,
+  with the binaries the Binaries workflow builds on each platform (see Releases).
 - There is no Alpine (musl), Windows on Arm or web build. On those platforms VS Code installs no
   Lumiose package with a server; a project can still install `@lumiose/language-server` (with its
   own compiler build) and point `lumiose.server.path` at it.
@@ -69,8 +83,7 @@ Limits:
 
 ## Installing a local build
 
-The extension is not published to the VS Code Marketplace or Open VSX yet, so this is the only way
-to install it. In a clone of the repository (Node.js 24, pnpm and Rust through rustup, which
+In a clone of the repository (Node.js 24, pnpm and Rust through rustup, which
 installs the version in `rust-toolchain.toml`), build the native compiler and package the extension
 for this machine, then install the `.vsix` over any previous Lumiose build (`--force` replaces it
 even though the version is unchanged):
@@ -90,7 +103,8 @@ Language Server** output channel: it logs the server's path and source (`bundled
 `setting`). In this repository, a workspace with `@lumiose/language-server` installed uses the
 repository's server from its TypeScript sources (see Which language server runs): after a server
 change, **Lumiose: Restart Language Server** picks it up without reinstalling. If an older install
-misbehaves, remove it first with `code --uninstall-extension lumiose.lumiose-vscode`.
+misbehaves, remove it first with `code --uninstall-extension itsjavi.lumiose-vscode` (`lumiose.lumiose-vscode` for older
+local builds, version 0.0.0).
 
 ## Building
 
@@ -98,6 +112,7 @@ misbehaves, remove it first with `code --uninstall-extension lumiose.lumiose-vsc
 pnpm --filter lumiose-vscode run build                  # dist/ and server/ for this platform
 pnpm --filter lumiose-vscode run package                # lumiose-vscode-<target>.vsix for this platform
 pnpm --filter lumiose-vscode run package --target linux-x64  # needs packages/compiler/compiler.linux-x64-gnu.node
+pnpm --filter lumiose-vscode run package --all          # every target; needs every compiler binary
 pnpm --filter lumiose-vscode run test:vscode            # smoke test in a real VS Code, both server modes
 ```
 
@@ -113,3 +128,49 @@ Code's Node.js). `--mode=workspace` or `--mode=bundled` runs one of them.
 | `lumiose.server.path`    | empty    | A language server entry to run instead of the workspace or bundled one.                                 |
 | `lumiose.server.runtime` | empty    | The Node.js executable for the server (see Runtime).                                                    |
 | `lumiose.trace.server`   | `off`    | Trace the client-server messages.                                                                       |
+
+## Releases
+
+The extension has the version of the other Lumiose packages (decision-89): `pnpm release:version`
+bumps it, and pushing the `v<x.y.z>` tag runs `.github/workflows/release.yml`:
+
+- the `vscode` job packages the `.vsix` of every target in Platforms (`node scripts/package.ts --all`)
+  with the compiler binaries of the Binaries workflow;
+- `github-release` attaches them to the tag's GitHub release;
+- `vscode-marketplace` and `vscode-open-vsx` publish them, after npm, on real releases
+  (`LUMIOSE_PUBLISH`) of `x.y.z` versions. Pre-release versions (`x.y.z-*`) are only on the GitHub
+  release: the Marketplace takes no such versions, and never publishes a version twice.
+
+A manual run of the workflow, or one without `LUMIOSE_PUBLISH`, packages the files and publishes
+nothing.
+
+### One-time setup
+
+**VS Code Marketplace** (publisher `itsjavi`). Azure DevOps global personal access tokens can no
+longer be created and stop working on 2026-12-01, so the job signs in with Microsoft Entra ID,
+without a secret
+([Microsoft's steps](https://code.visualstudio.com/api/working-with-extensions/publishing-extension)):
+
+1. In Microsoft Entra ID (Azure portal), register an application, or create a user-assigned managed
+   identity.
+2. Add a federated credential to it: issuer `https://token.actions.githubusercontent.com`, subject
+   `repo:itsjavi/lumiose:environment:vscode-marketplace`, audience `api://AzureADTokenExchange`.
+3. Add it to the `itsjavi` publisher as a Contributor, as Microsoft's steps describe.
+4. Set the repository variables `VSCE_AZURE_CLIENT_ID` (its application or client ID) and
+   `VSCE_AZURE_TENANT_ID`. The job's `vscode-marketplace` environment is created on the first run;
+   its settings can limit it to `v*` tags.
+
+Without the variables the job only warns. A publisher owned by a personal account may be refused
+with "corporate credentials required" (microsoft/vscode-vsce#1023). In both cases, upload the
+GitHub release's `.vsix` files by hand: open the extension on the publisher's management page and
+update it with each file.
+
+**Open VSX** (namespace `itsjavi`), for Cursor, VSCodium and other forks:
+
+1. Sign in to open-vsx.org with GitHub, link an Eclipse account and sign the Publisher Agreement.
+2. Create an access token, then the namespace: `npx ovsx create-namespace itsjavi -p <token>`.
+   Claim it on the Namespace Access page to show it as verified.
+3. Store the token as the repository secret `OVSX_PAT` for the first release.
+4. Once a version is on Open VSX, register a trusted publisher (Settings, Trusted Publishers:
+   GitHub Actions, `itsjavi`/`lumiose`, workflow `release.yml`). Then delete `OVSX_PAT` and the
+   token: a token takes precedence over trusted publishing.

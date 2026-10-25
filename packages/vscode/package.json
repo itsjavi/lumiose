@@ -1,7 +1,7 @@
 {
   "name": "lumiose-vscode",
   "displayName": "Lumiose",
-  "version": "0.0.0",
+  "version": "0.8.0",
   "private": true,
   "description": "Lumiose .stsx support: TSX with embedded CSS style blocks and $ref highlighting, and the Lumiose language server (TypeScript 7 takeover, CSS, project-wide classes and custom properties, snippets).",
   "categories": [
@@ -15,8 +15,17 @@
     "tsx",
     "typescript"
   ],
+  "homepage": "https://github.com/itsjavi/lumiose/tree/main/packages/vscode#readme",
+  "bugs": {
+    "url": "https://github.com/itsjavi/lumiose/issues"
+  },
   "license": "MIT",
-  "publisher": "lumiose",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/itsjavi/lumiose.git",
+    "directory": "packages/vscode"
+  },
+  "publisher": "itsjavi",
   "type": "module",
   "main": "./dist/extension.cjs",
   "scripts": {
@@ -29,6 +38,7 @@
   "devDependencies": {
     "@types/vscode": "~1.100.0",
     "@vscode/vsce": "^4.0.0",
+    "ovsx": "^1.3.0",
     "rolldown": "^1.2.12",
     "tm-grammars": "^1.32.22",
     "vscode-languageclient": "^10.1.2",
@@ -169,6 +179,7 @@
     "workspaceContains:**/*.stsx",
     "workspaceContains:node_modules/lumiose/package.json"
   ],
+  "icon": "icon.png",
   "engines": {
     "vscode": "^1.100.0"
   }

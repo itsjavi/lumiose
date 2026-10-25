@@ -10,7 +10,7 @@ const TIMEOUT = 60_000;
 async function run() {
   const folder = vscode.workspace.workspaceFolders?.[0];
   assert.ok(folder, "a workspace folder is open");
-  const extension = vscode.extensions.getExtension("lumiose.lumiose-vscode");
+  const extension = vscode.extensions.getExtension("itsjavi.lumiose-vscode");
   assert.ok(extension, "the extension is loaded");
 
   const card = vscode.Uri.file(path.join(folder.uri.fsPath, "src/components/Card.stsx"));

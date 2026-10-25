@@ -174,10 +174,11 @@ pnpm lumiose fmt          # oxfmt for the TSX, plus each <style> block
 
 ## Editor
 
-The Lumiose VS Code extension (`lumiose.lumiose-vscode`) is not on the VS Code Marketplace or
-Open VSX yet: build it from a clone of the repository and install the `.vsix` file for your
-platform. The build needs Node.js 24, pnpm and Rust (rustup installs the version pinned in
-`rust-toolchain.toml`):
+Lumiose releases after 0.8.0 publish the VS Code extension (`itsjavi.lumiose-vscode`) to the VS
+Code Marketplace and Open VSX (for Cursor, VSCodium and other forks), and attach the `.vsix` file of
+each platform to the [GitHub release](https://github.com/itsjavi/lumiose/releases). Until then,
+build it from a clone of the repository and install the `.vsix` file for your platform. The build
+needs Node.js 24, pnpm and Rust (rustup installs the version pinned in `rust-toolchain.toml`):
 
 ```sh
 git clone https://github.com/itsjavi/lumiose.git && cd lumiose

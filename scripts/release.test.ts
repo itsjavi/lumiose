@@ -210,6 +210,11 @@ function fixture(): string {
     version: "0.0.0",
   });
   write("packages/site/package.json", { name: "site", version: "0.0.0", private: true });
+  write("packages/vscode/package.json", {
+    name: "lumiose-vscode",
+    version: "0.0.0",
+    private: true,
+  });
   write("Cargo.toml", '[workspace.package]\nversion = "0.0.0"\n');
   write("packages/compiler/index.js", 'if (bindingPackageVersion !== "0.0.0") {}\n');
   write("packages/lumiose/docs/llms.txt", "These docs match lumiose 0.0.0. More.\n");
@@ -259,6 +264,8 @@ describe("release", () => {
       assert.equal(version(repo, path), "0.1.0", path);
     }
     assert.equal(version(repo, "packages/site/package.json"), "0.0.0");
+    // The private VS Code extension is released in lockstep (decision-89).
+    assert.equal(version(repo, "packages/vscode/package.json"), "0.1.0");
     assert.match(readFileSync(join(repo, "Cargo.toml"), "utf8"), /version = "0\.1\.0"/);
     assert.match(readFileSync(join(repo, "packages/compiler/index.js"), "utf8"), /!== "0\.1\.0"/);
     assert.match(

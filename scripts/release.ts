@@ -1,6 +1,7 @@
 // `pnpm release:version <x.y.z>`: moves every Lumiose package to one new version (lockstep). It
 // sets the version of each published package (the @lumiose/compiler-<platform> packages included)
-// and of the Cargo workspace (plus the napi loader's version check and the llms docs), pins internal dependencies that are not `workspace:` to it (pnpm pins
+// and of the Cargo workspace (plus the napi loader's version check, the llms docs and the VS Code
+// extension, which is not on npm), pins internal dependencies that are not `workspace:` to it (pnpm pins
 // `workspace:*` itself when packing), prepends the release's section to CHANGELOG.md from the
 // Conventional Commits since the last `v*` tag, then commits `chore(release): vX.Y.Z` and creates
 // the tag vX.Y.Z. It pushes nothing: pushing the tag starts the release workflow.
@@ -166,6 +167,8 @@ const VERSIONED_FILES: [string, (text: string, current: string, version: string)
   ["packages/compiler/index.js", setLoaderVersion],
   ["packages/lumiose/docs/llms.txt", setDocsVersion],
   ["packages/lumiose/docs/llms-full.txt", setDocsVersion],
+  // Private (published to the VS Code Marketplace and Open VSX, not npm), in lockstep (decision-89).
+  ["packages/vscode/package.json", (text, _current, version) => setPackageVersion(text, version)],
 ];
 
 /** Cargo.toml with `[workspace.package] version` set. */
