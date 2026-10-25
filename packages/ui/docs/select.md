@@ -236,7 +236,7 @@ picker shows the labels alone.
 - Firefox 155 keeps the `Trigger` and the tags inside options in the DOM (`select.css` hides the
   `Trigger`). Older browsers without customizable select drop them from server HTML, so an
   island's select falls back to rendering on the client there
-  ([LUM4006](https://itsjavi.com/lumiose/docs/errors/LUM4006/)).
+  ([LUM4006](https://lumiose.dev/docs/errors/LUM4006/)).
 - **Typeahead** matches an option's text, or its `label`: give options whose content starts with
   an icon (an emoji, a symbol) a `label`.
 - **`:open`** comes with customizable select.
@@ -247,5 +247,5 @@ picker shows the labels alone.
   async options.
 - [Menu](menu.md): commands rather than a value.
 - [UI components](README.md): the approach, styling, the default theme and the other components.
-- [Islands](https://itsjavi.com/lumiose/docs/concepts/islands/): running a component in the
+- [Islands](https://lumiose.dev/docs/concepts/islands/): running a component in the
   browser, for `bind:value`.

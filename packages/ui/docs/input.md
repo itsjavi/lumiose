@@ -84,4 +84,4 @@ Every browser; input types and constraints as the browser supports them.
 
 - [Field](field.md): label, description and errors for an Input (`Field.Control`).
 - [Combobox](combobox.md): an input that filters options.
-- [JSX](https://itsjavi.com/lumiose/docs/concepts/jsx/): `bind:value`.
+- [JSX](https://lumiose.dev/docs/concepts/jsx/): `bind:value`.

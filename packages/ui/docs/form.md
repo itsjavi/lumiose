@@ -127,5 +127,5 @@ supported browser has.
 
 - [Field](field.md): the fields and their errors.
 - [Fieldset](fieldset.md): groups of fields.
-- [Data and actions](https://itsjavi.com/lumiose/docs/concepts/data-and-actions/): form actions,
+- [Data and actions](https://lumiose.dev/docs/concepts/data-and-actions/): form actions,
   `fail()`, `actionData()` and `submit()`.

@@ -1,6 +1,6 @@
 # @lumiose/eslint-plugin
 
-The [Lumiose](https://itsjavi.com/lumiose/) compiler's `LUMxxxx` diagnostics as lint rules for oxlint
+The [Lumiose](https://lumiose.dev/) compiler's `LUMxxxx` diagnostics as lint rules for oxlint
 (JS plugins) and ESLint, with their help text and fixes, so every tool agrees with `lumiose check`.
 
 ```sh
@@ -31,7 +31,7 @@ export default [
 ```
 
 Project-wide checks need the whole project: run `lumiose check` for those. More:
-[oxlint, ESLint and Prettier](https://itsjavi.com/lumiose/docs/reference/cli/#oxlint-eslint-and-prettier).
+[oxlint, ESLint and Prettier](https://lumiose.dev/docs/reference/cli/#oxlint-eslint-and-prettier).
 
 ## License
 

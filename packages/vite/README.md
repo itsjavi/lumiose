@@ -1,6 +1,6 @@
 # @lumiose/vite
 
-The [Lumiose](https://itsjavi.com/lumiose/) Vite 8 plugin: compiles `.stsx` and `.tsx` with the
+The [Lumiose](https://lumiose.dev/) Vite 8 plugin: compiles `.stsx` and `.tsx` with the
 Lumiose compiler, runs the dev server with diagnostics in the overlay, and builds every rendering
 mode (static, server, islands and SPA).
 
@@ -20,7 +20,7 @@ export default defineConfig({
 ```
 
 Options (`mode`, `i18n`, `adapter`, `svg`, `md`, `html`, …) are listed in the
-[`@lumiose/vite` reference](https://itsjavi.com/lumiose/docs/reference/vite/). New projects get this
+[`@lumiose/vite` reference](https://lumiose.dev/docs/reference/vite/). New projects get this
 setup from `npm create lumiose@latest`.
 
 ## License

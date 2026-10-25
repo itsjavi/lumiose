@@ -152,7 +152,7 @@ lumiose({
 
 **Outside Lumiose.** `@lumiose/stsx` brings `.stsx` files and these style blocks to React, React
 Router and Solid through a Vite plugin, with the same placement rules, constants and
-`scopedStyles` option: see [STSX](https://itsjavi.com/lumiose/stsx/).
+`scopedStyles` option: see [STSX](https://lumiose.dev/stsx/).
 
 **Blocks are plain CSS:** no Sass, no `lang`, `media` or other attributes (only `global`). For CSS
 that is not a component's own (a reset, theme tokens, a stylesheet from another project, Tailwind),

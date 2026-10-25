@@ -19,7 +19,8 @@
 //   `redirects` writes only these into a built apps/web, for its e2e tests.
 // - sitemap.xml lists every indexable page (not 404 pages, redirect stubs or noindex pages), with
 //   absolute URLs from --site-url (or LUMIOSE_SITE_URL; on GitHub Actions it defaults to
-//   https://<owner>.github.io<base>). Without one, no sitemap is written.
+//   https://<owner>.github.io<base>; pages.yml passes https://lumiose.dev/). Without one, no sitemap
+//   is written.
 // - Benchmarks: the fullstack results viewer with the committed results at
 //   benchmarks/fullstack/, and the Lumiose js-framework-benchmark app at
 //   benchmarks/js-framework-benchmark/app/ (the results page itself is apps/web's).

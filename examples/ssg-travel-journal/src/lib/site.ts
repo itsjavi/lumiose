@@ -14,7 +14,7 @@ export const site = {
 
 /**
  * A file of `public/` (`/covers/x.svg`) below Vite's base, so the site also works below a path
- * (`LUMIOSE_BASE=/lumiose/examples/ssg-travel-journal/ lumiose build`, as on the Lumiose website).
+ * (`LUMIOSE_BASE=/demos/travel-journal/ lumiose build`, as on the Lumiose website).
  */
 export function asset(path: string): string {
   return import.meta.env.BASE_URL.replace(/\/$/, "") + path;

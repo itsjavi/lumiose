@@ -1,6 +1,6 @@
 # @lumiose/cli
 
-The `lumiose` command for [Lumiose](https://itsjavi.com/lumiose/) projects.
+The `lumiose` command for [Lumiose](https://lumiose.dev/) projects.
 
 ```sh
 pnpm add -D @lumiose/cli
@@ -19,7 +19,7 @@ pnpm add -D @lumiose/cli
 | `lumiose agents init`       | `AGENTS.md`, `CLAUDE.md` and the Lumiose skill for coding agents |
 | `lumiose mcp`               | The docs and diagnostics as an MCP server                        |
 
-Every command and option: [CLI reference](https://itsjavi.com/lumiose/docs/reference/cli/).
+Every command and option: [CLI reference](https://lumiose.dev/docs/reference/cli/).
 
 ## License
 

@@ -237,7 +237,7 @@ export function NoteEditor() {
 ```
 
 Any dialog works in place of the `<p role="alert">`, such as @lumiose/ui's
-[alert dialog](https://itsjavi.com/lumiose/ui/dialog/) bound to `pending() !== null`. When the
+[alert dialog](https://lumiose.dev/ui/dialog/) bound to `pending() !== null`. When the
 unsaved work sits in the rows of a list (an editable table), key the rows by the record's id
 ([Lists and keys](../concepts/jsx.md#lists-and-keys)): a row keyed by its index keeps its typed
 value after a sort or a filter, next to another record.

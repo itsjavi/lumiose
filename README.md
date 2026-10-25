@@ -11,11 +11,11 @@
 </p>
 
 <p align="center">
-  <a href="https://itsjavi.com/lumiose/">Website</a> ·
-  <a href="https://itsjavi.com/lumiose/docs/getting-started/">Get started</a> ·
-  <a href="https://itsjavi.com/lumiose/playground/">Playground</a> ·
-  <a href="https://itsjavi.com/lumiose/showcase/">Showcase</a> ·
-  <a href="https://itsjavi.com/lumiose/benchmarks/">Benchmarks</a> ·
+  <a href="https://lumiose.dev/">Website</a> ·
+  <a href="https://lumiose.dev/docs/getting-started/">Get started</a> ·
+  <a href="https://lumiose.dev/playground/">Playground</a> ·
+  <a href="https://lumiose.dev/showcase/">Showcase</a> ·
+  <a href="https://lumiose.dev/benchmarks/">Benchmarks</a> ·
   <a href="LICENSE">MIT License</a>
 </p>
 
@@ -78,7 +78,7 @@ export default function Counter() {
 ```
 
 `Counter` runs once. Clicking updates only the text and the class that read `count()`. Try it in the
-[playground](https://itsjavi.com/lumiose/playground/), which runs the compiler in your browser.
+[playground](https://lumiose.dev/playground/), which runs the compiler in your browser.
 
 ## Features
 
@@ -94,7 +94,7 @@ export default function Counter() {
 - **Content as components.** Import `.md` and `.html` files (GFM, front matter) as components, and any SVG,
   icon sets such as Lucide included, with `?component` (optimised and inlined).
 - **Deploy anywhere.** Node, Docker, Cloudflare Workers, Vercel, Netlify, Bun, Deno, Fly.io, Render, Railway, AWS
-  Lambda or any static host, each with a [deploy guide](https://itsjavi.com/lumiose/docs/deploy/).
+  Lambda or any static host, each with a [deploy guide](https://lumiose.dev/docs/deploy/).
 - **Explicit, for you and your agent.** Client boundaries are where you write them. Every diagnostic has a `LUMxxxx`
   code, a fix and a docs page. The docs ship inside the package (`lumiose docs signals`) and are served to agents over
   MCP.
@@ -118,10 +118,10 @@ export default function Counter() {
     <tr><td>Remix 3</td><td>Built in</td><td>Built in</td><td align="right">42&nbsp;kB</td><td align="right">1.57×</td><td align="right">44&nbsp;renders/s</td><td align="right">823&nbsp;req/s</td></tr>
   </tbody>
 </table>
-<p><sub>JS on a server page: what the fullstack comparison's issue tracker loads for its home page, brotli (2026-10-12 · Apple M1 Max (10 cores) · macOS 27.0.1 · Node 26.8.1). Client speed: js-framework-benchmark's weighted factor, where 1.00 is the fastest framework in the run and vanilla JS scores 1.00. Server speed: renders per second of the SSR benchmark's 5,000-component page to an HTML string (2026-10-12, Node v26.8.1, Apple M1 Max (10 cores, 32 GB), darwin 27.0.0 arm64), then requests per second on the fullstack comparison's home page (2026-10-12 · Apple M1 Max (10 cores) · macOS 27.0.1 · Node 26.8.1). Both React rows use React's client and rendering entries. Rows after Lumiose are ordered by npm downloads of each stack's main package (2026-09-10 to 2026-10-09). Astro's interactive islands use a second UI framework: Preact in the fullstack comparison, so its client speed is Preact's. Solid islands would be faster on the client. Method and every run: <a href="https://itsjavi.com/lumiose/benchmarks/">benchmarks</a>.</sub></p>
+<p><sub>JS on a server page: what the fullstack comparison's issue tracker loads for its home page, brotli (2026-10-12 · Apple M1 Max (10 cores) · macOS 27.0.1 · Node 26.8.1). Client speed: js-framework-benchmark's weighted factor, where 1.00 is the fastest framework in the run and vanilla JS scores 1.00. Server speed: renders per second of the SSR benchmark's 5,000-component page to an HTML string (2026-10-12, Node v26.8.1, Apple M1 Max (10 cores, 32 GB), darwin 27.0.0 arm64), then requests per second on the fullstack comparison's home page (2026-10-12 · Apple M1 Max (10 cores) · macOS 27.0.1 · Node 26.8.1). Both React rows use React's client and rendering entries. Rows after Lumiose are ordered by npm downloads of each stack's main package (2026-09-10 to 2026-10-09). Astro's interactive islands use a second UI framework: Preact in the fullstack comparison, so its client speed is Preact's. Solid islands would be faster on the client. Method and every run: <a href="https://lumiose.dev/benchmarks/">benchmarks</a>.</sub></p>
 <!-- /generated:compare -->
 
-Not every project fits: [When not to use Lumiose](https://itsjavi.com/lumiose/docs/when-not-to-use/) names the cases
+Not every project fits: [When not to use Lumiose](https://lumiose.dev/docs/when-not-to-use/) names the cases
 where another stack is the better choice today.
 
 ## Showcase
@@ -136,34 +136,34 @@ where another stack is the better choice today.
     <td align="center"><a href="https://itsjavi.com/dotmatrix/advanced/">Dotmatrix Advanced</a>: a chiptune tracker (SPA, <a href="https://github.com/itsjavi/dotmatrix">source</a>)</td>
   </tr>
   <tr>
-    <td width="50%"><a href="https://itsjavi.com/lumiose/demos/travel-journal/"><img src="apps/web/public/showcase/travel-journal.png" alt="Long Way Round: a travel journal home page with a serif headline, a search box and a featured post illustrated with a moonlit city."></a></td>
+    <td width="50%"><a href="https://lumiose.dev/demos/travel-journal/"><img src="apps/web/public/showcase/travel-journal.png" alt="Long Way Round: a travel journal home page with a serif headline, a search box and a featured post illustrated with a moonlit city."></a></td>
     <td width="50%"><a href="examples/ssr-bookshelf"><img src="apps/web/public/showcase/bookshelf.png" alt="Bookshelf: a book catalogue home page with a search box, sign-in links and a row of recommended books with star ratings."></a></td>
   </tr>
   <tr>
-    <td align="center"><a href="https://itsjavi.com/lumiose/demos/travel-journal/">Long Way Round</a>: a travel journal (static + islands)</td>
+    <td align="center"><a href="https://lumiose.dev/demos/travel-journal/">Long Way Round</a>: a travel journal (static + islands)</td>
     <td align="center"><a href="examples/ssr-bookshelf">Bookshelf</a>: a book catalogue (server)</td>
   </tr>
 </table>
 
-The [website](https://itsjavi.com/lumiose/) itself is a static Lumiose site, with islands for the search, the
+The [website](https://lumiose.dev/) itself is a static Lumiose site, with islands for the search, the
 playground and the landing page's light.
 
 ## Documentation
 
 The docs live in [`packages/lumiose/docs/`](packages/lumiose/docs/) and ship with the package, so they always match
-the installed version. Read them on the [website](https://itsjavi.com/lumiose/docs/getting-started/), from the terminal
-with `lumiose docs`, or through [`llms.txt`](https://itsjavi.com/lumiose/llms.txt). Good places to start:
-[Getting started](https://itsjavi.com/lumiose/docs/getting-started/),
-[Coming from React](https://itsjavi.com/lumiose/docs/coming-from/react/) (or Next.js, React Router
+the installed version. Read them on the [website](https://lumiose.dev/docs/getting-started/), from the terminal
+with `lumiose docs`, or through [`llms.txt`](https://lumiose.dev/llms.txt). Good places to start:
+[Getting started](https://lumiose.dev/docs/getting-started/),
+[Coming from React](https://lumiose.dev/docs/coming-from/react/) (or Next.js, React Router
 and Solid) and
-[Rendering modes](https://itsjavi.com/lumiose/docs/concepts/rendering-modes/).
+[Rendering modes](https://lumiose.dev/docs/concepts/rendering-modes/).
 
 ## Stability
 
 Lumiose is 0.x: any minor release may break the API, and breaking changes ship without migration paths until the first
-external production app or 1.0. The [Stability](https://itsjavi.com/lumiose/docs/stability/) page has the 1.0
+external production app or 1.0. The [Stability](https://lumiose.dev/docs/stability/) page has the 1.0
 criteria, what the API freeze covers, the supported Node.js versions and browsers, and who maintains Lumiose. Running
-it in production? Add your app to the [Used by](https://itsjavi.com/lumiose/showcase/#used-by) list. Security reports go
+it in production? Add your app to the [Used by](https://lumiose.dev/showcase/#used-by) list. Security reports go
 through the [security policy](.github/SECURITY.md).
 
 ## Working on Lumiose

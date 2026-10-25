@@ -129,4 +129,4 @@ Each component's page has an example stylesheet to start from.
 
 - [UI components](README.md): the approach and the components.
 - [Installation](installation.md): adding the package and importing its stylesheets.
-- [Styles](https://itsjavi.com/lumiose/docs/concepts/styles/): scoped CSS and global stylesheets in Lumiose.
+- [Styles](https://lumiose.dev/docs/concepts/styles/): scoped CSS and global stylesheets in Lumiose.

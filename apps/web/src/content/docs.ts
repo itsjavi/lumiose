@@ -39,11 +39,11 @@ const stsxSources = import.meta.glob<string>("../../../../packages/stsx/docs/**/
 });
 const STSX_DOCS_DIR = "../../../../packages/stsx/docs/";
 /** The UI pages link Lumiose's pages by their URLs on this site (they ship in another package). */
-const SITE_DOCS = "https://itsjavi.com/lumiose/docs/";
+const SITE_DOCS = "https://lumiose.dev/docs/";
 /** …and Lumiose's pages link the UI section by its URL. */
-const SITE_UI = "https://itsjavi.com/lumiose/ui/";
+const SITE_UI = "https://lumiose.dev/ui/";
 /** …and the STSX section by its URL. */
-const SITE_STSX = "https://itsjavi.com/lumiose/stsx/";
+const SITE_STSX = "https://lumiose.dev/stsx/";
 
 export interface DocHeading {
   depth: 2 | 3;

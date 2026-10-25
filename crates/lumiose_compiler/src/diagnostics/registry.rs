@@ -18,7 +18,7 @@ pub struct DiagnosticInfo {
 
 impl DiagnosticInfo {
     /// The docs topic for this code, as resolved by `lumiose docs` and `lumiose explain`: its page
-    /// `docs/errors/<id>.md` (`https://itsjavi.com/lumiose/docs/errors/<id>` online).
+    /// `docs/errors/<id>.md` (`https://lumiose.dev/docs/errors/<id>` online).
     pub fn docs(&self) -> String {
         format!("errors/{}", self.id)
     }

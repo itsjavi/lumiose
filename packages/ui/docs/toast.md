@@ -308,4 +308,4 @@ does. A toast in the page's HTML is announced the same way once the script runs.
 
 - [UI components](README.md): the approach, styling and the other components.
 - [Dialog](dialog.md): a modal popup, which the toasts' region follows.
-- [Data and actions](https://itsjavi.com/lumiose/docs/concepts/data-and-actions/): a form action's result, for a server-rendered toast.
+- [Data and actions](https://lumiose.dev/docs/concepts/data-and-actions/): a form action's result, for a server-rendered toast.

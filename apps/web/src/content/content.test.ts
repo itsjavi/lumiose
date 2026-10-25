@@ -42,17 +42,15 @@ describe("docs", () => {
     expect(docHref("https://example.com/a.md", "README")).toBe("https://example.com/a.md");
     expect(docHref("#concept", "README")).toBe("#concept");
     // The UI pages (packages/ui/docs) link Lumiose's by their site URLs.
-    expect(docHref("https://itsjavi.com/lumiose/docs/concepts/islands/", "ui/dialog")).toBe(
+    expect(docHref("https://lumiose.dev/docs/concepts/islands/", "ui/dialog")).toBe(
       "/docs/concepts/islands",
     );
     // …and are the /ui section (TASK-387), which Lumiose's pages link by its URL.
     expect(docHref("README.md#the-default-theme", "ui/dialog")).toBe("/ui#the-default-theme");
     expect(docHref("popover.md#popoverpopup", "ui/tooltip")).toBe("/ui/popover#popoverpopup");
-    expect(docHref("https://itsjavi.com/lumiose/docs/ui/dialog/", "README")).toBe("/ui/dialog");
-    expect(docHref("https://itsjavi.com/lumiose/ui/llms.txt", "README")).toBe("/ui/llms.txt");
-    expect(docHref("https://itsjavi.com/lumiose/ui/tabs#styling", "README")).toBe(
-      "/ui/tabs#styling",
-    );
+    expect(docHref("https://lumiose.dev/docs/ui/dialog/", "README")).toBe("/ui/dialog");
+    expect(docHref("https://lumiose.dev/ui/llms.txt", "README")).toBe("/ui/llms.txt");
+    expect(docHref("https://lumiose.dev/ui/tabs#styling", "README")).toBe("/ui/tabs#styling");
   });
 
   it("makes GitHub-style heading anchors", () => {
@@ -182,7 +180,7 @@ describe("docs", () => {
     const text = llmsText();
     expect(text).toContain("[Signals and reactivity](/docs/concepts/signals)");
     expect(text).not.toMatch(/\]\([^)]+\.md\)/);
-    expect(text).toContain("](https://itsjavi.com/lumiose/ui/llms.txt)");
+    expect(text).toContain("](https://lumiose.dev/ui/llms.txt)");
   });
 
   it("serves @lumiose/ui's llms.txt with links to its pages on the site", () => {

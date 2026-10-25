@@ -205,4 +205,4 @@ The plugin reports problems in the dev overlay and the build output, with a code
   component's only output.
 - **`LUM3014` to `LUM3020`.** CSS syntax and value problems.
 
-Each code has a page in the [Lumiose error reference](https://itsjavi.com/lumiose/docs/errors/).
+Each code has a page in the [Lumiose error reference](https://lumiose.dev/docs/errors/).

@@ -84,11 +84,11 @@ mistakes** and **Related**.
 
 ## STSX
 
-- [STSX](https://itsjavi.com/lumiose/stsx/llms.txt): `.stsx` files outside Lumiose. `@lumiose/stsx` is a Vite plugin that compiles their scoped `<style>` blocks for React, React Router and Solid, with the same placement rules, `$name` constants and `scopedStyles` option. Its docs ship in its package: `node_modules/@lumiose/stsx/docs/llms.txt` indexes them.
+- [STSX](https://lumiose.dev/stsx/llms.txt): `.stsx` files outside Lumiose. `@lumiose/stsx` is a Vite plugin that compiles their scoped `<style>` blocks for React, React Router and Solid, with the same placement rules, `$name` constants and `scopedStyles` option. Its docs ship in its package: `node_modules/@lumiose/stsx/docs/llms.txt` indexes them.
 
 ## UI
 
-- [UI components](https://itsjavi.com/lumiose/ui/llms.txt): `@lumiose/ui`, accessible and unstyled primitives on native elements, server-rendered without hydration, with the optional default theme. Its docs ship in its own package and match its own version: `node_modules/@lumiose/ui/docs/llms.txt` indexes them, and in a project that depends on it `lumiose docs ui` and `lumiose docs dialog` print them and the MCP server's `ui_components` tool lists the components.
+- [UI components](https://lumiose.dev/ui/llms.txt): `@lumiose/ui`, accessible and unstyled primitives on native elements, server-rendered without hydration, with the optional default theme. Its docs ship in its own package and match its own version: `node_modules/@lumiose/ui/docs/llms.txt` indexes them, and in a project that depends on it `lumiose docs ui` and `lumiose docs dialog` print them and the MCP server's `ui_components` tool lists the components.
 
 ## Deploy
 
@@ -392,7 +392,7 @@ No external production app is known yet, so the rule above is in force.
 
 An external production app is an app in production that:
 
-- is on the opt-in [Used by](https://itsjavi.com/lumiose/showcase/#used-by) list, added through a
+- is on the opt-in [Used by](https://lumiose.dev/showcase/#used-by) list, added through a
   pull request with its URL;
 - is not run by the Lumiose maintainer (the maintainer's own sites, such as itsjavi.com, do not
   count).
@@ -3203,7 +3203,7 @@ lumiose({
 
 **Outside Lumiose.** `@lumiose/stsx` brings `.stsx` files and these style blocks to React, React
 Router and Solid through a Vite plugin, with the same placement rules, constants and
-`scopedStyles` option: see [STSX](https://itsjavi.com/lumiose/stsx/).
+`scopedStyles` option: see [STSX](https://lumiose.dev/stsx/).
 
 **Blocks are plain CSS:** no Sass, no `lang`, `media` or other attributes (only `global`). For CSS
 that is not a component's own (a reset, theme tokens, a stylesheet from another project, Tailwind),
@@ -5071,7 +5071,7 @@ HTML, within reach of every script on the page. A `FormData` works too (its text
 left out), but it carries every field of the form: in development, Lumiose warns when one carries a
 name that looks secret (`password`, `pwd`, `token`, `otp`, `card`, `ssn`, `iban`, `privateKey`,
 `sessionId`, …, in camelCase too, such as `passwordConfirm`).
-@lumiose/ui's [Form](https://itsjavi.com/lumiose/ui/form/) takes them as `values` and fills its
+@lumiose/ui's [Form](https://lumiose.dev/ui/form/) takes them as `values` and fills its
 controls by name; with your own inputs, use them as `defaultValue`s.
 
 An Origin check protects page POSTs and form-encoded endpoint requests by default (403 for
@@ -13823,7 +13823,7 @@ export function NoteEditor() {
 ```
 
 Any dialog works in place of the `<p role="alert">`, such as @lumiose/ui's
-[alert dialog](https://itsjavi.com/lumiose/ui/dialog/) bound to `pending() !== null`. When the
+[alert dialog](https://lumiose.dev/ui/dialog/) bound to `pending() !== null`. When the
 unsaved work sits in the rows of a list (an editable table), key the rows by the record's id
 ([Lists and keys](../concepts/jsx.md#lists-and-keys)): a row keyed by its index keeps its typed
 value after a sort or a filter, next to another record.

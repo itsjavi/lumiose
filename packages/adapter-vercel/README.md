@@ -1,6 +1,6 @@
 # @lumiose/adapter-vercel
 
-Deploys a [Lumiose](https://itsjavi.com/lumiose/) build to Vercel through the Build Output API:
+Deploys a [Lumiose](https://lumiose.dev/) build to Vercel through the Build Output API:
 static files, and the build's fetch handler as a Node.js or Edge function.
 
 ```sh
@@ -18,7 +18,7 @@ export default defineConfig({
 });
 ```
 
-Project settings and deploying from the command line: [Deploy to Vercel](https://itsjavi.com/lumiose/docs/deploy/vercel/).
+Project settings and deploying from the command line: [Deploy to Vercel](https://lumiose.dev/docs/deploy/vercel/).
 
 ## License
 

@@ -54,5 +54,5 @@ untested.
 - [Type checking and editors](type-checking.md): `stsx typegen`, `tsc` and the language server.
 
 In a Lumiose app, `.stsx` is the component format and needs no plugin of its own: see
-[Styles](https://itsjavi.com/lumiose/docs/concepts/styles/) in the Lumiose docs. These pages ship in
+[Styles](https://lumiose.dev/docs/concepts/styles/) in the Lumiose docs. These pages ship in
 `@lumiose/stsx` (`node_modules/@lumiose/stsx/docs`), so they match the installed version.

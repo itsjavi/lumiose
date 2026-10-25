@@ -18,7 +18,7 @@ No external production app is known yet, so the rule above is in force.
 
 An external production app is an app in production that:
 
-- is on the opt-in [Used by](https://itsjavi.com/lumiose/showcase/#used-by) list, added through a
+- is on the opt-in [Used by](https://lumiose.dev/showcase/#used-by) list, added through a
   pull request with its URL;
 - is not run by the Lumiose maintainer (the maintainer's own sites, such as itsjavi.com, do not
   count).

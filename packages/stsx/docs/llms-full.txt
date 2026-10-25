@@ -63,7 +63,7 @@ untested.
 - [Type checking and editors](type-checking.md): `stsx typegen`, `tsc` and the language server.
 
 In a Lumiose app, `.stsx` is the component format and needs no plugin of its own: see
-[Styles](https://itsjavi.com/lumiose/docs/concepts/styles/) in the Lumiose docs. These pages ship in
+[Styles](https://lumiose.dev/docs/concepts/styles/) in the Lumiose docs. These pages ship in
 `@lumiose/stsx` (`node_modules/@lumiose/stsx/docs`), so they match the installed version.
 
 <!-- source: installation.md -->
@@ -381,7 +381,7 @@ The plugin reports problems in the dev overlay and the build output, with a code
   component's only output.
 - **`LUM3014` to `LUM3020`.** CSS syntax and value problems.
 
-Each code has a page in the [Lumiose error reference](https://itsjavi.com/lumiose/docs/errors/).
+Each code has a page in the [Lumiose error reference](https://lumiose.dev/docs/errors/).
 
 <!-- source: options.md -->
 

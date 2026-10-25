@@ -75,11 +75,11 @@ mistakes** and **Related**.
 
 ## STSX
 
-- [STSX](https://itsjavi.com/lumiose/stsx/llms.txt): `.stsx` files outside Lumiose. `@lumiose/stsx` is a Vite plugin that compiles their scoped `<style>` blocks for React, React Router and Solid, with the same placement rules, `$name` constants and `scopedStyles` option. Its docs ship in its package: `node_modules/@lumiose/stsx/docs/llms.txt` indexes them.
+- [STSX](https://lumiose.dev/stsx/llms.txt): `.stsx` files outside Lumiose. `@lumiose/stsx` is a Vite plugin that compiles their scoped `<style>` blocks for React, React Router and Solid, with the same placement rules, `$name` constants and `scopedStyles` option. Its docs ship in its package: `node_modules/@lumiose/stsx/docs/llms.txt` indexes them.
 
 ## UI
 
-- [UI components](https://itsjavi.com/lumiose/ui/llms.txt): `@lumiose/ui`, accessible and unstyled primitives on native elements, server-rendered without hydration, with the optional default theme. Its docs ship in its own package and match its own version: `node_modules/@lumiose/ui/docs/llms.txt` indexes them, and in a project that depends on it `lumiose docs ui` and `lumiose docs dialog` print them and the MCP server's `ui_components` tool lists the components.
+- [UI components](https://lumiose.dev/ui/llms.txt): `@lumiose/ui`, accessible and unstyled primitives on native elements, server-rendered without hydration, with the optional default theme. Its docs ship in its own package and match its own version: `node_modules/@lumiose/ui/docs/llms.txt` indexes them, and in a project that depends on it `lumiose docs ui` and `lumiose docs dialog` print them and the MCP server's `ui_components` tool lists the components.
 
 ## Deploy
 

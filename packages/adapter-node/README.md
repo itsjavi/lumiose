@@ -1,6 +1,6 @@
 # @lumiose/adapter-node
 
-Serves a [Lumiose](https://itsjavi.com/lumiose/) build with Node: the static files of `dist/client`
+Serves a [Lumiose](https://lumiose.dev/) build with Node: the static files of `dist/client`
 (with their compressed copies and caching headers), then the app's request handler, with streamed
 responses. `lumiose preview` uses it too.
 
@@ -17,9 +17,9 @@ console.log(`Listening on ${url}`);
 ```
 
 Run `lumiose build`, then `node server.ts`. It reads `PORT`, `HOST` and `ORIGIN`.
-API: [`@lumiose/adapter-node` reference](https://itsjavi.com/lumiose/docs/reference/adapter-node/).
-Deploying: [VPS](https://itsjavi.com/lumiose/docs/deploy/vps/),
-[Docker](https://itsjavi.com/lumiose/docs/deploy/docker/).
+API: [`@lumiose/adapter-node` reference](https://lumiose.dev/docs/reference/adapter-node/).
+Deploying: [VPS](https://lumiose.dev/docs/deploy/vps/),
+[Docker](https://lumiose.dev/docs/deploy/docker/).
 
 ## License
 

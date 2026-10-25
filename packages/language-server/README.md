@@ -1,6 +1,6 @@
 # @lumiose/language-server
 
-The [Lumiose](https://itsjavi.com/lumiose/) language server: a TypeScript 7 proxy for `.ts`, `.tsx` and
+The [Lumiose](https://lumiose.dev/) language server: a TypeScript 7 proxy for `.ts`, `.tsx` and
 `.stsx` files, with CSS features inside `<style>` blocks, class completion that follows scoping,
 custom property completion, the compiler's diagnostics and hovers that explain how each JSX
 expression runs.
@@ -18,7 +18,7 @@ Other editors start it over the Language Server Protocol:
 lumiose-language-server --stdio   # also --node-ipc, --socket=<port>, --pipe=<name>
 ```
 
-What it adds in the editor: [Getting started](https://itsjavi.com/lumiose/docs/getting-started/).
+What it adds in the editor: [Getting started](https://lumiose.dev/docs/getting-started/).
 
 ## License
 

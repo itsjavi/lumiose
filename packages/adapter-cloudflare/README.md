@@ -1,6 +1,6 @@
 # @lumiose/adapter-cloudflare
 
-Deploys a [Lumiose](https://itsjavi.com/lumiose/) build to Cloudflare Workers: the build's fetch
+Deploys a [Lumiose](https://lumiose.dev/) build to Cloudflare Workers: the build's fetch
 handler as the Worker, `dist/client` as static assets, bindings as `ctx.platform.env`.
 
 ```sh
@@ -18,7 +18,7 @@ export default defineConfig({
 });
 ```
 
-The `wrangler.jsonc` and the rest: [Deploy to Cloudflare Workers](https://itsjavi.com/lumiose/docs/deploy/cloudflare/).
+The `wrangler.jsonc` and the rest: [Deploy to Cloudflare Workers](https://lumiose.dev/docs/deploy/cloudflare/).
 
 ## License
 

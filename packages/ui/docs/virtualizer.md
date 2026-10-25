@@ -265,7 +265,7 @@ change the pre-mount window (`count`, `initial`, `columns`) must not read the br
 ## Keyboard and focus
 
 - **Key rows by the record's id**, never by the index: a kept row is the same record, so its
-  focus, selection and typed text stay with it ([Lists and keys](https://itsjavi.com/lumiose/docs/concepts/jsx/#lists-and-keys)).
+  focus, selection and typed text stay with it ([Lists and keys](https://lumiose.dev/docs/concepts/jsx/#lists-and-keys)).
   A row element that only wraps a grid's items may be keyed by its row index (`key={row}`): its
   items keep their own keys.
 - **Tab** moves through the rendered rows in DOM order; the browser scrolls the next one into view,
@@ -303,4 +303,4 @@ scrolls along the block axis only (vertical in horizontal writing modes).
 - [Virtual List](virtual-list.md), [Virtual Grid](virtual-grid.md) and
   [Virtual Table](virtual-table.md): the three layouts as components on this primitive.
 - [Scroll Area](scroll-area.md): custom scrollbars over a scroller; give its `Viewport` as `scroller`.
-- [Lists and keys](https://itsjavi.com/lumiose/docs/concepts/jsx/#lists-and-keys): how keyed rows update in place.
+- [Lists and keys](https://lumiose.dev/docs/concepts/jsx/#lists-and-keys): how keyed rows update in place.

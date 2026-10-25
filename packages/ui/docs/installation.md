@@ -55,11 +55,11 @@ export function Help() {
 ```
 
 To keep a component's state in a signal (`bind:open`, `bind:value`), render it inside an
-[island](https://itsjavi.com/lumiose/docs/concepts/islands/). Each component's page lists its parts,
+[island](https://lumiose.dev/docs/concepts/islands/). Each component's page lists its parts,
 props, keyboard contract and what works without JavaScript.
 
 ## Related
 
 - [UI components](README.md): the approach and the components.
 - [Theming](theming.md): the default theme's classes and `--lu-` properties, and your own CSS.
-- [Getting started](https://itsjavi.com/lumiose/docs/getting-started/): a new Lumiose app.
+- [Getting started](https://lumiose.dev/docs/getting-started/): a new Lumiose app.

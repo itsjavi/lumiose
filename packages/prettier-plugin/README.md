@@ -1,6 +1,6 @@
 # @lumiose/prettier-plugin
 
-Prettier support for [Lumiose](https://itsjavi.com/lumiose/) `.stsx` files: the TSX with Prettier's
+Prettier support for [Lumiose](https://lumiose.dev/) `.stsx` files: the TSX with Prettier's
 TypeScript printer and each `<style>` block with its CSS printer, re-indented at its placement, like
 `lumiose fmt`. A file with scanner or syntax errors is reported, not changed.
 
@@ -14,7 +14,7 @@ pnpm add -D @lumiose/prettier-plugin
 ```
 
 With oxfmt, which has no plugin API, format `.stsx` with `lumiose fmt`. More:
-[oxlint, ESLint and Prettier](https://itsjavi.com/lumiose/docs/reference/cli/#oxlint-eslint-and-prettier).
+[oxlint, ESLint and Prettier](https://lumiose.dev/docs/reference/cli/#oxlint-eslint-and-prettier).
 
 ## License
 

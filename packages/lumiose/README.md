@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://itsjavi.com/lumiose/favicon.svg" width="96" height="96" alt="Lumiose logo: a violet-to-amber glowing sphere">
+  <img src="https://lumiose.dev/favicon.svg" width="96" height="96" alt="Lumiose logo: a violet-to-amber glowing sphere">
 </p>
 
 <h1 align="center">Lumiose</h1>
@@ -11,10 +11,10 @@
 </p>
 
 <p align="center">
-  <a href="https://itsjavi.com/lumiose/">Website</a> ·
-  <a href="https://itsjavi.com/lumiose/docs/getting-started/">Get started</a> ·
-  <a href="https://itsjavi.com/lumiose/playground/">Playground</a> ·
-  <a href="https://itsjavi.com/lumiose/benchmarks/">Benchmarks</a> ·
+  <a href="https://lumiose.dev/">Website</a> ·
+  <a href="https://lumiose.dev/docs/getting-started/">Get started</a> ·
+  <a href="https://lumiose.dev/playground/">Playground</a> ·
+  <a href="https://lumiose.dev/benchmarks/">Benchmarks</a> ·
   <a href="https://github.com/itsjavi/lumiose">GitHub</a>
 </p>
 
@@ -90,15 +90,15 @@ turns components into direct DOM updates, with no virtual DOM.
 
 The docs ship inside this package, so they always match the installed version: read them in
 `node_modules/lumiose/docs`, from the terminal with `lumiose docs`, or on the
-[website](https://itsjavi.com/lumiose/docs/). Coming from React, Next.js, React Router or Solid? Start
-with the [Coming from](https://itsjavi.com/lumiose/docs/coming-from/react/) guides.
+[website](https://lumiose.dev/docs/). Coming from React, Next.js, React Router or Solid? Start
+with the [Coming from](https://lumiose.dev/docs/coming-from/react/) guides.
 
 ## Stability
 
 Lumiose is 0.x: any minor release may break the API. The
-[Stability](https://itsjavi.com/lumiose/docs/stability/) page has the 1.0 criteria, the supported
+[Stability](https://lumiose.dev/docs/stability/) page has the 1.0 criteria, the supported
 Node.js versions and browsers, and who maintains Lumiose; [When not to use
-Lumiose](https://itsjavi.com/lumiose/docs/when-not-to-use/) names the cases where another framework
+Lumiose](https://lumiose.dev/docs/when-not-to-use/) names the cases where another framework
 fits better.
 
 ## License

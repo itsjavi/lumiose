@@ -1,6 +1,6 @@
 # create-lumiose
 
-Creates a [Lumiose](https://itsjavi.com/lumiose/) app.
+Creates a [Lumiose](https://lumiose.dev/) app.
 
 ```sh
 npm create lumiose@latest my-app
@@ -19,9 +19,9 @@ registers the Lumiose MCP server for Claude Code and Codex. `create-lumiose --he
 option (`--yes`, `--force`, `--mcp`, `--format json`).
 
 Every template sets `lumiose({ csp: "strict" })` in `vite.config.ts`: a strict Content Security
-Policy from the first page ([Security](https://itsjavi.com/lumiose/docs/concepts/security/)).
+Policy from the first page ([Security](https://lumiose.dev/docs/concepts/security/)).
 
-Next: [Getting started](https://itsjavi.com/lumiose/docs/getting-started/).
+Next: [Getting started](https://lumiose.dev/docs/getting-started/).
 
 ## License
 

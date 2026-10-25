@@ -22,7 +22,7 @@
   },
   "js-framework-benchmark": {
     "frameworkVersionFromPackage": "lumiose",
-    "frameworkHomeURL": "https://itsjavi.com/lumiose/",
+    "frameworkHomeURL": "https://lumiose.dev/",
     "language": "TypeScript",
     "repoURL": "https://github.com/itsjavi/lumiose"
   }

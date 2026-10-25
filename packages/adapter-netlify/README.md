@@ -1,6 +1,6 @@
 # @lumiose/adapter-netlify
 
-Deploys a [Lumiose](https://itsjavi.com/lumiose/) build to Netlify: `dist/client` as the site, and
+Deploys a [Lumiose](https://lumiose.dev/) build to Netlify: `dist/client` as the site, and
 the build's fetch handler as a Netlify Function.
 
 ```sh
@@ -18,7 +18,7 @@ export default defineConfig({
 });
 ```
 
-The `netlify.toml` and the rest: [Deploy to Netlify](https://itsjavi.com/lumiose/docs/deploy/netlify/).
+The `netlify.toml` and the rest: [Deploy to Netlify](https://lumiose.dev/docs/deploy/netlify/).
 
 ## License
 

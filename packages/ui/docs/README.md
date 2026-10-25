@@ -8,7 +8,7 @@ table below lists them as they land.
 
 These pages ship in the package, in `node_modules/@lumiose/ui/docs`, so they match the installed
 version, and the Lumiose site renders them with a live demo of each example at
-[itsjavi.com/lumiose/ui](https://itsjavi.com/lumiose/ui/). Start with [Installation](installation.md)
+[lumiose.dev/ui](https://lumiose.dev/ui/). Start with [Installation](installation.md)
 and [Theming](theming.md). For coding agents, `llms.txt` indexes them and `llms-full.txt` holds them all;
 `lumiose docs ui` and `lumiose docs dialog` print them; the MCP server's `ui_components` tool lists
 every component's parts, props, events and styling hooks; and `lumiose agents init` adds a UI
@@ -37,7 +37,7 @@ Anatomy, API, Example, Styling, Keyboard and focus, Without JavaScript, Browser 
   renders in the page, outside the `Root` the island renders, and the server throws "Combobox
   parts must be inside <Combobox.Root>"; an island inside a `Root` the page renders does not see
   that `Root` either. Pass the data as props and render the `Root` and its parts inside the
-  island ([Islands](https://itsjavi.com/lumiose/docs/concepts/islands/)).
+  island ([Islands](https://lumiose.dev/docs/concepts/islands/)).
 - **Signals.** A component's state is a prop and a callback: `open` with `onOpenChange`, `checked`
   with `onCheckedChange`, `value` with `onValueChange`. Pass a signal's value and write it back in
   the callback to keep both in sync, or leave both out and the element keeps its own state. Custom
@@ -182,6 +182,6 @@ files' brotli sizes added up.
 
 ## Related
 
-- [Web components](https://itsjavi.com/lumiose/docs/guides/web-components/): custom elements in Lumiose pages and islands.
-- [Islands](https://itsjavi.com/lumiose/docs/concepts/islands/): where components run in the browser.
-- [JSX](https://itsjavi.com/lumiose/docs/concepts/jsx/): `class`, events and `on:`.
+- [Web components](https://lumiose.dev/docs/guides/web-components/): custom elements in Lumiose pages and islands.
+- [Islands](https://lumiose.dev/docs/concepts/islands/): where components run in the browser.
+- [JSX](https://lumiose.dev/docs/concepts/jsx/): `class`, events and `on:`.

@@ -360,7 +360,7 @@ The element is also an API of its own, for scripts and other frameworks:
 - [UI components](README.md): the approach, styling, the default theme and the other components.
 - [Dialog](dialog.md): a menu item can open one; focus returns to the menu's trigger when it
   closes.
-- [Islands](https://itsjavi.com/lumiose/docs/concepts/islands/): running a component in the
+- [Islands](https://lumiose.dev/docs/concepts/islands/): running a component in the
   browser, for `open`, `onOpenChange` and the `bind:` props.
-- [JSX](https://itsjavi.com/lumiose/docs/concepts/jsx/): `bind:`, native events with `on:` and
+- [JSX](https://lumiose.dev/docs/concepts/jsx/): `bind:`, native events with `on:` and
   `ref`.

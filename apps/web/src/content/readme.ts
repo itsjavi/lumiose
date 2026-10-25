@@ -15,7 +15,7 @@ import {
 } from "./stacks.ts";
 
 /** The published website, for the README's links. */
-const WEBSITE = "https://itsjavi.com/lumiose/";
+const WEBSITE = "https://lumiose.dev/";
 
 function escape(text: string): string {
   return text.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");

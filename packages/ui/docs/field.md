@@ -291,5 +291,5 @@ it throws (decision-62).
 - [Checkbox](checkbox.md), [Switch](switch.md), [Radio Group](radio-group.md),
   [Select](select.md), [Combobox](combobox.md), [Autocomplete](autocomplete.md),
   [Number Field](number-field.md), [Slider](slider.md): controls that take a field's wiring.
-- [Data and actions](https://itsjavi.com/lumiose/docs/concepts/data-and-actions/): form actions,
+- [Data and actions](https://lumiose.dev/docs/concepts/data-and-actions/): form actions,
   `fail()` and `actionData()`.

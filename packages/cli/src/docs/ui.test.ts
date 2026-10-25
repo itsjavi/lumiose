@@ -26,7 +26,7 @@ const here = dirname(fileURLToPath(import.meta.url));
 const UI_DIR = join(here, "../../../ui");
 const UI_DOCS = join(UI_DIR, "docs");
 const SRC = join(UI_DIR, "src");
-const SITE_DOCS = "https://itsjavi.com/lumiose/docs/";
+const SITE_DOCS = "https://lumiose.dev/docs/";
 const docs = loadDocs(UI_DOCS);
 const llms = readFileSync(join(UI_DOCS, "llms.txt"), "utf8");
 

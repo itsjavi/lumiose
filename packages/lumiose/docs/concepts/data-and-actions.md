@@ -44,7 +44,7 @@ HTML, within reach of every script on the page. A `FormData` works too (its text
 left out), but it carries every field of the form: in development, Lumiose warns when one carries a
 name that looks secret (`password`, `pwd`, `token`, `otp`, `card`, `ssn`, `iban`, `privateKey`,
 `sessionId`, …, in camelCase too, such as `passwordConfirm`).
-@lumiose/ui's [Form](https://itsjavi.com/lumiose/ui/form/) takes them as `values` and fills its
+@lumiose/ui's [Form](https://lumiose.dev/ui/form/) takes them as `values` and fills its
 controls by name; with your own inputs, use them as `defaultValue`s.
 
 An Origin check protects page POSTs and form-encoded endpoint requests by default (403 for

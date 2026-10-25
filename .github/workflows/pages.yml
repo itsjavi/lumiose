@@ -1,4 +1,5 @@
-# Builds the website with `pnpm build:site` and deploys it to GitHub Pages: apps/web at / (docs,
+# Builds the website with `pnpm build:site` and deploys it to GitHub Pages, served at
+# https://lumiose.dev (the custom domain under Settings > Pages): apps/web at / (docs,
 # showcase and benchmarks pages, and the playground at /playground), the serverless examples at
 # /demos/<slug>/, the benchmark UIs at /benchmarks/ and the old URLs' redirects (scripts/site.ts).
 # Enable it under Settings > Pages > Source: GitHub Actions.
@@ -25,9 +26,6 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - id: pages
-        uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
-
       # rust-toolchain.toml selects the toolchain; the playground needs the wasm target.
       - name: Rust toolchain
         run: |
@@ -50,8 +48,8 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
-      # base_path is "/<repo>" for a project page and "" for a user or custom-domain page.
-      - run: pnpm build:site --base "${{ steps.pages.outputs.base_path }}/"
+      # The site is at the root of its custom domain (TASK-596), whatever path GitHub reports.
+      - run: pnpm build:site --base / --site-url https://lumiose.dev/
 
       - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
         with:

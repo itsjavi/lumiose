@@ -1,5 +1,5 @@
-// Site-wide constants and the base path. The site may be served below a path (GitHub Pages:
-// `LUMIOSE_BASE=/lumiose/`): route URLs come from `href()`, which adds the base; other site URLs
+// Site-wide constants and the base path. The site may be served below a path (a GitHub Pages
+// project site: `LUMIOSE_BASE=/<repo>/`): route URLs come from `href()`, which adds the base; other site URLs
 // (public files such as the playground's generated assets) go through `link()`.
 import type { FooterColumn, NavLink } from "@lumiose/site-kit";
 import { href } from "lumiose";

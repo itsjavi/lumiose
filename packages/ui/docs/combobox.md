@@ -364,7 +364,7 @@ The element is also an API of its own, for scripts and other frameworks:
 - [Field](field.md): a label, a description and errors for a combobox.
 - [Menu](menu.md): commands rather than values, and the dismissal model the combobox shares.
 - [UI components](README.md): the approach, styling, the default theme and the other components.
-- [Islands](https://itsjavi.com/lumiose/docs/concepts/islands/): running a component in the
+- [Islands](https://lumiose.dev/docs/concepts/islands/): running a component in the
   browser, for `bind:value`, `bind:open` and async options.
-- [JSX](https://itsjavi.com/lumiose/docs/concepts/jsx/): `bind:`, native events with `on:` and
+- [JSX](https://lumiose.dev/docs/concepts/jsx/): `bind:`, native events with `on:` and
   `ref`.
