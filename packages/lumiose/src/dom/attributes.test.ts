@@ -188,6 +188,19 @@ describe("applyScope", () => {
     applyScope(el, undefined);
     expect(el.attributes.length).toBe(2);
   });
+
+  it("adds .name tokens as classes, which setClass then leaves alone (decision-85)", () => {
+    const el = document.createElement("div");
+    el.className = "lum-own";
+    const value = signal<string>("a");
+    bind(el, value, setClass);
+    applyScope(el, ".lum-p1  .lum-p2");
+    expect(el.className).toBe("lum-own a lum-p1 lum-p2");
+    value.set("b");
+    flush();
+    expect(el.className).toBe("lum-own lum-p1 lum-p2 b");
+    expect(el.hasAttribute(".lum-p1")).toBe(false);
+  });
 });
 
 describe("setNonce", () => {

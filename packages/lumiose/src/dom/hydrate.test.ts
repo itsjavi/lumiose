@@ -5,7 +5,7 @@
 // awaits replay from the records, and mismatches fall back to a client render.
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
-import { compile } from "@lumiose/compiler";
+import { compile, type CompileOptions } from "@lumiose/compiler";
 import { parseFragment, type DefaultTreeAdapterTypes } from "parse5";
 import type { Renderable } from "../contract/client.ts";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -37,17 +37,25 @@ type Module = Record<string, any>;
 /** Compiles `source` for both targets and imports the two modules. */
 async function load(
   source: string,
-  options: { hot?: boolean; states?: string[]; strictCsp?: boolean } = {},
+  options: {
+    hot?: boolean;
+    states?: string[];
+    strictCsp?: boolean;
+    /** Compile as `.stsx` with these `scopedStyles` (decision-85). */
+    scopedStyles?: CompileOptions["scopedStyles"];
+  } = {},
 ): Promise<{ client: Module; server: Module }> {
   const id = counter++;
   const modules: Record<string, Module> = {};
+  const extension = options.scopedStyles ? "stsx" : "tsx";
   for (const target of ["client", "server"] as const) {
-    const result = compile(source, `/src/case${id}.tsx`, {
+    const result = compile(source, `/src/case${id}.${extension}`, {
       target,
       styleImport: false,
       sourceMap: false,
       ...(options.hot && target === "client" ? { hot: true } : {}),
       ...(options.strictCsp ? { strictCsp: true } : {}),
+      ...(options.scopedStyles ? { scopedStyles: options.scopedStyles } : {}),
     });
     expect(result.diagnostics.filter((d) => d.severity === "error")).toEqual([]);
     let code = result.code;
@@ -131,6 +139,47 @@ afterEach(() => {
 });
 
 describe("hydrate", () => {
+  it("claims class-scoped elements without a mismatch (decision-85)", async () => {
+    const { client, server } = await load(
+      `
+      import { signal } from "lumiose";
+      function Chip(props: { class?: string; label: string }) {
+        return <span class={props.class}>{props.label}</span>;
+      }
+      export function Card() {
+        const on = signal(false);
+        return (
+          <article class="card">
+            <button class={{ on: on() }} onClick={() => on.set(!on())}>toggle</button>
+            <Chip class="chip" label="chip" />
+            <style>.card { padding: 1rem; } .chip { color: teal; }</style>
+          </article>
+        );
+      }`,
+      { scopedStyles: { strategy: "class" } },
+    );
+    await serve(server, [["Card", {}]]);
+    const article = document.querySelector("article")!;
+    const button = document.querySelector("button")!;
+    const scope = [...article.classList].find((name) => name.startsWith("lum-"))!;
+    expect(scope).toBeDefined();
+    expect(article.getAttribute("class")).toBe(`card ${scope}`);
+    expect(button.classList.contains(scope)).toBe(true);
+    // Class passthrough: the caller's scope class on the child's element.
+    expect(document.querySelector("span")!.getAttribute("class")).toBe(`chip ${scope}`);
+    await hydrateAll(client);
+    expect(warn.mock.calls.flat().join(" ")).not.toContain("LUM4006");
+    expect(document.querySelector("article")).toBe(article);
+    expect(document.querySelector("button")).toBe(button);
+    button.click();
+    flush();
+    expect(button.getAttribute("class")).toBe(`${scope} on`);
+    button.click();
+    flush();
+    expect(button.getAttribute("class")).toBe(scope);
+    expect(document.querySelector("span")!.classList.contains(scope)).toBe(true);
+  });
+
   it("claims a counter's nodes and makes it interactive", async () => {
     const { client, server } = await load(`
       import { signal } from "lumiose";

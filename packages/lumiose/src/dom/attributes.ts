@@ -194,11 +194,16 @@ export function setStyle(el: HTMLElement | SVGElement, value: unknown): void {
   slots.$$style = next;
 }
 
-/** Class passthrough (spec §4.6.2): sets each `data-l-*` scope token as an empty attribute. */
+/**
+ * Class passthrough (spec §4.6.2): applies each scope token, an attribute name (`data-lum-a1`) as
+ * an empty attribute, a `.name` (the class strategy, decision-85) as a class.
+ */
 export function applyScope(el: Element, tokens: string | undefined): void {
   if (tokens) {
     for (const token of tokens.split(" ")) {
-      if (token) {
+      if (token[0] === ".") {
+        el.classList.add(token.slice(1));
+      } else if (token) {
         el.setAttribute(token, "");
       }
     }

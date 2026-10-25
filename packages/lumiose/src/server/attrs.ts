@@ -35,8 +35,13 @@ export function attr(name: string, value: unknown, custom?: boolean): string {
   return ` ${name}="${escapeAttr(text)}"`;
 }
 
-/** ` class="…"` from a string, an array or a `Record<string, boolean>` (combinable), as `setClass`. */
-export function classAttr(value: unknown): string {
+/**
+ * ` class="…"` from a string, an array or a `Record<string, boolean>` (combinable), as `setClass`.
+ * `scope` adds the `.name` tokens of a `$$scope` string as classes (the class strategy,
+ * decision-85): the element's own scope classes and, with class passthrough, its caller's.
+ */
+export function classAttr(value: unknown, scope?: string): string {
+  if (scope !== undefined) return classOf([value, scopeClasses(scope)]);
   if (typeof value !== "string") return classOf(value);
   // Class strings repeat across rows and requests: their serialized attribute is memoized, in a
   // map that starts over once full (bounded memory for unbounded distinct values).
@@ -51,6 +56,17 @@ export function classAttr(value: unknown): string {
 
 const CLASS_CACHE_SIZE = 512;
 const classCache = new Map<string, string>();
+
+// The classes of a `$$scope` string: its `.name` tokens (attribute tokens are not classes).
+function scopeClasses(scope: unknown): string[] {
+  const classes: string[] = [];
+  if (typeof scope === "string") {
+    for (const token of scope.split(" ")) {
+      if (token.length > 1 && token[0] === ".") classes.push(token.slice(1));
+    }
+  }
+  return classes;
+}
 
 function classOf(value: unknown): string {
   const classes = classString(value);
@@ -171,25 +187,33 @@ const ATTRIBUTE_NAME = /^[^\s"'<>/=\p{Cc}]+$/u;
 /**
  * `{...props}` on an element. Event handlers, directives and invalid names are skipped; `custom`
  * as in `attr()`. A nullish spread (`{...props.extra}`) renders nothing, as on the client
- * (TASK-569).
+ * (TASK-569). Scope tokens in `props.$$scope` (class passthrough) and in `scope` (the element's
+ * own, with the class strategy) are written as attributes, or `.name` ones merged into `class`.
  */
 export function spreadAttrs(
   props: Record<string, unknown> | null | undefined,
   custom?: boolean,
+  scope?: string,
 ): string {
-  if (props == null) return "";
+  const passed = props?.$$scope;
+  const classes = [...scopeClasses(scope), ...scopeClasses(passed)];
   let out = "";
-  for (const key of Object.keys(props)) {
-    if (SKIPPED.has(key) || NOT_ATTRIBUTE.test(key) || SRCDOC.test(key)) continue;
-    const value = props[key];
-    if (key === "class") out += classAttr(value);
-    else if (key === "style") out += styleAttr(value);
-    else if (ATTRIBUTE_NAME.test(key)) out += attr(key, value, custom);
+  let classWritten = false;
+  if (props != null) {
+    for (const key of Object.keys(props)) {
+      if (SKIPPED.has(key) || NOT_ATTRIBUTE.test(key) || SRCDOC.test(key)) continue;
+      const value = props[key];
+      if (key === "class") {
+        out += classes.length === 0 ? classAttr(value) : classOf([value, classes]);
+        classWritten = true;
+      } else if (key === "style") out += styleAttr(value);
+      else if (ATTRIBUTE_NAME.test(key)) out += attr(key, value, custom);
+    }
   }
-  const scope = props.$$scope;
-  if (typeof scope === "string") {
-    for (const token of scope.split(" ")) {
-      if (token !== "" && ATTRIBUTE_NAME.test(token)) out += ` ${token}`;
+  if (!classWritten && classes.length > 0) out += classOf(classes);
+  if (typeof passed === "string") {
+    for (const token of passed.split(" ")) {
+      if (token !== "" && token[0] !== "." && ATTRIBUTE_NAME.test(token)) out += ` ${token}`;
     }
   }
   return out;

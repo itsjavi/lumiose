@@ -162,6 +162,19 @@ describe("attributes", () => {
     expect(classAttr(undefined)).toBe("");
   });
 
+  it("merges the class strategy's scope classes into class (decision-85)", () => {
+    expect(classAttr("btn", ".lum-a1 .lum-p2")).toBe(' class="btn lum-a1 lum-p2"');
+    expect(classAttr(undefined, ".lum-a1 ")).toBe(' class="lum-a1"');
+    expect(classAttr({ on: true }, "data-lum-x .lum-a1")).toBe(' class="on lum-a1"');
+    expect(classAttr("lum-a1", ".lum-a1")).toBe(' class="lum-a1"');
+    expect(spreadAttrs({ id: "x", class: "c" }, false, ".lum-a1")).toBe(' id="x" class="c lum-a1"');
+    expect(spreadAttrs({ id: "x", $$scope: ".lum-p2" }, false, ".lum-a1")).toBe(
+      ' id="x" class="lum-a1 lum-p2"',
+    );
+    expect(spreadAttrs(null, false, ".lum-a1")).toBe(' class="lum-a1"');
+    expect(spreadAttrs({ class: "c", $$scope: "data-lum-p2" })).toBe(' class="c" data-lum-p2');
+  });
+
   it("normalizes class strings outside the plain fast path", () => {
     expect(classAttr("")).toBe("");
     expect(classAttr("a")).toBe(' class="a"');
