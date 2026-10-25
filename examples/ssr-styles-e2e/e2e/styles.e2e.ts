@@ -88,6 +88,10 @@ test("the island hydrates the server HTML and its classes change", async ({ page
   await Promise.all(held.splice(0).map((release) => release()));
 
   const toggle = page.locator(".toggle");
+  // The page also modulepreloads the island, so the held request can come before the loader has
+  // run, and a click then lands before anything catches it (TASK-593): click once the island has
+  // hydrated (its delegated handler is set).
+  await expect.poll(() => toggle.evaluate((el) => "$$click" in el)).toBe(true);
   await toggle.click();
   await expect(toggle).toHaveAttribute("aria-pressed", "true");
   // The classes of the record, the array's other branch and the CSS module's `active`.

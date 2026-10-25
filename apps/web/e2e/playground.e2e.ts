@@ -133,9 +133,10 @@ test("the landing's live demo loads when visible, and edits update the outputs",
   await page.locator(".editor-pane .cm-line", { hasText: "Clicked {count()} times" }).click();
   await page.keyboard.press("Home");
   await page.keyboard.type("Pressed, ");
-  await page.locator(".editor-pane .cm-line", { hasText: "const gap = 8;" }).click();
+  // `--space: 8px;` becomes `--space: 80px;`.
+  await page.locator(".editor-pane .cm-line", { hasText: "--space: 8px;" }).click();
   await page.keyboard.press("End");
-  await page.keyboard.press("ArrowLeft");
+  for (let i = 0; i < "px;".length; i++) await page.keyboard.press("ArrowLeft");
   await page.keyboard.type("0");
   await expect(
     preview(page).getByRole("button", { name: "Pressed, Clicked 0 times" }),
@@ -143,7 +144,7 @@ test("the landing's live demo loads when visible, and edits update the outputs",
   await page.getByRole("tab", { name: "Client JS" }).click();
   await expect(page.getByRole("tabpanel", { name: "Client JS" })).toContainText("Pressed, Clicked");
   await page.getByRole("tab", { name: "CSS" }).click();
-  await expect(page.getByRole("tabpanel", { name: "CSS" })).toContainText("gap: 80px");
+  await expect(page.getByRole("tabpanel", { name: "CSS" })).toContainText("--space: 80px");
 });
 
 test.describe("without JavaScript", () => {
