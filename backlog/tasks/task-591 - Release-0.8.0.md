@@ -1,11 +1,11 @@
 ---
 id: TASK-591
 title: Release 0.8.0
-status: In Progress
+status: Done
 assignee:
   - '@Lux'
 created_date: '2026-10-25 03:02'
-updated_date: '2026-10-25 03:24'
+updated_date: '2026-10-25 03:43'
 labels: []
 milestone: m-14
 dependencies: []
@@ -23,7 +23,7 @@ Release M14 (@lumiose/stsx's first release, the scopedStyles option) and the fix
 - [x] #1 The user published the @lumiose/stsx placeholder and set its trusted publisher
 - [x] #2 The delta security review ran and its findings are tasks; those fixed before the release are named in the notes
 - [x] #3 pnpm check and pnpm pack:check pass
-- [ ] #4 The user approved the release and the push in chat; pnpm release:version 0.8.0 ran and the release is published
+- [x] #4 The user approved the release and the push in chat; pnpm release:version 0.8.0 ran and the release is published
 <!-- AC:END -->
 
 ## Implementation Notes
@@ -47,4 +47,14 @@ Release M14 (@lumiose/stsx's first release, the scopedStyles option) and the fix
 2026-10-25 (Lux): fixed before the release at the user's request: TASK-588, TASK-589 and TASK-590. Affected suites green after the fixes: lumiose 1222, @lumiose/vite 265, @lumiose/stsx 26, the stsx examples 8; typecheck and lint clean (existing warnings only).
 
 2026-10-25 (Lux): the user published @lumiose/stsx@0.0.0 (latest on npm) and set its trusted publisher. pnpm release:version 0.8.0 ran with the scale gate against v0.7.1: production build 0.999x, dev cold start 0.960x, HMR 1.012x, peak RSS 0.990x. Release commit 77df701d (every lockstep package at 0.8.0, @lumiose/stsx included; @lumiose/ui stays 0.2.0) and tag v0.8.0, local. Waiting for the user's approval to push main and v0.8.0.
+
+2026-10-25 (Lux): the user approved the push in chat; main 712e509f and v0.8.0 pushed. Release, Binaries, CI, UI browsers and Pages workflows started. Done once 0.8.0 is on npm.
+
+2026-10-25 (Lux): Release run 40158676543 succeeded: every binary job, publish (22 packages at 0.8.0) and github-release. On npm, latest is 0.8.0 for lumiose and @lumiose/stsx (provenance attested; @lumiose/stsx through its new trusted publisher); the registry took about a minute to show some of them. Pages deployed; CI and UI browsers were still running at closing time.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+0.8.0 released: M14 (@lumiose/stsx's first release, lumiose({ scopedStyles })) and the security review fixes TASK-588 to TASK-590. Scale gate against v0.7.1: build 0.999x, dev cold start 0.960x, HMR 1.012x, peak RSS 0.990x. All 22 packages published from CI with provenance, GitHub release created.
+<!-- SECTION:FINAL_SUMMARY:END -->
