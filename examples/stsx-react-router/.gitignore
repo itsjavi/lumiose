@@ -1,2 +1,4 @@
 .react-router/
 build/
+# Temporary apps of guard.test.ts
+.tmp-*/

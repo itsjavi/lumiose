@@ -84,6 +84,10 @@ pub struct TsxResult {
     pub diagnostics: Vec<Diagnostic>,
     /// The markers stamped per scope.
     pub scope_tokens: ScopeTokens,
+    /// The module's value exports (`default` included, types left out), sorted; empty with
+    /// `export * from`. Hosts check them against a framework's conventions (React Router's route
+    /// exports).
+    pub exports: Vec<String>,
 }
 
 impl TsxResult {
@@ -161,6 +165,7 @@ pub fn compile_tsx(source: &str, filename: &str, options: &TsxOptions) -> TsxRes
         .build(&program)
         .semantic
         .into_scoping();
+    let exports = crate::hot::export_names(&program).unwrap_or_default();
     let analysis = analyze::analyze(
         &program,
         &scoping,
@@ -235,6 +240,7 @@ pub fn compile_tsx(source: &str, filename: &str, options: &TsxOptions) -> TsxRes
         module_requests: style.requests,
         diagnostics,
         scope_tokens: scopes.tokens,
+        exports,
     }
 }
 
@@ -544,7 +550,8 @@ impl MapBuilder {
                 self.out_column = 0;
             }
             if !part.is_empty() {
-                self.tokens.push((self.out_line, self.out_column, line, column));
+                self.tokens
+                    .push((self.out_line, self.out_column, line, column));
             }
             self.out_column += part.encode_utf16().count() as u32;
         }

@@ -491,6 +491,11 @@ export interface TsxResult {
   diagnostics: Array<Diagnostic>;
   /** The markers stamped per scope. */
   scopeTokens: ScopeTokens;
+  /**
+   * The module's value exports (`default` included, types left out), sorted; empty with
+   * `export * from`.
+   */
+  exports: Array<string>;
 }
 
 /** Validates a `scopedStyles.namespace`: the error message, or `null` when it is valid. */

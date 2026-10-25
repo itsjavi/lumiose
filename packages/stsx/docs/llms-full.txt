@@ -385,8 +385,11 @@ export default defineConfig({
 
 React Router finds a route module by the file path in `routes.ts`, and strips its server-only
 exports (`loader`, `action`) from the client build. It does that only for files it compiles
-itself, so a route module cannot be a `.stsx` file: the plugin stops the build with an error that
-says so. Keep the route in `.tsx`, and put the markup and its styles in a `.stsx` component:
+itself, so a route module cannot be a `.stsx` file. The plugin stops the build, and dev server
+rendering, with an error that says so. It spots a route module in two ways: a `.stsx` file that
+exports a route-only name (`loader`, `action`, `clientLoader`, `clientAction`, `middleware`,
+`clientMiddleware` or `HydrateFallback`), and one that React Router imports as a route. Keep the
+route in `.tsx`, and put the markup and its styles in a `.stsx` component:
 
 ```tsx
 // app/routes/about.tsx

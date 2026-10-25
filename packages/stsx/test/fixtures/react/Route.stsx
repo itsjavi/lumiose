@@ -1,0 +1,11 @@
+export function loader() {
+  return { title: "Route" };
+}
+
+export default function Route() {
+  return <h1 className="title">Route</h1>;
+}
+
+<style>
+  .title { margin: 0; }
+</style>

@@ -142,6 +142,26 @@ describe.skipIf(!binding)("stsx() with React", () => {
     }
   });
 
+  it("rejects a .stsx module with route exports under React Router, in dev", async () => {
+    // A stand-in for React Router's plugin: the check only needs its name in the config.
+    const server = await devServer("react", [...plugins(), { name: "react-router" }]);
+    try {
+      await expect(server.environments.client.transformRequest("/Route.stsx")).rejects.toThrow(
+        /Route\.stsx: a React Router route module cannot be a \.stsx file \(it exports `loader`/,
+      );
+    } finally {
+      await server.close();
+    }
+    // Without React Router, `loader` is just an export.
+    const plain = await devServer("react", plugins());
+    try {
+      const js = await plain.environments.client.transformRequest("/Route.stsx");
+      expect(js!.code).toContain("function loader()");
+    } finally {
+      await plain.close();
+    }
+  });
+
   it("rejects a .stsx React Router route module", async () => {
     const server = await devServer("react", plugins());
     try {
@@ -150,7 +170,9 @@ describe.skipIf(!binding)("stsx() with React", () => {
           "./App.stsx",
           `${fixture("react")}/\0virtual:react-router/server-build`,
         ),
-      ).rejects.toThrow(/route modules cannot be \.stsx files/);
+      ).rejects.toThrow(
+        /a React Router route module cannot be a \.stsx file \(React Router imports it/,
+      );
     } finally {
       await server.close();
     }

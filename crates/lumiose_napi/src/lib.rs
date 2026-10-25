@@ -1026,6 +1026,9 @@ pub struct TsxResult {
     pub diagnostics: Vec<Diagnostic>,
     /// The markers stamped per scope.
     pub scope_tokens: ScopeTokens,
+    /// The module's value exports (`default` included, types left out), sorted; empty with
+    /// `export * from`.
+    pub exports: Vec<String>,
 }
 
 /// Compiles a `.stsx` module to TSX and CSS for another JSX framework (`@lumiose/stsx`,
@@ -1120,5 +1123,6 @@ pub fn compile_tsx(
                 })
                 .collect(),
         },
+        exports: result.exports,
     })
 }

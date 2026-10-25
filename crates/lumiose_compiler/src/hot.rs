@@ -217,7 +217,7 @@ fn function_component(
 }
 
 /// The module's export names; `None` with `export * from`.
-fn export_names(program: &Program<'_>) -> Option<Vec<String>> {
+pub(crate) fn export_names(program: &Program<'_>) -> Option<Vec<String>> {
     let mut names = Vec::new();
     for statement in &program.body {
         match statement {

@@ -5,7 +5,7 @@ status: Done
 assignee:
   - '@Photon'
 created_date: '2026-10-25 00:31'
-updated_date: '2026-10-25 01:14'
+updated_date: '2026-10-25 02:03'
 labels:
   - build
   - stsx
@@ -64,6 +64,8 @@ Lockstep package: release scripts and README. Lux adds packages/stsx/** to Photo
 - Tests (packages/stsx/src/plugin.test.ts, 9): options; React dev (TSX with Fast Refresh registration, CSS module, constants); React SSR with class markers and passthrough; React and Solid production builds; the scanner plugin; diagnostics (LUM3009 at Broken.stsx:8:15 with LUM3005 warned first); the React Router guard; Solid dev (markers in Solid templates).
 - Verified by hand with the TASK-571 apps on this package: React Router production SSR links per-route CSS with data-lum- markers, dev renders and hydrates without errors, and a .stsx route in routes.ts fails the build with the guard message.
 - README (setup per framework, styles, options, limits); AGENTS.md: packages/stsx/** in Photon's area. Preact is not claimed (untested).
+
+2026-10-25 (Lux, at the user's request): the React Router guard no longer rests on React Router internals alone. compileTsx reports the module's value exports (TsxResult.exports, napi exports). With React Router's plugin in the config, a .stsx module that exports a route-only name (loader, action, clientLoader, clientAction, middleware, clientMiddleware, the unstable_ middleware names, HydrateFallback) is an error in dev and builds; this public-API check also covers the browser loading a route module by URL in dev, which the internal-id check never saw. The internal-id check (virtual:react-router/server-build|server-manifest importers, route-module queries) stays as a second layer for route modules without those exports. examples/stsx-react-router/guard.test.ts pins both to the installed React Router: a build with a .stsx route; the dev browser path with a loader (export check only); a build and dev server rendering without route exports (internal layer only), so an upgrade that renames React Router's internals fails CI. Plugin tests cover the export check with and without React Router; the React Router docs page lists the names.
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary

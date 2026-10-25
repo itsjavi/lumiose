@@ -117,3 +117,13 @@ fn assert_parses_as_tsx(name: &str, code: &str) {
         parsed.diagnostics
     );
 }
+
+#[test]
+fn reports_value_exports() {
+    let source = "// @tsx className\nexport type Props = { a: string };\nexport interface Other {}\nexport function loader() { return 1; }\nexport const meta = () => [], action = 2;\nconst Local = () => <p />;\nexport { Local as Card };\nexport default function Page() { return <p />; }\n";
+    let result = compile("exports.stsx", source);
+    assert_eq!(
+        result.exports,
+        ["Card", "action", "default", "loader", "meta"]
+    );
+}

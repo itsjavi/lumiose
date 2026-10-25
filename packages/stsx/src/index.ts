@@ -21,8 +21,11 @@
 // - **Types.** The shadow TSX that `tsc` checks `.stsx` files through (./typegen.ts) is written when
 //   a dev server or a build starts, and again when a `.stsx` file changes (`stsx typegen` for CI).
 // - **React Router.** Route modules cannot be `.stsx`: React Router finds route modules by their
-//   file path and would leave their server-only exports in the client. An import of one from its
-//   route manifest is an error that shows the supported pattern.
+//   file path and would leave their server-only exports in the client. Two checks stop the build
+//   with an error that shows the supported pattern: a `.stsx` module that exports React Router's
+//   route-only names (its public route module API, in dev and builds alike), and, as a second
+//   layer for routes without them, an import from React Router's route manifest (internal module
+//   ids and queries of React Router 8, checked by examples/stsx-react-router's tests).
 
 import { readFile } from "node:fs/promises";
 import { existsSync, rmSync } from "node:fs";
@@ -43,9 +46,35 @@ const VIRTUAL = /\.stsx\.(tsx|css)$/;
 const JS_MODULE = /\.stsx\.tsx(?:\?|$)/;
 /** Queries that ask for the file itself, not its module. */
 const RAW_QUERY = /(?:^|&)(?:raw|url)(?:&|=|$)/;
-/** Modules of React Router that import route modules by their files. */
+/** Modules of React Router that import route modules by their files (React Router 8 internals). */
 const ROUTE_IMPORTER = /virtual:react-router\/(?:server-build|server-manifest)/;
 const ROUTE_QUERY = /(?:^|&)(?:__react-router-build-client-route|route-chunk=)/;
+/** Exports only a React Router route module has: data functions, middleware, the hydrate fallback. */
+const ROUTE_EXPORTS = new Set([
+  "loader",
+  "action",
+  "clientLoader",
+  "clientAction",
+  "middleware",
+  "clientMiddleware",
+  "unstable_middleware",
+  "unstable_clientMiddleware",
+  "HydrateFallback",
+]);
+
+/** The error for a `.stsx` React Router route module (`found`: the route exports that gave it away). */
+function routeModuleError(file: string, found?: readonly string[]): string {
+  const why =
+    found === undefined
+      ? "React Router imports it as a route module"
+      : `it exports ${found.map((name) => `\`${name}\``).join(", ")}, which only route modules export`;
+  return (
+    `${file}: a React Router route module cannot be a .stsx file (${why}). React Router finds ` +
+    "route modules by their file path, so it would leave their server-only exports in the client " +
+    "and pass no loaderData. Make the route module a .tsx file that renders a component from the " +
+    ".stsx file."
+  );
+}
 
 interface Output {
   code: string;
@@ -72,6 +101,8 @@ function fileOf(id: string): string {
 export default function stsx(options: StsxOptions): Plugin {
   const { classAttribute, scopedStyles } = validateOptions(options);
   let root = normalizePath(process.cwd());
+  /** React Router's Vite plugin is in the config. */
+  let reactRouter = false;
   /** Shadows are synced once per process, by the first environment that starts. */
   let shadowsSynced = false;
   /** By environment name, then `.stsx` file: the last compiled output. */
@@ -138,6 +169,10 @@ export default function stsx(options: StsxOptions): Plugin {
       if (diagnostic.severity !== "error") ctx.warn(toLog(file, source, diagnostic));
     }
     if (error !== undefined) ctx.error(toLog(file, source, error));
+    const routeExports = reactRouter
+      ? result.exports.filter((name) => ROUTE_EXPORTS.has(name))
+      : [];
+    if (routeExports.length > 0) ctx.error(routeModuleError(file, routeExports));
     outputsOf(ctx.environment.name).set(file, outputOf(result));
     return { code: result.code, map: result.map ?? null };
   }
@@ -174,6 +209,7 @@ export default function stsx(options: StsxOptions): Plugin {
 
     configResolved(config) {
       root = normalizePath(config.root);
+      reactRouter = config.plugins.some((plugin) => plugin.name.startsWith("react-router"));
     },
 
     buildStart() {
@@ -207,12 +243,7 @@ export default function stsx(options: StsxOptions): Plugin {
         (importer !== undefined && ROUTE_IMPORTER.test(importer)) ||
         ROUTE_QUERY.test(query ?? "")
       ) {
-        this.error(
-          `${bare} is a React Router route module: route modules cannot be .stsx files, because ` +
-            "React Router finds them by their file path (its server-only exports would stay in " +
-            "the client). Make the route module a .tsx file that renders a component from the " +
-            ".stsx file.",
-        );
+        this.error(routeModuleError(bare));
       }
       const resolved = await this.resolve(bare, importer, { ...resolveOptions, skipSelf: true });
       if (resolved === null || resolved.external) return resolved;
