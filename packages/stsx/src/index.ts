@@ -18,18 +18,21 @@
 // - **Constants.** `$name` constants imported from other modules are resolved with Vite's
 //   resolver and read from disk until the compiler has them all; edits to those modules update the
 //   CSS of the files that use them.
+// - **Types.** The shadow TSX that `tsc` checks `.stsx` files through (./typegen.ts) is written when
+//   a dev server or a build starts, and again when a `.stsx` file changes (`stsx typegen` for CI).
 // - **React Router.** Route modules cannot be `.stsx`: React Router finds route modules by their
 //   file path and would leave their server-only exports in the client. An import of one from its
 //   route manifest is an error that shows the supported pattern.
 
 import { readFile } from "node:fs/promises";
-import { existsSync } from "node:fs";
+import { existsSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { compileTsx, scan, type HostModule, type TsxResult } from "@lumiose/compiler";
 import { normalizePath, type Plugin, type Rollup } from "vite";
 import { toLog } from "./diagnostics.ts";
 import { validateOptions, type StsxOptions } from "./options.ts";
 import { packagesFor } from "./packages.ts";
+import { shadowLayout, shadowPathFor, syncShadows, writeShadow } from "./typegen.ts";
 
 export type { ScopedStylesOption, StsxOptions } from "./options.ts";
 
@@ -69,6 +72,8 @@ function fileOf(id: string): string {
 export default function stsx(options: StsxOptions): Plugin {
   const { classAttribute, scopedStyles } = validateOptions(options);
   let root = normalizePath(process.cwd());
+  /** Shadows are synced once per process, by the first environment that starts. */
+  let shadowsSynced = false;
   /** By environment name, then `.stsx` file: the last compiled output. */
   const outputs = new Map<string, Map<string, Output>>();
   /** Modules that `$name` constants were folded from, to the `.stsx` files that use them. */
@@ -171,6 +176,12 @@ export default function stsx(options: StsxOptions): Plugin {
       root = normalizePath(config.root);
     },
 
+    buildStart() {
+      if (shadowsSynced) return;
+      shadowsSynced = true;
+      syncShadows(shadowLayout(root));
+    },
+
     configureServer(server) {
       server.middlewares.use((req, _res, next) => {
         const [pathname, query] = (req.url ?? "").split("?");
@@ -244,8 +255,13 @@ export default function stsx(options: StsxOptions): Plugin {
     },
 
     async hotUpdate({ file, modules }) {
+      if (file.endsWith(".stsx") && this.environment.config.consumer === "client") {
+        const layout = shadowLayout(root);
+        if (existsSync(file)) writeShadow(layout, file);
+        else rmSync(shadowPathFor(layout, file), { force: true });
+      }
       const files = new Set(dependents.get(file) ?? []);
-      if (file.endsWith(".stsx")) files.add(file);
+      if (file.endsWith(".stsx") && existsSync(file)) files.add(file);
       if (files.size === 0) return;
       const environment = this.environment;
       const graph = environment.moduleGraph;

@@ -63,6 +63,33 @@ export default defineConfig({ plugins: [stsx({ classAttribute: "className" }), r
 - **Hot updates.** A style-only edit replaces the stylesheet without re-rendering; other edits go
   through your framework's refresh.
 
+## Type checking
+
+TypeScript does not know `.stsx`, so `@lumiose/stsx` writes a TSX copy of each file (the style
+blocks blanked out, every position unchanged) for stock `tsc` to check: a "shadow" in
+`.lumiose/stsx/`. Point `rootDirs` at it, so `import "./Card.stsx"` resolves to its shadow:
+
+```jsonc
+// tsconfig.json
+{
+  "compilerOptions": {
+    "rootDirs": [".", ".lumiose/stsx"],
+  },
+  "include": ["src", ".lumiose/stsx"],
+}
+```
+
+The plugin writes the shadows when the dev server or a build starts and whenever a `.stsx` file
+changes. In CI, write them before type checking:
+
+```sh
+stsx typegen && tsc
+```
+
+`tsc` reports errors in the shadow (`.lumiose/stsx/src/Card.stsx.tsx(12,7)`) at the line and column
+of the `.stsx` file. To keep the shadows somewhere else, name that directory `stsx` in `rootDirs`
+(`[".", ".types/stsx"]`). Add `.lumiose/` to `.gitignore`.
+
 ## Options
 
 ```ts
