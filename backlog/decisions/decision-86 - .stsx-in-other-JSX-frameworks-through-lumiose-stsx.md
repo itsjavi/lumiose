@@ -19,6 +19,7 @@ The user approved the package name `@lumiose/stsx` and, on 2026-10-25, the optio
 ## Decision
 
 **Package.** `@lumiose/stsx` (packages/stsx) is a Vite plugin that compiles `.stsx` files for any JSX framework. The framework's own Vite plugin compiles the JSX.
+- **Name.** Before the first release, the user considered Vite's `vite-plugin-` prefix convention (`@lumiose/vite-plugin-stsx`) and kept `@lumiose/stsx` (2026-10-25). The package is the home of the format outside Lumiose: besides the plugin, it ships the `stsx typegen` bin and the STSX docs. The `vite-plugin` keyword in its package.json keeps it findable as a Vite plugin.
 - **Modules.** `X.stsx` is served as the virtual module `X.stsx.tsx`, with its stylesheet as `X.stsx.css`. That way every framework plugin's `.[jt]sx?` filters accept it.
 - **Emitted TSX.** The source with its `<style>` blocks removed, the scope markers stamped per `scopedStyles` (decision-85), and an import of the stylesheet.
 - **Compiler mode.** The compiler gets a TSX emit mode for this. It skips Lumiose analysis and codegen, parses once, maps the emitted TSX back to the `.stsx` source, and reports only scanner and style (LUM3xxx) diagnostics.
