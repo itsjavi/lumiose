@@ -26,7 +26,7 @@ import { readFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { compileTsx, scan, type HostModule, type TsxResult } from "@lumiose/compiler";
-import { normalizePath, type EnvironmentModuleNode, type Plugin } from "vite";
+import { normalizePath, type Plugin } from "vite";
 import { toLog } from "./diagnostics.ts";
 import { validateOptions, type StsxOptions } from "./options.ts";
 import { packagesFor } from "./packages.ts";
@@ -233,9 +233,12 @@ export default function stsx(options: StsxOptions): Plugin {
       const environment = this.environment;
       const graph = environment.moduleGraph;
       const byFile = outputsOf(environment.name);
-      const updates: EnvironmentModuleNode[] = modules.filter(
-        (mod) => mod.file === null || !files.has(mod.file),
-      );
+      // Each changed `.stsx` file gets one update, sent here through `reloadModule()`. Its modules
+      // (the file, which `load` watches, and its virtual modules) are not passed on: React Router
+      // reloads the client copy of every module a hook passes on, which would send each update
+      // two or three times.
+      const others = modules.filter((mod) => mod.file === null || !files.has(fileOf(mod.file)));
+      const client = environment.config.consumer === "client";
       for (const changed of files) {
         const previous = byFile.get(changed);
         const source = await readFile(changed, "utf8");
@@ -246,18 +249,25 @@ export default function stsx(options: StsxOptions): Plugin {
         const next = outputOf(result);
         byFile.set(changed, next);
         const css = graph.getModuleById(changed + CSS_SUFFIX);
-        if (css !== undefined) {
-          graph.invalidateModule(css);
-          updates.push(css);
-        }
-        // A style-only edit leaves the TSX as it was: only the stylesheet is replaced.
         const js = graph.getModuleById(changed + JS_SUFFIX);
+        const cssChanged = previous === undefined || next.css !== previous.css;
+        // A changed stylesheet gets a new HMR timestamp, so a new TSX imports it afresh. Its other
+        // variants (`X.stsx.css?inline`, server-rendered critical CSS) are re-read on their next use.
+        if (cssChanged) {
+          const timestamp = Date.now();
+          for (const variant of graph.getModulesByFile(changed + CSS_SUFFIX) ?? []) {
+            graph.invalidateModule(variant, new Set(), timestamp, true);
+          }
+        }
         if (js !== undefined && next.code !== previous?.code) {
-          graph.invalidateModule(js);
-          updates.push(js);
+          await environment.reloadModule(js);
+        } else if (css !== undefined && cssChanged && client) {
+          // A style-only edit replaces the stylesheet alone; servers re-read it on their next
+          // render.
+          await environment.reloadModule(css);
         }
       }
-      return updates;
+      return others;
     },
   };
 }
