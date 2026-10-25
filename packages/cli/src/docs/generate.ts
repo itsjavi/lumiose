@@ -297,15 +297,13 @@ export function generateStsxLlms(docs: readonly Doc[]): Map<string, string> {
   const readme = docs.find((doc) => doc.topic === "README");
   if (!readme) throw new Error("The STSX docs have no README.md index.");
   const linked = [...readme.content.matchAll(/^- \[[^\]]+\]\(([^)#]+)\.md\)/gm)].map((m) => m[1]);
+  const at = (doc: Doc) => {
+    const index = linked.indexOf(doc.topic);
+    return index === -1 ? linked.length : index;
+  };
   const pages = docs
     .filter((doc) => doc !== readme)
-    .toSorted((a, b) => {
-      const at = (doc: Doc) => {
-        const index = linked.indexOf(doc.topic);
-        return index === -1 ? linked.length : index;
-      };
-      return at(a) - at(b) || a.title.localeCompare(b.title);
-    });
+    .toSorted((a, b) => at(a) - at(b) || a.title.localeCompare(b.title));
   const intro = [
     "# STSX",
     "",
