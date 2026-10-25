@@ -8,7 +8,11 @@ export function Counter({ label }: { label: string }) {
     <div className="counter">
       {/* Component-level block: it styles this component's elements only. */}
       <style>
-        .counter { display: flex; gap: 12px; align-items: center; }
+        .counter {
+          display: flex;
+          gap: 12px;
+          align-items: center;
+        }
         .increment {
           background: $brand.primary;
           color: white;
@@ -18,7 +22,10 @@ export function Counter({ label }: { label: string }) {
           font: inherit;
           cursor: pointer;
         }
-        .value { font-variant-numeric: tabular-nums; font-weight: 600; }
+        .value {
+          font-variant-numeric: tabular-nums;
+          font-weight: 600;
+        }
       </style>
       {/* `Button` is another component: the class strategy passes this scope to it. */}
       <Button className="increment" onClick={() => setCount((n) => n + 1)}>

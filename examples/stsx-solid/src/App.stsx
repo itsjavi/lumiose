@@ -15,11 +15,27 @@ export default function App() {
 
 // File-level block: every component of this file.
 <style>
-  .page { max-width: 720px; margin: 0 auto; padding: 32px 20px; }
-  h1 { color: $brand.primary; margin-top: 0; }
-  .card { background: $brand.soft; border-radius: $radius.lg; padding: 20px; }
+  .page {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 32px 20px;
+  }
+  h1 {
+    color: $brand.primary;
+    margin-top: 0;
+  }
+  .card {
+    background: $brand.soft;
+    border-radius: $radius.lg;
+    padding: 20px;
+  }
 </style>
 
 <style global>
-  body { margin: 0; font-family: system-ui, sans-serif; background: #fffaf5; color: #1c1917; }
+  body {
+    margin: 0;
+    font-family: system-ui, sans-serif;
+    background: #fffaf5;
+    color: #1c1917;
+  }
 </style>

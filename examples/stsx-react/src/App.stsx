@@ -19,8 +19,15 @@ export default function App() {
 
 // File-level block: every component of this file.
 <style>
-  .page { max-width: 720px; margin: 0 auto; padding: 32px 20px; }
-  h1 { color: $brand.primary; margin-top: 0; }
+  .page {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 32px 20px;
+  }
+  h1 {
+    color: $brand.primary;
+    margin-top: 0;
+  }
   .card {
     background: $brand.soft;
     border-radius: $radius.lg;
@@ -28,12 +35,23 @@ export default function App() {
     display: grid;
     gap: 12px;
   }
-  h2 { color: $brand.ink; margin: 0; font-size: 1.25rem; }
+  h2 {
+    color: $brand.ink;
+    margin: 0;
+    font-size: 1.25rem;
+  }
   @media (width < $BREAKPOINT) {
-    .page { padding: 16px; }
+    .page {
+      padding: 16px;
+    }
   }
 </style>
 
 <style global>
-  body { margin: 0; font-family: system-ui, sans-serif; background: #fafafa; color: #1f2937; }
+  body {
+    margin: 0;
+    font-family: system-ui, sans-serif;
+    background: #fafafa;
+    color: #1f2937;
+  }
 </style>

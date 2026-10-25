@@ -7,8 +7,15 @@ export function Counter(props: { label: string }) {
     <div class="counter">
       {/* Component-level block: it styles this component's elements only. */}
       <style>
-        .counter { display: grid; gap: 10px; }
-        .row { display: flex; gap: 12px; align-items: center; }
+        .counter {
+          display: grid;
+          gap: 10px;
+        }
+        .row {
+          display: flex;
+          gap: 12px;
+          align-items: center;
+        }
         button {
           background: $brand.primary;
           color: white;
@@ -17,8 +24,16 @@ export function Counter(props: { label: string }) {
           padding: 8px 14px;
           font: inherit;
         }
-        .dots { display: flex; gap: 6px; }
-        .dot { width: 14px; height: 14px; border-radius: 50%; background: $brand.primary; }
+        .dots {
+          display: flex;
+          gap: 6px;
+        }
+        .dot {
+          width: 14px;
+          height: 14px;
+          border-radius: 50%;
+          background: $brand.primary;
+        }
       </style>
       <div class="row">
         <button onClick={() => setCount((n) => n + 1)}>{props.label}</button>
