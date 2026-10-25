@@ -1,11 +1,11 @@
 ---
 id: TASK-592
 title: 'Proposal: .sjsx, STSX for JavaScript (naming, scope and cost)'
-status: To Do
+status: Done
 assignee:
   - '@Lux'
 created_date: '2026-10-25 04:05'
-updated_date: '2026-10-25 04:08'
+updated_date: '2026-10-25 04:13'
 labels:
   - proposal
   - stsx
@@ -46,12 +46,20 @@ Proposal requested by the user on 2026-10-25; not approved for implementation. A
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 The user chose a name (Styled JSX, STSX for JavaScript, or no new extension) and a scope (@lumiose/stsx only, or Lumiose too), or declined the proposal
-- [ ] #2 If approved, the work is recorded as a decision and split into tasks per owner area (compiler, @lumiose/stsx, language server and VS Code, fmt and lint, docs)
+- [x] #1 The user chose a name (Styled JSX, STSX for JavaScript, or no new extension) and a scope (@lumiose/stsx only, or Lumiose too), or declined the proposal
+- [x] #2 If approved, the work is recorded as a decision and split into tasks per owner area (compiler, @lumiose/stsx, language server and VS Code, fmt and lint, docs)
 <!-- AC:END -->
 
 ## Implementation Notes
 
 <!-- SECTION:NOTES:BEGIN -->
 2026-10-25 (Lux): naming chosen by the user: option 1. `.sjsx` is Styled JSX, the counterpart of Styled TSX ("STSX for JS is misleading"), accepting the overlap with Vercel's styled-jsx. Still open: the scope (@lumiose/stsx only, or Lumiose too) and the go-ahead to implement.
+
+2026-10-25 (Lux): scope chosen by the user: @lumiose/stsx and Lumiose, including JavaScript route files. Recorded as decision-88; the work is M15: TASK-593 (compiler), TASK-594 (@lumiose/stsx), TASK-595 (@lumiose/vite modules), TASK-596 (JavaScript route files), TASK-597 (language server and VS Code), TASK-598 (fmt and lint), TASK-599 (CLI, MCP, agent guidance), TASK-600 (docs and examples). Not implemented yet, at the user's request.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Proposal resolved: .sjsx is Styled JSX, in @lumiose/stsx and Lumiose with JavaScript route files (decision-88). Work planned as M15, TASK-593 to TASK-600.
+<!-- SECTION:FINAL_SUMMARY:END -->
