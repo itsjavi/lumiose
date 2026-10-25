@@ -44,9 +44,11 @@ definition and rename work on it.
 
 ## Editors
 
-The Lumiose VS Code extension handles `.stsx` files in any project; other editors run
-`@lumiose/language-server`, which it bundles. In a project that depends on `@lumiose/stsx` and
-not on `lumiose`, the server runs in **stsx mode**:
+The Lumiose VS Code extension (`lumiose.lumiose-vscode`, from the Marketplace) handles `.stsx` files
+in any project; other editors run `@lumiose/language-server`, which it bundles. How to install the
+extension, its use of your TypeScript 7 and its takeover mode, and the setup for Neovim, Helix and
+other editors: [Editors](https://lumiose.dev/docs/guides/editors/). In a project that depends on
+`@lumiose/stsx` and not on `lumiose`, the server runs in **stsx mode**:
 
 - **TypeScript:** completion, hover, go to definition, references, rename and type errors,
   through the shadows;

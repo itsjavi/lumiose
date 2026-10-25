@@ -1,16 +1,49 @@
-# Editors: Neovim, Helix and Zed
+# Editors: VS Code, Neovim, Helix and Zed
 
-> Run the Lumiose language server in Neovim and Helix (file type, root markers, the server command), what works in Zed today, and how GitHub highlights `.stsx` files.
+> Install the Lumiose VS Code extension, run the Lumiose language server in Neovim and Helix (file type, root markers, the server command), what works in Zed today, and how GitHub highlights `.stsx` files.
 
-VS Code has the Lumiose extension, which bundles the language server
-([Getting started](../getting-started.md#editor)). Other editors start the same server over the
-Language Server Protocol. It gives them everything the extension shows: TypeScript for `.ts`,
-`.tsx` and `.stsx` files, CSS features in `<style>` blocks, class and custom property completion,
-the compiler's `LUMxxxx` diagnostics and hovers that explain how each JSX expression runs.
+Every editor runs the same Lumiose language server: TypeScript for `.ts`, `.tsx` and `.stsx` files,
+CSS features in `<style>` blocks, class and custom property completion, the compiler's `LUMxxxx`
+diagnostics and hovers that explain how each JSX expression runs. VS Code (and its forks) gets it
+from the Lumiose extension, which bundles the server; other editors start it over the Language
+Server Protocol.
+
+## VS Code
+
+Install **Lumiose** (`lumiose.lumiose-vscode`) from the VS Code Marketplace: search for Lumiose in
+the Extensions view, or run
+
+```sh
+code --install-extension lumiose.lumiose-vscode
+```
+
+In Cursor, VSCodium and other forks, download the `.vsix` file of your platform (`darwin-arm64`,
+`darwin-x64`, `linux-x64`, `linux-arm64` or `win32-x64`) from the
+[latest GitHub release](https://github.com/itsjavi/lumiose/releases/latest) and run **Extensions:
+Install from VSIX…** from the command palette.
+
+The extension starts in workspaces with `.stsx` files or the `lumiose` package, and:
+
+- **Needs the project's TypeScript 7** (`typescript@^7`) for type features; without it, `.stsx`
+  files keep highlighting and CSS features, and the **Lumiose Language Server** output channel says
+  how to install it.
+- **Runs the server bundled with it**, on VS Code's own Node.js, unless the project has
+  `@lumiose/language-server` installed: then it runs that one, so the server matches your
+  `lumiose` version.
+- **Serves `.ts` and `.tsx` files too** ("takeover", so types flow between them and `.stsx` files)
+  once VS Code's built-in TypeScript extension is disabled for the workspace. It offers to do that
+  in Lumiose projects; **Lumiose: Set Up Takeover Mode** shows the steps (in the Extensions view,
+  **TypeScript and JavaScript Language Features**, **Disable (Workspace)**, then reload the window).
+  With `lumiose.takeover` set to `off`, it serves `.stsx` files only.
+
+**Lumiose: Restart Language Server** restarts it, and the extension's
+[README](https://github.com/itsjavi/lumiose/tree/main/packages/vscode#readme) lists its settings
+and how to build it from source.
 
 ## Set up the server
 
-Install it in the project, so it matches your `lumiose` version:
+Other editors run the server from the project. Install it there, so it matches your `lumiose`
+version:
 
 ```sh
 pnpm add -D @lumiose/language-server

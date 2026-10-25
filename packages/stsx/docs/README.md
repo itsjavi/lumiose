@@ -35,7 +35,9 @@ The block styles only `Counter`'s elements: its `button` rule reaches no other b
   your JS also uses, and typed custom property names (`var($vars.brand)`), so a typo fails the
   build.
 - **Editor support:** TypeScript and CSS features, class-name completion and unused-selector
-  warnings across the JSX and the blocks.
+  warnings across the JSX and the blocks, with the
+  [Lumiose VS Code extension](https://lumiose.dev/docs/guides/editors/#vs-code) or the language
+  server in other editors ([Type checking and editors](type-checking.md#editors)).
 
 **Status:** new. `@lumiose/stsx` shares the version of the other Lumiose packages.
 It has been tested with React 19, React Router 8 (framework mode, with server rendering) and Solid

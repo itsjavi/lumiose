@@ -10,17 +10,17 @@ Language support for Lumiose `.stsx` files (TSX plus raw-CSS `<style>` blocks):
 
 ## Install
 
-Lumiose releases after 0.8.0 publish the extension as `lumiose.lumiose-vscode`, with the version of
-the other Lumiose packages:
+The extension is `lumiose.lumiose-vscode`, with the version of the other Lumiose packages:
 
 - VS Code: search for **Lumiose** in the Extensions view, or run
   `code --install-extension lumiose.lumiose-vscode` (VS Code Marketplace);
-- Cursor, VSCodium and other forks: the same, from Open VSX;
-- any of them: download the `.vsix` of your platform from the
-  [GitHub release](https://github.com/itsjavi/lumiose/releases) and run **Extensions: Install from
-  VSIX…** from the command palette.
+- Cursor, VSCodium and other forks: download the `.vsix` of your platform from the
+  [latest GitHub release](https://github.com/itsjavi/lumiose/releases/latest) and run
+  **Extensions: Install from VSIX…** from the command palette.
 
-Until then, or to try unreleased changes, see Installing a local build.
+To try unreleased changes, see Installing a local build. The
+[Editors guide](https://lumiose.dev/docs/guides/editors/) covers TypeScript 7, takeover mode and
+the other editors.
 
 ## Editor features
 
