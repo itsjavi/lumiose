@@ -112,7 +112,7 @@ jobs:
           path: packages/vscode/*.vsix
           if-no-files-found: error
 
-  # Publishes the .vsix files to the VS Code Marketplace (publisher itsjavi) after npm, on a real
+  # Publishes the .vsix files to the VS Code Marketplace (publisher lumiose) after npm, on a real
   # release of an x.y.z version: the Marketplace takes no x.y.z-* versions, which only go to the
   # GitHub release. It signs in with Microsoft Entra ID (workload identity federation, no secret):
   # the federated credential trusts this job's environment, since its subject cannot match every tag.
@@ -160,7 +160,7 @@ jobs:
         working-directory: packages/vscode
         run: pnpm exec vsce publish --azure-credential --skip-duplicate --packagePath release/*.vsix
 
-  # Publishes the .vsix files to Open VSX (namespace itsjavi), for Cursor, VSCodium and other forks,
+  # Publishes the .vsix files to Open VSX (namespace lumiose), for Cursor, VSCodium and other forks,
   # like vscode-marketplace. Open VSX trusts this workflow (trusted publishing) once the extension has
   # a version there; the first version needs the OVSX_PAT secret, which must be deleted afterwards,
   # since a token takes precedence over trusted publishing.

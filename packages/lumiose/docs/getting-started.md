@@ -174,7 +174,7 @@ pnpm lumiose fmt          # oxfmt for the TSX, plus each <style> block
 
 ## Editor
 
-Lumiose releases after 0.8.0 publish the VS Code extension (`itsjavi.lumiose-vscode`) to the VS
+Lumiose releases after 0.8.0 publish the VS Code extension (`lumiose.lumiose-vscode`) to the VS
 Code Marketplace and Open VSX (for Cursor, VSCodium and other forks), and attach the `.vsix` file of
 each platform to the [GitHub release](https://github.com/itsjavi/lumiose/releases). Until then,
 build it from a clone of the repository and install the `.vsix` file for your platform. The build

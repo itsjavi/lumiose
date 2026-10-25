@@ -25,7 +25,7 @@
     "url": "git+https://github.com/itsjavi/lumiose.git",
     "directory": "packages/vscode"
   },
-  "publisher": "itsjavi",
+  "publisher": "lumiose",
   "type": "module",
   "main": "./dist/extension.cjs",
   "scripts": {

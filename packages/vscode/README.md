@@ -10,11 +10,11 @@ Language support for Lumiose `.stsx` files (TSX plus raw-CSS `<style>` blocks):
 
 ## Install
 
-Lumiose releases after 0.8.0 publish the extension as `itsjavi.lumiose-vscode`, with the version of
+Lumiose releases after 0.8.0 publish the extension as `lumiose.lumiose-vscode`, with the version of
 the other Lumiose packages:
 
 - VS Code: search for **Lumiose** in the Extensions view, or run
-  `code --install-extension itsjavi.lumiose-vscode` (VS Code Marketplace);
+  `code --install-extension lumiose.lumiose-vscode` (VS Code Marketplace);
 - Cursor, VSCodium and other forks: the same, from Open VSX;
 - any of them: download the `.vsix` of your platform from the
   [GitHub release](https://github.com/itsjavi/lumiose/releases) and run **Extensions: Install from
@@ -103,8 +103,7 @@ Language Server** output channel: it logs the server's path and source (`bundled
 `setting`). In this repository, a workspace with `@lumiose/language-server` installed uses the
 repository's server from its TypeScript sources (see Which language server runs): after a server
 change, **Lumiose: Restart Language Server** picks it up without reinstalling. If an older install
-misbehaves, remove it first with `code --uninstall-extension itsjavi.lumiose-vscode` (`lumiose.lumiose-vscode` for older
-local builds, version 0.0.0).
+misbehaves, remove it first with `code --uninstall-extension lumiose.lumiose-vscode`.
 
 ## Building
 
@@ -146,7 +145,7 @@ nothing.
 
 ### One-time setup
 
-**VS Code Marketplace** (publisher `itsjavi`). Azure DevOps global personal access tokens can no
+**VS Code Marketplace** (publisher `lumiose`). Azure DevOps global personal access tokens can no
 longer be created and stop working on 2026-12-01, so the job signs in with Microsoft Entra ID,
 without a secret
 ([Microsoft's steps](https://code.visualstudio.com/api/working-with-extensions/publishing-extension)):
@@ -155,7 +154,7 @@ without a secret
    identity.
 2. Add a federated credential to it: issuer `https://token.actions.githubusercontent.com`, subject
    `repo:itsjavi/lumiose:environment:vscode-marketplace`, audience `api://AzureADTokenExchange`.
-3. Add it to the `itsjavi` publisher as a Contributor, as Microsoft's steps describe.
+3. Add it to the `lumiose` publisher as a Contributor, as Microsoft's steps describe.
 4. Set the repository variables `VSCE_AZURE_CLIENT_ID` (its application or client ID) and
    `VSCE_AZURE_TENANT_ID`. The job's `vscode-marketplace` environment is created on the first run;
    its settings can limit it to `v*` tags.
@@ -165,10 +164,10 @@ with "corporate credentials required" (microsoft/vscode-vsce#1023). In both case
 GitHub release's `.vsix` files by hand: open the extension on the publisher's management page and
 update it with each file.
 
-**Open VSX** (namespace `itsjavi`), for Cursor, VSCodium and other forks:
+**Open VSX** (namespace `lumiose`), for Cursor, VSCodium and other forks:
 
 1. Sign in to open-vsx.org with GitHub, link an Eclipse account and sign the Publisher Agreement.
-2. Create an access token, then the namespace: `npx ovsx create-namespace itsjavi -p <token>`.
+2. Create an access token, then the namespace: `npx ovsx create-namespace lumiose -p <token>`.
    Claim it on the Namespace Access page to show it as verified.
 3. Store the token as the repository secret `OVSX_PAT` for the first release.
 4. Once a version is on Open VSX, register a trusted publisher (Settings, Trusted Publishers:

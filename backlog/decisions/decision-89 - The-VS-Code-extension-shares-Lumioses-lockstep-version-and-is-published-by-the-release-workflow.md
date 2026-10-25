@@ -15,7 +15,7 @@ The VS Code extension (`packages/vscode`, TASK-30 and TASK-51) was never publish
 User decision, 2026-10-25.
 
 - **Lockstep version.** The extension has the version of the other Lumiose packages: `pnpm release:version` bumps it, and every `v<x.y.z>` release publishes it, also when only its bundled server or compiler changed. A fix to the extension alone ships as a Lumiose patch release.
-- **Publisher `itsjavi`** (the user's Marketplace publisher): the extension ID is `itsjavi.lumiose-vscode`. Its package name stays `lumiose-vscode`, since `lumiose` names the framework package in the pnpm workspace.
+- **Publisher `lumiose`** (the user's Marketplace publisher, and the Open VSX namespace): the extension ID is `lumiose.lumiose-vscode`. Its package name stays `lumiose-vscode`, since `lumiose` names the framework package in the pnpm workspace. (The user first created the publisher `itsjavi`, then switched to `lumiose` the same day.)
 - **Published by the release workflow**, after the Binaries workflow: the `.vsix` of every supported platform goes to the tag's GitHub release, the VS Code Marketplace and Open VSX (for Cursor, VSCodium and other forks), gated by `LUMIOSE_PUBLISH` like npm. Pre-release versions (`x.y.z-*`) only get the GitHub release files.
 
 ## Consequences
