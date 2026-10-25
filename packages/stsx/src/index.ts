@@ -33,6 +33,7 @@ import { join } from "node:path";
 import { compileTsx, scan, type HostModule, type TsxResult } from "@lumiose/compiler";
 import { normalizePath, type Plugin, type Rollup } from "vite";
 import { toLog } from "./diagnostics.ts";
+import { assertLoadingAllowed } from "./fs-access.ts";
 import { validateOptions, type StsxOptions } from "./options.ts";
 import { packagesFor } from "./packages.ts";
 import { shadowLayout, shadowPathFor, syncShadows, writeShadow } from "./typegen.ts";
@@ -109,6 +110,11 @@ export default function stsx(options: StsxOptions): Plugin {
   const outputs = new Map<string, Map<string, Output>>();
   /** Modules that `$name` constants were folded from, to the `.stsx` files that use them. */
   const dependents = new Map<string, Set<string>>();
+  /**
+   * `.stsx` files the app's modules import: the browser may load them outside `server.fs.allow`,
+   * as Vite lets it load the modules that imports resolve to (a linked package's files).
+   */
+  const imported = new Set<string>();
 
   const outputsOf = (environment: string): Map<string, Output> => {
     let map = outputs.get(environment);
@@ -248,6 +254,7 @@ export default function stsx(options: StsxOptions): Plugin {
       const resolved = await this.resolve(bare, importer, { ...resolveOptions, skipSelf: true });
       if (resolved === null || resolved.external) return resolved;
       const path = resolved.id.split("?")[0]!;
+      if (importer !== undefined) imported.add(path);
       if (query !== undefined && RAW_QUERY.test(query)) return `${path}?${query}`;
       return path + JS_SUFFIX + (query === undefined ? "" : `?${query}`);
     },
@@ -256,6 +263,9 @@ export default function stsx(options: StsxOptions): Plugin {
       const match = VIRTUAL.exec(id.split("?")[0]!);
       if (match === null) return null;
       const file = fileOf(id);
+      // In dev, the browser gets the files inside `server.fs.allow` or imported by the app
+      // (./fs-access.ts).
+      if (!imported.has(file)) assertLoadingAllowed(this.environment, file);
       this.addWatchFile(file);
       if (match[1] === "tsx") return emit(this, file, await readFile(file, "utf8"));
       const byFile = outputsOf(this.environment.name);
@@ -288,8 +298,9 @@ export default function stsx(options: StsxOptions): Plugin {
     async hotUpdate({ file, modules }) {
       if (file.endsWith(".stsx") && this.environment.config.consumer === "client") {
         const layout = shadowLayout(root);
+        const shadow = shadowPathFor(layout, file);
         if (existsSync(file)) writeShadow(layout, file);
-        else rmSync(shadowPathFor(layout, file), { force: true });
+        else if (shadow !== undefined) rmSync(shadow, { force: true });
       }
       const files = new Set(dependents.get(file) ?? []);
       if (file.endsWith(".stsx") && existsSync(file)) files.add(file);

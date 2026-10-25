@@ -3,10 +3,11 @@ id: TASK-589
 title: >-
   stsx hot updates write shadows outside the shadow directory for files outside
   the root
-status: To Do
+status: Done
 assignee:
   - '@Photon'
 created_date: '2026-10-25 03:02'
+updated_date: '2026-10-25 03:14'
 labels:
   - stsx
   - bug
@@ -26,5 +27,17 @@ Fix: skip files outside the root in writeShadow and in the hotUpdate removal (or
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 A changed or deleted .stsx file outside the root writes or removes nothing outside the shadow directory, with a test
+- [x] #1 A changed or deleted .stsx file outside the root writes or removes nothing outside the shadow directory, with a test
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+2026-10-25 (Lux, solo takeover): shadowPathFor returns undefined for a file outside the root (a relative path that starts with .. or is absolute); writeShadow and the hotUpdate removal skip such files. Test in src/typegen.test.ts: a change event for a linked file next to the project writes nothing at the stray path, and an unlink leaves a file at that path alone (red before the fix). Docs: type-checking.md says only files under the root get shadows.
+<!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Shadows are written and removed only for .stsx files under the project root; a linked package's file gets none, instead of a stray file outside the shadow directory. Tested in packages/stsx/src/typegen.test.ts.
+<!-- SECTION:FINAL_SUMMARY:END -->

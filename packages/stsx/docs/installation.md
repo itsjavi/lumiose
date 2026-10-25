@@ -9,6 +9,11 @@ pnpm add -D @lumiose/stsx
 It needs Vite 8 and Node 24 or later. The plugin goes **before** the framework's plugin: it turns
 each `.stsx` file into TSX for that plugin, and its `<style>` blocks into a stylesheet for Vite.
 
+In dev, the browser gets the `.stsx` files inside
+[`server.fs.allow`](https://vite.dev/config/server-options#server-fs-allow), and those your app's
+modules import (a linked package's), as Vite does for its own files. Requests for others get
+Vite's 403.
+
 ## React
 
 ```ts

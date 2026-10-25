@@ -110,6 +110,44 @@ describe.skipIf(!binding)("stsx typegen", () => {
     }
   });
 
+  it("writes and removes nothing for files outside the root (TASK-589)", async () => {
+    const root = project("react");
+    // A linked package's file, next to the project: its shadow would be outside the shadow
+    // directory (`.lumiose/<linked dir>/Linked.stsx.tsx`).
+    const linked = `${root}-linked`;
+    dirs.push(linked);
+    mkdirSync(linked);
+    const file = join(linked, "Linked.stsx");
+    writeFileSync(file, `export const Linked = () => <p className="x">linked</p>;\n`);
+    const stray = join(root, ".lumiose", `${linked.split(/[\\/]/).pop()}/Linked.stsx.tsx`);
+    const server = await createServer({
+      root,
+      configFile: false,
+      customLogger: createLogger("silent"),
+      plugins: [stsx({ classAttribute: "className" })],
+      appType: "custom",
+      server: { middlewareMode: true, ws: false, watch: null },
+    });
+    const updated = async (event: "change" | "unlink") => {
+      server.watcher.emit(event, file);
+      // The hot update hooks run on the next ticks.
+      await new Promise((done) => setTimeout(done, 200));
+    };
+    try {
+      await server.environments.client.pluginContainer.buildStart({});
+      await updated("change");
+      expect(existsSync(stray)).toBe(false);
+      // A file that happens to be at that path survives the source's removal.
+      mkdirSync(join(stray, ".."), { recursive: true });
+      writeFileSync(stray, "// not a shadow\n");
+      rmSync(file);
+      await updated("unlink");
+      expect(readFileSync(stray, "utf8")).toBe("// not a shadow\n");
+    } finally {
+      await server.close();
+    }
+  });
+
   it("lets tsc check a React project, at the .stsx line and column", () => {
     const root = project("react", {
       compilerOptions: { ...COMPILER_OPTIONS, jsx: "react-jsx", types: ["react"] },

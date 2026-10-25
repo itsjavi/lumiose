@@ -22,6 +22,8 @@ column matches the `.stsx` file. With `rootDirs`, `import "./Card.stsx"` resolve
 - **Who writes them.** The Vite plugin writes every shadow when the dev server or a build starts,
   and rewrites a file's shadow when you edit it. `stsx typegen` writes them all and removes those
   of deleted files, for CI and other scripts.
+- **Files outside the project.** Only `.stsx` files under the project root get shadows. A linked
+  workspace package's files are checked in that package's own project (its own `stsx typegen`).
 - **The tsconfig hint.** Without the `rootDirs` entry, `stsx typegen` prints the line to add.
 - **Version control.** Add `.lumiose/` to `.gitignore`: the shadows are generated.
 - **Another directory.** Name it `stsx` in `rootDirs`, as in `[".", ".types/stsx"]`. The plugin and

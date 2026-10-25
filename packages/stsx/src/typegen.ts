@@ -8,7 +8,7 @@
 // writes them when the dev server or a build starts, and again when a file changes.
 
 import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
-import { dirname, join, relative, resolve } from "node:path";
+import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { scan } from "@lumiose/compiler";
 
 /** The default shadow directory, relative to the project root. */
@@ -45,15 +45,21 @@ export function rootDirsHint(layout: ShadowLayout): string {
   return `"rootDirs": [".", "${dir}"]`;
 }
 
-/** The shadow of `file` (absolute) in `layout`. */
-export function shadowPathFor(layout: ShadowLayout, file: string): string {
-  return join(layout.dir, relative(layout.root, file) + SHADOW_SUFFIX);
+/**
+ * The shadow of `file` (absolute) in `layout`, or `undefined` for a file outside the root, such as
+ * a linked package's (its own project checks it): its shadow would land outside `layout.dir`.
+ */
+export function shadowPathFor(layout: ShadowLayout, file: string): string | undefined {
+  const path = relative(layout.root, file);
+  if (path === ".." || path.startsWith(`..${sep}`) || isAbsolute(path)) return undefined;
+  return join(layout.dir, path + SHADOW_SUFFIX);
 }
 
-/** Writes the shadow of one `.stsx` file. */
+/** Writes the shadow of one `.stsx` file under the root (others have none). */
 export function writeShadow(layout: ShadowLayout, file: string, source?: string): void {
-  const text = source ?? readFileSync(file, "utf8");
   const shadow = shadowPathFor(layout, file);
+  if (shadow === undefined) return;
+  const text = source ?? readFileSync(file, "utf8");
   mkdirSync(dirname(shadow), { recursive: true });
   writeFileSync(shadow, scan(text, file).masked);
 }
