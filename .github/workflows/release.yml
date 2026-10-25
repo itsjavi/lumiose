@@ -8,9 +8,11 @@
 # Binaries workflow, and creates its GitHub release from its own CHANGELOG.md.
 # A v<x.y.z> tag also ships the VS Code extension (decision-89): the vscode job packages one .vsix
 # per platform, github-release attaches them, and the vscode-marketplace and vscode-open-vsx jobs
-# publish them (their setup: packages/vscode/README.md, Releases).
+# publish the release's files (their setup: packages/vscode/README.md, Releases).
 # Until the repository variable LUMIOSE_PUBLISH is "true", it is a dry run that publishes nothing;
-# a manual run (workflow_dispatch) is always a dry run.
+# a manual run (workflow_dispatch) is always a dry run, except with `vscode_release`: then only the
+# two extension jobs run, and publish the .vsix files of that existing GitHub release (a release
+# whose registry jobs failed, or ran before their setup).
 # npm trusts this workflow (trusted publishing, set on each package's npm settings), so no token is
 # involved: npm exchanges the publish job's OIDC identity for one-off publish credentials.
 name: Release
@@ -19,6 +21,11 @@ on:
   push:
     tags: ["v*", "@lumiose/*@*"]
   workflow_dispatch:
+    inputs:
+      vscode_release:
+        description: Only publish the VS Code extension files of this GitHub release (v<x.y.z>) to the Marketplace and Open VSX
+        type: string
+        default: ""
 
 permissions:
   contents: read
@@ -30,14 +37,14 @@ concurrency:
 jobs:
   binaries:
     # A package outside lockstep ships no compiler binary.
-    if: ${{ !startsWith(github.ref_name, '@') }}
+    if: ${{ !startsWith(github.ref_name, '@') && !inputs.vscode_release }}
     uses: ./.github/workflows/binaries.yml
     with:
       release: true
 
   publish:
     needs: binaries
-    if: ${{ !cancelled() && (needs.binaries.result == 'success' || needs.binaries.result == 'skipped') }}
+    if: ${{ !cancelled() && !inputs.vscode_release && (needs.binaries.result == 'success' || needs.binaries.result == 'skipped') }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -112,20 +119,18 @@ jobs:
           path: packages/vscode/*.vsix
           if-no-files-found: error
 
-  # Publishes the .vsix files to the VS Code Marketplace (publisher lumiose) after npm, on a real
-  # release of an x.y.z version: the Marketplace takes no x.y.z-* versions, which only go to the
-  # GitHub release. It signs in with Microsoft Entra ID (workload identity federation, no secret):
-  # the federated credential trusts this job's environment, since its subject cannot match every tag.
-  # Without the VSCE_AZURE_* variables it warns and publishes nothing: then upload the GitHub
-  # release's .vsix files on the publisher's page by hand.
+  # Publishes the release's .vsix files to the VS Code Marketplace (publisher lumiose): after the
+  # GitHub release of a v<x.y.z> tag, or on a manual run with `vscode_release`. The Marketplace takes
+  # no x.y.z-* versions, which stay on the GitHub release. It trusts this workflow (trusted
+  # publishing, a policy on the publisher), so `vsce publish --oidc` needs no token; vsce publishes
+  # every platform's file of the version in one run.
   vscode-marketplace:
-    needs: [vscode, publish]
-    if: ${{ !cancelled() && needs.vscode.result == 'success' && needs.publish.result == 'success' && github.event_name == 'push' && vars.LUMIOSE_PUBLISH == 'true' && !contains(github.ref_name, '-') }}
+    needs: github-release
+    if: ${{ !cancelled() && ((github.event_name == 'push' && needs.github-release.result == 'success' && startsWith(github.ref_name, 'v') && !contains(github.ref_name, '-')) || (github.event_name == 'workflow_dispatch' && startsWith(inputs.vscode_release, 'v') && !contains(inputs.vscode_release, '-'))) }}
     runs-on: ubuntu-latest
-    environment: vscode-marketplace
     permissions:
       contents: read
-      # Microsoft Entra ID workload identity federation.
+      # Trusted publishing: the registry exchanges the job's OIDC identity for a short-lived token.
       id-token: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -139,38 +144,27 @@ jobs:
 
       - run: pnpm install --frozen-lockfile --filter lumiose-vscode
 
-      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
-        with:
-          name: vscode-vsix
-          path: packages/vscode/release
-
-      - name: Check the Marketplace sign-in
-        if: ${{ vars.VSCE_AZURE_CLIENT_ID == '' || vars.VSCE_AZURE_TENANT_ID == '' }}
-        run: echo "::warning::VSCE_AZURE_CLIENT_ID or VSCE_AZURE_TENANT_ID is not set, so nothing was published to the VS Code Marketplace. Upload the GitHub release's .vsix files on the publisher's page."
-
-      - uses: azure/login@a641126d1b8aa4d1fa005f4f92df94a3a4c4c906 # v3.1.0
-        if: ${{ vars.VSCE_AZURE_CLIENT_ID != '' && vars.VSCE_AZURE_TENANT_ID != '' }}
-        with:
-          client-id: ${{ vars.VSCE_AZURE_CLIENT_ID }}
-          tenant-id: ${{ vars.VSCE_AZURE_TENANT_ID }}
-          allow-no-subscriptions: true
+      - name: Download the release's .vsix files
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ inputs.vscode_release || github.ref_name }}
+        run: gh release download "$TAG" --pattern "*.vsix" --dir packages/vscode/release
 
       - name: Publish to the VS Code Marketplace
-        if: ${{ vars.VSCE_AZURE_CLIENT_ID != '' && vars.VSCE_AZURE_TENANT_ID != '' }}
         working-directory: packages/vscode
-        run: pnpm exec vsce publish --azure-credential --skip-duplicate --packagePath release/*.vsix
+        run: pnpm exec vsce publish --oidc --skip-duplicate --packagePath release/*.vsix
 
-  # Publishes the .vsix files to Open VSX (namespace lumiose), for Cursor, VSCodium and other forks,
-  # like vscode-marketplace. Open VSX trusts this workflow (trusted publishing) once the extension has
-  # a version there; the first version needs the OVSX_PAT secret, which must be deleted afterwards,
-  # since a token takes precedence over trusted publishing.
+  # Publishes the release's .vsix files to Open VSX (namespace lumiose), for Cursor, VSCodium and
+  # other forks, like vscode-marketplace. Open VSX trusts this workflow (trusted publishing) once the
+  # extension has a version there; the first version needs the OVSX_PAT secret, which must be
+  # deleted afterwards, since a token takes precedence over trusted publishing.
   vscode-open-vsx:
-    needs: [vscode, publish]
-    if: ${{ !cancelled() && needs.vscode.result == 'success' && needs.publish.result == 'success' && github.event_name == 'push' && vars.LUMIOSE_PUBLISH == 'true' && !contains(github.ref_name, '-') }}
+    needs: github-release
+    if: ${{ !cancelled() && ((github.event_name == 'push' && needs.github-release.result == 'success' && startsWith(github.ref_name, 'v') && !contains(github.ref_name, '-')) || (github.event_name == 'workflow_dispatch' && startsWith(inputs.vscode_release, 'v') && !contains(inputs.vscode_release, '-'))) }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      # Open VSX trusted publishing.
+      # Trusted publishing: the registry exchanges the job's OIDC identity for a short-lived token.
       id-token: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -184,10 +178,11 @@ jobs:
 
       - run: pnpm install --frozen-lockfile --filter lumiose-vscode
 
-      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
-        with:
-          name: vscode-vsix
-          path: packages/vscode/release
+      - name: Download the release's .vsix files
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ inputs.vscode_release || github.ref_name }}
+        run: gh release download "$TAG" --pattern "*.vsix" --dir packages/vscode/release
 
       - name: Publish to Open VSX
         working-directory: packages/vscode

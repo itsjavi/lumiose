@@ -136,33 +136,29 @@ bumps it, and pushing the `v<x.y.z>` tag runs `.github/workflows/release.yml`:
 - the `vscode` job packages the `.vsix` of every target in Platforms (`node scripts/package.ts --all`)
   with the compiler binaries of the Binaries workflow;
 - `github-release` attaches them to the tag's GitHub release;
-- `vscode-marketplace` and `vscode-open-vsx` publish them, after npm, on real releases
-  (`LUMIOSE_PUBLISH`) of `x.y.z` versions. Pre-release versions (`x.y.z-*`) are only on the GitHub
-  release: the Marketplace takes no such versions, and never publishes a version twice.
+- `vscode-marketplace` and `vscode-open-vsx` download the release's files and publish them, on
+  real releases (`LUMIOSE_PUBLISH`) of `x.y.z` versions. Pre-release versions (`x.y.z-*`) are only
+  on the GitHub release: the Marketplace takes no such versions, and never publishes a version
+  twice.
 
 A manual run of the workflow, or one without `LUMIOSE_PUBLISH`, packages the files and publishes
-nothing.
+nothing. To publish the extension of an existing release, such as one whose registry jobs failed or
+ran before their setup, run the workflow with `vscode_release`: only the two registry jobs run.
+
+```sh
+gh workflow run release.yml -f vscode_release=v0.8.1
+```
+
+The Marketplace's web page takes one `.vsix` per upload, while a release has one per platform:
+`vsce publish --packagePath` publishes them all at once, which is what the workflow runs.
 
 ### One-time setup
 
-**VS Code Marketplace** (publisher `lumiose`). Azure DevOps global personal access tokens can no
-longer be created and stop working on 2026-12-01, so the job signs in with Microsoft Entra ID,
-without a secret
-([Microsoft's steps](https://code.visualstudio.com/api/working-with-extensions/publishing-extension)):
-
-1. In Microsoft Entra ID (Azure portal), register an application, or create a user-assigned managed
-   identity.
-2. Add a federated credential to it: issuer `https://token.actions.githubusercontent.com`, subject
-   `repo:itsjavi/lumiose:environment:vscode-marketplace`, audience `api://AzureADTokenExchange`.
-3. Add it to the `lumiose` publisher as a Contributor, as Microsoft's steps describe.
-4. Set the repository variables `VSCE_AZURE_CLIENT_ID` (its application or client ID) and
-   `VSCE_AZURE_TENANT_ID`. The job's `vscode-marketplace` environment is created on the first run;
-   its settings can limit it to `v*` tags.
-
-Without the variables the job only warns. A publisher owned by a personal account may be refused
-with "corporate credentials required" (microsoft/vscode-vsce#1023). In both cases, upload the
-GitHub release's `.vsix` files by hand: open the extension on the publisher's management page and
-update it with each file.
+**VS Code Marketplace** (publisher `lumiose`). The job uses trusted publishing
+(`vsce publish --oidc`): vsce exchanges the job's GitHub Actions identity for a short-lived
+Marketplace credential, so there is no token to store or renew. On the publisher's management page
+(https://marketplace.visualstudio.com/manage/publishers/lumiose), add a trusted publishing policy for
+the repository `itsjavi/lumiose` and the workflow `release.yml`.
 
 **Open VSX** (namespace `lumiose`), for Cursor, VSCodium and other forks:
 

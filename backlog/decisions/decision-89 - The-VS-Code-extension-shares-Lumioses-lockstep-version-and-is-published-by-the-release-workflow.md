@@ -21,6 +21,6 @@ User decision, 2026-10-25.
 ## Consequences
 
 - The release script bumps `packages/vscode/package.json` although the package is private (not on npm).
-- Marketplace publishing authenticates with Microsoft Entra ID, since Azure DevOps global PATs can no longer be created (2026-03-15) and stop working on 2026-12-01. If that fails for a personal publisher, the release's `.vsix` files can be uploaded by hand on the publisher's page.
+- Marketplace publishing uses trusted publishing (`vsce publish --oidc`, vsce 4, a policy on the publisher for this repository and `release.yml`), like npm and Open VSX: Azure DevOps global PATs can no longer be created (2026-03-15) and stop working on 2026-12-01. It replaced a first Microsoft Entra ID setup the same day. The Marketplace's web page takes one `.vsix` per upload, so hand uploads do not fit platform-specific packages; a manual run of the workflow with `vscode_release` publishes an existing release's files instead.
 - TASK-594 builds the job and documents the maintainer setup.
 
