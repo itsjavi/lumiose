@@ -1,0 +1,9 @@
+{
+  "name": "stsx-workspace",
+  "private": true,
+  "type": "module",
+  "devDependencies": {
+    "@lumiose/stsx": "*",
+    "react": "*"
+  }
+}

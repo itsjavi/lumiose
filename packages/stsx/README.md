@@ -90,6 +90,17 @@ stsx typegen && tsc
 of the `.stsx` file. To keep the shadows somewhere else, name that directory `stsx` in `rootDirs`
 (`[".", ".types/stsx"]`). Add `.lumiose/` to `.gitignore`.
 
+## Editors
+
+The Lumiose VS Code extension (and `@lumiose/language-server`, which it bundles, for other editors)
+works in any project with `.stsx` files. In a project that depends on `@lumiose/stsx` and not on `lumiose`, it runs in **stsx mode**:
+
+- TypeScript features through the shadows (`.lumiose/stsx`): completion, hover, go to
+  definition, rename and type errors at the right place in the `.stsx` file;
+- CSS features in `<style>` blocks, and class names between JSX (`class`, `className`, Solid's
+  `classList`) and the blocks: completion, go to definition, rename, unused selectors;
+- none of Lumiose's runtime checks or hovers, which do not apply to your framework.
+
 ## Options
 
 ```ts

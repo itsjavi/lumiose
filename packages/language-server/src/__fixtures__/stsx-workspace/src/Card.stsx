@@ -1,0 +1,16 @@
+import { useCount } from "./count.ts";
+
+export function Card(props: { title: string }) {
+  const count = useCount();
+  const label: string = count;
+  return (
+    <section className="card">
+      <style>
+        .card { padding: 1rem; }
+        .unused { color: red; }
+      </style>
+      <h2 className="">{props.title}</h2>
+      <p>{label}</p>
+    </section>
+  );
+}

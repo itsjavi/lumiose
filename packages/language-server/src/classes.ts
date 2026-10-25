@@ -1,7 +1,8 @@
 // Class names on both sides of an `.stsx` file (spec §9.2 cross-language features):
 // - selector classes in style blocks (`.button` in `.button:hover { … }`);
 // - class usages in JSX `class` attributes: `class="a b"`, `class={["a", on && "b"]}`,
-//   `class={{ a: on, "b-c": off }}`.
+//   `class={{ a: on, "b-c": off }}`; also `className` (React) and Solid's `classList` in projects
+//   that use `.stsx` through @lumiose/stsx (decision-86).
 // Both are found lexically on texts that keep source offsets (the virtual CSS and the masked
 // TSX), so every occurrence is a UTF-16 range in the source.
 
@@ -126,7 +127,7 @@ function skipCssString(css: string, i: number, to: number): number {
 /** `class` attributes in masked TSX: the class names they contain and their editable slots. */
 export function classAttributes(tsx: string): ClassAttributes {
   const result: ClassAttributes = { usages: [], slots: [] };
-  for (const match of tsx.matchAll(/(?<=\s)class\s*=\s*/g)) {
+  for (const match of tsx.matchAll(/(?<=\s)(?:class|className|classList)\s*=\s*/g)) {
     const start = match.index + match[0].length;
     const c = tsx[start];
     if (c === '"' || c === "'") {

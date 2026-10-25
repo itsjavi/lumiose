@@ -102,6 +102,7 @@ import {
 import { propertyContext, propertyDeclarations } from "./properties.ts";
 import { rewriteUris } from "./rewrite.ts";
 import { syncShadows } from "./shadows.ts";
+import { isStsxProject, syncStsxShadows } from "./stsx-mode.ts";
 import { snippetCompletions } from "./snippets.ts";
 import { StsxSnapshot, type CssBlock } from "./stsx.ts";
 import {
@@ -544,7 +545,9 @@ export function startServer(connection: Connection, options: ServerOptions = {})
   async function syncRoot(root: string): Promise<void> {
     syncedRoots.add(root);
     try {
-      const { files: synced, layout } = await syncShadows(root);
+      const { files: synced, layout } = isStsxProject(root)
+        ? await syncStsxShadows(root)
+        : await syncShadows(root);
       projects.setLayout(root, layout);
       // Used packages' files are indexed by their own project.
       for (const file of synced) {
@@ -586,10 +589,10 @@ export function startServer(connection: Connection, options: ServerOptions = {})
     }
     for (const [root, rootChanges] of byRoot) {
       try {
-        const { files: synced } = await syncShadows(root, {
-          files: rootChanges.map((change) => change.path),
-          layout: projects.layoutFor(root),
-        });
+        const paths = rootChanges.map((change) => change.path);
+        const { files: synced } = isStsxProject(root)
+          ? await syncStsxShadows(root, paths)
+          : await syncShadows(root, { files: paths, layout: projects.layoutFor(root) });
         const found = new Set(synced.map((file) => fileKey(file.source)));
         for (const file of synced) {
           if (file.own) indexStyles(file.source, root, file.text, file.scan);
@@ -1297,8 +1300,13 @@ export function startServer(connection: Connection, options: ServerOptions = {})
       : documented;
   });
 
-  /** Adds the execution contract of the JSX expression under the cursor (TASK-137). */
+  /**
+   * Adds the execution contract of the JSX expression under the cursor (TASK-137), in Lumiose
+   * projects only: stsx-mode projects run another framework's JSX.
+   */
   function withContract(hover: Hover | null, file: OpenFile, offset: number): Hover | null {
+    const filePath = uriToPath(file.uri);
+    if (filePath !== undefined && isStsxProject(projects.rootFor(filePath))) return hover;
     const { document } = file;
     if (file.contract?.version !== document.version) {
       const path = uriToPath(file.uri) ?? file.uri;

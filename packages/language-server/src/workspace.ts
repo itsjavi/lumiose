@@ -1,5 +1,6 @@
 // File URIs, Lumiose project roots and the source ↔ shadow mapping (spec §9.1):
-// `<root>/src/a/B.stsx` ↔ `<root>/.lumiose/shadow/src/a/B.stsx.tsx`. A project whose tsconfig
+// `<root>/src/a/B.stsx` ↔ `<root>/.lumiose/shadow/src/a/B.stsx.tsx`, or in an stsx-mode project
+// (./stsx-mode.ts) `<root>/src/a/B.stsx` ↔ `<root>/.lumiose/stsx/src/a/B.stsx.tsx`. A project whose tsconfig
 // extends the generated `.lumiose/tsconfig.generated.json` mirrors a wider base instead (TASK-73), e.g.
 // `<base>/apps/web/src/B.stsx` ↔ `<base>/apps/web/.lumiose/shadow/apps/web/src/B.stsx.tsx`.
 
@@ -7,6 +8,7 @@ import { existsSync } from "node:fs";
 import { dirname, join, sep } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { shadowLayout, shadowPathFor, sourcePathForShadow, type ShadowLayout } from "./shadows.ts";
+import { isStsxProject, stsxLayout, stsxShadowPath } from "./stsx-mode.ts";
 
 /** macOS and Windows file systems are case-insensitive; TypeScript may report lowercased paths. */
 const caseInsensitive = process.platform === "darwin" || process.platform === "win32";
@@ -34,7 +36,7 @@ export function isStsx(uriOrPath: string): boolean {
   return /\.stsx$/i.test(uriOrPath);
 }
 
-const SHADOW_SEGMENT = /[/\\]\.lumiose[/\\]shadow[/\\]/i;
+const SHADOW_SEGMENT = /[/\\]\.lumiose[/\\](?:shadow|stsx)[/\\]/i;
 
 /** Whether a URI or path names a shadow file. */
 export function isShadow(uriOrPath: string): boolean {
@@ -52,19 +54,19 @@ export function shadowToSource(uriOrPath: string): string | undefined {
 
 /** Rewrites shadow URIs and paths embedded in text (hover markdown, diagnostic messages). */
 export function rewriteShadowText(text: string): string {
-  if (!/\.lumiose[/\\]shadow/i.test(text)) return text;
+  if (!/\.lumiose[/\\](?:shadow|stsx)/i.test(text)) return text;
   return text.replace(
-    /([/\\])\.lumiose[/\\]shadow[/\\]([^\s"'`()<>[\]]*?\.stsx)\.tsx/gi,
+    /([/\\])\.lumiose[/\\](?:shadow|stsx)[/\\]([^\s"'`()<>[\]]*?\.stsx)\.tsx/gi,
     (_, separator: string, rest: string) => separator + rest,
   );
 }
 
 /** A shadow path or URI: the project root before `/.lumiose/shadow/`, and the rest. */
-const SHADOW_PATH = /^(.*?)[/\\]\.lumiose[/\\]shadow[/\\](.*\.stsx)\.tsx$/i;
+const SHADOW_PATH = /^(.*?)[/\\]\.lumiose[/\\](?:shadow|stsx)[/\\](.*\.stsx)\.tsx$/i;
 
 /** Shadow paths embedded in text: a path or `file:` URI up to a delimiter. */
 const EMBEDDED_SHADOW =
-  /[^\s"'`()<>[\]]+?[/\\]\.lumiose[/\\]shadow[/\\][^\s"'`()<>[\]]*?\.stsx\.tsx/gi;
+  /[^\s"'`()<>[\]]+?[/\\]\.lumiose[/\\](?:shadow|stsx)[/\\][^\s"'`()<>[\]]*?\.stsx\.tsx/gi;
 
 /** Finds the Lumiose project root of a file: the nearest directory with a tsconfig or package.json. */
 export class Projects {
@@ -99,7 +101,7 @@ export class Projects {
     let layout = this.#layouts.get(root);
     if (layout === undefined) {
       try {
-        layout = shadowLayout(root);
+        layout = isStsxProject(root) ? stsxLayout(root) : shadowLayout(root);
       } catch {
         layout = { root, base: root, mirrored: join(root, "src"), packages: [], outside: [] };
       }
@@ -130,6 +132,7 @@ export class Projects {
     const path = uriToPath(sourceUri);
     if (path === undefined) return sourceUri + ".tsx";
     root ??= this.rootFor(path);
+    if (isStsxProject(root)) return pathToUri(stsxShadowPath(root, path));
     return pathToUri(shadowPathFor(root, path, this.layoutFor(root)));
   }
 
@@ -148,7 +151,7 @@ export class Projects {
 
   /** Rewrites shadow URIs and paths embedded in text (hover markdown, diagnostic messages). */
   rewriteShadowText(text: string): string {
-    if (!/\.lumiose[/\\]shadow/i.test(text)) return text;
+    if (!/\.lumiose[/\\](?:shadow|stsx)/i.test(text)) return text;
     return text.replace(EMBEDDED_SHADOW, (match) => this.shadowToSource(match) ?? match);
   }
 }

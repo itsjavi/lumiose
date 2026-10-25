@@ -1,0 +1,13 @@
+{
+  "compilerOptions": {
+    "jsx": "preserve",
+    "module": "preserve",
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "noEmit": true,
+    "strict": true,
+    "types": [],
+    "rootDirs": [".", ".lumiose/stsx"]
+  },
+  "include": ["src", ".lumiose/stsx"]
+}
