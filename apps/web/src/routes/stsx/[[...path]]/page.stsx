@@ -11,5 +11,14 @@ export function staticPaths() {
 export default function StsxPage(props: PageProps<"/stsx/[[...path]]">) {
   const page =
     findStsxPage(props.params.path ?? "") ?? notFound(`No STSX page "${props.params.path}".`);
-  return <DocArticle page={page} title={page.path === "" ? "STSX" : `${page.title} · STSX`} />;
+  return (
+    <DocArticle
+      page={page}
+      title={
+        page.path === ""
+          ? "STSX: Styled TSX with scoped CSS for React and Solid"
+          : `${page.title} · STSX`
+      }
+    />
+  );
 }

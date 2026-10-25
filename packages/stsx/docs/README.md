@@ -1,6 +1,6 @@
 # STSX
 
-> `.stsx` files are TSX plus raw-CSS `<style>` blocks, scoped by where you put them and compiled at build time to plain scoped CSS. `@lumiose/stsx` brings them to React, React Router and Solid through a Vite plugin; Lumiose apps use them natively.
+> STSX (Styled TSX): `.stsx` files are TSX with plain-CSS `<style>` blocks, scoped by placement and compiled at build time. A Vite plugin for React, React Router and Solid, and native in Lumiose.
 
 ```tsx
 // Counter.stsx (React)

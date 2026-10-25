@@ -57,7 +57,7 @@ export function DocArticle(props: DocArticleProps) {
     <div class="doc">
       <Title>{props.title}</Title>
       <Meta name="description" content={props.page.summary} />
-      <Meta property="og:title" content={props.page.title} />
+      <Meta property="og:title" content={props.title} />
       <Meta property="og:description" content={props.page.summary} />
 
       <article>

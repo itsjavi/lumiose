@@ -1,8 +1,8 @@
 # @lumiose/stsx
 
-`.stsx` files for React, Solid and other JSX frameworks: TSX plus raw-CSS `<style>` blocks,
-scoped by where you put them, compiled at build time to plain scoped CSS. No CSS-in-JS runtime, no
-class-name strings to invent.
+STSX (Styled TSX) for React, Solid and other JSX frameworks: `.stsx` files are TSX plus raw-CSS
+`<style>` blocks, scoped by where you put them, compiled at build time to plain scoped CSS. No
+CSS-in-JS runtime, no class-name strings to invent.
 
 ```tsx
 // Counter.stsx
