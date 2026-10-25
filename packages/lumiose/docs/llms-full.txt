@@ -3181,6 +3181,10 @@ lumiose({
 - Class passthrough, `:global()`, `:deep()`, `@keyframes` scoping and placement work the same in
   every combination.
 
+**Outside Lumiose.** `@lumiose/stsx` brings `.stsx` files and these style blocks to React, React
+Router and Solid through a Vite plugin, with the same placement rules, constants and
+`scopedStyles` option: see [STSX](https://itsjavi.com/lumiose/stsx/).
+
 **Blocks are plain CSS:** no Sass, no `lang`, `media` or other attributes (only `global`). For CSS
 that is not a component's own (a reset, theme tokens, a stylesheet from another project, Tailwind),
 import `.css` files or CSS modules: see "Stylesheets, CSS Modules and Tailwind" below.

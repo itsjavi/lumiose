@@ -20,7 +20,8 @@
     "stsx": "./src/bin.ts"
   },
   "files": [
-    "dist"
+    "dist",
+    "docs"
   ],
   "type": "module",
   "exports": {

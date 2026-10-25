@@ -1,0 +1,30 @@
+import { useState } from "react";
+import { brand, radius } from "./tokens.ts";
+import { Button } from "./Button.tsx";
+
+export function Counter({ label }: { label: string }) {
+  const [count, setCount] = useState(0);
+  return (
+    <div className="counter">
+      {/* Component-level block: it styles this component's elements only. */}
+      <style>
+        .counter { display: flex; gap: 12px; align-items: center; }
+        .increment {
+          background: $brand.primary;
+          color: white;
+          border: 0;
+          border-radius: $radius.sm;
+          padding: 8px 14px;
+          font: inherit;
+          cursor: pointer;
+        }
+        .value { font-variant-numeric: tabular-nums; font-weight: 600; }
+      </style>
+      {/* `Button` is another component: the class strategy passes this scope to it. */}
+      <Button className="increment" onClick={() => setCount((n) => n + 1)}>
+        {label}
+      </Button>
+      <span className="value">count: {count}</span>
+    </div>
+  );
+}

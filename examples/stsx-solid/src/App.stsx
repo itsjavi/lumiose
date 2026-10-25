@@ -1,0 +1,25 @@
+import { brand, radius } from "./tokens.ts";
+import { Counter } from "./Counter.stsx";
+
+export default function App() {
+  return (
+    <main class="page">
+      <h1>.stsx in Solid</h1>
+      <section class="card">
+        <p>Elements that Solid creates later (the dots) carry the scope too.</p>
+        <Counter label="Increment" />
+      </section>
+    </main>
+  );
+}
+
+// File-level block: every component of this file.
+<style>
+  .page { max-width: 720px; margin: 0 auto; padding: 32px 20px; }
+  h1 { color: $brand.primary; margin-top: 0; }
+  .card { background: $brand.soft; border-radius: $radius.lg; padding: 20px; }
+</style>
+
+<style global>
+  body { margin: 0; font-family: system-ui, sans-serif; background: #fffaf5; color: #1c1917; }
+</style>

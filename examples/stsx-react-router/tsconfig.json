@@ -1,0 +1,17 @@
+{
+  // React Router's route types, and the shadows that `stsx typegen` (and the Vite plugin) write
+  // for tsc to check .stsx files.
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "jsx": "react-jsx",
+    "types": ["node", "vite/client"],
+    "rootDirs": [".", "./.react-router/types", ".lumiose/stsx"]
+  },
+  "include": [
+    "app",
+    "vite.config.ts",
+    "react-router.config.ts",
+    ".react-router/types",
+    ".lumiose/stsx"
+  ]
+}

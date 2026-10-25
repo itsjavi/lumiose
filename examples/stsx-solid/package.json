@@ -1,0 +1,23 @@
+{
+  "name": "@lumiose-examples/stsx-solid",
+  "version": "0.0.0",
+  "private": true,
+  "description": "@lumiose/stsx sample: .stsx components (TSX with scoped <style> blocks) in a Solid app on Vite 8.",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "typecheck": "stsx typegen && tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "solid-js": "1.9.17"
+  },
+  "devDependencies": {
+    "@lumiose/stsx": "workspace:*",
+    "typescript": "7.0.2",
+    "vite": "^8.3.4",
+    "vite-plugin-solid": "2.11.14"
+  }
+}

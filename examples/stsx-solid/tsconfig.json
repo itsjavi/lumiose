@@ -1,0 +1,11 @@
+{
+  // The shadows that `stsx typegen` (and the Vite plugin) write let tsc check .stsx files.
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "jsx": "preserve",
+    "jsxImportSource": "solid-js",
+    "types": ["node", "vite/client"],
+    "rootDirs": [".", ".lumiose/stsx"]
+  },
+  "include": ["src", "vite.config.ts", ".lumiose/stsx"]
+}

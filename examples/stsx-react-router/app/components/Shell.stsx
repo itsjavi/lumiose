@@ -1,0 +1,27 @@
+import { brand } from "../tokens.ts";
+
+export function Shell({ nav, children }: { nav: React.ReactNode; children: React.ReactNode }) {
+  return (
+    <div className="shell">
+      <header>
+        <strong>.stsx in React Router</strong>
+        <nav>{nav}</nav>
+      </header>
+      <main>{children}</main>
+    </div>
+  );
+}
+
+<style>
+  .shell { max-width: 760px; margin: 0 auto; padding: 24px; }
+  header { display: flex; gap: 24px; align-items: baseline; border-bottom: 2px solid $brand.primary; padding-bottom: 12px; }
+  strong { color: $brand.ink; font-size: 20px; }
+  nav { display: flex; gap: 16px; }
+  /* NavLink renders the <a>, outside this file's templates: reach it with :deep(). */
+  nav :deep(a) { color: $brand.primary; text-decoration: none; }
+  nav :deep(a.active) { font-weight: 700; text-decoration: underline; }
+</style>
+
+<style global>
+  body { margin: 0; font-family: system-ui, sans-serif; background: #f8fafc; color: #0f172a; }
+</style>

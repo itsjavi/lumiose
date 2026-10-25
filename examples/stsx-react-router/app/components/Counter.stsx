@@ -1,0 +1,24 @@
+import { useState } from "react";
+import { brand, radius } from "../tokens.ts";
+
+export function Counter({ start }: { start: number }) {
+  const [count, setCount] = useState(start);
+  return (
+    <div className="counter">
+      <style>
+        .counter { display: flex; gap: 12px; align-items: center; }
+        button {
+          background: $brand.primary;
+          color: white;
+          border: 0;
+          border-radius: $radius.sm;
+          padding: 8px 14px;
+          font: inherit;
+        }
+        output { font-weight: 600; font-variant-numeric: tabular-nums; }
+      </style>
+      <button onClick={() => setCount((n) => n + 1)}>Increment</button>
+      <output>count: {count}</output>
+    </div>
+  );
+}

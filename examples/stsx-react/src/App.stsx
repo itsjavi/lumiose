@@ -1,0 +1,39 @@
+import { BREAKPOINT, brand, radius } from "./tokens.ts";
+import { Counter } from "./Counter.stsx";
+
+export default function App() {
+  return (
+    <main className="page">
+      <h1>.stsx in React</h1>
+      <section className="card">
+        <h2>Scoped styles, plain CSS</h2>
+        <p>
+          The <code>&lt;style&gt;</code> blocks of this file style its elements only, with constants
+          from <code>tokens.ts</code>.
+        </p>
+        <Counter label="Increment" />
+      </section>
+    </main>
+  );
+}
+
+// File-level block: every component of this file.
+<style>
+  .page { max-width: 720px; margin: 0 auto; padding: 32px 20px; }
+  h1 { color: $brand.primary; margin-top: 0; }
+  .card {
+    background: $brand.soft;
+    border-radius: $radius.lg;
+    padding: 20px;
+    display: grid;
+    gap: 12px;
+  }
+  h2 { color: $brand.ink; margin: 0; font-size: 1.25rem; }
+  @media (width < $BREAKPOINT) {
+    .page { padding: 16px; }
+  }
+</style>
+
+<style global>
+  body { margin: 0; font-family: system-ui, sans-serif; background: #fafafa; color: #1f2937; }
+</style>

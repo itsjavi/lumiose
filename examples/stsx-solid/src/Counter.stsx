@@ -1,0 +1,32 @@
+import { createSignal, For } from "solid-js";
+import { brand, radius } from "./tokens.ts";
+
+export function Counter(props: { label: string }) {
+  const [count, setCount] = createSignal(0);
+  return (
+    <div class="counter">
+      {/* Component-level block: it styles this component's elements only. */}
+      <style>
+        .counter { display: grid; gap: 10px; }
+        .row { display: flex; gap: 12px; align-items: center; }
+        button {
+          background: $brand.primary;
+          color: white;
+          border: 0;
+          border-radius: $radius.sm;
+          padding: 8px 14px;
+          font: inherit;
+        }
+        .dots { display: flex; gap: 6px; }
+        .dot { width: 14px; height: 14px; border-radius: 50%; background: $brand.primary; }
+      </style>
+      <div class="row">
+        <button onClick={() => setCount((n) => n + 1)}>{props.label}</button>
+        <span>count: {count()}</span>
+      </div>
+      <div class="dots">
+        <For each={Array.from({ length: count() })}>{() => <span class="dot" />}</For>
+      </div>
+    </div>
+  );
+}
