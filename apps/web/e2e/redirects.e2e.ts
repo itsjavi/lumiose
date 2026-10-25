@@ -52,7 +52,7 @@ for (const [from, to] of cases) {
 
 test("the examples index moved to the showcase", async ({ page, baseURL }) => {
   await page.goto("/examples");
-  await page.waitForURL(`${baseURL}/showcase`);
+  await page.waitForURL(`${baseURL}/showcase/`);
   await expect(page.getByRole("heading", { level: 1, name: "Made with Lumiose" })).toBeVisible();
 });
 

@@ -30,7 +30,7 @@ function preview(page: Page, id?: string) {
 test("the UI section is in the site navigation, with a page per component", async ({ page }) => {
   await page.goto("/");
   await page.getByRole("navigation", { name: "Main" }).getByRole("link", { name: "UI" }).click();
-  await expect(page).toHaveURL(/\/ui$/);
+  await expect(page).toHaveURL(/\/ui\/$/);
   await expect(page).toHaveTitle("Lumiose UI: accessible components on native HTML");
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("UI components");
   const nav = page.getByRole("navigation", { name: "UI" });
@@ -44,7 +44,7 @@ test("the UI section is in the site navigation, with a page per component", asyn
   }
   for (const name of COMPONENTS) {
     await nav.getByRole("link", { name, exact: true }).click();
-    await expect(page).toHaveURL(new RegExp(`/ui/${name.toLowerCase().replaceAll(" ", "-")}$`));
+    await expect(page).toHaveURL(new RegExp(`/ui/${name.toLowerCase().replaceAll(" ", "-")}/$`));
     await expect(page.getByRole("heading", { level: 1 })).toHaveText(name);
     await expect(page).toHaveTitle(`${name} · Lumiose UI`);
     // A live demo at the top, and every live example above its code.
@@ -160,9 +160,9 @@ test("the old /docs/ui URLs redirect to /ui, and the docs list the UI pages", as
   baseURL,
 }) => {
   for (const [from, to] of [
-    ["/docs/ui", "/ui"],
-    ["/docs/ui/dialog", "/ui/dialog"],
-    ["/lumiose/docs/ui/tabs", "/lumiose/ui/tabs"],
+    ["/docs/ui", "/ui/"],
+    ["/docs/ui/dialog", "/ui/dialog/"],
+    ["/lumiose/docs/ui/tabs", "/lumiose/ui/tabs/"],
   ] as const) {
     await page.goto(from);
     await page.waitForURL(`${baseURL}${to}`);
@@ -170,7 +170,7 @@ test("the old /docs/ui URLs redirect to /ui, and the docs list the UI pages", as
   await page.goto("/docs/concepts/islands");
   await expect(
     page.getByRole("navigation", { name: "Docs" }).getByRole("link", { name: "Popover" }),
-  ).toHaveAttribute("href", "/ui/popover");
+  ).toHaveAttribute("href", "/ui/popover/");
 });
 
 test("search finds the UI pages", async ({ page }) => {

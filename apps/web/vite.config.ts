@@ -10,6 +10,8 @@ import { devMounts } from "./scripts/dev-mounts.ts";
 // and benchmark UIs) from their builds.
 export default defineConfig({
   base: process.env["LUMIOSE_BASE"] ?? "/",
-  plugins: [devMounts(), lumiose({ mode: "static" })],
+  // GitHub Pages serves each page from its folder's index.html and redirects /docs to /docs/, so
+  // href() writes the slash and links skip the redirect (TASK-598).
+  plugins: [devMounts(), lumiose({ mode: "static", trailingSlash: "always" })],
   test: { include: ["src/**/*.test.ts"] },
 });

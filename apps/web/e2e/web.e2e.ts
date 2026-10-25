@@ -48,7 +48,7 @@ test("the landing page presents Lumiose with benchmark evidence", async ({ page 
   );
   await expect(page.getByRole("link", { name: "Get started" }).first()).toHaveAttribute(
     "href",
-    "/docs/getting-started",
+    "/docs/getting-started/",
   );
   await expect(page.getByRole("link", { name: "Compare the stacks" })).toHaveAttribute(
     "href",
@@ -201,7 +201,7 @@ test("diagnostics have pages, and the printed URLs redirect to them", async ({ p
   await page.goto("/docs/errors");
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("Diagnostics");
   await page.goto("/errors/LUM2001");
-  await expect(page).toHaveURL(/\/docs\/errors\/LUM2001$/);
+  await expect(page).toHaveURL(/\/docs\/errors\/LUM2001\/$/);
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(/LUM2001/);
 });
 
@@ -213,14 +213,14 @@ test("llms.txt and llms-full.txt are served at the root, and the UI's below /ui"
   expect(llms.headers()["content-type"]).toContain("text/plain");
   const text = await llms.text();
   expect(text).toMatch(/^# Lumiose/);
-  expect(text).toContain("](/docs/concepts/signals)");
+  expect(text).toContain("](/docs/concepts/signals/)");
   expect(text).not.toMatch(/\]\([^)]+\.md\)/);
   const full = await request.get("/llms-full.txt");
   expect(await full.text()).toContain("<!-- source: concepts/signals.md -->");
   // @lumiose/ui's docs ship in their own package, with their own index (decision-64).
   const ui = await request.get("/ui/llms.txt");
   expect(ui.ok()).toBe(true);
-  expect(await ui.text()).toContain("](/ui/dialog)");
+  expect(await ui.text()).toContain("](/ui/dialog/)");
   const uiFull = await request.get("/ui/llms-full.txt");
   expect(await uiFull.text()).toContain("<!-- source: dialog.md -->");
 });

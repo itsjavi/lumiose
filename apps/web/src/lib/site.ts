@@ -22,7 +22,7 @@ export function sitePath(pathname: string): string {
 
 /** The docs page of a diagnostic's docs topic (`errors/LUM2001` or `diagnostics/LUM2001`). */
 export function docsLink(topic: string): string {
-  return link(`/docs/${topic.replace(/^diagnostics\//, "errors/")}`);
+  return href("/docs/[[...path]]", { path: topic.replace(/^diagnostics\//, "errors/") });
 }
 
 /** The source repository. */
