@@ -5,7 +5,7 @@ status: In Progress
 assignee:
   - '@Lux'
 created_date: '2026-10-25 03:02'
-updated_date: '2026-10-25 03:14'
+updated_date: '2026-10-25 03:24'
 labels: []
 milestone: m-14
 dependencies: []
@@ -20,7 +20,7 @@ Release M14 (@lumiose/stsx's first release, the scopedStyles option) and the fix
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 The user published the @lumiose/stsx placeholder and set its trusted publisher
+- [x] #1 The user published the @lumiose/stsx placeholder and set its trusted publisher
 - [x] #2 The delta security review ran and its findings are tasks; those fixed before the release are named in the notes
 - [x] #3 pnpm check and pnpm pack:check pass
 - [ ] #4 The user approved the release and the push in chat; pnpm release:version 0.8.0 ran and the release is published
@@ -45,4 +45,6 @@ Release M14 (@lumiose/stsx's first release, the scopedStyles option) and the fix
 2026-10-25 (Lux): pnpm check green (vitest 2670 passed, 2 skipped; cargo and scripts ok). pnpm pack:check packs 16 packages, @lumiose/stsx included (25 files). node scripts/release.ts 0.8.0 --dry-run: 0.7.1 -> 0.8.0, every lockstep package.json including packages/stsx, the generated loader and llms files, and a CHANGELOG section with the M14 features and fixes. Waiting for the user: the placeholder publish and trusted publisher, whether TASK-588 is fixed before the release, then approval to release and push.
 
 2026-10-25 (Lux): fixed before the release at the user's request: TASK-588, TASK-589 and TASK-590. Affected suites green after the fixes: lumiose 1222, @lumiose/vite 265, @lumiose/stsx 26, the stsx examples 8; typecheck and lint clean (existing warnings only).
+
+2026-10-25 (Lux): the user published @lumiose/stsx@0.0.0 (latest on npm) and set its trusted publisher. pnpm release:version 0.8.0 ran with the scale gate against v0.7.1: production build 0.999x, dev cold start 0.960x, HMR 1.012x, peak RSS 0.990x. Release commit 77df701d (every lockstep package at 0.8.0, @lumiose/stsx included; @lumiose/ui stays 0.2.0) and tag v0.8.0, local. Waiting for the user's approval to push main and v0.8.0.
 <!-- SECTION:NOTES:END -->
