@@ -1,27 +1,16 @@
 // The dev server answers 403 for `.stsx` files outside `server.fs.allow` (TASK-588), as Vite does
 // for the files it loads itself: the plugin reads `.stsx` files in its own load hook, which Vite
 // does not check.
-import {
-  cpSync,
-  mkdirSync,
-  mkdtempSync,
-  realpathSync,
-  rmSync,
-  symlinkSync,
-  writeFileSync,
-} from "node:fs";
+import { mkdirSync, writeFileSync } from "node:fs";
 import { createServer as createHttpServer } from "node:http";
 import type { AddressInfo } from "node:net";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
-import { fileURLToPath } from "node:url";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import react from "@vitejs/plugin-react";
-import { createLogger, createServer, normalizePath, type ViteDevServer } from "vite";
+import { createLogger, createServer, type ViteDevServer } from "vite";
+import { cacheDirOf, copyFixture, removeDir, tempDir } from "../test/project.ts";
 import stsx from "./index.ts";
 
 const binding = await import("@lumiose/compiler").catch(() => undefined);
-const packageDir = fileURLToPath(new URL("..", import.meta.url));
 
 let base: string;
 let root: string;
@@ -30,11 +19,9 @@ let server: ViteDevServer;
 
 beforeEach(async () => {
   if (!binding) return;
-  base = normalizePath(realpathSync.native(mkdtempSync(join(tmpdir(), "lumiose-stsx-fs-"))));
-  root = `${base}/app`;
+  base = tempDir("fs-access");
+  root = copyFixture("react", `${base}/app`);
   outside = `${base}/outside`;
-  cpSync(join(packageDir, "test/fixtures/react"), root, { recursive: true });
-  symlinkSync(join(packageDir, "node_modules"), join(root, "node_modules"), "junction");
   mkdirSync(outside);
   writeFileSync(
     `${outside}/Secret.stsx`,
@@ -46,6 +33,7 @@ beforeEach(async () => {
   );
   server = await createServer({
     root,
+    cacheDir: cacheDirOf(root),
     configFile: false,
     customLogger: createLogger("silent"),
     plugins: [stsx({ classAttribute: "className" }), react()],
@@ -56,7 +44,7 @@ beforeEach(async () => {
 
 afterEach(async () => {
   await server?.close();
-  if (base) rmSync(base, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
+  if (base) removeDir(base);
 });
 
 describe.skipIf(!binding)("server.fs.allow", () => {
@@ -74,7 +62,6 @@ describe.skipIf(!binding)("server.fs.allow", () => {
       for (const path of [
         `${fsUrl}/Secret.stsx`,
         `${fsUrl}/Secret.stsx?import`,
-        `${fsUrl}/Secret.stsx?raw`,
         `${fsUrl}/Secret.stsx.tsx`,
         `${fsUrl}/Secret.stsx.css`,
         `${fsUrl}/Secret.stsx.css?direct`,
@@ -83,6 +70,11 @@ describe.skipIf(!binding)("server.fs.allow", () => {
         expect([path, status]).toEqual([path, 403]);
         expect(body).not.toContain("secret");
       }
+      // `?raw` is Vite's own file import, which the plugin leaves alone: Vite refuses it, with a 403
+      // on macOS and Linux and a 404 on Windows CI.
+      const [raw, rawBody] = await get(`${fsUrl}/Secret.stsx?raw`);
+      expect([403, 404]).toContain(raw);
+      expect(rawBody).not.toContain("secret");
       // Files inside it load.
       const [status, body] = await get("/App.stsx");
       expect(status).toBe(200);

@@ -2,45 +2,38 @@
 // (default `.lumiose/stsx`), stale shadows removed, the tsconfig hint, fresh shadows from the dev
 // server, and stock `tsc` checking React and Solid projects through them.
 import { spawnSync } from "node:child_process";
-import {
-  cpSync,
-  existsSync,
-  mkdirSync,
-  mkdtempSync,
-  readFileSync,
-  realpathSync,
-  rmSync,
-  symlinkSync,
-  writeFileSync,
-} from "node:fs";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
-import { fileURLToPath } from "node:url";
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { createRequire } from "node:module";
+import { dirname, join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { createLogger, createServer } from "vite";
+import { cacheDirOf, copyFixture, removeDir } from "../test/project.ts";
 import { main } from "./cli.ts";
 import stsx from "./index.ts";
 
 const binding = await import("@lumiose/compiler").catch(() => undefined);
-const packageDir = fileURLToPath(new URL("..", import.meta.url));
-const tsc = join(packageDir, "../../node_modules/.bin/tsc");
+// TypeScript's own entry, run with Node: node_modules/.bin/tsc is a shell script, which Windows
+// cannot spawn.
+const tsc = join(
+  dirname(createRequire(import.meta.url).resolve("typescript/package.json")),
+  "bin/tsc",
+);
 const dirs: string[] = [];
 
-/** A copy of a fixture with the package's node_modules, and `tsconfig` as its tsconfig.json. */
+/** A copy of a fixture (../test/project.ts), with `tsconfig` as its tsconfig.json. */
 function project(fixture: string, tsconfig?: object): string {
-  const root = realpathSync.native(mkdtempSync(join(tmpdir(), "lumiose-stsx-types-")));
+  const root = copyFixture(
+    fixture,
+    undefined,
+    (path) => !path.includes(".lumiose") && !path.endsWith("Broken.stsx"),
+  );
   dirs.push(root);
-  cpSync(join(packageDir, "test/fixtures", fixture), root, {
-    recursive: true,
-    filter: (path) => !path.includes(".lumiose") && !path.endsWith("Broken.stsx"),
-  });
-  symlinkSync(join(packageDir, "node_modules"), join(root, "node_modules"), "junction");
   if (tsconfig) writeFileSync(join(root, "tsconfig.json"), JSON.stringify(tsconfig, null, 2));
   return root;
 }
 
 afterEach(() => {
-  for (const dir of dirs.splice(0)) rmSync(dir, { recursive: true, force: true });
+  for (const dir of dirs.splice(0)) removeDir(dir);
 });
 
 const COMPILER_OPTIONS = {
@@ -56,7 +49,9 @@ const COMPILER_OPTIONS = {
 };
 
 function typecheck(root: string): { status: number | null; output: string } {
-  const result = spawnSync(tsc, ["-p", join(root, "tsconfig.json")], { encoding: "utf8" });
+  const result = spawnSync(process.execPath, [tsc, "-p", join(root, "tsconfig.json")], {
+    encoding: "utf8",
+  });
   return { status: result.status, output: result.stdout + result.stderr };
 }
 
@@ -91,6 +86,7 @@ describe.skipIf(!binding)("stsx typegen", () => {
     const root = project("react");
     const server = await createServer({
       root,
+      cacheDir: cacheDirOf(root),
       configFile: false,
       customLogger: createLogger("silent"),
       plugins: [stsx({ classAttribute: "className" })],
@@ -122,6 +118,7 @@ describe.skipIf(!binding)("stsx typegen", () => {
     const stray = join(root, ".lumiose", `${linked.split(/[\\/]/).pop()}/Linked.stsx.tsx`);
     const server = await createServer({
       root,
+      cacheDir: cacheDirOf(root),
       configFile: false,
       customLogger: createLogger("silent"),
       plugins: [stsx({ classAttribute: "className" })],

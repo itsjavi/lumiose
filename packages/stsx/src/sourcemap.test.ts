@@ -7,6 +7,7 @@ import { describe, expect, it } from "vitest";
 import react from "@vitejs/plugin-react";
 import solid from "vite-plugin-solid";
 import { build, createLogger, createServer, type PluginOption, type Rolldown } from "vite";
+import { sharedCacheDir } from "../test/project.ts";
 import stsx from "./index.ts";
 
 const binding = await import("@lumiose/compiler").catch(() => undefined);
@@ -124,6 +125,7 @@ describe.skipIf(!binding)("stsx() source maps", () => {
   it("map dev code and stylesheets to the .stsx source", async () => {
     const server = await createServer({
       root: fixture("react"),
+      cacheDir: sharedCacheDir("sourcemap"),
       configFile: false,
       customLogger: createLogger("silent"),
       plugins: [stsx({ classAttribute: "className" }), react()],

@@ -12,6 +12,7 @@ import {
   type PluginOption,
   type Rolldown,
 } from "vite";
+import { sharedCacheDir } from "../test/project.ts";
 import stsx, { type StsxOptions } from "./index.ts";
 
 const binding = await import("@lumiose/compiler").catch(() => undefined);
@@ -23,6 +24,7 @@ function config(name: string, plugins: PluginOption[], warnings: string[] = []):
   logger.warn = (message) => void warnings.push(message);
   return {
     root: fixture(name),
+    cacheDir: sharedCacheDir("plugin"),
     configFile: false,
     customLogger: logger,
     plugins,

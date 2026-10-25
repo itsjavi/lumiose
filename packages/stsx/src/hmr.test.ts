@@ -3,32 +3,15 @@
 // module. React Router's `react-router-server-change-trigger-client-hmr` reloads the client copy of
 // every module a hook passes on, in every environment; a stand-in for it checks that no update is
 // sent twice.
-import {
-  cpSync,
-  mkdtempSync,
-  readFileSync,
-  realpathSync,
-  rmSync,
-  symlinkSync,
-  writeFileSync,
-} from "node:fs";
-import { tmpdir } from "node:os";
+import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { fileURLToPath } from "node:url";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import react from "@vitejs/plugin-react";
-import {
-  createLogger,
-  createServer,
-  normalizePath,
-  type HotPayload,
-  type Plugin,
-  type ViteDevServer,
-} from "vite";
+import { createLogger, createServer, type HotPayload, type Plugin, type ViteDevServer } from "vite";
+import { cacheDirOf, copyFixture, removeDir } from "../test/project.ts";
 import stsx from "./index.ts";
 
 const binding = await import("@lumiose/compiler").catch(() => undefined);
-const packageDir = fileURLToPath(new URL("..", import.meta.url));
 
 /** What React Router's dev plugin does with the modules a hot update hook passes on. */
 const echoToClient: Plugin = {
@@ -47,11 +30,10 @@ let server: ViteDevServer;
 
 beforeEach(async () => {
   if (!binding) return;
-  root = normalizePath(realpathSync.native(mkdtempSync(join(tmpdir(), "lumiose-stsx-hmr-"))));
-  cpSync(join(packageDir, "test/fixtures/react"), root, { recursive: true });
-  symlinkSync(join(packageDir, "node_modules"), join(root, "node_modules"), "junction");
+  root = copyFixture("react");
   server = await createServer({
     root,
+    cacheDir: cacheDirOf(root),
     configFile: false,
     customLogger: createLogger("silent"),
     plugins: [stsx({ classAttribute: "className" }), react(), echoToClient],
@@ -67,7 +49,7 @@ beforeEach(async () => {
 
 afterEach(async () => {
   await server?.close();
-  if (root) rmSync(root, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
+  if (root) removeDir(root);
 });
 
 /** The update paths the client receives while `edit` changes `file` (the watcher is driven by hand). */
@@ -126,13 +108,10 @@ describe.skipIf(!binding)("stsx() hot updates", () => {
 describe.skipIf(!binding)("stsx() hot updates with Solid", () => {
   it("replaces only the stylesheet on a style-only edit, once", async () => {
     const { default: solid } = await import("vite-plugin-solid");
-    const dir = normalizePath(
-      realpathSync.native(mkdtempSync(join(tmpdir(), "lumiose-stsx-solid-"))),
-    );
-    cpSync(join(packageDir, "test/fixtures/solid"), dir, { recursive: true });
-    symlinkSync(join(packageDir, "node_modules"), join(dir, "node_modules"), "junction");
+    const dir = copyFixture("solid");
     const solidServer = await createServer({
       root: dir,
+      cacheDir: cacheDirOf(dir),
       configFile: false,
       customLogger: createLogger("silent"),
       plugins: [stsx({ classAttribute: "class" }), solid(), echoToClient],
@@ -153,7 +132,7 @@ describe.skipIf(!binding)("stsx() hot updates with Solid", () => {
       await new Promise((done) => setTimeout(done, 100));
     } finally {
       await solidServer.close();
-      rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
+      removeDir(dir);
     }
     expect(paths).toEqual(["/App.stsx.css"]);
   });
