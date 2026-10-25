@@ -1,7 +1,7 @@
 // The playground page, prerendered inside the site's layout (header and footer). The Playground
 // island loads the WebAssembly compiler, the preview runtime and the editor in the browser, so only
 // this page fetches them.
-import { Meta, Title } from "lumiose";
+import { PageMeta } from "../../components/PageMeta.tsx";
 import { Playground } from "../../islands/Playground.stsx";
 
 const description =
@@ -10,10 +10,11 @@ const description =
 export default function PlaygroundPage() {
   return (
     <div class="playground-page">
-      <Title>Playground · Lumiose</Title>
-      <Meta name="description" content={description} />
-      <Meta property="og:title" content="Lumiose playground" />
-      <Meta property="og:description" content={description} />
+      <PageMeta
+        title="Lumiose playground: try .stsx components in the browser"
+        ogTitle="Lumiose playground"
+        description={description}
+      />
       <h1 class="visually-hidden">Playground</h1>
       <Playground client:load />
     </div>

@@ -28,6 +28,62 @@ export function docsLink(topic: string): string {
 /** The source repository. */
 export const REPOSITORY = "https://github.com/itsjavi/lumiose";
 
+/** The site's public origin (the GitHub Pages custom domain), for absolute URLs in the head. */
+export const SITE_URL = "https://lumiose.dev";
+
+/** The absolute URL of a site path: canonical links and Open Graph URLs must be absolute. */
+export function absoluteUrl(path: string): string {
+  return new URL(link(path), SITE_URL).href;
+}
+
+/**
+ * The canonical URL of a request path: GitHub Pages serves a page from its folder's index.html and
+ * redirects the path without a trailing slash, so pages get one (as in sitemap.xml).
+ */
+export function canonicalUrl(pathname: string): string {
+  const path = sitePath(pathname);
+  return absoluteUrl(path.endsWith("/") || /\.[a-z0-9]+$/i.test(path) ? path : `${path}/`);
+}
+
+/**
+ * A meta description of at most `max` characters: whole sentences when at least 100 characters of
+ * them fit, else the text cut at a word, with "…". Search results show about 160.
+ */
+export function metaDescription(text: string, max = 160): string {
+  const clean = text.replace(/\s+/g, " ").trim();
+  if (clean.length <= max) return clean;
+  let end = 0;
+  for (const match of clean.matchAll(/[.!?](?=\s)/g)) {
+    if (match.index + 1 > max) break;
+    end = match.index + 1;
+  }
+  if (end >= 100) return clean.slice(0, end);
+  const cut = clean.slice(0, clean.lastIndexOf(" ", max - 1)).replace(/[\s,;:(–-]+$/, "");
+  return `${cut}…`;
+}
+
+/** An Open Graph image in public/og (1200×630, scripts/og-images.ts). */
+export interface OgImage {
+  path: string;
+  alt: string;
+}
+
+/** The home page's image is every page's default; /stsx and /ui have their own. */
+export const ogImages = {
+  home: {
+    path: "/og/home.png",
+    alt: "Lumiose: Feels like React. Runs like vanilla JS. TSX with scoped CSS, signals, and 0 kB of JavaScript until a page needs it.",
+  },
+  stsx: {
+    path: "/og/stsx.png",
+    alt: "STSX: scoped CSS in your TSX. Plain-CSS style blocks, scoped by placement, compiled at build time, next to a React counter component.",
+  },
+  ui: {
+    path: "/og/ui.png",
+    alt: "Lumiose UI: accessible UI on native HTML. Dialogs, menus, comboboxes and more, server-rendered without hydration.",
+  },
+} satisfies Record<string, OgImage>;
+
 export const site = {
   name: "Lumiose",
   tagline: "Feels like React. Runs like vanilla JS.",

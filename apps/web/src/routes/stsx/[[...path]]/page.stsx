@@ -3,6 +3,7 @@
 import { notFound, type PageProps } from "lumiose";
 import { DocArticle } from "../../../components/DocArticle.stsx";
 import { findStsxPage, stsxPages } from "../../../content/docs.ts";
+import { ogImages } from "../../../lib/site.ts";
 
 export function staticPaths() {
   return stsxPages().map((page) => ({ params: { path: page.path } }));
@@ -19,6 +20,12 @@ export default function StsxPage(props: PageProps<"/stsx/[[...path]]">) {
           ? "STSX: Styled TSX with scoped CSS for React and Solid"
           : `${page.title} · STSX`
       }
+      description={
+        page.path === ""
+          ? "STSX (Styled TSX): TSX files with plain-CSS <style> blocks, scoped by placement and compiled at build time. A Vite plugin for React, React Router and Solid."
+          : undefined
+      }
+      image={page.path === "" ? ogImages.stsx : undefined}
     />
   );
 }

@@ -16,7 +16,7 @@ import {
   text,
   weight,
 } from "@lumiose/site-kit/tokens";
-import { href, Meta, Title } from "lumiose";
+import { href } from "lumiose";
 import { BarChart } from "../components/BarChart.stsx";
 import { LightField } from "../islands/LightField.stsx";
 import { Playground } from "../islands/Playground.stsx";
@@ -40,6 +40,7 @@ import {
   stacks,
   tableNote,
 } from "../content/stacks.ts";
+import { PageMeta } from "../components/PageMeta.tsx";
 import { site } from "../lib/site.ts";
 
 interface StaticTab {
@@ -103,10 +104,11 @@ export default function Home() {
 
   return (
     <div class="home">
-      <Title>{`Lumiose: ${site.tagline}`}</Title>
-      <Meta name="description" content={site.description} />
-      <Meta property="og:title" content="Lumiose" />
-      <Meta property="og:description" content={site.description} />
+      <PageMeta
+        title="Lumiose web framework: feels like React, runs like vanilla JS"
+        ogTitle={`Lumiose: ${site.tagline}`}
+        description={site.description}
+      />
 
       {/* A night stage in both themes: the light needs the dark. */}
       <section class="stage" data-theme="dark" aria-labelledby="hero-title">

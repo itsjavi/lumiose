@@ -3,8 +3,9 @@
 // /benchmarks/fullstack/; the js-framework-benchmark results are a page of this site, with the
 // Lumiose benchmark app below it. Every number comes from the committed results (evidence.ts).
 import { bp, color, layout, space, text } from "@lumiose/site-kit/tokens";
-import { href, Meta, Title } from "lumiose";
+import { href } from "lumiose";
 import { BarChart } from "../../components/BarChart.stsx";
+import { PageMeta } from "../../components/PageMeta.tsx";
 import { PageHead, ShowcaseGrid } from "../../components/Showcase.stsx";
 import { evidence } from "../../content/evidence.ts";
 import { benchmarks, REPOSITORY } from "../../content/showcase.ts";
@@ -17,8 +18,10 @@ export default function Benchmarks() {
 
   return (
     <div class="page">
-      <Title>Benchmarks · Lumiose</Title>
-      <Meta name="description" content="Lumiose's benchmarks and their latest committed results." />
+      <PageMeta
+        title="Benchmarks: Lumiose vs Next.js, SvelteKit, Astro and more"
+        description="Lumiose's latest committed benchmark runs: JavaScript shipped, client update speed and server rendering, against Next.js, SvelteKit, Astro, React and more."
+      />
       <PageHead kicker="Measured, not claimed" title="Benchmarks">
         <p>
           The latest committed runs of Lumiose's benchmarks, with the machine and date of each. The

@@ -8,6 +8,7 @@
   "scripts": {
     "playground:assets": "node scripts/playground-assets.ts",
     "ui:demos": "node scripts/ui-demos.ts",
+    "og:images": "node scripts/og-images.ts",
     "dev": "node scripts/playground-assets.ts --optional && lumiose dev",
     "build": "node scripts/playground-assets.ts && lumiose build",
     "preview": "lumiose preview",

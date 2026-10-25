@@ -28,7 +28,7 @@ test("the landing page presents Lumiose with benchmark evidence", async ({ page 
   const failures = watchFailures(page);
   await page.goto("/");
   await expect(page).toHaveTitle(/Lumiose/);
-  await expect(page).toHaveTitle("Lumiose: Feels like React. Runs like vanilla JS.");
+  await expect(page).toHaveTitle("Lumiose web framework: feels like React, runs like vanilla JS");
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(
     "One component model, from static pages to full-stack apps",
   );

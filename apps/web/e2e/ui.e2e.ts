@@ -31,7 +31,7 @@ test("the UI section is in the site navigation, with a page per component", asyn
   await page.goto("/");
   await page.getByRole("navigation", { name: "Main" }).getByRole("link", { name: "UI" }).click();
   await expect(page).toHaveURL(/\/ui$/);
-  await expect(page).toHaveTitle("Lumiose UI");
+  await expect(page).toHaveTitle("Lumiose UI: accessible components on native HTML");
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("UI components");
   const nav = page.getByRole("navigation", { name: "UI" });
   await expect(nav.getByRole("link", { name: "Introduction" })).toHaveAttribute(

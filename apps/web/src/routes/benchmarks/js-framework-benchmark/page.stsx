@@ -3,7 +3,7 @@
 // publishes below this page at app/ (TASK-163).
 import { LinkButton } from "@lumiose/site-kit";
 import { color, font, layout, radius, space, text } from "@lumiose/site-kit/tokens";
-import { Meta, Title } from "lumiose";
+import { PageMeta } from "../../../components/PageMeta.tsx";
 import { Marked } from "marked";
 import results from "../../../../../../benchmarks/js-framework-benchmark/RESULTS.md?raw";
 import { PageHead } from "../../../components/Showcase.stsx";
@@ -16,10 +16,9 @@ const html = new Marked({ gfm: true }).parse(results.replace(/^# .*\n/, ""), { a
 export default function JsFrameworkBenchmark() {
   return (
     <div class="page">
-      <Title>js-framework-benchmark results · Lumiose</Title>
-      <Meta
-        name="description"
-        content="Lumiose in krausest's js-framework-benchmark: CPU, script time and memory, with the method."
+      <PageMeta
+        title="js-framework-benchmark results · Lumiose"
+        description="Lumiose in krausest's js-framework-benchmark, next to Solid, Svelte, Vue and React: CPU time, script startup and memory, with the method."
       />
       <PageHead kicker="Benchmarks" title="js-framework-benchmark">
         <p>

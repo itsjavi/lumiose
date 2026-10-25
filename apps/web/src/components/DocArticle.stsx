@@ -20,8 +20,9 @@ import {
   text,
   weight,
 } from "@lumiose/site-kit/tokens";
-import { Meta, Title } from "lumiose";
 import { adjacentDocs, type DocBlock, type DocPage } from "../content/docs.ts";
+import { site, type OgImage } from "../lib/site.ts";
+import { PageMeta } from "./PageMeta.tsx";
 
 type Demo = NonNullable<Extract<DocBlock, { kind: "code" }>["demo"]>;
 
@@ -29,6 +30,10 @@ export interface DocArticleProps {
   page: DocPage;
   /** The document title. */
   title: string;
+  /** The meta description, instead of the page's summary (a section's landing page). */
+  description?: string;
+  /** The Open Graph image, instead of the home page's. */
+  image?: OgImage;
   /** Renders a UI example's live demo by id. */
   demo?: (id: string) => JSX.Element;
   /** Renders the default theme's palette. */
@@ -55,10 +60,11 @@ export function DocArticle(props: DocArticleProps) {
 
   return (
     <div class="doc">
-      <Title>{props.title}</Title>
-      <Meta name="description" content={props.page.summary} />
-      <Meta property="og:title" content={props.title} />
-      <Meta property="og:description" content={props.page.summary} />
+      <PageMeta
+        title={props.title}
+        description={props.description ?? (props.page.summary || site.description)}
+        image={props.image}
+      />
 
       <article>
         <header class="head">

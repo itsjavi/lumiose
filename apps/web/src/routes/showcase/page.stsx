@@ -3,7 +3,8 @@
 // with dummy content, built by scripts/site.ts below /demos/<slug>/ (TASK-163, TASK-215).
 import { Card } from "@lumiose/site-kit";
 import { color, font, layout, space, text } from "@lumiose/site-kit/tokens";
-import { href, Meta, Title } from "lumiose";
+import { href } from "lumiose";
+import { PageMeta } from "../../components/PageMeta.tsx";
 import { PageHead, ShowcaseGrid } from "../../components/Showcase.stsx";
 import { demos, DOTMATRIX, renderingModes, REPOSITORY, showcase } from "../../content/showcase.ts";
 import { usedBy } from "../../content/used-by.ts";
@@ -13,8 +14,10 @@ const usedByFile = `${REPOSITORY}/blob/main/apps/web/src/content/used-by.ts`;
 export default function Showcase() {
   return (
     <div class="page">
-      <Title>Made with Lumiose · Showcase</Title>
-      <Meta name="description" content="Apps built with Lumiose, running live, with their code." />
+      <PageMeta
+        title="Showcase: apps made with Lumiose"
+        description="Apps made with Lumiose, running live with their code: the Dotmatrix chiptune studios, a static travel journal, and every rendering mode Lumiose has."
+      />
       <PageHead kicker="Showcase" title="Made with Lumiose">
         <p>
           Complete apps, each built with <code>lumiose build</code> and published as static files:

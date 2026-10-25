@@ -4,7 +4,7 @@
 // /benchmarks/fullstack/ by scripts/site.ts, with the same files below it.
 import { LinkButton } from "@lumiose/site-kit";
 import { color, font, layout, radius, space, text } from "@lumiose/site-kit/tokens";
-import { Meta, Title } from "lumiose";
+import { PageMeta } from "../../../components/PageMeta.tsx";
 import { Marked } from "marked";
 import method from "../../../content/fullstack-method.md?raw";
 import { implementations, runs } from "../../../content/fullstack.ts";
@@ -31,10 +31,9 @@ export default function FullstackComparison() {
 
   return (
     <div class="page">
-      <Title>Fullstack comparison: method and data · Lumiose</Title>
-      <Meta
-        name="description"
-        content="How Lumiose's fullstack comparison is measured: the app, the fairness rules, every implementation, the raw results and how to reproduce a run."
+      <PageMeta
+        title="Fullstack comparison: method and data · Lumiose"
+        description="How Lumiose's fullstack comparison is measured: the app, the fairness rules, every implementation, the raw results and how to reproduce a run."
       />
       <PageHead kicker="Benchmarks" title="Fullstack comparison: method and data">
         <p>

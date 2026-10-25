@@ -3,7 +3,7 @@
 // pages moved to /ui (TASK-387): their old URLs below /docs/ui are static redirects.
 import { notFound, redirect, type PageProps } from "lumiose";
 import { DocArticle } from "../../../components/DocArticle.stsx";
-import { docPages, findDoc, uiPages } from "../../../content/docs.ts";
+import { docPages, findDoc, uiPages, type DocPage } from "../../../content/docs.ts";
 
 export function staticPaths() {
   return [
@@ -20,7 +20,21 @@ export default function DocsPage(props: PageProps<"/docs/[[...path]]">) {
   return (
     <DocArticle
       page={page}
-      title={page.path === "" ? "Lumiose docs" : `${page.title} · Lumiose docs`}
+      title={
+        page.path === ""
+          ? "Lumiose docs: guides, concepts and API reference"
+          : `${page.title} · Lumiose docs`
+      }
+      description={description(page)}
     />
   );
+}
+
+/** The meta description of the index and the diagnostics, whose one-line summaries say little. */
+function description(page: DocPage): string | undefined {
+  if (page.path === "") {
+    return "Learn Lumiose: getting started, components, signals, scoped styles, routing, islands, server rendering, and the API and CLI reference.";
+  }
+  const code = /^errors\/(LUM\d+)$/.exec(page.path)?.[1];
+  return code && `Lumiose diagnostic ${code}: ${page.summary} What it means, an example, and how to fix it.`;
 }

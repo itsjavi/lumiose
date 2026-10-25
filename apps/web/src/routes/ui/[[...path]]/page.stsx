@@ -12,6 +12,7 @@ import { notFound, type PageProps } from "lumiose";
 import { DocArticle } from "../../../components/DocArticle.stsx";
 import { ThemePalette } from "../../../components/ThemePalette.stsx";
 import { findUiPage, uiPages } from "../../../content/docs.ts";
+import { ogImages } from "../../../lib/site.ts";
 import { UiDemo } from "../../../ui-demos/index.tsx";
 
 export function staticPaths() {
@@ -24,7 +25,17 @@ export default function UiPage(props: PageProps<"/ui/[[...path]]">) {
   return (
     <DocArticle
       page={page}
-      title={page.path === "" ? "Lumiose UI" : `${page.title} · Lumiose UI`}
+      title={
+        page.path === ""
+          ? "Lumiose UI: accessible components on native HTML"
+          : `${page.title} · Lumiose UI`
+      }
+      description={
+        page.path === ""
+          ? "@lumiose/ui: accessible, unstyled components on native HTML (dialog, popover, menu, combobox), server-rendered without hydration, with an optional theme."
+          : undefined
+      }
+      image={page.path === "" ? ogImages.ui : undefined}
       demo={(id) => <UiDemo id={id} />}
       palette={() => <ThemePalette />}
     />
