@@ -26,7 +26,7 @@ import { readFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { compileTsx, scan, type HostModule, type TsxResult } from "@lumiose/compiler";
-import { normalizePath, type Plugin } from "vite";
+import { normalizePath, type Plugin, type Rollup } from "vite";
 import { toLog } from "./diagnostics.ts";
 import { validateOptions, type StsxOptions } from "./options.ts";
 import { packagesFor } from "./packages.ts";
@@ -112,6 +112,31 @@ export default function stsx(options: StsxOptions): Plugin {
     }
   }
 
+  type Context = Rollup.PluginContext & { environment: { name: string } };
+
+  /**
+   * Compiles `source` to TSX from `load` (so that the build's source maps start from this map:
+   * Rolldown's native transforms do not compose JS transform maps that follow `load`) and reports
+   * its diagnostics: warnings first, then the first error, which stops the build.
+   */
+  async function emit(
+    ctx: Context,
+    file: string,
+    source: string,
+  ): Promise<Rollup.SourceDescription> {
+    const result = await compileFile(file, source, async (specifier, importer) => {
+      const resolved = await ctx.resolve(specifier, importer, { skipSelf: true });
+      return resolved === null || resolved.external ? undefined : fileOf(resolved.id);
+    });
+    const error = result.diagnostics.find((d) => d.severity === "error");
+    for (const diagnostic of result.diagnostics) {
+      if (diagnostic.severity !== "error") ctx.warn(toLog(file, source, diagnostic));
+    }
+    if (error !== undefined) ctx.error(toLog(file, source, error));
+    outputsOf(ctx.environment.name).set(file, outputOf(result));
+    return { code: result.code, map: result.map ?? null };
+  }
+
   return {
     name: "lumiose:stsx",
     enforce: "pre",
@@ -190,7 +215,7 @@ export default function stsx(options: StsxOptions): Plugin {
       if (match === null) return null;
       const file = fileOf(id);
       this.addWatchFile(file);
-      if (match[1] === "tsx") return { code: await readFile(file, "utf8") };
+      if (match[1] === "tsx") return emit(this, file, await readFile(file, "utf8"));
       const byFile = outputsOf(this.environment.name);
       let output = byFile.get(file);
       if (output === undefined) {
@@ -207,22 +232,14 @@ export default function stsx(options: StsxOptions): Plugin {
       };
     },
 
+    // Hosts that read a `.stsx` file and transform it themselves (React Router compiles route
+    // files this way) pass the raw source: it is compiled here. The TSX that `load` emitted passes.
     transform: {
       filter: { id: JS_MODULE },
       async handler(code, id) {
         const file = fileOf(id);
-        const result = await compileFile(file, code, async (specifier, importer) => {
-          const resolved = await this.resolve(specifier, importer, { skipSelf: true });
-          return resolved === null || resolved.external ? undefined : fileOf(resolved.id);
-        });
-        // Warnings first, then the first error (which stops the transform).
-        const error = result.diagnostics.find((d) => d.severity === "error");
-        for (const diagnostic of result.diagnostics) {
-          if (diagnostic.severity !== "error") this.warn(toLog(file, code, diagnostic));
-        }
-        if (error !== undefined) this.error(toLog(file, code, error));
-        outputsOf(this.environment.name).set(file, outputOf(result));
-        return { code: result.code, map: result.map ?? null };
+        if (outputsOf(this.environment.name).get(file)?.code === code) return null;
+        return emit(this, file, code);
       },
     },
 

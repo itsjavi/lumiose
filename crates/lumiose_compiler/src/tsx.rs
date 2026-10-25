@@ -455,7 +455,7 @@ impl Edits {
             }
             if let Some(map) = &mut map {
                 map.copy(&mut out, source, cursor, start);
-                map.insert(&mut out, text);
+                map.insert(&mut out, text, source, start);
             } else {
                 out.push_str(&source[cursor..start]);
                 out.push_str(text);
@@ -500,17 +500,6 @@ impl MapBuilder {
         (line as u32, column as u32)
     }
 
-    fn advance(&mut self, text: &str) {
-        for c in text.chars() {
-            if c == '\n' {
-                self.out_line += 1;
-                self.out_column = 0;
-            } else {
-                self.out_column += c.len_utf16() as u32;
-            }
-        }
-    }
-
     fn copy(&mut self, out: &mut String, source: &str, start: usize, end: usize) {
         if start >= end {
             return;
@@ -542,8 +531,23 @@ impl MapBuilder {
         out.push_str(&source[start..end]);
     }
 
-    fn insert(&mut self, out: &mut String, text: &str) {
-        self.advance(text);
+    /// Inserted text maps to where it was inserted (each of its lines), so that tools that
+    /// compose maps (a framework transform after this one) trace every segment to the source.
+    fn insert(&mut self, out: &mut String, text: &str, source: &str, at: usize) {
+        if text.is_empty() {
+            return;
+        }
+        let (line, column) = self.position(source, at);
+        for (i, part) in text.split('\n').enumerate() {
+            if i > 0 {
+                self.out_line += 1;
+                self.out_column = 0;
+            }
+            if !part.is_empty() {
+                self.tokens.push((self.out_line, self.out_column, line, column));
+            }
+            self.out_column += part.encode_utf16().count() as u32;
+        }
         out.push_str(text);
     }
 
