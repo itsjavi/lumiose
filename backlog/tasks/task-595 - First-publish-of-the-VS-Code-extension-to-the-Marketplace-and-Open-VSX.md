@@ -5,7 +5,7 @@ status: To Do
 assignee:
   - '@Lux'
 created_date: '2026-10-25 17:09'
-updated_date: '2026-10-25 18:22'
+updated_date: '2026-10-25 18:30'
 labels: []
 dependencies:
   - TASK-594
@@ -34,4 +34,6 @@ TASK-594 automated the releases; publishing needs the user's one-time setup (pac
 The user switched the Marketplace publisher from itsjavi to lumiose (2026-10-25): the extension ID is lumiose.lumiose-vscode, and the Open VSX namespace is lumiose.
 
 The Marketplace job now uses trusted publishing (vsce publish --oidc) instead of Microsoft Entra ID, and the registry jobs publish the GitHub release's .vsix files, also on a manual run with vscode_release. The Marketplace's web upload takes one file, which does not fit one .vsix per platform.
+
+Marketplace trusted publishing has not launched (2026-10-25): vsce 4's --oidc is hidden and unannounced, and the Marketplace's token exchange still answers TrustedPublishingNotSupportedException (microsoft/vscode-vsce#1275; the Marketplace team targeted the week of 2026-10-30). The Marketplace job warns until the repository variable VSCE_TRUSTED_PUBLISHING is true.
 <!-- SECTION:NOTES:END -->

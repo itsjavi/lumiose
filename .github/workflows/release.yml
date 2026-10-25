@@ -150,7 +150,14 @@ jobs:
           TAG: ${{ inputs.vscode_release || github.ref_name }}
         run: gh release download "$TAG" --pattern "*.vsix" --dir packages/vscode/release
 
+      # The Marketplace has not launched trusted publishing yet (microsoft/vscode-vsce#1275), so the
+      # job waits for the repository variable VSCE_TRUSTED_PUBLISHING, set once the policy exists.
+      - name: Check the Marketplace setup
+        if: ${{ vars.VSCE_TRUSTED_PUBLISHING != 'true' }}
+        run: echo "::warning::VSCE_TRUSTED_PUBLISHING is not true, so nothing was published to the VS Code Marketplace (packages/vscode/README.md, Releases)."
+
       - name: Publish to the VS Code Marketplace
+        if: ${{ vars.VSCE_TRUSTED_PUBLISHING == 'true' }}
         working-directory: packages/vscode
         run: pnpm exec vsce publish --oidc --skip-duplicate --packagePath release/*.vsix
 

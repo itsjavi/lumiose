@@ -156,9 +156,16 @@ The Marketplace's web page takes one `.vsix` per upload, while a release has one
 
 **VS Code Marketplace** (publisher `lumiose`). The job uses trusted publishing
 (`vsce publish --oidc`): vsce exchanges the job's GitHub Actions identity for a short-lived
-Marketplace credential, so there is no token to store or renew. On the publisher's management page
-(https://marketplace.visualstudio.com/manage/publishers/lumiose), add a trusted publishing policy for
-the repository `itsjavi/lumiose` and the workflow `release.yml`.
+Marketplace credential, so there is no token to store or renew. The Marketplace has not launched
+trusted publishing yet (October 2026: vsce has the option, the Marketplace still refuses the
+exchange; [microsoft/vscode-vsce#1275](https://github.com/microsoft/vscode-vsce/issues/1275) tracks
+it), so until then the job only warns. Once it is available:
+
+1. On the publisher's management page
+   (https://marketplace.visualstudio.com/manage/publishers/lumiose), add a trusted publishing policy
+   for the repository `itsjavi/lumiose` and the workflow `release.yml`.
+2. Set the repository variable `VSCE_TRUSTED_PUBLISHING` to `true`.
+3. Publish the releases the job skipped: `gh workflow run release.yml -f vscode_release=v<x.y.z>`.
 
 **Open VSX** (namespace `lumiose`), for Cursor, VSCodium and other forks:
 
