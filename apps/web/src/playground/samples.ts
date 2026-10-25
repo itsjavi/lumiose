@@ -142,8 +142,6 @@ export default function Todos() {
     label: "Scoped styles",
     code: `import { signal } from "lumiose";
 
-const theme = { gap: "0.75rem", radius: "12px", hue: "265deg" };
-
 function Badge(props: { label: string }) {
   return <span class="badge">{props.label}</span>;
 }
@@ -174,11 +172,15 @@ export default function Card() {
 // The file's block: every component in this file (Card and Badge).
 <style>
   .card {
+    /* Custom properties: Badge, inside the card, inherits them. */
+    --gap: 0.75rem;
+    --radius: 12px;
+    --hue: 265deg;
     display: grid;
-    gap: $theme.gap;
+    gap: var(--gap);
     padding: 1rem;
     border: 1px solid color-mix(in oklab, currentColor 20%, transparent);
-    border-radius: $theme.radius;
+    border-radius: var(--radius);
   }
   h2 {
     margin: 0;
@@ -187,8 +189,8 @@ export default function Card() {
   .badge {
     padding: 0.125rem 0.5rem;
     border-radius: 999px;
-    background: oklch(0.92 0.05 $theme.hue);
-    color: oklch(0.35 0.15 $theme.hue);
+    background: oklch(0.92 0.05 var(--hue));
+    color: oklch(0.35 0.15 var(--hue));
   }
 </style>
 `,

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { brand, radius } from "./tokens.ts";
+import { vars } from "./vars.ts";
 import { Button } from "./Button.tsx";
 
 export function Counter({ label }: { label: string }) {
@@ -14,10 +14,10 @@ export function Counter({ label }: { label: string }) {
           align-items: center;
         }
         .increment {
-          background: $brand.primary;
+          background: var($vars.brand);
           color: white;
           border: 0;
-          border-radius: $radius.sm;
+          border-radius: var($vars.radius.sm);
           padding: 8px 14px;
           font: inherit;
           cursor: pointer;

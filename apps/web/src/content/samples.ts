@@ -5,9 +5,6 @@
 
 export const counterSource = `import { signal } from "lumiose";
 
-const gap = 8;
-const radius = { pill: "999px" };
-
 export default function Counter() {
   const count = signal(0);
 
@@ -32,14 +29,16 @@ function Reset(props: { onReset(): void }) {
 // One block at the end of the file styles both components.
 <style>
   .counter {
+    --accent: #5546ff;
+    --space: 8px;
     display: flex;
-    gap: calc($gap * 1px);
+    gap: var(--space);
   }
   .pill {
-    padding: calc($gap * 1px) calc($gap * 2px);
-    border: 2px solid #5546ff;
-    border-radius: $radius.pill;
-    background: #5546ff;
+    padding: var(--space) calc(var(--space) * 2);
+    border: 2px solid var(--accent);
+    border-radius: 999px;
+    background: var(--accent);
     color: white;
     font: inherit;
   }
@@ -59,8 +58,6 @@ import "/src/App.stsx?lumiose&type=style&lang.css";
 const _t0 = /* @__PURE__ */ template(\`<div class=counter data-lum-rdjmzp3m><button class=pill data-lum-rdjmzp3m>Clicked <!> times\`);
 const _t1 = /* @__PURE__ */ template(\`<button class="pill ghost" data-lum-rdjmzp3m>Reset\`);
 const _a0 = (el, v) => toggleClass(el, "hot", v);
-const gap = 8;
-const radius = { pill: "999px" };
 export default function Counter() {
 \tconst count = signal(0);
 \tconst _el = _t0(), _button = _el.firstChild, _marker = _button.firstChild.nextSibling;
@@ -76,20 +73,23 @@ function Reset(props) {
 \treturn _el2;
 }
 delegateEvents(["click"]);
+// One block at the end of the file styles both components.
 `;
 
 export const counterCss = `.counter[data-lum-rdjmzp3m] {
-  gap: 8px;
+  --accent: #5546ff;
+  --space: 8px;
+  gap: var(--space);
   display: flex;
 }
 
 .pill[data-lum-rdjmzp3m] {
+  padding: var(--space) calc(var(--space) * 2);
+  border: 2px solid var(--accent);
+  background: var(--accent);
   color: #fff;
   font: inherit;
-  background: #5546ff;
-  border: 2px solid #5546ff;
   border-radius: 999px;
-  padding: 8px 16px;
 }
 
 .ghost[data-lum-rdjmzp3m] {

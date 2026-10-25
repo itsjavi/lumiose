@@ -1,15 +1,36 @@
-import { BREAKPOINT, brand, radius } from "./tokens.ts";
+import { useSyncExternalStore } from "react";
+import { BREAKPOINT } from "./layout.ts";
+import { vars } from "./vars.ts";
 import { Counter } from "./Counter.stsx";
 
+const narrowQuery = `(width < ${BREAKPOINT})`;
+
+function useNarrow() {
+  return useSyncExternalStore(
+    (onChange) => {
+      const query = matchMedia(narrowQuery);
+      query.addEventListener("change", onChange);
+      return () => query.removeEventListener("change", onChange);
+    },
+    () => matchMedia(narrowQuery).matches,
+    () => false,
+  );
+}
+
 export default function App() {
+  const narrow = useNarrow();
   return (
     <main className="page">
       <h1>.stsx in React</h1>
       <section className="card">
         <h2>Scoped styles, plain CSS</h2>
         <p>
-          The <code>&lt;style&gt;</code> blocks of this file style its elements only, with constants
-          from <code>tokens.ts</code>.
+          The <code>&lt;style&gt;</code> blocks of this file style its elements only. Colors and
+          radii are custom properties, named in <code>vars.ts</code>.
+        </p>
+        <p className="layout">
+          {narrow ? "Narrow" : "Wide"} layout: the media query and <code>matchMedia</code> read the
+          same breakpoint from <code>layout.ts</code>.
         </p>
         <Counter label="Increment" />
       </section>
@@ -25,18 +46,18 @@ export default function App() {
     padding: 32px 20px;
   }
   h1 {
-    color: $brand.primary;
+    color: var($vars.brand);
     margin-top: 0;
   }
   .card {
-    background: $brand.soft;
-    border-radius: $radius.lg;
+    background: var($vars.surface);
+    border-radius: var($vars.radius.lg);
     padding: 20px;
     display: grid;
     gap: 12px;
   }
   h2 {
-    color: $brand.ink;
+    color: var($vars.ink);
     margin: 0;
     font-size: 1.25rem;
   }
@@ -48,6 +69,14 @@ export default function App() {
 </style>
 
 <style global>
+  /* The design tokens: custom properties, read with var() in every block. */
+  :root {
+    --brand: #7c3aed;
+    --surface: #ede9fe;
+    --ink: #2e1065;
+    --radius-sm: 6px;
+    --radius-lg: 14px;
+  }
   body {
     margin: 0;
     font-family: system-ui, sans-serif;

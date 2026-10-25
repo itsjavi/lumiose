@@ -48,7 +48,7 @@ The generated file, with paths relative to `.lumiose/`:
 | `rootDirs` with `.lumiose/shadow`               | `import "./X.stsx"` resolves to the shadow file `X.stsx.tsx`.                                       |
 | `include` `.lumiose/shadow`, `.lumiose/types`   | Shadow files and generated route types are part of the program.                                     |
 | `types: ["lumiose/env"]`                        | The global `JSX` namespace, `import.meta.env`, `Locals` and `.svg`/`.md`/`.html`/`?client` modules. |
-| `allowImportingTsExtensions`                    | Imports name their extension: `./Card.stsx`, `./tokens.ts`.                                         |
+| `allowImportingTsExtensions`                    | Imports name their extension: `./Card.stsx`, `./vars.ts`.                                           |
 | `skipLibCheck`                                  | Dependencies' `.d.ts` files are not checked: faster, and their type errors are not yours.           |
 
 If you set `include` or `types` yourself, they replace the generated lists: keep `src`,

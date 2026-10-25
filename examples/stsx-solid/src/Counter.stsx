@@ -1,5 +1,4 @@
 import { createSignal, For } from "solid-js";
-import { brand, radius } from "./tokens.ts";
 
 export function Counter(props: { label: string }) {
   const [count, setCount] = createSignal(0);
@@ -17,10 +16,10 @@ export function Counter(props: { label: string }) {
           align-items: center;
         }
         button {
-          background: $brand.primary;
+          background: var(--brand);
           color: white;
           border: 0;
-          border-radius: $radius.sm;
+          border-radius: var(--radius-sm);
           padding: 8px 14px;
           font: inherit;
         }
@@ -32,7 +31,7 @@ export function Counter(props: { label: string }) {
           width: 14px;
           height: 14px;
           border-radius: 50%;
-          background: $brand.primary;
+          background: var(--brand);
         }
       </style>
       <div class="row">

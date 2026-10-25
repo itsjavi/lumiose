@@ -1,5 +1,5 @@
 import { signal, type Signal } from "lumiose";
-import { theme } from "./tokens.ts";
+import { vars } from "./vars.ts";
 
 interface Todo {
   id: number;
@@ -55,7 +55,7 @@ export function Todos(props: { class?: string }) {
   }
   li {
     display: flex;
-    gap: calc($theme.space * 2px);
+    gap: calc(var($vars.space) * 2);
     align-items: center;
   }
   li.done label {
@@ -63,6 +63,6 @@ export function Todos(props: { class?: string }) {
     opacity: 0.6;
   }
   .remove {
-    color: $theme.danger;
+    color: var($vars.danger);
   }
 </style>

@@ -93,8 +93,14 @@ docs instead of guessing.
 - \`.stsx\` is TSX plus raw-CSS \`<style>\` blocks. Read and edit everything outside \`<style>\` as
   TSX; the inside of a \`<style>\` block is plain CSS, not a string or CSS-in-JS.
 - Convention: one top-level \`<style>\` at the end of the file, after the components. It styles
-  every component in the file, so they share it. \`$name\` in CSS reads a top-level \`const\`
-  declared above the block (\`$theme.gap\` for object members). \`<style global>\` is global.
+  every component in the file, so they share it. \`<style global>\` is global.
+- Design tokens (colors, spacing, radii, fonts) are CSS custom properties: declare them on
+  \`:root\` in the root layout's \`<style global>\` and read them with \`var(--name)\`. Do not put a
+  design system in a TS module read with \`$\`.
+- \`$name\` in CSS inlines a JS \`const\` at build time (\`$layout.columns\` for object members). Use
+  it only for \`@media\`/\`@container\`/\`@supports\` conditions such as breakpoints, and for values
+  JS also uses. Custom property names may be typed in an \`as const\` module
+  (\`vars = { brand: "--brand" }\`), read as \`var($vars.brand)\`.
 - Nest a block inside an intrinsic element only to scope that element's subtree or to read a
   \`const\` declared in the component; never in \`{…}\`, conditionals or \`.map\` (\`LUM3010\`).
   When moving rules to the file-level block, check that no selector starts matching another

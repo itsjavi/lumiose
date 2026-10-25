@@ -5,7 +5,6 @@
 ```tsx
 // Counter.stsx (React)
 import { useState } from "react";
-import { brand } from "./tokens.ts";
 
 export function Counter() {
   const [count, setCount] = useState(0);
@@ -13,7 +12,7 @@ export function Counter() {
     <div className="counter">
       <style>
         .counter { display: flex; gap: 8px; }
-        button { background: $brand.primary; color: white; }
+        button { background: var(--brand); color: white; }
       </style>
       <button onClick={() => setCount(count + 1)}>count: {count}</button>
     </div>
@@ -22,7 +21,7 @@ export function Counter() {
 ```
 
 The block styles only `Counter`'s elements: its `button` rule reaches no other button in the app.
-`$brand.primary` is a constant from `tokens.ts`, folded into the CSS at build time.
+`--brand` is one of your design's custom properties, declared on `:root`.
 
 **What you get:**
 
@@ -32,7 +31,9 @@ The block styles only `Counter`'s elements: its `button` rule reaches no other b
   by Vite like any CSS. Elements carry a small marker, an attribute or a class.
 - **Scope by placement:** a block styles the file, a component, or one element's subtree,
   depending on where it sits.
-- **Typed constants** shared between TypeScript and CSS, in values and in media queries.
+- **Constants shared with TypeScript** (`$name`), for media query breakpoints and the values
+  your JS also uses, and typed custom property names (`var($vars.brand)`), so a typo fails the
+  build.
 - **Editor support:** TypeScript and CSS features, class-name completion and unused-selector
   warnings across the JSX and the blocks.
 
@@ -45,8 +46,9 @@ untested.
 
 - [Installation](installation.md): the Vite plugin for React, React Router and Solid, and the
   tsconfig for type checking.
-- [Styles](styles.md): placement and scope, global blocks, `$name` constants, `:global()` and
-  `:deep()`, keyframes, dynamic values, specificity and class passthrough.
+- [Styles](styles.md): placement and scope, global blocks, design tokens as custom properties,
+  `$name` constants, `:global()` and `:deep()`, keyframes, dynamic values, specificity and class
+  passthrough.
 - [Options](options.md): `classAttribute` and `scopedStyles`.
 - [React Router](react-router.md): components in `.stsx`, route modules in `.tsx`, and CSS per route.
 - [Type checking and editors](type-checking.md): `stsx typegen`, `tsc` and the language server.

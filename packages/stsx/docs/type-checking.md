@@ -37,7 +37,7 @@ column of the `.stsx` file.
 ## Constants in CSS
 
 `$name` references in style blocks become expressions in the shadow, so TypeScript checks them
-too: a missing export or member (`$brand.nope`) is a type error at the reference, and go to
+too: a missing export or member (`var($vars.brnd)`) is a type error at the reference, and go to
 definition and rename work on it.
 
 ## Editors

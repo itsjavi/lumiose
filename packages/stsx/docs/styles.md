@@ -1,6 +1,6 @@
 # Styles
 
-> A `<style>` block holds plain CSS and styles what encloses it: the file at the top level, a component or one element's subtree inside JSX, or the whole app with `global`. Constants come from TypeScript with `$name`; `:global()` and `:deep()` cross the scope.
+> A `<style>` block holds plain CSS and styles what encloses it: the file at the top level, a component or one element's subtree inside JSX, or the whole app with `global`. Design tokens are custom properties; `$name` brings in TypeScript constants for breakpoints and values JS also uses; `:global()` and `:deep()` cross the scope.
 
 ## Placement decides scope
 
@@ -46,18 +46,66 @@ custom properties and modern syntax. Vite lowers it for your `build.cssTarget`, 
 extracts it into the stylesheet of the chunk or route that imports the component. Sass and other
 `lang` attributes are not supported; import `.scss` files through Vite instead.
 
+## Design tokens: custom properties
+
+Colors, spacing, radii and the other values of a design are CSS custom properties. Declare them
+once on `:root`, in a `<style global>` block of your root component or in a global stylesheet,
+and read them with `var()`. A theme or dark mode overrides them with a selector or a media query:
+
+```tsx
+// App.stsx
+<style global>
+  :root { --brand: #7c3aed; --surface: #f5f3ff; --radius: 8px; }
+  :root[data-theme="dark"] { --brand: #a78bfa; --surface: #1e1b4b; }
+</style>
+
+<style>
+  .card { background: var(--surface); border-radius: var(--radius); }
+</style>
+```
+
+**Typed names.** To catch a mistyped name, and to use the same names from JS, keep them in an
+`as const` module and read them with `var($vars.name)`. The module holds the names only; the
+values stay in CSS:
+
+```ts
+// vars.ts
+export const vars = { brand: "--brand", surface: "--surface", radius: "--radius" } as const;
+```
+
+```tsx
+// Chip.stsx
+import { vars } from "./vars.ts";
+
+export function Chip({ label }: { label: string }) {
+  return <span className="chip">{label}</span>;
+}
+
+<style>
+  .chip { color: var($vars.brand); border-radius: var($vars.radius, 4px); }
+</style>
+```
+
+`var($vars.brand)` ships as `var(--brand)`, with fallbacks kept, and `$vars.brnd` fails the build
+(`LUM3008`). From JS, the same strings set and read the values:
+`el.style.setProperty(vars.brand, color)`, `getComputedStyle(el).getPropertyValue(vars.brand)`,
+or a `style` prop (below). The declarations on `:root` still spell the names out, since `$` is
+not read in a property name.
+
 ## Constants: `$name`
 
 A `$name` reference in a value or in an `@media`, `@container` or `@supports` condition is
-replaced at build time by a constant:
+replaced at build time by a constant. Use it for what custom properties cannot do, `var()` in a
+media query, and for values your JS also uses: a breakpoint that `matchMedia` also checks, grid
+columns that a virtualizer also computes with, a color that a canvas also draws with.
 
 ```tsx
-import { BREAKPOINT, radius } from "./tokens.ts";
+// layout.ts: export const BREAKPOINT = "640px";
+import { BREAKPOINT } from "./layout.ts";
 
-const accent = "#e11d48";
+const isNarrow = () => matchMedia(`(width < ${BREAKPOINT})`).matches;
 
 <style>
-  .card { border-radius: $radius.lg; border-color: $accent; }
   @media (width < $BREAKPOINT) { .card { padding: 0; } }
 </style>
 ```
@@ -72,7 +120,7 @@ const accent = "#e11d48";
   JavaScript names cannot contain `-`.
 - **Not replaced** in selectors, property names, strings, comments or `url()`. In selectors,
   `[href$=".pdf"]` keeps its CSS meaning.
-- **Updates.** Editing `tokens.ts` in dev updates the CSS of every file that uses it.
+- **Updates.** Editing an imported module in dev updates the CSS of every file that reads it.
 
 CSS has no JavaScript expressions: blocks are static. For a value that changes at runtime, set a
 custom property in the `style` prop and read it with `var()`:
@@ -84,6 +132,22 @@ custom property in the `style` prop and read it with `var()`:
   </style>
 </div>
 ```
+
+React's `CSSProperties` type has no custom property keys, so TypeScript rejects `"--progress"`
+(and `[vars.brand]`) in a `style` object. Add them once, in a `.d.ts` file of your project:
+
+```ts
+// src/custom-properties.d.ts
+import "react";
+
+declare module "react" {
+  interface CSSProperties {
+    [name: `--${string}`]: string | number | undefined;
+  }
+}
+```
+
+Solid's `style` type accepts them as they are.
 
 ## Escapes: `:global()` and `:deep()`
 

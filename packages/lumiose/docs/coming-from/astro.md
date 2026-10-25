@@ -84,15 +84,15 @@ with the same URLs and look, its small scripts as `?client` custom elements, and
 
 ### Styles and scripts
 
-| Astro                               | Lumiose                                                                                                                                                                                              |
-| ----------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `<style>` (scoped to the component) | A `<style>` block, scoped by placement: file level, or nested in an element for its subtree ([Styles](../concepts/styles.md)).                                                                       |
-| `<style is:global>`, `:global(.x)`  | `<style global>`, `:global(.x)`; `:deep(.x)` reaches into child components and Markdown.                                                                                                             |
-| `<style define:vars={{ accent }}>`  | `$accent` for a constant, inlined at build time ([JS values in styles](../concepts/styles.md#js-values-in-styles)); `style={{ "--accent": color() }}` plus `var(--accent)` for a value that changes. |
-| `<script>` (bundled, TypeScript)    | `import init from "./init.ts?client"` and `init()` while rendering: the pages that render the component load the script, without the island runtime ([Islands](../concepts/islands.md)).             |
-| `<script define:vars={{ id }}>`     | Attributes on a custom element, typed in `JSX.IntrinsicElements` and read in `connectedCallback` ([Web components](../guides/web-components.md)).                                                    |
-| `<script is:inline>`                | A JSX `<script>`: its text is written as is ([JSX](../concepts/jsx.md)).                                                                                                                             |
-| Tailwind integration                | The Tailwind v4 Vite plugin works as in any Vite app ([Styles](../concepts/styles.md#stylesheets-css-modules-and-tailwind)).                                                                         |
+| Astro                               | Lumiose                                                                                                                                                                                                                    |
+| ----------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `<style>` (scoped to the component) | A `<style>` block, scoped by placement: file level, or nested in an element for its subtree ([Styles](../concepts/styles.md)).                                                                                             |
+| `<style is:global>`, `:global(.x)`  | `<style global>`, `:global(.x)`; `:deep(.x)` reaches into child components and Markdown.                                                                                                                                   |
+| `<style define:vars={{ accent }}>`  | `style={{ "--accent": color() }}` plus `var(--accent)` for a value that changes; `$accent` for a constant that JS also uses or a breakpoint, inlined at build time ([Design tokens](../concepts/styles.md#design-tokens)). |
+| `<script>` (bundled, TypeScript)    | `import init from "./init.ts?client"` and `init()` while rendering: the pages that render the component load the script, without the island runtime ([Islands](../concepts/islands.md)).                                   |
+| `<script define:vars={{ id }}>`     | Attributes on a custom element, typed in `JSX.IntrinsicElements` and read in `connectedCallback` ([Web components](../guides/web-components.md)).                                                                          |
+| `<script is:inline>`                | A JSX `<script>`: its text is written as is ([JSX](../concepts/jsx.md)).                                                                                                                                                   |
+| Tailwind integration                | The Tailwind v4 Vite plugin works as in any Vite app ([Styles](../concepts/styles.md#stylesheets-css-modules-and-tailwind)).                                                                                               |
 
 ### Islands
 

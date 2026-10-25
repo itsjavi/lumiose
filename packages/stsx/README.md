@@ -7,7 +7,6 @@ class-name strings to invent.
 ```tsx
 // Counter.stsx
 import { useState } from "react";
-import { brand } from "./tokens.ts";
 
 export function Counter() {
   const [count, setCount] = useState(0);
@@ -15,7 +14,7 @@ export function Counter() {
     <div className="counter">
       <style>
         .counter { display: flex; gap: 8px; }
-        button { background: $brand.primary; color: white; }
+        button { background: var(--brand); color: white; }
       </style>
       <button onClick={() => setCount(count + 1)}>count: {count}</button>
     </div>
@@ -24,7 +23,7 @@ export function Counter() {
 ```
 
 The `<style>` block styles only `Counter`'s elements: that `button` rule does not reach any other
-button. `$brand.primary` is a constant from `tokens.ts`, folded into the CSS at build time.
+button. `--brand` is one of your design's custom properties, declared on `:root`.
 
 ## Setup
 
@@ -56,8 +55,11 @@ export default defineConfig({ plugins: [stsx({ classAttribute: "className" }), r
   everything inside it in that component. `<style global>` is not scoped.
 - **Plain CSS.** Nesting, media queries and modern syntax; Vite's CSS pipeline lowers it for your
   `build.cssTarget` and extracts it (per route under React Router).
-- **`$name` constants** from the same file or imported from `.ts` modules, in values and in
-  `@media`, `@container` and `@supports` conditions: `@media (width < $BREAKPOINT)`.
+- **Design tokens are custom properties**: declare them on `:root` in a `<style global>` block
+  and read them with `var(--brand)`. For typo checks, keep their names in an `as const` module
+  (`export const vars = { brand: "--brand" } as const`) and write `var($vars.brand)`.
+- **`$name` constants** from the same file or imported from `.ts` modules, for what custom
+  properties cannot do and for values your JS also uses: `@media (width < $BREAKPOINT)`.
 - **`:global(.x)`** leaves a selector unscoped; **`:deep(.x)`** reaches elements rendered by child
   components (`.card :deep(a)`).
 - **Hot updates.** A style-only edit replaces the stylesheet without re-rendering; other edits go

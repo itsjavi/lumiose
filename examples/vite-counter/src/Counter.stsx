@@ -1,5 +1,5 @@
 import { signal } from "lumiose";
-import { theme } from "./tokens.ts";
+import { vars } from "./vars.ts";
 
 export function Counter({ start = 0, class: className }: { start?: number; class?: string }) {
   const count = signal(start);
@@ -16,19 +16,19 @@ export function Counter({ start = 0, class: className }: { start?: number; class
 
 <style>
   h2 {
-    color: $theme.accent;
+    color: var($vars.accent);
   }
   button {
-    background: $theme.accent;
+    background: var($vars.accent);
     color: white;
     border: 0;
-    border-radius: calc($theme.radius * 1px);
-    padding: calc($theme.space * 1px) calc($theme.space * 3px);
+    border-radius: var($vars.radius);
+    padding: var($vars.space) calc(var($vars.space) * 3);
   }
   button + button {
-    margin-inline-start: calc($theme.space * 2px);
+    margin-inline-start: calc(var($vars.space) * 2);
   }
   .hot {
-    background: $theme.danger;
+    background: var($vars.danger);
   }
 </style>

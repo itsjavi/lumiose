@@ -1,5 +1,3 @@
-import { brand, radius } from "../tokens.ts";
-
 export function AboutCard({ message }: { message: string }) {
   return (
     <section className="about">
@@ -10,6 +8,6 @@ export function AboutCard({ message }: { message: string }) {
 }
 
 <style>
-  .about { background: $brand.soft; border-radius: $radius.lg; padding: 20px; margin-top: 20px; }
-  .message { color: $brand.ink; font-style: italic; }
+  .about { background: var(--surface); border-radius: var(--radius-lg); padding: 20px; margin-top: 20px; }
+  .message { color: var(--ink); font-style: italic; }
 </style>

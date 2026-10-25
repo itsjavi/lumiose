@@ -1,5 +1,3 @@
-import { brand } from "../tokens.ts";
-
 export function Shell({ nav, children }: { nav: React.ReactNode; children: React.ReactNode }) {
   return (
     <div className="shell">
@@ -14,14 +12,22 @@ export function Shell({ nav, children }: { nav: React.ReactNode; children: React
 
 <style>
   .shell { max-width: 760px; margin: 0 auto; padding: 24px; }
-  header { display: flex; gap: 24px; align-items: baseline; border-bottom: 2px solid $brand.primary; padding-bottom: 12px; }
-  strong { color: $brand.ink; font-size: 20px; }
+  header { display: flex; gap: 24px; align-items: baseline; border-bottom: 2px solid var(--brand); padding-bottom: 12px; }
+  strong { color: var(--ink); font-size: 20px; }
   nav { display: flex; gap: 16px; }
   /* NavLink renders the <a>, outside this file's templates: reach it with :deep(). */
-  nav :deep(a) { color: $brand.primary; text-decoration: none; }
+  nav :deep(a) { color: var(--brand); text-decoration: none; }
   nav :deep(a.active) { font-weight: 700; text-decoration: underline; }
 </style>
 
 <style global>
+  /* The design tokens: custom properties, read with var() in every block. */
+  :root {
+    --brand: #059669;
+    --surface: #d1fae5;
+    --ink: #064e3b;
+    --radius-sm: 6px;
+    --radius-lg: 14px;
+  }
   body { margin: 0; font-family: system-ui, sans-serif; background: #f8fafc; color: #0f172a; }
 </style>

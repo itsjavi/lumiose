@@ -1,4 +1,4 @@
-// Smoke test: the production build has the scoped CSS (class strategy), with the folded constants,
+// Smoke test: the production build has the scoped CSS (class strategy), with the typed var() names,
 // and the markers in the components' class names; the server renders them too, with class
 // passthrough to `Button`.
 import { fileURLToPath } from "node:url";
@@ -21,7 +21,9 @@ it("builds the scoped CSS and the class markers", async () => {
   const code = js?.type === "chunk" ? js.code : "";
   const scope = /\.page\.(lum-[0-9a-z]{8})/.exec(styles)![1]!;
   expect(styles).toContain(`.increment.lum-`);
-  expect(styles).toContain("#7c3aed");
+  expect(styles).toMatch(/--brand: ?#7c3aed/);
+  expect(styles).toContain("var(--radius-sm)");
+  expect(styles).toMatch(/@media \(width ?< ?640px\)/);
   expect(code).toContain(scope);
 });
 

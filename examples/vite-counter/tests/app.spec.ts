@@ -131,7 +131,7 @@ test("scoped, file and global styles apply without leaking", async ({ page }) =>
       .evaluate((el, p) => getComputedStyle(el).getPropertyValue(p), property);
   // Global: unscoped.
   expect(await css("body", "margin-top")).toBe("0px");
-  // File scope (App) with a $token.
+  // File scope (App), reading a custom property through `var($vars.accent)`.
   expect(await css("h1", "color")).toBe(ACCENT);
   // Counter's `h2` and `button` rules stay inside Counter.
   expect(await css(".counter h2", "color")).toBe(ACCENT);
@@ -154,9 +154,9 @@ test("scoped, file and global styles apply without leaking", async ({ page }) =>
 test("style edits hot-update the CSS without re-running components", async ({ page }, info) => {
   test.skip(info.project.name !== "dev", "HMR only exists in dev");
   const file = resolve(import.meta.dirname, "../src/Counter.stsx");
-  const tokens = resolve(import.meta.dirname, "../src/tokens.ts");
+  const vars = resolve(import.meta.dirname, "../src/vars.ts");
   const source = readFileSync(file, "utf8");
-  const tokensSource = readFileSync(tokens, "utf8");
+  const varsSource = readFileSync(vars, "utf8");
   await page.goto("/");
   await page.evaluate(() => ((window as unknown as { marker: number }).marker = 1));
   const counter = page.getByRole("button", { name: /Clicked/ });
@@ -167,14 +167,17 @@ test("style edits hot-update the CSS without re-running components", async ({ pa
     // A style block edit: only the CSS module updates, so the count survives.
     await edit(
       file,
-      source.replace("h2 {\n    color: $theme.accent;\n  }", "h2 {\n    color: rgb(1, 2, 3);\n  }"),
+      source.replace(
+        "h2 {\n    color: var($vars.accent);\n  }",
+        "h2 {\n    color: rgb(1, 2, 3);\n  }",
+      ),
     );
     await expect(heading).toHaveCSS("color", "rgb(1, 2, 3)");
     await expect(counter).toHaveText("Clicked 2 times");
-    // A token edit: the CSS of every file reading it updates.
-    await edit(tokens, tokensSource.replace('accent: "#4f46e5"', 'accent: "#059669"'));
-    await expect(page.locator("h1")).toHaveCSS("color", "rgb(5, 150, 105)");
-    await expect(counter).toHaveCSS("background-color", "rgb(5, 150, 105)");
+    // A vars.ts edit: the CSS of every file reading the name updates.
+    await edit(vars, varsSource.replace('accent: "--accent"', 'accent: "--danger"'));
+    await expect(page.locator("h1")).toHaveCSS("color", DANGER);
+    await expect(counter).toHaveCSS("background-color", DANGER);
     await expect(counter).toHaveText("Clicked 2 times");
     expect(await page.evaluate(() => (window as unknown as { marker: number }).marker)).toBe(1);
     if (process.env.LUMIOSE_SCREENSHOTS) {
@@ -184,7 +187,7 @@ test("style edits hot-update the CSS without re-running components", async ({ pa
     }
   } finally {
     await edit(file, source);
-    await edit(tokens, tokensSource);
+    await edit(vars, varsSource);
   }
   await expect(heading).toHaveCSS("color", ACCENT);
   await expect(counter).toHaveText("Clicked 2 times");

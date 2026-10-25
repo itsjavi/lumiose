@@ -1,6 +1,6 @@
 import { Counter } from "./Counter.stsx";
 import { Todos } from "./Todos.stsx";
-import { theme } from "./tokens.ts";
+import { vars } from "./vars.ts";
 
 /** The Lumiose website, when this app is published on it (scripts/site.ts sets the variable). */
 const LUMIOSE_SITE: string | undefined = import.meta.env.PUBLIC_LUMIOSE_SITE;
@@ -24,29 +24,37 @@ export function App() {
   main {
     max-width: 40rem;
     margin: 0 auto;
-    padding: calc($theme.space * 4px);
+    padding: calc(var($vars.space) * 4);
   }
   h1 {
-    color: $theme.accent;
+    color: var($vars.accent);
   }
   footer {
     font-size: 0.875rem;
     color: #666;
   }
   footer a {
-    color: $theme.accent;
+    color: var($vars.accent);
   }
 
   /* Class passthrough: lands on the element where Counter and Todos apply `props.class`. */
   .panel {
-    border: 1px solid $theme.border;
-    border-radius: calc($theme.radius * 1px);
-    padding: calc($theme.space * 3px);
-    margin-block: calc($theme.space * 4px);
+    border: 1px solid var($vars.border);
+    border-radius: var($vars.radius);
+    padding: calc(var($vars.space) * 3);
+    margin-block: calc(var($vars.space) * 4);
   }
 </style>
 
 <style global>
+  /* The design tokens: custom properties, named in vars.ts. */
+  :root {
+    --accent: #4f46e5;
+    --danger: #dc2626;
+    --border: #d4d4d8;
+    --radius: 8px;
+    --space: 4px;
+  }
   body {
     margin: 0;
     font-family: system-ui, sans-serif;

@@ -1,19 +1,15 @@
 # Styles
 
-> Write plain CSS in `<style>` blocks: where a block sits decides its scope, and CSS can read JS constants at build time.
+> Write plain CSS in `<style>` blocks: where a block sits decides its scope. Design tokens are CSS custom properties, and `$name` brings in the JS constants that CSS and JS share.
 
 ## Concept
 
 **One block per file, at the end.** The default is a single top-level `<style>` after the
-components. It styles every template in the file, so several components share it, and it reads
-any top-level `const` declared above it. The JSX stays free of CSS, and the file reads like a
-component file with its stylesheet:
+components. It styles every template in the file, so several components share it. The JSX stays
+free of CSS, and the file reads like a component file with its stylesheet:
 
 ```stsx check
 import { signal } from "lumiose";
-
-const accent = "#5546ff";
-const radius = "10px";
 
 export function Counter() {
   const count = signal(0);
@@ -39,15 +35,17 @@ export function Reset(props: { onReset: () => void }) {
   button {
     padding: 0.5rem 1rem;
     border: 0;
-    border-radius: $radius;
-    background: $accent;
+    border-radius: var(--radius);
+    background: var(--accent);
     color: white;
   }
-  .reset { background: transparent; color: $accent; }
+  .reset { background: transparent; color: var(--accent); }
 </style>
 ```
 
 `Counter` and `Reset` share the block: `button` matches the buttons of both, and of no other file.
+`--accent` and `--radius` are design tokens: custom properties declared once on `:root` (see
+"Design tokens" below).
 
 **Placement decides scope.**
 
@@ -62,21 +60,21 @@ when the file-level block cannot do the job:
 
 - **Scoping one element's subtree,** so a selector such as `p` or `.note` cannot match anything
   else in the file.
-- **Reading a constant declared inside a component** (`const gap = 12` in its body). A file-level
-  block only sees top-level constants.
+- **Reading a constant declared inside a component** (`const columns = 3` in its body, which its
+  JS uses too). A file-level block only sees top-level constants.
 
 ```stsx
-export function Panel() {
-  const gap = 12;
+export function Panel(props: { items: string[] }) {
+  const columns = 3;
 
   return (
     <div class="panel">
       <aside class="side">…</aside>                 {/* not styled by the <style> below */}
       <section class="body">
-        <p class="note">…</p>
+        <p class="note">{Math.ceil(props.items.length / columns)} rows</p>
         <style> p { color: tomato; } </style>      {/* only the <p> of this <section> */}
       </section>
-      <style> .panel { gap: calc($gap * 1px); } </style>   {/* reads the component's `gap` */}
+      <style> .panel { grid-template-columns: repeat($columns, 1fr); } </style>   {/* reads `columns` */}
     </div>
   );
 }
@@ -196,21 +194,105 @@ plugin rewrites a stylesheet under a new name after Lumiose recorded it, the bui
 the chunks that import it, the name it was emitted with, or the one new CSS file), and warns about
 a linked stylesheet the output no longer has.
 
+### Design tokens
+
+Colors, spacing, radii, fonts and the other values of a design are CSS custom properties (decision-87).
+Declare them once on `:root`, usually in the root layout's `<style global>` (or an imported
+stylesheet), and read them with `var()` in every block. A theme or dark mode overrides them with a
+selector or a media query, a section of the page can override a few through the cascade, and they
+show up in devtools:
+
+```stsx check
+// src/routes/layout.stsx
+import type { LayoutProps } from "lumiose";
+
+export default function Layout(props: LayoutProps<"/">) {
+  return <div class="app">{props.children}</div>;
+}
+
+<style global>
+  :root {
+    --accent: #5546ff;
+    --surface: #f4f4f5;
+    --radius: 10px;
+    --space: 0.5rem;
+  }
+  :root[data-theme="dark"] {
+    --accent: #8b80ff;
+    --surface: #27272a;
+  }
+</style>
+```
+
+**Typed names.** To catch a mistyped name, and to use the same names from JS, keep them in an
+`as const` module and read them with `var($vars.name)`. The module holds the names only; the values
+stay in CSS:
+
+```ts check file=vars.ts
+// src/vars.ts
+export const vars = {
+  accent: "--accent",
+  surface: "--surface",
+  radius: "--radius",
+  space: "--space",
+} as const;
+```
+
+```stsx check file=components/Chip.stsx
+// src/components/Chip.stsx
+import { vars } from "../vars.ts";
+
+export function Chip(props: { label: string; color: string }) {
+  return (
+    <span class="chip" style={{ [vars.accent]: props.color }}>
+      {props.label}
+    </span>
+  );
+}
+
+<style>
+  .chip {
+    padding: calc(var($vars.space) / 2) var($vars.space);
+    border-radius: var($vars.radius, 4px);
+    background: var($vars.surface);
+    color: var($vars.accent);
+  }
+</style>
+```
+
+`var($vars.accent)` ships as `var(--accent)`, and `var($vars.radius, 4px)` keeps its fallback. A
+mistyped member (`$vars.acent`) fails the build with [LUM3008](../errors/LUM3008.md), and
+TypeScript checks the JS side (`style={{ [vars.accent]: … }}`, `getPropertyValue(vars.accent)`).
+The declarations on `:root` still spell the names out, because `$` is not read in a property
+name. Plain `var(--accent)` needs no module: the names module is worth it when a project wants
+those checks.
+
+**When to use `$name` instead.** A custom property is resolved by the browser, which is what design
+tokens need. A `$` constant is fixed at build time: keep it for what custom properties cannot do,
+and for values that JS code also needs:
+
+- **Conditions** of `@media`, `@container` and `@supports`, where `var()` does not work: a
+  breakpoint (`@media (width < $narrow)`).
+- **Values shared with JS:** the breakpoint that `matchMedia` also checks, the grid columns that a
+  virtualizer also computes with, a duration that a timer also waits for, a color that a canvas
+  draws with or that JS color math derives.
+
 ### JS values in styles
 
-`$name` and `$obj.key` put a JS value into CSS. The compiler evaluates the reference at build time
-and inlines the result, so the output is plain CSS: no runtime lookup and no JS inside CSS.
+`$name` and `$obj.key` put a JS value into CSS, for the cases above. The compiler evaluates the
+reference at build time and inlines the result, so the output is plain CSS: no runtime lookup and
+no JS inside CSS.
 TypeScript checks each reference like any other expression. Imports used only by `$` references
 are removed from the JS output, and editing them hot-reloads the CSS only.
 
 **What a reference can name:** a `const` whose value the compiler can work out without running the
 app.
 
-| Declared as                                                                                  | Readable from                                                                                                    |
-| -------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
-| A top-level `const` of the file                                                              | Every block of the file. A top-level block must come after it.                                                   |
-| A `const` of the enclosing component                                                         | Blocks inside that component, `<style global>` included.                                                         |
-| An `export const` (or `export default`) of an imported `.ts`, `.tsx`, `.stsx` or JSON module | Every block of the importing file: named, default or namespace imports (`$theme.space.md`), re-exports included. |
+| Declared as                                                                                  | Readable from                                                                                                 |
+| -------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| A top-level `const` of the file                                                              | Every block of the file. A top-level block must come after it.                                                |
+| A `const` of the enclosing component                                                         | Blocks inside that component, `<style global>` included.                                                      |
+| An `export const` (or `export default`) of an imported `.ts`, `.tsx`, `.stsx` or JSON module | Every block of the importing file: named, default or namespace imports (`$scale.ticks`), re-exports included. |
 
 Imports are resolved the way the rest of the toolchain resolves them: by Vite in `lumiose dev` and
 builds (aliases included), and like TypeScript in `lumiose check` and the editor (relative paths,
@@ -218,8 +300,8 @@ tsconfig `paths`, package `exports` and `imports`). An import that cannot be res
 no such export, is reported as [LUM3008](../errors/LUM3008.md) at each reference.
 
 The value may be built from literals, template literals, arithmetic (`+ - * / % **`, unary `-`),
-other constants, and object literals with their members at any depth (`$theme.color.brand`),
-including spreads, destructuring, `as const` and `satisfies`. Mark token objects `as const`: a plain
+other constants, and object literals with their members at any depth (`$chart.series.sales`),
+including spreads, destructuring, `as const` and `satisfies`. Mark constant objects `as const`: a plain
 object literal folds too, as written, but only `as const` keeps the JS read-only like the CSS.
 
 **How values are written.** Strings are inserted verbatim, without quotes (`"12px"` becomes
@@ -268,45 +350,62 @@ properties are not scoped and inherit, so descendants can read them too.
 </div>
 ```
 
-Tokens usually live in their own module:
+Values that the styles and the JS both use live in a module of their own, imported by the
+components and the code that need them. Here the meter's `ticks` decide both the labels it renders
+and the columns and marks of its CSS, and `narrow` is the breakpoint of its `@media` and of the
+app's `matchMedia` check. Its design values are custom properties:
 
-```ts check file=theme.ts
-// src/theme.ts
-export const space = { sm: 4, md: 8, lg: 16 } as const;
-export const radius = "6px";
+```ts check file=scale.ts
+// src/scale.ts: read by the styles and by the JS.
+export const ticks = 4;
 export const narrow = "40rem";
+export const isNarrow = () => matchMedia(`(width < ${narrow})`).matches;
 ```
 
 ```stsx check file=components/Meter.stsx
 // src/components/Meter.stsx
-import * as theme from "../theme.ts";
+import * as scale from "../scale.ts";
 
-const track = theme.space.sm * 2;
-const shadow = `0 1px ${track / 4}px rgb(0 0 0 / 0.2)`;
+const step = 100 / scale.ticks;
 
 export function Meter(props: { label: string; value: number }) {
-  const border = 1;
-
   return (
     <div class="meter" style={{ "--value": `${props.value}%` }}>
       <span>{props.label}</span>
       <div class="track">
         <div class="fill" />
       </div>
+      <ol class="scale">
+        {Array.from({ length: scale.ticks }, (_, i) => (
+          <li key={i}>{(i + 1) * step}%</li>
+        ))}
+      </ol>
 
       <style>
         .meter {
-          --pad: calc($theme.space.md * 2px);
           display: grid;
-          gap: calc($theme.space.sm * 1px);
-          padding: var(--pad);
-          border: calc($border * 1px) solid;
-          border-radius: $theme.radius;
+          gap: var(--space);
+          padding: calc(var(--space) * 2);
+          border-radius: var(--radius);
+          background: var(--surface);
         }
-        .track { block-size: calc($track * 1px); border-radius: calc($track * 1px / 2); box-shadow: $shadow; }
-        .fill { inline-size: var(--value); block-size: 100%; background: currentColor; }
-        @media (width < $theme.narrow) {
-          .meter { max-inline-size: calc(100% - $theme.space.lg * 2px); }
+        .track {
+          block-size: 8px;
+          border-radius: 4px;
+          background: repeating-linear-gradient(to right, transparent 0 calc($step * 1% - 1px), currentColor 0 calc($step * 1%));
+          box-shadow: inset 0 1px 2px rgb(0 0 0 / 0.2);
+        }
+        .fill { inline-size: var(--value); block-size: 100%; background: var(--accent); }
+        .scale {
+          display: grid;
+          grid-template-columns: repeat($scale.ticks, 1fr);
+          margin: 0;
+          padding: 0;
+          list-style: none;
+          text-align: end;
+        }
+        @media (width < $scale.narrow) {
+          .scale { display: none; }
         }
       </style>
     </div>
@@ -315,34 +414,43 @@ export function Meter(props: { label: string; value: number }) {
 ```
 
 The compiler's CSS output for that file (`data-lum-lw1tegds` is the component's scope token). Every
-`$` reference and every constant `calc()` is gone; only the runtime `var(--value)` and the
-`%`-relative width are left to the browser:
+`$` reference and every constant `calc()` is gone; the `var()` reads, which the browser resolves,
+and the `%`-relative stop are left as written:
 
 ```css
 .meter[data-lum-lw1tegds] {
-  --pad: 16px;
-  padding: var(--pad);
-  border: 1px solid;
-  border-radius: 6px;
-  gap: 4px;
+  gap: var(--space);
+  padding: calc(var(--space) * 2);
+  border-radius: var(--radius);
+  background: var(--surface);
   display: grid;
 }
 
 .track[data-lum-lw1tegds] {
+  background: repeating-linear-gradient(to right, #0000 0 calc(25% - 1px), currentColor 0 25%);
   border-radius: 4px;
   block-size: 8px;
-  box-shadow: 0 1px 2px #0003;
+  box-shadow: inset 0 1px 2px #0003;
 }
 
 .fill[data-lum-lw1tegds] {
   inline-size: var(--value);
-  background: currentColor;
+  background: var(--accent);
   block-size: 100%;
 }
 
+.scale[data-lum-lw1tegds] {
+  text-align: end;
+  grid-template-columns: repeat(4, 1fr);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+}
+
 @media (width < 40rem) {
-  .meter[data-lum-lw1tegds] {
-    max-inline-size: calc(100% - 32px);
+  .scale[data-lum-lw1tegds] {
+    display: none;
   }
 }
 ```
@@ -355,7 +463,7 @@ declarations, so the output is equivalent to the source, not identical.
 Constant math never reaches the browser. It is computed in two steps:
 
 1. **JS math, by the Lumiose compiler.** Arithmetic in constants and template literals is evaluated
-   before the value is inserted: `const track = theme.space.sm * 2` inlines `8`.
+   before the value is inserted: `const step = 100 / scale.ticks` inlines `25`.
 2. **CSS math, by Lightning CSS.** After substitution, Lightning CSS reduces `calc()`, `min()`,
    `max()`, `clamp()`, `round()`, `abs()`, the trigonometric functions and the other CSS math
    functions whenever the operands are concrete values in compatible units. `calc($gap * 2px)`
@@ -596,6 +704,8 @@ plugin, `@stylexjs/unplugin`):
 | `<style>…</style>` at module top level   | File-scoped CSS, shared by every component of the file. By convention one block, at the end of the file.  |
 | `<style>…</style>` in component JSX      | CSS scoped to its enclosing element's subtree (the whole component when placed under the root element).   |
 | `<style global>…</style>`                | Unscoped, app-wide CSS.                                                                                   |
+| `var(--name)`                            | A custom property: design tokens (declared on `:root`) and runtime values.                                |
+| `var($vars.name)`                        | A custom property whose name comes from an `as const` module, so a typo fails the build.                  |
 | `$name`, `$obj.key`                      | A JS constant, inlined at build time, in property values and `@media`/`@container`/`@supports` preludes.  |
 | `calc()`, `min()`, `max()`, `clamp()`, … | Folded at build time when every operand is a concrete value in compatible units.                          |
 | `:global(sel)`, `:deep(sel)`             | Escape or extend the scope.                                                                               |
@@ -606,8 +716,7 @@ plugin, `@stylexjs/unplugin`):
 ## Example
 
 ```stsx check
-// tokens are usually in their own module: `export const radius = { sm: "4px", lg: "12px" } as const;`
-const radius = { sm: "4px", lg: "12px" } as const;
+// Read by the app's JS too: `matchMedia(`(width < ${BREAKPOINT})`)`.
 const BREAKPOINT = "40rem";
 
 export function Card(props: { title: string; progress: number; class?: string }) {
@@ -619,38 +728,50 @@ export function Card(props: { title: string; progress: number; class?: string })
   );
 }
 
-export function Dashboard(props: { columns: number }) {
-  const gap = 12;
+export function Dashboard(props: { stats: { title: string; progress: number }[] }) {
+  const columns = 3;
 
   return (
-    <main class="dashboard" style={{ "--columns": props.columns }}>
-      <Card class="featured" title="Uploads" progress={40} />
-      <Card title="Downloads" progress={75} />
+    <main class="dashboard">
+      {props.stats.map((stat, i) => (
+        <Card key={stat.title} class={i === 0 ? "featured" : undefined} {...stat} />
+      ))}
+      <p class="summary">{Math.ceil(props.stats.length / columns)} rows</p>
 
       <style>
-        .dashboard { gap: calc($gap * 1px); }
+        .dashboard { grid-template-columns: repeat($columns, 1fr); }
+        @media (width < $BREAKPOINT) { .dashboard { grid-template-columns: 1fr; } }
       </style>
     </main>
   );
 }
 
 <style>
-  .dashboard { display: grid; grid-template-columns: repeat(var(--columns), 1fr); }
-  .card { display: grid; gap: 0.5rem; border-radius: $radius.lg; }
+  .dashboard { display: grid; gap: var(--space); }
+  .summary { grid-column: 1 / -1; }
+  .card { display: grid; gap: 0.5rem; padding: var(--space); border-radius: var(--radius); background: var(--surface); }
   .card h2 { margin: 0; }
-  .bar { inline-size: var(--progress); block-size: 4px; background: currentColor; }
-  .featured { outline: 2px solid gold; }
-  @media (width < $BREAKPOINT) { .card { border-radius: $radius.sm; } }
+  .bar { inline-size: var(--progress); block-size: 4px; background: var(--accent); }
+  .featured { outline: 2px solid var(--accent); }
 </style>
 ```
 
-`Card` and `Dashboard` share the file-level block, which reads the top-level constants. `.featured`
-is set by `Dashboard` and styles the `<article>` inside `Card`: both are in the file's scope (from
-another file, the class would get there through class passthrough). The nested block in
-`Dashboard` is there because it reads `gap`, a constant of the component.
+`Card` and `Dashboard` share the file-level block, which reads the design tokens declared on
+`:root` (see "Design tokens"). `.featured` is set by `Dashboard` and styles the `<article>`
+inside `Card`: both are in the file's scope (from another file, the class would get there through
+class passthrough). The nested block in `Dashboard` is there because it reads `columns`, a
+constant the component's JS also uses. `BREAKPOINT` is a `$` constant because `var()` does not
+work in `@media`, and the app's JS checks the same width.
 
 ## Common mistakes
 
+- **A design system in `$` constants.** Colors, spacing and radii folded at build time cannot
+  change with a theme, a media query or the cascade, and devtools do not show them. Declare them
+  as custom properties on `:root` and read them with `var()`; keep `$` for breakpoints and values
+  JS also uses (see "Design tokens").
+- **`"var(--brand)"` in a names module.** Store the bare name (`brand: "--brand"`) and write
+  `var($vars.brand)`: the same string then works in JS (`style={{ [vars.brand]: … }}`), and
+  fallbacks work (`var($vars.brand, #000)`).
 - **A block inside `{…}`, a conditional, a `.map` callback, or a component element** such as
   `<Suspense>` or `<Card>`. Move it into an intrinsic element of the component (`LUM3010`).
 - **Returning a block, or using it as an expression** (`return <style>…`, `=> <style>`). Put it
