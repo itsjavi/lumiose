@@ -3,7 +3,7 @@ id: doc-1
 title: Lumiose architecture specification
 type: specification
 created_date: '2026-10-08 10:28'
-updated_date: '2026-10-24 11:03'
+updated_date: '2026-10-25 00:55'
 tags:
   - architecture
   - spec
@@ -365,12 +365,12 @@ Replay validates the key. On a mismatch, it evaluates `e`, and reports `LUM4006`
 #### 4.6.2 Mechanics
 
 **Tokens.**
-- Each scope that has styles gets the token `data-l-<hash>`. The hash is a stable base36 hash of the root-relative path, plus the component name for component scopes.
+- Each scope that has styles gets a token: a stable base36 hash of the root-relative path, plus the component name for component scopes. Elements carry it as a marker chosen by `scopedStyles` (decision-85): the attribute `data-lum-<hash>` by default, or the class `lum-<hash>`, with a configurable namespace.
 - **Every element** in a scope's templates carries that scope's token, baked into the template HTML. No pruning, so dynamic classes always work.
 - An element covered by both the file scope and a component scope carries both tokens.
 
 **Selectors and ordering.**
-- The last compound of each selector gets `[data-l-<hash>]`, placed before any pseudo-element. This is a (0,1,0) specificity bump.
+- The last compound of each selector gets the marker's selector (`[data-lum-<hash>]` or `.lum-<hash>`), placed before any pseudo-element. By default this is a (0,1,0) specificity bump; with `specificity: "zero"` it is wrapped in `:where()` and adds nothing (decision-85).
 - `:global(sel)` is left unscoped. `:deep(sel)` scopes only the left part of the selector.
 - `@keyframes` names are scoped, and `animation` references are rewritten.
 - Custom properties are not scoped.
@@ -490,7 +490,7 @@ import { signal } from "lumiose";
 import { template, insert, delegateEvents, $await, $component } from "lumiose/dom";
 import "/src/components/Team.stsx?lumiose&type=style&lang.css";
 
-const _t0 = /*#__PURE__*/ template(`<article class=card data-l-k3x9a2 data-l-f81c0q><h3 data-l-k3x9a2 data-l-f81c0q> </h3><button data-l-k3x9a2 data-l-f81c0q>👏 <!>`);
+const _t0 = /*#__PURE__*/ template(`<article class=card data-lum-k3x9a2 data-lum-f81c0q><h3 data-lum-k3x9a2 data-lum-f81c0q> </h3><button data-lum-k3x9a2 data-lum-f81c0q>👏 <!>`);
 const _a0 = (el, v) => (el.data = v);                          // hoisted apply fns (memory)
 
 export const MemberCard = $component(async function MemberCard(props) {

@@ -3,7 +3,7 @@ id: doc-2
 title: Compiler-runtime contract
 type: specification
 created_date: '2026-10-08 12:27'
-updated_date: '2026-10-24 18:36'
+updated_date: '2026-10-25 00:55'
 tags:
   - architecture
   - contract
@@ -27,14 +27,14 @@ tags:
   - Bundles without islands or SSR never contain the hydration code.
   - This amends spec v0.3 §5.2, which described a separate `_tN.h` walk: equal tree-shaking, simpler codegen.
 - **Hoisting.** The compiler hoists everything static to module scope: templates, `apply` functions, static SSR string parts, selector setup where possible, and delegated event name lists.
-- **Scope tokens are attributes** (`data-l-<hash>`) baked into template HTML. Runtime class handling never touches them.
+- **Scope markers are baked into template HTML** (`scopedStyles`, decision-85): attributes by default (`data-lum-<hash>`, the namespace is configurable), or with the class strategy classes (`lum-<hash>`) merged into the element's `class`. Runtime class handling never touches them: `setClass` only removes the classes it added itself. On the server, class markers are merged into the single `class` attribute (`classAttr(value, scope)`, `spreadAttrs(props, custom, scope)`, or baked).
 - **Props are getter objects.**
   - Static literal props are plain values.
   - Dynamic props become `get name() { return expr; }`.
   - `children` is always a getter.
   - On the server, dynamic props are evaluated lazily and at most once per component instance: the first read runs the expression and caches it in a closure variable; unread props never run; a first read that throws is retried (decision-28, TASK-151). Client props stay reactive getters.
-  - The hidden `$$scope` prop carries the caller's scope tokens when `class` is passed.
-  - A component that passes its own `class` prop on to a child component forwards its caller's scope: `$$scope` is its own tokens plus `props.$$scope` (`"data-l-m1 " + (props.$$scope ?? "")`), or `props.$$scope` when it has no styles. Runtimes skip empty tokens (TASK-92).
+  - The hidden `$$scope` prop carries the caller's scope tokens when `class` is passed: space-separated, attribute markers as their names (`data-lum-p1`), class markers as `.name` (`.lum-p1`), so the runtimes know which kind to apply (decision-85).
+  - A component that passes its own `class` prop on to a child component forwards its caller's scope: `$$scope` is its own tokens plus `props.$$scope` (`"data-lum-m1 " + (props.$$scope ?? "")`), or `props.$$scope` when it has no styles. Runtimes skip empty tokens (TASK-92).
 
 ## 2. Client runtime (`lumiose/dom`)
 
@@ -55,7 +55,7 @@ tags:
 | `selector(source)` | Returns `isSelected(key)`. Only the previous and the next key re-notify |
 | `createComponent(C, props)` | New owner, untracked call. A native `async function` takes the async path (§4) |
 | `restProps(props, keys)`, `mergeProps(...)`, `spread(el, () => props)` | Reactive props utilities |
-| `applyScope(el, tokens)` | Sets each `data-l-*` token in `tokens` as an empty attribute |
+| `applyScope(el, tokens)` | Applies each `$$scope` token in `tokens`: an attribute name as an empty attribute, a `.name` as a class (decision-85) |
 | `delegateEvents(names)` | Document-level, idempotent. Dispatch calls `el.$$name(e)`, or `el.$$name(el.$$nameData, e)` when a data slot exists. It stops at the boundary of an island or app root, and respects `cancelBubble` |
 | `listen(el, name, handler, options?)` | `addEventListener` plus cleanup |
 | `bindValue`, `bindChecked` | Effect writes the property, and the `input`/`change` listener sets the signal |
@@ -89,7 +89,7 @@ Imported only by code compiled with the `hot` option in `lumiose dev`; never par
 | `insert(v)` | Dynamic region. Inside islands it is wrapped as `<!--[-->…<!--]-->`; outside islands it is unwrapped |
 | `insertValue(v)` | `insert(v)` as an `SSRNode`, for a dynamic item of an array of renderables (the client's `insertValue`): an array escapes plain strings, so the block is returned as markup |
 | `insertText(v)` | `text()` for text values (including nullish and booleans), `insert()` for objects. A maybe-text child alone between nodes (the provable-text rule) is a client template text node written by `insertText`; a non-text value renders as an `insert()` block inside islands, which the client claims as a region whose marker is the text node |
-| `attr`, `classAttr`, `styleAttr`, `spreadAttrs`, `escape` | Attribute serialization. `styleAttr` follows the CSP mode (spec §7.4). `attr` and `spreadAttrs` take an optional last argument, `true` on custom-element tags: object, array and function values are then left out of the HTML and set as properties when the island hydrates (TASK-337) |
+| `attr`, `classAttr`, `styleAttr`, `spreadAttrs`, `escape` | Attribute serialization. `styleAttr` follows the CSP mode (spec §7.4). `attr` and `spreadAttrs` take an optional `custom` argument, `true` on custom-element tags: object, array and function values are then left out of the HTML and set as properties when the island hydrates (TASK-337). With the class strategy (decision-85), `classAttr(value, scope)` and `spreadAttrs(props, custom, scope)` merge the `.name` tokens of `scope` (the element's own scope classes and, with class passthrough, the caller's `$$scope`) into the one `class` attribute; `spreadAttrs` also merges those of `props.$$scope`, and writes the attribute tokens there as attributes |
 | `rawText(value, tag, json?)` | The text of a `<script>` or `<style>` (`tag`), which HTML does not decode: written as it is, with `</script`, `</style` and (in a script) `<!--` neutralized as `<\/script`, `<\/style`, `<\!--`; with `json`, every `<` is `\u003c`, like `jsonForScript`. Nullish and booleans render nothing (Photon, TASK-472 L7) |
 | `nonceAttr()` | Under strict CSP, the ` nonce="…"` attribute with the current response's nonce for JSX-authored `<script>`/`<style>` (and native SVG `<style>`) without an explicit `nonce`; empty otherwise. Static `style="…"` strings render as nonce'd rules (decision-27) |
 | `list(source, render)` | Joins rows; inside islands, markers as on the client |
@@ -184,7 +184,7 @@ export function Counter({ start = 0 }: { start?: number }) {
 import { signal } from "lumiose";
 import { template, bind, toggleClass, insert, delegateEvents } from "lumiose/dom";
 import "/src/Counter.stsx?lumiose&type=style&lang.css";
-const _t0 = template(`<button data-l-c1>Clicked <!> times`);
+const _t0 = template(`<button data-lum-c1>Clicked <!> times`);
 const _a0 = (el, v) => toggleClass(el, "hot", v);
 export function Counter(props) {
   const count = signal(props.start === undefined ? 0 : props.start);
@@ -201,10 +201,10 @@ delegateEvents(["click"]);
 // server
 import { signal } from "lumiose";
 import { ssr, SSRHtml, classAttr, insert } from "lumiose/server";
-const _s0 = ["<button data-l-c1", ">Clicked ", " times</button>"];
+const _s0 = ["<button data-lum-c1", ">Clicked ", " times</button>"];
 const _c0 = (h0, h1) =>
   typeof h0 === "string" && typeof h1 === "string"
-    ? new SSRHtml("<button data-l-c1" + h0 + ">Clicked " + h1 + " times</button>")
+    ? new SSRHtml("<button data-lum-c1" + h0 + ">Clicked " + h1 + " times</button>")
     : ssr(_s0, h0, h1);
 export function Counter(props) {
   const count = signal(props.start === undefined ? 0 : props.start);
@@ -213,7 +213,7 @@ export function Counter(props) {
 ```
 
 ```css
-.hot[data-l-c1] { color: crimson; }
+.hot[data-lum-c1] { color: crimson; }
 ```
 
 ### 5.2 Keyed list with selector and a data-slot event
@@ -227,7 +227,7 @@ export function Counter(props) {
 ```
 
 ```js
-const _t1 = template(`<tr data-l-x><td data-l-x><a data-l-x> `);
+const _t1 = template(`<tr data-lum-x><td data-lum-x><a data-lum-x> `);
 const _isSel = selector(selected);                          // hoisted into component setup
 list(_tbody, null, rows, (row) => {
   const _tr = _t1(), _a = _tr.firstChild.firstChild;
@@ -250,7 +250,7 @@ list(_tbody, null, rows, (row) => {
 insert(_el, createComponent(Card, {
   get title() { return post().title; },
   class: "featured",
-  $$scope: "data-l-p1",
+  $$scope: "data-lum-p1",
   get children() { return post().body; },
 }), _marker);
 // inside Card, where it applies props.class:
