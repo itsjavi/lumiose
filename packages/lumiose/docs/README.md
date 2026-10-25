@@ -73,6 +73,10 @@ mistakes** and **Related**.
 - [Editors](guides/editors.md): The language server in Neovim and Helix (file type, root markers, the server command), what works in Zed today, and GitHub highlighting through `.gitattributes`.
 - [Web components](guides/web-components.md): Custom elements and web-component libraries: defining them in the browser, typing them in JSX, properties versus attributes (React 19's rule), events with `on:`, server rendering, and the Custom Elements Everywhere score (100).
 
+## STSX
+
+- [STSX](https://itsjavi.com/lumiose/stsx/llms.txt): `.stsx` files outside Lumiose. `@lumiose/stsx` is a Vite plugin that compiles their scoped `<style>` blocks for React, React Router and Solid, with the same placement rules, `$name` constants and `scopedStyles` option. Its docs ship in its package: `node_modules/@lumiose/stsx/docs/llms.txt` indexes them.
+
 ## UI
 
 - [UI components](https://itsjavi.com/lumiose/ui/llms.txt): `@lumiose/ui`, accessible and unstyled primitives on native elements, server-rendered without hydration, with the optional default theme. Its docs ship in its own package and match its own version: `node_modules/@lumiose/ui/docs/llms.txt` indexes them, and in a project that depends on it `lumiose docs ui` and `lumiose docs dialog` print them and the MCP server's `ui_components` tool lists the components.

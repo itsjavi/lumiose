@@ -38,6 +38,7 @@ export const site = {
 
 export const navLinks: NavLink[] = [
   { href: href("/docs/[[...path]]", { path: "" }), label: "Docs" },
+  { href: href("/stsx/[[...path]]", { path: "" }), label: "STSX" },
   { href: href("/ui/[[...path]]", { path: "" }), label: "UI" },
   { href: href("/showcase"), label: "Showcase" },
   { href: href("/benchmarks"), label: "Benchmarks" },
@@ -56,6 +57,7 @@ export const footerColumns: FooterColumn[] = [
       { href: href("/docs/[[...path]]", { path: "concepts/components" }), label: "Components" },
       { href: href("/docs/[[...path]]", { path: "concepts/styles" }), label: "Styles" },
       { href: href("/docs/[[...path]]", { path: "concepts/islands" }), label: "Islands" },
+      { href: href("/stsx/[[...path]]", { path: "" }), label: "STSX outside Lumiose" },
       { href: href("/ui/[[...path]]", { path: "" }), label: "UI components" },
     ],
   },
@@ -85,6 +87,7 @@ export const footerColumns: FooterColumn[] = [
     links: [
       { href: href("/llms.txt"), label: "llms.txt" },
       { href: href("/llms-full.txt"), label: "llms-full.txt" },
+      { href: href("/stsx/llms.txt"), label: "STSX llms.txt" },
       { href: href("/ui/llms.txt"), label: "UI llms.txt" },
       { href: href("/docs/[[...path]]", { path: "reference/mcp" }), label: "MCP server" },
       { href: REPOSITORY, label: "GitHub" },

@@ -2,7 +2,9 @@
 // that `lumiose docs` prints and the package ships), rendered for /docs. @lumiose/ui ships its own
 // docs (`packages/ui/docs`, decision-64): they are the /ui section (TASK-387), in the order of their
 // llms.txt, with topics below `ui/` (`ui/dialog`), and also fill the docs index's UI section. Their
-// `tsx check` examples carry the id of their live demo (./ui-demos.ts).
+// `tsx check` examples carry the id of their live demo (./ui-demos.ts). @lumiose/stsx's docs
+// (`packages/stsx/docs`) are the /stsx section (TASK-585), in the order of their llms.txt, with
+// topics below `stsx/`.
 //
 // This is the only module that knows the docs are Markdown files read through Vite: it loads them
 // as raw strings with `import.meta.glob(…, { query: "?raw" })` and renders them with `marked`.
@@ -13,6 +15,7 @@
 import { highlight } from "@lumiose/site-kit/highlight";
 import { href as routeHref } from "lumiose";
 import { Marked, Renderer, type Token, type Tokens } from "marked";
+import stsxIndex from "../../../../packages/stsx/docs/llms.txt?raw";
 import uiIndex from "../../../../packages/ui/docs/llms.txt?raw";
 import { link } from "../lib/site.ts";
 import { isCheckedTsx, uiDemos } from "./ui-demos.ts";
@@ -29,10 +32,18 @@ const uiSources = import.meta.glob<string>("../../../../packages/ui/docs/**/*.md
   eager: true,
 });
 const UI_DOCS_DIR = "../../../../packages/ui/docs/";
+const stsxSources = import.meta.glob<string>("../../../../packages/stsx/docs/**/*.md", {
+  query: "?raw",
+  import: "default",
+  eager: true,
+});
+const STSX_DOCS_DIR = "../../../../packages/stsx/docs/";
 /** The UI pages link Lumiose's pages by their URLs on this site (they ship in another package). */
 const SITE_DOCS = "https://itsjavi.com/lumiose/docs/";
 /** …and Lumiose's pages link the UI section by its URL. */
 const SITE_UI = "https://itsjavi.com/lumiose/ui/";
+/** …and the STSX section by its URL. */
+const SITE_STSX = "https://itsjavi.com/lumiose/stsx/";
 
 export interface DocHeading {
   depth: 2 | 3;
@@ -95,7 +106,7 @@ interface Collection {
   byPath: Map<string, DocPage>;
 }
 
-let cache: { docs: Collection; ui: Collection; nav: NavSection[] } | undefined;
+let cache: { docs: Collection; ui: Collection; stsx: Collection; nav: NavSection[] } | undefined;
 
 function load() {
   if (cache !== undefined) return cache;
@@ -105,6 +116,9 @@ function load() {
   }
   for (const [file, text] of Object.entries(uiSources)) {
     texts.set(`ui/${file.slice(UI_DOCS_DIR.length, -".md".length)}`, text);
+  }
+  for (const [file, text] of Object.entries(stsxSources)) {
+    texts.set(`stsx/${file.slice(STSX_DOCS_DIR.length, -".md".length)}`, text);
   }
   const index = texts.get("README");
   if (index === undefined) throw new Error(`No docs index at ${DOCS_DIR}README.md.`);
@@ -116,6 +130,18 @@ function load() {
       section.entries.map((entry) => ({
         topic: `ui/${entry.topic}`,
         section: section.title,
+        label: entry.topic === "README" ? "Introduction" : entry.label,
+      })),
+    ),
+  );
+
+  // STSX's llms.txt gives its reading order too.
+  const stsx = collect(
+    texts,
+    readOutline(stsxIndex).flatMap((section) =>
+      section.entries.map((entry) => ({
+        topic: `stsx/${entry.topic}`,
+        section: "STSX",
         label: entry.topic === "README" ? "Introduction" : entry.label,
       })),
     ),
@@ -148,7 +174,7 @@ function load() {
     const before = nav.findIndex((section) => after.includes(section.title));
     nav.splice(before === -1 ? nav.length : before, 0, { title: "UI", pages: [...ui.pages] });
   }
-  cache = { docs, ui, nav };
+  cache = { docs, ui, stsx, nav };
   return cache;
 }
 
@@ -190,6 +216,16 @@ export function findUiPage(path: string): DocPage | undefined {
   return load().ui.byPath.get(path.replace(/^\/+|\/+$/g, ""));
 }
 
+/** Every page of the /stsx section (packages/stsx/docs), in the order of STSX's llms.txt. */
+export function stsxPages(): readonly DocPage[] {
+  return load().stsx.pages;
+}
+
+/** The STSX page at a URL path below /stsx (`""` is the introduction). */
+export function findStsxPage(path: string): DocPage | undefined {
+  return load().stsx.byPath.get(path.replace(/^\/+|\/+$/g, ""));
+}
+
 /** The /ui navigation: the UI's llms.txt sections (Overview, Components). */
 export function uiNav(): readonly NavSection[] {
   const nav: NavSection[] = [];
@@ -203,7 +239,11 @@ export function uiNav(): readonly NavSection[] {
 
 /** The pages before and after `page` in reading order, in its own section of the site. */
 export function adjacentDocs(page: DocPage): { prev?: DocPage; next?: DocPage } {
-  const pages = isUiTopic(page.topic) ? uiPages() : docPages();
+  const pages = isUiTopic(page.topic)
+    ? uiPages()
+    : isStsxTopic(page.topic)
+      ? stsxPages()
+      : docPages();
   const at = pages.indexOf(page);
   return { prev: pages[at - 1], next: pages[at + 1] };
 }
@@ -245,12 +285,20 @@ function isUiTopic(topic: string): boolean {
   return topic === "ui" || topic.startsWith("ui/");
 }
 
+function isStsxTopic(topic: string): boolean {
+  return topic === "stsx" || topic.startsWith("stsx/");
+}
+
 /**
  * URL path of a topic, below /docs (`README` → "", `errors/README` → `errors`), or below /ui for a
- * UI topic (`ui/README` → "", `ui/dialog` → `dialog`).
+ * UI topic (`ui/README` → "", `ui/dialog` → `dialog`), or below /stsx for an STSX topic.
  */
 export function topicPath(topic: string): string {
-  const path = isUiTopic(topic) ? topic.replace(/^ui\/?/, "") : topic;
+  const path = isUiTopic(topic)
+    ? topic.replace(/^ui\/?/, "")
+    : isStsxTopic(topic)
+      ? topic.replace(/^stsx\/?/, "")
+      : topic;
   return path === "README" ? "" : path.replace(/\/README$/, "");
 }
 
@@ -260,7 +308,9 @@ export function topicUrl(topic: string, hash = ""): string {
   return (
     (isUiTopic(topic)
       ? routeHref("/ui/[[...path]]", { path })
-      : routeHref("/docs/[[...path]]", { path })) + hash
+      : isStsxTopic(topic)
+        ? routeHref("/stsx/[[...path]]", { path })
+        : routeHref("/docs/[[...path]]", { path })) + hash
   );
 }
 
@@ -278,6 +328,14 @@ export function docHref(href: string, from: string): string {
     if (path.endsWith(".txt")) return link(`/ui/${path}`);
     return topicUrl(
       `ui/${path.replace(/\/$/, "") || "README"}`,
+      hash === undefined ? "" : `#${hash}`,
+    );
+  }
+  if (href.startsWith(SITE_STSX)) {
+    const [path = "", hash] = href.slice(SITE_STSX.length).split("#");
+    if (path.endsWith(".txt")) return link(`/stsx/${path}`);
+    return topicUrl(
+      `stsx/${path.replace(/\/$/, "") || "README"}`,
       hash === undefined ? "" : `#${hash}`,
     );
   }

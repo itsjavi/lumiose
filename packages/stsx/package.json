@@ -44,7 +44,9 @@
     "typecheck": "tsc -p tsconfig.json",
     "test": "vitest run",
     "build": "node ../../scripts/build-package.ts",
-    "prepack": "pnpm run build"
+    "prepack": "pnpm run build",
+    "docs:gen": "node scripts/gen-llms.ts",
+    "docs:check": "node scripts/gen-llms.ts --check"
   },
   "dependencies": {
     "@lumiose/compiler": "workspace:*"

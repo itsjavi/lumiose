@@ -1,0 +1,15 @@
+// The /stsx section (TASK-585): @lumiose/stsx's docs, rendered from packages/stsx/docs (the pages
+// the package ships, one source with its llms.txt) by DocArticle.
+import { notFound, type PageProps } from "lumiose";
+import { DocArticle } from "../../../components/DocArticle.stsx";
+import { findStsxPage, stsxPages } from "../../../content/docs.ts";
+
+export function staticPaths() {
+  return stsxPages().map((page) => ({ params: { path: page.path } }));
+}
+
+export default function StsxPage(props: PageProps<"/stsx/[[...path]]">) {
+  const page =
+    findStsxPage(props.params.path ?? "") ?? notFound(`No STSX page "${props.params.path}".`);
+  return <DocArticle page={page} title={page.path === "" ? "STSX" : `${page.title} · STSX`} />;
+}

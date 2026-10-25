@@ -1,0 +1,34 @@
+// The /stsx section's shell (DocsShell): @lumiose/stsx's pages (packages/stsx/docs) in the order of
+// STSX's llms.txt, then links for agents and to the Lumiose docs.
+import { href, url, type LayoutProps } from "lumiose";
+import { DocsShell, type ShellSection } from "../../components/DocsShell.stsx";
+import { findStsxPage, stsxPages } from "../../content/docs.ts";
+import { sitePath } from "../../lib/site.ts";
+
+export default function StsxLayout(props: LayoutProps<"/stsx">) {
+  const current = findStsxPage(sitePath(url().pathname).replace(/^\/stsx\/?|\/$/g, ""));
+  const sections = (): ShellSection[] => [
+    {
+      title: "STSX",
+      links: stsxPages().map((page) => ({
+        href: page.url,
+        label: page.label,
+        current: page === current,
+      })),
+    },
+    {
+      title: "More",
+      links: [
+        { href: href("/stsx/llms.txt"), label: "STSX llms.txt" },
+        { href: href("/docs/[[...path]]", { path: "concepts/styles" }), label: "Styles in Lumiose" },
+        { href: href("/docs/[[...path]]", { path: "" }), label: "Lumiose docs" },
+      ],
+    },
+  ];
+
+  return (
+    <DocsShell label="STSX" sections={sections()}>
+      {props.children}
+    </DocsShell>
+  );
+}

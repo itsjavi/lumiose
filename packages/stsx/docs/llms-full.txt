@@ -1,0 +1,516 @@
+# STSX
+
+> `.stsx` files are TSX plus raw-CSS `<style>` blocks, scoped by where you put them and compiled at build time to plain scoped CSS. `@lumiose/stsx` brings them to React, React Router and Solid through a Vite plugin; Lumiose apps use them natively.
+
+These docs ship in `@lumiose/stsx` and match the installed version: `node_modules/@lumiose/stsx/docs`.
+In Lumiose apps, `.stsx` is the component format: `node_modules/lumiose/docs/llms.txt`.
+
+<!-- source: README.md -->
+
+# STSX
+
+> `.stsx` files are TSX plus raw-CSS `<style>` blocks, scoped by where you put them and compiled at build time to plain scoped CSS. `@lumiose/stsx` brings them to React, React Router and Solid through a Vite plugin; Lumiose apps use them natively.
+
+```tsx
+// Counter.stsx (React)
+import { useState } from "react";
+import { brand } from "./tokens.ts";
+
+export function Counter() {
+  const [count, setCount] = useState(0);
+  return (
+    <div className="counter">
+      <style>
+        .counter { display: flex; gap: 8px; }
+        button { background: $brand.primary; color: white; }
+      </style>
+      <button onClick={() => setCount(count + 1)}>count: {count}</button>
+    </div>
+  );
+}
+```
+
+The block styles only `Counter`'s elements: its `button` rule reaches no other button in the app.
+`$brand.primary` is a constant from `tokens.ts`, folded into the CSS at build time.
+
+**What you get:**
+
+- **Plain CSS** next to the markup, with nesting and modern syntax, and none of the class names
+  you would otherwise have to invent.
+- **No runtime.** Styles become a static stylesheet: extracted per route, minified and lowered
+  by Vite like any CSS. Elements carry a small marker, an attribute or a class.
+- **Scope by placement:** a block styles the file, a component, or one element's subtree,
+  depending on where it sits.
+- **Typed constants** shared between TypeScript and CSS, in values and in media queries.
+- **Editor support:** TypeScript and CSS features, class-name completion and unused-selector
+  warnings across the JSX and the blocks.
+
+**Status:** new. `@lumiose/stsx` shares the version of the other Lumiose packages.
+It has been tested with React 19, React Router 8 (framework mode, with server rendering) and Solid
+1.9 on Vite 8. Other JSX frameworks whose Vite plugin compiles `.tsx` files should work, but are
+untested.
+
+## Pages
+
+- [Installation](installation.md): the Vite plugin for React, React Router and Solid, and the
+  tsconfig for type checking.
+- [Styles](styles.md): placement and scope, global blocks, `$name` constants, `:global()` and
+  `:deep()`, keyframes, dynamic values, specificity and class passthrough.
+- [Options](options.md): `classAttribute` and `scopedStyles`.
+- [React Router](react-router.md): components in `.stsx`, route modules in `.tsx`, and CSS per route.
+- [Type checking and editors](type-checking.md): `stsx typegen`, `tsc` and the language server.
+
+In a Lumiose app, `.stsx` is the component format and needs no plugin of its own: see
+[Styles](https://itsjavi.com/lumiose/docs/concepts/styles/) in the Lumiose docs. These pages ship in
+`@lumiose/stsx` (`node_modules/@lumiose/stsx/docs`), so they match the installed version.
+
+<!-- source: installation.md -->
+
+# Installation
+
+> Add `@lumiose/stsx` to a Vite app before your framework's plugin, set `classAttribute` for the framework, and point the tsconfig at the shadow files so that `tsc` checks `.stsx` files.
+
+```sh
+pnpm add -D @lumiose/stsx
+```
+
+It needs Vite 8 and Node 24 or later. The plugin goes **before** the framework's plugin: it turns
+each `.stsx` file into TSX for that plugin, and its `<style>` blocks into a stylesheet for Vite.
+
+## React
+
+```ts
+// vite.config.ts
+import react from "@vitejs/plugin-react";
+import stsx from "@lumiose/stsx";
+import { defineConfig } from "vite";
+
+export default defineConfig({
+  plugins: [stsx({ classAttribute: "className" }), react()],
+});
+```
+
+Fast Refresh works as with `.tsx` files. An edit inside a `<style>` block replaces the stylesheet
+alone, without re-rendering.
+
+## React Router
+
+```ts
+// vite.config.ts
+import { reactRouter } from "@react-router/dev/vite";
+import stsx from "@lumiose/stsx";
+import { defineConfig } from "vite";
+
+export default defineConfig({
+  plugins: [stsx({ classAttribute: "className" }), reactRouter()],
+});
+```
+
+Route modules stay `.tsx` files and render components from `.stsx` files: see
+[React Router](react-router.md).
+
+## Solid
+
+```ts
+// vite.config.ts
+import stsx from "@lumiose/stsx";
+import { defineConfig } from "vite";
+import solid from "vite-plugin-solid";
+
+export default defineConfig({
+  plugins: [stsx({ classAttribute: "class" }), solid()],
+});
+```
+
+Solid compiles the scope markers into its static templates, so they cost nothing at runtime.
+Elements that Solid creates later (in `<For>`, `<Show>`) carry them too.
+
+## TypeScript
+
+Add the shadow directory to `rootDirs` and `include`, so that `import "./Card.stsx"` type-checks:
+
+```jsonc
+// tsconfig.json
+{
+  "compilerOptions": {
+    "rootDirs": [".", ".lumiose/stsx"],
+  },
+  "include": ["src", ".lumiose/stsx"],
+}
+```
+
+Add `.lumiose/` to `.gitignore`, and run `stsx typegen` before `tsc` in CI. Editors, other
+directories and the details: [Type checking and editors](type-checking.md).
+
+## Your first component
+
+Rename a component file from `.tsx` to `.stsx` and add a `<style>` block next to the elements it
+styles:
+
+```tsx
+// Card.stsx
+export function Card({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <article className="card">
+      <style>
+        .card { padding: 1rem; border-radius: 12px; background: #f4f4f5; }
+        h2 { margin: 0 0 0.5rem; }
+      </style>
+      <h2>{title}</h2>
+      {children}
+    </article>
+  );
+}
+```
+
+Imports of `./Card.stsx` work like imports of `./Card.tsx`. The rules of the blocks: [Styles](styles.md).
+
+<!-- source: styles.md -->
+
+# Styles
+
+> A `<style>` block holds plain CSS and styles what encloses it: the file at the top level, a component or one element's subtree inside JSX, or the whole app with `global`. Constants come from TypeScript with `$name`; `:global()` and `:deep()` cross the scope.
+
+## Placement decides scope
+
+| Placement                                       | Styles                                                                          |
+| ----------------------------------------------- | ------------------------------------------------------------------------------- |
+| Top level of the file (outside every component) | Every element of every component in the file                                    |
+| Inside a component's JSX                        | The element that contains the block and everything inside it, in that component |
+| `<style global>`, anywhere                      | The whole app, unscoped                                                         |
+
+```tsx
+export function Nav() {
+  return (
+    <nav>
+      <style>
+        a { color: inherit; }
+      </style>
+      <a href="/">Home</a>
+    </nav>
+  );
+}
+
+<style>
+  nav { display: flex; gap: 1rem; }
+</style>
+
+<style global>
+  body { margin: 0; }
+</style>
+```
+
+A block inside JSX must be a static child of an element or fragment: not inside a condition, a
+`.map()` or another `{…}` expression, and not the only thing a component returns. Use classes for
+variations.
+
+Every element in a scope carries the scope's marker, so dynamic classes and elements created
+later (lists, conditions) match the scope's rules too. Elements rendered by **another component**
+do not: reach them with `:deep()`, or with class passthrough (below).
+
+## Plain CSS
+
+Blocks are CSS, as in a `.css` file: nesting, `@media`, `@container`, `@supports`, `@layer`,
+custom properties and modern syntax. Vite lowers it for your `build.cssTarget`, minifies it, and
+extracts it into the stylesheet of the chunk or route that imports the component. Sass and other
+`lang` attributes are not supported; import `.scss` files through Vite instead.
+
+## Constants: `$name`
+
+A `$name` reference in a value or in an `@media`, `@container` or `@supports` condition is
+replaced at build time by a constant:
+
+```tsx
+import { BREAKPOINT, radius } from "./tokens.ts";
+
+const accent = "#e11d48";
+
+<style>
+  .card { border-radius: $radius.lg; border-color: $accent; }
+  @media (width < $BREAKPOINT) { .card { padding: 0; } }
+</style>
+```
+
+- **Eligible.** Top-level `const` bindings of the file, `export const` imports from `.ts`,
+  `.tsx` or `.stsx` modules, and local `const` bindings of the component (for a block in its JSX).
+  Their values must be statically known: literals, template literals of constants, members of
+  `as const` objects and arrays, and simple arithmetic.
+- **Strings** go in as raw CSS text, **numbers** as they are: write `"8px"`, or
+  `calc($gap * 1px)`.
+- **Dot notation** for object members (`$brand.primary`); `$brand-primary` is an error, since
+  JavaScript names cannot contain `-`.
+- **Not replaced** in selectors, property names, strings, comments or `url()`. In selectors,
+  `[href$=".pdf"]` keeps its CSS meaning.
+- **Updates.** Editing `tokens.ts` in dev updates the CSS of every file that uses it.
+
+CSS has no JavaScript expressions: blocks are static. For a value that changes at runtime, set a
+custom property in the `style` prop and read it with `var()`:
+
+```tsx
+<div className="bar" style={{ "--progress": `${percent}%` }}>
+  <style>
+    .bar { width: var(--progress); }
+  </style>
+</div>
+```
+
+## Escapes: `:global()` and `:deep()`
+
+- **`:global(sel)`** leaves `sel` unscoped: `.menu :global(.icon)` styles any `.icon` inside the
+  menu, and `:global(body.dark) .menu` reads a class on `<body>`.
+- **`:deep(sel)`** scopes only what is on its left: `.card :deep(a)` styles links that a child
+  component renders inside `.card`.
+
+## Keyframes
+
+`@keyframes` names are scoped per block's scope, and `animation` and `animation-name` references
+to them are rewritten, so two components can each define `@keyframes spin` without a clash.
+
+## Specificity
+
+By default a scoped selector gets one extra attribute or class, a (0,1,0) bump: `.note` becomes
+`.note[data-lum-a1b2c3d4]`. A component's rules then win over global rules of the same
+specificity. With `scopedStyles: { specificity: "zero" }` the marker goes inside `:where()` and
+adds nothing, so a global or utility class written later wins ([Options](options.md)).
+
+## Class passthrough
+
+With `scopedStyles: { strategy: "class" }`, the scope travels with the class you pass to a
+component:
+
+```tsx
+// Parent.stsx
+import { Button } from "./Button.tsx";
+
+export function Toolbar() {
+  return (
+    <div>
+      <style>
+        .cta { font-weight: bold; }
+      </style>
+      <Button className="cta">Save</Button>
+    </div>
+  );
+}
+```
+
+The parent's scope classes are appended to `className`. A `Button` that puts `props.className` on
+its element, as most components do, receives them, and `.cta` styles it. With the default
+attribute strategy, use `:deep()` instead.
+
+## Diagnostics
+
+The plugin reports problems in the dev overlay and the build output, with a code frame:
+
+- **`LUM3005`, unused selector.** A selector that matches no element of its scope (it reads
+  `classAttribute`).
+- **`LUM3008`, unresolvable constant.** A `$name` that is not a constant.
+- **`LUM3009`, hyphenated reference.** `$brand-primary`.
+- **`LUM3010` and `LUM3011`, misplaced block.** A block in a condition, or one that is a
+  component's only output.
+- **`LUM3014` to `LUM3020`.** CSS syntax and value problems.
+
+Each code has a page in the [Lumiose error reference](https://itsjavi.com/lumiose/docs/errors/).
+
+<!-- source: options.md -->
+
+# Options
+
+> `stsx({ classAttribute, scopedStyles })`: the JSX attribute that holds classes (required), and how scoped elements are marked and matched: attribute or class, default or zero specificity, and the marker's namespace.
+
+```ts
+stsx({
+  classAttribute: "className", // required: "className" or "class"
+  scopedStyles: {
+    strategy: "attribute", // or "class"
+    specificity: "default", // or "zero"
+    namespace: "lum",
+  },
+});
+```
+
+Invalid options stop Vite when the config loads, with the option and the expected values.
+
+## `classAttribute`
+
+The attribute that holds class names in your JSX: `"className"` for React and Preact, `"class"`
+for Solid. The unused-selector check (`LUM3005`) reads it. With the class strategy, the scope
+classes are merged into it, and class passthrough appends the parent's scope to the one passed to
+a component.
+
+## `scopedStyles`
+
+| `strategy`            | `specificity`       | Element                     | `.note` becomes                    |
+| --------------------- | ------------------- | --------------------------- | ---------------------------------- |
+| `attribute` (default) | `default` (default) | `data-lum-a1b2c3d4`         | `.note[data-lum-a1b2c3d4]`         |
+| `attribute`           | `zero`              | `data-lum-a1b2c3d4`         | `.note:where([data-lum-a1b2c3d4])` |
+| `class`               | `default`           | `class="note lum-a1b2c3d4"` | `.note.lum-a1b2c3d4`               |
+| `class`               | `zero`              | `class="note lum-a1b2c3d4"` | `.note:where(.lum-a1b2c3d4)`       |
+
+- **`strategy: "attribute"`** adds empty `data-<namespace>-<hash>` attributes and leaves your
+  class names alone.
+- **`strategy: "class"`** merges `<namespace>-<hash>` classes into `classAttribute`: appended to
+  a string, combined with a computed value, added to an element without one. It also enables
+  class passthrough to child components ([Styles](styles.md#class-passthrough)). Choose it when
+  something strips or rejects `data-*` attributes, or for passthrough.
+- **`specificity: "zero"`** wraps the marker in `:where()`: scoped rules then tie with global rules
+  of the same specificity, and source order decides. Choose it when global styles or utility
+  classes should override component styles without `!important`. Every evergreen browser
+  supports `:where()`.
+- **`namespace`** starts with a lowercase letter and holds lowercase letters, digits and hyphens.
+  Change it to avoid clashes with another library's markers.
+
+The hash is stable: it comes from the file's path relative to the project root (and the
+component's name), so builds on different machines produce the same markers. A `.stsx` file in a
+linked workspace package outside the root is named relative to its package.
+
+<!-- source: react-router.md -->
+
+# React Router
+
+> In React Router's framework mode, components can be `.stsx` files: their CSS is linked per route in server-rendered HTML, in dev and production. Route modules stay `.tsx` files that render those components.
+
+```ts
+// vite.config.ts
+import { reactRouter } from "@react-router/dev/vite";
+import stsx from "@lumiose/stsx";
+import { defineConfig } from "vite";
+
+export default defineConfig({
+  plugins: [stsx({ classAttribute: "className" }), reactRouter()],
+});
+```
+
+## Route modules are `.tsx`
+
+React Router finds a route module by the file path in `routes.ts`, and strips its server-only
+exports (`loader`, `action`) from the client build. It does that only for files it compiles
+itself, so a route module cannot be a `.stsx` file: the plugin stops the build with an error that
+says so. Keep the route in `.tsx`, and put the markup and its styles in a `.stsx` component:
+
+```tsx
+// app/routes/about.tsx
+import { AboutCard } from "../components/AboutCard.stsx";
+import type { Route } from "./+types/about";
+
+export function loader() {
+  return { message: "Hello from the loader" };
+}
+
+export default function About({ loaderData }: Route.ComponentProps) {
+  return <AboutCard message={loaderData.message} />;
+}
+```
+
+```tsx
+// app/components/AboutCard.stsx
+export function AboutCard({ message }: { message: string }) {
+  return (
+    <section className="about">
+      <h1>About</h1>
+      <p className="message">{message}</p>
+    </section>
+  );
+}
+
+<style>
+  .about { padding: 20px; border-radius: 14px; background: #d1fae5; }
+  .message { font-style: italic; }
+</style>
+```
+
+`root.tsx` can render `.stsx` components too: a layout shell, a navigation bar.
+
+## CSS per route
+
+- **Production.** Each route's stylesheet holds the CSS of the `.stsx` components it imports.
+  React Router links it in the route's server-rendered `<head>`, and client navigations load it
+  before the route renders.
+- **Dev.** React Router's critical CSS includes the `.stsx` styles, so pages do not flash
+  unstyled. An edit inside a `<style>` block hot-replaces the stylesheet alone, once per save.
+- **Styling a `NavLink` or `Link`.** It renders its `<a>` in your component's markup, but as
+  another component's element: reach it with `:deep()`, as in `nav :deep(a.active)`, or use the
+  class strategy so the scope travels with its `className`.
+
+## Types
+
+React Router's route types and the `.stsx` shadows share `rootDirs`:
+
+```jsonc
+// tsconfig.json
+{
+  "compilerOptions": {
+    "rootDirs": [".", "./.react-router/types", ".lumiose/stsx"],
+  },
+  "include": ["app", ".react-router/types", ".lumiose/stsx"],
+}
+```
+
+```sh
+stsx typegen && react-router typegen && tsc
+```
+
+<!-- source: type-checking.md -->
+
+# Type checking and editors
+
+> TypeScript checks `.stsx` files through shadow TSX files that `stsx typegen` and the Vite plugin write to `.lumiose/stsx`. The Lumiose language server and VS Code extension give `.stsx` files TypeScript and CSS features in any project.
+
+## Shadows
+
+TypeScript does not know `.stsx`. For each `.stsx` file, a TSX copy (the "shadow") is written to
+`.lumiose/stsx/<the file's path>.stsx.tsx`. Its style blocks are blanked out and every other
+character keeps its position, so the shadow type-checks like the component and every line and
+column matches the `.stsx` file. With `rootDirs`, `import "./Card.stsx"` resolves to the shadow:
+
+```jsonc
+// tsconfig.json
+{
+  "compilerOptions": {
+    "rootDirs": [".", ".lumiose/stsx"],
+  },
+  "include": ["src", ".lumiose/stsx"],
+}
+```
+
+- **Who writes them.** The Vite plugin writes every shadow when the dev server or a build starts,
+  and rewrites a file's shadow when you edit it. `stsx typegen` writes them all and removes those
+  of deleted files, for CI and other scripts.
+- **The tsconfig hint.** Without the `rootDirs` entry, `stsx typegen` prints the line to add.
+- **Version control.** Add `.lumiose/` to `.gitignore`: the shadows are generated.
+- **Another directory.** Name it `stsx` in `rootDirs`, as in `[".", ".types/stsx"]`. The plugin and
+  `stsx typegen` use it; the language server reads `.lumiose/stsx` only.
+
+```sh
+stsx typegen && tsc
+```
+
+`tsc` names the shadow in its errors (`.lumiose/stsx/src/Card.stsx.tsx(12,7)`), at the line and
+column of the `.stsx` file.
+
+## Constants in CSS
+
+`$name` references in style blocks become expressions in the shadow, so TypeScript checks them
+too: a missing export or member (`$brand.nope`) is a type error at the reference, and go to
+definition and rename work on it.
+
+## Editors
+
+The Lumiose VS Code extension handles `.stsx` files in any project; other editors run
+`@lumiose/language-server`, which it bundles. In a project that depends on `@lumiose/stsx` and
+not on `lumiose`, the server runs in **stsx mode**:
+
+- **TypeScript:** completion, hover, go to definition, references, rename and type errors,
+  through the shadows;
+- **CSS** in style blocks: completion, hover, colors and syntax errors;
+- **Class names** between the JSX (`class`, `className`, Solid's `classList`) and the blocks:
+  completion, go to definition, rename and unused-selector warnings;
+- **None of Lumiose's own checks:** no reactivity or island diagnostics and no
+  execution-contract hovers, since your framework's JSX is not Lumiose's.
+
+GitHub highlights `.stsx` as TSX with a line in `.gitattributes`:
+
+```text
+*.stsx linguist-language=TSX
+```
+

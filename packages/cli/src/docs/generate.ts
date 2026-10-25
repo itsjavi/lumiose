@@ -287,3 +287,33 @@ export function generateUiLlms(docs: readonly Doc[]): Map<string, string> {
   ];
   return llmsFiles(index, intro, [readme, ...guides, ...components]);
 }
+
+/**
+ * `llms.txt` and `llms-full.txt` of @lumiose/stsx's docs (the /stsx section of the site): the index
+ * (`README`), then its pages in the order of the index's own links, then any other page by title.
+ * Links are relative to the STSX docs directory; the docs ship in the package.
+ */
+export function generateStsxLlms(docs: readonly Doc[]): Map<string, string> {
+  const readme = docs.find((doc) => doc.topic === "README");
+  if (!readme) throw new Error("The STSX docs have no README.md index.");
+  const linked = [...readme.content.matchAll(/^- \[[^\]]+\]\(([^)#]+)\.md\)/gm)].map((m) => m[1]);
+  const pages = docs
+    .filter((doc) => doc !== readme)
+    .toSorted((a, b) => {
+      const at = (doc: Doc) => {
+        const index = linked.indexOf(doc.topic);
+        return index === -1 ? linked.length : index;
+      };
+      return at(a) - at(b) || a.title.localeCompare(b.title);
+    });
+  const intro = [
+    "# STSX",
+    "",
+    `> ${readme.summary ?? "Docs for @lumiose/stsx."}`,
+    "",
+    "These docs ship in `@lumiose/stsx` and match the installed version: `node_modules/@lumiose/stsx/docs`.",
+    "In Lumiose apps, `.stsx` is the component format: `node_modules/lumiose/docs/llms.txt`.",
+  ];
+  const index = [...intro, "", "## Docs", "", ...[readme, ...pages].map(uiEntry)];
+  return llmsFiles(index, intro, [readme, ...pages]);
+}

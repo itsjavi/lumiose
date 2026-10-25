@@ -1,0 +1,15 @@
+# STSX
+
+> `.stsx` files are TSX plus raw-CSS `<style>` blocks, scoped by where you put them and compiled at build time to plain scoped CSS. `@lumiose/stsx` brings them to React, React Router and Solid through a Vite plugin; Lumiose apps use them natively.
+
+These docs ship in `@lumiose/stsx` and match the installed version: `node_modules/@lumiose/stsx/docs`.
+In Lumiose apps, `.stsx` is the component format: `node_modules/lumiose/docs/llms.txt`.
+
+## Docs
+
+- [STSX](README.md): `.stsx` files are TSX plus raw-CSS `<style>` blocks, scoped by where you put them and compiled at build time to plain scoped CSS. `@lumiose/stsx` brings them to React, React Router and Solid through a Vite plugin; Lumiose apps use them natively.
+- [Installation](installation.md): Add `@lumiose/stsx` to a Vite app before your framework's plugin, set `classAttribute` for the framework, and point the tsconfig at the shadow files so that `tsc` checks `.stsx` files.
+- [Styles](styles.md): A `<style>` block holds plain CSS and styles what encloses it: the file at the top level, a component or one element's subtree inside JSX, or the whole app with `global`. Constants come from TypeScript with `$name`; `:global()` and `:deep()` cross the scope.
+- [Options](options.md): `stsx({ classAttribute, scopedStyles })`: the JSX attribute that holds classes (required), and how scoped elements are marked and matched: attribute or class, default or zero specificity, and the marker's namespace.
+- [React Router](react-router.md): In React Router's framework mode, components can be `.stsx` files: their CSS is linked per route in server-rendered HTML, in dev and production. Route modules stay `.tsx` files that render those components.
+- [Type checking and editors](type-checking.md): TypeScript checks `.stsx` files through shadow TSX files that `stsx typegen` and the Vite plugin write to `.lumiose/stsx`. The Lumiose language server and VS Code extension give `.stsx` files TypeScript and CSS features in any project.
