@@ -1,0 +1,10 @@
+const brandPrimary = "red";
+
+export function Broken() {
+  return <p className="x">broken</p>;
+}
+
+<style>
+  .x { color: $brand-primary; }
+  .unused { color: blue; }
+</style>

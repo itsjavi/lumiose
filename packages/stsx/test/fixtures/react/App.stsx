@@ -1,0 +1,31 @@
+import { useState } from "react";
+import { BREAKPOINT, brand } from "./tokens.ts";
+import { Chip } from "./Chip.tsx";
+
+export function Counter() {
+  const [count, setCount] = useState(0);
+  return (
+    <div className="counter">
+      <style>
+        .counter { display: flex; }
+        button { background: $brand.primary; }
+      </style>
+      <button onClick={() => setCount(count + 1)}>count: {count}</button>
+    </div>
+  );
+}
+
+export default function App() {
+  return (
+    <main className="page">
+      <Counter />
+      <Chip className="cta" label="chip" />
+    </main>
+  );
+}
+
+<style>
+  .page { background: $brand.soft; }
+  .cta { font-weight: bold; }
+  @media (width < $BREAKPOINT) { .page { padding: 0; } }
+</style>

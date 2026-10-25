@@ -1,0 +1,17 @@
+import { createSignal, For } from "solid-js";
+
+export default function App() {
+  const [count, setCount] = createSignal(0);
+  return (
+    <main class="page">
+      <button onClick={() => setCount(count() + 1)}>count: {count()}</button>
+      <ul>
+        <For each={[1, 2, 3]}>{(n) => <li class="dot">{n}</li>}</For>
+      </ul>
+      <style>
+        .page { padding: 1rem; }
+        .dot { color: teal; }
+      </style>
+    </main>
+  );
+}
