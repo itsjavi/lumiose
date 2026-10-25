@@ -1,0 +1,44 @@
+=== css
+main .note.lum-6ey8fjs6 {
+  color: green;
+}
+
+.card.lum-xq8o4hxs, p.lum-xq8o4hxs {
+  padding: 1rem;
+}
+
+.card > h2 + p ~ span.lum-xq8o4hxs, a[href$=".pdf"]:hover.lum-xq8o4hxs {
+  color: red;
+}
+
+.card.lum-xq8o4hxs:before, .card:hover.lum-xq8o4hxs:after, .lum-xq8o4hxs::selection {
+  content: "";
+}
+
+.card.lum-xq8o4hxs {
+  &:hover {
+    color: #00f;
+  }
+
+  & .title.lum-xq8o4hxs {
+    font-weight: bold;
+  }
+}
+
+.card.lum-xq8o4hxs .item a, .lum-xq8o4hxs .child {
+  margin: 0;
+}
+
+.card.lum-xq8o4hxs .icon, body.dark .card.lum-xq8o4hxs {
+  width: 1em;
+}
+
+@keyframes spin-xq8o4hxs {
+  to {
+    transform: rotate(1turn);
+  }
+}
+
+.card.lum-xq8o4hxs {
+  animation: 1s spin-xq8o4hxs;
+}

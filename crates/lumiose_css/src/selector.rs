@@ -14,8 +14,9 @@ use crate::{ElementInventory, Span};
 
 /// How to scope the selectors of one block.
 pub(crate) struct ScopeContext<'a> {
-    /// The attribute selector to insert, `[data-l-<token>]`; `None` in a global block.
-    pub attribute: Option<&'a str>,
+    /// The selector to insert (`[data-lum-<token>]`, `.lum-<token>`, maybe in `:where()`); `None`
+    /// in a global block.
+    pub marker: Option<&'a str>,
     /// The scope's elements, for `LUM3005`.
     pub inventory: Option<&'a ElementInventory>,
     /// How messages name the scope: "component `Card`" or "this file".
@@ -118,7 +119,7 @@ fn rewrite_complex(
     }
 
     let compounds = &complex.compounds;
-    // The compound that gets the token, where the attribute goes, and the simple selectors
+    // The compound that gets the token, where the marker goes, and the simple selectors
     // that make up the subject (for `LUM3005`).
     let target: Option<(&[Simple], usize)> = match deep {
         None => compounds
@@ -142,9 +143,9 @@ fn rewrite_complex(
             // `.a:deep(.b)` → `.a[t] .b`; `.a :deep(.b)` → `.a[t] .b`; a leading `:deep(.b)`
             // → `[t] .b` (top level) or `.b` (nested: relative to the scoped parent).
             let opening = simple.range.start..args.start;
-            let replacement = match (left.is_empty(), scope.attribute) {
+            let replacement = match (left.is_empty(), scope.marker) {
                 (false, _) => " ".to_owned(),
-                (true, Some(attribute)) if k == 0 && !nested => format!("{attribute} "),
+                (true, Some(marker)) if k == 0 && !nested => format!("{marker} "),
                 (true, _) => String::new(),
             };
             out.edits.push(Edit::replace(opening, replacement));
@@ -153,14 +154,14 @@ fn rewrite_complex(
         }
     };
 
-    let (Some(attribute), Some((simples, at))) = (scope.attribute, target) else {
+    let (Some(marker), Some((simples, at))) = (scope.marker, target) else {
         return;
     };
     // A compound with `&` is the parent element, which already carries the token.
     if simples.iter().any(|s| s.kind == Kind::Nesting) {
         return;
     }
-    out.edits.push(Edit::insert(at, attribute));
+    out.edits.push(Edit::insert(at, marker));
     if let Some(inventory) = scope.inventory
         && let Some((simple, reason)) = unmatched(css, simples, inventory)
     {
@@ -562,9 +563,9 @@ mod tests {
     use super::*;
     use crate::edits::Rewritten;
 
-    fn rewrite_with(css: &str, nested: bool, attribute: Option<&str>) -> (String, Vec<String>) {
+    fn rewrite_with(css: &str, nested: bool, marker: Option<&str>) -> (String, Vec<String>) {
         let scope = ScopeContext {
-            attribute,
+            marker,
             inventory: None,
             scope_label: "this file",
         };
@@ -700,7 +701,7 @@ mod tests {
             ..ElementInventory::default()
         };
         let scope = ScopeContext {
-            attribute: Some("[t]"),
+            marker: Some("[t]"),
             inventory: Some(&inventory),
             scope_label: "component `Card`",
         };

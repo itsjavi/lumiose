@@ -9,7 +9,7 @@
   }
 }
 
-.page[data-l-rm5eopd9] {
+.page[data-lum-rm5eopd9] {
   --name: fade;
   animation: .2s fade-rm5eopd9;
 }
@@ -36,23 +36,23 @@
   }
 }
 
-.spinner[data-l-sy3s2vln] {
+.spinner[data-lum-sy3s2vln] {
   animation: 1s linear infinite spin-sy3s2vln;
 }
 
-.dot[data-l-sy3s2vln] {
+.dot[data-lum-sy3s2vln] {
   animation: 2s fade-rm5eopd9, 1s pulse\ wave-sy3s2vln, 1s vendor-bounce;
 }
 
-.ring[data-l-sy3s2vln] {
+.ring[data-lum-sy3s2vln] {
   animation-name: spin-sy3s2vln, fade-rm5eopd9;
 }
 
-.busy[data-l-sy3s2vln] {
+.busy[data-lum-sy3s2vln] {
   animation-name: none;
 }
 
-.toast[data-l-5htuz52m] {
+.toast[data-lum-5htuz52m] {
   animation: 3s spin;
 }
 
@@ -63,7 +63,7 @@
     }
   }
 
-  .toast[data-l-5htuz52m] {
+  .toast[data-lum-5htuz52m] {
     animation: .3s ease-out fade-5htuz52m;
   }
 }

@@ -1,27 +1,27 @@
 === css
-.anything-goes[data-l-6uzmws3n], section[data-l-6uzmws3n], .card[data-l-jrwca9d4], .card .title[data-l-jrwca9d4], h2.title[data-l-jrwca9d4], #main[data-l-jrwca9d4], .card:hover[data-l-jrwca9d4] {
+.anything-goes[data-lum-6uzmws3n], section[data-lum-6uzmws3n], .card[data-lum-jrwca9d4], .card .title[data-lum-jrwca9d4], h2.title[data-lum-jrwca9d4], #main[data-lum-jrwca9d4], .card:hover[data-lum-jrwca9d4] {
   color: red;
 }
 
-.missing[data-l-jrwca9d4], footer[data-l-jrwca9d4], #nope[data-l-jrwca9d4], .card .gone[data-l-jrwca9d4] {
+.missing[data-lum-jrwca9d4], footer[data-lum-jrwca9d4], #nope[data-lum-jrwca9d4], .card .gone[data-lum-jrwca9d4] {
   color: #00f;
 }
 
-Button.cta[data-l-jrwca9d4], a.cta[data-l-jrwca9d4], .cta#anything[data-l-jrwca9d4] {
+Button.cta[data-lum-jrwca9d4], a.cta[data-lum-jrwca9d4], .cta#anything[data-lum-jrwca9d4] {
   color: green;
 }
 
-.missing[data-l-jrwca9d4] .child, .outside .card[data-l-jrwca9d4], .x\:y[data-l-jrwca9d4] {
+.missing[data-lum-jrwca9d4] .child, .outside .card[data-lum-jrwca9d4], .x\:y[data-lum-jrwca9d4] {
   margin: 0;
 }
 
-.card[data-l-jrwca9d4] {
-  & .absent[data-l-jrwca9d4], &.dynamic {
+.card[data-lum-jrwca9d4] {
+  & .absent[data-lum-jrwca9d4], &.dynamic {
     color: red;
   }
 }
 
-.bar[data-l-jrwca9d4] {
+.bar[data-lum-jrwca9d4] {
   width: calc(var(--progress) * 100%);
 }
 === diagnostics

@@ -1,30 +1,30 @@
 === css
-p[data-l-xmc593zf] {
+p[data-lum-xmc593zf] {
   margin: 0;
 }
 
-.arrow[data-l-s5k0mrq0]:before {
+.arrow[data-lum-s5k0mrq0]:before {
   content: "→ 😀";
 }
 
-.arrow[data-l-s5k0mrq0] {
+.arrow[data-lum-s5k0mrq0] {
   gap: 4px;
 }
 
-.next[data-l-s5k0mrq0] {
+.next[data-lum-s5k0mrq0] {
   color: red;
   gap: 4px;
 }
 
 @media (width > 1px) {
-  .arrow[data-l-s5k0mrq0] {
+  .arrow[data-lum-s5k0mrq0] {
     color: red;
   }
 }
 === map
-1:0 `p[data-l-xmc593zf] {` → 20:2 `p { margin: 0; }`
-5:0 `.arrow[data-l-s5k0mrq0]:` → 10:8 `.arrow::before { content`
-9:0 `.arrow[data-l-s5k0mrq0]` → 10:44 `.arrow { gap: $gap; } .n`
-13:0 `.next[data-l-s5k0mrq0] {` → 10:66 `.next { gap: $gap; color`
+1:0 `p[data-lum-xmc593zf] {` → 20:2 `p { margin: 0; }`
+5:0 `.arrow[data-lum-s5k0mrq0` → 10:8 `.arrow::before { content`
+9:0 `.arrow[data-lum-s5k0mrq0` → 10:44 `.arrow { gap: $gap; } .n`
+13:0 `.next[data-lum-s5k0mrq0]` → 10:66 `.next { gap: $gap; color`
 18:0 `@media (width > 1px) {` → 11:8 `@media (width > 1px) {`
-19:2 `.arrow[data-l-s5k0mrq0]` → 12:10 `.arrow { color: red; }`
+19:2 `.arrow[data-lum-s5k0mrq0` → 12:10 `.arrow { color: red; }`

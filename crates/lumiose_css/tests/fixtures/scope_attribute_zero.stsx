@@ -1,0 +1,26 @@
+// Attribute strategy, zero specificity (decision-85): `:where([data-lum-<token>])`.
+// @scope attribute zero
+export function Card() {
+  return (
+    <article class="card">
+      <style>
+        .card, p { padding: 1rem; }
+        .card > h2 + p ~ span, a[href$=".pdf"]:hover { color: red; }
+        .card::before, .card:hover::after, ::selection { content: ""; }
+        .card {
+          &:hover { color: blue; }
+          .title { font-weight: bold; }
+        }
+        .card :deep(.item a), :deep(.child) { margin: 0; }
+        .card :global(.icon), :global(body.dark) .card { width: 1em; }
+        @keyframes spin { to { transform: rotate(1turn); } }
+        .card { animation: spin 1s; }
+      </style>
+      <h2 class="title">Title</h2>
+    </article>
+  );
+}
+
+<style>
+  main .note { color: green; }
+</style>

@@ -1,5 +1,5 @@
 === css
-.card[data-l-qdse9v4z] {
+.card[data-lum-qdse9v4z] {
   color: notacolor;
   width: 10 px;
   background-color: notacolor;
@@ -15,7 +15,7 @@
   display: flexbox !important;
 }
 
-.card[data-l-qdse9v4z] {
+.card[data-lum-qdse9v4z] {
   @media print {
     color: nope;
   }

@@ -7,19 +7,19 @@ html {
   margin: 0;
 }
 
-.file[data-l-4jzvlchn] {
+.file[data-lum-4jzvlchn] {
   color: red;
 }
 
-body.dark .menu[data-l-jyhh5azx] {
+body.dark .menu[data-lum-jyhh5azx] {
   background: #000;
 }
 
-.menu[data-l-jyhh5azx] .icon {
+.menu[data-lum-jyhh5azx] .icon {
   width: 1em;
 }
 
-.menu.open[data-l-jyhh5azx] {
+.menu.open[data-lum-jyhh5azx] {
   display: block;
 }
 
@@ -31,19 +31,19 @@ body.dark .menu[data-l-jyhh5azx] {
   color: red;
 }
 
-.menu[data-l-jyhh5azx] .item a {
+.menu[data-lum-jyhh5azx] .item a {
   color: inherit;
 }
 
-.menu[data-l-jyhh5azx] .item {
+.menu[data-lum-jyhh5azx] .item {
   margin: 0;
 }
 
-[data-l-jyhh5azx] .child {
+[data-lum-jyhh5azx] .child {
   gap: 1rem;
 }
 
-.menu[data-l-jyhh5azx] {
+.menu[data-lum-jyhh5azx] {
   & .nested {
     color: #00f;
   }
@@ -53,11 +53,11 @@ body.dark .menu[data-l-jyhh5azx] {
   }
 }
 
-.menu:not(.disabled)[data-l-jyhh5azx] {
+.menu:not(.disabled)[data-lum-jyhh5azx] {
   cursor: pointer;
 }
 
-:global .bare[data-l-jyhh5azx], .menu[data-l-jyhh5azx] .one .two, .menu.x[data-l-jyhh5azx] {
+:global .bare[data-lum-jyhh5azx], .menu[data-lum-jyhh5azx] .one .two, .menu.x[data-lum-jyhh5azx] {
   color: red;
 }
 

@@ -1,0 +1,44 @@
+=== css
+main .note:where(.app-yit0wmvz) {
+  color: green;
+}
+
+.card:where(.app-mu55zxw3), p:where(.app-mu55zxw3) {
+  padding: 1rem;
+}
+
+.card > h2 + p ~ span:where(.app-mu55zxw3), a[href$=".pdf"]:hover:where(.app-mu55zxw3) {
+  color: red;
+}
+
+.card:where(.app-mu55zxw3):before, .card:hover:where(.app-mu55zxw3):after, :where(.app-mu55zxw3)::selection {
+  content: "";
+}
+
+.card:where(.app-mu55zxw3) {
+  &:hover {
+    color: #00f;
+  }
+
+  & .title:where(.app-mu55zxw3) {
+    font-weight: bold;
+  }
+}
+
+.card:where(.app-mu55zxw3) .item a, :where(.app-mu55zxw3) .child {
+  margin: 0;
+}
+
+.card:where(.app-mu55zxw3) .icon, body.dark .card:where(.app-mu55zxw3) {
+  width: 1em;
+}
+
+@keyframes spin-mu55zxw3 {
+  to {
+    transform: rotate(1turn);
+  }
+}
+
+.card:where(.app-mu55zxw3) {
+  animation: 1s spin-mu55zxw3;
+}

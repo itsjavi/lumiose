@@ -1,5 +1,5 @@
 === css
-.broken[data-l-108q9hnp] {
+.broken[data-lum-108q9hnp] {
   width: 10px;
 }
 
@@ -7,11 +7,11 @@
   color: red;
 }
 
-.broken :deep()[data-l-108q9hnp] {
+.broken :deep()[data-lum-108q9hnp] {
   color: red;
 }
 
-.ok[data-l-108q9hnp] {
+.ok[data-lum-108q9hnp] {
   color: red;
 }
 === diagnostics

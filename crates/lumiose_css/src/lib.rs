@@ -9,11 +9,11 @@
 //! # Behaviour
 //!
 //! - **Scopes.** A [`Scope::File`], [`Scope::Component`] or [`Scope::Subtree`] block is scoped
-//!   with the attribute
-//!   [`scope_attribute`]`(token)`, `[data-l-<token>]`, appended to the last compound of
-//!   every selector, before any pseudo-element (a (0,1,0) specificity bump). Use
-//!   [`scope_token`] to derive tokens so that templates and CSS agree. [`Scope::Global`]
-//!   blocks are emitted unscoped.
+//!   with [`CssInput::scope_style`]'s [`ScopeStyle::selector`]`(token)`, appended to the last
+//!   compound of every selector, before any pseudo-element: `[data-lum-<token>]` by default (a
+//!   (0,1,0) specificity bump), `.lum-<token>` with the class strategy, either inside `:where()`
+//!   with zero specificity (decision-85). Use [`scope_token`] and [`ScopeStyle::marker`] so
+//!   that templates and CSS agree. [`Scope::Global`] blocks are emitted unscoped.
 //! - **`:global(sel)`** leaves `sel` unscoped; the token goes on the last compound that still
 //!   has a scoped part (a type, class, id, attribute, `*` or `&`), so `.a :global(.b)` is
 //!   `.a[t] .b` and a selector made only of `:global()` parts is fully global.
@@ -96,7 +96,10 @@ pub use diagnostics::{CssCode, CssDiagnostic, Fix, Label, Severity, TextEdit};
 pub use lightningcss::targets::{Browsers, Targets};
 pub use prepass::{RefSite, find_refs};
 pub use process::process;
-pub use token::{scope_attribute, scope_token};
+pub use token::{
+    DEFAULT_NAMESPACE, ScopeSpecificity, ScopeStrategy, ScopeStyle, scope_attribute, scope_token,
+    validate_namespace,
+};
 
 /// A half-open byte range `start..end` in the original source.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default, PartialOrd, Ord)]
@@ -252,6 +255,8 @@ pub struct CssInput<'a> {
     /// CSS reads are reported as `LUM3012`. Leave empty to skip the check (for example when
     /// the property is meant for CSS in another file; see [`CssOutput::custom_properties_read`]).
     pub custom_properties_set: &'a [CustomPropertySet],
+    /// How scoped selectors match the markers the templates carry (decision-85).
+    pub scope_style: ScopeStyle<'a>,
 }
 
 /// Build options shared by every file.

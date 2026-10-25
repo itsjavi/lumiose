@@ -1,5 +1,5 @@
 === css
-.regular[data-l-v0l7zw5c] {
+.regular[data-lum-v0l7zw5c] {
   opacity: .5;
   width: calc(100% - 16px);
   height: calc(1em + 2px);
@@ -12,7 +12,7 @@
   transform: rotate(90deg);
 }
 
-.custom[data-l-v0l7zw5c] {
+.custom[data-lum-v0l7zw5c] {
   --space: 16px;
   --spaces: 8px 16px, 10px;
   --size: 8px;
@@ -32,7 +32,7 @@
   --upper: 4px;
 }
 
-.functions[data-l-v0l7zw5c] {
+.functions[data-lum-v0l7zw5c] {
   --round: 3px;
   --mod: 1px;
   --rem: calc(-1px);
@@ -50,7 +50,7 @@
   --pi: 3.14159deg;
 }
 
-.untouched[data-l-v0l7zw5c] {
+.untouched[data-lum-v0l7zw5c] {
   --mixed: calc(100% - 8 * 2px);
   --relative: calc(1em + 2px);
   --viewport: min(10vw, 100px);

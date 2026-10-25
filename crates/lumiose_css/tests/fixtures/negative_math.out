@@ -1,5 +1,5 @@
 === css
-.clamped[data-l-nhp0mkie] {
+.clamped[data-lum-nhp0mkie] {
   border: 0 solid red;
   -webkit-border-radius: 0;
   border-top-left-radius: 0;
@@ -21,7 +21,7 @@
   }
 }
 
-.untouched[data-l-nhp0mkie] {
+.untouched[data-lum-nhp0mkie] {
   min-width: calc(var(--w) - 7px);
   --negative: calc(-5px);
   margin-left: -5px;
@@ -32,6 +32,6 @@
 === var() reads
 --w
 === map
-1:0 `.clamped[data-l-nhp0mkie` → 11:2 `.clamped {`
+1:0 `.clamped[data-lum-nhp0mk` → 11:2 `.clamped {`
 17:0 `@keyframes shrink-nhp0mk` → 27:2 `@keyframes shrink {`
-23:0 `.untouched[data-l-nhp0mk` → 31:2 `.untouched {`
+23:0 `.untouched[data-lum-nhp0` → 31:2 `.untouched {`

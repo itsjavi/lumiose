@@ -1,0 +1,44 @@
+=== css
+main .note:where([data-lum-zinsygne]) {
+  color: green;
+}
+
+.card:where([data-lum-zc0pa4g4]), p:where([data-lum-zc0pa4g4]) {
+  padding: 1rem;
+}
+
+.card > h2 + p ~ span:where([data-lum-zc0pa4g4]), a[href$=".pdf"]:hover:where([data-lum-zc0pa4g4]) {
+  color: red;
+}
+
+.card:where([data-lum-zc0pa4g4]):before, .card:hover:where([data-lum-zc0pa4g4]):after, :where([data-lum-zc0pa4g4])::selection {
+  content: "";
+}
+
+.card:where([data-lum-zc0pa4g4]) {
+  &:hover {
+    color: #00f;
+  }
+
+  & .title:where([data-lum-zc0pa4g4]) {
+    font-weight: bold;
+  }
+}
+
+.card:where([data-lum-zc0pa4g4]) .item a, :where([data-lum-zc0pa4g4]) .child {
+  margin: 0;
+}
+
+.card:where([data-lum-zc0pa4g4]) .icon, body.dark .card:where([data-lum-zc0pa4g4]) {
+  width: 1em;
+}
+
+@keyframes spin-zc0pa4g4 {
+  to {
+    transform: rotate(1turn);
+  }
+}
+
+.card:where([data-lum-zc0pa4g4]) {
+  animation: 1s spin-zc0pa4g4;
+}

@@ -16,9 +16,7 @@ use crate::lines::{LineIndex, Newlines};
 use crate::prepass::{self, RefSite};
 use crate::selector::{self, Rewrite, ScopeContext};
 use crate::values::Substitution;
-use crate::{
-    CssBlock, CssInput, CssOptions, CssOutput, RefValue, Scope, Span, scope_attribute, sourcemap,
-};
+use crate::{CssBlock, CssInput, CssOptions, CssOutput, RefValue, Scope, Span, sourcemap};
 
 /// Processes the `<style>` blocks of one file into a single stylesheet. See the crate docs
 /// for the behaviour.
@@ -271,10 +269,10 @@ fn prepare<'a>(
     let clamps = clamp::guard(content, &scan.declarations, &edits);
     edits.extend(clamps);
 
-    let attribute = block
+    let marker = block
         .scope
         .token()
-        .map(|token| format!("[{}]", scope_attribute(token)));
+        .map(|token| input.scope_style.selector(token));
     let label = match &block.scope {
         Scope::Component { name, .. } => format!("component `{name}`"),
         Scope::Subtree { name, element, .. } => {
@@ -283,7 +281,7 @@ fn prepare<'a>(
         Scope::File { .. } | Scope::Global { .. } => "this file".to_owned(),
     };
     let scope = ScopeContext {
-        attribute: attribute.as_deref(),
+        marker: marker.as_deref(),
         inventory: block
             .scope
             .token()
@@ -599,14 +597,14 @@ mod tests {
         let css = output.css;
         // Own > innermost enclosing > outer; unknown names stay global; siblings are separate.
         assert!(
-            css.contains(".b[data-l-b]{animation:1s spin-r,1s fade-b}"),
+            css.contains(".b[data-lum-b]{animation:1s spin-r,1s fade-b}"),
             "{css}"
         );
         assert!(
-            css.contains(".c[data-l-c]{animation:1s spin-r,1s fade-b,1s pulse}"),
+            css.contains(".c[data-lum-c]{animation:1s spin-r,1s fade-b,1s pulse}"),
             "{css}"
         );
-        assert!(css.contains(".d[data-l-d]{animation:1s fade-r}"), "{css}");
+        assert!(css.contains(".d[data-lum-d]{animation:1s fade-r}"), "{css}");
     }
 
     #[test]

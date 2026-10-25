@@ -253,6 +253,12 @@ pub fn process(
         // `LUM3012` needs every stylesheet of the app (a property set here is often read by
         // another file's CSS), so it is left to a project-wide check.
         custom_properties_set: &[],
+        // The templates still carry `scope_attribute`'s legacy `data-l-` markers until the
+        // compiler takes `scopedStyles` (TASK-573).
+        scope_style: lumiose_css::ScopeStyle {
+            namespace: "l",
+            ..lumiose_css::ScopeStyle::default()
+        },
     };
     let output = lumiose_css::process(
         &input,

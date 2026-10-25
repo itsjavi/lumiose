@@ -6,6 +6,7 @@
 //! - `// @ref radius.lg = "8px"` / `// @ref gap = 4`: a resolved `$` constant;
 //! - `// @inventory <file|Component> tags=a,b classes=c component-classes=d ids=e dynamic=classes`;
 //! - `// @style-prop --name`: a custom property set in a JSX `style` prop;
+//! - `// @scope <attribute|class> <default|zero> [namespace]`: the scope style (decision-85);
 //! - `// @minify`, `// @sourcemap`, `// @targets <browserslist query>`;
 //! - `// @crlf`: run on the source with CRLF line endings.
 //!
@@ -20,7 +21,8 @@ use std::path::Path;
 
 use lumiose_css::{
     CssBlock, CssInput, CssOptions, CustomPropertySet, ElementInventory, RefValue, ResolvedRef,
-    Scope, Span, browserslist_targets, find_refs, process, scope_token,
+    Scope, ScopeSpecificity, ScopeStrategy, ScopeStyle, Span, browserslist_targets, find_refs,
+    process, scope_token,
 };
 use parcel_sourcemap::SourceMap;
 
@@ -100,6 +102,7 @@ fn run(name: &str, source: &str) -> String {
         refs: &refs,
         inventories: &inventories,
         custom_properties_set: &header.style_props,
+        scope_style: header.scope_style(),
     };
     let output = process(&input, &header.options);
 
@@ -213,6 +216,23 @@ struct Header {
     inventories: Vec<(String, ElementInventory)>,
     style_props: Vec<CustomPropertySet>,
     options: CssOptions,
+    /// `// @scope <attribute|class> <default|zero> [namespace]`.
+    scope: Option<(ScopeStrategy, ScopeSpecificity, Option<String>)>,
+}
+
+impl Header {
+    fn scope_style(&self) -> ScopeStyle<'_> {
+        let Some((strategy, specificity, namespace)) = &self.scope else {
+            return ScopeStyle::default();
+        };
+        ScopeStyle {
+            strategy: *strategy,
+            specificity: *specificity,
+            namespace: namespace
+                .as_deref()
+                .unwrap_or(lumiose_css::DEFAULT_NAMESPACE),
+        }
+    }
 }
 
 impl Header {
@@ -271,6 +291,20 @@ impl Header {
                         name: rest.to_owned(),
                         span: Span::new(name_start as u32, (name_start + rest.len()) as u32),
                     });
+                }
+                "scope" => {
+                    let mut parts = rest.split_whitespace();
+                    let strategy = match parts.next() {
+                        Some("attribute") => ScopeStrategy::Attribute,
+                        Some("class") => ScopeStrategy::Class,
+                        other => panic!("`@scope <attribute|class> …`, got {other:?}"),
+                    };
+                    let specificity = match parts.next() {
+                        Some("default") => ScopeSpecificity::Default,
+                        Some("zero") => ScopeSpecificity::Zero,
+                        other => panic!("`@scope <strategy> <default|zero>`, got {other:?}"),
+                    };
+                    header.scope = Some((strategy, specificity, parts.next().map(String::from)));
                 }
                 "minify" => header.options.minify = true,
                 "crlf" => {}

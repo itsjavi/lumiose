@@ -24,7 +24,7 @@
     &:hover { tab-size: 2; }
 }
 
-.card[data-l-3nufjgmn] {
+.card[data-lum-3nufjgmn] {
   padding: 0;
 
   @apply p-6 font-bold hover:bg-red-500;
@@ -36,18 +36,18 @@
     color: white;
   }
 
-  & .title[data-l-3nufjgmn] {
+  & .title[data-lum-3nufjgmn] {
     @apply text-xl;
   }
 }
 
 @made-up-rule foo;
 
-.b[data-l-3nufjgmn] {
+.b[data-lum-3nufjgmn] {
   @frobnicate x;
 }
 
-.c[data-l-3nufjgmn] {
+.c[data-lum-3nufjgmn] {
   @APPLY p-2;
 }
 === diagnostics
