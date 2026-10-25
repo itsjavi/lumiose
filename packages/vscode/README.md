@@ -69,16 +69,22 @@ Limits:
 
 ## Installing a local build
 
-Build the native compiler and package the extension for this machine, then install the `.vsix`
-over any previous Lumiose build (`--force` replaces it even though the version is unchanged):
+The extension is not published to the VS Code Marketplace or Open VSX yet, so this is the only way
+to install it. In a clone of the repository (Node.js 24, pnpm and Rust through rustup, which
+installs the version in `rust-toolchain.toml`), build the native compiler and package the extension
+for this machine, then install the `.vsix` over any previous Lumiose build (`--force` replaces it
+even though the version is unchanged):
 
 ```sh
+pnpm install
 pnpm build:compiler                          # packages/compiler/compiler.<platform>.node
 pnpm --filter lumiose-vscode run package       # packages/vscode/lumiose-vscode-<target>.vsix
 code --install-extension packages/vscode/lumiose-vscode-darwin-arm64.vsix --force
 ```
 
-Use the `.vsix` of your platform (`lumiose-vscode-linux-x64.vsix`, …; see Platforms). Then run
+Use the `.vsix` of your platform (`lumiose-vscode-linux-x64.vsix`, …; see Platforms). In Cursor,
+VSCodium and other forks, run **Extensions: Install from VSIX…** from the command palette instead
+of `code`. Then run
 **Developer: Reload Window** in every open VS Code window. To check what runs, open the **Lumiose
 Language Server** output channel: it logs the server's path and source (`bundled`, `workspace` or
 `setting`). In this repository, a workspace with `@lumiose/language-server` installed uses the

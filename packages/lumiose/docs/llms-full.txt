@@ -326,8 +326,25 @@ pnpm lumiose fmt          # oxfmt for the TSX, plus each <style> block
 
 ## Editor
 
-Install the Lumiose VS Code extension (`lumiose-vscode`). It adds the `stsx` language and runs the
-Lumiose language server, which proxies TypeScript for `.ts`, `.tsx` and `.stsx` files and adds:
+The Lumiose VS Code extension (`lumiose.lumiose-vscode`) is not on the VS Code Marketplace or
+Open VSX yet: build it from a clone of the repository and install the `.vsix` file for your
+platform. The build needs Node.js 24, pnpm and Rust (rustup installs the version pinned in
+`rust-toolchain.toml`):
+
+```sh
+git clone https://github.com/itsjavi/lumiose.git && cd lumiose
+pnpm install
+pnpm build:compiler                        # the native compiler for this machine
+pnpm --filter lumiose-vscode run package   # packages/vscode/lumiose-vscode-<platform>.vsix
+code --install-extension packages/vscode/lumiose-vscode-darwin-arm64.vsix --force
+```
+
+Replace `darwin-arm64` with your platform: `darwin-x64`, `linux-x64`, `linux-arm64` or `win32-x64`.
+In Cursor, VSCodium and other VS Code forks, run **Extensions: Install from VSIX…** from the command
+palette instead of `code`. Then run **Developer: Reload Window**.
+
+The extension adds the `stsx` language and runs the Lumiose language server, which proxies
+TypeScript for `.ts`, `.tsx` and `.stsx` files and adds:
 
 - CSS features inside `<style>` blocks;
 - class completion, definitions and rename that follow placement: the blocks enclosing the
