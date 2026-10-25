@@ -132,7 +132,7 @@ export interface ComponentInfo {
    * without one. `type` is the declaration of a props type named in the same file, if any.
    */
   props: { parameter: string; type?: string } | null;
-  /** The `data-l-*` scope attribute of each element that holds `<style>` blocks. */
+  /** The scope marker (`data-lum-*` attribute or `lum-*` class) of each element that holds `<style>` blocks. */
   styleScopes: { attribute: string; location: Location }[];
 }
 

@@ -54,7 +54,7 @@ describe.skipIf(!binding)("@lumiose/compiler native compile", () => {
       styleImport: false,
     });
     const token = result.meta.scopeTokens.components.Counter![0]!.attribute;
-    expect(token).toMatch(/^data-l-[0-9a-z]{8}$/);
+    expect(token).toMatch(/^data-lum-[0-9a-z]{8}$/);
     expect(result.meta.scopeTokens.file).toBeUndefined();
     expect(result.code).toContain(`template(\`<button class=card ${token}> \`)`);
     expect(result.code).not.toContain("lang.css");

@@ -247,9 +247,8 @@ impl<'a> Codegen<'a, '_> {
                 args: Vec::new(),
             });
         }
-        for token in self.scope_tokens(span) {
-            template.element_attrs_mut(node).push((token, None));
-        }
+        let markers = self.scope_tokens(span);
+        self.stamp_scope(template.element_attrs_mut(node), markers);
         if let Some((name, value)) = self.source_attribute(&tag, span) {
             template.element_attrs_mut(node).push((name, Some(value)));
         }

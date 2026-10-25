@@ -1,8 +1,8 @@
 import { ssr, SSRHtml, insert, insertText } from "lumiose/server";
 import "/src/misplaced-style.stsx?lumiose&type=style&lang.css";
-const _s0 = ["<li data-l-3y536f6d>", "</li>"];
-const _c0 = (h0) => typeof h0 === "string" ? new SSRHtml("<li data-l-3y536f6d>" + h0 + "</li>") : ssr(_s0, h0);
-const _s1 = ["<footer data-l-snjkckt6></footer>"];
+const _s0 = ["<li data-lum-3y536f6d>", "</li>"];
+const _c0 = (h0) => typeof h0 === "string" ? new SSRHtml("<li data-lum-3y536f6d>" + h0 + "</li>") : ssr(_s0, h0);
+const _s1 = ["<footer data-lum-snjkckt6></footer>"];
 const _s2 = [
 	"<ul>",
 	"",

@@ -22,12 +22,6 @@ pub fn scope_token(path: &str, component: Option<&str>) -> String {
     base36(mix(hash) % 36u64.pow(8), 8)
 }
 
-/// The legacy attribute name for a token, `data-l-<token>`: the compiler's markers until it takes
-/// a [`ScopeStyle`] (TASK-573), which then replaces this function.
-pub fn scope_attribute(token: &str) -> String {
-    format!("data-l-{token}")
-}
-
 /// The default [`ScopeStyle::namespace`].
 pub const DEFAULT_NAMESPACE: &str = "lum";
 
@@ -152,7 +146,6 @@ mod tests {
             scope_token("src/a.stsx", Some("Card")),
             scope_token("src/a.stsx", Some("Cards"))
         );
-        assert_eq!(scope_attribute("abc"), "data-l-abc");
     }
 
     #[test]

@@ -54,6 +54,10 @@ fn compile(name: &str, source: &str, target: Target) -> (String, Option<String>)
     let options = CompileOptions {
         target,
         root: Some("/".to_owned()),
+        css: lumiose_compiler::CssOptions {
+            scoped: scoped_styles(source),
+            ..lumiose_compiler::CssOptions::default()
+        },
         ..CompileOptions::default()
     };
     let CompileResult {
@@ -80,6 +84,32 @@ fn compile(name: &str, source: &str, target: Target) -> (String, Option<String>)
         }
     }
     (output, css)
+}
+
+/// A `// @scoped-styles <attribute|class> <default|zero> [namespace]` line (decision-85), else
+/// the defaults.
+fn scoped_styles(source: &str) -> lumiose_compiler::ScopedStyles {
+    use lumiose_compiler::{ScopeSpecificity, ScopeStrategy, ScopedStyles};
+    let Some(line) = source
+        .lines()
+        .find_map(|line| line.strip_prefix("// @scoped-styles "))
+    else {
+        return ScopedStyles::default();
+    };
+    let mut parts = line.split_whitespace();
+    let strategy = match parts.next() {
+        Some("class") => ScopeStrategy::Class,
+        _ => ScopeStrategy::Attribute,
+    };
+    let specificity = match parts.next() {
+        Some("zero") => ScopeSpecificity::Zero,
+        _ => ScopeSpecificity::Default,
+    };
+    ScopedStyles {
+        strategy,
+        specificity,
+        namespace: parts.next().unwrap_or("lum").to_owned(),
+    }
 }
 
 fn assert_parses_as_js(name: &str, code: &str) {

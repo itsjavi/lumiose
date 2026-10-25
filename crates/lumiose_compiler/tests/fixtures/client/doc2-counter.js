@@ -2,7 +2,7 @@
 import { signal } from "lumiose";
 import { template, bind, toggleClass, insert, delegateEvents } from "lumiose/dom";
 import "/src/doc2-counter.stsx?lumiose&type=style&lang.css";
-const _t0 = /* @__PURE__ */ template(`<button data-l-kuy18vvn>Clicked <!> times`);
+const _t0 = /* @__PURE__ */ template(`<button data-lum-kuy18vvn>Clicked <!> times`);
 const _a0 = (el, v) => toggleClass(el, "hot", v);
 export function Counter(props) {
 	const count = signal(props.start === void 0 ? 0 : props.start);

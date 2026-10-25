@@ -282,7 +282,7 @@ describe("lumiose mcp", () => {
     });
     expect(card.props.type).toContain("title: string;");
     expect(card.styleScopes).toEqual([
-      { attribute: expect.stringMatching(/^data-l-/), location: { line: 11, column: 5 } },
+      { attribute: expect.stringMatching(/^data-lum-/), location: { line: 11, column: 5 } },
     ]);
     expect(byFile["src/components/Counter.stsx"].components[0].props).toEqual({
       parameter: "{ start = 0 }: { start?: number }",
@@ -302,7 +302,7 @@ describe("lumiose mcp", () => {
   it.skipIf(!binding)("compiles a file or source text for the client and the server", async () => {
     const card = await callJson("compile", { file: "src/components/Card.stsx" });
     expect(card.client.code).toContain("lumiose/dom");
-    expect(card.client.css).toMatch(/\.card\[data-l-[\w-]+\]/);
+    expect(card.client.css).toMatch(/\.card\[data-lum-[\w-]+\]/);
     expect(card.client.css).toContain("gap: 8px");
     expect(card.server.code).toContain("lumiose/server");
     expect(card.diagnostics).toEqual([]);
@@ -375,7 +375,7 @@ describe("lumiose mcp", () => {
       const stripped = await callJson("render", { path: "/", strip: true });
       expect(stripped.body).toContain("<h1>Hello MCP</h1>");
       expect(stripped.body).toContain("<title>Home</title>");
-      expect(stripped.body).not.toMatch(/<script|<style|<link|<!--|data-l-/);
+      expect(stripped.body).not.toMatch(/<script|<style|<link|<!--|data-lum?-/);
 
       const api = await callJson("render", { path: "/api/hello" });
       expect(JSON.parse(api.body)).toEqual({ hello: "world" });

@@ -1,36 +1,36 @@
-.panel[data-l-cghs6uw8] {
+.panel[data-lum-cghs6uw8] {
   border-radius: 2px;
   padding: 2rem;
   box-shadow: 0 1px 2px #0002;
 }
 
-.panel h2[data-l-cghs6uw8] {
+.panel h2[data-lum-cghs6uw8] {
   margin: 12px;
   font-size: 24px;
 }
 
 @media (width < 400px) {
-  .panel[data-l-cghs6uw8] {
+  .panel[data-lum-cghs6uw8] {
     padding: 0;
   }
 }
 
-.bad[data-l-cghs6uw8] {
+.bad[data-lum-cghs6uw8] {
   width: $width;
   height: $mutable;
   color: $runtime;
 }
 
-.hyphen[data-l-cghs6uw8] {
+.hyphen[data-lum-cghs6uw8] {
   color: $brand-primary;
 }
 
-.missing[data-l-cghs6uw8] {
+.missing[data-lum-cghs6uw8] {
   color: $missing;
   top: $undeclared;
   left: $tokens.nothing;
 }
 
-.unused[data-l-cghs6uw8] {
+.unused[data-lum-cghs6uw8] {
   color: red;
 }

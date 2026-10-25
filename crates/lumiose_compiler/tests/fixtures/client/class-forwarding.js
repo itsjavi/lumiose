@@ -1,9 +1,9 @@
 import { template, bind, setClass, insert, insertText, createComponent, applyScope } from "lumiose/dom";
 import "/src/class-forwarding.tsx?lumiose&type=style&lang.css";
 const _t0 = /* @__PURE__ */ template(`<span> `);
-const _t1 = /* @__PURE__ */ template(`<div data-l-xv47rtvg>`);
-const _t2 = /* @__PURE__ */ template(`<section data-l-h4k9s2t6>`);
-const _t3 = /* @__PURE__ */ template(`<main data-l-7mclcxns><!>`);
+const _t1 = /* @__PURE__ */ template(`<div data-lum-xv47rtvg>`);
+const _t2 = /* @__PURE__ */ template(`<section data-lum-h4k9s2t6>`);
+const _t3 = /* @__PURE__ */ template(`<main data-lum-7mclcxns><!>`);
 function Inner(props) {
 	const _el = _t0(), _text = _el.firstChild;
 	bind(_el, () => props.class, setClass);
@@ -21,7 +21,7 @@ export function Middle(props) {
 		get label() {
 			return props.label;
 		},
-		$$scope: "data-l-xv47rtvg " + (props.$$scope ?? "")
+		$$scope: "data-lum-xv47rtvg " + (props.$$scope ?? "")
 	}));
 	return _el2;
 }
@@ -45,7 +45,7 @@ export function Own(props) {
 		get label() {
 			return props.label;
 		},
-		$$scope: "data-l-h4k9s2t6"
+		$$scope: "data-lum-h4k9s2t6"
 	}));
 	return _el3;
 }
@@ -54,12 +54,12 @@ export function Outer() {
 	insert(_el4, createComponent(Middle, {
 		class: "cta",
 		label: "a",
-		$$scope: "data-l-7mclcxns"
+		$$scope: "data-lum-7mclcxns"
 	}), _marker);
 	insert(_el4, createComponent(Plain, {
 		class: "cta",
 		label: "b",
-		$$scope: "data-l-7mclcxns"
+		$$scope: "data-lum-7mclcxns"
 	}));
 	return _el4;
 }

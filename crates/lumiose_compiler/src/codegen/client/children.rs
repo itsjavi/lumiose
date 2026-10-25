@@ -268,11 +268,8 @@ impl<'a> Codegen<'a, '_> {
                 Item::Rows(rows, span) => {
                     // The template spells out the `<tbody>` the HTML parser inserts, so that walks
                     // (and dynamic rows' parent) match the parsed DOM.
-                    let attrs = self
-                        .tbody_scope_tokens(span)
-                        .into_iter()
-                        .map(|t| (t, None))
-                        .collect();
+                    let mut attrs = Vec::new();
+                    self.stamp_scope(&mut attrs, self.tbody_scope_tokens(span));
                     let tag = "tbody".to_owned();
                     let tbody = template.add(Some(parent), NodeKind::Element { tag, attrs }, span);
                     self.build_items(template, tbody, rows, namespace);

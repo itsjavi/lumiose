@@ -147,7 +147,7 @@ export function Nav() {
     );
     render(() => createComponent(Nav, {}), document.body);
     const link = document.querySelector("a")!;
-    const scope = [...link.attributes].find((a) => a.name.startsWith("data-l-"))!.name;
+    const scope = [...link.attributes].find((a) => a.name.startsWith("data-lum-"))!.name;
     expect(svgs()[0]!.hasAttribute(scope)).toBe(true);
     expect(svgs()[0]!.getAttribute("class")).toBe("icon");
   });

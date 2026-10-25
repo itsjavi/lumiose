@@ -133,6 +133,9 @@ struct OpenTag<'a> {
     content: Option<Piece<'a>>,
     /// `Some(json)` for a `<script>` or `<style>`, whose content is raw text (TASK-472 L7).
     raw_text: Option<bool>,
+    /// With the class strategy (decision-85), the element's scope classes: merged into its
+    /// `class` (or its spread's) and taken from here, else written as a `class` of their own.
+    scope_classes: Vec<String>,
 }
 
 impl<'a> Codegen<'a, '_> {
@@ -306,7 +309,19 @@ impl<'a> Codegen<'a, '_> {
         let auto_nonce = self.options.strict_csp
             && matches!(tag.as_str(), "script" | "style")
             && !super::element::has_attribute(&opening.attributes, "nonce");
+        let markers = self.scope_tokens(span);
+        let scope_attributes = if self.options.scope_classes {
+            open.scope_classes = markers;
+            Vec::new()
+        } else {
+            markers
+        };
         self.ssr_attributes(&tag, opening.attributes, &mut open, span);
+        if !open.scope_classes.is_empty() {
+            let classes = std::mem::take(&mut open.scope_classes).join(" ");
+            open.head
+                .push(Piece::Html(attribute_html("class", Some(&classes))));
+        }
         if auto_nonce {
             // Strict CSP (decision-27): the response's nonce; after a spread, whose own wins.
             let hole = self.helper_call("nonceAttr", [], span);
@@ -317,7 +332,7 @@ impl<'a> Codegen<'a, '_> {
         for piece in open.head {
             out.piece(piece);
         }
-        for token in self.scope_tokens(span) {
+        for token in scope_attributes {
             out.attribute(&token, None);
         }
         if let Some((name, value)) = self.source_attribute(&tag, span) {
@@ -531,8 +546,13 @@ impl<'a> Codegen<'a, '_> {
                 }
                 Item::Rows(rows, span) => {
                     out.html("<tbody");
-                    for token in self.tbody_scope_tokens(span) {
-                        out.attribute(&token, None);
+                    let markers = self.tbody_scope_tokens(span);
+                    if !self.options.scope_classes {
+                        for token in markers {
+                            out.attribute(&token, None);
+                        }
+                    } else if !markers.is_empty() {
+                        out.attribute("class", Some(&markers.join(" ")));
                     }
                     out.html(">");
                     self.ssr_items(out, rows);
@@ -600,12 +620,20 @@ impl<'a> Codegen<'a, '_> {
             // through the spread, in order ([`take_written`]).
             let written = take_written(self.ast, &mut attributes);
             let props = self.props_expression(attributes, None, span);
-            let hole = if is_custom_element(tag) {
+            // With the class strategy, the spread writes the element's `class`, so the scope
+            // classes go to it (`spreadAttrs(props, custom, ".lum-a")`, decision-85).
+            let scope = (!open.scope_classes.is_empty()).then(|| {
+                let refs = self.scope_refs(&std::mem::take(&mut open.scope_classes));
+                self.ast.string(span, &refs.join(" "))
+            });
+            let custom = self.ast.boolean(span, is_custom_element(tag));
+            let hole = match scope {
+                Some(scope) => self.helper_call("spreadAttrs", [props, custom, scope], span),
                 // A custom element: objects and arrays are properties (TASK-337, `attr` below).
-                let custom = self.ast.boolean(span, true);
-                self.helper_call("spreadAttrs", [props, custom], span)
-            } else {
-                self.helper_call("spreadAttrs", [props], span)
+                None if is_custom_element(tag) => {
+                    self.helper_call("spreadAttrs", [props, custom], span)
+                }
+                None => self.helper_call("spreadAttrs", [props], span),
             };
             open.tail.push(Piece::Hole(hole));
             if !written.is_empty() {
@@ -733,9 +761,13 @@ impl<'a> Codegen<'a, '_> {
     /// the client's token order (baked keys first); anything else is one `classAttr()` hole,
     /// followed by the caller's scope tokens when it applies `props.class` (spec §4.6.2).
     fn ssr_class(&mut self, open: &mut OpenTag<'a>, value: AttrValue<'a>, span: Span) {
+        // Static classes get the scope classes appended; computed ones get them through
+        // `classAttr`'s second argument. Without a class value they stay in `open` for the
+        // element's own `class`.
         let expr = match value {
             AttrValue::Empty | AttrValue::True => return,
             AttrValue::Str(s) => {
+                let s = with_scope_classes(s, &mut open.scope_classes);
                 open.head
                     .push(Piece::Html(attribute_html("class", Some(&s))));
                 return;
@@ -744,6 +776,7 @@ impl<'a> Codegen<'a, '_> {
         };
         match literal(&expr) {
             Some(Literal::Str(s)) => {
+                let s = with_scope_classes(s, &mut open.scope_classes);
                 open.head
                     .push(Piece::Html(attribute_html("class", Some(&s))));
                 return;
@@ -754,7 +787,7 @@ impl<'a> Codegen<'a, '_> {
         if let Expression::ArrayExpression(array) = expr.without_parentheses()
             && let Some(parts) = static_strings(array)
         {
-            let joined = parts.join(" ");
+            let joined = with_scope_classes(parts.join(" "), &mut open.scope_classes);
             if !joined.is_empty() {
                 open.head
                     .push(Piece::Html(attribute_html("class", Some(&joined))));
@@ -770,7 +803,8 @@ impl<'a> Codegen<'a, '_> {
                 Literal::Str(s) => !s.is_empty(),
                 _ => false,
             });
-            let baked: Vec<String> = baked.into_iter().map(|(key, _)| key).collect();
+            let mut baked: Vec<String> = baked.into_iter().map(|(key, _)| key).collect();
+            baked.append(&mut open.scope_classes);
             if dynamic.is_empty() {
                 if !baked.is_empty() {
                     open.head
@@ -794,6 +828,32 @@ impl<'a> Codegen<'a, '_> {
         }
         let expr = self.visited(expr);
         let passes_class = self.reads_props_class(&expr);
+        if self.options.scope_classes {
+            // `classAttr(value, scope)`: the element's own scope classes and, with class
+            // passthrough, the caller's `$$scope`, merged into the one `class` attribute.
+            let own = self.scope_refs(&std::mem::take(&mut open.scope_classes));
+            let own = (!own.is_empty()).then(|| own.join(" "));
+            let caller = passes_class.map(|props_name| {
+                self.ast
+                    .member(span, self.ast.ident(span, &props_name), "$$scope")
+            });
+            let scope = match (own, caller) {
+                (None, None) => None,
+                (Some(own), None) => Some(self.ast.string(span, &own)),
+                (None, Some(caller)) => Some(caller),
+                (Some(own), Some(caller)) => {
+                    let own = self.ast.string(span, &format!("{own} "));
+                    let caller = self.ast.coalesce(span, caller, self.ast.string(span, ""));
+                    Some(self.ast.binary(span, own, BinaryOperator::Addition, caller))
+                }
+            };
+            let hole = match scope {
+                Some(scope) => self.helper_call("classAttr", [expr, scope], span),
+                None => self.helper_call("classAttr", [expr], span),
+            };
+            open.tail.push(Piece::Hole(hole));
+            return;
+        }
         let hole = self.helper_call("classAttr", [expr], span);
         open.tail.push(Piece::Hole(hole));
         if let Some(props_name) = passes_class {
@@ -951,4 +1011,17 @@ fn attribute_html(name: &str, value: Option<&str>) -> String {
     let mut out = String::new();
     html::write_attribute(name, value, &mut out);
     out
+}
+
+/// A static class value with the element's scope classes appended (and taken), decision-85.
+fn with_scope_classes(value: String, scope_classes: &mut Vec<String>) -> String {
+    if scope_classes.is_empty() {
+        return value;
+    }
+    let classes = std::mem::take(scope_classes).join(" ");
+    if value.trim().is_empty() {
+        classes
+    } else {
+        format!("{value} {classes}")
+    }
 }

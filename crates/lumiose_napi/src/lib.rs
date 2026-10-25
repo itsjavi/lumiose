@@ -307,6 +307,60 @@ pub struct ModuleRequest {
     pub specifier: String,
 }
 
+/// The `scopedStyles` option of the Vite plugins (decision-85).
+#[napi(object)]
+pub struct ScopedStyles {
+    /// `"attribute"` (default): `data-<namespace>-<token>`; `"class"`: `<namespace>-<token>`.
+    pub strategy: Option<ScopeStrategy>,
+    /// `"default"`: the scope adds (0,1,0); `"zero"`: it adds nothing (`:where()`).
+    pub specificity: Option<ScopeSpecificity>,
+    /// Default `"lum"`: a lowercase letter, then lowercase letters, digits and hyphens.
+    pub namespace: Option<String>,
+}
+
+#[napi(string_enum = "lowercase")]
+pub enum ScopeStrategy {
+    Attribute,
+    Class,
+}
+
+#[napi(string_enum = "lowercase")]
+pub enum ScopeSpecificity {
+    Default,
+    Zero,
+}
+
+/// The compiler's `scopedStyles`; an invalid namespace is an error.
+fn scoped_styles(options: Option<ScopedStyles>) -> napi::Result<lumiose_compiler::ScopedStyles> {
+    let mut scoped = lumiose_compiler::ScopedStyles::default();
+    let Some(options) = options else {
+        return Ok(scoped);
+    };
+    if let Some(strategy) = options.strategy {
+        scoped.strategy = match strategy {
+            ScopeStrategy::Attribute => lumiose_compiler::ScopeStrategy::Attribute,
+            ScopeStrategy::Class => lumiose_compiler::ScopeStrategy::Class,
+        };
+    }
+    if let Some(specificity) = options.specificity {
+        scoped.specificity = match specificity {
+            ScopeSpecificity::Default => lumiose_compiler::ScopeSpecificity::Default,
+            ScopeSpecificity::Zero => lumiose_compiler::ScopeSpecificity::Zero,
+        };
+    }
+    if let Some(namespace) = options.namespace {
+        lumiose_compiler::validate_namespace(&namespace).map_err(napi::Error::from_reason)?;
+        scoped.namespace = namespace;
+    }
+    Ok(scoped)
+}
+
+/// Validates a `scopedStyles.namespace`: the error message, or `null` when it is valid.
+#[napi]
+pub fn validate_scope_namespace(namespace: String) -> Option<String> {
+    lumiose_compiler::validate_namespace(&namespace).err()
+}
+
 #[napi(object)]
 pub struct CompileOptions {
     /// Default `"client"`: `lumiose/dom` code; `"server"`: `lumiose/server` code.
@@ -322,6 +376,9 @@ pub struct CompileOptions {
     pub css_targets: Option<Vec<String>>,
     /// Minify `css`. Default `false`.
     pub css_minify: Option<bool>,
+    /// How elements carry scope tokens and how scoped selectors match them (decision-85).
+    /// Default: `data-lum-<token>` attributes with a (0,1,0) bump.
+    pub scoped_styles: Option<ScopedStyles>,
     /// The project root: island refs name modules inside it root-relatively (`/src/x.stsx#X`),
     /// and scope tokens hash the root-relative path.
     pub root: Option<String>,
@@ -415,7 +472,7 @@ pub struct ResolvedStyleRef {
     pub value: Option<Either<String, f64>>,
 }
 
-/// The `data-l-*` scope attributes of a file.
+/// The scope markers of a file: `data-<namespace>-*` attributes or `<namespace>-*` classes (decision-85).
 #[napi(object)]
 pub struct ScopeTokens {
     /// The file scope attribute (top-level `<style>` blocks).
@@ -508,7 +565,7 @@ pub struct CompileMeta {
     pub runtime_helpers: Vec<String>,
     pub style_refs: Vec<ResolvedStyleRef>,
     pub has_styles: bool,
-    /// The `data-l-*` attributes stamped on the file's and its components' elements.
+    /// The scope markers stamped on the file's and its components' elements.
     pub scope_tokens: ScopeTokens,
     /// Island call sites, in source order.
     pub islands: Vec<IslandMeta>,
@@ -570,6 +627,7 @@ pub fn compile(
                 css: lumiose_compiler::CssOptions {
                     targets,
                     minify: o.css_minify.unwrap_or(false),
+                    scoped: scoped_styles(o.scoped_styles)?,
                 },
                 root: o.root,
                 packages: o
@@ -914,6 +972,7 @@ pub fn compile_svg(
             emit_css: Some(false),
             css_targets: None,
             css_minify: None,
+            scoped_styles: None,
             root: options.root,
             packages: None,
             modules: None,

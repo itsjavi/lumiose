@@ -103,7 +103,7 @@ describe("content components", () => {
     expect(document.querySelector("td")!.textContent).toBe("1");
     expect((document.querySelector("input") as HTMLInputElement).checked).toBe(true);
     // Scoped by the file's block.
-    expect([...h1.attributes].some((a) => a.name.startsWith("data-l-"))).toBe(true);
+    expect([...h1.attributes].some((a) => a.name.startsWith("data-lum-"))).toBe(true);
     expect(document.querySelector("style")).toBeNull();
   });
 

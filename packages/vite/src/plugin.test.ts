@@ -442,9 +442,9 @@ describe.skipIf(!binding)("@lumiose/vite", () => {
     const ssr = await server.environments.ssr.transformRequest(`${fs}/src/Header.stsx`);
     expect(ssr!.code).toContain('island)("@acme/kit/src/Nav.stsx#Nav"');
     // Its JS and CSS hash the same package-relative path into the scope token.
-    const token = /data-l-(\w+)/.exec(ssr!.code)![1];
+    const token = /data-lum-(\w+)/.exec(ssr!.code)![1];
     const css = await server.environments.client.transformRequest(`${fs}/src/Header.stsx${STYLE}`);
-    expect(css!.code).toContain(`[data-l-${token}]`);
+    expect(css!.code).toContain(`[data-lum-${token}]`);
   });
 
   it("compiles the Lumiose packages installed in node_modules, named package-relatively", async () => {
@@ -465,9 +465,9 @@ describe.skipIf(!binding)("@lumiose/vite", () => {
     // In dev, a module imported from a versioned one carries Vite's version query.
     const browser = await client.transformRequest(`/${UI_DIR}/dist/Star.stsx?v=1a2b3c4d`);
     expect(browser!.code).toContain("template(");
-    const token = /data-l-(\w+)/.exec(browser!.code)![1];
+    const token = /data-lum-(\w+)/.exec(browser!.code)![1];
     const css = await client.transformRequest(`/${UI_DIR}/dist/Star.stsx${STYLE}`);
-    expect(css!.code).toContain(`.star[data-l-${token}]`);
+    expect(css!.code).toContain(`.star[data-lum-${token}]`);
   });
 
   it("builds every island into its own chunk from the manifest", async () => {
@@ -503,7 +503,7 @@ describe.skipIf(!binding)("@lumiose/vite", () => {
   it("keeps :dir() and light-dark() in production CSS, unless the project sets its own target", async () => {
     // A `:lang()` rewrite would miss `<html dir="rtl">` and any other `dir` attribute (TASK-422).
     const own = await arrowCss();
-    expect(own).toMatch(/\.arrow:dir\(rtl\)\[data-l-\w+\]\{/);
+    expect(own).toMatch(/\.arrow:dir\(rtl\)\[data-lum-\w+\]\{/);
     expect(own).not.toContain(":lang(");
     expect(await arrowCss(["chrome111"])).toContain(":lang(");
     // Lowered for Safari 17.4, light-dark() would follow only the system's scheme, not a
@@ -515,7 +515,7 @@ describe.skipIf(!binding)("@lumiose/vite", () => {
 
   it("serves the scoped CSS of a file through Vite's CSS pipeline", async () => {
     const js = await server.environments.client.transformRequest("/Counter.stsx");
-    const token = /data-l-[0-9a-z]{8}/.exec(js!.code)![0];
+    const token = /data-lum-[0-9a-z]{8}/.exec(js!.code)![0];
     const css = await server.environments.client.transformRequest(`/Counter.stsx${STYLE}`);
     // Vite's dev CSS module: the stylesheet injected by `updateStyle`, self-accepting.
     expect(css!.code).toContain(`button[${token}] {`);

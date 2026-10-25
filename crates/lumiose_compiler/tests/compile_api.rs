@@ -297,7 +297,7 @@ export function Header() {
     assert!(!result.code.contains(r#"island("/repo"#), "{}", result.code);
     let token = lumiose_css::scope_token("@acme/kit/src/Header.stsx", Some("Header"));
     assert!(
-        result.code.contains(&format!("data-l-{token}")),
+        result.code.contains(&format!("data-lum-{token}")),
         "{}",
         result.code
     );
@@ -317,7 +317,7 @@ export function Header() {
     );
     let token = lumiose_css::scope_token(filename, Some("Header"));
     assert!(
-        bare.code.contains(&format!("data-l-{token}")),
+        bare.code.contains(&format!("data-lum-{token}")),
         "{}",
         bare.code
     );
@@ -431,15 +431,15 @@ fn scope_tokens_hash_the_root_relative_path() {
     let file = lumiose_css::scope_token("src/Card.stsx", None);
     let card = lumiose_css::scope_token("src/Card.stsx", Some("Card"));
     assert!(
-        result
-            .code
-            .contains(&format!("<article class=card data-l-{file} data-l-{card}>")),
+        result.code.contains(&format!(
+            "<article class=card data-lum-{file} data-lum-{card}>"
+        )),
         "{}",
         result.code
     );
     let css = result.css.expect("css");
-    assert!(css.contains(&format!("article[data-l-{file}]")), "{css}");
-    assert!(css.contains(&format!(".card[data-l-{card}]")), "{css}");
+    assert!(css.contains(&format!("article[data-lum-{file}]")), "{css}");
+    assert!(css.contains(&format!(".card[data-lum-{card}]")), "{css}");
     // File scope first, then component blocks.
     assert!(css.find("article[").unwrap() < css.find(".card[").unwrap());
 }
@@ -464,22 +464,22 @@ fn nested_blocks_scope_to_their_enclosing_element() {
     let nested = lumiose_css::scope_token("/src/Card.stsx", Some("Card#1"));
     let text = |span: lumiose_compiler::Span| &source[span.start as usize..span.end as usize];
     assert_eq!(subtrees.len(), 2);
-    assert_eq!(subtrees[0].attribute, format!("data-l-{card}"));
+    assert_eq!(subtrees[0].attribute, format!("data-lum-{card}"));
     assert!(text(subtrees[0].span).starts_with("<article>"));
-    assert_eq!(subtrees[1].attribute, format!("data-l-{nested}"));
+    assert_eq!(subtrees[1].attribute, format!("data-lum-{nested}"));
     assert!(text(subtrees[1].span).starts_with(r#"<div class="b">"#));
     assert!(text(subtrees[1].span).ends_with("</div>"));
     let code = &result.code;
     assert!(
-        code.contains(&format!("<p class=a data-l-{card}>")),
+        code.contains(&format!("<p class=a data-lum-{card}>")),
         "{code}"
     );
     assert!(
-        code.contains(&format!("<p class=c data-l-{card} data-l-{nested}>")),
+        code.contains(&format!("<p class=c data-lum-{card} data-lum-{nested}>")),
         "{code}"
     );
     let css = result.css.expect("css");
-    assert!(css.contains(&format!(".c[data-l-{nested}]")), "{css}");
+    assert!(css.contains(&format!(".c[data-lum-{nested}]")), "{css}");
 }
 
 #[test]
@@ -518,6 +518,7 @@ fn css_can_be_disabled_and_minified() {
                 }),
                 ..lumiose_css::Targets::default()
             },
+            ..lumiose_compiler::CssOptions::default()
         },
         ..CompileOptions::default()
     };
@@ -1485,4 +1486,35 @@ export function Theme() {
     assert_eq!(reported(Target::Server, false), ["localStorage", "window"]);
     assert_eq!(reported(Target::Client, true), ["localStorage", "window"]);
     assert!(reported(Target::Client, false).is_empty());
+}
+
+#[test]
+fn scoped_styles_choose_the_markers() {
+    let source = "export function Card() {\n  return <p class=\"card\">x<style>.card { color: red; }</style></p>;\n}\n";
+    let options = CompileOptions {
+        root: Some("/app".into()),
+        css: lumiose_compiler::CssOptions {
+            scoped: lumiose_compiler::ScopedStyles {
+                strategy: lumiose_compiler::ScopeStrategy::Class,
+                specificity: lumiose_compiler::ScopeSpecificity::Zero,
+                namespace: "app".into(),
+            },
+            ..lumiose_compiler::CssOptions::default()
+        },
+        ..CompileOptions::default()
+    };
+    let result = compile(source, "/app/src/Card.stsx", &options);
+    assert!(result.diagnostics.is_empty(), "{:?}", result.diagnostics);
+    let card = lumiose_css::scope_token("src/Card.stsx", Some("Card"));
+    let scopes = &result.meta.scope_tokens.components["Card"];
+    assert_eq!(scopes[0].attribute, format!("app-{card}"));
+    assert!(
+        result
+            .code
+            .contains(&format!("<p class=\"card app-{card}\">")),
+        "{}",
+        result.code
+    );
+    let css = result.css.expect("css");
+    assert!(css.contains(&format!(".card:where(.app-{card})")), "{css}");
 }

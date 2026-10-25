@@ -3,7 +3,7 @@
 import { signal } from "lumiose";
 import { template, bind, setAttr, setProp, setClass, toggleClass, setStyleProperty, insert, mergeProps, spread, applyScope, delegateEvents, bindValue, useRef } from "lumiose/dom";
 import "/src/ssr-attributes.stsx?lumiose&type=style&lang.css";
-const _t0 = /* @__PURE__ */ template(`<form method=post data-l-0caa055f><input data-l-0caa055f><input data-l-0caa055f><p class=base style=color:red data-l-0caa055f></p><div data-l-0caa055f></div><span data-l-0caa055f></span><textarea data-l-0caa055f></textarea><textarea data-l-0caa055f></textarea><b data-l-0caa055f>`);
+const _t0 = /* @__PURE__ */ template(`<form method=post data-lum-0caa055f><input data-lum-0caa055f><input data-lum-0caa055f><p class=base style=color:red data-lum-0caa055f></p><div data-lum-0caa055f></div><span data-lum-0caa055f></span><textarea data-lum-0caa055f></textarea><textarea data-lum-0caa055f></textarea><b data-lum-0caa055f>`);
 const _a0 = (el, v) => setAttr(el, "title", v);
 const _a1 = (el, v) => setAttr(el, "aria-busy", v);
 const _a2 = (el, v) => setAttr(el, "hidden", v);

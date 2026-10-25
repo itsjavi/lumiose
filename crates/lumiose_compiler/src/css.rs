@@ -21,8 +21,8 @@
 use std::collections::{BTreeMap, HashMap, HashSet};
 
 use lumiose_css::{
-    CssBlock, CssDiagnostic, CssInput, CssOutput, ElementInventory, RefValue, ResolvedRef, Scope,
-    Targets, scope_attribute, scope_token,
+    CssBlock, CssDiagnostic, CssInput, CssOutput, DEFAULT_NAMESPACE, ElementInventory, RefValue,
+    ResolvedRef, Scope, ScopeSpecificity, ScopeStrategy, ScopeStyle, Targets, scope_token,
 };
 use oxc_ast::ast::*;
 use oxc_ast_visit::{Visit, walk};
@@ -37,11 +37,42 @@ use crate::scanner::{Placement, StyleBlock};
 use crate::span::Span;
 
 /// CSS output options.
-#[derive(Debug, Clone, Copy, Default)]
+#[derive(Debug, Clone, Default)]
 pub struct CssOptions {
     /// Browser targets for nesting lowering and prefixing; the default keeps modern syntax.
     pub targets: Targets,
     pub minify: bool,
+    /// How elements carry scope tokens and how scoped selectors match them (decision-85).
+    pub scoped: ScopedStyles,
+}
+
+/// The `scopedStyles` option (decision-85): the owned form of [`ScopeStyle`].
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ScopedStyles {
+    pub strategy: ScopeStrategy,
+    pub specificity: ScopeSpecificity,
+    /// Validated by the host with [`lumiose_css::validate_namespace`].
+    pub namespace: String,
+}
+
+impl Default for ScopedStyles {
+    fn default() -> Self {
+        Self {
+            strategy: ScopeStrategy::default(),
+            specificity: ScopeSpecificity::default(),
+            namespace: DEFAULT_NAMESPACE.to_owned(),
+        }
+    }
+}
+
+impl ScopedStyles {
+    pub fn style(&self) -> ScopeStyle<'_> {
+        ScopeStyle {
+            strategy: self.strategy,
+            specificity: self.specificity,
+            namespace: &self.namespace,
+        }
+    }
 }
 
 /// The scopes of a file's blocks and the tokens the codegen stamps.
@@ -51,8 +82,9 @@ pub struct ScopePlan {
     /// One entry per extractable block (not SVG, not in an expression position, not outside
     /// every component).
     blocks: Vec<CssBlock>,
-    /// Bare tokens (without `data-l-`) by attribute name, for the inventories.
+    /// Bare tokens by marker (`data-lum-<token>` or `lum-<token>`), for the inventories.
     bare: HashMap<String, String>,
+    style: ScopedStyles,
 }
 
 impl ScopePlan {
@@ -61,8 +93,12 @@ impl ScopePlan {
         program: &Program<'_>,
         analysis: &Analysis,
         path: &str,
+        style: &ScopedStyles,
     ) -> Self {
-        let mut plan = Self::default();
+        let mut plan = Self {
+            style: style.clone(),
+            ..Self::default()
+        };
         let elements = ElementSpans::collect(program, blocks);
         // Scoped component blocks with their component and enclosing element; tokens are
         // assigned once every style-bearing element of a component is known.
@@ -184,9 +220,9 @@ impl ScopePlan {
     }
 
     fn register(&mut self, token: &str) -> String {
-        let attribute = scope_attribute(token);
-        self.bare.insert(attribute.clone(), token.to_owned());
-        attribute
+        let marker = self.style.style().marker(token);
+        self.bare.insert(marker.clone(), token.to_owned());
+        marker
     }
 
     /// True when the file has CSS to process.
@@ -253,12 +289,7 @@ pub fn process(
         // `LUM3012` needs every stylesheet of the app (a property set here is often read by
         // another file's CSS), so it is left to a project-wide check.
         custom_properties_set: &[],
-        // The templates still carry `scope_attribute`'s legacy `data-l-` markers until the
-        // compiler takes `scopedStyles` (TASK-573).
-        scope_style: lumiose_css::ScopeStyle {
-            namespace: "l",
-            ..lumiose_css::ScopeStyle::default()
-        },
+        scope_style: options.scoped.style(),
     };
     let output = lumiose_css::process(
         &input,
@@ -402,7 +433,7 @@ struct InventoryCollector<'o> {
     tokens: &'o ScopeTokens,
     /// Names of the components being visited (innermost last).
     components: Vec<String>,
-    /// By attribute name (`data-l-…`).
+    /// By marker (`data-lum-…` or `lum-…`).
     inventories: BTreeMap<String, ElementInventory>,
 }
 

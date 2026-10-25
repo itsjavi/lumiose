@@ -2,7 +2,7 @@ import { unit } from "./tokens.ts";
 import { signal } from "lumiose";
 import { template } from "lumiose/dom";
 import "/src/style-constants.stsx?lumiose&type=style&lang.css";
-const _t0 = /* @__PURE__ */ template(`<section class=panel data-l-cghs6uw8><h2 data-l-cghs6uw8>Title`);
+const _t0 = /* @__PURE__ */ template(`<section class=panel data-lum-cghs6uw8><h2 data-lum-cghs6uw8>Title`);
 const size = 3;
 const sizes = {
 	sm: `${size * unit}px`,

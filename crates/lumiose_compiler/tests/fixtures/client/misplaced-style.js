@@ -1,7 +1,7 @@
 import { template, insert, insertText } from "lumiose/dom";
 import "/src/misplaced-style.stsx?lumiose&type=style&lang.css";
-const _t0 = /* @__PURE__ */ template(`<li data-l-3y536f6d> `);
-const _t1 = /* @__PURE__ */ template(`<footer data-l-snjkckt6>`);
+const _t0 = /* @__PURE__ */ template(`<li data-lum-3y536f6d> `);
+const _t1 = /* @__PURE__ */ template(`<footer data-lum-snjkckt6>`);
 const _t2 = /* @__PURE__ */ template(`<ul><!>`);
 const _t3 = /* @__PURE__ */ template(`<p>`);
 // LUM3010 found on the AST: blocks inside .map() callbacks and nested functions (the scanner

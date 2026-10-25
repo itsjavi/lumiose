@@ -138,13 +138,13 @@ describe.skipIf(!binding)(".md and .html imports", () => {
   it("compiles a Markdown file to a static component with its CSS module", async () => {
     const result = await server.environments.client.transformRequest("/content/post.md.stsx");
     expect(result!.code).toContain("template(");
-    expect(result!.code).toContain("<h1 id=hello-lumiose data-l-");
+    expect(result!.code).toContain("<h1 id=hello-lumiose data-lum-");
     expect(result!.code).toContain("lumiose-frontmatter");
     expect(result!.code).toContain("post.md.stsx?lumiose&type=style&lang.css");
     const css = await server.environments.client.transformRequest(
       "/content/post.md.stsx?lumiose&type=style&lang.css",
     );
-    expect(css!.code).toMatch(/\.note\[data-l-\w+\]/);
+    expect(css!.code).toMatch(/\.note\[data-lum-\w+\]/);
     const { headings } = (await server.ssrLoadModule("/content/post.md.stsx")) as {
       headings: unknown;
     };
@@ -191,17 +191,17 @@ describe.skipIf(!binding)(".md and .html imports", () => {
     };
     const html = await render();
     expect(html).toContain("<h2>Hello, Lumiose</h2>");
-    expect(html).toMatch(/<h1 id=hello-lumiose data-l-\w+>Hello, Lumiose<\/h1>/);
-    expect(html).toMatch(/<span class=note data-l-\w+>raw HTML<\/span>/);
+    expect(html).toMatch(/<h1 id=hello-lumiose data-lum-\w+>Hello, Lumiose<\/h1>/);
+    expect(html).toMatch(/<span class=note data-lum-\w+>raw HTML<\/span>/);
     // Relative asset URLs are imported, so they resolve against the file, not the page.
-    expect(html).toMatch(/<img alt="A photo" data-l-\w+ src="\/content\/photo.png">/);
-    expect(html).toMatch(/<a data-l-\w+ href="\/content\/files\/report.pdf#page=2">/);
+    expect(html).toMatch(/<img alt="A photo" data-lum-\w+ src="\/content\/photo.png">/);
+    expect(html).toMatch(/<a data-lum-\w+ href="\/content\/files\/report.pdf#page=2">/);
     // The template's content is verbatim (not scoped), the scripts are gone from the markup.
     expect(html).toMatch(
-      /<template id=card data-l-\w+><style>:host \{ color: red; \}<\/style><slot><\/slot><\/template>/,
+      /<template id=card data-lum-\w+><style>:host \{ color: red; \}<\/style><slot><\/slot><\/template>/,
     );
     // No island: the page loads the scripts as a module script, from the URL client code imports.
-    expect(html).toMatch(/<user-card data-l-\w+>Ada<\/user-card>\s*<\/main>/);
+    expect(html).toMatch(/<user-card data-lum-\w+>Ada<\/user-card>\s*<\/main>/);
     expect(html).not.toMatch(/define\(\)|<!--l:|lumiose-script/);
     const card = await renderCard();
     expect(card.head).toBe(

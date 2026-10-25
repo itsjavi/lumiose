@@ -51,9 +51,10 @@ use html::Namespace;
 use idioms::MapCtx;
 use props::PropPath;
 
-/// `data-l-*` scope attributes per scope (computed from the style blocks, see `crate::css`).
-/// Every element of a scope carries its attribute(s); component call sites that pass `class`
-/// also pass the caller's attributes there as `$$scope` (spec §4.6.2).
+/// Scope markers per scope (computed from the style blocks, see `crate::css`): attribute names
+/// (`data-lum-<token>`) or, with the class strategy, class names (`lum-<token>`, decision-85).
+/// Every element of a scope carries its markers; component call sites that pass `class` also
+/// pass the caller's markers there as `$$scope` (spec §4.6.2).
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize))]
 pub struct ScopeTokens {
@@ -106,6 +107,9 @@ pub struct TransformOptions<'o> {
     /// The module id, used for the CSS module import.
     pub filename: &'o str,
     pub scope_tokens: &'o ScopeTokens,
+    /// `scopedStyles.strategy` is `class` (decision-85): the markers are classes, merged into the
+    /// elements' `class`, and `$$scope` carries them as `.name`; otherwise they are attributes.
+    pub scope_classes: bool,
     /// Emit `import "<id>?lumiose&type=style&lang.css"` when the file has style blocks.
     pub style_import: bool,
     /// See [`crate::CompileOptions::strict_csp`].
@@ -645,6 +649,38 @@ impl<'a> Codegen<'a, '_> {
     pub fn tbody_scope_tokens(&self, rows: Span) -> Vec<String> {
         let component = self.component().map(|c| c.name.as_str());
         self.options.scope_tokens.at(component, rows, true)
+    }
+
+    /// Adds scope markers to a template element's static attributes: empty attributes, or with
+    /// the class strategy classes appended to its static `class` (or a new one). A dynamic
+    /// `class` keeps them, since `setClass` only removes the classes it added itself.
+    pub fn stamp_scope(&self, attrs: &mut Vec<(String, Option<String>)>, markers: Vec<String>) {
+        if markers.is_empty() {
+            return;
+        }
+        if !self.options.scope_classes {
+            attrs.extend(markers.into_iter().map(|marker| (marker, None)));
+            return;
+        }
+        let classes = markers.join(" ");
+        match attrs.iter_mut().find(|(name, _)| name == "class") {
+            Some((_, Some(value))) if !value.is_empty() => {
+                value.push(' ');
+                value.push_str(&classes);
+            }
+            Some((_, value)) => *value = Some(classes),
+            None => attrs.push(("class".to_owned(), Some(classes))),
+        }
+    }
+
+    /// Markers as `$$scope` tokens: attribute names as they are, classes as `.name` (contract
+    /// doc-2 §5.3), so the runtimes know which kind to apply.
+    pub fn scope_refs(&self, markers: &[String]) -> Vec<String> {
+        if self.options.scope_classes {
+            markers.iter().map(|marker| format!(".{marker}")).collect()
+        } else {
+            markers.to_vec()
+        }
     }
 
     /// The `data-lumiose-source` attribute of the JSX element `tag` at `span`, in dev with the

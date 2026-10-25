@@ -28,7 +28,7 @@ export interface CompileMeta {
   runtimeHelpers: Array<string>;
   styleRefs: Array<ResolvedStyleRef>;
   hasStyles: boolean;
-  /** The `data-l-*` attributes stamped on the file's and its components' elements. */
+  /** The scope markers stamped on the file's and its components' elements. */
   scopeTokens: ScopeTokens;
   /** Island call sites, in source order. */
   islands: Array<IslandMeta>;
@@ -59,6 +59,11 @@ export interface CompileOptions {
   cssTargets?: Array<string>;
   /** Minify `css`. Default `false`. */
   cssMinify?: boolean;
+  /**
+   * How elements carry scope tokens and how scoped selectors match them (decision-85).
+   * Default: `data-lum-<token>` attributes with a (0,1,0) bump.
+   */
+  scopedStyles?: ScopedStyles;
   /**
    * The project root: island refs name modules inside it root-relatively (`/src/x.stsx#X`),
    * and scope tokens hash the root-relative path.
@@ -336,7 +341,21 @@ export interface ScanResult {
   diagnostics: Array<Diagnostic>;
 }
 
-/** The `data-l-*` scope attributes of a file. */
+/** The `scopedStyles` option of the Vite plugins (decision-85). */
+export interface ScopedStyles {
+  /** `"attribute"` (default): `data-<namespace>-<token>`; `"class"`: `<namespace>-<token>`. */
+  strategy?: ScopeStrategy;
+  /** `"default"`: the scope adds (0,1,0); `"zero"`: it adds nothing (`:where()`). */
+  specificity?: ScopeSpecificity;
+  /** Default `"lum"`: a lowercase letter, then lowercase letters, digits and hyphens. */
+  namespace?: string;
+}
+
+export type ScopeSpecificity = "default" | "zero";
+
+export type ScopeStrategy = "attribute" | "class";
+
+/** The scope markers of a file: `data-<namespace>-*` attributes or `<namespace>-*` classes (decision-85). */
 export interface ScopeTokens {
   /** The file scope attribute (top-level `<style>` blocks). */
   file?: string;
@@ -422,6 +441,9 @@ export interface TextEdit {
   span: Span;
   text: string;
 }
+
+/** Validates a `scopedStyles.namespace`: the error message, or `null` when it is valid. */
+export declare function validateScopeNamespace(namespace: string): string | null;
 
 /** The compiler version, for cache keys. */
 export declare function version(): string;

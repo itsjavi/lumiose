@@ -2,8 +2,8 @@
 import { signal } from "lumiose";
 import { template, bind, toggleClass, insertText, list, selector, delegateEvents } from "lumiose/dom";
 import "/src/doc2-keyed-list.stsx?lumiose&type=style&lang.css";
-const _t0 = /* @__PURE__ */ template(`<tr data-l-tavixavi><td data-l-tavixavi><a data-l-tavixavi> `);
-const _t1 = /* @__PURE__ */ template(`<tbody data-l-tavixavi>`);
+const _t0 = /* @__PURE__ */ template(`<tr data-lum-tavixavi><td data-lum-tavixavi><a data-lum-tavixavi> `);
+const _t1 = /* @__PURE__ */ template(`<tbody data-lum-tavixavi>`);
 const _a0 = (el, v) => toggleClass(el, "danger", v);
 const _onClick = (row) => select(row.id);
 const rows = signal([]);

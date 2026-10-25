@@ -916,8 +916,11 @@ const {
   ParentKind,
   PlacementKind,
   scan,
+  ScopeSpecificity,
+  ScopeStrategy,
   Severity,
   StyleRefBindingType,
+  validateScopeNamespace,
   version,
 } = nativeBinding;
 export { AttributeValueKind };
@@ -932,7 +935,10 @@ export { FileKind };
 export { ParentKind };
 export { PlacementKind };
 export { scan };
+export { ScopeSpecificity };
+export { ScopeStrategy };
 export { Severity };
 export { StyleRefBindingType };
+export { validateScopeNamespace };
 export { version };
 export const __napiBindingTarget = __napiLoadedBindingTarget;

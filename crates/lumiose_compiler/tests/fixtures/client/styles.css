@@ -1,12 +1,12 @@
-.card[data-l-ecz843t9] {
+.card[data-lum-ecz843t9] {
   color: #222;
 }
 
-.card[data-l-ecz843t9] .external {
+.card[data-lum-ecz843t9] .external {
   color: oklch(70% .1 120);
 }
 
-footer[data-l-ecz843t9] {
+footer[data-lum-ecz843t9] {
   animation: 1s fade-ecz843t9;
 }
 
@@ -16,7 +16,7 @@ footer[data-l-ecz843t9] {
   }
 }
 
-.card[data-l-wjsvhj1q] {
+.card[data-lum-wjsvhj1q] {
   border-radius: 8px;
   padding: 4px;
 }

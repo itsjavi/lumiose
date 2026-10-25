@@ -56,8 +56,8 @@ function Reset(props: { onReset(): void }) {
 export const counterOutput = `import { signal } from "lumiose";
 import { template, bind, toggleClass, insert, createComponent, delegateEvents } from "lumiose/dom";
 import "/src/App.stsx?lumiose&type=style&lang.css";
-const _t0 = /* @__PURE__ */ template(\`<div class=counter data-l-rdjmzp3m><button class=pill data-l-rdjmzp3m>Clicked <!> times\`);
-const _t1 = /* @__PURE__ */ template(\`<button class="pill ghost" data-l-rdjmzp3m>Reset\`);
+const _t0 = /* @__PURE__ */ template(\`<div class=counter data-lum-rdjmzp3m><button class=pill data-lum-rdjmzp3m>Clicked <!> times\`);
+const _t1 = /* @__PURE__ */ template(\`<button class="pill ghost" data-lum-rdjmzp3m>Reset\`);
 const _a0 = (el, v) => toggleClass(el, "hot", v);
 const gap = 8;
 const radius = { pill: "999px" };
@@ -78,12 +78,12 @@ function Reset(props) {
 delegateEvents(["click"]);
 `;
 
-export const counterCss = `.counter[data-l-rdjmzp3m] {
+export const counterCss = `.counter[data-lum-rdjmzp3m] {
   gap: 8px;
   display: flex;
 }
 
-.pill[data-l-rdjmzp3m] {
+.pill[data-lum-rdjmzp3m] {
   color: #fff;
   font: inherit;
   background: #5546ff;
@@ -92,12 +92,12 @@ export const counterCss = `.counter[data-l-rdjmzp3m] {
   padding: 8px 16px;
 }
 
-.ghost[data-l-rdjmzp3m] {
+.ghost[data-lum-rdjmzp3m] {
   color: inherit;
   background: none;
 }
 
-.hot[data-l-rdjmzp3m] {
+.hot[data-lum-rdjmzp3m] {
   outline: 2px solid tomato;
 }
 `;

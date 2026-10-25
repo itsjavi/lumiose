@@ -244,7 +244,7 @@ describe.skipIf(!binding)("lumiose build", () => {
     expect(links).toHaveLength(1);
     expect(links[0]![2]!.split(" ")).toHaveLength(2);
     const shared = read(root, links[0]![1]!);
-    expect(shared).toMatch(/margin:0[^]*\.layout\[data-l-\w+\]\{color:#dc143c\}/);
+    expect(shared).toMatch(/margin:0[^]*\.layout\[data-lum-\w+\]\{color:#dc143c\}/);
     for (const href of links[0]![2]!.split(" ")) {
       expect(shared).toContain(read(root, href.slice(1)).trim());
     }
@@ -396,7 +396,7 @@ export default function Home() { return <main><Toggle client:load /></main>; }
     const css = [...home.matchAll(/<link rel="stylesheet" href="\/(assets\/[\w.-]+\.css)"/g)];
     const styles = css.map((link) => read(root, link[1]!)).join("");
     expect(styles).toContain("color:teal");
-    expect(styles).toMatch(/\.toggle\[data-l-\w+\]\{color:tomato\}/);
+    expect(styles).toMatch(/\.toggle\[data-lum-\w+\]\{color:tomato\}/);
     expect(home).toMatch(/<link rel="modulepreload" href="\/assets\/Toggle-[\w-]+\.js">/);
     const scripts = readdirSync(join(result.clientDir, "assets")).filter((file) =>
       file.endsWith(".js"),
@@ -630,11 +630,11 @@ export default function Layout(props: { children?: JSX.Element }) {
     expect(shared).not.toBeNull();
     expect(page).toContain(shared[0]);
     // The layout's stylesheets, in cascade order: the imported file, then the style block.
-    expect(read(root, shared[1]!)).toMatch(/margin:0[^]*\.layout\[data-l-\w+\]\{color:navy\}/);
+    expect(read(root, shared[1]!)).toMatch(/margin:0[^]*\.layout\[data-lum-\w+\]\{color:navy\}/);
     expect(shared[2]!.split(" ")).toHaveLength(2);
     // A small page stylesheet is inlined after it; one over 4 kB is linked.
     const inline = /<style data-l-css="\/assets\/page-[\w-]+\.css">([^<]*)<\/style>/.exec(home);
-    expect(inline![1]).toMatch(/\.home\[data-l-\w+\]\{color:teal\}/);
+    expect(inline![1]).toMatch(/\.home\[data-lum-\w+\]\{color:teal\}/);
     expect(home.indexOf(shared[0])).toBeLessThan(home.indexOf(inline![0]));
     const pageLink =
       /<link rel="stylesheet" href="\/assets\/big-page-[\w-]+\.css" data-l-css="\/assets\/big-page-[\w-]+\.css">/.exec(
@@ -691,11 +691,11 @@ export default function Site(props: { children?: JSX.Element }) {
     expect(home[1]).toMatch(/href="\/assets\/styles-[\w-]+\.css" data-l-css="[^" ]+ [^" ]+"/);
     expect(home[2]).toMatch(/^<style data-l-css=/);
     expect(read(root, hrefOf(home[0]!))).toMatch(
-      /margin:0[^]*\.layout\[data-l-\w+\]\{color:navy\}/,
+      /margin:0[^]*\.layout\[data-lum-\w+\]\{color:navy\}/,
     );
     // The group's file holds site.css, then the layout's style block, in cascade order.
     const group = read(root, hrefOf(home[1]!));
-    expect(group).toMatch(/^\.site\{color:#dc143c\}[^]*\.chrome-0\[data-l-\w+\]/);
+    expect(group).toMatch(/^\.site\{color:#dc143c\}[^]*\.chrome-0\[data-lum-\w+\]/);
     expect(group).not.toContain("navy");
     // The editor links the every-page file only: no chrome.
     expect(editor).toHaveLength(2);

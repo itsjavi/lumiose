@@ -182,6 +182,7 @@ fn compiler_options(options: CompileOptions) -> lumiose_compiler::CompileOptions
         css: lumiose_compiler::CssOptions {
             targets: lumiose_compiler::CssTargets::default(),
             minify: options.css_minify.unwrap_or(false),
+            scoped: lumiose_compiler::ScopedStyles::default(),
         },
         root: options.root,
         packages: options

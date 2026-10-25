@@ -1,0 +1,11 @@
+// @scoped-styles attribute zero app
+// Zero specificity and a custom namespace (decision-85): `data-app-<token>` attributes, matched
+// through `:where()`.
+export function Note() {
+  return (
+    <p class="note">
+      note
+      <style>.note { color: teal; }</style>
+    </p>
+  );
+}

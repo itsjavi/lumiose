@@ -163,7 +163,8 @@ pub struct CompileMeta {
     pub style_refs: Vec<ResolvedStyleRef>,
     /// True when the module imports its CSS module.
     pub has_styles: bool,
-    /// The `data-l-*` attributes stamped on the file's and its components' elements.
+    /// The scope markers (attributes or classes, decision-85) stamped on the file's and its
+    /// components' elements.
     pub scope_tokens: ScopeTokens,
     /// Island call sites, in source order (both targets).
     pub islands: Vec<IslandMeta>,
@@ -325,6 +326,7 @@ pub fn compile(source: &str, filename: &str, options: &CompileOptions) -> Compil
         &program,
         &analysis,
         &scope_path(filename, options.root.as_deref(), &options.packages),
+        &options.css.scoped,
     );
     let emit_css = options.emit_css && scopes.has_css() && style.is_complete();
     let inventories = if emit_css {
@@ -353,6 +355,7 @@ pub fn compile(source: &str, filename: &str, options: &CompileOptions) -> Compil
         packages: &options.packages,
         filename,
         scope_tokens: &scopes.tokens,
+        scope_classes: options.css.scoped.strategy == lumiose_css::ScopeStrategy::Class,
         style_import: options.style_import,
         strict_csp: options.strict_csp,
         dev_source: dev_source.as_ref(),

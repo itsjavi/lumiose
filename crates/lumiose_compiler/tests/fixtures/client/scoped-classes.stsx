@@ -1,0 +1,37 @@
+// @scoped-styles class default
+// The class strategy (decision-85): scope classes merge into each element's `class` (static,
+// object, array, computed, spread, or a `class` of their own), `$$scope` carries them as
+// `.name`, and the server writes one `class` attribute.
+type Props = { class?: string; label: string; rows: string[]; on: boolean };
+
+function Inner(props: Props) {
+  return <span class={props.class}>{props.label}</span>;
+}
+
+export function Card(props: Props) {
+  return (
+    <article class="card">
+      <h2>{props.label}</h2>
+      <p class={{ lead: true, on: props.on }}>lead</p>
+      <p class={["a", "b"]}>static array</p>
+      <p class={props.on ? "x" : "y"}>computed</p>
+      <p {...props}>spread</p>
+      <Inner class="cta" label="passthrough" rows={[]} on />
+      <table>
+        {props.rows.map((row) => (
+          <tr>
+            <td>{row}</td>
+          </tr>
+        ))}
+      </table>
+      <style>
+        .card { padding: 1rem; }
+        .cta { font-weight: bold; }
+      </style>
+    </article>
+  );
+}
+
+<style>
+  h2 { margin: 0; }
+</style>

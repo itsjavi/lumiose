@@ -7,9 +7,9 @@ import { template, insert, insertText, createComponent } from "lumiose/dom";
 import "/src/islands.stsx?lumiose&type=style&lang.css";
 const _t0 = /* @__PURE__ */ template(`<b> `);
 const _t1 = /* @__PURE__ */ template(`<i>`);
-const _t2 = /* @__PURE__ */ template(`<p data-l-k3v7p5ya>footer`);
-const _t3 = /* @__PURE__ */ template(`<svg data-l-k3v7p5ya>`);
-const _t4 = /* @__PURE__ */ template(`<main data-l-k3v7p5ya><!><!><!><!><!><!>`);
+const _t2 = /* @__PURE__ */ template(`<p data-lum-k3v7p5ya>footer`);
+const _t3 = /* @__PURE__ */ template(`<svg data-lum-k3v7p5ya>`);
+const _t4 = /* @__PURE__ */ template(`<main data-lum-k3v7p5ya><!><!><!><!><!><!>`);
 export function Local(props) {
 	const _el = _t0(), _text = _el.firstChild;
 	insertText(_text, () => props.n);
@@ -35,7 +35,7 @@ export default function Page(props) {
 			return _t3();
 		},
 		class: "wide",
-		$$scope: "data-l-k3v7p5ya"
+		$$scope: "data-lum-k3v7p5ya"
 	}), _marker3);
 	insert(_el2, createComponent(ui.Tabs, {}), _marker4);
 	insert(_el2, createComponent(Local, { n: 1 }), _marker5);

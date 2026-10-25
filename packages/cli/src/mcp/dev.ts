@@ -177,14 +177,15 @@ function messageOf(error: unknown): string {
 /**
  * The visible markup of a page, for reading what it renders: no `<script>`, `<style>`, `<link>`,
  * `<meta>` or `<template>` elements (island records, CSS, slots sent for later), no comments
- * (hydration markers) and no `data-l-*` attributes; blank lines collapsed.
+ * (hydration markers) and no `data-l-*` attributes or default `data-lum-*` scope attributes
+ * (decision-85); blank lines collapsed.
  */
 export function stripHtml(html: string): string {
   return html
     .replace(/<(script|style|template)\b[^>]*>[\s\S]*?<\/\1\s*>/gi, "")
     .replace(/<(?:link|meta)\b[^>]*>/gi, "")
     .replace(/<!--[\s\S]*?-->/g, "")
-    .replace(/\s+data-l-[\w-]*(?:=(?:"[^"]*"|'[^']*'|[^\s>]*))?/g, "")
+    .replace(/\s+data-(?:l|lum)-[\w-]*(?:=(?:"[^"]*"|'[^']*'|[^\s>]*))?/g, "")
     .replace(/[ \t]+$/gm, "")
     .replace(/\n{2,}/g, "\n");
 }

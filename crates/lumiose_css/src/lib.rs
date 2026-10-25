@@ -97,8 +97,7 @@ pub use lightningcss::targets::{Browsers, Targets};
 pub use prepass::{RefSite, find_refs};
 pub use process::process;
 pub use token::{
-    DEFAULT_NAMESPACE, ScopeSpecificity, ScopeStrategy, ScopeStyle, scope_attribute, scope_token,
-    validate_namespace,
+    DEFAULT_NAMESPACE, ScopeSpecificity, ScopeStrategy, ScopeStyle, scope_token, validate_namespace,
 };
 
 /// A half-open byte range `start..end` in the original source.

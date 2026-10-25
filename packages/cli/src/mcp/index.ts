@@ -281,7 +281,7 @@ export async function createLumioseMcpServer(options: LumioseMcpOptions): Promis
           .boolean()
           .optional()
           .describe(
-            "HTML only: return the visible markup, without scripts, styles, link/meta tags, templates, hydration comments and data-l-* attributes",
+            "HTML only: return the visible markup, without scripts, styles, link/meta tags, templates, hydration comments, data-l-* attributes and data-lum-* scope attributes",
           ),
       },
       annotations: { readOnlyHint: false, openWorldHint: false },

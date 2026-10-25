@@ -4,12 +4,12 @@
 import { Card, Panel } from "./ui.stsx";
 import { template, insert, insertText, list, createComponent, $await, $leave, $async } from "lumiose/dom";
 import "/src/nested-styles.stsx?lumiose&type=style&lang.css";
-const _t0 = /* @__PURE__ */ template(`<section class=a data-l-nmviz5ch data-l-wepye2d9><div class=b1 data-l-nmviz5ch data-l-wepye2d9><p class=c1 data-l-nmviz5ch data-l-wepye2d9>one</p></div><div class=b2 data-l-nmviz5ch data-l-wepye2d9><p class=c2 data-l-nmviz5ch data-l-wepye2d9 data-l-44pntcw3>two`);
-const _t1 = /* @__PURE__ */ template(`<p class=note data-l-nmviz5ch data-l-238shbm8>inside the subtree`);
-const _t2 = /* @__PURE__ */ template(`<main data-l-nmviz5ch><header class=head data-l-nmviz5ch data-l-7ikt7jyc></header><article class=body data-l-nmviz5ch data-l-238shbm8>`);
-const _t3 = /* @__PURE__ */ template(`<li class=item data-l-nmviz5ch data-l-jwlnrxd5 data-l-pqjmvna1> `);
-const _t4 = /* @__PURE__ */ template(`<tr data-l-nmviz5ch data-l-jwlnrxd5 data-l-qcwvws3i><td data-l-nmviz5ch data-l-jwlnrxd5 data-l-qcwvws3i> `);
-const _t5 = /* @__PURE__ */ template(`<ul class=list data-l-nmviz5ch data-l-jwlnrxd5 data-l-pqjmvna1></ul><table data-l-nmviz5ch data-l-jwlnrxd5 data-l-qcwvws3i><tbody data-l-nmviz5ch data-l-jwlnrxd5 data-l-qcwvws3i></tbody></table><table data-l-nmviz5ch data-l-jwlnrxd5><tbody data-l-nmviz5ch data-l-jwlnrxd5><tr class=row data-l-nmviz5ch data-l-jwlnrxd5 data-l-gw6dys2h><td data-l-nmviz5ch data-l-jwlnrxd5 data-l-gw6dys2h>static`, 1);
+const _t0 = /* @__PURE__ */ template(`<section class=a data-lum-nmviz5ch data-lum-wepye2d9><div class=b1 data-lum-nmviz5ch data-lum-wepye2d9><p class=c1 data-lum-nmviz5ch data-lum-wepye2d9>one</p></div><div class=b2 data-lum-nmviz5ch data-lum-wepye2d9><p class=c2 data-lum-nmviz5ch data-lum-wepye2d9 data-lum-44pntcw3>two`);
+const _t1 = /* @__PURE__ */ template(`<p class=note data-lum-nmviz5ch data-lum-238shbm8>inside the subtree`);
+const _t2 = /* @__PURE__ */ template(`<main data-lum-nmviz5ch><header class=head data-lum-nmviz5ch data-lum-7ikt7jyc></header><article class=body data-lum-nmviz5ch data-lum-238shbm8>`);
+const _t3 = /* @__PURE__ */ template(`<li class=item data-lum-nmviz5ch data-lum-jwlnrxd5 data-lum-pqjmvna1> `);
+const _t4 = /* @__PURE__ */ template(`<tr data-lum-nmviz5ch data-lum-jwlnrxd5 data-lum-qcwvws3i><td data-lum-nmviz5ch data-lum-jwlnrxd5 data-lum-qcwvws3i> `);
+const _t5 = /* @__PURE__ */ template(`<ul class=list data-lum-nmviz5ch data-lum-jwlnrxd5 data-lum-pqjmvna1></ul><table data-lum-nmviz5ch data-lum-jwlnrxd5 data-lum-qcwvws3i><tbody data-lum-nmviz5ch data-lum-jwlnrxd5 data-lum-qcwvws3i></tbody></table><table data-lum-nmviz5ch data-lum-jwlnrxd5><tbody data-lum-nmviz5ch data-lum-jwlnrxd5><tr class=row data-lum-nmviz5ch data-lum-jwlnrxd5 data-lum-gw6dys2h><td data-lum-nmviz5ch data-lum-jwlnrxd5 data-lum-gw6dys2h>static`, 1);
 $async(Rows);
 // A → B1 → C1 and A → B2 → C2 → <style>: C1 is not styled by C2's blocks (and `.c1` there is
 // LUM3005, labelled with the `<p>` subtree). The root block covers the whole component; blocks
@@ -23,21 +23,21 @@ export function Siblings(props) {
 	const _el = _t2(), _header = _el.firstChild, _article = _header.nextSibling;
 	insert(_header, createComponent(Card, {
 		class: "title",
-		$$scope: "data-l-nmviz5ch data-l-7ikt7jyc",
+		$$scope: "data-lum-nmviz5ch data-lum-7ikt7jyc",
 		get children() {
 			return props.label;
 		}
 	}));
 	insert(_article, createComponent(Panel, {
 		class: "panel",
-		$$scope: "data-l-nmviz5ch data-l-238shbm8",
+		$$scope: "data-lum-nmviz5ch data-lum-238shbm8",
 		get children() {
 			return _t1();
 		}
 	}));
 	insert(_el, createComponent(Card, {
 		class: "outside",
-		$$scope: "data-l-nmviz5ch",
+		$$scope: "data-lum-nmviz5ch",
 		children: "no subtree tokens"
 	}));
 	return _el;

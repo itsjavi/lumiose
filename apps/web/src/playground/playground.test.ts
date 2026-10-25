@@ -90,7 +90,7 @@ describe("preview", () => {
       ),
     );
     expect(code).not.toContain("type=style");
-    expect(css).toMatch(/\.a\[data-l-\w+\]/);
+    expect(css).toMatch(/\.a\[data-lum-\w+\]/);
   });
 });
 

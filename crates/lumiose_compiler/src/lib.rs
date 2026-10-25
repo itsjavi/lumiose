@@ -21,11 +21,12 @@ pub use compile::{
     CompileMeta, CompileOptions, CompileResult, ComponentMeta, CustomPropertiesMeta, IslandMeta,
     Target, compile,
 };
-pub use css::CssOptions;
+pub use css::{CssOptions, ScopedStyles};
 pub use custom_properties::CustomPropertySet;
 pub use diagnostics::{Code, Diagnostic, Severity};
 pub use imports::ImportMeta;
 pub use lumiose_css::Targets as CssTargets;
+pub use lumiose_css::{ScopeSpecificity, ScopeStrategy, validate_namespace};
 pub use module_id::PackageRoot;
 pub use prepare::{ConstValue, HostModule, ModuleRequest, ResolvedModule};
 pub use scanner::{ScanResult, scan};

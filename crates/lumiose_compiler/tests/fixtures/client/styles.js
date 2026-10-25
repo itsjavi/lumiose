@@ -4,9 +4,9 @@
 import { used } from "./tokens.ts";
 import { template, insertText, list } from "lumiose/dom";
 import "/src/styles.stsx?lumiose&type=style&lang.css";
-const _t0 = /* @__PURE__ */ template(`<span class=item data-l-ecz843t9 data-l-wjsvhj1q> `);
-const _t1 = /* @__PURE__ */ template(`<div class=card data-l-ecz843t9 data-l-wjsvhj1q><b data-l-ecz843t9 data-l-wjsvhj1q> </b><i data-l-ecz843t9 data-l-wjsvhj1q> `);
-const _t2 = /* @__PURE__ */ template(`<footer data-l-ecz843t9>Footer`);
+const _t0 = /* @__PURE__ */ template(`<span class=item data-lum-ecz843t9 data-lum-wjsvhj1q> `);
+const _t1 = /* @__PURE__ */ template(`<div class=card data-lum-ecz843t9 data-lum-wjsvhj1q><b data-lum-ecz843t9 data-lum-wjsvhj1q> </b><i data-lum-ecz843t9 data-lum-wjsvhj1q> `);
+const _t2 = /* @__PURE__ */ template(`<footer data-lum-ecz843t9>Footer`);
 const gap = 4;
 export function Card(props) {
 	const _el2 = _t1(), _b = _el2.firstChild, _text2 = _b.firstChild, _text3 = _b.nextSibling.firstChild;

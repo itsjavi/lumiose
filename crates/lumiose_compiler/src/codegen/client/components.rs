@@ -217,7 +217,7 @@ impl<'a> Codegen<'a, '_> {
             current.push(self.prop(&name, expr, span, memo));
         }
         if is_component && passes_class {
-            let tokens = self.scope_tokens(span);
+            let tokens = self.scope_refs(&self.scope_tokens(span));
             let own = (!tokens.is_empty()).then(|| self.ast.string(span, &tokens.join(" ")));
             let forwarded = forwards_class.map(|props_name| {
                 self.ast
