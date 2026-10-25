@@ -2,6 +2,18 @@
 
 All Lumiose packages share one version, except those released outside lockstep (@lumiose/ui), which keep their own changelog in their directory.
 
+## 0.8.1 (2026-10-25)
+
+### Features
+
+- **site:** internal links with trailing slashes (TASK-598) (8d3d39f0)
+- **site:** Open Graph images and an SEO pass on titles and descriptions (TASK-597) (68eae180)
+- **vscode:** publish the extension from the release workflow, in lockstep, as itsjavi.lumiose-vscode (TASK-594) (38dc556d)
+
+### Scale
+
+Not measured: the scale gate was skipped (`--skip-scale-gate`).
+
 ## 0.8.0 (2026-10-25)
 
 ### Features

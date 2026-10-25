@@ -1,7 +1,7 @@
 {
   "name": "lumiose-vscode",
   "displayName": "Lumiose",
-  "version": "0.8.0",
+  "version": "0.8.1",
   "private": true,
   "description": "Lumiose .stsx support: TSX with embedded CSS style blocks and $ref highlighting, and the Lumiose language server (TypeScript 7 takeover, CSS, project-wide classes and custom properties, snippets).",
   "categories": [

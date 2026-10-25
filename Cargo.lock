@@ -841,7 +841,7 @@ checksum = "f9f8bd3e56ce4dfc153cf470fffbfa98c7620958b312ca5c3a4b8d5181fd13c6"
 
 [[package]]
 name = "lumiose_compiler"
-version = "0.8.0"
+version = "0.8.1"
 dependencies = [
  "lumiose_css",
  "oxc_allocator",
@@ -860,7 +860,7 @@ dependencies = [
 
 [[package]]
 name = "lumiose_content"
-version = "0.8.0"
+version = "0.8.1"
 dependencies = [
  "comrak",
  "html5ever",
@@ -869,7 +869,7 @@ dependencies = [
 
 [[package]]
 name = "lumiose_css"
-version = "0.8.0"
+version = "0.8.1"
 dependencies = [
  "lightningcss",
  "parcel_sourcemap",
@@ -877,7 +877,7 @@ dependencies = [
 
 [[package]]
 name = "lumiose_napi"
-version = "0.8.0"
+version = "0.8.1"
 dependencies = [
  "lumiose_compiler",
  "lumiose_content",
@@ -890,7 +890,7 @@ dependencies = [
 
 [[package]]
 name = "lumiose_svg"
-version = "0.8.0"
+version = "0.8.1"
 dependencies = [
  "cssparser",
  "lumiose_compiler",
@@ -899,7 +899,7 @@ dependencies = [
 
 [[package]]
 name = "lumiose_wasm"
-version = "0.8.0"
+version = "0.8.1"
 dependencies = [
  "getrandom 0.3.4",
  "lumiose_compiler",

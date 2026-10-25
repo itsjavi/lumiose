@@ -1,6 +1,6 @@
 {
   "name": "@lumiose/stsx",
-  "version": "0.8.0",
+  "version": "0.8.1",
   "description": "STSX (Styled TSX) for React, Solid and other JSX frameworks: a Vite plugin for .stsx files, TSX plus raw-CSS <style> blocks scoped by placement.",
   "keywords": [
     "jsx",
