@@ -154,18 +154,33 @@ The Marketplace's web page takes one `.vsix` per upload, while a release has one
 
 ### One-time setup
 
-**VS Code Marketplace** (publisher `lumiose`). The job uses trusted publishing
-(`vsce publish --oidc`): vsce exchanges the job's GitHub Actions identity for a short-lived
-Marketplace credential, so there is no token to store or renew. The Marketplace has not launched
-trusted publishing yet (October 2026: vsce has the option, the Marketplace still refuses the
-exchange; [microsoft/vscode-vsce#1275](https://github.com/microsoft/vscode-vsce/issues/1275) tracks
-it), so until then the job only warns. Once it is available:
+**VS Code Marketplace** (publisher `lumiose`). The job publishes with the `VSCE_PAT` secret until
+trusted publishing replaces it. Without either, it only warns.
+
+The PAT, for now:
+
+1. Sign in to https://dev.azure.com with the Microsoft account that owns the `lumiose` publisher,
+   and create an Azure DevOps organization if you have none. Any organization works: publishers are
+   not linked to one.
+2. In **User settings**, **Personal access tokens**, create a token in that organization (not **All
+   accessible organizations**: those global PATs stop working on 2026-12-01), with the longest
+   expiry it allows (a year) and the scope **Marketplace: Manage** (**Custom defined**, **Show all
+   scopes**). Microsoft calls organization-scoped PATs a temporary workaround
+   ([microsoft/vscode-docs#10526](https://github.com/microsoft/vscode-docs/issues/10526)).
+3. Store it as the repository secret `VSCE_PAT`, and replace it before it expires.
+
+Trusted publishing (`vsce publish --oidc`) exchanges the job's GitHub Actions identity for a
+short-lived Marketplace credential, with no token to store or renew. The Marketplace has not
+launched it yet ([microsoft/vscode-vsce#1275](https://github.com/microsoft/vscode-vsce/issues/1275)
+tracks it). Once it is available:
 
 1. On the publisher's management page
    (https://marketplace.visualstudio.com/manage/publishers/lumiose), add a trusted publishing policy
    for the repository `itsjavi/lumiose` and the workflow `release.yml`.
-2. Set the repository variable `VSCE_TRUSTED_PUBLISHING` to `true`.
-3. Publish the releases the job skipped: `gh workflow run release.yml -f vscode_release=v<x.y.z>`.
+2. Set the repository variable `VSCE_TRUSTED_PUBLISHING` to `true`, then delete `VSCE_PAT` and the
+   PAT.
+
+To publish a release the job skipped: `gh workflow run release.yml -f vscode_release=v<x.y.z>`.
 
 **Open VSX** (namespace `lumiose`), for Cursor, VSCodium and other forks:
 

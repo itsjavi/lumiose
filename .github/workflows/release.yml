@@ -121,9 +121,11 @@ jobs:
 
   # Publishes the release's .vsix files to the VS Code Marketplace (publisher lumiose): after the
   # GitHub release of a v<x.y.z> tag, or on a manual run with `vscode_release`. The Marketplace takes
-  # no x.y.z-* versions, which stay on the GitHub release. It trusts this workflow (trusted
-  # publishing, a policy on the publisher), so `vsce publish --oidc` needs no token; vsce publishes
-  # every platform's file of the version in one run.
+  # no x.y.z-* versions, which stay on the GitHub release. vsce publishes every platform's file of
+  # the version in one run: with trusted publishing once the repository variable
+  # VSCE_TRUSTED_PUBLISHING is "true" (a policy on the publisher, no token), else with the VSCE_PAT
+  # secret (a PAT scoped to one Azure DevOps organization, Marketplace: Manage). With neither, it
+  # warns and publishes nothing.
   vscode-marketplace:
     needs: github-release
     if: ${{ !cancelled() && ((github.event_name == 'push' && needs.github-release.result == 'success' && startsWith(github.ref_name, 'v') && !contains(github.ref_name, '-')) || (github.event_name == 'workflow_dispatch' && startsWith(inputs.vscode_release, 'v') && !contains(inputs.vscode_release, '-'))) }}
@@ -150,16 +152,21 @@ jobs:
           TAG: ${{ inputs.vscode_release || github.ref_name }}
         run: gh release download "$TAG" --pattern "*.vsix" --dir packages/vscode/release
 
-      # The Marketplace has not launched trusted publishing yet (microsoft/vscode-vsce#1275), so the
-      # job waits for the repository variable VSCE_TRUSTED_PUBLISHING, set once the policy exists.
-      - name: Check the Marketplace setup
-        if: ${{ vars.VSCE_TRUSTED_PUBLISHING != 'true' }}
-        run: echo "::warning::VSCE_TRUSTED_PUBLISHING is not true, so nothing was published to the VS Code Marketplace (packages/vscode/README.md, Releases)."
-
+      # Trusted publishing has not launched on the Marketplace yet (microsoft/vscode-vsce#1275): until
+      # then the PAT publishes.
       - name: Publish to the VS Code Marketplace
-        if: ${{ vars.VSCE_TRUSTED_PUBLISHING == 'true' }}
         working-directory: packages/vscode
-        run: pnpm exec vsce publish --oidc --skip-duplicate --packagePath release/*.vsix
+        env:
+          TRUSTED: ${{ vars.VSCE_TRUSTED_PUBLISHING }}
+          MARKETPLACE_TOKEN: ${{ secrets.VSCE_PAT }}
+        run: |
+          if [[ "$TRUSTED" == "true" ]]; then
+            pnpm exec vsce publish --oidc --skip-duplicate --packagePath release/*.vsix
+          elif [[ -n "$MARKETPLACE_TOKEN" ]]; then
+            VSCE_PAT="$MARKETPLACE_TOKEN" pnpm exec vsce publish --skip-duplicate --packagePath release/*.vsix
+          else
+            echo "::warning::Neither VSCE_TRUSTED_PUBLISHING nor the VSCE_PAT secret is set, so nothing was published to the VS Code Marketplace (packages/vscode/README.md, Releases)."
+          fi
 
   # Publishes the release's .vsix files to Open VSX (namespace lumiose), for Cursor, VSCodium and
   # other forks, like vscode-marketplace. Open VSX trusts this workflow (trusted publishing) once the
