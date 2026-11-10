@@ -56,7 +56,7 @@ test("reports diagnostics in the editor and the Diagnostics tab", async ({ page 
   await expect(item).toContainText("unknown `<style>` attribute `lang`");
   await expect(item.getByRole("link", { name: "LUM1005" })).toHaveAttribute(
     "href",
-    "/docs/errors/LUM1005",
+    "/docs/errors/LUM1005/",
   );
 });
 
@@ -83,7 +83,7 @@ test("switches samples and works below the site's base path", async ({ page }) =
   await expect(frame.getByText("2 left")).toBeVisible();
   await expect(page.getByRole("link", { name: "Docs" }).first()).toHaveAttribute(
     "href",
-    "/lumiose/docs",
+    "/lumiose/docs/",
   );
 });
 
