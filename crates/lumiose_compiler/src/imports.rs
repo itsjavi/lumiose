@@ -38,7 +38,7 @@ impl Collector {
             return;
         }
         self.0.push(ImportMeta {
-            specifier: source.value.to_string(),
+            specifier: source.value.as_str().unwrap_or_default().to_owned(),
             span: Span::new(source.span.start + 1, source.span.end - 1),
             dynamic,
         });

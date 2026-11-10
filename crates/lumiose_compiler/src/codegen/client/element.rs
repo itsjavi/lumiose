@@ -28,7 +28,9 @@ pub enum AttrValue<'a> {
 pub fn attr_value<'a>(value: Option<JSXAttributeValue<'a>>) -> AttrValue<'a> {
     match value {
         None => AttrValue::True,
-        Some(JSXAttributeValue::StringLiteral(lit)) => AttrValue::Str(decode_entities(&lit.value)),
+        Some(JSXAttributeValue::StringLiteral(lit)) => {
+            AttrValue::Str(decode_entities(lit.value.as_str().unwrap_or_default()))
+        }
         Some(JSXAttributeValue::ExpressionContainer(container)) => {
             match container.unbox().expression {
                 JSXExpression::EmptyExpression(_) => AttrValue::Empty,
@@ -54,7 +56,9 @@ pub enum Literal {
 
 pub fn literal(expr: &Expression<'_>) -> Option<Literal> {
     match expr.without_parentheses() {
-        Expression::StringLiteral(lit) => Some(Literal::Str(lit.value.to_string())),
+        Expression::StringLiteral(lit) => {
+            lit.value.as_str().map(|text| Literal::Str(text.to_owned()))
+        }
         Expression::NumericLiteral(lit) => Some(Literal::Str(js_number(lit.value))),
         Expression::BooleanLiteral(lit) => Some(Literal::Bool(lit.value)),
         Expression::NullLiteral(_) => Some(Literal::Nullish),
@@ -67,8 +71,9 @@ pub fn literal(expr: &Expression<'_>) -> Option<Literal> {
         Expression::TemplateLiteral(template) if template.expressions.is_empty() => template
             .quasis
             .first()
-            .and_then(|q| q.value.cooked.as_ref())
-            .map(|cooked| Literal::Str(cooked.to_string())),
+            .and_then(|q| q.value.cooked)
+            .and_then(|cooked| cooked.as_str())
+            .map(|cooked| Literal::Str(cooked.to_owned())),
         _ => None,
     }
 }
@@ -817,9 +822,9 @@ impl<'a> Codegen<'a, '_> {
             let constant = match &item {
                 JSXAttributeItem::Attribute(attribute) if bakeable => match &attribute.value {
                     None => Some(None),
-                    Some(JSXAttributeValue::StringLiteral(text)) => {
-                        Some(Some(decode_entities(&text.value)))
-                    }
+                    Some(JSXAttributeValue::StringLiteral(text)) => Some(Some(decode_entities(
+                        text.value.as_str().unwrap_or_default(),
+                    ))),
                     _ => None,
                 },
                 _ => None,
@@ -1090,11 +1095,11 @@ pub(super) fn is_json_script(tag: &str, attributes: &[JSXAttributeItem<'_>]) -> 
         JSXAttributeItem::Attribute(attribute) if attribute_name(&attribute.name) == "type" => {
             match &attribute.value {
                 Some(JSXAttributeValue::StringLiteral(value)) => {
-                    html::is_json_script_type(&value.value)
+                    html::is_json_script_type(value.value.as_str().unwrap_or_default())
                 }
                 Some(JSXAttributeValue::ExpressionContainer(container)) => matches!(
                     &container.expression,
-                    JSXExpression::StringLiteral(value) if html::is_json_script_type(&value.value)
+                    JSXExpression::StringLiteral(value) if html::is_json_script_type(value.value.as_str().unwrap_or_default())
                 ),
                 _ => false,
             }

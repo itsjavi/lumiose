@@ -257,7 +257,7 @@ pub fn server_only_imports(
         let Statement::ImportDeclaration(import) = statement else {
             continue;
         };
-        let source = import.source.value.as_str();
+        let source = import.source.value.as_str().unwrap_or_default();
         let all = is_server_only(source);
         for specifier in import.specifiers.iter().flatten() {
             let request_api = source == "lumiose"

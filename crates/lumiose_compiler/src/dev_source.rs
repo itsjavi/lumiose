@@ -86,7 +86,7 @@ pub fn label_signals<'a>(ast: &Ast<'a>, program: &mut Program<'a>) -> Option<Str
         let Statement::ImportDeclaration(import) = statement else {
             continue;
         };
-        if import.source.value.as_str() != "lumiose" {
+        if import.source.value != "lumiose" {
             continue;
         }
         for specifier in import.specifiers.iter().flatten() {

@@ -216,7 +216,7 @@ fn collect_binding(
 pub fn property_key_name<'b>(key: &'b PropertyKey<'_>) -> Option<&'b str> {
     match key {
         PropertyKey::StaticIdentifier(ident) => Some(ident.name.as_str()),
-        PropertyKey::StringLiteral(lit) => Some(lit.value.as_str()),
+        PropertyKey::StringLiteral(lit) => lit.value.as_str(),
         _ => None,
     }
 }

@@ -19,17 +19,17 @@ lumiose_svg = { path = "crates/lumiose_svg" }
 lumiose_content = { path = "crates/lumiose_content" }
 
 # OXC: every oxc_* crate on the same exact version.
-oxc_allocator = "=0.153.0"
-oxc_ast = "=0.153.0"
-oxc_ast_visit = "=0.153.0"
-oxc_codegen = "=0.153.0"
-oxc_diagnostics = "=0.153.0"
-oxc_parser = "=0.153.0"
-oxc_semantic = "=0.153.0"
+oxc_allocator = "=0.158.0"
+oxc_ast = "=0.158.0"
+oxc_ast_visit = "=0.158.0"
+oxc_codegen = "=0.158.0"
+oxc_diagnostics = "=0.158.0"
+oxc_parser = "=0.158.0"
+oxc_semantic = "=0.158.0"
 oxc_sourcemap = "=9.0.0"
-oxc_span = "=0.153.0"
-oxc_syntax = "=0.153.0"
-oxc_transformer = "=0.153.0"
+oxc_span = "=0.158.0"
+oxc_syntax = "=0.158.0"
+oxc_transformer = "=0.158.0"
 
 serde = { version = "=1.0.229", features = ["derive"] }
 
@@ -38,23 +38,23 @@ lightningcss = { version = "=1.0.0-alpha.72", default-features = false, features
   "sourcemap",
   "visitor",
 ] }
-parcel_sourcemap = { version = "=2.1.1", features = ["json"] }
+parcel_sourcemap = { version = "=2.1.2", features = ["json"] }
 
 # SVG imports (lumiose_svg): the XML parser, and the CSS tokenizer Lightning CSS already ships
 # (same version) for prefixing ids in `<style>`.
 cssparser = "=0.37.0"
-roxmltree = "=0.21.1"
+roxmltree = "=0.21.2"
 
 # Markdown and HTML imports (lumiose_content): comrak for CommonMark + GFM (autolinks included),
 # html5ever for spec-compliant HTML tree building.
-comrak = { version = "=0.55.0", default-features = false }
+comrak = { version = "=0.59.0", default-features = false }
 html5ever = "=0.40.1"
 
 # Bindings
-napi = { version = "=3.14.2", default-features = false, features = ["napi4", "dyn-symbols"] }
-napi-derive = "=3.6.12"
+napi = { version = "=3.16.1", default-features = false, features = ["napi4", "dyn-symbols"] }
+napi-derive = "=3.7.0"
 napi-build = "=2.6.0"
-wasm-bindgen = "=0.2.129"
+wasm-bindgen = "=0.2.130"
 serde-wasm-bindgen = "=0.6.5"
 # lumiose_wasm in the browser: Lightning CSS's ahash seeds through getrandom (wasm_js backend).
 getrandom = "=0.3.4"

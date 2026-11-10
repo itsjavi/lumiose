@@ -470,9 +470,12 @@ impl<'a> Codegen<'a, '_> {
                 "selected" => return None,
                 "value" => {
                     value = Some(match &attribute.value {
-                        Some(JSXAttributeValue::StringLiteral(literal)) => self
-                            .ast
-                            .string(span, &super::text::decode_entities(&literal.value)),
+                        Some(JSXAttributeValue::StringLiteral(literal)) => self.ast.string(
+                            span,
+                            &super::text::decode_entities(
+                                literal.value.as_str().unwrap_or_default(),
+                            ),
+                        ),
                         Some(JSXAttributeValue::ExpressionContainer(container)) => {
                             let expression = container.expression.as_expression()?;
                             let copy = super::clone_expression(self.ast, expression);
@@ -497,7 +500,9 @@ impl<'a> Codegen<'a, '_> {
                             text.push_str(&super::text::decode_entities(&raw.value))
                         }
                         JSXChild::ExpressionContainer(container) => match &container.expression {
-                            JSXExpression::StringLiteral(literal) => text.push_str(&literal.value),
+                            JSXExpression::StringLiteral(literal) => {
+                                text.push_str(literal.value.as_str()?)
+                            }
                             JSXExpression::EmptyExpression(_) => {}
                             _ => return None,
                         },

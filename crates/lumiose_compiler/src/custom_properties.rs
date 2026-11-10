@@ -66,19 +66,21 @@ impl Collector {
                         continue;
                     };
                     if let PropertyKey::StringLiteral(key) = &property.key
-                        && is_custom_property(&key.value)
+                        && let Some(name) = key.value.as_str()
+                        && is_custom_property(name)
                     {
                         self.found.push(CustomPropertySet {
-                            name: key.value.to_string(),
+                            name: name.to_owned(),
                             // Without the quotes.
                             span: Span::new(key.span.start + 1, key.span.end - 1),
                         });
                     }
                 }
             }
-            Expression::StringLiteral(literal) => {
-                self.string(&literal.value, literal.span.start + 1)
-            }
+            Expression::StringLiteral(literal) => self.string(
+                literal.value.as_str().unwrap_or_default(),
+                literal.span.start + 1,
+            ),
             Expression::TemplateLiteral(template) if template.expressions.is_empty() => {
                 if let Some(quasi) = template.quasis.first() {
                     self.string(&quasi.value.raw, quasi.span.start);
@@ -103,7 +105,10 @@ impl<'a> Visit<'a> for Collector {
             }
             match &attribute.value {
                 Some(JSXAttributeValue::StringLiteral(literal)) => {
-                    self.string(&literal.value, literal.span.start + 1);
+                    self.string(
+                        literal.value.as_str().unwrap_or_default(),
+                        literal.span.start + 1,
+                    );
                 }
                 Some(JSXAttributeValue::ExpressionContainer(container)) => {
                     if let Some(expression) = container.expression.as_expression() {

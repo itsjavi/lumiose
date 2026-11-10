@@ -269,8 +269,13 @@ impl<'a> Visit<'a> for Collector<'_, '_> {
                 ImportDeclarationSpecifier::ImportNamespaceSpecifier(_) => "*".to_owned(),
             };
             if let Some(symbol) = specifier.local().symbol_id.get() {
-                self.imports
-                    .insert(symbol, (it.source.value.to_string(), imported));
+                self.imports.insert(
+                    symbol,
+                    (
+                        it.source.value.as_str().unwrap_or_default().to_owned(),
+                        imported,
+                    ),
+                );
             }
         }
     }

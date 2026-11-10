@@ -390,12 +390,15 @@ impl<'s, 'p, 'h> Folder<'s, 'p, 'h> {
                 "it has no member `{}`",
                 path[0]
             ))),
-            Expression::StringLiteral(literal) => Ok(ConstValue::String(literal.value.to_string())),
+            Expression::StringLiteral(literal) => match literal.value.as_str() {
+                Some(text) => Ok(ConstValue::String(text.to_owned())),
+                None => Err(FoldError::not_constant("a string has a lone surrogate")),
+            },
             Expression::NumericLiteral(literal) => Ok(ConstValue::Number(literal.value)),
             Expression::TemplateLiteral(template) => {
                 let mut text = String::new();
                 for (index, quasi) in template.quasis.iter().enumerate() {
-                    let Some(cooked) = &quasi.value.cooked else {
+                    let Some(cooked) = quasi.value.cooked.and_then(|cooked| cooked.as_str()) else {
                         return Err(FoldError::not_constant("a template has an invalid escape"));
                     };
                     text.push_str(cooked);
@@ -463,7 +466,10 @@ impl<'s, 'p, 'h> Folder<'s, 'p, 'h> {
                             None => None,
                         }
                     } else {
-                        property.key.static_name().map(|name| name.into_owned())
+                        property
+                            .key
+                            .static_name()
+                            .and_then(|name| name.as_str().map(str::to_owned))
                     };
                     if key.as_deref() != Some(name) {
                         continue;
@@ -586,7 +592,13 @@ fn index<'s, 'p>(
                         ImportDeclarationSpecifier::ImportNamespaceSpecifier(_) => "*".to_owned(),
                     };
                     if let Some(symbol) = specifier.local().symbol_id.get() {
-                        imports.insert(symbol, (import.source.value.to_string(), imported));
+                        imports.insert(
+                            symbol,
+                            (
+                                import.source.value.as_str().unwrap_or_default().to_owned(),
+                                imported,
+                            ),
+                        );
                     }
                 }
             }
@@ -626,7 +638,7 @@ fn index<'s, 'p>(
                     exports.insert(
                         specifier.exported.name().to_string(),
                         Export::From {
-                            specifier: export.source.value.to_string(),
+                            specifier: export.source.value.as_str().unwrap_or_default().to_owned(),
                             imported: specifier.local.name().to_string(),
                         },
                     );
@@ -637,12 +649,12 @@ fn index<'s, 'p>(
                     exports.insert(
                         name.name().to_string(),
                         Export::From {
-                            specifier: export.source.value.to_string(),
+                            specifier: export.source.value.as_str().unwrap_or_default().to_owned(),
                             imported: "*".to_owned(),
                         },
                     );
                 }
-                None => stars.push(export.source.value.to_string()),
+                None => stars.push(export.source.value.as_str().unwrap_or_default().to_owned()),
             },
             Statement::ExportDefaultDeclaration(export) => {
                 let value = match &export.declaration {
@@ -690,7 +702,7 @@ fn pattern_path(pattern: &BindingPattern<'_>, symbol: SymbolId) -> Option<Vec<St
                 property.key.static_name()
             }?;
             let mut rest = pattern_path(&property.value, symbol)?;
-            rest.insert(0, key.into_owned());
+            rest.insert(0, key.as_str()?.to_owned());
             Some(rest)
         }),
         _ => None,

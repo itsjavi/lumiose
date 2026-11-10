@@ -109,7 +109,7 @@ jobs:
       - if: matrix.part == 'site'
         uses: taiki-e/install-action@b80e2bb2635f28eb98b9fce1e2f0887e1535c6b2 # v2.90.0
         with:
-          tool: wasm-bindgen@0.2.129
+          tool: wasm-bindgen@0.2.130
 
       - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
 

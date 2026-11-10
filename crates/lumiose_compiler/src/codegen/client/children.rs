@@ -141,17 +141,18 @@ impl<'a> Codegen<'a, '_> {
             Expression::ParenthesizedExpression(paren) => {
                 self.push_expression(paren.unbox().expression, span, items);
             }
-            Expression::StringLiteral(lit) => items.push(Item::Text(lit.value.to_string(), span)),
+            // A string with a lone surrogate (`"\uD800"`) is not text Rust can hold: it stays an
+            // expression.
+            Expression::StringLiteral(lit) if let Some(text) = lit.value.as_str() => {
+                items.push(Item::Text(text.to_owned(), span));
+            }
             Expression::NumericLiteral(lit) => items.push(Item::Text(js_number(lit.value), span)),
             Expression::TemplateLiteral(template)
-                if template.expressions.is_empty() && template.quasis[0].value.cooked.is_some() =>
+                if template.expressions.is_empty()
+                    && let Some(cooked) =
+                        template.quasis[0].value.cooked.and_then(|c| c.as_str()) =>
             {
-                let cooked = template.quasis[0]
-                    .value
-                    .cooked
-                    .as_ref()
-                    .map(ToString::to_string);
-                items.push(Item::Text(cooked.unwrap_or_default(), span));
+                items.push(Item::Text(cooked.to_owned(), span));
             }
             Expression::BooleanLiteral(_) | Expression::NullLiteral(_) => {}
             Expression::Identifier(ident)

@@ -52,7 +52,7 @@ impl ModuleBindings {
         for statement in &program.body {
             match statement {
                 Statement::ImportDeclaration(import) => {
-                    let source = import.source.value.to_string();
+                    let source = import.source.value.as_str().unwrap_or_default().to_owned();
                     for specifier in import.specifiers.iter().flatten() {
                         let (local, imported) = match specifier {
                             ImportDeclarationSpecifier::ImportSpecifier(s) => {

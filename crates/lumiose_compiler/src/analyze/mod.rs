@@ -775,7 +775,7 @@ impl<'a> Visit<'a> for Analyzer<'_> {
     }
 
     fn visit_import_declaration(&mut self, it: &ImportDeclaration<'a>) {
-        let source = it.source.value.as_str();
+        let source = it.source.value.as_str().unwrap_or_default();
         let component_source = source.starts_with('.')
             || source.starts_with('/')
             || source == "lumiose"

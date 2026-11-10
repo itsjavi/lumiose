@@ -295,7 +295,7 @@ impl Stamper<'_> {
         match &attribute.value {
             Some(JSXAttributeValue::StringLiteral(literal)) => {
                 let at = literal.span.end - 1;
-                let separator = if literal.value.trim().is_empty() {
+                let separator = if literal.value.as_str().unwrap_or_default().trim().is_empty() {
                     ""
                 } else {
                     " "

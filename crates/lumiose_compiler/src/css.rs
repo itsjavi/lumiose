@@ -555,7 +555,14 @@ fn static_classes(value: Option<&JSXAttributeValue<'_>>, out: &mut Vec<String>) 
     match value {
         None => true,
         Some(JSXAttributeValue::StringLiteral(literal)) => {
-            out.extend(literal.value.split_whitespace().map(str::to_owned));
+            out.extend(
+                literal
+                    .value
+                    .as_str()
+                    .unwrap_or_default()
+                    .split_whitespace()
+                    .map(str::to_owned),
+            );
             true
         }
         Some(JSXAttributeValue::ExpressionContainer(container)) => {
@@ -599,7 +606,7 @@ fn static_strings(value: Option<&JSXAttributeValue<'_>>, out: &mut Vec<String>) 
     match value {
         None => true,
         Some(JSXAttributeValue::StringLiteral(literal)) => {
-            out.push(literal.value.to_string());
+            out.push(literal.value.as_str().unwrap_or_default().to_owned());
             true
         }
         Some(JSXAttributeValue::ExpressionContainer(container)) => {
@@ -619,15 +626,15 @@ fn static_strings(value: Option<&JSXAttributeValue<'_>>, out: &mut Vec<String>) 
 fn string_leaves(expression: &Expression<'_>, f: &mut impl FnMut(&str)) -> bool {
     match expression.get_inner_expression() {
         Expression::StringLiteral(literal) => {
-            f(&literal.value);
+            f(literal.value.as_str().unwrap_or_default());
             true
         }
         Expression::TemplateLiteral(template) if template.expressions.is_empty() => {
             template
                 .quasis
                 .iter()
-                .filter_map(|quasi| quasi.value.cooked.as_ref())
-                .for_each(|text| f(text));
+                .filter_map(|quasi| quasi.value.cooked.and_then(|cooked| cooked.as_str()))
+                .for_each(&mut *f);
             true
         }
         Expression::ConditionalExpression(conditional) => {
