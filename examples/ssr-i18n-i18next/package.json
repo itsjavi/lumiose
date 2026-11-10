@@ -20,7 +20,7 @@
   "devDependencies": {
     "@lumiose/cli": "workspace:*",
     "@lumiose/vite": "workspace:*",
-    "@playwright/test": "1.65.0"
+    "@playwright/test": "1.63.0"
   },
   "demo": {
     "title": "i18n with i18next (server-rendered)",

@@ -19,7 +19,7 @@
   "devDependencies": {
     "@lumiose/cli": "workspace:*",
     "@lumiose/vite": "workspace:*",
-    "@playwright/test": "1.65.0",
+    "@playwright/test": "1.63.0",
     "@tailwindcss/vite": "4.3.5",
     "@types/node": "^24.19.1",
     "tailwindcss": "4.3.5",

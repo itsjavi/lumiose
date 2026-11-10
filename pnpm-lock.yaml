@@ -77,7 +77,7 @@ importers:
     devDependencies:
       '@axe-core/playwright':
         specifier: 4.14.0
-        version: 4.14.0(playwright-core@1.65.0)
+        version: 4.14.0(playwright-core@1.63.0)
       '@lumiose/cli':
         specifier: workspace:*
         version: link:../../packages/cli
@@ -88,8 +88,8 @@ importers:
         specifier: workspace:*
         version: link:../../packages/vite
       '@playwright/test':
-        specifier: 1.65.0
-        version: 1.65.0
+        specifier: 1.63.0
+        version: 1.63.0
       '@types/node':
         specifier: ^24.19.1
         version: 24.19.1
@@ -110,8 +110,8 @@ importers:
         specifier: workspace:*
         version: link:../../packages/vite
       '@playwright/test':
-        specifier: 1.65.0
-        version: 1.65.0
+        specifier: 1.63.0
+        version: 1.63.0
       '@types/node':
         specifier: ^24.19.1
         version: 24.19.1
@@ -210,7 +210,7 @@ importers:
         version: link:../../packages/ui-css
       next:
         specifier: 16.4.5
-        version: 16.4.5(@babel/core@7.29.13(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.65.0)(@types/node@24.19.1)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
+        version: 16.4.5(@babel/core@7.29.13(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.63.0)(@types/node@24.19.1)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       react:
         specifier: 19.3.1
         version: 19.3.1
@@ -324,7 +324,7 @@ importers:
         version: link:../../packages/ui-css
       remix:
         specifier: 3.2.0
-        version: 3.2.0(@emnapi/core@2.0.0-beta.3)(@emnapi/runtime@2.0.0-beta.3)(mysql2@3.24.4(@types/node@24.19.1))(playwright@1.65.0)
+        version: 3.2.0(@emnapi/core@2.0.0-beta.3)(@emnapi/runtime@2.0.0-beta.3)(mysql2@3.24.4(@types/node@24.19.1))(playwright@1.63.0)
     devDependencies:
       '@types/node':
         specifier: 24.19.1
@@ -406,8 +406,8 @@ importers:
   benchmarks/fullstack/harness:
     devDependencies:
       '@playwright/test':
-        specifier: 1.65.0
-        version: 1.65.0
+        specifier: 1.63.0
+        version: 1.63.0
       '@types/autocannon':
         specifier: 7.12.7
         version: 7.12.7
@@ -497,7 +497,7 @@ importers:
         version: 19.3.1(react@19.3.1)
       remix:
         specifier: 3.2.0
-        version: 3.2.0(@emnapi/core@2.0.0-beta.3)(@emnapi/runtime@2.0.0-beta.3)(mysql2@3.24.4(@types/node@24.19.1))(playwright@1.65.0)
+        version: 3.2.0(@emnapi/core@2.0.0-beta.3)(@emnapi/runtime@2.0.0-beta.3)(mysql2@3.24.4(@types/node@24.19.1))(playwright@1.63.0)
       solid-js:
         specifier: 1.9.18
         version: 1.9.18
@@ -531,8 +531,8 @@ importers:
         specifier: workspace:*
         version: link:../../packages/vite
       '@playwright/test':
-        specifier: 1.65.0
-        version: 1.65.0
+        specifier: 1.63.0
+        version: 1.63.0
       '@types/node':
         specifier: ^24.19.1
         version: 24.19.1
@@ -556,8 +556,8 @@ importers:
         specifier: workspace:*
         version: link:../../packages/vite
       '@playwright/test':
-        specifier: 1.65.0
-        version: 1.65.0
+        specifier: 1.63.0
+        version: 1.63.0
       '@types/node':
         specifier: ^24.19.1
         version: 24.19.1
@@ -578,8 +578,8 @@ importers:
         specifier: workspace:*
         version: link:../../packages/vite
       '@playwright/test':
-        specifier: 1.65.0
-        version: 1.65.0
+        specifier: 1.63.0
+        version: 1.63.0
       '@types/node':
         specifier: ^24.19.1
         version: 24.19.1
@@ -600,8 +600,8 @@ importers:
         specifier: workspace:*
         version: link:../../packages/vite
       '@playwright/test':
-        specifier: 1.65.0
-        version: 1.65.0
+        specifier: 1.63.0
+        version: 1.63.0
       '@types/node':
         specifier: ^24.19.1
         version: 24.19.1
@@ -625,7 +625,7 @@ importers:
         version: 7.10.1(prisma@7.10.1(@types/node@24.19.1)(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(magicast@0.5.5)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(typescript@7.0.2))(typescript@7.0.2)
       better-auth:
         specifier: 1.7.18
-        version: 1.7.18(@opentelemetry/api@1.9.1)(@prisma/client@7.10.1(prisma@7.10.1(@types/node@24.19.1)(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(magicast@0.5.5)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(typescript@7.0.2))(typescript@7.0.2))(mysql2@3.24.4(@types/node@24.19.1))(next@16.4.5(@babel/core@7.29.13(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.65.0)(@types/node@24.19.1)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(prisma@7.10.1(@types/node@24.19.1)(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(magicast@0.5.5)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(typescript@7.0.2))(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(solid-js@1.9.18)(svelte@5.57.3)(vitest@5.1.0(@opentelemetry/api@1.9.1)(@types/node@24.19.1)(happy-dom@21.0.4)(vite@8.3.7(@types/node@24.19.1)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(yaml@2.9.1)))(vue@3.5.45(typescript@7.0.2))
+        version: 1.7.18(@opentelemetry/api@1.9.1)(@prisma/client@7.10.1(prisma@7.10.1(@types/node@24.19.1)(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(magicast@0.5.5)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(typescript@7.0.2))(typescript@7.0.2))(mysql2@3.24.4(@types/node@24.19.1))(next@16.4.5(@babel/core@7.29.13(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.63.0)(@types/node@24.19.1)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(prisma@7.10.1(@types/node@24.19.1)(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(magicast@0.5.5)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(typescript@7.0.2))(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(solid-js@1.9.18)(svelte@5.57.3)(vitest@5.1.0(@opentelemetry/api@1.9.1)(@types/node@24.19.1)(happy-dom@21.0.4)(vite@8.3.7(@types/node@24.19.1)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(yaml@2.9.1)))(vue@3.5.45(typescript@7.0.2))
       lumiose:
         specifier: workspace:*
         version: link:../../packages/lumiose
@@ -637,8 +637,8 @@ importers:
         specifier: workspace:*
         version: link:../../packages/vite
       '@playwright/test':
-        specifier: 1.65.0
-        version: 1.65.0
+        specifier: 1.63.0
+        version: 1.63.0
       prisma:
         specifier: 7.10.1
         version: 7.10.1(@types/node@24.19.1)(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(magicast@0.5.5)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(typescript@7.0.2)
@@ -659,8 +659,8 @@ importers:
         specifier: workspace:*
         version: link:../../packages/vite
       '@playwright/test':
-        specifier: 1.65.0
-        version: 1.65.0
+        specifier: 1.63.0
+        version: 1.63.0
 
   examples/ssr-deploy:
     dependencies:
@@ -715,8 +715,8 @@ importers:
         specifier: workspace:*
         version: link:../../packages/vite
       '@playwright/test':
-        specifier: 1.65.0
-        version: 1.65.0
+        specifier: 1.63.0
+        version: 1.63.0
 
   examples/ssr-i18n-paraglide:
     dependencies:
@@ -740,8 +740,8 @@ importers:
         specifier: workspace:*
         version: link:../../packages/vite
       '@playwright/test':
-        specifier: 1.65.0
-        version: 1.65.0
+        specifier: 1.63.0
+        version: 1.63.0
 
   examples/ssr-realtime:
     dependencies:
@@ -762,8 +762,8 @@ importers:
         specifier: workspace:*
         version: link:../../packages/vite
       '@playwright/test':
-        specifier: 1.65.0
-        version: 1.65.0
+        specifier: 1.63.0
+        version: 1.63.0
       '@types/ws':
         specifier: 8.18.2
         version: 8.18.2
@@ -784,8 +784,8 @@ importers:
         specifier: workspace:*
         version: link:../../packages/vite
       '@playwright/test':
-        specifier: 1.65.0
-        version: 1.65.0
+        specifier: 1.63.0
+        version: 1.63.0
       '@tailwindcss/vite':
         specifier: 4.3.5
         version: 4.3.5(vite@8.3.7(@types/node@24.19.1)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(yaml@2.9.1))
@@ -903,7 +903,7 @@ importers:
     devDependencies:
       '@axe-core/playwright':
         specifier: 4.14.0
-        version: 4.14.0(playwright-core@1.65.0)
+        version: 4.14.0(playwright-core@1.63.0)
       '@lumiose/cli':
         specifier: workspace:*
         version: link:../../packages/cli
@@ -911,8 +911,8 @@ importers:
         specifier: workspace:*
         version: link:../../packages/vite
       '@playwright/test':
-        specifier: 1.65.0
-        version: 1.65.0
+        specifier: 1.63.0
+        version: 1.63.0
       '@types/node':
         specifier: ^24.19.1
         version: 24.19.1
@@ -933,8 +933,8 @@ importers:
         specifier: workspace:*
         version: link:../../packages/vite
       '@playwright/test':
-        specifier: 1.65.0
-        version: 1.65.0
+        specifier: 1.63.0
+        version: 1.63.0
       '@types/node':
         specifier: ^24.19.1
         version: 24.19.1
@@ -1020,8 +1020,8 @@ importers:
         specifier: 1.45.0
         version: 1.45.0
       '@playwright/test':
-        specifier: 1.65.0
-        version: 1.65.0
+        specifier: 1.63.0
+        version: 1.63.0
       '@sanity/client':
         specifier: 8.15.0
         version: 8.15.0(vitest@5.1.0(@opentelemetry/api@1.9.1)(@types/node@24.19.1)(happy-dom@21.0.4)(vite@8.3.7(@types/node@24.19.1)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(yaml@2.9.1)))
@@ -1240,8 +1240,8 @@ importers:
         specifier: workspace:*
         version: link:../vite
       '@playwright/test':
-        specifier: 1.65.0
-        version: 1.65.0
+        specifier: 1.63.0
+        version: 1.63.0
       '@types/node':
         specifier: ^24.19.1
         version: 24.19.1
@@ -5068,8 +5068,8 @@ packages:
     bundledDependencies:
       - napi-wasm
 
-  '@playwright/test@1.65.0':
-    resolution: {integrity: sha512-iGURLGuKDLakSEl7Pgfv8h7f+XLT+V861Wfhz0zlEl5nyFuKUopdkFBPKqTllTUp06aOwPuH8iuUEb3yp3MpbQ==}
+  '@playwright/test@1.63.0':
+    resolution: {integrity: sha512-oxMK4vllB9RK5NQ2l1pq1IfOf2AvnEuj/vYGDj0H2nMtmtZpKtCwt/l00GEO6xjGfpBNAvjovvYdCm50dRQkpQ==}
     engines: {node: '>=20'}
     hasBin: true
 
@@ -9371,13 +9371,13 @@ packages:
   pkg-types@2.4.0:
     resolution: {integrity: sha512-07Fys7iVx0X6TcviMOgogM1Lk33ZyqOezMnU79S+kffWqwolG/5W9V8EgQSeYCIfFTYVgssRbnH630Oa2+soBA==}
 
-  playwright-core@1.65.0:
-    resolution: {integrity: sha512-vNSKgH6YqtN7cdT/L334zo0a+YwkrpicyrHJlWWPIm/Q+Nn2SWInil01oT0mbu96U4GgoRtCYQD9CzJQgju+lA==}
+  playwright-core@1.63.0:
+    resolution: {integrity: sha512-rYCsBF/M5HjUch52bbtVONEFjv6Xu8sm8h72dNlR5bzIE1fvC/bxgspzkjSfU+MweEMmPM8KJebG6nnyxo5mCg==}
     engines: {node: '>=20'}
     hasBin: true
 
-  playwright@1.65.0:
-    resolution: {integrity: sha512-F3AMWcR44qMBt4kq+6Kb6mX7bjGXshktKFOPULd7reED6ZJWevjbNRqysP7q+AATE9kdPEZBibex1BYsvpVoeA==}
+  playwright@1.63.0:
+    resolution: {integrity: sha512-+7ziBLidS4NaNCdt57SUDT+wYmmd5fmiQejUic/kb+YsYSCPyOOE9sebzMjNmQrsnNpDJqd4WHvV/8lfKfUDUg==}
     engines: {node: '>=20'}
     hasBin: true
 
@@ -11202,10 +11202,10 @@ snapshots:
     dependencies:
       yaml: 2.9.1
 
-  '@axe-core/playwright@4.14.0(playwright-core@1.65.0)':
+  '@axe-core/playwright@4.14.0(playwright-core@1.63.0)':
     dependencies:
       axe-core: 4.14.0
-      playwright-core: 1.65.0
+      playwright-core: 1.63.0
 
   '@azure/abort-controller@2.2.0':
     dependencies:
@@ -14300,9 +14300,9 @@ snapshots:
       is-glob: 4.0.3
       picomatch: 4.0.7
 
-  '@playwright/test@1.65.0':
+  '@playwright/test@1.63.0':
     dependencies:
-      playwright: 1.65.0
+      playwright: 1.63.0
 
   '@polka/url@1.0.0-next.29': {}
 
@@ -14663,7 +14663,7 @@ snapshots:
       '@remix-run/fetch-router': 1.0.0
       '@remix-run/session': 1.0.1
 
-  '@remix-run/cli@1.0.2(@emnapi/core@2.0.0-beta.3)(@emnapi/runtime@2.0.0-beta.3)(mysql2@3.24.4(@types/node@24.19.1))(playwright@1.65.0)':
+  '@remix-run/cli@1.0.2(@emnapi/core@2.0.0-beta.3)(@emnapi/runtime@2.0.0-beta.3)(mysql2@3.24.4(@types/node@24.19.1))(playwright@1.63.0)':
     dependencies:
       '@remix-run/assets': 1.0.2(@emnapi/core@2.0.0-beta.3)(@emnapi/runtime@2.0.0-beta.3)
       '@remix-run/data-table': 1.0.0
@@ -14671,7 +14671,7 @@ snapshots:
       '@remix-run/data-table-postgres': 1.0.0
       '@remix-run/data-table-sqlite': 1.0.0
       '@remix-run/terminal': 1.0.0
-      '@remix-run/test': 1.1.0(@emnapi/core@2.0.0-beta.3)(@emnapi/runtime@2.0.0-beta.3)(playwright@1.65.0)
+      '@remix-run/test': 1.1.0(@emnapi/core@2.0.0-beta.3)(@emnapi/runtime@2.0.0-beta.3)(playwright@1.63.0)
       jsonc-parser: 3.3.1
       semver: 7.8.6
     transitivePeerDependencies:
@@ -14884,7 +14884,7 @@ snapshots:
 
   '@remix-run/terminal@1.0.0': {}
 
-  '@remix-run/test@1.1.0(@emnapi/core@2.0.0-beta.3)(@emnapi/runtime@2.0.0-beta.3)(playwright@1.65.0)':
+  '@remix-run/test@1.1.0(@emnapi/core@2.0.0-beta.3)(@emnapi/runtime@2.0.0-beta.3)(playwright@1.63.0)':
     dependencies:
       '@remix-run/node-tsx': 1.0.0(@emnapi/core@2.0.0-beta.3)(@emnapi/runtime@2.0.0-beta.3)
       '@remix-run/terminal': 1.0.0
@@ -14899,7 +14899,7 @@ snapshots:
       source-map-js: 1.2.2
       v8-to-istanbul: 9.3.0
     optionalDependencies:
-      playwright: 1.65.0
+      playwright: 1.63.0
     transitivePeerDependencies:
       - '@emnapi/core'
       - '@emnapi/runtime'
@@ -16551,7 +16551,7 @@ snapshots:
 
   before-after-hook@4.0.0: {}
 
-  better-auth@1.7.18(@opentelemetry/api@1.9.1)(@prisma/client@7.10.1(prisma@7.10.1(@types/node@24.19.1)(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(magicast@0.5.5)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(typescript@7.0.2))(typescript@7.0.2))(mysql2@3.24.4(@types/node@24.19.1))(next@16.4.5(@babel/core@7.29.13(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.65.0)(@types/node@24.19.1)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(prisma@7.10.1(@types/node@24.19.1)(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(magicast@0.5.5)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(typescript@7.0.2))(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(solid-js@1.9.18)(svelte@5.57.3)(vitest@5.1.0(@opentelemetry/api@1.9.1)(@types/node@24.19.1)(happy-dom@21.0.4)(vite@8.3.7(@types/node@24.19.1)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(yaml@2.9.1)))(vue@3.5.45(typescript@7.0.2)):
+  better-auth@1.7.18(@opentelemetry/api@1.9.1)(@prisma/client@7.10.1(prisma@7.10.1(@types/node@24.19.1)(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(magicast@0.5.5)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(typescript@7.0.2))(typescript@7.0.2))(mysql2@3.24.4(@types/node@24.19.1))(next@16.4.5(@babel/core@7.29.13(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.63.0)(@types/node@24.19.1)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(prisma@7.10.1(@types/node@24.19.1)(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(magicast@0.5.5)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(typescript@7.0.2))(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(solid-js@1.9.18)(svelte@5.57.3)(vitest@5.1.0(@opentelemetry/api@1.9.1)(@types/node@24.19.1)(happy-dom@21.0.4)(vite@8.3.7(@types/node@24.19.1)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(yaml@2.9.1)))(vue@3.5.45(typescript@7.0.2)):
     dependencies:
       '@better-auth/core': 1.7.18(@better-auth/utils@0.5.1)(@better-fetch/fetch@1.3.3)(@opentelemetry/api@1.9.1)(better-call@1.4.5(zod@4.6.7))(jose@6.2.16)(kysely@0.29.8)(nanostores@1.5.5)
       '@better-auth/drizzle-adapter': 1.7.18(@better-auth/core@1.7.18(@better-auth/utils@0.5.1)(@better-fetch/fetch@1.3.3)(@opentelemetry/api@1.9.1)(better-call@1.4.5(zod@4.6.7))(jose@6.2.16)(kysely@0.29.8)(nanostores@1.5.5))(@better-auth/utils@0.5.1)
@@ -16573,7 +16573,7 @@ snapshots:
     optionalDependencies:
       '@prisma/client': 7.10.1(prisma@7.10.1(@types/node@24.19.1)(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(magicast@0.5.5)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(typescript@7.0.2))(typescript@7.0.2)
       mysql2: 3.24.4(@types/node@24.19.1)
-      next: 16.4.5(@babel/core@7.29.13(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.65.0)(@types/node@24.19.1)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
+      next: 16.4.5(@babel/core@7.29.13(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.63.0)(@types/node@24.19.1)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       prisma: 7.10.1(@types/node@24.19.1)(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(magicast@0.5.5)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(typescript@7.0.2)
       react: 19.3.1
       react-dom: 19.3.1(react@19.3.1)
@@ -18301,7 +18301,7 @@ snapshots:
 
   neotraverse@1.0.1: {}
 
-  next@16.4.5(@babel/core@7.29.13(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.65.0)(@types/node@24.19.1)(react-dom@19.3.1(react@19.3.1))(react@19.3.1):
+  next@16.4.5(@babel/core@7.29.13(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.63.0)(@types/node@24.19.1)(react-dom@19.3.1(react@19.3.1))(react@19.3.1):
     dependencies:
       '@next/env': 16.4.5
       '@swc/helpers': 0.5.23
@@ -18321,7 +18321,7 @@ snapshots:
       '@next/swc-win32-arm64-msvc': 16.4.5
       '@next/swc-win32-x64-msvc': 16.4.5
       '@opentelemetry/api': 1.9.1
-      '@playwright/test': 1.65.0
+      '@playwright/test': 1.63.0
       sharp: 0.35.5(@types/node@24.19.1)
     transitivePeerDependencies:
       - '@babel/core'
@@ -19015,11 +19015,11 @@ snapshots:
       exsolve: 1.2.0
       pathe: 2.0.3
 
-  playwright-core@1.65.0: {}
+  playwright-core@1.63.0: {}
 
-  playwright@1.65.0:
+  playwright@1.63.0:
     dependencies:
-      playwright-core: 1.65.0
+      playwright-core: 1.63.0
 
   postcss-calc@11.2.3(postcss@8.5.32):
     dependencies:
@@ -19252,14 +19252,14 @@ snapshots:
 
   remeda@2.33.4: {}
 
-  remix@3.2.0(@emnapi/core@2.0.0-beta.3)(@emnapi/runtime@2.0.0-beta.3)(mysql2@3.24.4(@types/node@24.19.1))(playwright@1.65.0):
+  remix@3.2.0(@emnapi/core@2.0.0-beta.3)(@emnapi/runtime@2.0.0-beta.3)(mysql2@3.24.4(@types/node@24.19.1))(playwright@1.63.0):
     dependencies:
       '@remix-run/assert': 1.0.0
       '@remix-run/assets': 1.0.2(@emnapi/core@2.0.0-beta.3)(@emnapi/runtime@2.0.0-beta.3)
       '@remix-run/async-context-middleware': 1.0.0
       '@remix-run/auth': 1.0.1
       '@remix-run/auth-middleware': 1.0.1
-      '@remix-run/cli': 1.0.2(@emnapi/core@2.0.0-beta.3)(@emnapi/runtime@2.0.0-beta.3)(mysql2@3.24.4(@types/node@24.19.1))(playwright@1.65.0)
+      '@remix-run/cli': 1.0.2(@emnapi/core@2.0.0-beta.3)(@emnapi/runtime@2.0.0-beta.3)(mysql2@3.24.4(@types/node@24.19.1))(playwright@1.63.0)
       '@remix-run/component': 1.2.0
       '@remix-run/component-hmr': 1.0.1(@emnapi/core@2.0.0-beta.3)(@emnapi/runtime@2.0.0-beta.3)
       '@remix-run/compression-middleware': 1.0.2
@@ -19302,10 +19302,10 @@ snapshots:
       '@remix-run/static-middleware': 1.0.2
       '@remix-run/tar-parser': 1.0.1
       '@remix-run/terminal': 1.0.0
-      '@remix-run/test': 1.1.0(@emnapi/core@2.0.0-beta.3)(@emnapi/runtime@2.0.0-beta.3)(playwright@1.65.0)
+      '@remix-run/test': 1.1.0(@emnapi/core@2.0.0-beta.3)(@emnapi/runtime@2.0.0-beta.3)(playwright@1.63.0)
     optionalDependencies:
       mysql2: 3.24.4(@types/node@24.19.1)
-      playwright: 1.65.0
+      playwright: 1.63.0
     transitivePeerDependencies:
       - '@emnapi/core'
       - '@emnapi/runtime'

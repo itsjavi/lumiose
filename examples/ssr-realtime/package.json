@@ -21,7 +21,7 @@
   "devDependencies": {
     "@lumiose/cli": "workspace:*",
     "@lumiose/vite": "workspace:*",
-    "@playwright/test": "1.65.0",
+    "@playwright/test": "1.63.0",
     "@types/ws": "8.18.2"
   },
   "demo": {

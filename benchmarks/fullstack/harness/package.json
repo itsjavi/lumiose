@@ -12,7 +12,7 @@
     "typecheck": "tsc -p tsconfig.json"
   },
   "devDependencies": {
-    "@playwright/test": "1.65.0",
+    "@playwright/test": "1.63.0",
     "@types/autocannon": "7.12.7",
     "@types/node": "^24.19.1",
     "autocannon": "9.0.0"

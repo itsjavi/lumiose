@@ -21,7 +21,7 @@
     "@inlang/plugin-message-format": "4.6.0",
     "@lumiose/cli": "workspace:*",
     "@lumiose/vite": "workspace:*",
-    "@playwright/test": "1.65.0"
+    "@playwright/test": "1.63.0"
   },
   "demo": {
     "title": "i18n with Paraglide JS (server-rendered)",
