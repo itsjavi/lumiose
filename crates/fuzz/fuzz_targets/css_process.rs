@@ -2,6 +2,10 @@
 //! resolved, under each scope, minified or not, with a source map or not. It must never panic:
 //! the language server and `lumiose dev` run it on every keystroke. The first byte picks the
 //! scope and the options.
+//!
+//! `process` catches Lightning CSS's own panics and reports them (`LUM3014`). libFuzzer's panic
+//! hook aborts before a panic can be caught, so the target installs a quiet hook instead: only a
+//! panic that escapes `process` still fails the run (libfuzzer-sys aborts on it).
 #![no_main]
 
 use libfuzzer_sys::fuzz_target;
@@ -11,6 +15,8 @@ use lumiose_css::{
 };
 
 fuzz_target!(|data: &[u8]| {
+    static QUIET_PANICS: std::sync::Once = std::sync::Once::new();
+    QUIET_PANICS.call_once(|| std::panic::set_hook(Box::new(|_| {})));
     let Some((&flags, rest)) = data.split_first() else {
         return;
     };

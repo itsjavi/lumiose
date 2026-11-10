@@ -6,6 +6,9 @@ use libfuzzer_sys::fuzz_target;
 use lumiose_compiler::{CompileOptions, Target, compile};
 
 fuzz_target!(|data: &[u8]| {
+    // Lightning CSS panics are caught and reported by the CSS pipeline: see css_process.rs.
+    static QUIET_PANICS: std::sync::Once = std::sync::Once::new();
+    QUIET_PANICS.call_once(|| std::panic::set_hook(Box::new(|_| {})));
     let Ok(source) = std::str::from_utf8(data) else {
         return;
     };

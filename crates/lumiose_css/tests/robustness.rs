@@ -110,6 +110,41 @@ fn boundaries(text: &str) -> impl Iterator<Item = usize> + '_ {
         .chain(std::iter::once(text.len()))
 }
 
+/// Lightning CSS panics on these (`unreachable!()` in its `<percentage>` parser, found by the
+/// nightly fuzzer, TASK-599): `process` reports `LUM3014` and leaves the block out.
+#[test]
+fn lightning_css_panics_become_diagnostics() {
+    let scope = Scope::Global { component: None };
+    for css in [
+        "@keyframes k { calc(1 - 2) { top: 0 } }",
+        "{{}}@keyframes k{{}calc(1 -\n2)",
+    ] {
+        let blocks = [CssBlock {
+            content: Span::new(0, css.len() as u32),
+            scope: scope.clone(),
+            svg: false,
+        }];
+        let output = process(
+            &CssInput {
+                filename: "fuzz.stsx",
+                source: css,
+                blocks: &blocks,
+                ..CssInput::default()
+            },
+            &CssOptions::default(),
+        );
+        assert_eq!(output.css, "", "{css}");
+        assert!(
+            output
+                .diagnostics
+                .iter()
+                .any(|d| d.code.id() == "LUM3014" && d.message.contains("internal error")),
+            "{css}: {:?}",
+            output.diagnostics
+        );
+    }
+}
+
 #[test]
 fn truncated_blocks_never_panic() {
     let scope = Scope::Component {

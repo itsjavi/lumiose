@@ -1,6 +1,7 @@
 //! The per-file pipeline: pre-pass, Lightning CSS parse, AST passes, merge, minify, print.
 
 use std::collections::{BTreeSet, HashMap};
+use std::panic::{AssertUnwindSafe, catch_unwind};
 use std::sync::{Arc, RwLock};
 
 use lightningcss::error::{ErrorLocation, ParserError};
@@ -46,16 +47,27 @@ pub fn process(input: &CssInput, options: &CssOptions) -> CssOutput {
             continue;
         }
         let warnings = Arc::new(RwLock::new(Vec::new()));
-        let parsed = StyleSheet::parse(
-            &block.rewritten.text,
-            ParserOptions {
-                filename: index.to_string(),
-                source_index: crate::to_u32(index),
-                error_recovery: true,
-                warnings: Some(Arc::clone(&warnings)),
-                ..ParserOptions::default()
-            },
-        );
+        let parsed = guarded(|| {
+            StyleSheet::parse(
+                &block.rewritten.text,
+                ParserOptions {
+                    filename: index.to_string(),
+                    source_index: crate::to_u32(index),
+                    error_recovery: true,
+                    warnings: Some(Arc::clone(&warnings)),
+                    ..ParserOptions::default()
+                },
+            )
+        });
+        let Some(parsed) = parsed else {
+            diagnostics.push(block.lightning_diagnostic(
+                CssCode::CssSyntaxError,
+                INTERNAL_ERROR.to_owned(),
+                None,
+            ));
+            sheets.push(None);
+            continue;
+        };
         if let Ok(warnings) = warnings.read() {
             for warning in warnings.iter().filter(|w| !is_tailwind_at_rule(&w.kind)) {
                 diagnostics.push(block.lightning_diagnostic(
@@ -118,6 +130,18 @@ pub fn process(input: &CssInput, options: &CssOptions) -> CssOutput {
         diagnostics,
         custom_properties_read: reads.into_iter().collect(),
     }
+}
+
+/// The message of `LUM3014` when Lightning CSS panicked instead of returning an error.
+const INTERNAL_ERROR: &str = "Lightning CSS failed on this CSS with an internal error; the CSS it could not handle is left out";
+
+/// Runs a Lightning CSS call, turning a panic into `None`. Lightning CSS has `unreachable!()`
+/// arms that malformed CSS reaches (a keyframe selector `calc(1 - 2)`, TASK-599), and `process`
+/// runs on every keystroke in the language server and the dev server: a block that cannot be
+/// compiled is a diagnostic there, never a crash. Where panics abort (WebAssembly), this is no
+/// guard.
+fn guarded<T>(call: impl FnOnce() -> T) -> Option<T> {
+    catch_unwind(AssertUnwindSafe(call)).ok()
 }
 
 /// Tailwind CSS v4's at-rules (`@slot` is the placeholder in a `@custom-variant` body).
@@ -470,23 +494,35 @@ fn print(
             None => CssDiagnostic::new(code, Span::default(), message),
         }
     };
-    if let Err(error) = sheet.minify(MinifyOptions {
-        targets: options.targets,
-        ..MinifyOptions::default()
-    }) {
+    let mut printed_map = options.source_map.then(|| SourceMap::new(""));
+    let printed = guarded(|| {
+        let minified = sheet.minify(MinifyOptions {
+            targets: options.targets,
+            ..MinifyOptions::default()
+        });
+        let printed = sheet.to_css(PrinterOptions {
+            minify: options.minify,
+            source_map: printed_map.as_mut(),
+            targets: options.targets,
+            ..PrinterOptions::default()
+        });
+        (minified, printed)
+    });
+    let Some((minified, printed)) = printed else {
+        diagnostics.push(location_diagnostic(
+            CssCode::CssSyntaxError,
+            INTERNAL_ERROR.to_owned(),
+            None,
+        ));
+        return (String::new(), None);
+    };
+    if let Err(error) = minified {
         diagnostics.push(location_diagnostic(
             CssCode::CssSyntaxError,
             error.kind.to_string(),
             error.loc.as_ref(),
         ));
     }
-    let mut printed_map = options.source_map.then(|| SourceMap::new(""));
-    let printed = sheet.to_css(PrinterOptions {
-        minify: options.minify,
-        source_map: printed_map.as_mut(),
-        targets: options.targets,
-        ..PrinterOptions::default()
-    });
     match printed {
         Ok(result) => {
             let map = printed_map

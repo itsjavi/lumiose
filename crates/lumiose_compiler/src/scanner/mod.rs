@@ -262,10 +262,10 @@ pub fn scan_kind(source: &str, kind: FileKind) -> ScanResult {
             mask: MaskPlan::default(),
         };
     }
-    let (blocks, mut diagnostics) = lexer::Lexer::new(source, kind).run();
+    let (blocks, mut diagnostics, bindings) = lexer::Lexer::new(source, kind).run();
     let mask = MaskPlan::new(&blocks);
     let masked = mask.render_utf8(source);
-    declarations::check_ref_order(&masked, &blocks, &mut diagnostics);
+    declarations::check_ref_order(source, &blocks, &bindings, &mut diagnostics);
     diagnostics.sort_by_key(|diagnostic| (diagnostic.span.start, diagnostic.span.end));
     ScanResult {
         kind,

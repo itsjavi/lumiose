@@ -302,3 +302,61 @@ fn diagnostics_are_sorted_and_have_docs() {
     );
     assert_eq!(result.diagnostics[0].docs(), "errors/LUM1005");
 }
+
+fn ref_order_errors(source: &str) -> Vec<String> {
+    let result = stsx(source);
+    result
+        .diagnostics
+        .iter()
+        .filter(|diagnostic| diagnostic.code == Code::StyleRefBeforeDeclaration)
+        .map(|diagnostic| {
+            let span = diagnostic.span;
+            source[span.start as usize..span.end as usize].to_owned()
+        })
+        .collect()
+}
+
+#[test]
+fn ref_order_sees_every_top_level_lexical_binding() {
+    let block = "<style>.a { inset: $a $b $c $d $e $f $g $h $i $j $k $l $m $n $o; }</style>\n";
+    let declared = "\
+export const a = 1, b: Map<string, number> = new Map(), c = a < 2
+let { d, e: [f] } = x
+declare const g: number;
+abstract class h {}
+await using i = open();
+const j = <p>it's {a} here</p>, k = /[)}]/;
+";
+    // Not top-level lexical bindings.
+    let other = "\
+var l = 1;
+function m() { const n = 1; }
+const z = class o {};
+const y = [1] as const
+foo(m);
+for (const n of []) {}
+";
+    let source = format!("{block}{declared}{other}");
+    assert_eq!(
+        ref_order_errors(&source),
+        ["$a", "$b", "$c", "$d", "$f", "$g", "$h", "$i", "$j", "$k"]
+    );
+    // Declared before the block: nothing to report.
+    assert!(ref_order_errors(&format!("{declared}{block}")).is_empty());
+}
+
+/// The nightly `scan` fuzz target timed out here (TASK-599): this check parsed the masked text
+/// with OXC, which backtracks exponentially on this nesting. 22 repetitions took 48 seconds.
+#[test]
+fn ref_order_check_is_linear_on_nested_speculative_syntax() {
+    let nested = "d = a <s,(n = a <[t((n = ".repeat(400);
+    let source = format!(
+        "<style>.a {{ fill: $gap }}</style>\n{nested}{}",
+        "[".repeat(5000)
+    );
+    let started = std::time::Instant::now();
+    for kind in [FileKind::Stsx, FileKind::Tsx] {
+        scan_kind(&source, kind);
+    }
+    assert!(started.elapsed() < std::time::Duration::from_secs(5));
+}

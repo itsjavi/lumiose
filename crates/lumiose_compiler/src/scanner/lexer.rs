@@ -13,6 +13,7 @@ use super::JsxParentKind;
 use super::StyleBlock;
 use super::block::BlockPosition;
 use super::chars::{char_at, is_ident_part, is_ident_start, is_js_whitespace, is_style_open};
+use super::declarations::{Declarator, declared_names};
 use crate::diagnostics::{Code, Diagnostic, Severity};
 use crate::span::Span;
 
@@ -94,6 +95,8 @@ struct Checkpoint {
     diagnostics: usize,
     prev: Prev,
     newline: bool,
+    bindings: usize,
+    declaring: bool,
 }
 
 pub(super) enum Stop {
@@ -122,6 +125,12 @@ pub(super) struct Lexer<'s> {
     not_jsx: Vec<usize>,
     pub(super) blocks: Vec<StyleBlock>,
     pub(super) diagnostics: Vec<Diagnostic>,
+    /// Name spans of the top-level lexical bindings (`const`, `let`, `using`, `class`), for
+    /// `LUM3013`.
+    bindings: Vec<Span>,
+    /// Inside a top-level `const`/`let`/`using` statement: a top-level `,` may start another
+    /// declarator.
+    declaring: bool,
 }
 
 impl<'s> Lexer<'s> {
@@ -140,10 +149,13 @@ impl<'s> Lexer<'s> {
             not_jsx: Vec::new(),
             blocks: Vec::new(),
             diagnostics: Vec::new(),
+            bindings: Vec::new(),
+            declaring: false,
         }
     }
 
-    pub(super) fn run(mut self) -> (Vec<StyleBlock>, Vec<Diagnostic>) {
+    /// The style blocks, the diagnostics, and the top-level lexical bindings' name spans.
+    pub(super) fn run(mut self) -> (Vec<StyleBlock>, Vec<Diagnostic>, Vec<Span>) {
         loop {
             let step = match self.frames.last() {
                 Some(Frame::Template { .. }) => self.step_template(),
@@ -158,7 +170,7 @@ impl<'s> Lexer<'s> {
             }
         }
         self.report_unterminated_template();
-        (self.blocks, self.diagnostics)
+        (self.blocks, self.diagnostics, self.bindings)
     }
 
     // ----- cursor helpers -----
@@ -214,6 +226,8 @@ impl<'s> Lexer<'s> {
             diagnostics: self.diagnostics.len(),
             prev: self.prev,
             newline: self.newline,
+            bindings: self.bindings.len(),
+            declaring: self.declaring,
         });
         self.checkpoints.len() - 1
     }
@@ -233,6 +247,8 @@ impl<'s> Lexer<'s> {
         self.diagnostics.truncate(checkpoint.diagnostics);
         self.prev = checkpoint.prev;
         self.newline = checkpoint.newline;
+        self.bindings.truncate(checkpoint.bindings);
+        self.declaring = checkpoint.declaring;
         self.control = false;
         self.gt = false;
         self.not_jsx.push(checkpoint.pos);
@@ -488,6 +504,16 @@ impl<'s> Lexer<'s> {
             b';' => {
                 self.pos += 1;
                 self.set(Prev::Start);
+                if self.frames.is_empty() {
+                    self.declaring = false;
+                }
+            }
+            b',' => {
+                self.pos += 1;
+                self.set(Prev::Expr);
+                if self.declaring && self.frames.is_empty() {
+                    declared_names(self.src, self.pos, Declarator::Next, &mut self.bindings);
+                }
             }
             b'=' => {
                 if self.peek(1) == Some(b'>') {
@@ -589,7 +615,11 @@ impl<'s> Lexer<'s> {
             return;
         }
         let after_for = self.control;
-        match &self.src[start..self.pos] {
+        let word = &self.src[start..self.pos];
+        if self.frames.is_empty() && matches!(word, "const" | "let" | "using" | "class") {
+            self.declaration(start, word == "class");
+        }
+        match word {
             // `void` is left out: in TS it is mostly a type (`() => void`), an operand.
             "return" | "typeof" | "instanceof" | "in" | "of" | "new" | "delete" | "throw"
             | "case" | "yield" | "extends" | "default" | "keyof" | "as" | "satisfies"
@@ -608,6 +638,33 @@ impl<'s> Lexer<'s> {
             }
             _ => self.set(Prev::Operand),
         }
+    }
+
+    /// A `const`, `let`, `using` or `class` keyword at the top level, starting at `start`:
+    /// collects the names it declares when it opens a statement. `as const`, `<const T>`, a class
+    /// expression and the identifiers `let` and `using` do not. Decorated classes are missed.
+    fn declaration(&mut self, start: usize, class: bool) {
+        let before = self.src[..start].trim_end();
+        let modifier = ["declare", "abstract", "await"].iter().any(|word| {
+            before.strip_suffix(word).is_some_and(|rest| {
+                !rest
+                    .as_bytes()
+                    .last()
+                    .is_some_and(|&byte| is_ident_part(byte))
+            })
+        });
+        let opens_statement =
+            self.prev == Prev::Start || (self.prev == Prev::Operand && self.newline) || modifier;
+        if !opens_statement {
+            return;
+        }
+        let kind = if class {
+            Declarator::Class
+        } else {
+            self.declaring = true;
+            Declarator::First
+        };
+        declared_names(self.src, self.pos, kind, &mut self.bindings);
     }
 
     fn open_brace(&mut self) {
