@@ -17,18 +17,18 @@
     "test:e2e": "playwright test"
   },
   "dependencies": {
-    "@libsql/client": "0.17.4",
+    "@libsql/client": "0.18.0",
     "@lumiose/adapter-node": "workspace:*",
-    "@prisma/adapter-libsql": "7.10.0",
-    "@prisma/client": "7.10.0",
-    "better-auth": "1.7.7",
+    "@prisma/adapter-libsql": "7.10.1",
+    "@prisma/client": "7.10.1",
+    "better-auth": "1.7.18",
     "lumiose": "workspace:*"
   },
   "devDependencies": {
     "@lumiose/cli": "workspace:*",
     "@lumiose/vite": "workspace:*",
-    "@playwright/test": "1.63.0",
-    "prisma": "7.10.0"
+    "@playwright/test": "1.65.0",
+    "prisma": "7.10.1"
   },
   "demo": {
     "title": "Accounts with Better Auth and Prisma (server-rendered)",

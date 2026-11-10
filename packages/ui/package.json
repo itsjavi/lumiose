@@ -165,10 +165,10 @@
   "devDependencies": {
     "@lumiose/compiler": "workspace:*",
     "@lumiose/vite": "workspace:*",
-    "@types/node": "^24.0.0",
-    "happy-dom": "^20.14.5",
+    "@types/node": "^24.19.1",
+    "happy-dom": "^21.0.4",
     "lumiose": "workspace:*",
-    "vite": "^8.3.4"
+    "vite": "^8.3.7"
   },
   "peerDependencies": {
     "lumiose": "workspace:^"

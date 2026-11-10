@@ -12,12 +12,12 @@
     "typecheck": "stsx typegen && tsc -p tsconfig.json"
   },
   "dependencies": {
-    "solid-js": "1.9.17"
+    "solid-js": "1.9.18"
   },
   "devDependencies": {
     "@lumiose/stsx": "workspace:*",
     "typescript": "7.0.2",
-    "vite": "^8.3.4",
-    "vite-plugin-solid": "2.11.14"
+    "vite": "^8.3.7",
+    "vite-plugin-solid": "2.11.15"
   }
 }

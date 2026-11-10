@@ -14,22 +14,22 @@ app = "my-app"
 primary_region = "ams"
 
 [env]
-  NODE_ENV = "production"
-  PORT = "3000"
+NODE_ENV = "production"
+PORT = "3000"
 
 [http_service]
-  internal_port = 3000
-  force_https = true
-  auto_stop_machines = "stop"
-  auto_start_machines = true
-  min_machines_running = 0
+internal_port = 3000
+force_https = true
+auto_stop_machines = "stop"
+auto_start_machines = true
+min_machines_running = 0
 
 [[http_service.checks]]
-  grace_period = "10s"
-  interval = "30s"
-  method = "GET"
-  timeout = "5s"
-  path = "/"
+grace_period = "10s"
+interval = "30s"
+method = "GET"
+timeout = "5s"
+path = "/"
 ```
 
 Secrets go in with `fly secrets set LUMIOSE_SECRET="$(openssl rand -base64 32)"`, then

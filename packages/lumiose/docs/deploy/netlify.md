@@ -25,8 +25,8 @@ export default defineConfig({
 ```toml
 # netlify.toml, next to package.json
 [build]
-  command = "lumiose build"
-  publish = "dist/client"
+command = "lumiose build"
+publish = "dist/client"
 ```
 
 Push to a site connected to the repository, or deploy from the command line with
@@ -38,8 +38,8 @@ command from the repository root, so name the package and the full publish path:
 
 ```toml
 [build]
-  command = "pnpm --filter my-app build"
-  publish = "apps/my-app/dist/client"
+command = "pnpm --filter my-app build"
+publish = "apps/my-app/dist/client"
 ```
 
 ## What the build writes

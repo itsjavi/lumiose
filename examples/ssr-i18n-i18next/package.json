@@ -14,13 +14,13 @@
   },
   "dependencies": {
     "@lumiose/adapter-node": "workspace:*",
-    "i18next": "26.4.3",
+    "i18next": "27.0.1",
     "lumiose": "workspace:*"
   },
   "devDependencies": {
     "@lumiose/cli": "workspace:*",
     "@lumiose/vite": "workspace:*",
-    "@playwright/test": "1.63.0"
+    "@playwright/test": "1.65.0"
   },
   "demo": {
     "title": "i18n with i18next (server-rendered)",

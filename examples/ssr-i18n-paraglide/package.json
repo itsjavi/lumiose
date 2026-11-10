@@ -17,11 +17,11 @@
     "lumiose": "workspace:*"
   },
   "devDependencies": {
-    "@inlang/paraglide-js": "2.27.0",
-    "@inlang/plugin-message-format": "4.5.0",
+    "@inlang/paraglide-js": "3.2.1",
+    "@inlang/plugin-message-format": "4.6.0",
     "@lumiose/cli": "workspace:*",
     "@lumiose/vite": "workspace:*",
-    "@playwright/test": "1.63.0"
+    "@playwright/test": "1.65.0"
   },
   "demo": {
     "title": "i18n with Paraglide JS (server-rendered)",

@@ -23,7 +23,10 @@ it("skips stylesheets that a merged file or an inline style already holds", () =
   document.head.innerHTML =
     '<link rel="stylesheet" href="/assets/styles-x.css" data-l-css="/assets/a.css /assets/b.css">' +
     '<style data-l-css="/assets/c.css">.c{}</style>';
-  void helper(() => undefined, ["assets/a.css", "assets/c.css", "assets/d.css", "assets/e.js"]);
+  // happy-dom fails to fetch the stylesheet it links, which rejects the helper: only the links matter.
+  helper(() => undefined, ["assets/a.css", "assets/c.css", "assets/d.css", "assets/e.js"]).catch(
+    () => undefined,
+  );
   const added = [...document.head.querySelectorAll("link")].slice(1);
   expect(added.map((link) => [link.rel, link.getAttribute("href")])).toEqual([
     ["stylesheet", "https://example.com/assets/d.css"],

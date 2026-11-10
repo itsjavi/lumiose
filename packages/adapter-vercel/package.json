@@ -32,12 +32,12 @@
     "prepack": "pnpm run build"
   },
   "dependencies": {
-    "@vercel/nft": "1.11.0",
+    "@vercel/nft": "1.11.1",
     "lumiose": "workspace:*"
   },
   "devDependencies": {
     "@lumiose/vite": "workspace:*",
-    "vite": "^8.3.4"
+    "vite": "^8.3.7"
   },
   "peerDependencies": {
     "vite": "^8.3.0"

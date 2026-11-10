@@ -12,10 +12,7 @@ export interface SearchEntry {
 
 /** Lowercase, without diacritics: `Café` → `cafe`. */
 export function normalize(text: string): string {
-  return text
-    .normalize("NFKD")
-    .replace(/[̀-ͯ]/g, "")
-    .toLowerCase();
+  return text.normalize("NFKD").replace(/[̀-ͯ]/g, "").toLowerCase();
 }
 
 /**

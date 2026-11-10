@@ -11743,8 +11743,8 @@ export default defineConfig({
 ```toml
 # netlify.toml, next to package.json
 [build]
-  command = "lumiose build"
-  publish = "dist/client"
+command = "lumiose build"
+publish = "dist/client"
 ```
 
 Push to a site connected to the repository, or deploy from the command line with
@@ -11756,8 +11756,8 @@ command from the repository root, so name the package and the full publish path:
 
 ```toml
 [build]
-  command = "pnpm --filter my-app build"
-  publish = "apps/my-app/dist/client"
+command = "pnpm --filter my-app build"
+publish = "apps/my-app/dist/client"
 ```
 
 ## What the build writes
@@ -11896,22 +11896,22 @@ app = "my-app"
 primary_region = "ams"
 
 [env]
-  NODE_ENV = "production"
-  PORT = "3000"
+NODE_ENV = "production"
+PORT = "3000"
 
 [http_service]
-  internal_port = 3000
-  force_https = true
-  auto_stop_machines = "stop"
-  auto_start_machines = true
-  min_machines_running = 0
+internal_port = 3000
+force_https = true
+auto_stop_machines = "stop"
+auto_start_machines = true
+min_machines_running = 0
 
 [[http_service.checks]]
-  grace_period = "10s"
-  interval = "30s"
-  method = "GET"
-  timeout = "5s"
-  path = "/"
+grace_period = "10s"
+interval = "30s"
+method = "GET"
+timeout = "5s"
+path = "/"
 ```
 
 Secrets go in with `fly secrets set LUMIOSE_SECRET="$(openssl rand -base64 32)"`, then

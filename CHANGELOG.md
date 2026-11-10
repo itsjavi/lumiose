@@ -40,12 +40,12 @@ Not measured: the scale gate was skipped (`--skip-scale-gate`).
 
 The large-app benchmark (1,500 routes, 5,000 components), working tree against v0.7.1 (13e9c9c6), medians of 3 rounds on Apple M1 Max (10 cores, 32 GB, darwin 27.0.0 arm64, Node v26.8.1). The release gate stops at a ratio above 1.2.
 
-| Metric | Previous | This release | Ratio |
-| ------ | -------- | ------------ | ----- |
-| Production build (ms) | 30724.7 | 30709.1 | 0.999 |
-| Dev cold start (ms) | 1088.9 | 1045.5 | 0.960 |
-| HMR latency (ms) | 79.2 | 80.1 | 1.012 |
-| Server memory, peak RSS (MB) | 480.4 | 475.4 | 0.990 |
+| Metric                       | Previous | This release | Ratio |
+| ---------------------------- | -------- | ------------ | ----- |
+| Production build (ms)        | 30724.7  | 30709.1      | 0.999 |
+| Dev cold start (ms)          | 1088.9   | 1045.5       | 0.960 |
+| HMR latency (ms)             | 79.2     | 80.1         | 1.012 |
+| Server memory, peak RSS (MB) | 480.4    | 475.4        | 0.990 |
 
 ## 0.7.1 (2026-10-24)
 
@@ -64,12 +64,12 @@ The large-app benchmark (1,500 routes, 5,000 components), working tree against v
 
 The large-app benchmark (1,500 routes, 5,000 components), working tree against v0.7.0 (fc8f673c), medians of 3 rounds on Apple M1 Max (10 cores, 32 GB, darwin 27.0.0 arm64, Node v26.8.1). The release gate stops at a ratio above 1.2.
 
-| Metric | Previous | This release | Ratio |
-| ------ | -------- | ------------ | ----- |
-| Production build (ms) | 36734.7 | 31228.1 | 0.850 |
-| Dev cold start (ms) | 1025.6 | 1146.5 | 1.118 |
-| HMR latency (ms) | 81.3 | 78.6 | 0.967 |
-| Server memory, peak RSS (MB) | 525.9 | 523.9 | 0.996 |
+| Metric                       | Previous | This release | Ratio |
+| ---------------------------- | -------- | ------------ | ----- |
+| Production build (ms)        | 36734.7  | 31228.1      | 0.850 |
+| Dev cold start (ms)          | 1025.6   | 1146.5       | 1.118 |
+| HMR latency (ms)             | 81.3     | 78.6         | 0.967 |
+| Server memory, peak RSS (MB) | 525.9    | 523.9        | 0.996 |
 
 ## 0.7.0 (2026-10-24)
 
@@ -109,12 +109,12 @@ The large-app benchmark (1,500 routes, 5,000 components), working tree against v
 
 The large-app benchmark (1,500 routes, 5,000 components), working tree against v0.6.0 (fcbf8cf6), medians of 3 rounds on Apple M1 Max (10 cores, 32 GB, darwin 27.0.0 arm64, Node v26.8.1). The release gate stops at a ratio above 1.2.
 
-| Metric | Previous | This release | Ratio |
-| ------ | -------- | ------------ | ----- |
-| Production build (ms) | 28357.7 | 28391.8 | 1.001 |
-| Dev cold start (ms) | 951.8 | 948.1 | 0.996 |
-| HMR latency (ms) | 85.4 | 83.3 | 0.976 |
-| Server memory, peak RSS (MB) | 524.5 | 524.1 | 0.999 |
+| Metric                       | Previous | This release | Ratio |
+| ---------------------------- | -------- | ------------ | ----- |
+| Production build (ms)        | 28357.7  | 28391.8      | 1.001 |
+| Dev cold start (ms)          | 951.8    | 948.1        | 0.996 |
+| HMR latency (ms)             | 85.4     | 83.3         | 0.976 |
+| Server memory, peak RSS (MB) | 524.5    | 524.1        | 0.999 |
 
 ## 0.6.0 (2026-10-23)
 

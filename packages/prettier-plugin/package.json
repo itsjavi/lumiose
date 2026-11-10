@@ -37,7 +37,7 @@
   },
   "devDependencies": {
     "@lumiose/compiler": "workspace:*",
-    "prettier": "^3.9.9"
+    "prettier": "^3.9.10"
   },
   "peerDependencies": {
     "prettier": "^3.0.0"

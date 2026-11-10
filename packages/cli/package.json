@@ -50,7 +50,7 @@
   "dependencies": {
     "@lumiose/compiler": "workspace:*",
     "@lumiose/vite": "workspace:*",
-    "@modelcontextprotocol/sdk": "^1.32.1",
+    "@modelcontextprotocol/sdk": "^1.32.2",
     "lumiose": "workspace:*",
     "zod": "^4.6.7"
   },
@@ -61,19 +61,19 @@
     "@opentelemetry/sdk-node": "0.223.0",
     "@opentelemetry/sdk-trace-base": "2.12.0",
     "@opentelemetry/sdk-trace-web": "2.12.0",
-    "@opentelemetry/semantic-conventions": "1.43.0",
-    "@playwright/test": "1.63.0",
-    "@sanity/client": "8.9.0",
+    "@opentelemetry/semantic-conventions": "1.45.0",
+    "@playwright/test": "1.65.0",
+    "@sanity/client": "8.15.0",
     "@sanity/webhook": "4.0.4",
-    "@sentry/browser": "10.76.2",
-    "@sentry/node": "10.76.2",
-    "@sentry/vite-plugin": "5.4.1",
+    "@sentry/browser": "11.11.0",
+    "@sentry/node": "11.11.0",
+    "@sentry/vite-plugin": "11.11.0",
     "@testing-library/dom": "10.4.2",
-    "@testing-library/user-event": "14.6.7",
-    "posthog-js": "1.438.7",
-    "posthog-node": "5.55.2",
-    "stripe": "23.0.0",
-    "vite": "^8.3.4"
+    "@testing-library/user-event": "14.6.8",
+    "posthog-js": "1.447.4",
+    "posthog-node": "5.63.2",
+    "stripe": "23.1.0",
+    "vite": "^8.3.7"
   },
   "peerDependencies": {
     "vite": "^8.3.0"

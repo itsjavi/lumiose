@@ -16,16 +16,16 @@
   "dependencies": {
     "@bench/data": "workspace:*",
     "@bench/ui-css": "workspace:*",
-    "@solidjs/meta": "0.29.4",
-    "@solidjs/router": "1.0.0",
-    "@solidjs/start": "2.0.6",
-    "nitro": "3.0.260903-beta",
-    "solid-js": "1.9.17"
+    "@solidjs/meta": "0.29.8",
+    "@solidjs/router": "1.0.1",
+    "@solidjs/start": "2.2.2",
+    "nitro": "3.0.261103-rc",
+    "solid-js": "1.9.18"
   },
   "devDependencies": {
     "@types/node": "24.19.1",
     "typescript": "7.0.2",
-    "vite": "8.3.4"
+    "vite": "8.3.7"
   },
   "demo": {
     "name": "tracker-solid-start",

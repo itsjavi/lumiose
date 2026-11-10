@@ -14,15 +14,15 @@
     "clean": "rm -rf dist .astro node_modules/.vite node_modules/.astro"
   },
   "dependencies": {
-    "@astrojs/node": "11.1.7",
-    "@astrojs/preact": "6.0.6",
+    "@astrojs/node": "11.1.11",
+    "@astrojs/preact": "6.1.2",
     "@bench/data": "workspace:*",
     "@bench/ui-css": "workspace:*",
-    "astro": "7.3.8",
-    "preact": "10.29.8"
+    "astro": "7.4.7",
+    "preact": "11.2.0"
   },
   "devDependencies": {
-    "@astrojs/check": "0.9.10",
+    "@astrojs/check": "0.9.12",
     "@emnapi/runtime": "1.11.3",
     "@types/node": "24.19.1",
     "typescript": "6.0.3"

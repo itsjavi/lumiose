@@ -22,7 +22,7 @@
   "devDependencies": {
     "@lumiose/cli": "workspace:*",
     "@lumiose/vite": "workspace:*",
-    "@playwright/test": "1.63.0"
+    "@playwright/test": "1.65.0"
   },
   "demo": {
     "title": "Bookshelf (server-rendered, node:sqlite)",

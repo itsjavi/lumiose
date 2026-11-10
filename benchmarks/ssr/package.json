@@ -16,21 +16,21 @@
     "@lumiose/compiler": "workspace:*",
     "@solidjs/compiler": "2.0.0-rc.14",
     "@solidjs/web": "2.0.0-rc.14",
-    "astro": "7.3.8",
+    "astro": "7.4.7",
     "babel-preset-solid": "1.9.16",
     "lumiose": "workspace:*",
-    "preact": "11.0.1",
-    "preact-render-to-string": "6.8.0",
-    "react": "19.3.0",
-    "react-dom": "19.3.0",
-    "remix": "3.0.0",
-    "solid-js": "1.9.17",
+    "preact": "11.2.0",
+    "preact-render-to-string": "6.8.2",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
+    "remix": "3.2.0",
+    "solid-js": "1.9.18",
     "solid-js-2": "npm:solid-js@2.0.0-rc.14",
-    "svelte": "5.57.2",
-    "vue": "3.5.43"
+    "svelte": "5.57.3",
+    "vue": "3.5.45"
   },
   "devDependencies": {
     "@types/babel__core": "^7.20.5",
-    "vite": "^8.3.4"
+    "vite": "^8.3.7"
   }
 }

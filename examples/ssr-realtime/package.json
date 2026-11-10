@@ -16,12 +16,12 @@
   "dependencies": {
     "@lumiose/adapter-node": "workspace:*",
     "lumiose": "workspace:*",
-    "ws": "8.22.0"
+    "ws": "8.22.2"
   },
   "devDependencies": {
     "@lumiose/cli": "workspace:*",
     "@lumiose/vite": "workspace:*",
-    "@playwright/test": "1.63.0",
+    "@playwright/test": "1.65.0",
     "@types/ws": "8.18.2"
   },
   "demo": {

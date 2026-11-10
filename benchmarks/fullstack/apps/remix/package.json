@@ -16,7 +16,7 @@
   "dependencies": {
     "@bench/data": "workspace:*",
     "@bench/ui-css": "workspace:*",
-    "remix": "3.0.0"
+    "remix": "3.2.0"
   },
   "devDependencies": {
     "@types/node": "24.19.1",

@@ -17,14 +17,14 @@
   "dependencies": {
     "@bench/data": "workspace:*",
     "@bench/ui-css": "workspace:*",
-    "nuxt": "4.6.1",
-    "vue": "3.5.43",
+    "nuxt": "4.6.4",
+    "vue": "3.5.45",
     "vue-router": "5.4.0"
   },
   "devDependencies": {
     "@types/node": "24.19.1",
     "typescript": "6.0.3",
-    "vue-tsc": "3.3.13"
+    "vue-tsc": "3.3.14"
   },
   "demo": {
     "name": "tracker-nuxt",
