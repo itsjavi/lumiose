@@ -3,11 +3,11 @@ id: TASK-600
 title: >-
   OXC parses nested speculative TSX in exponential time: bound compile() or
   report upstream
-status: In Progress
+status: To Do
 assignee:
   - Photon
 created_date: '2026-11-10T12:19:00Z'
-updated_date: '2026-11-11T02:16:00Z'
+updated_date: '2026-11-11T02:25:00Z'
 labels:
   - compiler
 dependencies: []
@@ -37,4 +37,6 @@ Minimal trigger: 'a <(n = ' nested ('a < (n = a < (n = 0))'), which doubles oxc_
 Fix: crates/lumiose_compiler/src/depth.rs check() also counts the brackets open at once that were opened after a '<' that no '>', ';', '=', '&&' or '||' closed ('=>' does not close it), and rejects the file with LUM1010 past MAX_SPECULATION = 10. compile(), compile_tsx() and the constants resolver's module parse use it. The 48 s reproduction now returns LUM1010 in milliseconds (tests/compile_api.rs lum1010_bounds_nested_speculative_type_arguments). None of the repository's 1769 TS/TSX/STSX sources trips the limit; a generated .d.ts with zod types nested more than 10 inline object types deep does, which the LUM1010 page documents.
 
 The guard is a heuristic: other speculative constructs may still be slow; the nightly fuzz will show them. AC #1 (upstream report) waits for the user's approval of the report text.
+
+Blocked on the user: AC #1 needs approval of the upstream report (or an OXC release that fixes it).
 <!-- SECTION:NOTES:END -->

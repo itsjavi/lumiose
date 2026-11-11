@@ -133,10 +133,19 @@ test.describe("customizable select", () => {
     await expect(select.locator("selectedcontent")).toHaveText("🍌 Banana", INNER);
   });
 
-  test("a click on the label focuses the select without opening it", async ({ page }) => {
+  // The browser's own behaviour, which changed: up to Chrome 157 the click only focuses the
+  // select; from Chrome 158 it also opens the picker, focus on the selected option (TASK-601).
+  test("a click on the label moves focus to the select, or opens its picker", async ({ page }) => {
     await page.goto("/select");
     const { select } = fruit(page);
     await page.getByText("Fruit", { exact: true }).click();
+    await expect
+      .poll(() => select.evaluate((el) => el === document.activeElement || el.matches(":open")))
+      .toBe(true);
+    if (await isOpen(select)) {
+      await expect(select.locator("option:checked")).toBeFocused();
+      await page.keyboard.press("Escape");
+    }
     await expect(select).toBeFocused();
     expect(await isOpen(select)).toBe(false);
   });

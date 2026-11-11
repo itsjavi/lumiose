@@ -206,8 +206,8 @@ keyboard. In Chromium's customizable select:
 | Escape                      | Closes the picker without selecting, focus back on the control; closed, it goes on, so a dialog closes. |
 | Tab                         | In the picker: closes it, focus back on the control; from there Tab moves on.                           |
 
-A click on a `<label for>` focuses the select without opening it. A click on the control opens the
-picker; a click on an option selects it; a click outside closes the picker. Other browsers keep
+A click on a `<label for>` does what the browser does for a select: it focuses it, and from Chrome
+158 it also opens the picker of a customizable select. A click on the control opens the picker; a click on an option selects it; a click outside closes the picker. Other browsers keep
 their own select keyboard and pickers, which differ by platform.
 
 ## Without JavaScript, and the client script
