@@ -3,11 +3,11 @@ id: TASK-600
 title: >-
   OXC parses nested speculative TSX in exponential time: bound compile() or
   report upstream
-status: To Do
+status: Done
 assignee:
   - Photon
 created_date: '2026-11-10T12:19:00Z'
-updated_date: '2026-11-11T02:25:00Z'
+updated_date: '2026-11-11T11:41:00Z'
 labels:
   - compiler
 dependencies: []
@@ -23,7 +23,7 @@ Found while fixing the nightly scan fuzz timeout (TASK-599). oxc_parser (0.153 a
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 The exponential case is reported upstream or fixed by an OXC upgrade
+- [x] #1 The exponential case is reported upstream or fixed by an OXC upgrade
 - [x] #2 compile() on the reproduction returns in bounded time, with a regression test
 <!-- AC:END -->
 
@@ -39,4 +39,6 @@ Fix: crates/lumiose_compiler/src/depth.rs check() also counts the brackets open 
 The guard is a heuristic: other speculative constructs may still be slow; the nightly fuzz will show them. AC #1 (upstream report) waits for the user's approval of the report text.
 
 Blocked on the user: AC #1 needs approval of the upstream report (or an OXC release that fixes it).
+
+Upstream: OXC already tracks this as oxc-project/oxc#27637 (open, with a proposed patch on a contributor's fork). Added our valid-TypeScript reproduction and 0.158.0 timings as a comment: https://github.com/oxc-project/oxc/issues/27637#issuecomment-6794852366 (posted with the user's approval, 2026-11-11). The LUM1010 speculation limit can go once a release fixes that issue.
 <!-- SECTION:NOTES:END -->
