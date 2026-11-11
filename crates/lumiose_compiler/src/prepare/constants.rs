@@ -548,6 +548,10 @@ impl<'s, 'p, 'h> Folder<'s, 'p, 'h> {
         } else {
             SourceType::ts()
         };
+        // A module past the nesting limits (LUM1010 in its own compile) is not read for constants.
+        if crate::depth::check(&text).is_some() {
+            return None;
+        }
         let text = self.allocator.alloc_str(&text);
         let parsed = Parser::new(self.allocator, text, source_type).parse();
         if parsed.fatal_error || !parsed.diagnostics.is_empty() {

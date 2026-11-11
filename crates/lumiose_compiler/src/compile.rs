@@ -232,17 +232,10 @@ pub fn compile(source: &str, filename: &str, options: &CompileOptions) -> Compil
     let mut diagnostics = scan.diagnostics.clone();
 
     // Deeper nesting would overflow the stack in oxc's recursive passes (TASK-170).
-    if let Some(span) = crate::depth::too_deep(scan.masked()) {
+    if let Some((limit, span)) = crate::depth::check(scan.masked()) {
         diagnostics.push(
-            Diagnostic::new(
-                Code::SourceNestedTooDeep,
-                span,
-                format!(
-                    "brackets are nested more than {} levels deep here; the file is not compiled",
-                    crate::depth::MAX_DEPTH
-                ),
-            )
-            .with_help("Split the expression into named parts (constants or functions)."),
+            Diagnostic::new(Code::SourceNestedTooDeep, span, limit.message())
+                .with_help(limit.help()),
         );
         sort(&mut diagnostics);
         return CompileResult {

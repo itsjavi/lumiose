@@ -107,15 +107,11 @@ impl TsxResult {
 pub fn compile_tsx(source: &str, filename: &str, options: &TsxOptions) -> TsxResult {
     let scan = scanner::scan(source, filename);
     let mut diagnostics = scan.diagnostics.clone();
-    if let Some(span) = crate::depth::too_deep(scan.masked()) {
-        diagnostics.push(Diagnostic::new(
-            Code::SourceNestedTooDeep,
-            span,
-            format!(
-                "brackets are nested more than {} levels deep here; the file is not compiled",
-                crate::depth::MAX_DEPTH
-            ),
-        ));
+    if let Some((limit, span)) = crate::depth::check(scan.masked()) {
+        diagnostics.push(
+            Diagnostic::new(Code::SourceNestedTooDeep, span, limit.message())
+                .with_help(limit.help()),
+        );
         return TsxResult {
             diagnostics,
             ..TsxResult::default()

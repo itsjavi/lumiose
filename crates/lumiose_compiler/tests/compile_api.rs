@@ -1518,3 +1518,35 @@ fn scoped_styles_choose_the_markers() {
     let css = result.css.expect("css");
     assert!(css.contains(&format!(".card:where(.app-{card})")), "{css}");
 }
+
+/// oxc reads a `<` as type arguments first and parses the text again when that fails, so nested
+/// readings double its parse time: this valid file took 48 s before the limit (TASK-600).
+#[test]
+fn lum1010_bounds_nested_speculative_type_arguments() {
+    let source = format!(
+        "export const d = {}0{};\n",
+        "a <s,(n = a <[t((n = ".repeat(22),
+        "))])".repeat(22)
+    );
+    let started = std::time::Instant::now();
+    for file in ["/app/src/deep.tsx", "/app/src/deep.stsx"] {
+        let result = compile(&source, file, &CompileOptions::default());
+        let codes: Vec<_> = result.diagnostics.iter().map(|d| d.code).collect();
+        assert_eq!(codes, [Code::SourceNestedTooDeep], "{file}");
+        assert!(result.diagnostics[0].message.contains("`<`"), "{file}");
+        assert!(result.code.is_empty(), "{file}");
+    }
+    assert!(started.elapsed() < std::time::Duration::from_secs(2));
+
+    // At the limit the file still compiles, and quickly.
+    let n = lumiose_compiler::depth::MAX_SPECULATION;
+    let source = format!(
+        "export const d = (a: number, n: number) => {}0{};\n",
+        "a <(n = ".repeat(n),
+        ")".repeat(n)
+    );
+    let started = std::time::Instant::now();
+    let result = compile(&source, "/app/src/ok.tsx", &CompileOptions::default());
+    assert!(result.diagnostics.is_empty(), "{:?}", result.diagnostics);
+    assert!(started.elapsed() < std::time::Duration::from_secs(2));
+}
