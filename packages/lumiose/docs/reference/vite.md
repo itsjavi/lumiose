@@ -766,3 +766,13 @@ it("counts clicks", () => {
   no CSP; test the build with `lumiose preview`.
 - **Waiting for hydration in Playwright.** Islands replay early clicks and input; assert on what
   the page shows instead of waiting for a timeout.
+
+## The three kinds of tests
+
+**Three kinds of tests**, with stock tools and no Lumiose adapter package:
+
+| Test             | Tools                                                                      | What it runs                                       |
+| ---------------- | -------------------------------------------------------------------------- | -------------------------------------------------- |
+| Component        | Vitest, `happy-dom`, `@testing-library/dom`, `@testing-library/user-event` | `render()` from `lumiose/dom` into `document.body` |
+| Server rendering | Vitest (node environment)                                                  | `renderToString(() => <Page />)`                   |
+| End to end       | Playwright (`@playwright/test`)                                            | The built app, served by `lumiose preview`         |
