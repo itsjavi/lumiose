@@ -8,54 +8,70 @@ Use them for custom servers, tests and tools. Concepts:
 
 ## renderToStream
 
+Renders `root` to HTML shell-first and streams the rest.
+
+It resolves once everything outside `<Suspense>` is ready (decision-19), and rejects with the first
+error thrown while rendering the shell (so the caller can render an error page with the right
+status). The stream then delivers each boundary as it resolves, out of order.
+
 ```ts
 function renderToStream(
   root: () => unknown,
   options?: RenderToStreamOptions,
 ): Promise<RenderedShell>;
+```
 
-interface RenderToStreamOptions {
-  /** Aborts the render: rejects a pending shell, ends the stream and aborts getAbortSignal(). */
-  signal?: AbortSignal;
-  /** SSG/prerender: render every Suspense boundary into the shell; no fallbacks, no stream. */
-  resolveAll?: boolean;
-  /** CSP nonce for the $swap scripts and strict-mode <style> rules. */
-  nonce?: string;
-  /** CSP strict mode: style props become nonce'd <style> rules. */
-  strictStyles?: boolean;
-  /** Maps an island module specifier to its URL for modulepreload hints. */
-  islandUrl?: (specifier: string) => string;
-  /**
-   * URL of the island loader (lumiose/dom/loader). A page with islands gets it once, as
-   * <script type="module" async>: in `head` when the shell has islands, else in the first
-   * streamed chunk with island records. Default: none (islands render but do not hydrate).
-   */
-  loaderUrl?: string;
-  /** Errors of streamed boundaries that no ErrorBoundary handled. Default: console.error. */
-  onError?: (error: unknown) => void;
-  /**
-   * Prepended to every useId() of the render, its islands included (they reuse it when they
-   * hydrate). Keeps the ids of several renders or apps on one page apart. Default: "".
-   */
-  idPrefix?: string;
+```tsx check
+import { renderToStream } from "lumiose";
+
+function App() {
+  return <h1>Hello</h1>;
 }
 
+const shell = await renderToStream(() => <App />);
+console.log(shell.head, shell.body, shell.stream === null);
+```
+
+| Name             | Type                            | Default         | Description                                                                                                                                                                                                                                                      |
+| ---------------- | ------------------------------- | --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `root`           | `() => unknown`                 | —               | Returns the tree to render.                                                                                                                                                                                                                                      |
+| `signal`         | `AbortSignal`                   | —               | Aborts the render: rejects a pending shell, ends the stream and aborts `getAbortSignal()`.                                                                                                                                                                       |
+| `resolveAll`     | `boolean`                       | `false`         | SSG/prerender: render every Suspense boundary into the shell; no fallbacks, no stream.                                                                                                                                                                           |
+| `nonce`          | `string`                        | —               | CSP nonce for the `$swap` scripts and strict-mode `<style>` rules.                                                                                                                                                                                               |
+| `strictStyles`   | `boolean`                       | `false`         | CSP strict mode: `style` props become nonce'd `<style>` rules.                                                                                                                                                                                                   |
+| `islandUrl`      | `(specifier: string) => string` | unchanged       | Maps an island module specifier to its URL for `modulepreload` hints.                                                                                                                                                                                            |
+| `loaderUrl`      | `string`                        | —               | URL of the island loader (`lumiose/dom/loader`). A page with islands gets it once, as `<script type="module" async>`: in `head` when the shell has islands, else in the first streamed chunk with island records. Without it, islands render but do not hydrate. |
+| `onError`        | `(error: unknown) => void`      | `console.error` | Receives errors of streamed boundaries that no `<ErrorBoundary>` handled.                                                                                                                                                                                        |
+| `sanitizeErrors` | `boolean`                       | `false`         | Production: an `<ErrorBoundary>` fallback receives a generic error with a short `digest` instead of an error that is not an `HttpError`, and the original error goes to `onError` with the same `digest`. When false, the fallback gets the error itself.        |
+| `idPrefix`       | `string`                        | `""`            | Prepended to every `useId()` of the render, its islands included (they reuse it when they hydrate). Keeps the ids of several renders or apps on one page apart.                                                                                                  |
+
+### RenderedShell
+
+What `renderToStream` resolves with: the parts of the page, for the caller to put in a document.
+
+```ts
 interface RenderedShell {
-  /** Collected <Title>/<Meta>/<Head> HTML, modulepreload hints and strict-mode styles. */
   head: string;
-  /** The shell HTML, followed by the shell's island records. */
   body: string;
-  /** Streamed boundary chunks to append inside <body>; null when nothing is pending. */
   stream: ReadableStream<string> | null;
 }
 ```
 
-Renders `root` shell-first (decision-19): resolves once everything outside `<Suspense>` is ready,
-and rejects with the first error thrown while rendering the shell (so the caller can render an
-error page with the right status). The stream then delivers each boundary as it resolves, out of
-order.
+| Name     | Type                             | Default | Description                                                                             |
+| -------- | -------------------------------- | ------- | --------------------------------------------------------------------------------------- |
+| `head`   | `string`                         | —       | Collected `<Title>`/`<Meta>`/`<Head>` HTML, modulepreload hints and strict-mode styles. |
+| `body`   | `string`                         | —       | The shell HTML, followed by the shell's island records.                                 |
+| `stream` | `ReadableStream<string> \| null` | —       | Streamed boundary chunks to append inside `<body>`; null when nothing is pending.       |
 
 ## renderToString
+
+Renders everything resolved (no fallbacks, no stream) and returns the body HTML. Used for
+prerendering and tests. It takes the options of [`renderToStream`](#rendertostream), except
+`resolveAll`.
+
+Both are server-only: in the browser build of `lumiose` they throw `LUM4003`. With `idPrefix`, the
+island records carry the prefix, so [`useId()`](reactivity.md#useid) returns the same ids after
+hydration.
 
 ```ts
 function renderToString(
@@ -64,12 +80,15 @@ function renderToString(
 ): Promise<string>;
 ```
 
-Renders everything resolved (no fallbacks, no stream) and returns the body HTML. Used for
-prerendering and tests.
+```tsx check
+import { renderToString } from "lumiose";
 
-Both are server-only: in the browser build of `lumiose` they throw `LUM4003`. With `idPrefix`, the
-island records carry the prefix, so [`useId()`](reactivity.md#useid) returns the same ids after
-hydration.
+function Hello(props: { name: string }) {
+  return <h1>Hello {props.name}</h1>;
+}
+
+export const html = await renderToString(() => <Hello name="Ada" />);
+```
 
 ## `lumiose/server`
 
