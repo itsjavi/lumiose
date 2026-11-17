@@ -389,15 +389,6 @@ sent to the browser**.
 
 **Mistakes with async components.**
 
-    </button>
-
-);
-}
-
-```
-
-## Common mistakes
-
 - **Reading the component's own signals in its body.** A signal created in the body and read in
   the body re-runs the component, which re-creates the signal. Read it in JSX or handlers instead
   (`LUM2007`).
@@ -413,4 +404,7 @@ sent to the browser**.
   Use `await fetchJSON(url)` (`LUM4007`).
 - **Putting secrets in awaited values inside islands.** They are serialized into the HTML. Fetch
   only what the browser may see.
-```
+- **Wrapping a re-run in `<Suspense>` and expecting the fallback again.** Revealed content keeps
+  its stale UI; show progress with `isPending()` or `isBusy()`.
+- **`await using` in a component body.** Not supported in v1 (`LUM1007`).
+- **Expecting `resource()` on the server.** It never runs there; use an async component.
