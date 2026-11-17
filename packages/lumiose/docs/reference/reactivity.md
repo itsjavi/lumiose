@@ -429,10 +429,6 @@ const Count = createContext(signal(0));
 
 ## useId
 
-```ts
-function useId(): string;
-```
-
 Returns an id that is unique in the page, for `id`/`for`, `aria-labelledby`, `aria-describedby`,
 `aria-controls` and the like. Call it in a component's setup, once per id you need; each call returns
 the instance's next id. The id is a valid HTML id and CSS identifier (`l0-0-1-0`, `ls3`, `lc7`), so
@@ -449,6 +445,10 @@ it also works in selectors and as a `view-transition-name`. Do not parse it: the
   hydrate. Ids then start with the prefix.
 - **Async components.** Each run of an async component runs its body again, so a re-run after a
   signal it read changed gets new ids, as its other locals are new too.
+
+```ts
+function useId(): string;
+```
 
 ```tsx check
 import { useId } from "lumiose";

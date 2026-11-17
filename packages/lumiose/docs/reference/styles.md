@@ -81,6 +81,13 @@ Design tokens are custom properties declared on `:root`
 same names from JS, keep them in an `as const` module and read them with `var($vars.name)`. The
 module holds the names only; the values stay in CSS.
 
+`var($vars.accent)` ships as `var(--accent)`, and `var($vars.radius, 4px)` keeps its fallback. A
+mistyped member (`$vars.acent`) fails the build with [LUM3008](../errors/LUM3008.md), and
+TypeScript checks the JS side (`style={{ [vars.accent]: … }}`, `getPropertyValue(vars.accent)`).
+The declarations on `:root` still spell the names out, because `$` is not read in a property
+name. Plain `var(--accent)` needs no module: the names module is worth it when a project wants
+those checks.
+
 ```ts check file=vars.ts
 // src/vars.ts
 export const vars = {
@@ -112,13 +119,6 @@ export function Chip(props: { label: string; color: string }) {
   }
 </style>
 ```
-
-`var($vars.accent)` ships as `var(--accent)`, and `var($vars.radius, 4px)` keeps its fallback. A
-mistyped member (`$vars.acent`) fails the build with [LUM3008](../errors/LUM3008.md), and
-TypeScript checks the JS side (`style={{ [vars.accent]: … }}`, `getPropertyValue(vars.accent)`).
-The declarations on `:root` still spell the names out, because `$` is not read in a property
-name. Plain `var(--accent)` needs no module: the names module is worth it when a project wants
-those checks.
 
 ## JS values in styles
 
