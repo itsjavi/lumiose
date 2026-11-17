@@ -2,38 +2,7 @@
 
 > Use custom elements and web-component libraries in Lumiose: define them in the browser, type them in JSX, pass properties and attributes, listen to their events with `on:`, and render them on the server. Lumiose scores 100 on Custom Elements Everywhere.
 
-Web components are how Lumiose works with UI libraries that are not written for it (decision-54):
-anything built as custom elements, by hand or with Lit, Stencil, FAST or Web Awesome, runs in
-Lumiose pages and islands without an adapter.
-
-## Custom Elements Everywhere
-
-[Custom Elements Everywhere](https://custom-elements-everywhere.com) tests how a framework passes
-data to custom elements and listens to their events. Lumiose runs its suites in
-`benchmarks/custom-elements-everywhere`, with upstream's tests, weights and scoring:
-
-| Engines                     | Score | Basic | Advanced |
-| --------------------------- | ----- | ----- | -------- |
-| Chrome and Firefox (scored) | 100   | 16/16 | 16/16    |
-| WebKit                      | 100   | 8/8   | 8/8      |
-
-Basic support: elements with and without children in a shadow root, booleans, numbers and strings,
-and events listened to imperatively. Advanced support: arrays and objects (camelCase names too) as
-properties, and events with lowercase, kebab-case, camelCase, CAPS and PascalCase names, listened
-to in JSX. Run it with `pnpm --filter @lumiose/bench-cee test:e2e`. The site does not list Lumiose
-yet.
-
 ## Define the elements in the browser
-
-A custom element must be defined before the component that renders it runs, so that it is already
-upgraded when Lumiose passes it properties. Import the definition with `?client` in the component
-that renders the element, and call the import while it renders ([Islands](../concepts/islands.md),
-"Scripts of server-rendered components"). The definition never runs on the server, where
-`customElements` does not exist. An island imports it before it hydrates, and a page that renders
-the component on the server loads it as a module script of its own, without the island runtime.
-Make the call a statement of its own at the top of the component, as below: an island loads a
-script that it only calls conditionally (under an `if`) when the call runs, after the component,
-and the element's first properties would then reach it as attributes:
 
 ```ts check file=elements/star-rating.ts
 // src/elements/star-rating.ts: a custom element of your own, or a library's entry point
@@ -76,10 +45,21 @@ export class StarRating extends HTMLElement {
 customElements.define("star-rating", StarRating);
 ```
 
-## Type it in JSX
+A custom element must be defined before the component that renders it runs, so that it is already
+upgraded when Lumiose passes it properties. Import the definition with `?client` in the component
+that renders the element, and call the import while it renders ([Islands](../concepts/islands.md),
+"Scripts of server-rendered components"). The definition never runs on the server, where
+`customElements` does not exist. An island imports it before it hydrates, and a page that renders
+the component on the server loads it as a module script of its own, without the island runtime.
+Make the call a statement of its own at the top of the component, as `Review` does in the next section: an island loads a
+script that it only calls conditionally (under an `if`) when the call runs, after the component,
+and the element's first properties would then reach it as attributes.
 
-Undeclared custom elements accept any attribute. Declare an element to type-check its props, in
-any `.d.ts` or module of the project ([JSX types](../reference/jsx.md#custom-elements)):
+> **Why:** Web components are how Lumiose works with UI libraries that are not written for it (decision-54):
+> anything built as custom elements, by hand or with Lit, Stencil, FAST or Web Awesome, runs in
+> Lumiose pages and islands without an adapter.
+
+## Type it in JSX
 
 ```tsx check file=components/Review.tsx
 // src/components/Review.tsx
@@ -120,6 +100,9 @@ export function Review(props: { rating: number }) {
 }
 ```
 
+Undeclared custom elements accept any attribute. Declare an element to type-check its props, in
+any `.d.ts` or module of the project ([JSX types](../reference/jsx.md#custom-elements)).
+
 Render it as an island: `<Review client:visible rating={4} />` ([Islands](../concepts/islands.md)).
 
 ## Properties and attributes
@@ -139,7 +122,8 @@ a setter, or a name that no prop uses (a private `#getter` for an attribute it r
 
 Strings set as properties keep the URL check of attributes (a `javascript:` URL becomes a
 placeholder). An element that is not defined yet when the component runs gets attributes for
-everything, so load its definition first (above). `class`, `style`, `ref`, `attach` and
+everything, so load its definition first
+([Define the elements in the browser](#define-the-elements-in-the-browser)). `class`, `style`, `ref`, `attach` and
 `innerHTML` work as on any element, and a spread (`{...props}`) follows the same rule (it never
 sets `innerHTML`, `textContent` or `srcdoc`, on any element).
 
@@ -147,7 +131,7 @@ sets `innerHTML`, `textContent` or `srcdoc`, on any element).
 
 `on:name` adds a native listener for the event of that exact name, so any casing works:
 `on:rating-change`, `on:sl-change`, `on:valueChanged`, `on:PascalEvent`. Type the handler's event
-yourself, as above. `onClick` and the other camelCase handlers are for the standard DOM events,
+yourself, as `Review` does. `onClick` and the other camelCase handlers are for the standard DOM events,
 lowercased and delegated: use `on:` for a component's own events. Both run inside a batch, so
 what the handler writes is on screen when the component's `dispatchEvent()` returns.
 
@@ -158,8 +142,8 @@ when the element itself dispatches `input`, `change` or `xchange` (lowercase: `o
 `checkedchange`, `valuechange`); events that bubble up from its children are ignored. It suits
 elements whose state lives in a property and that announce its changes with one of those events,
 as native controls and `@lumiose/ui`'s elements do. For other event names (`rating-change`,
-`sl-change`), set the property and listen with `on:` as above. Declare the binding on a typed
-element:
+`sl-change`), set the property and listen with `on:`, as `Review` does. Declare the binding on a typed
+element.
 
 ```tsx check
 import { signal, type Signal } from "lumiose";
@@ -188,12 +172,12 @@ On the server a custom element renders as its tag with the attributes Lumiose ca
 strings, numbers and `true` (`<star-rating max="5" value="4">`), and its light-DOM children. Its
 shadow root and properties exist only once the browser defines the element; when the island
 hydrates, Lumiose sets the properties on the upgraded element. Arrays and objects are not
-attributes: the server leaves them out of the HTML, as React 19 does (`labels` above), and the
+attributes: the server leaves them out of the HTML, as React 19 does (`labels` in `Review`), and the
 island sets them as properties when it hydrates; functions are left out too. Elements outside
 islands stay server HTML: they upgrade when their definition loads (the `?client` script of the
 component that renders them), and read what they need from attributes.
 
-To show the element before its definition loads, style it with `:not(:defined)`:
+To show the element before its definition loads, style it with `:not(:defined)`.
 
 ```css
 star-rating:not(:defined) {
@@ -204,13 +188,6 @@ star-rating:not(:defined) {
 ```
 
 ## Server data in attributes
-
-An element that needs a little behaviour, and no island, gets the server's data through its
-attributes (decision-71). The component that renders it writes the data as attributes and calls
-its `?client` script, which takes no arguments. The element reads the attributes in
-`connectedCallback`. Declare the element in `JSX.IntrinsicElements` so the server side is
-type-checked: a missing or mistyped attribute is a `lumiose check` error. The page loads the
-definition as one module script, without the island runtime.
 
 ```ts check file=elements/local-time.ts
 // src/elements/local-time.ts: runs in the browser only
@@ -265,6 +242,13 @@ export function PublishedAt(props: { date: Date }) {
 }
 ```
 
+An element that needs a little behaviour, and no island, gets the server's data through its
+attributes (decision-71). The component that renders it writes the data as attributes and calls
+its `?client` script, which takes no arguments. The element reads the attributes in
+`connectedCallback`. Declare the element in `JSX.IntrinsicElements` so the server side is
+type-checked: a missing or mistyped attribute is a `lumiose check` error. The page loads the
+definition as one module script, without the island runtime.
+
 Each instance carries its own data, and the element upgrades wherever it appears: in server HTML,
 in streamed `<Suspense>` boundaries, after SPA navigations, and in Markdown or CMS HTML that
 contains the tag. Numbers and booleans become attribute strings (`true` adds the attribute, `false`
@@ -279,23 +263,25 @@ A `?client` script loads as `<script type="module" async>`, so it can run before
 reaches the elements it defines: on a slow or streamed response, or when the browser has the
 script cached. The parser then upgrades each element as it creates it, and `connectedCallback`
 runs before the element has children: the parser appends them afterwards. The attributes are
-already there, and listening works; reading or replacing the children does not:
+already there, and listening works; reading or replacing the children does not.
 
 - **Listen on the element itself.** Events from children that the parser adds later bubble up to
   it. Look up the part an event concerns when it fires (`event.target`, `this.querySelector()`),
   not in `connectedCallback`, as `copy-button` does in
   [Islands](../concepts/islands.md#concept).
 - **Wait for the parser** to read or change the children: while `document.readyState` is
-  `"loading"`, do that work on `DOMContentLoaded`, as `local-time` does above. Without the wait,
+  `"loading"`, do that work on `DOMContentLoaded`, as `local-time` does. Without the wait,
   `local-time` would set its text and the parser would then append the server's text after it.
   Elements that connect once the document is parsed (an SPA navigation, an island, `innerHTML`)
   are inserted with their children.
 
-**Elements the script creates are unscoped.** The component's scoped `<style>` blocks style the
+### Elements the script creates
+
+They are unscoped. The component's scoped `<style>` blocks style the
 elements of its templates ([Styles](../concepts/styles.md)), not those the script makes with
 `document.createElement()` or `innerHTML`, and a selector that only they match is `LUM3005`.
 Render the markup on the server and let the script fill, show or hide it, or reach the created
-elements with `:deep()` under an element of the scope:
+elements with `:deep()` under an element of the scope.
 
 ```ts check file=elements/copy-code.ts
 // src/elements/copy-code.ts: adds a Copy button to the code it wraps
@@ -349,6 +335,23 @@ export function CodeBlock(props: { code: string }) {
   );
 }
 ```
+
+## Custom Elements Everywhere
+
+[Custom Elements Everywhere](https://custom-elements-everywhere.com) tests how a framework passes
+data to custom elements and listens to their events. Lumiose runs its suites in
+`benchmarks/custom-elements-everywhere`, with upstream's tests, weights and scoring:
+
+| Engines                     | Score | Basic | Advanced |
+| --------------------------- | ----- | ----- | -------- |
+| Chrome and Firefox (scored) | 100   | 16/16 | 16/16    |
+| WebKit                      | 100   | 8/8   | 8/8      |
+
+Basic support: elements with and without children in a shadow root, booleans, numbers and strings,
+and events listened to imperatively. Advanced support: arrays and objects (camelCase names too) as
+properties, and events with lowercase, kebab-case, camelCase, CAPS and PascalCase names, listened
+to in JSX. Run it with `pnpm --filter @lumiose/bench-cee test:e2e`. The site does not list Lumiose
+yet.
 
 ## Related
 
