@@ -2,17 +2,21 @@
 
 > Deploy to Coolify with its Dockerfile build pack: the port, a domain, secrets, the health check and a volume for data.
 
-[Coolify](https://coolify.io) builds the app's Dockerfile on your server and runs the image behind
-its proxy, which terminates TLS for the domain. Lumiose needs nothing Coolify-specific: the image
-is the one from [Docker](docker.md). The field names below follow Coolify v4's documentation; this
-guide has not been run on a Coolify instance yet (see the [verification table](README.md#verification)).
+> **Status:** Not tested on a Coolify instance yet ([verification table](README.md#verification)).
+> The field names follow Coolify v4's documentation.
 
-## 1. Add the Dockerfile
+## 1. Build
 
-Commit the [Dockerfile and `.dockerignore`](docker.md#the-dockerfile) at the root of the
-repository. Check that it builds locally (`docker build -t my-app .`): Coolify runs the same build.
+```sh
+docker build -t my-app .
+```
 
-## 2. Create the application
+Commit the [Dockerfile and `.dockerignore`](docker.md#1-configure) at the root of the repository,
+and check that the image builds locally: Coolify runs the same build.
+[Coolify](https://coolify.io) builds it on your server and runs the image behind its proxy, which
+terminates TLS for the domain. Lumiose needs nothing Coolify-specific.
+
+## 2. Configure
 
 In Coolify, **+ New**, pick the project and environment, connect the repository (a public URL, a
 Git App or a deploy key) and choose the **Dockerfile** build pack. Then, under **General**:
@@ -27,7 +31,7 @@ Git App or a deploy key) and choose the **Dockerfile** build pack. Then, under *
 Coolify sets `PORT` to the first exposed port and `HOST` to `0.0.0.0` when they are not set,
 which is what `createServer()` reads.
 
-## 3. Environment variables
+## 3. Set variables
 
 Under **Environment Variables**:
 
@@ -40,39 +44,41 @@ Under **Environment Variables**:
 New variables are available during the build by default; a secret that reaches the build can end
 up in the image's layers. Restart or redeploy after changing them.
 
-## 4. Health check
-
-The image's `HEALTHCHECK` fetches `HEALTHCHECK_PATH` (`/` by default) inside the container. For a
-Dockerfile application, Coolify uses an image's `HEALTHCHECK` instead of the one in its
-**Healthcheck** settings, waits for the new container to be healthy before it replaces the old
-one, and its default proxy (Traefik) stops routing to a container that turns unhealthy. To check a cheaper URL than the home
-page, add a `GET` endpoint such as `/healthz` and set `HEALTHCHECK_PATH=/healthz` as a variable.
-A health check configured in Coolify's dashboard instead runs `curl` or `wget` in the container;
-Alpine has `wget`.
-
-## 5. Persistent storage
-
-Files the app writes at run time (a SQLite database, uploads) are lost when Coolify replaces the
-container, unless they live on a volume. Create the directory for the `node` user in the
-Dockerfile, before `USER node`:
+## 4. Add storage
 
 ```dockerfile
+# In the Dockerfile, before `USER node`
 RUN mkdir /data && chown node:node /data
 ```
 
-Then **Configuration**, **Persistent Storage**, **Add**, **Volume Mount**, with `/data` as the
+Files the app writes at run time (a SQLite database, uploads) are lost when Coolify replaces the
+container, unless they live on a volume. Create the directory for the `node` user, then
+**Configuration**, **Persistent Storage**, **Add**, **Volume Mount**, with `/data` as the
 **Destination Path**, and point the app at it (`DATABASE_PATH=/data/app.db`, or whatever your app
 reads). Redeploy, and back the volume up outside the server.
 
-## 6. Deploy
+## 5. Deploy
 
-**Deploy**, then read the build log (the three Dockerfile stages) and the runtime logs (the
-`Listening on …` line of `server.ts`). Pushes to the branch redeploy when automatic deployments
-are on.
+Press **Deploy**. Pushes to the branch redeploy when automatic deployments are on.
 
-## A monorepo
+## 6. Verify
 
-Set **Base Directory** to the directory the Dockerfile's `COPY` lines are relative to, and
-**Dockerfile Location** to the Dockerfile's path from there. The bookshelf sample, for example,
-builds from the repository root with `/examples/ssr-bookshelf/Dockerfile`
-([its notes](docker.md#the-bookshelf-sample)).
+```text
+Listening on http://localhost:3000/
+```
+
+Read the build log (the three Dockerfile stages), then the runtime logs, which show this line of
+`server.ts`. Coolify waits for the new container to be healthy before it replaces the old one.
+
+## Notes
+
+- **Health check.** The image's `HEALTHCHECK` fetches `HEALTHCHECK_PATH` (`/` by default) inside
+  the container. For a Dockerfile application, Coolify uses an image's `HEALTHCHECK` instead of
+  the one in its **Healthcheck** settings, and its default proxy (Traefik) stops routing to a
+  container that turns unhealthy. To check a cheaper URL than the home page, add a `GET` endpoint
+  such as `/healthz` and set `HEALTHCHECK_PATH=/healthz` as a variable. A health check configured
+  in Coolify's dashboard instead runs `curl` or `wget` in the container; Alpine has `wget`.
+- **A monorepo.** Set **Base Directory** to the directory the Dockerfile's `COPY` lines are
+  relative to, and **Dockerfile Location** to the Dockerfile's path from there. The bookshelf
+  sample, for example, builds from the repository root with `/examples/ssr-bookshelf/Dockerfile`
+  ([its notes](docker.md#the-bookshelf-sample)).

@@ -2,68 +2,53 @@
 
 > Run a Lumiose app on your own server with the Node adapter under systemd or pm2, behind Caddy or nginx for TLS.
 
-This page covers an app with server routes and the `server.ts` that `create-lumiose --template ssr`
-writes. The examples call the app `my-app`, serve it as `example.com`, and keep it in
-`/srv/my-app`. To run it in Docker on the server instead, see [Docker](docker.md).
+> **For:** an app with server routes and the `server.ts` that `create-lumiose --template ssr`
+> writes. The examples call the app `my-app`, serve it as `example.com`, and keep it in
+> `/srv/my-app`. To run it in Docker on the server instead, see [Docker](docker.md).
 
-## Build and install
-
-The server needs Node 24 or later. Build on the server, or in CI and copy the output. The build
-loads the compiler's native binary, published for Linux x64 and arm64 on glibc and for x64 on
-musl (Alpine; arm64 too from the release after 0.2.0); on another platform, build in CI.
+## 1. Build
 
 ```sh
 pnpm install --frozen-lockfile
 pnpm build
+node server.ts
 ```
 
-To ship production dependencies only, build in CI (or with the [Docker](docker.md) image's
-`build` stage), copy `dist/`, `server.ts`, `package.json`, `pnpm-lock.yaml` and
-`pnpm-workspace.yaml` (if any) to `/srv/my-app`, and run
-`pnpm install --frozen-lockfile --prod` there. Then start it with `node server.ts`, which serves
-`dist/` on `PORT` (3000).
+```text
+Listening on http://localhost:3000/
+```
 
-## What the adapter already does
+The server needs Node 24 or later. Build on the server, or in CI and copy the output.
+`node server.ts` serves `dist/` on `PORT` (3000).
 
-`createServer()` serves `dist/client` first, then the app ([`@lumiose/adapter-node`](../reference/adapter-node.md)):
+> **Platforms:** the build loads the compiler's native binary, published for Linux x64 and arm64
+> on glibc and for x64 on musl (Alpine; arm64 too from the release after 0.2.0). On another
+> platform, build in CI.
 
-- **Compression.** Static files are sent from the `.br` and `.gz` copies that `lumiose build`
-  writes next to every text file of 1 kB or more (brotli 11, gzip 9), at no CPU cost per request.
-  Pages and endpoints with a text content type are compressed as they stream: brotli quality 4,
-  else gzip 6. Every compressible response gets `Vary: Accept-Encoding`.
-- **Caching.** Content-hashed files under `assets/` (`loader-BzIcWyn5.js`) get
-  `Cache-Control: public, max-age=31536000, immutable`; a new build changes their names. Every
-  other file, prerendered pages included, gets `public, max-age=0, must-revalidate` with an `ETag`
-  and `Last-Modified`, answered with `304` when unchanged. Pages rendered per request send what
-  the app sets (`response().setHeader("cache-control", …)`).
-- **Headers.** `lumiose({ headers })` and the default `X-Content-Type-Options` and
-  `Referrer-Policy` go on static files and pages alike.
+> **Production dependencies only:** build in CI (or with the [Docker](docker.md) image's `build`
+> stage), copy `dist/`, `server.ts`, `package.json`, `pnpm-lock.yaml` and `pnpm-workspace.yaml`
+> (if any) to `/srv/my-app`, and run `pnpm install --frozen-lockfile --prod` there.
 
-So the proxy only adds TLS, HTTP/2 and connection limits. Proxy every request to Node: a proxy
-that serves `dist/client` itself would have to repeat the caching rules and the headers above.
-With compression on in both, the proxy leaves the already encoded responses alone; or pass
-`compress: false` to `createServer()` and let the proxy compress.
+## 2. Configure
 
-## The process
+Keep the process running with systemd or pm2. Both configs set `ORIGIN` to the public origin and
+`HOST=127.0.0.1`, which keeps the app off the public network: only the proxy reaches it.
 
 ### systemd
 
-Create a system user that owns nothing it runs:
+Create a system user that owns nothing it runs, and put the secrets in `/etc/my-app.env`, one
+`KEY=value` per line, readable by root only. Set `ExecStart` to the path `command -v node` prints.
 
 ```sh
-sudo useradd --system --home-dir /srv/my-app --shell /usr/sbin/nologin my-app
+sudo useradd --system --home-dir /srv/my-app \
+  --shell /usr/sbin/nologin my-app
+echo "LUMIOSE_SECRET=$(openssl rand -base64 32)" \
+  | sudo tee /etc/my-app.env > /dev/null
+sudo chmod 600 /etc/my-app.env
 ```
-
-Put the secrets in `/etc/my-app.env`, one `KEY=value` per line, readable by root only
-(`sudo chmod 600 /etc/my-app.env`):
-
-```sh
-LUMIOSE_SECRET=paste-the-output-of-openssl-rand-base64-32
-```
-
-`/etc/systemd/system/my-app.service`:
 
 ```ini
+# /etc/systemd/system/my-app.service
 [Unit]
 Description=my-app (Lumiose)
 After=network-online.target
@@ -99,16 +84,13 @@ journalctl -u my-app -f                # logs
 sudo systemctl restart my-app          # after deploying a new build
 ```
 
-Set `ExecStart` to the path `command -v node` prints. `HOST=127.0.0.1` keeps the app off the
-public network: only the proxy reaches it. Point file databases and uploads at `/var/lib/my-app`
-(the `StateDirectory`): with `ProtectSystem=strict`, it and a private `/tmp` are the only places
-the app can write.
+> **State:** point file databases and uploads at `/var/lib/my-app` (the `StateDirectory`): with
+> `ProtectSystem=strict`, it and a private `/tmp` are the only places the app can write.
 
 ### pm2
 
-`ecosystem.config.cjs`, next to `server.ts`:
-
 ```js
+// ecosystem.config.cjs, next to server.ts
 module.exports = {
   apps: [
     {
@@ -139,20 +121,15 @@ pm2 logs my-app
 restores. This runs one process (pm2's fork mode); pm2's cluster mode has not been tested with
 Lumiose.
 
-## The proxy
+## 3. Deploy
 
-Set `ORIGIN` to the public origin (`https://example.com`), as in the configs above. The app
-then builds request URLs (`url()`, `ctx.url`) with `https:` and your host, not the `http:` it
-receives from the proxy. Without `ORIGIN`, the URL comes from the `Host` header, which the proxy
-must pass through. The cross-site check of form posts compares the browser's `Origin` host with
-that URL's host. Behind a proxy, the app's `clientAddress` is the proxy's: read
-`X-Forwarded-For`, which both configs set, in middleware.
+Put Caddy or nginx in front, and proxy every request to Node: the adapter already compresses
+and caches ([Notes](#what-the-adapter-already-does)).
 
 ### Caddy
 
-`/etc/caddy/Caddyfile`:
-
 ```caddy
+# /etc/caddy/Caddyfile
 example.com {
 	reverse_proxy 127.0.0.1:3000
 }
@@ -165,10 +142,9 @@ compressed.
 
 ### nginx
 
-`/etc/nginx/sites-available/my-app` (linked into `sites-enabled`), with a certificate from
-certbot:
-
 ```nginx
+# /etc/nginx/sites-available/my-app, linked into sites-enabled,
+# with a certificate from certbot
 upstream my_app {
     server 127.0.0.1:3000;
     keepalive 16;
@@ -206,9 +182,59 @@ server {
 }
 ```
 
-`proxy_set_header Host $host` matters: nginx sends the upstream's name (`my_app`) as `Host`
-otherwise. `http2 on` needs nginx 1.25.1 or later; on older versions, write `listen 443 ssl http2`.
-`proxy_http_version 1.1` with an empty `Connection` header reuses connections to Node
-(`keepalive`). For WebSockets, add the `/ws` location from the [realtime guide](../guides/realtime.md#behind-a-proxy).
-`client_max_body_size` should match the largest body the app accepts
-([Security](../concepts/security.md)), or nginx answers `413` first.
+- `proxy_set_header Host $host` matters: nginx sends the upstream's name (`my_app`) as `Host`
+  otherwise.
+- `http2 on` needs nginx 1.25.1 or later; on older versions, write `listen 443 ssl http2`.
+- `proxy_http_version 1.1` with an empty `Connection` header reuses connections to Node
+  (`keepalive`).
+- For WebSockets, add the `/ws` location from the
+  [realtime guide](../guides/realtime.md#behind-a-proxy).
+- `client_max_body_size` should match the largest body the app accepts
+  ([Security](../concepts/security.md)), or nginx answers `413` first.
+
+## 4. Verify
+
+```sh
+curl -sI https://example.com/ | head -n 1
+curl -sI http://example.com/ | head -n 1
+```
+
+```text
+HTTP/2 200
+HTTP/1.1 301 Moved Permanently
+```
+
+The page arrives over HTTP/2, and plain HTTP redirects to HTTPS (Caddy answers `308`).
+
+## Notes
+
+### The origin behind a proxy
+
+Set `ORIGIN` to the public origin (`https://example.com`), as in the configs of step 2. The app
+then builds request URLs (`url()`, `ctx.url`) with `https:` and your host, not the `http:` it
+receives from the proxy. Without `ORIGIN`, the URL comes from the `Host` header, which the proxy
+must pass through. The cross-site check of form posts compares the browser's `Origin` host with
+that URL's host. Behind a proxy, the app's `clientAddress` is the proxy's: read
+`X-Forwarded-For`, which both proxy configs set, in middleware.
+
+### What the adapter already does
+
+`createServer()` serves `dist/client` first, then the app
+([`@lumiose/adapter-node`](../reference/adapter-node.md)):
+
+- **Compression.** Static files are sent from the `.br` and `.gz` copies that `lumiose build`
+  writes next to every text file of 1 kB or more (brotli 11, gzip 9), at no CPU cost per request.
+  Pages and endpoints with a text content type are compressed as they stream: brotli quality 4,
+  else gzip 6. Every compressible response gets `Vary: Accept-Encoding`.
+- **Caching.** Content-hashed files under `assets/` (`loader-BzIcWyn5.js`) get
+  `Cache-Control: public, max-age=31536000, immutable`; a new build changes their names. Every
+  other file, prerendered pages included, gets `public, max-age=0, must-revalidate` with an `ETag`
+  and `Last-Modified`, answered with `304` when unchanged. Pages rendered per request send what
+  the app sets (`response().setHeader("cache-control", …)`).
+- **Headers.** `lumiose({ headers })` and the default `X-Content-Type-Options` and
+  `Referrer-Policy` go on static files and pages alike.
+
+So the proxy only adds TLS, HTTP/2 and connection limits. A proxy that serves `dist/client`
+itself would have to repeat the caching rules and the headers of this list. With compression on
+in both, the proxy leaves the already encoded responses alone; or pass `compress: false` to
+`createServer()` and let the proxy compress.

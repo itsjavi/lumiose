@@ -2,13 +2,14 @@
 
 > A multi-stage Dockerfile for a Lumiose app: production dependencies only, a non-root user and a health check.
 
-This page is for an app with server routes and the `server.ts` that `create-lumiose --template ssr`
-writes (`@lumiose/adapter-node`'s `createServer()`). The same image runs on any host that runs
-containers: a [VPS](vps.md) with Docker, [Coolify](coolify.md), Kubernetes, a container platform.
+> **For:** an app with server routes and the `server.ts` that `create-lumiose --template ssr`
+> writes (`@lumiose/adapter-node`'s `createServer()`). The same image runs on any host that runs
+> containers: a [VPS](vps.md) with Docker, [Coolify](coolify.md), Kubernetes, a container platform.
 
-## The Dockerfile
+## 1. Configure
 
-Put it at the root of the project, next to `package.json` and `pnpm-lock.yaml`:
+Put the `Dockerfile` at the root of the project, next to `package.json` and `pnpm-lock.yaml`. The
+`.dockerignore` leaves out of the build context what the image builds itself.
 
 ```dockerfile
 # syntax=docker/dockerfile:1
@@ -50,9 +51,8 @@ ENTRYPOINT ["/sbin/tini", "--"]
 CMD ["node", "server.ts"]
 ```
 
-And a `.dockerignore`, so the build context leaves out what the image builds itself:
-
 ```text
+# .dockerignore
 node_modules
 dist
 .lumiose
@@ -61,50 +61,74 @@ dist
 *.log
 ```
 
-Build and run it:
+## 2. Build
 
 ```sh
 docker build -t my-app .
-docker run --rm -p 3000:3000 -e LUMIOSE_SECRET="$(openssl rand -base64 32)" my-app
 ```
 
-`LUMIOSE_SECRET` is only needed when the app signs cookies (`signedCookie()`); pass every secret
+Docker runs the three stages: `build`, `prod-deps`, then the runtime image.
+
+## 3. Deploy
+
+```sh
+docker run --rm --name my-app -p 3000:3000 \
+  -e LUMIOSE_SECRET="$(openssl rand -base64 32)" my-app
+```
+
+```text
+Listening on http://localhost:3000/
+```
+
+`LUMIOSE_SECRET` is only needed when the app signs cookies (`signedCookie()`). Pass every secret
 at run time like this, never as a build argument or an `ENV` line, which stay in the image. The
-other settings (`ORIGIN` behind a proxy, `PORT`, `HOST`) are in
+other settings (`ORIGIN` behind a proxy, `PORT`, `HOST`):
 [Production settings](README.md#production-settings).
 
-## How it works
+## 4. Verify
+
+```sh
+curl -sI http://localhost:3000/ | head -n 1
+docker inspect -f '{{.State.Health.Status}}' my-app
+```
+
+```text
+HTTP/1.1 200 OK
+healthy
+```
+
+The status is `starting` until the first health check passes.
+
+## Notes
 
 - **Three stages.** `build` installs everything and runs `lumiose build`. `prod-deps` installs only
   `dependencies`, so Vite, the compiler and the CLI never reach the image. The last stage copies
   `dist/`, those `node_modules` and `server.ts` onto a fresh `node:24-alpine`. The server build
   bundles your server code and the Lumiose runtime; other npm packages stay imports, which is why
   production dependencies are installed.
-- **Debian to build, Alpine to run.** `lumiose build` loads the compiler's native binary, published
-  for Linux x64 and arm64 on glibc but only x64 on musl, so the build stage is `node:24-slim`,
-  which builds on both architectures (an arm64 laptop or server included). The build output is
-  JavaScript and static files, so it runs on Alpine. `prod-deps` uses the runtime's image so that a
-  dependency with a native addon is built for musl. The release after 0.2.0 also publishes the
-  arm64 musl binary (`@lumiose/compiler-linux-arm64-musl`); from that version on, the build stage
-  can be `node:24-alpine` as well, and this Debian stage becomes optional.
-- **Non-root.** The app runs as `node` (uid 1000), and the files it runs are owned by root, so it
-  cannot change them. A directory it writes to, such as a SQLite database's, must be created for
-  it before `USER node` and mounted as a volume:
-  `RUN mkdir /data && chown node:node /data`, then `docker run -v my-app-data:/data …`.
+- **Debian to build, Alpine to run.** The compiler's native binary is published for Linux x64 and
+  arm64 on glibc but only x64 on musl, so the build stage is `node:24-slim`, which builds on both
+  architectures (an arm64 laptop or server included). The output is JavaScript and static files,
+  so it runs on Alpine. `prod-deps` uses the runtime's image so that a dependency with a native
+  addon is built for musl. The release after 0.2.0 also publishes the arm64 musl binary
+  (`@lumiose/compiler-linux-arm64-musl`); from then on the build stage can be `node:24-alpine`
+  too, and the Debian stage becomes optional.
+- **Non-root.** The app runs as `node` (uid 1000), and root owns the files it runs, so it cannot
+  change them. Create a directory it writes to, such as a SQLite database's, before `USER node`
+  and mount it as a volume: `RUN mkdir /data && chown node:node /data`, then
+  `docker run -v my-app-data:/data …`.
 - **Health check.** `HEALTHCHECK` fetches `HEALTHCHECK_PATH` (default `/`) with Node, since Alpine
   has no curl; any `2xx` answer is healthy. Point it at a cheap URL, such as a `GET` endpoint
   that returns `ok` without rendering a page: `docker run -e HEALTHCHECK_PATH=/healthz …`.
   `--start-interval` (Docker Engine 25 or later) checks every 2 s while the container starts.
 - **Signals.** Node as PID 1 ignores `SIGTERM`, so `docker stop` would wait 10 s and kill it.
   [tini](https://github.com/krallin/tini) passes the signal on, and Node exits at once.
-- **pnpm.** `npm install --global pnpm@11` installs pnpm; when `package.json` has a
-  `packageManager` field (`pnpm@11.x.y`), pnpm switches to that version. The cache mounts keep
-  the package store between builds. `pnpm-workspace.yaml*` copies the file when it exists
-  (pnpm 11 keeps settings there).
-
-**With npm** instead of pnpm: drop the `npm install --global pnpm@11` lines, the `PNPM_HOME`
-variable and the cache mounts, copy `package-lock.json` instead of `pnpm-lock.yaml`, and run
-`npm ci`, `npm run build` and `npm ci --omit=dev`. This variant has not been tested.
+- **pnpm.** When `package.json` has a `packageManager` field (`pnpm@11.x.y`), the installed pnpm
+  switches to that version. The cache mounts keep the package store between builds.
+  `pnpm-workspace.yaml*` copies the file when it exists (pnpm 11 keeps settings there).
+- **npm.** Drop the `npm install --global pnpm@11` lines, the `PNPM_HOME` variable and the cache
+  mounts, copy `package-lock.json` instead of `pnpm-lock.yaml`, and run `npm ci`,
+  `npm run build` and `npm ci --omit=dev`. This variant has not been tested.
 
 ## The bookshelf sample
 
@@ -128,8 +152,7 @@ docker run --rm -p 3000:3000 -e LUMIOSE_SECRET="$(openssl rand -base64 32)" \
   -v bookshelf-data:/data lumiose-bookshelf
 ```
 
-`node examples/ssr-bookshelf/e2e/docker-smoke.ts` builds the image and checks a running container:
-health, a server-rendered page compressed with brotli, a database query, a sign-in, prerendered pages, the
-`immutable` caching of hashed assets and their precompressed copies, the `node` user, no dev
-dependency in the image, and a prompt stop. It needs Docker, skips itself in CI, and is never run
-by CI: a cold build compiles the Rust compiler (about 1 minute on an 8-core arm64 machine).
+`node examples/ssr-bookshelf/e2e/docker-smoke.ts` builds the image and checks a running container;
+what it checks is in the [verification table](README.md#verification). It needs Docker, skips
+itself in CI, and is never run by CI: a cold build compiles the Rust compiler (about 1 minute on
+an 8-core arm64 machine).
