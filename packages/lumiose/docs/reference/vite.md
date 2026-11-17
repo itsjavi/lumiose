@@ -502,7 +502,7 @@ component.
   DOM) or `<svg>` is left as it is. `$name` references are not available: there is no JS scope.
 - **Scripts.** `<script>` and `<script type="module">` run as client modules: bundled by Vite and
   loaded in the browser on the pages that render the component, as a
-  [`?client` script](../concepts/islands.md#concept) is, without the island runtime. Inline scripts and `src`
+  [`?client` script](dom.md#client-scripts) is, without the island runtime. Inline scripts and `src`
   files are both bundled. A relative `src` is resolved against the HTML file.
   Classic scripts become modules too, so they are deferred and strict. Scripts with other types
   (`application/ld+json`, `importmap`) stay in the markup.
@@ -523,8 +523,7 @@ component.
 Raw `<style>` in Markdown follows the same rules. Raw `<script>` in Markdown is an error, with
 the file and line ([LUM1008](../errors/LUM1008.md)); scripts belong in `.html` imports.
 
-**How scripts load.** A file's scripts take the path of a [`?client` import](../concepts/islands.md#concept)
-("Scripts of server-rendered components"). A server-rendered page that renders the component gets
+**How scripts load.** A file's scripts take the path of a [`?client` import](dom.md#client-scripts). A server-rendered page that renders the component gets
 one `<script type="module" async>` for them, in the `<head>` or with the streamed chunk of the
 `<Suspense>` boundary that rendered it. There is no island: a page with no islands loads that
 script and no island runtime. The scripts run once per page however many times the component
