@@ -145,6 +145,45 @@ fn lightning_css_panics_become_diagnostics() {
     }
 }
 
+/// The value checks parse each declaration with Lightning CSS before the stylesheet is parsed.
+/// `scale: abs(-50%)` reaches the same `unreachable!()` there (found by the nightly fuzzer,
+/// TASK-618): the panic must not escape `process`.
+#[test]
+fn a_panic_in_the_value_checks_does_not_escape() {
+    for css in [
+        ".a { scale: abs(-50%) }",
+        ".a { scale: abs(-50%); color: red }",
+    ] {
+        for scope in [
+            Scope::Global { component: None },
+            Scope::Component {
+                name: "Card".into(),
+                token: "t".into(),
+            },
+        ] {
+            let blocks = [CssBlock {
+                content: Span::new(0, css.len() as u32),
+                scope,
+                svg: false,
+            }];
+            let output = process(
+                &CssInput {
+                    filename: "fuzz.stsx",
+                    source: css,
+                    blocks: &blocks,
+                    ..CssInput::default()
+                },
+                &CssOptions::default(),
+            );
+            assert!(
+                output.diagnostics.iter().any(|d| d.code.id() == "LUM3014"),
+                "{css}: {:?}",
+                output.diagnostics
+            );
+        }
+    }
+}
+
 #[test]
 fn truncated_blocks_never_panic() {
     let scope = Scope::Component {

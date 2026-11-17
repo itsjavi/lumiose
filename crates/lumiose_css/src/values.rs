@@ -38,6 +38,7 @@ use lightningcss::values::time::Time;
 use crate::diagnostics::{CssCode, CssDiagnostic, Fix, TextEdit};
 use crate::fold;
 use crate::prepass::Declaration;
+use crate::process::guarded;
 use crate::{RefValue, Span};
 
 /// A `$ref` site of the block and its value; `None` when it is not substituted (unresolved
@@ -164,8 +165,7 @@ fn check_declaration(
         return;
     }
     let value = Value::new(content, range.clone(), &refs);
-    let Ok(parsed) = Property::parse_string(id.clone(), &value.text, ParserOptions::default())
-    else {
+    let Some(parsed) = parse_property(id.clone(), &value.text) else {
         // Lightning CSS drops the declaration and warns (`LUM3015`).
         return;
     };
@@ -427,8 +427,7 @@ fn unitless(
     let printed = || parsed.value_to_css_string(PrinterOptions::default()).ok();
     for kind in [Kind::Length, Kind::Angle, Kind::Time] {
         let text = value.with_unit(index, kind.unit());
-        let Ok(with_unit) = Property::parse_string(id.clone(), &text, ParserOptions::default())
-        else {
+        let Some(with_unit) = parse_property(id.clone(), &text) else {
             continue;
         };
         if matches!(with_unit, Property::Unparsed(_)) {
@@ -472,8 +471,7 @@ fn unitless(
                         &value.text[..range.start],
                         &value.text[range.end..]
                     );
-                    Property::parse_string(id.clone(), &text, ParserOptions::default())
-                        .ok()
+                    parse_property(id.clone(), &text)
                         .filter(|parsed| !matches!(parsed, Property::Unparsed(_)))
                         .and_then(|parsed| {
                             parsed.value_to_css_string(PrinterOptions::default()).ok()
@@ -490,6 +488,14 @@ fn unitless(
     None
 }
 
+/// `Property::parse_string`, with a Lightning CSS panic read as "does not parse". Its
+/// `<percentage>` parser has an `unreachable!()` that `scale: abs(-50%)` reaches (TASK-618, found
+/// by the nightly fuzzer): these checks run before the guarded `StyleSheet::parse`, which then
+/// reports the block (`LUM3014`).
+fn parse_property<'i>(id: PropertyId<'i>, text: &'i str) -> Option<Property<'i>> {
+    guarded(|| Property::parse_string(id, text, ParserOptions::default()).ok()).flatten()
+}
+
 /// Whether the math function `text` adds or compares a plain number with a dimension, which
 /// is invalid (`calc(8 + 1px)`).
 fn mixes_number(kind: Kind, text: &str) -> bool {
@@ -497,7 +503,7 @@ fn mixes_number(kind: Kind, text: &str) -> bool {
     where
         for<'i> Calc<V>: Parse<'i>,
     {
-        Calc::<V>::parse_string(text).ok()
+        guarded(|| Calc::<V>::parse_string(text).ok()).flatten()
     }
     match kind {
         Kind::Length => parse::<LengthPercentage>(text).is_some_and(|calc| mixed(&calc)),

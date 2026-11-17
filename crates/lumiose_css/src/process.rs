@@ -140,7 +140,7 @@ const INTERNAL_ERROR: &str = "Lightning CSS failed on this CSS with an internal 
 /// runs on every keystroke in the language server and the dev server: a block that cannot be
 /// compiled is a diagnostic there, never a crash. Where panics abort (WebAssembly), this is no
 /// guard.
-fn guarded<T>(call: impl FnOnce() -> T) -> Option<T> {
+pub(crate) fn guarded<T>(call: impl FnOnce() -> T) -> Option<T> {
     catch_unwind(AssertUnwindSafe(call)).ok()
 }
 

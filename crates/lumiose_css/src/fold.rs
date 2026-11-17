@@ -140,7 +140,7 @@ where
 {
     // Parsing `Calc` rather than `V` itself: `Percentage::parse` panics on a `calc()` that
     // does not reduce to a percentage.
-    Calc::<V>::parse_string(text).ok()
+    crate::process::guarded(|| Calc::<V>::parse_string(text).ok()).flatten()
 }
 
 /// The single value `calc` reduced to: a `V`, or a number (`sign(-2px)` is `-1`).
