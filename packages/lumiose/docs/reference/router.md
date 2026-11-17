@@ -502,3 +502,131 @@ export function Editor() {
   return <textarea onInput={() => dirty.set(true)} />;
 }
 ```
+
+## Locale routing in detail
+
+```ts
+// vite.config.ts
+lumiose({
+  i18n: {
+    locales: ["en", "es", "fr"],
+    defaultLocale: "en", // served unprefixed (/about); the others are prefixed (/es/about)
+    missing: "404", // or "redirect" to the default locale's page; site-wide
+    detect: false, // or { cookie: "locale", acceptLanguage: true }: only on entry
+  },
+  site: "https://example.com", // the origin of prerendered pages' absolute URLs
+});
+```
+
+**URLs.** Locales are URL path segments (`en`, `pt-BR`). The router reads the prefix and matches
+the rest against the routes, so `src/routes/about/page.stsx` serves `/about` (the default locale)
+and `/es/about`, `/fr/about` for the locales it declares. The default locale has no prefix:
+`/en/about` is not a URL. There is no `[locale]` folder (a route param named `locale` is
+[LUM5007](../errors/LUM5007.md)).
+
+**Declaring locales.** A page exists in the locales it declares; without a declaration, only in the
+default locale, so a site can translate some pages and never serves an untranslated duplicate:
+
+- `export const locales = ["en", "es"]`: these locales; `"all"`: every configured locale.
+- `export async function locales({ params })`: content-driven pages decide per params (a blog post
+  translated into some languages). It runs per request, and once per path while prerendering.
+- A layout's `locales` applies to every page below it; a page's own export wins. Endpoints
+  (`route.ts`) declare locales the same way.
+- A locale the config does not list is a `LUM5002` error.
+
+**Missing translations.** A page requested in a locale it does not declare is a 404 (the
+`not-found` page, in that locale), or with `missing: "redirect"` a redirect to the default
+locale's URL when the page exists there (302, or 307 for other methods than GET).
+
+**The request's locale.** `locale()` from `lumiose` reads it on the server (the URL prefix, else
+the default locale), `ctx.locale` in middleware, actions and endpoints, and `locale()` from
+`lumiose/router` is reactive in SPA routes (and the page's locale in islands). `Locale` is the
+union of the configured locales, from typegen. Without `lumiose({ i18n })` they are `undefined`,
+and typed `string | undefined`. The document's `<html lang>` follows: the default
+document writes it, a custom `src/document.stsx` gets the `lang` of its `<html>` set, and SPA
+navigations update it.
+
+**Links.** `href()` builds URLs in the current locale: `href("/about")` is `/es/about` on a Spanish
+page. The `locale` key switches it: `href("/blog/[slug]", { slug, locale: "fr" })`. `href()` does
+not check that the page declares the locale; `alternates()` lists the URLs that exist.
+
+**Alternates and search engines.** `alternates()` returns the current page in every locale it
+declares, `[{ locale, href }]`, for language switchers. `alternates(pattern, params?)` does the same
+for another route, to link a page translated into fewer locales than the current one
+(`alternates("/about")`); its params are typed like `href()`'s. A route whose locales come from a
+`locales({ params })` function throws there: rendering cannot wait for it, so build those links
+from the translations your content lists. A page that declares more than one locale also gets, in
+its `<head>`:
+
+- `<link rel="alternate" hreflang="…">` for each declared locale, and nothing for the others (no
+  `x-default`), so search engines never see a URL that does not exist;
+- `<link rel="canonical">` to the page's own URL in its locale (each locale is canonical for
+  itself). A canonical the page or a layout renders with `<Head>` replaces it.
+
+In `spa` routes the client router keeps them current: after each navigation it writes the new
+page's links, or removes them for a page that declares a single locale, and a canonical that the
+new page renders with `<Head>` still replaces Lumiose's. Hreflang links of the configured locales
+belong to Lumiose there: do not write them with `<Head>`.
+
+These URLs are absolute: the request's origin for pages rendered per request, and
+`lumiose({ site })` for prerendered pages, which have no request; after an SPA navigation, the
+page's origin (`location.origin`). Without `site`, prerendered pages
+get root-relative URLs, which search engines ignore, and `lumiose build` warns. The origin is
+joined with the `href()` path, which already has Vite's `base`: a site with a path
+(`"https://example.com/docs"`) sets the base when the config has none, and must match it
+otherwise.
+
+**Prerendering.** A `static` page (or an `spa` page with `prerender`) renders once per locale it
+declares, for each path of its `staticPaths()`: `about/index.html`, `es/about/index.html`, … A
+`locales()` function is asked for each path's params.
+
+**Detection** (`detect`, off by default) runs only on entry, never on every request:
+
+- On a first visit (no `cookie`), the visitor's `Accept-Language` locale (with
+  `acceptLanguage: true`): a page that declares it redirects there (`/about` → `/es/about`), and
+  the cookie records the locale either way.
+- On `/`, the cookie's locale: a visitor who chose Spanish lands on `/es`.
+- Deep links never redirect once the cookie exists, prefixed URLs never do, and without a `cookie`
+  only `/` detects (first visits cannot be told apart).
+- These responses send `Vary: Cookie, Accept-Language` and `Cache-Control: private, no-store`.
+- A prefetch never keeps a decision, since a language switcher may change the cookie before the
+  navigation: the speculation rules leave out `/`, and a detecting request that carries
+  `Sec-Purpose: prefetch` (another prefetcher, a prerender) gets a `503` the browser discards, so the
+  navigation itself detects.
+
+A language switcher must update the cookie (`cookies().set("locale", "es")` in an action, or
+`document.cookie` in an island); the cookie is not `HttpOnly`, so client code can. Detection runs in
+the request handler: a prerendered `/` served as a file never redirects, so render the entry page
+per request (`export const mode = "server"`) to detect there.
+
+**SPA routes.** The client router matches prefixed URLs too, for the locales a page declares in a
+list; a page with a `locales()` function, or a locale it does not declare, loads as a document and
+the server answers. That is a trade-off: the function runs on the server (it usually reads content
+or a database), and only the server knows whether the URL exists, so it answers with the page, a
+404 or a redirect, and its `hreflang` links. A navigation to another locale renders every level
+again.
+
+**Messages.** Lumiose does not translate or format messages: use a library such as Paraglide JS
+(compile-time messages, only what a page uses) or i18next, keyed by `locale()`. The
+[i18n guide](../guides/i18n.md) shows both end to end.
+
+> **Status:** locale routing, declarations, `missing`, detection, `locale()`, `alternates()`,
+> locale-aware `href()`, `<html lang>`, `hreflang` and canonical links, and per-locale
+> prerendering are available. Locales per domain (`example.es`) come after 1.0.
+
+**Mistakes with locale routing.**
+
+- **A `[locale]` folder.** The router handles the prefix: `src/routes/about/page.stsx` serves
+  every locale it declares, and a param named `locale` is `LUM5007`.
+- **Expecting every page in every locale.** Without `export const locales` (on the page or a
+  layout), a page exists only in the default locale; `/es/about` is then a 404.
+- **`href()` to a page that is not translated.** On a French page `href("/about")` is
+  `/fr/about`; pick a locale from `alternates("/about")`.
+- **Hard-coded prefixes.** `"/es" + path` breaks for the default locale and below a `base`; use
+  `href(pattern, { locale })`.
+- **A switcher that does not update the detection cookie.** The visitor's next visit to `/` sends
+  them back to the locale in the cookie.
+- **Detection on a prerendered `/`.** A static file never redirects; render the entry page per
+  request.
+- **No `site` for a prerendered site.** `hreflang` and canonical URLs stay root-relative, which
+  search engines ignore; `lumiose build` warns.
