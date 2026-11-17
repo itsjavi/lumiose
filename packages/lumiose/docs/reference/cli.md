@@ -24,16 +24,20 @@ lumiose help --format json      # every command, for agents
 - **Logs** go to stderr with `--format json`, so stdout parses as JSON.
 - **Typos** get suggestions: `lumiose chek` prints `Did you mean "lumiose check"?`.
 
-| Option                   | Applies to   | Meaning                                                       |
-| ------------------------ | ------------ | ------------------------------------------------------------- |
-| `--root <dir>`, `--cwd`  | all          | Project root (default: the current directory).                |
-| `--format human \| json` | all          | Output format (default `human`).                              |
-| `-h, --help`             | all          | Help for the command.                                         |
-| `-v, --version`          |              | The version (`{ command: "version", ok, version }` in JSON).  |
-| `-p, --project <file>`   | check        | tsconfig path relative to the root (default `tsconfig.json`). |
-| `--check`                | fmt          | List unformatted files and exit 1 instead of writing.         |
-| `--port <n>`             | dev, preview | Port; `0` picks a free one.                                   |
-| `--host <addr>`          | dev, preview | Listen address (`0.0.0.0`: all addresses).                    |
+Every option, and the commands it applies to. An option passed to a command it does not apply to
+is a usage error (exit 2).
+
+| Name                    | Type            | Default         | Description                                                                            |
+| ----------------------- | --------------- | --------------- | -------------------------------------------------------------------------------------- |
+| `--root <dir>`, `--cwd` | `string`        | `.`             | All commands. Project root; the default is the current directory. `--cwd` is an alias. |
+| `--format <format>`     | `human \| json` | `human`         | All commands. Output format.                                                           |
+| `-h, --help`            | `boolean`       | `false`         | All commands. Help for the command.                                                    |
+| `-v, --version`         | `boolean`       | `false`         | Without a command. The version (`{ command: "version", ok, version }` in JSON).        |
+| `-p, --project <file>`  | `string`        | `tsconfig.json` | `check`. tsconfig path relative to the root.                                           |
+| `--check`               | `boolean`       | `false`         | `fmt`. List unformatted files and exit 1 instead of writing.                           |
+| `--mcp`                 | `boolean`       | `false`         | `agents init`. Also register `lumiose mcp` for Claude Code and Codex.                  |
+| `--port <n>`            | `number`        | —               | `dev`, `preview`. Port; `0` picks a free one. Each command has its own default.        |
+| `--host <addr>`         | `string`        | `localhost`     | `dev`, `preview`. Listen address (`0.0.0.0`: all addresses).                           |
 
 ## lumiose dev
 
@@ -56,10 +60,8 @@ changes an island's props, hydration strategy or slot content; when the response
 redirected or is not HTML; when the page was the result of a form post; and when the render
 reported errors (the reload shows the overlay).
 
-```sh
-lumiose dev --port 3000
-lumiose dev --format json   # one line once listening: { "command": "dev", "ok": true, "url": "http://localhost:5173/", "urls": { "local": [...], "network": [...] } }
-```
+With `--format json`, it prints one line once listening:
+`{ "command": "dev", "ok": true, "url": "http://localhost:5173/", "urls": { "local": [...], "network": [...] } }`.
 
 Every page gets the in-page inspector: Alt+Shift+L or the corner button opens it, and Alt+click
 opens an element's source in your editor ([Dev tools](../concepts/dev-tools.md)).
@@ -68,6 +70,22 @@ opens an element's source in your editor ([Dev tools](../concepts/dev-tools.md))
 Like Vite, the server stops when its stdin ends; start it with an open stdin when it runs in the
 background. A project with its own Node server runs the same dev setup inside it with
 [`createDevHandler()`](vite.md#createdevhandler).
+
+```sh
+lumiose dev [options]
+```
+
+```sh
+lumiose dev --port 3000
+```
+
+| Name                    | Type            | Default     | Description                                                                             |
+| ----------------------- | --------------- | ----------- | --------------------------------------------------------------------------------------- |
+| `--port <n>`            | `number`        | `5173`      | Port; `0` picks a free one. The default is Vite's `server.port`, or the next free port. |
+| `--host <addr>`         | `string`        | `localhost` | Listen address (`0.0.0.0`: all addresses). The default is Vite's `server.host`.         |
+| `--root <dir>`, `--cwd` | `string`        | `.`         | Project root.                                                                           |
+| `--format <format>`     | `human \| json` | `human`     | Output format.                                                                          |
+| `-h, --help`            | `boolean`       | `false`     | Usage, options, exit codes and examples.                                                |
 
 ## lumiose build
 
@@ -84,11 +102,23 @@ Servers and deploy adapters cache exactly the files the build named by content h
 files you put in `public/assets/` revalidate
 ([`@lumiose/adapter-node`](./adapter-node.md#createstatichandler)).
 
+Route errors (`LUM5002`, `LUM5003`, `LUM5005`, `LUM5006`) and compile errors exit 1. With
+`--format json`, the report is
+`{ outDir, clientDir, serverEntry, prerendered: [{ path, file, kind }] }`.
+
 ```sh
-lumiose build --format json   # { outDir, clientDir, serverEntry, prerendered: [{ path, file, kind }] }
+lumiose build [options]
 ```
 
-Route errors (`LUM5002`, `LUM5003`, `LUM5005`, `LUM5006`) and compile errors exit 1.
+```sh
+lumiose build --format json
+```
+
+| Name                    | Type            | Default | Description                              |
+| ----------------------- | --------------- | ------- | ---------------------------------------- |
+| `--root <dir>`, `--cwd` | `string`        | `.`     | Project root.                            |
+| `--format <format>`     | `human \| json` | `human` | Output format.                           |
+| `-h, --help`            | `boolean`       | `false` | Usage, options, exit codes and examples. |
 
 ## lumiose preview
 
@@ -101,6 +131,22 @@ static files included, gets `lumiose({ headers })` and Vite's `preview.headers`,
 `server.headers` (as with `vite preview`)
 ([adapter `headers`](./adapter-node.md#createhandler)).
 `--format json` prints one line once listening: `{ "command": "preview", "ok": true, "url" }`.
+
+```sh
+lumiose preview [options]
+```
+
+```sh
+lumiose preview --port 8080
+```
+
+| Name                    | Type            | Default     | Description                                |
+| ----------------------- | --------------- | ----------- | ------------------------------------------ |
+| `--port <n>`            | `number`        | `4173`      | Port; `0` picks a free one.                |
+| `--host <addr>`         | `string`        | `localhost` | Listen address (`0.0.0.0`: all addresses). |
+| `--root <dir>`, `--cwd` | `string`        | `.`         | Project root.                              |
+| `--format <format>`     | `human \| json` | `human`     | Output format.                             |
+| `-h, --help`            | `boolean`       | `false`     | Usage, options, exit codes and examples.   |
 
 ## lumiose check
 
@@ -115,11 +161,8 @@ compiler diagnostics for `.stsx` and `.tsx` files (such as `LUM1006` for a `<sty
 like TypeScript resolves them (relative paths, tsconfig `paths`, package `exports`). Route
 diagnostics use the project's default mode from `lumiose({ mode })`.
 
-```sh
-lumiose check
-lumiose check --format json   # { command, ok, diagnostics: [...], summary: { errors, warnings, hints, files } }
-```
-
+With `--format json`, the report is
+`{ command, ok, diagnostics: [...], summary: { errors, warnings, hints, files } }`.
 Each JSON diagnostic has `source` (`ts`, `lumiose`, `oxlint`, `stylelint`), `code`, `severity`,
 `file`, `line`, `column`, `endLine`, `endColumn`, `message`, and optional `help`, `docs` and
 `fix`. A `fix` is `{ message, edits: [{ line, column, endLine, endColumn, text }] }`, with the same
@@ -132,15 +175,42 @@ for a prop that cannot be serialized are reported as `LUM4002` on the prop (see
 errors yet: the report then ends with a note (JSON: `notes: [...]`), and another run after the
 fixes shows them.
 
+```sh
+lumiose check [options]
+```
+
+```sh
+lumiose check -p tsconfig.app.json
+```
+
+| Name                    | Type            | Default         | Description                              |
+| ----------------------- | --------------- | --------------- | ---------------------------------------- |
+| `-p, --project <file>`  | `string`        | `tsconfig.json` | tsconfig path, relative to the root.     |
+| `--root <dir>`, `--cwd` | `string`        | `.`             | Project root.                            |
+| `--format <format>`     | `human \| json` | `human`         | Output format.                           |
+| `-h, --help`            | `boolean`       | `false`         | Usage, options, exit codes and examples. |
+
 ## lumiose typegen
 
 Writes the route types (`.lumiose/types/routes.d.ts`), the generated tsconfig
 (`.lumiose/tsconfig.generated.json`) and syncs the shadow TSX files (`.lumiose/shadow/`), without
-type-checking: what a bare `tsc` or an editor needs.
+type-checking: what a bare `tsc` or an editor needs. With `--format json`, the report is
+`{ routeTypes: { file, changed }, routes, shadows: { dir, files, written, deleted }, diagnostics, summary }`.
+Exits 1 when the routes have errors.
 
 ```sh
-lumiose typegen --format json   # { routeTypes: { file, changed }, routes, shadows: { dir, files, written, deleted }, diagnostics, summary }
+lumiose typegen [options]
 ```
+
+```sh
+lumiose typegen --format json
+```
+
+| Name                    | Type            | Default | Description                              |
+| ----------------------- | --------------- | ------- | ---------------------------------------- |
+| `--root <dir>`, `--cwd` | `string`        | `.`     | Project root.                            |
+| `--format <format>`     | `human \| json` | `human` | Output format.                           |
+| `-h, --help`            | `boolean`       | `false` | Usage, options, exit codes and examples. |
 
 ## lumiose routes
 
@@ -153,6 +223,14 @@ each route declares (its own `locales` export, a layout's, or the default locale
 `locales() in <file>` marks a route whose `locales({ params })` function decides per params.
 When the app has middleware, a `MIDDLEWARE` column shows each route's chain in the order it runs:
 `src/middleware.ts`, then the folder `middleware.ts` files from the outermost folder in.
+
+Paths in JSON are project-relative. Exits 1 when the routes have errors. With `--format json`, the
+report is
+`{ routesDir, defaultMode, i18n?, routes: [{ pattern, file, kind, mode, ssr?, prerender?, layouts, middleware, params, locales?, localesFrom? }], diagnostics, summary }`.
+
+```sh
+lumiose routes [options]
+```
 
 ```sh
 $ lumiose routes
@@ -177,11 +255,13 @@ Routes in src/routes (default mode: server): 2 pages, 0 endpoints
 PATTERN       KIND  MODE    FILE                   MIDDLEWARE                                LAYOUTS
 /             page  server  page.stsx              src/middleware.ts                         layout.stsx
 /admin/users  page  server  admin/users/page.stsx  src/middleware.ts > admin/middleware.ts  layout.stsx
-
-$ lumiose routes --format json   # { routesDir, defaultMode, i18n?, routes: [{ pattern, file, kind, mode, ssr?, prerender?, layouts, middleware, params, locales?, localesFrom? }], diagnostics, summary }
 ```
 
-Paths in JSON are project-relative. Exits 1 when the routes have errors.
+| Name                    | Type            | Default | Description                              |
+| ----------------------- | --------------- | ------- | ---------------------------------------- |
+| `--root <dir>`, `--cwd` | `string`        | `.`     | Project root.                            |
+| `--format <format>`     | `human \| json` | `human` | Output format.                           |
+| `-h, --help`            | `boolean`       | `false` | Usage, options, exit codes and examples. |
 
 ## lumiose lint
 
@@ -191,17 +271,43 @@ installs and configures stylelint, on each
 block's CSS with `$` references replaced by same-length identifiers. The JSON report has the shape
 of `lumiose check`'s.
 
-## lumiose fmt
+```sh
+lumiose lint [options]
+```
 
 ```sh
-lumiose fmt [paths...]        # default path: src
-lumiose fmt --check
-lumiose fmt --check --format json   # { check, files: [{ file, status, warnings, error? }], summary: { files, formatted, errors } }
+lumiose lint --format json
 ```
+
+| Name                    | Type            | Default | Description                              |
+| ----------------------- | --------------- | ------- | ---------------------------------------- |
+| `--root <dir>`, `--cwd` | `string`        | `.`     | Project root.                            |
+| `--format <format>`     | `human \| json` | `human` | Output format.                           |
+| `-h, --help`            | `boolean`       | `false` | Usage, options, exit codes and examples. |
+
+## lumiose fmt
 
 Formats `.stsx` files: the TSX with oxfmt (each block replaced by a placeholder), then each block's
 CSS separately with its `$` references protected, then re-indents and stitches the file together.
-With `--check`, a `formatted` file is one that is not formatted yet.
+With `--check`, a `formatted` file is one that is not formatted yet. With `--format json`, the
+report is
+`{ check, files: [{ file, status, warnings, error? }], summary: { files, formatted, errors } }`.
+
+```sh
+lumiose fmt [paths...] [options]
+```
+
+```sh
+lumiose fmt src/components --check
+```
+
+| Name                    | Type            | Default | Description                                           |
+| ----------------------- | --------------- | ------- | ----------------------------------------------------- |
+| `[paths...]`            | `string[]`      | `src`   | The files and folders to format.                      |
+| `--check`               | `boolean`       | `false` | List unformatted files and exit 1 instead of writing. |
+| `--root <dir>`, `--cwd` | `string`        | `.`     | Project root.                                         |
+| `--format <format>`     | `human \| json` | `human` | Output format.                                        |
+| `-h, --help`            | `boolean`       | `false` | Usage, options, exit codes and examples.              |
 
 ## oxlint, ESLint and Prettier
 
@@ -249,6 +355,18 @@ file with scanner or syntax errors is reported, not changed. oxfmt has no plugin
 
 ## lumiose docs
 
+Prints the version-matched docs from `node_modules/lumiose/docs`. When the project has
+`@lumiose/ui` installed, its docs, which ship in its package and match its own version
+(`node_modules/@lumiose/ui/docs`), join them as `ui/` topics. A bare name prefers concepts over
+reference pages and lists the other matches. An exported name (case-sensitive, such as `signal`,
+`Link` or `fail`) prints the section of the reference page that documents it. A search requires
+every term to occur in a page.
+Exits 1 when nothing matches.
+
+```sh
+lumiose docs [topic...] [options]
+```
+
 ```sh
 lumiose docs                  # the docs index
 lumiose docs signals          # a topic by name...
@@ -265,31 +383,35 @@ lumiose docs ui               # with @lumiose/ui installed: its index (ui/README
 lumiose docs dialog           # ...and a component's page (ui/dialog)
 ```
 
-Prints the version-matched docs from `node_modules/lumiose/docs`. When the project has
-`@lumiose/ui` installed, its docs, which ship in its package and match its own version
-(`node_modules/@lumiose/ui/docs`), join them as `ui/` topics. A bare name prefers concepts over
-reference pages and lists the other matches. An exported name (case-sensitive, such as `signal`,
-`Link` or `fail`) prints the section of the reference page that documents it. A search requires
-every term to occur in a page.
-Exits 1 when nothing matches.
+| Name                    | Type            | Default | Description                                                                          |
+| ----------------------- | --------------- | ------- | ------------------------------------------------------------------------------------ |
+| `[topic...]`            | `string[]`      | —       | A topic, a diagnostic code, an exported name or search terms. Without it: the index. |
+| `--root <dir>`, `--cwd` | `string`        | `.`     | Project root.                                                                        |
+| `--format <format>`     | `human \| json` | `human` | Output format.                                                                       |
+| `-h, --help`            | `boolean`       | `false` | Usage, options, exit codes and examples.                                             |
 
 ## lumiose explain
+
+Prints the long-form explanation of a diagnostic code: what it means, an example, and how to fix
+it. Exits 1 for an unknown code and 2 for text that is not a code.
+
+```sh
+lumiose explain <code> [options]
+```
 
 ```sh
 lumiose explain LUM3010
 lumiose explain lum3010 --format json   # { code, title, severity, category, topic, content }
 ```
 
-Prints the long-form explanation of a diagnostic code: what it means, an example, and how to fix
-it. Exits 1 for an unknown code and 2 for text that is not a code.
+| Name                    | Type            | Default | Description                                        |
+| ----------------------- | --------------- | ------- | -------------------------------------------------- |
+| `<code>`                | `string`        | —       | The diagnostic code, in any letter case. Required. |
+| `--root <dir>`, `--cwd` | `string`        | `.`     | Project root.                                      |
+| `--format <format>`     | `human \| json` | `human` | Output format.                                     |
+| `-h, --help`            | `boolean`       | `false` | Usage, options, exit codes and examples.           |
 
 ## lumiose agents init
-
-```sh
-lumiose agents init
-lumiose agents init --mcp           # also .mcp.json (Claude Code) and .codex/config.toml (Codex)
-lumiose agents init --format json   # { files: [{ file, action: "created" | "updated" | "unchanged" }] }
-```
 
 Makes an existing project agent-ready, as `create-lumiose` does for new ones: a Lumiose section in
 `AGENTS.md` (between `<!-- lumiose:start … -->` and `<!-- lumiose:end -->`, pointing at
@@ -308,13 +430,40 @@ registers `lumiose mcp` for Claude Code and
 Codex, run with the package manager of the lockfile (see [MCP](mcp.md#register-it)); the JSON
 report then has `mcp: { command, args, note }`.
 
+```sh
+lumiose agents init [options]
+```
+
+```sh
+lumiose agents init
+lumiose agents init --mcp           # also .mcp.json (Claude Code) and .codex/config.toml (Codex)
+lumiose agents init --format json   # { files: [{ file, action: "created" | "updated" | "unchanged" }] }
+```
+
+| Name                    | Type            | Default | Description                                                                                 |
+| ----------------------- | --------------- | ------- | ------------------------------------------------------------------------------------------- |
+| `--mcp`                 | `boolean`       | `false` | Also register `lumiose mcp` for Claude Code (`.mcp.json`) and Codex (`.codex/config.toml`). |
+| `--root <dir>`, `--cwd` | `string`        | `.`     | Project root.                                                                               |
+| `--format <format>`     | `human \| json` | `human` | Output format.                                                                              |
+| `-h, --help`            | `boolean`       | `false` | Usage, options, exit codes and examples.                                                    |
+
 ## lumiose mcp
+
+Starts the MCP server on stdio for coding agents: the tools `docs_search`, `docs_get`, `check`,
+`routes`, `components`, `compile`, `render`, `dev_logs` and `ui_components` (the `@lumiose/ui`
+components, when installed), and the docs and the route manifest as resources. It runs until the client disconnects. See [MCP server](mcp.md).
+
+```sh
+lumiose mcp [options]
+```
 
 ```sh
 lumiose mcp
 claude mcp add lumiose -- npx lumiose mcp   # register it with Claude Code
 ```
 
-Starts the MCP server on stdio for coding agents: the tools `docs_search`, `docs_get`, `check`,
-`routes`, `components`, `compile`, `render`, `dev_logs` and `ui_components` (the `@lumiose/ui`
-components, when installed), and the docs and the route manifest as resources. It runs until the client disconnects. See [MCP server](mcp.md).
+| Name                    | Type            | Default | Description                              |
+| ----------------------- | --------------- | ------- | ---------------------------------------- |
+| `--root <dir>`, `--cwd` | `string`        | `.`     | Project root.                            |
+| `--format <format>`     | `human \| json` | `human` | Output format.                           |
+| `-h, --help`            | `boolean`       | `false` | Usage, options, exit codes and examples. |
