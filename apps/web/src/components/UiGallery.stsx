@@ -183,7 +183,7 @@ export function UiGallery(props: UiGalleryProps) {
     background: $color.sunken;
   }
   .foot:hover .arr {
-    color: $color.accent;
+    color: $color.text;
   }
   .foot:focus-visible {
     outline-offset: -2px;

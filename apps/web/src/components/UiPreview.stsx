@@ -36,4 +36,9 @@ export function UiPreview(props: {
   .preview :deep(*::after) {
     all: revert-layer;
   }
+  /* The theme styles components, not plain links: a demo's own link takes the text colour rather
+     than the browser's blue. */
+  .preview :deep(a:not([class])) {
+    color: inherit;
+  }
 </style>

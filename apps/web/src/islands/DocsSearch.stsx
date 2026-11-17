@@ -145,10 +145,10 @@ export function DocsSearch(props: { index: string }) {
     background: $color.surface;
     font-size: $text.sm;
   }
+  /* The shared focus ring (Base), drawn inside the field so the header does not clip it. */
   .input:focus-visible {
-    outline: none;
-    border-color: $color.accent;
-    box-shadow: 0 0 0 3px $color.accentSoft;
+    border-color: $color.text;
+    outline-offset: -2px;
   }
   .key {
     position: absolute;
