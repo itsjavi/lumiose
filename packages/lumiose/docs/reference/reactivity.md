@@ -436,3 +436,184 @@ export function Clock() {
   );
 }
 ```
+
+## State libraries mapped
+
+**No state library needed.** Only the code that reads a signal (or a store property) re-runs, so
+selectors and re-render tuning are not needed. What the popular libraries offer maps to:
+
+| Library feature                                      | In Lumiose                                                                        |
+| ---------------------------------------------------- | --------------------------------------------------------------------------------- |
+| Jotai `atom(v)`, derived atoms                       | `signal(v)`, `computed(fn)`                                                       |
+| Jotai `atomFamily`                                   | a `store` keyed by id, or the family recipe below                                 |
+| Jotai `atomWithStorage`, Zustand `persist`           | the persisted signal recipe below                                                 |
+| Jotai `Provider`, Zustand `createStore` with context | a store with actions, provided through context (recipe below)                     |
+| Zustand selectors, `subscribeWithSelector`           | not needed: `computed` for the slice, `effect` to react to it                     |
+| Zustand `immer` middleware                           | `store()`: a mutable proxy, mutate it directly                                    |
+| Zustand `devtools`                                   | `effect(() => console.debug(JSON.stringify(state)))` (tracks every property read) |
+| Valtio `proxy`, `snapshot`                           | `store`, `snapshot`                                                               |
+| Solid `reconcile`, TanStack structural sharing       | `reconcile(store, data)`: patch fresh data in, keeping unchanged items            |
+| `zustand/vanilla`, a Jotai store, Redux              | the external store recipe below                                                   |
+
+## Scoped state on the server and in tests
+
+**Islands.** Each [island](../concepts/islands.md) hydrates as its own root, so context provided by the page
+does not reach an island, and one island cannot provide to another. The server renders islands
+the same way, so their HTML matches. Islands share the Lumiose runtime and the modules they import,
+so islands share state through **scoped state**: `defineState(factory)` returns an accessor whose
+factory runs on first use, once per page in the browser and once per request on the server.
+
+**Scoped state on the server.** The factory runs per request, so it can seed itself from the
+request (`cookies()`, `locals()`, …); there is no separate seed API. When islands (or SPA routes)
+import a state, the page sends its server values: the signals and stores the factory returned,
+once per page, in the chunk where the state was first used. In the browser the factory runs again
+(rebuilding computeds and functions) and the server values replace its signals and stores before
+any island reads them, so hydration matches. A state that only server code imports is never sent.
+Sent values must be plain data, like island props (`LUM4011`), and they are **public**: everyone
+who can load the page can read them in its source. Never put secrets in a state that islands use.
+
+**Scoped state in tests.** Under Vitest, `@lumiose/vite` resets scoped state before each test: each
+test starts with fresh instances, in DOM tests and in server tests (where calls outside a render
+share one instance per test).
+
+What the page sends is `cart`'s store (`{ items: [...] }`): `count` and `add` are created again in
+the browser. `@lumiose/vite` names each state after its module and export
+(`/src/lib/cart.ts#cart`), the way it names islands, so define states at module scope and export
+them (or the binding). For state that lives only in the browser, a module-scope `signal` works too,
+as long as it is written only in handlers and effects, which never run on the server.
+
+## State recipes
+
+### Families (atomFamily)
+
+A `store` tracks each key separately, so a record keyed by id is already a family: setting
+`selected[id]` re-runs only what read that id.
+
+```ts check
+import { store } from "lumiose";
+
+export const selected = store<Record<string, boolean>>({});
+// selected["todo-1"] = true; re-runs only the bindings that read selected["todo-1"]
+```
+
+When each entry must be a signal of its own (to pass it to a component, or to derive from it),
+create them on first use:
+
+```ts check
+import { signal, type Signal } from "lumiose";
+
+export function family<K, T>(initial: (key: K) => T) {
+  const signals = new Map<K, Signal<T>>();
+  return {
+    get(key: K): Signal<T> {
+      let entry = signals.get(key);
+      if (entry === undefined) signals.set(key, (entry = signal(initial(key))));
+      return entry;
+    },
+    delete(key: K): void {
+      signals.delete(key);
+    },
+  };
+}
+
+export const drafts = family((_postId: string) => "");
+// drafts.get("post-1").set("Hello"); drafts.get("post-1")()
+```
+
+### Fresh data into a store (reconcile)
+
+Replacing a store's array with a new fetch result (`state.books = fresh`) gives every row a new
+object, so a list re-renders every row and loses its local state. `reconcile` patches the data in
+instead: rows are matched by `id` (or by `{ key }`), unchanged rows keep their identity, and only
+the fields that changed notify.
+
+```ts check
+import { reconcile, store } from "lumiose";
+
+interface Book {
+  id: number;
+  title: string;
+}
+
+export const books = store<Book[]>([]);
+
+export async function refresh(): Promise<void> {
+  const fresh = (await (await fetch("/api/books")).json()) as Book[];
+  reconcile(books, fresh); // only changed titles and added or removed rows update the page
+}
+```
+
+It works on a part of a store too: `reconcile(state.books, fresh)`. Keys missing from the new
+data are deleted, nested objects are merged, and other values are replaced.
+
+### A persisted signal (atomWithStorage, persist)
+
+Call it in a component. The saved value loads in `onMount`, after hydration, so the server HTML
+and the first browser render agree; other tabs stay in sync through the `storage` event.
+
+```tsx check
+import { effect, onMount, signal, type Signal } from "lumiose";
+
+export function persisted<T>(key: string, initial: T): Signal<T> {
+  const value = signal(initial);
+  let loaded = false;
+  onMount(() => {
+    const saved = localStorage.getItem(key);
+    if (saved !== null) value.set(JSON.parse(saved) as T);
+    loaded = true;
+    const sync = (event: StorageEvent) => {
+      if (event.key === key && event.newValue !== null) value.set(JSON.parse(event.newValue) as T);
+    };
+    window.addEventListener("storage", sync);
+    return () => window.removeEventListener("storage", sync);
+  });
+  effect(() => {
+    const current = value();
+    if (loaded) localStorage.setItem(key, JSON.stringify(current));
+  });
+  return value;
+}
+
+export function ThemeToggle() {
+  const theme = persisted<"light" | "dark">("theme", "light");
+  return (
+    <button onClick={() => theme.update((t) => (t === "light" ? "dark" : "light"))}>
+      Theme: {theme()}
+    </button>
+  );
+}
+```
+
+In a `client:only` island or an SPA, which render nothing on the server, you can read
+`localStorage` directly in `signal(…)` instead.
+
+## Common mistakes when sharing state
+
+- **Writing module-scope state during SSR.** A module-scope signal written in a component body or
+  a server path leaks one request's state into the next (`LUM4008`). Use `defineState`, whose
+  factory runs once per request, or keep it in context.
+- **Reading page context inside an island.** Each island starts a new context root, on the
+  server as in the browser, so `useContext()` inside it does not see what the page provided outside
+  it and returns the context's default (`LUM4010` warns in dev). Pass the value as an island prop,
+  provide the context inside the island, or share scoped state (`defineState`).
+- **Calling request APIs in a state's factory without a guard.** The factory also runs in the
+  browser, where `cookies()` and `locals()` throw `LUM4003`. Read them only on the server
+  (`isServer ? cookies().get("cart") : undefined`); the server's values arrive anyway.
+- **Putting secrets or class instances in a state that islands use.** Its signals and stores are
+  sent with the page, readable by anyone, and must hold plain data (`LUM4011`). Keep secrets in
+  server-only modules; keep other values in computeds or functions, which are not sent.
+- **Calling a state's accessor at module scope on the server.** There is no request there, so it
+  throws. Call it in components, middleware, endpoints or actions.
+- **Creating a state inside a function.** Only module-scope states get an id, so a state created
+  in a component or helper is never sent and the browser starts from the factory's values.
+- **Reading `localStorage` in setup in a server-rendered component.** The server cannot read it,
+  so the first browser render differs from the HTML (`LUM4006`). Load it in `onMount`, as the
+  persisted recipe does.
+- **Copying state between stores with `effect`.** `effect(() => b.set(a()))` adds a frame of
+  staleness. Derive with `computed`, or keep one source of truth.
+- **Expecting `snapshot()` in an effect to track.** Its reads are not tracked. To log every change,
+  read through the store (`JSON.stringify(state)`).
+- **Assigning a fresh fetch result over a store's array.** `state.rows = await res.json()` replaces
+  every row, so lists re-create their rows and lose row state. Use `reconcile(state.rows, data)`.
+- **Wrapping a class instance, `Map` or `Set` in `store()`.** Only plain objects and arrays become
+  reactive. Use a record keyed by id, or the family recipe.
