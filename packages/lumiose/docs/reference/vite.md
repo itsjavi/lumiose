@@ -676,7 +676,8 @@ inline icons render faster and can be styled and animated part by part.
   root `<svg>` (through `class`) carries your component's scope. Use inherited properties
   (`color`, `fill`, `stroke`, `stroke-width`) on the root, or `:deep(path)`.
 - **Setting only `width`.** The file's `height` stays, and the drawing is centred in that box.
-  Pass both, or size icons with CSS as above.
+  Pass both, or size icons with CSS
+  (`.icon { width: 1.25em; height: 1.25em; }`).
 - **Labelling a decorative icon.** An icon next to visible text needs no `title`; a `title` there
   makes screen readers repeat the text.
 - **Hard-coded colours in an icon set.** If icons stay black whatever `color` says, the files
