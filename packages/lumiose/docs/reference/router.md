@@ -460,3 +460,45 @@ export default function Settings() {
 
 See also: [Routing](../concepts/routing.md), [Rendering modes](../concepts/rendering-modes.md),
 [`lumiose`: app layer](app.md).
+
+## The SPA router in short
+
+Routes with `mode = "spa"` use the client router `lumiose/router` ([reference](../reference/router.md)):
+
+- The SPA starts at the outermost `spa` layout (or the page itself) and covers every `spa` page
+  below it; links between them navigate on the client, other links load the document.
+- `<Link href prefetch>` (plain `<a>` links work too), `navigate(href, { replace })`, reactive
+  `params()`, `route()` (the matched pattern), `url()`, `searchParams()` (`searchParams.set()` changes the
+  query) and `isNavigating()`.
+- Layouts persist: a layout's `children` is the outlet, and layouts shared by the old and the new
+  page keep their state. A page with other param values (`songs/[id]`) is a new page.
+- A navigation holds the old page until the new page's async content is ready, then swaps. With
+  `viewTransitions: true`, a navigation to another page swaps inside
+  [`viewTransition()`](components.md#viewtransition) (a query change on the same page
+  does not), and `<ViewTransition>` names the elements that morph.
+- Scroll restoration, focus reset, an announcement of each new page for screen readers (its
+  `<Title>`, else its first `<h1>`), `not-found` for unknown URLs and `notFound()`, `error` for
+  errors. See [Behaviour](#behaviour).
+- Navigation hooks: `beforeNavigate(fn)` runs before each navigation and may `cancel()` it (to
+  confirm leaving unsaved changes; the page stays, and for `"leave"`, such as closing the tab, the
+  browser asks), and `afterNavigate(fn)` runs after each completed one and once on mount (page
+  views, focus). They belong to the component that calls them during setup, and work in islands of
+  MPA pages too (link clicks, `"leave"` and `"enter"`). See
+  [Navigation hooks](#navigation-hooks), and
+  [Unsaved changes](#unsaved-changes) for a guard with your own dialog.
+
+```tsx
+import { signal } from "lumiose";
+import { afterNavigate, beforeNavigate } from "lumiose/router";
+
+export function Editor() {
+  const dirty = signal(false);
+  beforeNavigate((navigation) => {
+    if (!dirty()) return;
+    if (navigation.type === "leave") navigation.cancel(); // the browser asks
+    else if (!confirm("Discard your changes?")) navigation.cancel();
+  });
+  afterNavigate((navigation) => console.info("page view", navigation.to?.url.pathname));
+  return <textarea onInput={() => dirty.set(true)} />;
+}
+```
