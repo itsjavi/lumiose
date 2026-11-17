@@ -2,10 +2,12 @@
 
 > Deploy to Cloudflare Workers with `@lumiose/adapter-cloudflare`: the app runs as a Worker, the static files as assets.
 
-Tested locally in `wrangler dev` (workerd), not yet on Cloudflare itself: see the
-[verification table](README.md#verification).
+> **Status:** Tested locally in `wrangler dev` (workerd), not yet on Cloudflare itself
+> ([verification table](README.md#verification)).
 
-## Set it up
+## 1. Configure
+
+Add the adapter to the Vite config, and a `wrangler.jsonc` next to `package.json`.
 
 ```sh
 pnpm add -D @lumiose/adapter-cloudflare wrangler
@@ -23,27 +25,54 @@ export default defineConfig({
 ```
 
 ```jsonc
-// wrangler.jsonc, next to package.json
+// wrangler.jsonc
 {
   "name": "my-app",
   "main": "dist/_worker.js",
   "compatibility_date": "2026-09-01",
-  // AsyncLocalStorage, which Lumiose's request APIs use, and process.env for your variables.
+  // AsyncLocalStorage, which Lumiose's request APIs
+  // use, and process.env for your variables.
   "compatibility_flags": ["nodejs_compat"],
   "assets": { "directory": "dist/client" },
 }
 ```
 
-Then build and deploy:
+## 2. Build
 
 ```sh
 pnpm lumiose build
-pnpm wrangler deploy      # or `wrangler dev` to try the build locally first
+```
+
+```text
+dist/_worker.js
+dist/client/
+dist/client/_headers
 ```
 
 `lumiose build` warns, with a config to copy, when the project has no `wrangler.jsonc`,
-`wrangler.json` or `wrangler.toml`. A site whose every route is prerendered builds no Worker: drop
-`main`, and Cloudflare serves the assets alone.
+`wrangler.json` or `wrangler.toml`. What each file is: [What the build writes](#what-the-build-writes).
+
+## 3. Deploy
+
+```sh
+pnpm wrangler deploy
+```
+
+Wrangler bundles the Worker and uploads it with the assets.
+
+## 4. Verify
+
+```sh
+pnpm wrangler dev
+# in a second terminal
+curl -sI http://localhost:8787/ | head -n 1
+```
+
+```text
+HTTP/1.1 200 OK
+```
+
+`wrangler dev` runs the build locally in workerd, so you can try it before you deploy.
 
 ## What the build writes
 
@@ -55,7 +84,9 @@ pnpm wrangler deploy      # or `wrangler dev` to try the build locally first
 | `dist/client/.assetsignore` | Only when prerendered pages have form actions: their HTML is left out of the assets, because Cloudflare answers a `POST` to a static file itself (`405`). The Worker renders those pages, fully resolved, and runs their actions.                                                                    |
 
 Cloudflare compresses responses itself, so the build writes no `.br`/`.gz` copies, and the server
-build leaves out its own static file layer (no `node:fs`).
+build leaves out its own static file layer (no `node:fs`). A site whose every route is
+prerendered builds no Worker: drop `main`, and Cloudflare serves the assets alone
+([Static hosts](static.md#cloudflare)).
 
 ## The platform in your code
 
@@ -66,7 +97,9 @@ Middleware, endpoints and actions get Cloudflare's arguments as `ctx.platform`:
 - `ctx.platform.clientAddress`: the `CF-Connecting-IP` header.
 
 Type your bindings by augmenting `PlatformEnv` (with `@cloudflare/workers-types` or the types
-`wrangler types` generates):
+`wrangler types` generates). Server components read them through middleware: copy what they
+need to `ctx.locals`. Variables and secrets are also in `process.env` with `nodejs_compat`
+(compatibility dates from 2025-04-01), so `env("NAME")` and `ctx.env.NAME` work as on Node.
 
 ```ts
 // src/routes/api/notes/route.ts
@@ -81,14 +114,11 @@ declare module "lumiose" {
 export const mode = "server";
 
 export const GET: Endpoint<"/api/notes"> = async (ctx) => {
-  const { results } = await ctx.platform.env.DB.prepare("select * from notes").all();
+  const db = ctx.platform.env.DB;
+  const { results } = await db.prepare("select * from notes").all();
   return Response.json(results);
 };
 ```
-
-Server components read them through middleware: copy what they need to `ctx.locals`.
-Variables and secrets are also in `process.env` with `nodejs_compat` (compatibility dates from
-2025-04-01), so `env("NAME")` and `ctx.env.NAME` work as on Node.
 
 ## Trailing slashes
 
@@ -103,7 +133,7 @@ Cloudflare's assets follow `assets.html_handling`. Match it to `lumiose({ traili
 With `"ignore"`, Lumiose serves both forms itself, but Cloudflare redirects `/about` before the
 Worker runs.
 
-## Good to know
+## Notes
 
 - Static files skip the Worker, so middleware does not run for them. Headers they need belong in
   `lumiose({ headers })`.

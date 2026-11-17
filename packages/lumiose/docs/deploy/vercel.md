@@ -2,10 +2,12 @@
 
 > Deploy to Vercel with `@lumiose/adapter-vercel`: the static files plus the app as a Node.js or Edge function.
 
-Tested locally with a harness for the Build Output API, not yet on Vercel itself: Vercel has no
-local runner for `.vercel/output`. See the [verification table](README.md#verification).
+> **Status:** Tested locally with a harness for the Build Output API, not yet on Vercel itself:
+> Vercel has no local runner for `.vercel/output` ([verification table](README.md#verification)).
 
-## Set it up
+## 1. Configure
+
+Add the adapter to the Vite config, and `.vercel/` to `.gitignore`.
 
 ```sh
 pnpm add -D @lumiose/adapter-vercel
@@ -18,20 +20,46 @@ import lumiose from "@lumiose/vite";
 import { defineConfig } from "vite";
 
 export default defineConfig({
-  plugins: [lumiose({ adapter: vercel() })], // or vercel({ runtime: "edge" })
+  // or vercel({ runtime: "edge" })
+  plugins: [lumiose({ adapter: vercel() })],
 });
 ```
 
-In the Vercel project, set the **Framework Preset** to "Other" and the **Build Command** to
-`lumiose build` (or `pnpm build`). Vercel deploys the `.vercel/output` directory that the build
-writes. From the command line, build and deploy the output as it is:
+## 2. Build
 
 ```sh
 pnpm lumiose build
+```
+
+```text
+.vercel/output/config.json
+.vercel/output/static/
+.vercel/output/functions/__lumiose.func/
+```
+
+The build writes the `.vercel/output` directory that Vercel deploys. What each part is:
+[What the build writes](#what-the-build-writes).
+
+## 3. Deploy
+
+```sh
 pnpm dlx vercel deploy --prebuilt
 ```
 
-Add `.vercel/` to `.gitignore`.
+This deploys the output as it is. To let Vercel build on each push instead, set the project's
+**Framework Preset** to "Other" and its **Build Command** to `lumiose build` (or `pnpm build`).
+
+## 4. Verify
+
+```sh
+curl -sI https://my-app.vercel.app/ | head -n 1
+```
+
+```text
+HTTP/2 200
+```
+
+Use the URL that `vercel deploy` prints.
 
 ## What the build writes
 
@@ -70,7 +98,7 @@ hit the static files. Vercel compresses responses itself: the build writes no `.
 Request URLs use the public origin from `X-Forwarded-Proto` and `X-Forwarded-Host`, which
 Vercel's proxy sets, so the cross-site check of form posts compares the right origins.
 
-## Good to know
+## Notes
 
 - Static files skip the function, so middleware does not run for them. Headers they need belong in
   `lumiose({ headers })`.

@@ -2,6 +2,22 @@
 
 > Deploy a fully prerendered site to GitHub Pages, Cloudflare, Netlify, S3 or any file server: `dist/client` is the whole site.
 
+> **Status:** how far each host's steps were checked is in the
+> [verification table](README.md#verification).
+
+## 1. Build
+
+```sh
+pnpm lumiose build
+```
+
+```text
+dist/client/index.html
+dist/client/404.html
+dist/client/assets/
+dist/client/_headers
+```
+
 `lumiose build` writes no `dist/server` when no route renders per request (no `server` route, no
 `spa` route rendered on the server per request, no form action): see
 [Rendering modes](../concepts/rendering-modes.md). What `dist/client` holds:
@@ -16,41 +32,51 @@
   precompressed files. Hosts that compress on their own serve them as plain files; leave them out of
   the upload there.
 
-Set Vite's `base` when the site is served below a path (`base: "/my-repo/"` for a GitHub Pages
-project site): links built with `href()` follow it.
+> **Base path:** set Vite's `base` when the site is served below a path (`base: "/my-repo/"` for
+> a GitHub Pages project site): links built with `href()` follow it.
 
-How far each host's steps were checked is in the [verification table](README.md#verification).
+## 2. Deploy
 
-## Cloudflare
+Upload `dist/client` to the host. Each host below has its own command or config.
 
-Use the [Cloudflare adapter](cloudflare.md) even for a static site: it skips the precompressed
-copies and adds a year of caching for the hashed files of `/assets/` to `_headers`. Without a server, the build writes
-no Worker, and the wrangler config has assets only:
+### Cloudflare
 
 ```jsonc
 // wrangler.jsonc
 {
   "name": "my-site",
   "compatibility_date": "2026-09-01",
-  "assets": { "directory": "dist/client", "not_found_handling": "404-page" },
+  "assets": {
+    "directory": "dist/client",
+    "not_found_handling": "404-page",
+  },
 }
 ```
 
-`pnpm wrangler deploy` uploads it. `not_found_handling: "404-page"` serves `404.html` with status
-404 for unknown URLs. On Cloudflare Pages, `pnpm wrangler pages deploy dist/client` deploys the
-same directory (Pages reads `_headers` and serves `404.html` by itself); add a
-`dist/client/.assetsignore` with `*.br` and `*.gz` there, or build with the adapter.
+```sh
+pnpm wrangler deploy
+```
 
-## Netlify
+Use the [Cloudflare adapter](cloudflare.md) even for a static site: it skips the precompressed
+copies and adds a year of caching for the hashed files of `/assets/` to `_headers`. Without a
+server, the build writes no Worker, and the wrangler config has assets only.
+`not_found_handling: "404-page"` serves `404.html` with status 404 for unknown URLs.
+
+> **Cloudflare Pages:** `pnpm wrangler pages deploy dist/client` deploys the same directory
+> (Pages reads `_headers` and serves `404.html` by itself); add a `dist/client/.assetsignore`
+> with `*.br` and `*.gz` there, or build with the adapter.
+
+### Netlify
 
 Use the [Netlify adapter](netlify.md) and the same `netlify.toml`: for a static site the build
 writes no function, and Netlify serves `404.html` and applies `_headers` by itself.
 
-## GitHub Pages
+### GitHub Pages
 
 Deploy `dist/client` with GitHub's Pages actions (set the repository's Pages source to "GitHub
 Actions"). GitHub Pages serves `404.html` for unknown URLs and ignores `_headers`; it compresses
-on its own.
+on its own. For a project site (`https://<user>.github.io/<repo>/`), build with
+`base: "/<repo>/"` in `vite.config.ts`.
 
 ```yaml
 # .github/workflows/pages.yml
@@ -85,14 +111,11 @@ jobs:
         uses: actions/deploy-pages@v4
 ```
 
-For a project site (`https://<user>.github.io/<repo>/`), build with `base: "/<repo>/"` in
-`vite.config.ts`.
-
-## S3 and CloudFront
+### S3 and CloudFront
 
 Upload `dist/client` to the bucket with a long cache for the hashed assets and revalidation for the
-rest, then let CloudFront compress (enable "Compress objects automatically") and answer unknown URLs
-with `404.html` (a custom error response for 403 and 404, status 404):
+rest. Then let CloudFront compress (enable "Compress objects automatically") and answer unknown
+URLs with `404.html` (a custom error response for 403 and 404, status 404).
 
 ```sh
 aws s3 sync dist/client s3://my-bucket --delete \
@@ -102,12 +125,20 @@ aws s3 sync dist/client/assets s3://my-bucket/assets --delete \
   --exclude "*.br" --exclude "*.gz" --cache-control "public, max-age=31536000, immutable"
 ```
 
-S3 serves `about/index.html` for `/about/` only from its website endpoint (or with a CloudFront
-function that appends `index.html`). Headers from `lumiose({ headers })` go into a CloudFront
-response headers policy.
+> **Details:** S3 serves `about/index.html` for `/about/` only from its website endpoint (or with
+> a CloudFront function that appends `index.html`). Headers from `lumiose({ headers })` go into
+> a CloudFront response headers policy.
 
-## Any file server
+### Any file server
 
 nginx, Caddy or another server can serve `dist/client` as it is, `.br`/`.gz` copies included
-(nginx's `brotli_static`/`gzip_static`, Caddy's `precompressed`). `lumiose preview` serves it
-locally the way static hosts do.
+(nginx's `brotli_static`/`gzip_static`, Caddy's `precompressed`).
+
+## 3. Verify
+
+```sh
+pnpm lumiose preview
+```
+
+`lumiose preview` serves `dist/client` locally the way static hosts do. On the host, a page
+answers `200` and an unknown URL answers `404` with your `not-found` page.
