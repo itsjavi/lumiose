@@ -24,19 +24,14 @@ export function GitHubLink(props: { href: string; label?: string }) {
     place-items: center;
     inline-size: 2.25rem;
     block-size: 2.25rem;
-    border: 1px solid $color.border;
-    border-radius: $radius.pill;
-    background: $color.surface;
-    color: $color.muted;
-    transition:
-      color $motion.fast $motion.ease,
-      border-color $motion.fast $motion.ease,
-      box-shadow $motion.base $motion.ease;
+    border: 1px solid $color.borderStrong;
+    border-radius: $radius.sm;
+    background: transparent;
+    color: $color.text;
+    transition: border-color $motion.fast $motion.ease;
   }
   .github:hover {
-    color: $color.text;
-    border-color: $color.borderStrong;
-    box-shadow: 0 0 0 4px color-mix(in oklab, $color.glowB 18%, transparent);
+    border-color: $color.text;
   }
   svg {
     fill: currentColor;

@@ -1,13 +1,13 @@
 // Buttons and links styled as buttons. Both share the file-level stylesheet below; variants and
 // sizes are class objects, so a variant is one selector (`.btn.primary`).
 
-import { color, motion, radius, shadow, space, text, weight } from "./tokens.ts";
+import { color, motion, radius, space, text, weight } from "./tokens.ts";
 
 export type ButtonVariant = "primary" | "secondary" | "ghost";
 export type ButtonSize = "sm" | "md" | "lg";
 
 interface ButtonBase {
-  /** `primary` (default): the main action, with the brand glow. `secondary`: outlined. `ghost`: quiet. */
+  /** `primary` (default): the main action, filled with the text colour. `secondary`: outlined. `ghost`: quiet. */
   variant?: ButtonVariant;
   size?: ButtonSize;
   class?: JSX.ClassValue;
@@ -78,18 +78,16 @@ export function LinkButton(props: LinkButtonProps) {
 
 <style>
   .btn {
-    --btn-pad-block: $space.xs;
-    --btn-pad-inline: $space.md;
-    position: relative;
     display: inline-flex;
     align-items: center;
     justify-content: center;
     gap: $space.xs;
-    padding: var(--btn-pad-block) var(--btn-pad-inline);
+    min-block-size: 2.5rem;
+    padding: $space.xxs $space.lg;
     border: 1px solid transparent;
-    border-radius: $radius.pill;
+    border-radius: $radius.sm;
     font-size: $text.sm;
-    font-weight: $weight.semibold;
+    font-weight: $weight.medium;
     line-height: 1.25;
     text-decoration: none;
     white-space: nowrap;
@@ -97,11 +95,7 @@ export function LinkButton(props: LinkButtonProps) {
     transition:
       background-color $motion.fast $motion.ease,
       border-color $motion.fast $motion.ease,
-      box-shadow $motion.base $motion.ease,
-      transform $motion.fast $motion.ease;
-  }
-  .btn:active:not(:disabled) {
-    transform: translateY(1px);
+      color $motion.fast $motion.ease;
   }
   .btn:disabled {
     cursor: not-allowed;
@@ -109,48 +103,33 @@ export function LinkButton(props: LinkButtonProps) {
   }
 
   .btn.sm {
-    --btn-pad-block: $space.xxs;
-    --btn-pad-inline: $space.sm;
-    font-size: $text.xs;
+    min-block-size: 2.125rem;
+    padding-inline: $space.md;
   }
   .btn.lg {
-    --btn-pad-block: $space.sm;
-    --btn-pad-inline: $space.lg;
+    min-block-size: 2.875rem;
+    padding-inline: $space.lg;
     font-size: $text.md;
   }
 
+  /* The main action is the page inverted: the text colour as the fill, the background as the text. */
   .btn.primary {
-    background: linear-gradient(
-      180deg,
-      color-mix(in oklab, $color.accent 92%, white),
-      $color.accent
-    );
-    color: $color.accentFg;
-    box-shadow:
-      $shadow.sm,
-      inset 0 1px 0 rgb(255 255 255 / 0.18);
+    background: $color.text;
+    color: $color.bg;
+    border-color: $color.text;
   }
-  /* The glow: the brand colors light up around the button. */
   .btn.primary:hover:not(:disabled) {
-    background: linear-gradient(
-      180deg,
-      color-mix(in oklab, $color.accentHover 92%, white),
-      $color.accentHover
-    );
-    box-shadow:
-      $shadow.glow,
-      inset 0 1px 0 rgb(255 255 255 / 0.18);
+    background: color-mix(in oklab, $color.text 82%, $color.bg);
+    border-color: color-mix(in oklab, $color.text 82%, $color.bg);
   }
 
   .btn.secondary {
-    background: $color.surface;
+    background: transparent;
     color: $color.text;
     border-color: $color.borderStrong;
   }
   .btn.secondary:hover:not(:disabled) {
-    border-color: $color.accent;
-    color: $color.accentText;
-    background: $color.accentSoft;
+    border-color: $color.text;
   }
 
   .btn.ghost {
@@ -160,9 +139,5 @@ export function LinkButton(props: LinkButtonProps) {
   .btn.ghost:hover:not(:disabled) {
     background: $color.sunken;
     color: $color.text;
-  }
-
-  .btn:focus-visible {
-    outline-offset: 3px;
   }
 </style>

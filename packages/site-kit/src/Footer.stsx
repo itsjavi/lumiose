@@ -2,7 +2,7 @@
 
 import { Logo } from "./Logo.stsx";
 import type { NavLink } from "./SiteNav.stsx";
-import { bp, color, layout, space, text, weight } from "./tokens.ts";
+import { bp, color, label, layout, space, text, weight } from "./tokens.ts";
 
 export interface FooterColumn {
   title: string;
@@ -78,24 +78,28 @@ export function Footer(props: FooterProps) {
 <style>
   .footer {
     margin-block-start: $space.xxxl;
-    border-block-start: 1px solid $color.border;
-    background:
-      radial-gradient(
-        50% 80% at 50% 100%,
-        color-mix(in oklab, $color.glowA 8%, transparent),
-        transparent
-      ),
-      $color.bg;
     color: $color.muted;
     font-size: $text.sm;
+  }
+  .inner,
+  .bottom {
+    max-inline-size: $layout.page;
+    margin-inline: auto;
+    padding-inline: $layout.gutter;
+  }
+  /* The hairlines are as wide as the page column, like the header's. */
+  .inner::before,
+  .bottom::before {
+    content: "";
+    display: block;
+    flex: 0 0 100%;
+    border-block-start: 1px solid $color.border;
   }
   .inner {
     display: flex;
     flex-wrap: wrap;
     gap: $space.xl $space.xxl;
-    max-inline-size: $layout.page;
-    margin-inline: auto;
-    padding: $space.xxl $layout.gutter $space.xl;
+    padding-block-end: $space.xl;
   }
   .about {
     flex: 1 1 18rem;
@@ -104,15 +108,16 @@ export function Footer(props: FooterProps) {
     flex: 0 1 10rem;
   }
   .tagline {
-    margin-block-start: $space.sm;
+    margin-block-start: $space.md;
     max-inline-size: 22rem;
   }
   h2 {
     margin-block-end: $space.sm;
-    color: $color.text;
-    font-size: $text.xs;
-    font-weight: $weight.semibold;
-    letter-spacing: 0.08em;
+    color: $color.muted;
+    font-family: $label.font;
+    font-size: $label.size;
+    font-weight: $weight.regular;
+    letter-spacing: $label.tracking;
     text-transform: uppercase;
   }
   ul {
@@ -120,20 +125,21 @@ export function Footer(props: FooterProps) {
     gap: $space.xs;
   }
   a {
-    color: $color.muted;
+    color: $color.text;
     text-decoration: none;
   }
   a:hover {
-    color: $color.accentText;
     text-decoration: underline;
   }
   .bottom {
-    max-inline-size: $layout.page;
-    margin-inline: auto;
-    padding: $space.md $layout.gutter $space.xl;
-    border-block-start: 1px solid $color.border;
-    color: $color.subtle;
-    font-size: $text.xs;
+    padding-block-end: $space.xl;
+    font-family: $label.font;
+    font-size: $label.size;
+    letter-spacing: $label.tracking;
+    text-transform: uppercase;
+  }
+  .bottom p {
+    padding-block-start: $space.lg;
   }
   @media (width < $bp.sm) {
     .about {

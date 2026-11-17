@@ -49,24 +49,16 @@ export function SiteHeader(props: SiteHeaderProps) {
     position: sticky;
     inset-block-start: 0;
     z-index: $z.header;
-    background: color-mix(in oklab, $color.bg 80%, transparent);
-    backdrop-filter: blur(14px) saturate(1.5);
-    /* A thin line of light along the bottom edge: a border image rather than a pseudo-element,
-       so contrast checkers can see the header's background behind its text (axe). */
+    background: color-mix(in oklab, $color.bg 70%, transparent);
+    backdrop-filter: blur(8px);
+    /* A border rather than a pseudo-element, so contrast checkers can see the header's background
+       behind its text (axe). */
     border-block-end: 1px solid $color.border;
-    border-image: linear-gradient(
-        90deg,
-        $color.border,
-        color-mix(in oklab, $color.glowA 49%, $color.border) 30%,
-        color-mix(in oklab, $color.glowB 49%, $color.border) 70%,
-        $color.border
-      )
-      1;
   }
   .inner {
     display: flex;
     align-items: center;
-    gap: $space.lg;
+    gap: $space.xl;
     max-inline-size: $layout.page;
     block-size: $layout.header;
     margin-inline: auto;
@@ -74,7 +66,6 @@ export function SiteHeader(props: SiteHeaderProps) {
   }
   .brand {
     display: inline-flex;
-    border-radius: $space.xs;
     text-decoration: none;
   }
   .actions {

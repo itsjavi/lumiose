@@ -1,6 +1,7 @@
-// An aside for notes, warnings and tips in prose.
+// An aside for notes, warnings and tips in prose. The kinds share one look (decision-90 has no
+// status colours): the icon and the label tell them apart.
 
-import { color, radius, space, text, weight } from "./tokens.ts";
+import { color, label, radius, space, text } from "./tokens.ts";
 
 export type CalloutKind = "info" | "warn" | "tip";
 
@@ -44,49 +45,45 @@ export function Callout(props: CalloutProps) {
 }
 
 <style>
+  /* Every kind has the same colours: the icon and the label tell them apart. */
   .callout {
-    --callout-fg: $color.infoFg;
-    --callout-bg: $color.infoBg;
-    --callout-border: $color.infoBorder;
     display: grid;
     grid-template-columns: auto 1fr;
     gap: $space.sm;
     margin-block: $space.lg;
     padding: $space.md $space.lg $space.md $space.md;
-    border: 1px solid var(--callout-border);
-    border-inline-start-width: 3px;
+    border: 1px solid $color.border;
+    border-inline-start-color: $color.text;
     border-radius: $radius.md;
-    background: var(--callout-bg);
+    background: $color.bg;
     color: $color.text;
     font-size: $text.sm;
   }
-  .callout.warn {
-    --callout-fg: $color.warnFg;
-    --callout-bg: $color.warnBg;
-    --callout-border: $color.warnBorder;
-  }
-  .callout.tip {
-    --callout-fg: $color.tipFg;
-    --callout-bg: $color.tipBg;
-    --callout-border: $color.tipBorder;
-  }
   .icon {
-    margin-block-start: 0.1rem;
     fill: none;
-    stroke: var(--callout-fg);
-    stroke-width: 1.6;
-    stroke-linecap: round;
-    stroke-linejoin: round;
+    stroke: $color.text;
+    stroke-width: 1.4;
+    stroke-linecap: square;
+    stroke-linejoin: miter;
   }
   .title {
-    margin-block-end: $space.xxs;
-    color: var(--callout-fg);
-    font-weight: $weight.semibold;
+    margin-block: 0.3rem $space.xs;
+    color: $color.text;
+    font-family: $label.font;
+    font-size: $label.size;
+    line-height: 1.3;
+    letter-spacing: $label.tracking;
+    text-transform: uppercase;
+  }
+  .content {
+    color: $color.muted;
   }
   .content > :deep(* + *) {
     margin-block-start: $space.xs;
   }
-  .content :deep(a) {
-    color: var(--callout-fg);
+  .content :deep(a),
+  .content :deep(code),
+  .content :deep(kbd) {
+    color: $color.text;
   }
 </style>

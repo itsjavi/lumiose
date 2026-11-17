@@ -134,12 +134,12 @@ import {
   :where(h1, h2, h3, h4, h5, h6) {
     line-height: $leading.tight;
     font-weight: $weight.bold;
-    letter-spacing: -0.02em;
+    letter-spacing: -0.03em;
     text-wrap: balance;
   }
   :where(h1) {
     font-size: $text.xxxl;
-    letter-spacing: -0.03em;
+    letter-spacing: -0.045em;
   }
   :where(h2) {
     font-size: $text.xxl;
@@ -177,8 +177,10 @@ import {
     text-decoration-color: currentColor;
   }
 
+  /* Selected text is the page inverted. */
   ::selection {
-    background: color-mix(in oklab, $color.accent 28%, transparent);
+    background: $color.text;
+    color: $color.bg;
   }
 
   /* Code */
@@ -187,16 +189,12 @@ import {
     font-size: 0.9em;
     font-variant-ligatures: none;
   }
-  /* Inline code: smaller than the text around it (monospace glyphs run wide), a slate chip on the
-     info background that sets it apart from body text; a chip broken across lines keeps its edges. */
+  /* Inline code: smaller than the text around it (monospace glyphs run wide), set apart from body
+     text by the mono font and a hairline underneath. */
   :where(:not(pre) > code) {
-    padding: 0.08em 0.32em;
-    border-radius: $radius.sm;
-    background: $color.inlineCodeBg;
-    border: 1px solid $color.inlineCodeBorder;
+    border-block-end: 1px solid $color.inlineCodeBorder;
     color: $color.inlineCodeFg;
-    font-size: 0.85em;
-    box-decoration-break: clone;
+    font-size: 0.88em;
   }
   /* Code that is a link's text reads as the link. */
   :where(a > code) {

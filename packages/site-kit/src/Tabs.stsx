@@ -10,7 +10,7 @@ import {
   type TabsTabProps,
 } from "@lumiose/ui";
 import "@lumiose/ui/tabs.css";
-import { color, motion, radius, space, text, weight } from "./tokens.ts";
+import { color, motion, radius, space, text } from "./tokens.ts";
 
 export type { TabsListProps, TabsPanelProps, TabsRootProps, TabsTabProps };
 
@@ -49,52 +49,41 @@ export const Tabs = { Root, List, Tab, Panel };
   .tabs {
     margin-block: $space.lg;
   }
+  /* The hairline under the list is drawn by the tabs and by a filler after them, so the selected
+     tab's line replaces its part of it. */
   .list {
     display: flex;
-    gap: $space.xxs;
-    border-block-end: 1px solid $color.border;
     overflow-x: auto;
     scrollbar-width: none;
   }
+  .list::after {
+    content: "";
+    flex: 1;
+    border-block-end: 1px solid $color.border;
+  }
   .tab {
-    position: relative;
     padding: $space.xs $space.md;
     border: 0;
-    border-radius: $radius.sm $radius.sm 0 0;
+    border-block-end: 1px solid $color.border;
+    border-radius: $radius.sm;
     background: transparent;
     color: $color.muted;
     font-size: $text.sm;
-    font-weight: $weight.medium;
     white-space: nowrap;
     transition:
       color $motion.fast $motion.ease,
-      background-color $motion.fast $motion.ease;
+      border-color $motion.fast $motion.ease;
   }
   .tab:hover {
     color: $color.text;
-    background: $color.sunken;
   }
   .tab:focus-visible {
     outline-offset: -2px;
   }
+  /* Selected: the text colour and a line in the text colour, not colour alone. */
   .tab[aria-selected="true"] {
     color: $color.text;
-  }
-  /* The selected tab is lit from below. */
-  .tab::after {
-    content: "";
-    position: absolute;
-    inset-inline: $space.xs;
-    inset-block-end: -1px;
-    block-size: 2px;
-    border-radius: $radius.pill;
-    background: $color.accent;
-    box-shadow: 0 -2px 12px $color.glowA;
-    transform: scaleX(0);
-    transition: transform $motion.base $motion.ease;
-  }
-  .tab[aria-selected="true"]::after {
-    transform: scaleX(1);
+    border-block-end-color: $color.text;
   }
   .panel {
     margin-block-start: $space.md;
