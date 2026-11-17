@@ -2,32 +2,15 @@
 
 > Report server errors from `onRequestError` and browser errors from `onError` to Sentry, with source maps for the client and the server bundles.
 
-Sentry has no Lumiose SDK, and needs none: `@sentry/node` starts in
-`src/instrumentation.server.ts` and receives every unexpected error of a request, and
-`@sentry/browser` starts in `src/instrumentation.client.ts`, before any island hydrates, and
-receives the errors of islands, the SPA router and `submit()`
-([Server](../concepts/server.md#instrumentation), [Islands](../concepts/islands.md#concept)).
-Sentry's Vite plugin uploads the source maps of both builds.
-
-| File                            | Role                                                                   |
-| ------------------------------- | ---------------------------------------------------------------------- |
-| `vite.config.ts`                | Hidden source maps, uploaded to Sentry after each build, then deleted. |
-| `src/instrumentation.server.ts` | Starts `@sentry/node`; reports request errors with their phase.        |
-| `src/instrumentation.client.ts` | Starts `@sentry/browser`; reports island, router and submit errors.    |
-
-> **Status:** checked on 2026-10-15 with a Lumiose app built with `lumiose build` and served by
-> `lumiose preview`, against a local stand-in for Sentry's ingest endpoint: a server render error
-> and an island error each arrived as one event with the tags below and debug IDs for the source
-> maps, and the build wrote hidden source maps for the client and the server. Not run against a
-> Sentry account (no upload of the maps). Packages: `@sentry/node` and `@sentry/browser` 10.76,
-> `@sentry/vite-plugin` 5.4.
-
-## Setup
+## 1. Install
 
 ```sh
 pnpm add @sentry/node @sentry/browser
 pnpm add -D @sentry/vite-plugin
 ```
+
+Sentry has no Lumiose SDK, and needs none: `@sentry/node` and `@sentry/browser` start in the two
+instrumentation files, and Sentry's Vite plugin uploads the source maps of both builds.
 
 | Variable                       | Where                                                                                 |
 | ------------------------------ | ------------------------------------------------------------------------------------- |
@@ -38,13 +21,7 @@ pnpm add -D @sentry/vite-plugin
 
 A DSN is not a secret (it only lets clients send events), so the same one may serve both sides.
 
-## Source maps
-
-`build.sourcemap: "hidden"` writes a map next to every bundle of both builds without the
-`//# sourceMappingURL` comment, so browsers do not fetch them. The plugin, last in the list, runs
-after the client build and after the server build: it adds a debug ID to each bundle and its map,
-uploads the maps, and deletes them so they are not deployed. Without `SENTRY_AUTH_TOKEN` (on a
-laptop) it builds as usual, warns, and uploads nothing.
+## 2. Upload source maps
 
 ```ts check
 // vite.config.ts
@@ -53,28 +30,30 @@ import { sentryVitePlugin } from "@sentry/vite-plugin";
 import { defineConfig } from "vite";
 
 export default defineConfig({
-  // Source maps for Sentry only: "hidden" leaves out the //# sourceMappingURL comment.
+  // "hidden": maps without the sourceMappingURL comment.
   build: { sourcemap: "hidden" },
   plugins: [
     lumiose({ mode: "server" }),
-    // Last: uploads the client's and the server's source maps after each build, then deletes them.
+    // Last, so it sees the final bundles.
     sentryVitePlugin({
       org: process.env.SENTRY_ORG,
       project: process.env.SENTRY_PROJECT,
       authToken: process.env.SENTRY_AUTH_TOKEN,
-      sourcemaps: { filesToDeleteAfterUpload: ["dist/**/*.map"] },
+      sourcemaps: {
+        filesToDeleteAfterUpload: ["dist/**/*.map"],
+      },
     }),
   ],
 });
 ```
 
-## Server errors
+`build.sourcemap: "hidden"` writes a map next to every bundle of both builds without the
+`//# sourceMappingURL` comment, so browsers do not fetch them. The plugin runs after the client
+build and after the server build: it adds a debug ID to each bundle and its map, uploads the maps,
+and deletes them so they are not deployed. Without `SENTRY_AUTH_TOKEN` (on a laptop) it builds as
+usual, warns, and uploads nothing.
 
-`register()` starts the SDK once per server instance, before the first request.
-`onRequestError` receives what the request handler catches and Sentry's own Node integrations do
-not see: errors that render the `error` page or answer 500, errors of streamed `<Suspense>`
-boundaries, rejected `waitUntil()` work and errors an `<ErrorBoundary>` caught, each with the
-phase it happened in. `redirect()`, `notFound()` and `error(status)` are not reported.
+## 3. Report server errors
 
 ```ts check
 // src/instrumentation.server.ts
@@ -93,23 +72,26 @@ export function register() {
 export function onRequestError(error: unknown, info: RequestErrorInfo) {
   Sentry.captureException(error, {
     tags: { phase: info.phase, route: info.route ?? "(none)" },
-    extra: { url: info.request.url, method: info.request.method, digest: info.digest },
+    extra: {
+      url: info.request.url,
+      method: info.request.method,
+      digest: info.digest,
+    },
   });
 }
 ```
 
-The `digest` is what an `<ErrorBoundary>` fallback shows in production: a user who quotes it
-leads you to the event. Sentry's Node SDK also sets up OpenTelemetry for its own tracing; to keep
-the [OpenTelemetry guide](opentelemetry.md)'s setup as well, follow Sentry's instructions for an
-existing OpenTelemetry setup (`skipOpenTelemetrySetup`).
+`register()` starts the SDK once per server instance, before the first request.
+`onRequestError` receives what the request handler catches and Sentry's own Node integrations do
+not see, each with the phase it happened in: errors that render the `error` page or answer 500,
+errors of streamed `<Suspense>` boundaries, rejected `waitUntil()` work and errors an
+`<ErrorBoundary>` caught. `redirect()`, `notFound()` and `error(status)` are not reported
+([Instrumentation](../concepts/server.md#instrumentation)).
 
-## Browser errors
+> **Digest:** the `digest` is what an `<ErrorBoundary>` fallback shows in production: a user who
+> quotes it leads you to the event.
 
-The file's top-level code runs before any island hydrates, so the SDK is ready for hydration
-errors. `onError` receives what Lumiose catches: an island that fails to load or hydrate, or an
-event held until it hydrated that throws when replayed (`"hydrate"`), an async component or an `<ErrorBoundary>` (`"render"`), an effect or binding
-(`"effect"`), the SPA router (`"navigate"`) and `submit()` (`"submit"`), with the island's
-module and export. Sentry's own handlers still catch everything else on the page.
+## 4. Report browser errors
 
 ```ts check
 // src/instrumentation.client.ts
@@ -123,10 +105,26 @@ Sentry.init({
 
 export function onError(error: unknown, info: ClientErrorInfo) {
   Sentry.captureException(error, {
-    tags: { phase: info.phase, route: info.route ?? "(mpa)", island: info.island ?? "(none)" },
+    tags: {
+      phase: info.phase,
+      route: info.route ?? "(mpa)",
+      island: info.island ?? "(none)",
+    },
   });
 }
 ```
+
+The file's top-level code runs before any island hydrates, so the SDK is ready for hydration
+errors ([Islands](../concepts/islands.md#concept)). `onError` receives what Lumiose catches, with
+the island's module and export. Sentry's own handlers still catch everything else on the page.
+
+| `info.phase` | What failed                                                                                            |
+| ------------ | ------------------------------------------------------------------------------------------------------ |
+| `"hydrate"`  | An island that fails to load or hydrate, or an event held until it hydrated that throws when replayed. |
+| `"render"`   | An async component or an `<ErrorBoundary>`.                                                            |
+| `"effect"`   | An effect or binding.                                                                                  |
+| `"navigate"` | The SPA router.                                                                                        |
+| `"submit"`   | `submit()`.                                                                                            |
 
 ## Production
 
@@ -137,6 +135,9 @@ export function onError(error: unknown, info: ClientErrorInfo) {
   strict policy does not restrict (it sets `script-src` and `style-src`, not `connect-src`).
 - Set `release` in both `init` calls, or let the plugin inject it from the Git commit, so
   events and source maps match.
+- Sentry's Node SDK also sets up OpenTelemetry for its own tracing; to keep the
+  [OpenTelemetry guide](opentelemetry.md)'s setup as well, follow Sentry's instructions for an
+  existing OpenTelemetry setup (`skipOpenTelemetrySetup`).
 
 ## Common mistakes
 
@@ -149,3 +150,10 @@ export function onError(error: unknown, info: ClientErrorInfo) {
 - **Deploying the source maps.** Keep `filesToDeleteAfterUpload`, or anyone can read the original
   source.
 - **The plugin before `lumiose()`.** Put it last, so it sees the final bundles.
+
+> **Status:** checked on 2026-10-15 with a Lumiose app built with `lumiose build` and served by
+> `lumiose preview`, against a local stand-in for Sentry's ingest endpoint: a server render error
+> and an island error each arrived as one event with the tags of steps 3 and 4 and debug IDs for
+> the source maps, and the build wrote hidden source maps for the client and the server. Not run
+> against a Sentry account (no upload of the maps). Packages: `@sentry/node` and `@sentry/browser`
+> 10.76, `@sentry/vite-plugin` 5.4.
