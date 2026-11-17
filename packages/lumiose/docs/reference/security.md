@@ -111,7 +111,7 @@ Chromium, Firefox and WebKit). For HTML you do not control in a frame, add `sand
 
 **JSON in a `<script>`** (JSON-LD, an import map): write it as a text child. In a JSON-typed script
 (`application/ld+json` and other `…json` types, `importmap`, `speculationrules`), Lumiose writes
-every `<` as `<`. So a value such as `"</script><script>…"` can't close the element, and the
+every `<` as `\u003c`. So a value such as `"</script><script>…"` can't close the element, and the
 JSON reads back the same:
 
 ```tsx

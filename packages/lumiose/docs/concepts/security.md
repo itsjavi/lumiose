@@ -4,233 +4,11 @@
 
 ## Concept
 
-**Strict Content Security Policy.** A strict CSP lets the browser run only the scripts and apply
-only the styles the page meant to include, so injected markup cannot run code. **New projects start
-with it:** every `create-lumiose` template sets `csp: "strict"` in `vite.config.ts`. The framework
-default stays off, so a project set up by hand opts in. With `lumiose({ csp: "strict" })`:
+### Strict CSP from one option
 
-- **Pages rendered per request** (`server` routes, `spa` routes that reach the server) get a new
-  random nonce for each response. Every inline `<script>` and `<style>` Lumiose writes carries it:
-  the page's stylesheets that are inlined and the script after the linked ones (see
-  [Styles](styles.md)), the island loader, the
-  streamed `<Suspense>` swaps, the speculation rules, the View Transitions opt-in and module
-  preloads. The response gets this header:
-
-  ```
-  Content-Security-Policy: script-src 'nonce-…' 'strict-dynamic'; style-src 'self' 'nonce-…'; object-src 'none'; base-uri 'self'; frame-ancestors 'self'
-  ```
-
-  `'strict-dynamic'` lets the scripts the page loads import their own modules (islands, SPA
-  routes). Stylesheets from your own origin are allowed; inline styles need the nonce.
-  `frame-ancestors 'self'` lets only your own pages frame them, so another site cannot overlay
-  your forms (clickjacking). These responses also get `Cache-Control: private, no-store` unless the page sets its own: a nonce is
-  only secret while no shared cache hands the same HTML to someone else.
-
-- **Prerendered pages** (`static` routes, the shells of `spa` pages) are files that every visitor
-  gets as they are, so a nonce would be the same for everyone. Each one gets the policy as
-  `<meta http-equiv="Content-Security-Policy">`, first in `<head>`, with the SHA-256 hash of each
-  inline script and style that Lumiose or your JSX wrote (the same ones that get a nonce per
-  request) and `'self'` for scripts and stylesheets of your origin. It works on any static host.
-  Browsers ignore `frame-ancestors` in a `<meta>` policy, so it is left out there: to keep other
-  sites from framing prerendered pages, send `X-Frame-Options: SAMEORIGIN` or a
-  `Content-Security-Policy: frame-ancestors 'self'` header from your host or `lumiose({ headers })`.
-- **`style` props** render as rules of a nonce'd (or hashed) `<style>` that target a `data-l-v`
-  attribute, instead of `style="…"` attributes, which a strict policy refuses. In the browser,
-  styles are set through the CSSOM, which the policy allows. How the server writes them:
-  - **One rule per distinct style.** Elements with the same declarations share a rule within a
-    response, so a long list whose items repeat a few style values writes a few rules, not one per
-    item.
-  - **Precedence as an inline style.** A rule reads `[data-l-v="3"]:not(#a#b){…}`. `:not(#a#b)`
-    matches every element (none has two ids) and weighs two ids, so the rule wins over your
-    components' scoped rules, `:where()` defaults and most page rules, as an inline style does.
-    Like an inline style, it gives way to `!important` rules, CSS animations, and the styles an
-    island sets once it hydrates. Only a selector with two ids or more can win over it where it
-    would not win over an inline style.
-  - **Hydration.** An island sets every style of its elements through the CSSOM as it hydrates,
-    and they drop their `data-l-v`: a style property the island removes later is unset, as without
-    CSP, instead of falling back to the server's rule.
-  - **Isolation.** A value cannot close its rule or the `<style>` element, and a comment, string,
-    `url(` or bracket it leaves open is closed at its end, so it cannot reach other elements'
-    rules. A value with a `url(` right after an identifier character (`éurl(`, `#url(`), which
-    browsers may read differently, gets a `<style>` of its own.
-- **Your own inline scripts and styles** written in JSX get the nonce automatically: a
-  `<script innerHTML={…}>` in the document, a JSON-LD block, an SVG `<style>`. An explicit `nonce`
-  prop wins. Strings rendered as text are escaped and never become elements, and raw HTML strings
-  (`innerHTML` of another element) never get a nonce, nor a hash on prerendered pages: a script
-  injected through such a string is blocked either way.
-- **Static `style="…"` strings** (in JSX, and in `.md`/`.html` imports) are applied like `style`
-  props: a nonce'd rule on the server, the CSSOM in the browser.
-- **`cspNonce()`** returns the response's nonce during a server render (the document included) and
-  in middleware, and `undefined` without strict CSP or while prerendering. Use it for markup you
-  build yourself: a third-party snippet as a string, a custom `Content-Security-Policy` header, a
-  script you create at runtime. In the browser it reads `<meta property="csp-nonce">`.
-- **Your own policy wins.** A `Content-Security-Policy` header from `lumiose({ headers })` for the
-  path, or one set with `response().setHeader()` or by middleware, replaces Lumiose's; with `headers`,
-  the path's prerendered pages get no `<meta>` policy either. `lumiose dev` puts nonces on the page but sends no policy,
-  because Vite injects styles of its own for hot updates.
-
-Elements that the client creates later (a `<style>` inside an `<svg>` rendered after a client
-navigation) take the nonce from `<meta property="csp-nonce">`. A prerendered page has no nonce,
-so such an element is refused there unless it was in the prerendered HTML: put its rules in the
-file's `<style>` block.
-
-**Client navigation.** `navigate()` and the redirects of enhanced form actions only
-follow `http:` and `https:` URLs (relative ones included); a `javascript:` or `data:` location
-throws a `TypeError` instead of running in the page. Spread props drop lowercase `on*` keys
-(`{...{ onclick: "…" }}`): an inline handler attribute is a script sink, so handlers are only
-functions in `onClick`. They drop `innerHTML`, `textContent` and an iframe's `srcdoc` (in any
-case) too, on the server and the client: an object from JSON (a notification passed to a toast as
-it came) cannot inject markup, and only a written `innerHTML` or `srcdoc` prop sets HTML, next to a
-spread too (`<div {...rest} innerHTML={html} />`).
-
-> **Warning:** `<Dynamic component="div">` takes its props as written ones: it applies
-> `innerHTML`, `textContent` and `srcdoc` from them. Never spread an object from JSON, or any
-> other untrusted object, into `Dynamic`.
-
-**Unsafe URLs.** A dynamic value for a URL attribute (`href`, `src`, `action`, `formaction`,
-`xlink:href`, `poster`, `data`, …) whose scheme is `javascript:`, `vbscript:` or `data:text/html`
-renders as `about:blank#blocked`, on the server and in the browser, with a
-[LUM4009](../errors/LUM4009.md) warning in development. Case, leading spaces and control
-characters, and tabs or newlines inside the scheme do not get past it. String literals in your JSX
-are left as written.
-
-**Raw HTML.** `innerHTML={…}` and an iframe's `srcdoc={…}` render a string as HTML, as it is: a
-script in it runs, in a `srcdoc` frame with the page's origin and access to the page. Pass them only
-HTML you trust (your own, or sanitized). With `csp: "strict"` the browser refuses a script injected
-either way: neither gets a nonce, and a `srcdoc` frame inherits the page's policy (checked in
-Chromium, Firefox and WebKit). For HTML you do not control in a frame, add `sandbox` (without
-`allow-same-origin`), which gives the frame an origin of its own.
-
-**JSON in a `<script>`** (JSON-LD, an import map): write it as a text child. In a JSON-typed script
-(`application/ld+json` and other `…json` types, `importmap`, `speculationrules`), Lumiose writes
-every `<` as `<`. So a value such as `"</script><script>…"` can't close the element, and the
-JSON reads back the same:
-
-```tsx
-export function ArticleData(props: { title: string; author: string }) {
-  const data = {
-    "@context": "https://schema.org",
-    "@type": "Article",
-    headline: props.title,
-    author: { "@type": "Person", name: props.author },
-  };
-  return <script type="application/ld+json">{JSON.stringify(data)}</script>;
-}
-```
-
-The text of any `<script>` or `<style>` is raw text: it is written as it is, not HTML-escaped,
-except for the character after a `<` that could open a tag, an end tag or a comment (a letter, `!`,
-`/` or `?`), which Lumiose escapes: `<img` becomes `<\u0069mg` in a script and `<\69 mg` in a
-style, `</script` becomes `<\/script` and `<!--` becomes `<\!--`. So a value can't end the
-element, nor open a tag where the element ends up inside `<svg>` or `<math>` (a component whose
-root is a `<style>`), whose `<style>` and `<script>` text the browser parses as markup. The escapes
-read back as written in JavaScript strings, template literals, regular expressions and
-identifiers, and in CSS strings, identifiers and URLs. They don't in script code with `<` right
-before a keyword or `!` (`i<this.n`, `a<!b`: write `i < this.n`), in raw template strings
-(`String.raw`), for `<!` in a regular expression with the `u` or `v` flag, and for a CSS `<!--`. A
-`<style>` or `<script>` written inside `<svg>` or `<math>`, or under a root such as `<g>`, is an SVG
-or MathML element: its text is escaped as usual, and the parser decodes it. See
-[Head and metadata](head.md) for JSON-LD per page.
-
-**Error details.** In production server rendering, `<ErrorBoundary>` fallbacks receive a generic
-error with a short `digest`, and the original error is logged with the same digest
-([ErrorBoundary](../reference/components.md#errorboundary)).
-
-**Redirects.** `redirect()` accepts paths and `http(s)` URLs only; a `javascript:` or `data:`
-location throws. For a user-supplied target (`?next=`), accept only same-origin paths, or the user
-lands wherever a link sends them:
-
-```ts
-// A `next` parameter as a path of this site, else the fallback.
-function safeNext(next: string | null, fallback = "/"): string {
-  if (next === null || !next.startsWith("/") || next.startsWith("//") || next.startsWith("/\\")) {
-    return fallback;
-  }
-  return next;
-}
-redirect(safeNext(url.searchParams.get("next")));
-```
-
-Trailing-slash redirects (`lumiose({ trailingSlash })`) and the redirects of i18n (a missing
-translation with `missing: "redirect"`, locale detection) always stay on your site, also for a
-request path such as `//evil.com/` or `/es//evil.com`. `href()` refuses `.` and `..` as param values, which a browser
-would resolve into another route.
-
-**Files from elsewhere.** Icon sets, Markdown and HTML often come from outside the project. The
-compiler guards against what such files could carry:
-
-- **SVG imports** are untrusted input. They keep an allowlist of SVG elements and attributes: no
-  scripts, handlers, `<foreignObject>` HTML, `javascript:` URLs or animations of links, and
-  `<style>` text cannot open a tag. They load nothing from outside the file: external `href`s on
-  `<use>`, `<image>` and `<feImage>`, `url()`s to other files and `@import` are dropped, so an
-  icon set cannot track the people who view your pages ([SVG imports](svg.md)).
-- **Markdown and HTML imports** are trusted author files, compiled as written: raw HTML, inline
-  handlers and, in `.html`, scripts are kept, and nothing sanitizes them at runtime. Review them
-  like code, and never put end-user content in them ([Markdown and HTML imports](content.md)).
-- **`$` constants** in style blocks cannot end their declaration or the `<style>` element
-  ([LUM3021](../errors/LUM3021.md)), so data in a constant cannot add CSS outside its scope.
-- **Frontmatter** keys such as `__proto__` stay plain data.
-- **Depth limits** turn absurdly nested files into errors instead of crashes or stalls: CSS
-  blocks past 64 levels and parentheses past 16 ([LUM3014](../errors/LUM3014.md)), SVG elements past 128
-  (in an SVG's own CSS, blocks past 64 levels lose their content instead),
-  Markdown and HTML past 512 ([LUM1009](../errors/LUM1009.md)).
-
-**Cross-site form posts.** Form actions and form-encoded posts to endpoints are checked against
-the `Origin` header (on by default, `lumiose({ csrf })`); see [Data and actions](data-and-actions.md).
-
-**Request URLs.** `lumiose dev`, `lumiose preview` and `@lumiose/adapter-node` build each request's URL
-from the server's origin (`ORIGIN`, else the socket's protocol and the `Host` header) plus the
-request target's path, appended as is: a request for `//attacker.test/reset` stays on your origin
-with that path, so `ctx.url`, `url()`, the cross-site check and `fetchJSON()`'s same-origin test
-never see another host. Targets that are not a path (`http://other/x`, or `*` other than with
-`OPTIONS`) and invalid `Host` headers get `400 Bad Request`. Behind a proxy that rewrites the
-host, set `ORIGIN` (or the adapter's `origin`) so a client cannot choose the origin through `Host`.
-
-**Request body limits.** Every request body is bounded (decision-29): URL-encoded forms, JSON and
-other bodies at 1 MB, `multipart/form-data` (uploads) at 10 MB. A larger request gets `413 Payload
-Too Large`, refused before reading when its `Content-Length` says so, else as soon as the bytes
-read pass the limit; nothing buffers an unbounded body. The limits hold for form actions
-(`ctx.formData()`), endpoints (`request.formData()`, `json()`, `text()`, `arrayBuffer()` read the
-bounded body) and middleware alike, in every deployment. The client's `Content-Type` picks the
-limit, except that `json()` and `text()` keep the 1 MB one: declaring `multipart/form-data` does
-not raise a JSON endpoint's limit. `formData()` and raw reads (`arrayBuffer()`, `request.body`, for
-a multipart parser of your own) of a multipart body get the upload limit. A `request.clone()` keeps
-these limits; a request re-wrapped with `new Request(request)` keeps the Content-Type's limit only,
-so its `json()` and `text()` read a body declared multipart up to the upload limit: call them on
-the request itself or a clone. Raise or lower the limits for the app with
-`lumiose({ limits: { body: "2mb", upload: "50mb" } })`, and for one route with
-`export const limits = { upload: "200mb" }` in its page or endpoint file.
-
-**Default response headers.** `X-Content-Type-Options: nosniff` (no MIME sniffing of uploads and
-JSON) and `Referrer-Policy: strict-origin-when-cross-origin` (no full URLs to other sites) go on
-every response; override them in `lumiose({ headers })`, or remove one with `""`.
-
-**Server-only code** (`*.server.*` files, `src/server/`) never reaches the browser: imports from
-client code fail `lumiose dev`/`lumiose build` (`LUM4003`), `lumiose dev` refuses to serve the files
-(`server.fs.deny`), and only `import.meta.env.PUBLIC_*` variables reach client code (`envPrefix`).
-See [Server](server.md).
-
-**What the page sends.** Island props, values awaited inside islands and the scoped state islands
-use (`defineState`) are serialized into the page as plain data (JSON in
-`<script type="application/json">`, escaped so it cannot end the element): anyone who loads the
-page can read them. Never pass a secret there; keep it in server-only modules.
-
-**Secrets.** `signedCookie()` needs a secret of at least 32 bytes in production
-(`LUMIOSE_SECRET`); a shorter one throws when the cookie is used (in development it warns).
-`{ allowWeakSecret: true }` opts out.
-
-**Compression.** `@lumiose/adapter-node` compresses responses; for pages that render a secret next
-to reflected input, see BREACH in the [adapter reference](../reference/adapter-node.md).
-
-## API
-
-| Option / export                   | Meaning                                                                     |
-| --------------------------------- | --------------------------------------------------------------------------- |
-| `lumiose({ csp: "strict" })`      | Nonces per response, the policy header, hash policies for prerendered pages |
-| `cspNonce(): string \| undefined` | The response's nonce (from `lumiose`), for markup the app builds itself     |
-| `<meta property="csp-nonce">`     | Written by Lumiose with the nonce; the client's preload helper reads it     |
-
-## Example
+With `csp: "strict"`, the browser runs only the scripts and applies only the styles the page
+meant to include, so injected markup cannot run code. Every `create-lumiose` template sets it;
+the framework default is off, so a project set up by hand opts in.
 
 ```ts
 // vite.config.ts
@@ -239,11 +17,148 @@ import lumiose from "@lumiose/vite";
 export default { plugins: [lumiose({ csp: "strict" })] };
 ```
 
+```text
+Content-Security-Policy: script-src 'nonce-…'
+  'strict-dynamic'; style-src 'self' 'nonce-…';
+  object-src 'none'; base-uri 'self';
+  frame-ancestors 'self'
+```
+
+- **Pages rendered per request** get a new random nonce for each response, on every inline
+  `<script>` and `<style>` that Lumiose or your JSX wrote, and this header (one line). They also
+  get `Cache-Control: private, no-store` unless the page sets its own.
+- **Prerendered pages** get the policy as a `<meta>`, with the SHA-256 hash of each inline script
+  and style. Browsers ignore `frame-ancestors` there: send it, or `X-Frame-Options: SAMEORIGIN`,
+  as a header.
+- **`style` props and `style="…"` strings** render as rules of a nonce'd or hashed `<style>`, not
+  as attributes.
+- **Raw HTML strings** (`innerHTML`) never get a nonce or a hash: a script injected through one
+  is blocked.
+- **Your own policy wins**, and `lumiose dev` sends no policy.
+
+All of it, with `cspNonce()`:
+[Strict Content Security Policy](../reference/security.md#strict-content-security-policy).
+
+### Values that cannot run code
+
+Text is escaped. A `javascript:`, `vbscript:` or `data:text/html` URL from a dynamic value renders
+as `about:blank#blocked` ([LUM4009](../errors/LUM4009.md)). A spread drops `innerHTML`,
+`textContent`, `srcdoc` and lowercase `on*` keys, so an object from JSON cannot inject markup.
+
+```tsx check
+export function Profile(props: {
+  bio: string;
+  site: string;
+  attrs: JSX.HTMLProps<HTMLParagraphElement>;
+}) {
+  return (
+    <p {...props.attrs}>
+      {props.bio}
+      <a href={props.site}>Website</a>
+    </p>
+  );
+}
+```
+
+> **Warning:** `<Dynamic component="div">` takes its props as written ones: it applies
+> `innerHTML`, `textContent` and `srcdoc` from them. Never spread an object from JSON, or any
+> other untrusted object, into `Dynamic`.
+
+> **Details:** [Unsafe URLs](../reference/security.md#unsafe-urls) and
+> [Client navigation and spread props](../reference/security.md#client-navigation-and-spread-props):
+> `navigate()` and the redirects of enhanced form actions only follow `http:` and `https:` URLs.
+
+### Raw HTML and JSON
+
+`innerHTML={…}` and an iframe's `srcdoc={…}` render a string as HTML, as it is: a script in it
+runs. Pass them only HTML you trust, your own or sanitized. Write JSON for a `<script>` as a text
+child: every `<` is written as `<`, so a value cannot close the element.
+
+```tsx check
+export function ArticleData(props: { title: string }) {
+  const data = () => ({
+    "@context": "https://schema.org",
+    "@type": "Article",
+    headline: props.title,
+  });
+  return <script type="application/ld+json">{JSON.stringify(data())}</script>;
+}
+```
+
+> **Details:** [Raw HTML](../reference/security.md#raw-html) (`sandbox` for frames you do not
+> control) and how the text of any `<script>` or `<style>` is escaped:
+> [JSON and raw text](../reference/security.md#json-and-raw-text-in-script-and-style).
+
+### Redirects
+
+`redirect()` accepts paths and `http(s)` URLs only; a `javascript:` or `data:` location throws.
+For a user-supplied target (`?next=`), accept only same-origin paths, or the user lands wherever
+a link sends them.
+
+```ts
+// A `next` parameter as a path of this site.
+function safeNext(next: string | null, fallback = "/") {
+  if (next === null || !next.startsWith("/") || next.startsWith("//") || next.startsWith("/\\")) {
+    return fallback;
+  }
+  return next;
+}
+redirect(safeNext(url.searchParams.get("next")));
+```
+
+> **Details:** trailing-slash and i18n redirects always stay on your site, and `href()` refuses
+> `.` and `..` as param values: [Redirects](../reference/security.md#redirects).
+
+### On by default
+
+Each line links to its rules.
+
+- **[Cross-site form posts](../reference/security.md#cross-site-form-posts):** form actions and
+  form-encoded posts to endpoints are checked against the `Origin` header (`lumiose({ csrf })`).
+- **[Request body limits](../reference/security.md#request-body-limits):** forms, JSON and other
+  bodies stop at 1 MB, `multipart/form-data` at 10 MB, with `413 Payload Too Large`. Change them
+  with `lumiose({ limits })` or a route's `export const limits`.
+- **[Request URLs](../reference/security.md#request-urls):** built from the server's origin, so
+  a request cannot choose another host. Behind a proxy that rewrites the host, set `ORIGIN`.
+- **[Default response headers](../reference/security.md#default-response-headers):**
+  `X-Content-Type-Options: nosniff` and `Referrer-Policy: strict-origin-when-cross-origin`.
+- **[Server-only code](../reference/security.md#server-only-code)** (`*.server.*`, `src/server/`)
+  never reaches the browser (`LUM4003`), and only `PUBLIC_*` variables reach client code.
+- **[What the page sends](../reference/security.md#what-the-page-sends):** island props, values
+  awaited in islands and scoped state are readable by anyone who loads the page. Never pass a
+  secret there.
+- **[Secrets](../reference/security.md#secrets):** `signedCookie()` needs a secret of at least
+  32 bytes in production (`LUMIOSE_SECRET`).
+- **[Error details](../reference/security.md#error-details):** in production server rendering,
+  `<ErrorBoundary>` fallbacks get a generic error with a `digest`.
+- **[Files from elsewhere](../reference/security.md#files-from-elsewhere):** SVG imports are
+  sanitized as untrusted input. Markdown and HTML imports are trusted author files, compiled as
+  written: never put end-user content in them.
+- **[Compression](../reference/security.md#compression):** BREACH, for pages that render a secret
+  next to reflected input.
+
+## API
+
+| Option / export                              | Meaning                                                |
+| -------------------------------------------- | ------------------------------------------------------ |
+| `lumiose({ csp: "strict" })`                 | Nonces per response, the policy header, hash policies. |
+| `cspNonce(): string \| undefined`            | The response's nonce, for markup the app builds.       |
+| `<meta property="csp-nonce">`                | Written by Lumiose; the client reads the nonce there.  |
+| `lumiose({ csrf })`                          | The cross-site check of form posts (on by default).    |
+| `lumiose({ limits })`, `export const limits` | Request body limits, for the app or a route.           |
+| `lumiose({ headers })`                       | Response headers, your own policy included.            |
+
+## Example
+
+An inline script that runs before the first paint. On a server-rendered page Lumiose gives it the
+response's nonce; on a prerendered page the page's policy lists its hash.
+
 ```tsx
-// src/document.tsx: an inline script that runs before the first paint
+// src/document.tsx
 import type { DocumentProps } from "lumiose";
 
-const THEME = `document.documentElement.dataset.theme = localStorage.getItem("theme") ?? "auto"`;
+const THEME = `document.documentElement.dataset.theme =
+  localStorage.getItem("theme") ?? "auto"`;
 
 export default function Document(props: DocumentProps) {
   return (
@@ -259,21 +174,16 @@ export default function Document(props: DocumentProps) {
 }
 ```
 
-On a server-rendered page Lumiose gives the script the response's nonce; on a prerendered page the
-page's policy lists the script's hash.
-
 ## Common mistakes
 
-- **An inline script built as a string** (`<div innerHTML={'<script>…</script>'}>`, a snippet
-  added at runtime). Lumiose only nonces elements written in JSX: the browser refuses it and logs a
-  CSP violation. Write it as a JSX `<script>`, add `nonce={cspNonce()}` to the markup you build,
-  or load the code as a module.
-- **A `<style>` inside an `<svg>` that only the client renders, on a prerendered page.** No nonce
-  exists there. Put the rules in the file's `<style>` block.
-- **Expecting the policy in `lumiose dev`.** Dev sends none; check with `lumiose build` and
-  `lumiose preview` or your server.
-- **Adding `'unsafe-inline'` to make an error go away.** It disables the protection for every
-  inline script. Find the element in the console message and give it the nonce instead.
+- **An inline script built as a string.** Only elements written in JSX get the nonce. Write a
+  JSX `<script>`, add `nonce={cspNonce()}` to markup you build, or load the code as a module.
+- **A client-only `<style>` inside an `<svg>` on a prerendered page.** No nonce exists there: put
+  the rules in the file's `<style>` block.
+- **Expecting the policy in `lumiose dev`.** Check with `lumiose build` and `lumiose preview`.
+- **Adding `'unsafe-inline'`.** It disables the protection for every inline script.
+
+The long forms: [Common mistakes](../reference/security.md#common-mistakes).
 
 ## Related diagnostics
 
