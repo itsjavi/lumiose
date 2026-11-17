@@ -15,17 +15,6 @@ event handlers and effects). Concepts:
 
 ### Link
 
-```ts
-function Link(props: LinkProps): JSX.Element;
-
-type LinkProps = Omit<JSX.IntrinsicElements["a"], "href" | "children"> & {
-  href: string;
-  /** Default "hover" in spa pages; on MPA pages, lumiose({ prefetch }). */
-  prefetch?: "hover" | "viewport" | "none";
-  children?: JSX.Element;
-};
-```
-
 An `<a href>` with every attribute and event of `<a>`. The router navigates plain `<a>` links too;
 `<Link>` adds:
 
@@ -46,18 +35,44 @@ An `<a href>` with every attribute and event of `<a>`. The router navigates plai
 
 Build `href` with [`href()`](app.md#href) so the route and its params type-check.
 
+```ts
+function Link(props: LinkProps): JSX.Element;
+
+type LinkProps = Omit<JSX.IntrinsicElements["a"], "href" | "children"> & {
+  href: string;
+  prefetch?: Prefetch;
+  children?: JSX.Element;
+};
+
+type Prefetch = "hover" | "viewport" | "none";
+```
+
+```tsx check
+import { href } from "lumiose";
+import { Link } from "lumiose/router";
+
+export function MusicNav() {
+  return (
+    <nav>
+      <Link href={href("/music")}>Songs</Link>
+      <Link href={href("/music/settings")} prefetch="none">
+        Settings
+      </Link>
+    </nav>
+  );
+}
+```
+
+| Name       | Type                              | Default   | Description                                                                                                            |
+| ---------- | --------------------------------- | --------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `href`     | `string`                          | —         | The URL; build it with `href()` to type-check the route and its params.                                                |
+| `prefetch` | `"hover" \| "viewport" \| "none"` | `"hover"` | When to load the target route's modules. The default is `"hover"` in spa pages; on MPA pages, `lumiose({ prefetch })`. |
+| `children` | `JSX.Element`                     | —         | The link's content.                                                                                                    |
+| `...`      | `JSX.IntrinsicElements["a"]`      | —         | Every other attribute and event of `<a>`.                                                                              |
+
 ## Navigation
 
 ### navigate
-
-```ts
-function navigate(href: string | URL, options?: NavigateOptions): Promise<void>;
-
-interface NavigateOptions {
-  /** Replace the current history entry instead of adding one. */
-  replace?: boolean;
-}
-```
 
 Navigates on the client when `href` belongs to the current SPA, else loads the document. Resolves
 once the new page is on screen (its async content ready), or when another navigation supersedes
@@ -66,14 +81,44 @@ scheme, such as `javascript:`, throws a `TypeError`. An `href` that only names a
 current page (`navigate("#comments")`) is the browser's, as a link to it is: it scrolls there and
 keeps focus, no hook runs, and `url()` follows.
 
+```ts
+function navigate(href: string | URL, options?: NavigateOptions): Promise<void>;
+
+interface NavigateOptions {
+  replace?: boolean;
+}
+```
+
+```tsx check
+import { navigate } from "lumiose/router";
+
+export function DoneButton() {
+  const done = () => void navigate("/music", { replace: true });
+  return <button onClick={done}>Done</button>;
+}
+```
+
+| Name              | Type            | Default | Description                                                      |
+| ----------------- | --------------- | ------- | ---------------------------------------------------------------- |
+| `href`            | `string \| URL` | —       | Where to go: an `http:` or `https:` URL, relative ones included. |
+| `options.replace` | `boolean`       | `false` | Replace the current history entry instead of adding one.         |
+
 ### isNavigating
+
+Whether a navigation is in flight: from the click until the new page is on screen. Reactive, and
+counted by [`isBusy()`](reactivity.md) (decision-20).
 
 ```ts
 function isNavigating(): boolean;
 ```
 
-Whether a navigation is in flight: from the click until the new page is on screen. Reactive, and
-counted by [`isBusy()`](reactivity.md) (decision-20).
+```tsx check
+import { isNavigating } from "lumiose/router";
+
+export function NavigationProgress() {
+  return <progress hidden={!isNavigating()} />;
+}
+```
 
 ## Navigation hooks
 
@@ -81,27 +126,6 @@ SvelteKit's `beforeNavigate` and `afterNavigate` (decision-50). Call them during
 like `onMount`: the hook runs while the component is mounted and is removed when it is disposed.
 
 ### beforeNavigate
-
-```ts
-function beforeNavigate(fn: (navigation: BeforeNavigate) => void): void;
-
-interface BeforeNavigate {
-  type: "link" | "navigate" | "popstate" | "leave";
-  from: NavigationTarget | null;
-  /** `null` when the next document is outside the app (another origin, or `"leave"`). */
-  to: NavigationTarget | null;
-  /** The document unloads: the navigation is not a client-side one. */
-  willUnload: boolean;
-  cancel(): void;
-}
-
-interface NavigationTarget {
-  url: URL;
-  /** The matched route pattern (`/songs/[id]`); undefined when none matched. */
-  route: Routes | undefined;
-  params: Record<string, string>;
-}
-```
 
 Runs before each navigation away from the current location, before the router loads anything.
 `type` is what started it:
@@ -131,7 +155,60 @@ So a hook that guards unsaved changes cancels `"leave"` and asks the user itself
 [Unsaved changes](#unsaved-changes)). A change of the URL's `#hash` alone is not a navigation for
 the hooks.
 
+```ts
+function beforeNavigate(fn: (navigation: BeforeNavigate) => void): void;
+
+interface BeforeNavigate {
+  type: "link" | "navigate" | "popstate" | "leave";
+  from: NavigationTarget | null;
+  to: NavigationTarget | null;
+  willUnload: boolean;
+  cancel(): void;
+}
+
+interface NavigationTarget {
+  url: URL;
+  route: Routes | undefined;
+  params: Record<string, string>;
+}
+```
+
+```tsx check
+import { signal } from "lumiose";
+import { beforeNavigate } from "lumiose/router";
+
+export function Draft() {
+  const dirty = signal(false);
+  beforeNavigate((navigation) => {
+    if (dirty()) navigation.cancel();
+  });
+  return <textarea onInput={() => dirty.set(true)} />;
+}
+```
+
+| Name | Type                                   | Default | Description                                               |
+| ---- | -------------------------------------- | ------- | --------------------------------------------------------- |
+| `fn` | `(navigation: BeforeNavigate) => void` | —       | The hook. It runs while the calling component is mounted. |
+
+| Member       | Type                                            | Description                                                                                     |
+| ------------ | ----------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| `type`       | `"link" \| "navigate" \| "popstate" \| "leave"` | What started the navigation.                                                                    |
+| `from`       | `NavigationTarget \| null`                      | Where it starts.                                                                                |
+| `to`         | `NavigationTarget \| null`                      | Where it goes; `null` when the next document is outside the app (another origin, or `"leave"`). |
+| `willUnload` | `boolean`                                       | The document unloads: the navigation is not a client-side one.                                  |
+| `cancel()`   | `void`                                          | Stops the navigation.                                                                           |
+| `url`        | `URL`                                           | The location's URL.                                                                             |
+| `route`      | `Routes \| undefined`                           | The matched route pattern (`/songs/[id]`); undefined when none matched.                         |
+| `params`     | `Record<string, string>`                        | The route's params.                                                                             |
+
 ### afterNavigate
+
+Runs once per completed client navigation, after the new page is on screen (after a view
+transition's DOM update, not its animation), its scroll position restored, focus reset and the page
+announced to screen readers. A
+navigation that a newer one supersedes or a hook cancels never completes. It also runs once when
+the component mounts, with `type: "enter"` and `from: null`, so the first page view counts too; a
+component that a navigation created gets that navigation's call instead.
 
 ```ts
 function afterNavigate(fn: (navigation: AfterNavigate) => void): void;
@@ -144,12 +221,28 @@ interface AfterNavigate {
 }
 ```
 
-Runs once per completed client navigation, after the new page is on screen (after a view
-transition's DOM update, not its animation), its scroll position restored, focus reset and the page
-announced to screen readers. A
-navigation that a newer one supersedes or a hook cancels never completes. It also runs once when
-the component mounts, with `type: "enter"` and `from: null`, so the first page view counts too; a
-component that a navigation created gets that navigation's call instead.
+```tsx check
+import { afterNavigate } from "lumiose/router";
+
+export function PageViews() {
+  afterNavigate((navigation) => {
+    const path = navigation.to?.url.pathname;
+    console.info("page view", navigation.type, path);
+  });
+  return <></>;
+}
+```
+
+| Name | Type                                  | Default | Description                                               |
+| ---- | ------------------------------------- | ------- | --------------------------------------------------------- |
+| `fn` | `(navigation: AfterNavigate) => void` | —       | The hook. It runs while the calling component is mounted. |
+
+| Member       | Type                                            | Description                                                           |
+| ------------ | ----------------------------------------------- | --------------------------------------------------------------------- |
+| `type`       | `"enter" \| "link" \| "navigate" \| "popstate"` | What started the navigation; `"enter"` is the mount of the component. |
+| `from`       | `NavigationTarget \| null`                      | Where it started; `null` for `"enter"`.                               |
+| `to`         | `NavigationTarget \| null`                      | Where it went.                                                        |
+| `willUnload` | `boolean`                                       | Whether the document unloads.                                         |
 
 ### On MPA pages
 
@@ -185,6 +278,12 @@ The dialog's **Leave** button sets a flag that the hook checks first, then follo
 `location.assign(url)` on an MPA page, where islands that use the hooks load no router, and
 `navigate(url)` in an SPA. Without the flag the hook cancels again (on an MPA page as `"leave"`, so
 the browser asks).
+
+Any dialog works in place of the `<p role="alert">`, such as @lumiose/ui's
+[alert dialog](https://lumiose.dev/ui/dialog/) bound to `pending() !== null`. When the
+unsaved work sits in the rows of a list (an editable table), key the rows by the record's id
+([Lists and keys](../concepts/jsx.md#lists-and-keys)): a row keyed by its index keeps its typed
+value after a sort or a filter, next to another record.
 
 ```tsx check
 // An island of a server page that edits a note; in an SPA, the same component as a page
@@ -236,73 +335,84 @@ export function NoteEditor() {
 }
 ```
 
-Any dialog works in place of the `<p role="alert">`, such as @lumiose/ui's
-[alert dialog](https://lumiose.dev/ui/dialog/) bound to `pending() !== null`. When the
-unsaved work sits in the rows of a list (an editable table), key the rows by the record's id
-([Lists and keys](../concepts/jsx.md#lists-and-keys)): a row keyed by its index keeps its typed
-value after a sort or a filter, next to another record.
-
 ## Route state
 
 ### params
 
-```ts
-function params<P extends Routes = never>(): RouteParams<P>; // untyped: Record<string, string>
-```
-
 The current route's params, reactive: `params<"/songs/[id]">().id`. Pages also receive them as
 `props.params`.
 
-### route
-
 ```ts
-function route(): Routes | undefined;
+function params<P extends Routes = never>(): [P] extends [never]
+  ? Record<string, string>
+  : RouteParams<P>;
 ```
+
+```tsx check file=routes/music/[id]/page.tsx
+// src/routes/music/[id]/page.tsx
+import { params } from "lumiose/router";
+
+export default function Song() {
+  return <h1>Song {params<"/music/[id]">().id}</h1>;
+}
+```
+
+### route
 
 The matched route pattern, reactive: `route() === "/songs/[id]"`. Compare patterns instead of
 matching `url().pathname`; typegen makes an unknown pattern a type error. `undefined` on a `not-found`
 page for an unknown URL (a matched route that throws `notFound()` keeps its pattern).
 
+```ts
+function route(): Routes | undefined;
+```
+
+```tsx check
+import { route } from "lumiose/router";
+
+export function NowPlaying() {
+  return <p hidden={route() !== "/music/[id]"}>Now playing</p>;
+}
+```
+
 ### url
+
+The current URL, reactive. Do not mutate it.
 
 ```ts
 function url(): URL;
 ```
 
-The current URL, reactive. Do not mutate it.
+```tsx check
+import { url } from "lumiose/router";
+
+export function CurrentPath() {
+  return <code>{url().pathname}</code>;
+}
+```
 
 ### locale
-
-```ts
-function locale(): Locale;
-```
 
 With `lumiose({ i18n })`, the locale of the current URL (its prefix, else the default locale),
 reactive inside SPA routes; in islands of other routes, the page's. `undefined` without
 `lumiose({ i18n })`, typed `string | undefined`. A navigation to another locale renders every level again, and `<html lang>`
 follows. See [Internationalization](../concepts/i18n.md).
 
-### searchParams
-
 ```ts
-interface SearchParams {
-  (): URLSearchParams;
-  set(
-    next: SearchParamsInit | ((current: URLSearchParams) => SearchParamsInit),
-    options?: SearchParamsOptions,
-  ): Promise<void>;
-}
-const searchParams: SearchParams;
+function locale(): Locale;
+```
 
-type SearchParamsInit =
-  | URLSearchParams
-  | string
-  | Record<string, string | number | boolean | readonly string[] | null | undefined>;
+```tsx check
+import { locale } from "lumiose/router";
 
-interface SearchParamsOptions extends NavigateOptions {
-  shallow?: boolean;
+export function Greeting() {
+  return <h1>{locale() === "es" ? "Hola" : "Hello"}</h1>;
 }
 ```
+
+### searchParams
+
+The current URL's query, with `set()` to change it.
 
 `searchParams()` is the current URL's query, reactive (a new object per change). `searchParams.set()`
 navigates to the current path with a new query, keeping the scroll position; `null` and
@@ -333,6 +443,42 @@ build time a `static` page has none (`LUM5001`). See [Islands](../concepts/islan
 While a page is still loading during a navigation, `params()`, `route()`, `url()` and `searchParams()` called in it
 (and its props) already describe the page it is loading; everything else keeps the shown URL until
 the new page is on screen.
+
+```ts
+interface SearchParams {
+  (): URLSearchParams;
+  set(
+    next: SearchParamsInit | ((current: URLSearchParams) => SearchParamsInit),
+    options?: SearchParamsOptions,
+  ): Promise<void>;
+}
+const searchParams: SearchParams;
+
+type SearchParamsInit =
+  | URLSearchParams
+  | string
+  | Record<string, string | number | boolean | readonly string[] | null | undefined>;
+
+interface SearchParamsOptions extends NavigateOptions {
+  shallow?: boolean;
+}
+```
+
+```tsx check
+import { searchParams } from "lumiose/router";
+
+export function NextPage() {
+  const page = () => Number(searchParams().get("page") ?? 1);
+  const next = () => void searchParams.set({ page: page() + 1 });
+  return <button onClick={next}>Page {page() + 1}</button>;
+}
+```
+
+| Name              | Type                                                                   | Default | Description                                                                                                              |
+| ----------------- | ---------------------------------------------------------------------- | ------- | ------------------------------------------------------------------------------------------------------------------------ |
+| `next`            | `SearchParamsInit \| ((current: URLSearchParams) => SearchParamsInit)` | —       | The new query, or a function of the current one. `null` and `undefined` values are left out.                             |
+| `options.replace` | `boolean`                                                              | `false` | Replace the current history entry instead of adding one.                                                                 |
+| `options.shallow` | `boolean`                                                              | `false` | In islands of MPA pages, update the URL and `searchParams()` without loading the page. Inside an SPA it changes nothing. |
 
 ## Behaviour
 
