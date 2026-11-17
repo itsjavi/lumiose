@@ -19,6 +19,17 @@ Nothing here is decided until the user answers. Answered items move to the Answe
 
 **Backlog state (2026-10-17):** every task that doesn't wait on an item below is done. The workers are idle until the user answers.
 
+### R1 to R6. The black-and-white redesign (M16, 2026-11-17)
+
+The user asked Lux to keep going until the redesign tasks were complete, so these were postponed instead of blocking. Decision-90 holds what is already decided.
+
+- **R1. Sign-off of the redesign (TASK-615).** The site, docs and UI theme are redesigned locally and nothing is pushed. **Waiting:** the user's review and the OK to push. **Meanwhile:** commits stay local.
+- **R2. The Corner L logo (TASK-616).** A web search found no similar well-known mark, but official registry searches and reverse image searches need a person. **Options:** keep, adjust (let the quarter touch the L, or give the L a distinctive cut), or replace. **Recommendation:** run the checks in TASK-616, then keep. **Meanwhile:** the mark is used everywhere, unreleased.
+- **R3. No red in the default UI theme (TASK-613).** `--lu-destructive` is the text colour, so a destructive button looks like a primary one, and the invalid state has no colour of its own. **Options:** (a) keep plain black and white; (b) give destructive and invalid states one red. **Recommendation:** (a) for the default theme, with the override documented, as it is. **Meanwhile:** (a).
+- **R4. The playground's red error colour (TASK-606).** It stayed red, the only hue besides amber on the site. **Options:** keep, or switch to the text colour with an icon. **Recommendation:** keep: errors in an editor should stand out. **Meanwhile:** kept.
+- **R5. The docs pilot review (TASK-609).** The rewrite of the remaining pages started without the planned review of the pilot. **Waiting:** the user reading Getting started, Components, Signals and Styles; changes to the writing guide in `apps/web/CONTRIBUTING.md` then apply to all pages.
+- **R6. Length of the guides, deploy and coming-from pages (TASK-611).** They follow the new structure but are about as long as before, because they are mostly code, config and mapping tables. **Options:** (a) leave them; (b) move the coming-from mapping tables and the adapters' build-output tables to reference pages. **Recommendation:** (a): the tables are why readers open those pages. **Meanwhile:** (a).
+
 ### P1. Push main to origin
 
 - Every push needs the user's OK, because it runs CI, which costs money (AGENTS.md).
