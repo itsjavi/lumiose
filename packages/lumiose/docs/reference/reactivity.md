@@ -19,41 +19,78 @@ everything created under it.
 
 ## signal
 
-```ts
-function signal<T>(value: T, options?: SignalOptions<T>): Signal<T>;
-
-interface Signal<T> {
-  (): T; // read (tracked)
-  set(value: T): void;
-  update(fn: (value: T) => T): void;
-  peek(): T; // read without tracking
-}
-interface SignalOptions<T> {
-  /** When a write counts as a change. Default Object.is; false: every write is a change. */
-  equals?: false | ((a: T, b: T) => boolean);
-}
-```
+Creates a reactive value: a function that reads it, with `set`, `update` and `peek`.
 
 A write that is `Object.is`-equal to the current value is not a change. So
 `list().push(x); list.set(list())` changes nothing: write a new value
 (`list.update((l) => [...l, x])`), use `store()`, or create the signal with `{ equals: false }`.
 
+```ts
+function signal<T>(value: T, options?: SignalOptions<T>): Signal<T>;
+
+interface Signal<T> {
+  (): T;
+  set(value: T): void;
+  update(fn: (value: T) => T): void;
+  peek(): T;
+}
+interface SignalOptions<T> {
+  equals?: false | ((a: T, b: T) => boolean);
+}
+```
+
+```tsx check
+import { signal } from "lumiose";
+
+export function Counter() {
+  const count = signal(0);
+  const add = () => count.update((n) => n + 1);
+  return <button onClick={add}>Clicked {count()} times</button>;
+}
+```
+
+| Name             | Type                                 | Default     | Description                                                        |
+| ---------------- | ------------------------------------ | ----------- | ------------------------------------------------------------------ |
+| `value`          | `T`                                  | —           | The initial value.                                                 |
+| `options.equals` | `false \| ((a: T, b: T) => boolean)` | `Object.is` | When a write counts as a change. `false`: every write is a change. |
+
+| Member       | Type   | Description                       |
+| ------------ | ------ | --------------------------------- |
+| `()`         | `T`    | Reads the value (tracked).        |
+| `set(value)` | `void` | Writes a value.                   |
+| `update(fn)` | `void` | Writes `fn` of the current value. |
+| `peek()`     | `T`    | Reads without tracking.           |
+
 ## computed
 
-```ts
-function computed<T>(fn: (previous: T | undefined) => T, options?: SignalOptions<T>): Computed<T>;
-type Computed<T> = () => T;
-```
+Creates a read-only value derived from other signals.
 
 Lazy (runs on first read), cached, glitch-free. `fn` must be pure: no signal writes (`LUM2002`).
 An unobserved computed unlinks itself from its sources.
 
-## effect
-
 ```ts
-function effect(fn: EffectFn): () => void;
-type EffectFn = () => void | (() => void);
+function computed<T>(fn: (previous: T | undefined) => T, options?: SignalOptions<T>): Computed<T>;
+
+type Computed<T> = () => T;
 ```
+
+```tsx check
+import { computed, signal } from "lumiose";
+
+export function Cart() {
+  const prices = signal([12, 30]);
+  const sum = (a: number, b: number) => a + b;
+  const total = computed(() => prices().reduce(sum, 0));
+  return <p>Total: {total()}</p>;
+}
+```
+
+| Name             | Type                                 | Default     | Description                                                                                    |
+| ---------------- | ------------------------------------ | ----------- | ---------------------------------------------------------------------------------------------- |
+| `fn`             | `(previous: T \| undefined) => T`    | —           | Computes the value from the signals it reads. It receives the previous value and must be pure. |
+| `options.equals` | `false \| ((a: T, b: T) => boolean)` | `Object.is` | When a write counts as a change. `false`: every write is a change.                             |
+
+## effect
 
 Runs `fn` after the DOM updates, then again whenever a signal it read changes. A returned function
 is a cleanup, run before the next run and on disposal. Returns a disposer. Owned by the current
@@ -70,46 +107,127 @@ not yet its DOM.
 - **Deriving state in an effect** (`effect(() => b.set(a() * 2))`) adds a frame of staleness and an
   extra flush. Use `computed(() => a() * 2)`.
 
+```ts
+function effect(fn: EffectFn): () => void;
+type EffectFn = () => void | (() => void);
+```
+
+```tsx check
+import { effect, signal } from "lumiose";
+
+export function TitleField() {
+  const title = signal("Inbox");
+  effect(() => {
+    document.title = title();
+  });
+  return <input bind:value={title} />;
+}
+```
+
+| Name | Type       | Default | Description                                                                              |
+| ---- | ---------- | ------- | ---------------------------------------------------------------------------------------- |
+| `fn` | `EffectFn` | —       | The function to run. Signals it reads are tracked; a function it returns is its cleanup. |
+
 ## onMount
+
+Runs `fn` once, untracked, after the current owner's DOM is mounted. It may return a cleanup.
 
 ```ts
 function onMount(fn: EffectFn): void;
 ```
 
-Runs `fn` once, untracked, after the current owner's DOM is mounted. It may return a cleanup.
+```tsx check
+import { onMount, signal } from "lumiose";
+
+export function WindowWidth() {
+  const width = signal(0);
+  onMount(() => {
+    const update = () => width.set(window.innerWidth);
+    update();
+    window.addEventListener("resize", update);
+    return () => window.removeEventListener("resize", update);
+  });
+  return <p>{width()} px wide</p>;
+}
+```
+
+| Name | Type       | Default | Description                                                              |
+| ---- | ---------- | ------- | ------------------------------------------------------------------------ |
+| `fn` | `EffectFn` | —       | Runs once, untracked, after mount. A function it returns is its cleanup. |
 
 ## onCleanup
+
+Registers `fn` on the current owner: it runs when the owner is disposed (or, for an effect, before
+its next run).
 
 ```ts
 function onCleanup(fn: () => void): void;
 ```
 
-Registers `fn` on the current owner: it runs when the owner is disposed (or, for an effect, before
-its next run).
+```tsx check
+import { onCleanup, signal } from "lumiose";
+
+export function Clock() {
+  const now = signal(new Date());
+  const timer = setInterval(() => now.set(new Date()), 1000);
+  onCleanup(() => clearInterval(timer));
+  return <time>{now().toLocaleTimeString()}</time>;
+}
+```
+
+| Name | Type         | Default | Description                                                                        |
+| ---- | ------------ | ------- | ---------------------------------------------------------------------------------- |
+| `fn` | `() => void` | —       | Runs when the current owner is disposed (for an effect, also before its next run). |
 
 ## getAbortSignal
-
-```ts
-function getAbortSignal(): AbortSignal;
-```
 
 An `AbortSignal` for the current owner. Aborted when the owner is disposed, when an effect re-runs,
 or when an async component run is superseded. On the server it is the request's signal. Throws
 outside an owner (with a message in development). Svelte has the same function.
 
+```ts
+function getAbortSignal(): AbortSignal;
+```
+
+```tsx check
+import { getAbortSignal } from "lumiose";
+
+export async function UserName(props: { id: string }) {
+  const res = await fetch(`/api/users/${props.id}`, {
+    signal: getAbortSignal(),
+  });
+  const user = (await res.json()) as { name: string };
+  return <p>{user.name}</p>;
+}
+```
+
 ## untrack
+
+Runs `fn` without subscribing the current scope to the signals it reads.
 
 ```ts
 function untrack<T>(fn: () => T): T;
 ```
 
-Runs `fn` without subscribing the current scope to the signals it reads.
+```tsx check
+import { effect, signal, untrack } from "lumiose";
+
+export function Search() {
+  const query = signal("");
+  const page = signal(1);
+  // Runs when query changes, not when page does.
+  effect(() => {
+    console.log("search", query(), untrack(page));
+  });
+  return <input bind:value={query} />;
+}
+```
+
+| Name | Type      | Default | Description                                                                       |
+| ---- | --------- | ------- | --------------------------------------------------------------------------------- |
+| `fn` | `() => T` | —       | Runs at once; the signals it reads are not tracked. `untrack` returns its result. |
 
 ## batch
-
-```ts
-function batch<T>(fn: () => T): T;
-```
 
 Defers dependents until `fn` returns, so they run once. Event handlers are batched automatically,
 for the duration of the handler: delegated `onX` handlers, native `on:x` listeners, the direct
@@ -117,11 +235,26 @@ listeners of non-bubbling events (`onFocus`, `onScroll`) and handlers passed in 
 writes render together when the handler returns, so the DOM is current right after the event
 (decision-81). Any other write schedules a microtask flush.
 
-## flush
-
 ```ts
-function flush(): void;
+function batch<T>(fn: () => T): T;
 ```
+
+```ts check
+import { batch, type Signal } from "lumiose";
+
+export function rename(first: Signal<string>, last: Signal<string>): void {
+  batch(() => {
+    first.set("Grace");
+    last.set("Hopper");
+  });
+}
+```
+
+| Name | Type      | Default | Description                                                                                               |
+| ---- | --------- | ------- | --------------------------------------------------------------------------------------------------------- |
+| `fn` | `() => T` | —       | Runs at once; dependents of the signals it writes run once, after it returns. `batch` returns its result. |
+
+## flush
 
 Runs pending computeds, DOM bindings and effects now, instead of in the next microtask. Effects
 never run synchronously with a write: in tests, call `flush()` after a write before asserting.
@@ -134,22 +267,55 @@ signal values, but the DOM does not show them yet. A conditional or list around 
 that such a write changed still updates first, so an effect never runs inside content that an
 earlier effect's write removed.
 
+```ts
+function flush(): void;
+```
+
+```ts check
+import { effect, flush, signal } from "lumiose";
+
+export function latestSeen(): number {
+  const count = signal(0);
+  let seen = -1;
+  effect(() => {
+    seen = count();
+  });
+  count.set(5);
+  flush();
+  return seen; // 5
+}
+```
+
 ## store
 
-```ts
-function store<T extends object>(value: T): T;
-```
+Creates a deep reactive object or array that you mutate directly.
 
 Wraps a plain object or array in a deep, **mutable** reactive proxy, like Valtio's `proxy`, Vue's
 `reactive` or Solid's `createMutable`: you write to it directly (`state.count++`,
 `state.items.push(item)`), with no setter. Reads track per property, writes notify only on change,
 array methods work. Class instances, `Map`s, `Set`s and frozen objects are returned as is.
 
-## snapshot
-
 ```ts
-function snapshot<T>(value: T): T;
+function store<T extends object>(value: T): T;
 ```
+
+```tsx check
+import { store } from "lumiose";
+
+export function Todos() {
+  const state = store({ items: ["Write docs"] });
+  const add = () => {
+    state.items.push("Ship it");
+  };
+  return <button onClick={add}>{state.items.length} items</button>;
+}
+```
+
+| Name    | Type | Default | Description                                                                                             |
+| ------- | ---- | ------- | ------------------------------------------------------------------------------------------------------- |
+| `value` | `T`  | —       | A plain object or array to wrap. Class instances, `Map`s, `Set`s and frozen objects are returned as is. |
+
+## snapshot
 
 A deep plain copy of a store, of a value inside one (`snapshot(state.items)`), or of plain data
 that holds stores. Plain objects and arrays are copied; other values (`Date`s, `Map`s, class
@@ -160,19 +326,19 @@ are not tracked: in an effect, read the properties it should react to. On the se
 plain object.
 
 ```ts
+function snapshot<T>(value: T): T;
+```
+
+```ts
 const song = store({ title: "Demo", rows: [] as number[][] });
 worker.postMessage({ type: "song", song: snapshot(song) });
 ```
 
+| Name    | Type | Default | Description                                                   |
+| ------- | ---- | ------- | ------------------------------------------------------------- |
+| `value` | `T`  | —       | A store, a value inside one, or plain data that holds stores. |
+
 ## reconcile
-
-```ts
-function reconcile<T extends object>(target: T, data: T, options?: ReconcileOptions): void;
-
-interface ReconcileOptions {
-  key?: string; // identifies array items, default "id"
-}
-```
 
 Patches fresh `data` (a fetch result, a server payload) into a store, or into an object or array
 inside one (`reconcile(state.books, fresh)`), in place, with Solid's `reconcile` semantics:
@@ -192,6 +358,14 @@ otherwise it throws a `TypeError` in development. Pass the store, not plain data
 without notifying anything (that is what happens on the server, where stores are plain objects).
 
 ```ts
+function reconcile<T extends object>(target: T, data: T, options?: ReconcileOptions): void;
+
+interface ReconcileOptions {
+  key?: string;
+}
+```
+
+```ts
 const books = store<Book[]>([]);
 reconcile(books, (await (await fetch("/api/books")).json()) as Book[]);
 
@@ -199,18 +373,15 @@ const page = store({ rows: [{ slug: "intro", views: 1 }] });
 reconcile(page.rows, [{ slug: "intro", views: 2 }], { key: "slug" });
 ```
 
+| Name          | Type     | Default | Description                                                                       |
+| ------------- | -------- | ------- | --------------------------------------------------------------------------------- |
+| `target`      | `T`      | —       | The store, or an object or array inside one, to patch.                            |
+| `data`        | `T`      | —       | The fresh data, of the same kind as `target` (both arrays or both plain objects). |
+| `options.key` | `string` | `"id"`  | The property that identifies array items across updates.                          |
+
 ## createContext, useContext
 
-```ts
-function createContext<T>(defaultValue: T): Context<T>;
-function createContext<T>(): Context<T | undefined>;
-function useContext<T>(context: Context<T>): T;
-interface Context<T> {
-  (props: { value: T; children?: JSX.Element }): JSX.Element; // the provider component
-  readonly id: symbol;
-  readonly defaultValue: T;
-}
-```
+`createContext` creates a context, and `useContext` reads the value of its nearest provider.
 
 A context is also its provider component, as in React 19 and Solid 2: `<Theme value="dark">…</Theme>`
 provides `value` to everything rendered inside it, including content rendered later (conditionals,
@@ -222,6 +393,18 @@ The provider reads `value` once, when it renders, like Solid's provider and like
 prop read in a component body: components run once. To share state that changes, provide a signal,
 a store or an object with getters, and read it where it is used.
 
+```ts
+function createContext<T>(defaultValue: T): Context<T>;
+function createContext<T>(): Context<T | undefined>;
+function useContext<T>(context: Context<T>): T;
+
+interface Context<T> {
+  (props: { value: T; children?: Renderable }): Renderable;
+  readonly id: symbol;
+  readonly defaultValue: T;
+}
+```
+
 ```tsx
 const Theme = createContext("light");
 const Count = createContext(signal(0));
@@ -232,6 +415,17 @@ const Count = createContext(signal(0));
   </Count>
 </Theme>;
 ```
+
+| Name           | Type         | Default     | Description                                          |
+| -------------- | ------------ | ----------- | ---------------------------------------------------- |
+| `defaultValue` | `T`          | `undefined` | What `useContext` returns when no provider is above. |
+| `context`      | `Context<T>` | —           | The context to read.                                 |
+
+| Member         | Type         | Description                                       |
+| -------------- | ------------ | ------------------------------------------------- |
+| `(props)`      | `Renderable` | The provider component: `<Ctx value={v}>…</Ctx>`. |
+| `id`           | `symbol`     | The context's unique key.                         |
+| `defaultValue` | `T`          | The default passed to `createContext`.            |
 
 ## useId
 
@@ -285,10 +479,6 @@ export function SignUp() {
 
 ## defineState
 
-```ts
-function defineState<T>(factory: () => T): () => T;
-```
-
 Scoped state: returns an accessor whose `factory` runs on the first call, once per scope, and
 returns the same instance after that.
 
@@ -318,6 +508,10 @@ Define states at module scope with `export const x = defineState(…)` (or expor
 created elsewhere (inside a function) are never sent.
 
 ```ts
+function defineState<T>(factory: () => T): () => T;
+```
+
+```ts
 import { computed, cookies, defineState, isServer, signal } from "lumiose";
 
 export const prefs = defineState(() => {
@@ -327,11 +521,11 @@ export const prefs = defineState(() => {
 // prefs().theme(), prefs().dark(), prefs().theme.set("dark")
 ```
 
-## isServer
+| Name      | Type      | Default | Description                                                                |
+| --------- | --------- | ------- | -------------------------------------------------------------------------- |
+| `factory` | `() => T` | —       | Creates the state. Runs on the first call of the accessor, once per scope. |
 
-```ts
-const isServer: boolean;
-```
+## isServer
 
 `true` in the server entry of `lumiose` (the `node` condition), `false` in the browser entry
 (Solid's name). Use it to guard code that runs on both sides, such as a `defineState` factory that
@@ -343,56 +537,108 @@ It is a constant, so production client builds fold it: `if (isServer) { … }` a
 bundle. The server branch must still type-check and import only what client code may import;
 server-only modules stay out of client graphs ([LUM4003](../errors/LUM4003.md)).
 
-## isPending
-
 ```ts
-function isPending(): boolean;
+const isServer: boolean;
 ```
+
+```ts check
+import { isServer } from "lumiose";
+
+export function storedTheme(): string {
+  if (isServer) return "light";
+  return localStorage.getItem("theme") ?? "light";
+}
+```
+
+## isPending
 
 Inside an async component (its body or its UI): whether a **re-run** is in flight. The first load is
 not a re-run (`<Suspense>` covers it). Reading it in the body does not re-run the component.
 Always `false` on the server.
 
-## isBusy
-
 ```ts
-function isBusy(): boolean;
+function isPending(): boolean;
 ```
+
+```tsx check
+import { fetchJSON, isPending } from "lumiose";
+
+export async function BookTitle(props: { id: string }) {
+  const url = `/api/books/${props.id}`;
+  const book = await fetchJSON<{ title: string }>(url);
+  return <h2 class={{ stale: isPending() }}>{book.title}</h2>;
+}
+```
+
+## isBusy
 
 App-wide: whether anything is in flight: an async component run, a `<Suspense>` showing its
 fallback, a form submission (`submit()`), an SPA navigation or a request of the async cache
 (`fetchJSON`, `query`), background refetches included. Reactive. Always `false` on the
 server.
 
-## resource
-
 ```ts
-function resource<T>(fetcher: (signal: AbortSignal) => T | PromiseLike<T>): Resource<T>;
+function isBusy(): boolean;
+```
 
-interface Resource<T> {
-  (): T | undefined; // latest value, tracked
-  loading(): boolean;
-  error(): unknown;
-  refetch(): void; // aborts a load in flight and loads again
+```tsx check
+import { isBusy } from "lumiose";
+
+export function BusyBar() {
+  return <progress hidden={!isBusy()} aria-label="Loading" />;
 }
 ```
+
+## resource
+
+Loads a value on demand and exposes its loading and error state.
 
 Low-level on-demand loading. `fetcher` runs now and whenever a signal it read synchronously
 changes; its `AbortSignal` aborts when superseded or disposed. The first load counts as pending
 for the nearest `<Suspense>`. Errors are not thrown: read `error()`. Browser only: on the server it
 stays loading. Prefer [async components](../concepts/async.md).
 
-## optimistic
-
 ```ts
-function optimistic<T>(source: () => T): Optimistic<T>;
+function resource<T>(fetcher: (signal: AbortSignal) => T | PromiseLike<T>): Resource<T>;
 
-interface Optimistic<T> {
-  (): T; // source() with the pending overlays applied in order, tracked
-  set(value: T, promise: PromiseLike<unknown>): void;
-  update(fn: (value: T) => T, promise: PromiseLike<unknown>): void;
+interface Resource<T> {
+  (): T | undefined;
+  loading(): boolean;
+  error(): unknown;
+  refetch(): void;
 }
 ```
+
+```tsx check
+import { resource, signal } from "lumiose";
+
+interface User {
+  name: string;
+}
+
+export function UserCard() {
+  const id = signal("ada");
+  const user = resource(async (signal) => {
+    const res = await fetch(`/api/users/${id()}`, { signal });
+    return (await res.json()) as User;
+  });
+  const reload = () => user.refetch();
+  return <p onClick={reload}>{user.loading() ? "Loading…" : user()?.name}</p>;
+}
+```
+
+| Name      | Type                                           | Default | Description                                                                                                                     |
+| --------- | ---------------------------------------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| `fetcher` | `(signal: AbortSignal) => T \| PromiseLike<T>` | —       | Loads the value. Runs now and whenever a signal it read synchronously changes; its `signal` aborts when superseded or disposed. |
+
+| Member      | Type             | Description                                                                  |
+| ----------- | ---------------- | ---------------------------------------------------------------------------- |
+| `()`        | `T \| undefined` | The latest loaded value; `undefined` until the first load resolves. Tracked. |
+| `loading()` | `boolean`        | Whether a load is in flight. Tracked.                                        |
+| `error()`   | `unknown`        | The error of the latest load, or `undefined` once a load succeeds. Tracked.  |
+| `refetch()` | `void`           | Aborts a load in flight and loads again.                                     |
+
+## optimistic
 
 A value that follows `source` (a getter such as `() => props.likes`, or a signal), plus overlays
 held while their promises are pending. Each `set`/`update` applies at once and drops when its own
@@ -401,6 +647,43 @@ back. Concurrent overlays apply in call order over the latest source value, so a
 re-applied when the source changes. A rejection is not re-thrown; await the promise itself to
 handle it. Writes stop when the owner is disposed. On the server it reads `source()` and `set`/`update`
 do nothing. See [optimistic updates](../concepts/data-and-actions.md) in Data and actions.
+
+```ts
+function optimistic<T>(source: () => T): Optimistic<T>;
+
+interface Optimistic<T> {
+  (): T;
+  set(value: T, promise: PromiseLike<unknown>): void;
+  update(fn: (value: T) => T, promise: PromiseLike<unknown>): void;
+}
+```
+
+```tsx check
+import { optimistic, submit } from "lumiose";
+
+export function LikeButton(props: { likes: number }) {
+  const likes = optimistic(() => props.likes);
+  return (
+    <form
+      method="post"
+      action="?/like"
+      onSubmit={(event) => likes.update((n) => n + 1, submit(event))}
+    >
+      <button>Like ({likes()})</button>
+    </form>
+  );
+}
+```
+
+| Name     | Type      | Default | Description                                                             |
+| -------- | --------- | ------- | ----------------------------------------------------------------------- |
+| `source` | `() => T` | —       | The value to follow: a getter such as `() => props.likes`, or a signal. |
+
+| Member                | Type   | Description                                                                                          |
+| --------------------- | ------ | ---------------------------------------------------------------------------------------------------- |
+| `()`                  | `T`    | `source()` with the pending overlays applied in order. Tracked.                                      |
+| `set(value, promise)` | `void` | Shows `value` until `promise` settles.                                                               |
+| `update(fn, promise)` | `void` | Shows `fn` applied to the current value until `promise` settles; re-applied when the source changes. |
 
 ## Example
 
@@ -496,6 +779,8 @@ export const selected = store<Record<string, boolean>>({});
 // selected["todo-1"] = true; re-runs only the bindings that read selected["todo-1"]
 ```
 
+#### One signal per key
+
 When each entry must be a signal of its own (to pass it to a component, or to derive from it),
 create them on first use:
 
@@ -527,6 +812,9 @@ object, so a list re-renders every row and loses its local state. `reconcile` pa
 instead: rows are matched by `id` (or by `{ key }`), unchanged rows keep their identity, and only
 the fields that changed notify.
 
+It works on a part of a store too: `reconcile(state.books, fresh)`. Keys missing from the new
+data are deleted, nested objects are merged, and other values are replaced.
+
 ```ts check
 import { reconcile, store } from "lumiose";
 
@@ -543,13 +831,13 @@ export async function refresh(): Promise<void> {
 }
 ```
 
-It works on a part of a store too: `reconcile(state.books, fresh)`. Keys missing from the new
-data are deleted, nested objects are merged, and other values are replaced.
-
 ### A persisted signal (atomWithStorage, persist)
 
 Call it in a component. The saved value loads in `onMount`, after hydration, so the server HTML
 and the first browser render agree; other tabs stay in sync through the `storage` event.
+
+In a `client:only` island or an SPA, which render nothing on the server, you can read
+`localStorage` directly in `signal(…)` instead.
 
 ```tsx check
 import { effect, onMount, signal, type Signal } from "lumiose";
@@ -583,9 +871,6 @@ export function ThemeToggle() {
   );
 }
 ```
-
-In a `client:only` island or an SPA, which render nothing on the server, you can read
-`localStorage` directly in `signal(…)` instead.
 
 ## Common mistakes when sharing state
 
