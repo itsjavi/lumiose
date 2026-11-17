@@ -95,60 +95,60 @@ test("the landing page presents Lumiose with benchmark evidence", async ({ page 
   expect(failures).toEqual([]);
 });
 
-/** Counts requestAnimationFrame calls, to see whether the light field's loop runs. */
-async function countFrames(page: Page) {
-  await page.addInitScript(() => {
-    const original = window.requestAnimationFrame.bind(window);
-    (window as unknown as { frames: number }).frames = 0;
-    window.requestAnimationFrame = (callback) => {
-      (window as unknown as { frames: number }).frames++;
-      return original(callback);
-    };
-  });
-  return async (ms: number) => {
-    const before = await page.evaluate(() => (window as unknown as { frames: number }).frames);
-    await page.waitForTimeout(ms);
-    return (await page.evaluate(() => (window as unknown as { frames: number }).frames)) - before;
-  };
+/** The beams' pulse, as the browser runs it: one CSS animation per beam. */
+function beamAnimations(page: Page) {
+  return page.evaluate(() =>
+    document
+      .getAnimations()
+      .filter((animation) =>
+        (animation.effect as KeyframeEffect | null)?.target?.matches(".lm-beams line"),
+      )
+      .map((animation) => animation.playState),
+  );
 }
 
-test("the light field pauses with its button and off-screen", async ({ page }) => {
-  const frames = await countFrames(page);
+test("the beams pulse behind every page, brighter on the landing, and pause with their control", async ({
+  page,
+}) => {
+  const level = () =>
+    page
+      .locator(".lm-beams")
+      .evaluate((svg) => getComputedStyle(svg).getPropertyValue("--lm-beam"));
+  await page.goto("/docs/concepts/styles");
+  const inner = Number(await level());
   await page.goto("/");
-  const pause = page.getByRole("button", { name: "Pause animation" });
-  // client:idle: the island loads after the first paint, and only with WebGL.
-  await expect(page.locator(".stage canvas.on")).toBeAttached({ timeout: 10_000 });
-  await expect(pause).toBeVisible();
-  expect(await frames(500)).toBeGreaterThan(5);
+  expect(Number(await level())).toBeGreaterThan(inner);
+  await expect(page.locator(".lm-beams line")).toHaveCount(14);
+  await expect(page.locator(".lm-beams")).toHaveAttribute("aria-hidden", "true");
+  expect(new Set(await beamAnimations(page))).toEqual(new Set(["running"]));
 
-  await pause.click();
-  const play = page.getByRole("button", { name: "Play animation" });
-  await expect(play).toBeVisible();
-  expect(await frames(500)).toBeLessThanOrEqual(1);
-  await play.click();
-  expect(await frames(500)).toBeGreaterThan(5);
-
-  await page.locator("#start-title").scrollIntoViewIfNeeded();
-  await page.waitForTimeout(200);
-  expect(await frames(500)).toBeLessThanOrEqual(1);
+  const pause = page.getByRole("checkbox", { name: "Pause background animation" });
+  await pause.check();
+  expect(new Set(await beamAnimations(page))).toEqual(new Set(["paused"]));
+  await pause.uncheck();
+  expect(new Set(await beamAnimations(page))).toEqual(new Set(["running"]));
 });
 
-test("under reduced motion the light field is one still frame", async ({ page }) => {
-  const frames = await countFrames(page);
+test("under reduced motion the beams are still, with no pause control", async ({ page }) => {
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.goto("/");
-  await expect(page.locator(".stage canvas.on")).toBeAttached({ timeout: 10_000 });
-  await expect(page.locator(".stage .motion")).toBeHidden();
-  expect(await frames(1000)).toBeLessThanOrEqual(1);
+  await expect(page.locator(".lm-beams line").first()).toHaveCSS("animation-name", "none");
+  expect(await beamAnimations(page)).toEqual([]);
+  await expect(page.getByLabel("Pause background animation")).toBeHidden();
 });
 
-test("without JavaScript the landing is complete, on the CSS light", async ({ browser }) => {
+test("without JavaScript the landing is complete, beams and their pause control included", async ({
+  browser,
+}) => {
   const context = await browser.newContext({ javaScriptEnabled: false });
   const page = await context.newPage();
   await page.goto("/");
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
   await expect(page.locator("#compare tbody tr")).toHaveCount(9);
-  await expect(page.locator(".stage .motion")).toBeHidden();
+  const beam = page.locator(".lm-beams line").first();
+  await expect(beam).toHaveCSS("animation-play-state", "running");
+  await page.getByLabel("Pause background animation").check();
+  await expect(beam).toHaveCSS("animation-play-state", "paused");
   await expect(page.locator(".live-demo").getByText("You write")).toBeVisible();
   await context.close();
 });
@@ -316,7 +316,7 @@ test("screenshots", async ({ page }) => {
 const landingShot = (name: string) => `../../backlog/assets/task-213-${name}.png`;
 
 // SCREENSHOTS=1 pnpm screenshots: TASK-213's landing captures at 1440 and 390 px, in both themes,
-// with the live demo loaded and the light paused once it is fully up.
+// with the live demo loaded and the beams paused.
 test("landing screenshots", async ({ page }) => {
   test.skip(!process.env["SCREENSHOTS"], "Set SCREENSHOTS=1 to capture.");
   for (const [width, height] of [
@@ -331,11 +331,8 @@ test("landing screenshots", async ({ page }) => {
       await expect(page.locator(".playground .status")).toContainText("Compiled", {
         timeout: 20_000,
       });
-      await page.evaluate(() => scrollTo(0, 0));
-      await expect(page.locator(".stage canvas.on")).toBeAttached({ timeout: 10_000 });
-      await page.waitForTimeout(3000);
-      await page.getByRole("button", { name: "Pause animation" }).click();
-      // The click scrolls the button into view; the capture starts at the top.
+      await page.getByLabel("Pause background animation").check();
+      // The click scrolls the control into view; the capture starts at the top.
       await page.evaluate(() => scrollTo(0, 0));
       await page.waitForTimeout(300);
       await page.screenshot({ path: landingShot(`${width}-${scheme}`), fullPage: true });

@@ -1,11 +1,11 @@
 ---
 id: TASK-605
 title: 'Site shell: beams of light background, header, footer, favicon and OG images'
-status: To Do
+status: In Progress
 assignee:
   - '@Beacon'
 created_date: '2026-11-17T12:28:00Z'
-updated_date: '2026-11-17T12:57:00Z'
+updated_date: '2026-11-17T14:26:00Z'
 labels: []
 milestone: m-16
 dependencies:
@@ -34,4 +34,11 @@ Replace the LightField three.js island with the beams of the reference: thin amb
 
 <!-- SECTION:NOTES:BEGIN -->
 From TASK-602 (Lux): apps/web still hard-codes old brand colours in scripts/og-images.ts and public/favicon.svg.
+
+Beacon (beacon-20261117-t605), paused on Lux's request, task stays In Progress.
+Done and committed (c26d4dc3, 2f782328, 98e654bc, plus the wip spec commit): apps/web/src/components/Beams.stsx (static SVG beams and arcs, CSS pulse, dim level on inner pages, still under reduced motion, CSS-only 'Pause background animation' checkbox in the footer), wired in routes/layout.stsx; the LightField island and lib/light-field.ts are removed (the site never depended on three.js: the light field was hand-written WebGL, so no dependency or lockfile change); the landing's stage lost its night background, scrim and gradient headline so the beams show; favicon.svg and public/og/*.png in the Corner L identity (scripts/og-images.ts); screenshots backlog/assets/redesign/task-605-*.jpg.
+Contrast, measured against the dev server with every beam at its peak (lowest ratio of text over a beam or arc pixel, 1440 and 390 px, landing, docs, /ui, benchmarks, playground): dark 4.91:1 (grey text, playground at 390 px; landing 5.06), light 5.18:1. Without beams the grey is 8.33 and 7.00.
+Checks: lumiose check, vitest (46), pnpm typecheck and pnpm lint pass.
+Left: the rewritten shell specs in e2e/web.e2e.ts and e2e/a11y.e2e.ts are committed as wip but were NEVER RUN (the e2e lock was held by another worker). No files are uncommitted.
+Next step: take .local/coordination/e2e.lock, run 'pnpm exec playwright test --project=static e2e/web.e2e.ts e2e/a11y.e2e.ts' in apps/web, fix what fails in the shell specs, record the '[lowest contrast over a beam]' figures printed by the static build, then check off the acceptance criteria and write the final summary. Not verified: the favicon in a real browser tab, the paint cost of the pulse.
 <!-- SECTION:NOTES:END -->

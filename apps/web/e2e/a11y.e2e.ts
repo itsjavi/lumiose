@@ -164,11 +164,6 @@ async function settle(page: Page) {
   await page.waitForLoadState("networkidle");
   const path = new URL(page.url()).pathname;
   if (path === "/") {
-    // The light field (client:idle) draws once WebGL is up; the CSS light stays without it.
-    await page
-      .locator(".stage canvas.on")
-      .waitFor({ state: "attached", timeout: 10_000 })
-      .catch(() => {});
     // The live demo hydrates when visible: check it live (the static stand-in is checked below).
     await page.locator(".live-demo").scrollIntoViewIfNeeded();
   }
@@ -275,36 +270,27 @@ for (const scheme of ["light", "dark"] as const) {
 }
 
 /**
- * The brightest color behind the hero's copy over the light field's frames, scrim included, from
- * "text over the light field keeps AA contrast" below (it prints the measured peak).
- */
-const STAGE_PEAK = "#302e40";
-
-/**
  * The decorative layers axe cannot see through ("needs review"), each replaced by a solid color at
  * its strongest: the glows composited at their peak, the sticky header's translucent background
  * over the page's darkest (light theme) or lightest (dark theme) content, and the two ends of the
  * primary buttons' and the gradient text's gradients. The site's own selectors: keep in sync.
  */
 const FLATTENED = [
-  // The landing's night stage: the light field, its CSS fallback and the scrim become one solid
-  // color, the brightest the field gets behind the copy (measured by the test below, rounded up).
-  `.stage { background: ${STAGE_PEAK} !important; }
-   .stage canvas, .stage .scrim { display: none !important; }
-   .box { background: color-mix(in srgb, var(--lm-glow-b) 14%, var(--lm-surface)) !important; }
+  // The beams behind the page are thin lines, which no solid color stands for: "text over the
+  // beams keeps AA contrast" below measures them. The install box lets a quarter of what is behind
+  // it through: here, a beam at full strength.
+  `.box { background: color-mix(in srgb, var(--lm-glow-b) 14%, var(--lm-surface)) !important; }
    tr.self > * { background: color-mix(in srgb, var(--lm-accent) 10%, var(--lm-surface)) !important; }
    .closing { background: color-mix(in srgb, var(--lm-glow-b) 12%, var(--lm-bg)) !important; }
-   .install { background: color-mix(in srgb, var(--lm-bg) 75%, ${STAGE_PEAK}) !important; }
+   .install { background: color-mix(in srgb, var(--lm-bg) 75%, var(--lm-accent)) !important; }
    .top { background: color-mix(in srgb, var(--lm-glow-a) 22%, var(--lm-bg)) !important; }
    .footer { background: color-mix(in srgb, var(--lm-glow-a) 8%, var(--lm-bg)) !important; }
    .card::before { display: none !important; }
    .card.linked { background: color-mix(in srgb, var(--lm-glow-a) 22%, var(--lm-surface)) !important; }
    header.header { backdrop-filter: none !important;
      background: color-mix(in srgb, var(--lm-bg) 80%, var(--lm-text)) !important; }
-   .btn.primary { background: color-mix(in oklab, var(--lm-accent) 92%, white) !important; }
-   .lit { color: var(--lm-accent-text) !important; background: none !important; }`,
-  `.btn.primary { background: var(--lm-accent) !important; }
-   .lit { color: var(--lm-glow-text) !important; background: none !important; }`,
+   .btn.primary { background: color-mix(in oklab, var(--lm-accent) 92%, white) !important; }`,
+  `.btn.primary { background: var(--lm-accent) !important; }`,
 ];
 
 for (const scheme of ["light", "dark"] as const) {
@@ -332,105 +318,145 @@ for (const scheme of ["light", "dark"] as const) {
   });
 }
 
-/** An sRGB channel (0–255) in linear light. */
-function linear(channel: number) {
-  const c = channel / 255;
-  return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
-}
+/** Every beam at the top of its pulse at once: brighter than the page ever is. */
+const BEAMS_AT_PEAK = `*, *::before, *::after { transition: none !important; }
+  .lm-beams line { animation: none !important; opacity: var(--lm-beam) !important; }`;
 
-/** WCAG relative luminance of an sRGB color (0–255 channels). */
-function luminance([r, g, b]: number[]) {
-  return 0.2126 * linear(r!) + 0.7152 * linear(g!) + 0.0722 * linear(b!);
-}
+/** The page types whose text starts nearest the beams' corner, and the landing's brighter beams. */
+const BEAM_PAGES = [
+  "/",
+  "/docs/getting-started",
+  "/docs/concepts/styles",
+  "/ui",
+  "/benchmarks",
+  "/playground",
+];
 
-for (const [width, height] of [
-  [1440, 900],
-  [820, 1180],
-  [390, 844],
-] as const) {
-  test(`text over the light field keeps AA contrast at every sampled frame (${width} px)`, async ({
-    page,
-  }) => {
-    // decision-39: text over a moving background sits on a backdrop that keeps 4.5:1 (3:1 for
-    // large text) at every frame. Axe cannot see into the canvas, so this test does: it hides the
-    // copy, captures the stage over several seconds of light, and compares each text color with
-    // the brightest pixel behind it.
-    await page.setViewportSize({ width, height });
-    await page.goto("/");
-    const lit = page.locator(".stage canvas.on");
-    await lit.waitFor({ state: "attached", timeout: 10_000 }).catch(() => {});
-    test.skip((await lit.count()) === 0, "No WebGL here: the CSS light is checked by axe.");
-    await page.waitForTimeout(2500);
-
-    const texts = await page.evaluate(() => {
-      const stage = document.querySelector(".stage")!.getBoundingClientRect();
-      const selectors = [".eyebrow", "h1 .line", ".lead", ".badge", ".proof strong", ".proof span"];
-      return selectors.flatMap((selector) =>
-        Array.from(document.querySelectorAll<HTMLElement>(`.hero ${selector}`)).map((element) => {
-          const box = element.getBoundingClientRect();
-          const style = getComputedStyle(element);
-          const size = Number.parseFloat(style.fontSize);
-          const bold = Number(style.fontWeight) >= 700;
-          // The gradient headline: its darkest stop, the indigo end.
-          const color = element.classList.contains("lit") ? "rgb(184, 176, 255)" : style.color;
-          return {
-            label: `${selector} "${element.textContent!.trim().slice(0, 24)}"`,
-            box: [box.left - stage.left, box.top - stage.top, box.width, box.height],
-            rgb: color.match(/\d+/g)!.slice(0, 3).map(Number),
-            large: size >= 24 || (bold && size >= 18.66),
-          };
-        }),
-      );
-    });
-    await page.addStyleTag({ content: ".hero { visibility: hidden !important; }" });
-
-    const failures = new Set<string>();
-    let peak = [0, 0, 0];
-    for (let frame = 0; frame < 4; frame++) {
-      const shot = (await page.locator(".stage").screenshot()).toString("base64");
-      const brightest = await page.evaluate(
-        async ({ png, boxes }) => {
-          const image = new Image();
-          image.src = `data:image/png;base64,${png}`;
-          await image.decode();
-          const canvas = new OffscreenCanvas(image.width, image.height);
-          const context = canvas.getContext("2d")!;
-          context.drawImage(image, 0, 0);
-          return boxes.map(([x, y, w, h]) => {
-            const data = context.getImageData(
-              Math.max(0, Math.floor(x!)),
-              Math.max(0, Math.floor(y!)),
-              Math.max(1, Math.ceil(w!)),
-              Math.max(1, Math.ceil(h!)),
-            ).data;
-            let best = [0, 0, 0];
-            let bestSum = -1;
-            for (let i = 0; i < data.length; i += 4) {
-              // Rec. 709 weights: the brightest pixel by luminance, close enough to rank them.
-              const sum = 0.2126 * data[i]! + 0.7152 * data[i + 1]! + 0.0722 * data[i + 2]!;
-              if (sum > bestSum) {
-                bestSum = sum;
-                best = [data[i]!, data[i + 1]!, data[i + 2]!];
+for (const scheme of ["light", "dark"] as const) {
+  for (const [width, height] of [
+    [1440, 900],
+    [820, 1180],
+    [390, 844],
+  ] as const) {
+    test(`text over the beams keeps AA contrast at their brightest (${scheme}, ${width} px)`, async ({
+      page,
+    }) => {
+      // decision-90: text keeps 4.5:1 against what is behind it, a beam at its brightest included.
+      // Axe cannot see the beams behind the text, so this test does: with every beam at its peak
+      // and the text hidden, it captures the page with and without the beams. The pixels that
+      // differ inside a text's box are the beams (and arcs) behind that text, and each is compared
+      // with the text's color. Large text gets no lower bar.
+      test.setTimeout(BEAM_PAGES.length * PER_PAGE);
+      await page.setViewportSize({ width, height });
+      await page.emulateMedia({ colorScheme: scheme });
+      const failures: string[] = [];
+      let lowest = 21;
+      for (const path of BEAM_PAGES) {
+        await page.goto(path);
+        await page.waitForLoadState("networkidle");
+        await page.addStyleTag({ content: BEAMS_AT_PEAK });
+        const texts = await page.evaluate(() => {
+          const area = document.querySelector(".lm-beams")!.getBoundingClientRect();
+          const bottom = Math.min(area.bottom, innerHeight);
+          const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+          const found: { label: string; box: number[]; rgb: number[] }[] = [];
+          for (let node = walker.nextNode(); node !== null; node = walker.nextNode()) {
+            const parent = node.parentElement!;
+            const text = node.textContent!.trim();
+            if (text === "" || parent.closest(".sr-only") !== null) continue;
+            if (!parent.checkVisibility({ visibilityProperty: true, opacityProperty: true }))
+              continue;
+            const range = document.createRange();
+            range.selectNodeContents(node);
+            const rgb = getComputedStyle(parent)
+              .color.match(/[\d.]+/g)!
+              .slice(0, 3)
+              .map(Number);
+            for (const box of range.getClientRects()) {
+              const outside =
+                box.width < 1 ||
+                box.left >= area.right ||
+                box.right <= 0 ||
+                box.top >= bottom ||
+                box.bottom <= 0;
+              if (outside) continue;
+              found.push({
+                label: `${parent.tagName.toLowerCase()} "${text.slice(0, 24)}"`,
+                box: [box.left, box.top, box.width, box.height],
+                rgb,
+              });
+            }
+          }
+          return found;
+        });
+        expect(texts.length, `${path}: text over the beams' area`).toBeGreaterThan(0);
+        await page.addStyleTag({
+          content: "* { color: transparent !important; text-shadow: none !important; }",
+        });
+        const lit = (await page.screenshot()).toString("base64");
+        await page.addStyleTag({ content: ".lm-beams { visibility: hidden !important; }" });
+        const plain = (await page.screenshot()).toString("base64");
+        const worst = await page.evaluate(
+          async ({ litPng, plainPng, boxes }) => {
+            // oxlint-disable-next-line unicorn/consistent-function-scoping -- runs in the page
+            const pixels = async (png: string) => {
+              const image = new Image();
+              image.src = `data:image/png;base64,${png}`;
+              await image.decode();
+              const canvas = new OffscreenCanvas(image.width, image.height);
+              const context = canvas.getContext("2d")!;
+              context.drawImage(image, 0, 0);
+              return context.getImageData(0, 0, image.width, image.height);
+            };
+            // WCAG relative luminance of an sRGB color (0–255 channels).
+            // oxlint-disable-next-line unicorn/consistent-function-scoping -- runs in the page
+            const linear = (channel: number) => {
+              const c = channel / 255;
+              return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+            };
+            // oxlint-disable-next-line unicorn/consistent-function-scoping -- runs in the page
+            const luminance = (r: number, g: number, b: number) =>
+              0.2126 * linear(r) + 0.7152 * linear(g) + 0.0722 * linear(b);
+            const [a, b] = [await pixels(litPng), await pixels(plainPng)];
+            let low = { ratio: 21, label: "", on: [0, 0, 0], pixels: 0 };
+            for (const text of boxes) {
+              const color = luminance(text.rgb[0]!, text.rgb[1]!, text.rgb[2]!);
+              const [left, top, w, h] = text.box as [number, number, number, number];
+              for (
+                let y = Math.max(0, Math.floor(top));
+                y < Math.min(a.height, Math.ceil(top + h));
+                y++
+              ) {
+                for (
+                  let x = Math.max(0, Math.floor(left));
+                  x < Math.min(a.width, Math.ceil(left + w));
+                  x++
+                ) {
+                  const i = (y * a.width + x) * 4;
+                  const [r, g, bl] = [a.data[i]!, a.data[i + 1]!, a.data[i + 2]!];
+                  if (r === b.data[i] && g === b.data[i + 1] && bl === b.data[i + 2]) continue;
+                  low.pixels++;
+                  const behind = luminance(r, g, bl);
+                  const ratio = (Math.max(color, behind) + 0.05) / (Math.min(color, behind) + 0.05);
+                  if (ratio < low.ratio) low = { ...low, ratio, label: text.label, on: [r, g, bl] };
+                }
               }
             }
-            return best;
-          });
-        },
-        { png: shot, boxes: texts.map((text) => text.box) },
-      );
-      texts.forEach((text, index) => {
-        const background = brightest[index]!;
-        if (luminance(background) > luminance(peak)) peak = background;
-        const ratio = (luminance(text.rgb) + 0.05) / (luminance(background) + 0.05);
-        if (ratio < (text.large ? 3 : 4.5)) {
-          failures.add(`${text.label}: ${ratio.toFixed(2)} on rgb(${background.join(", ")})`);
+            return low;
+          },
+          { litPng: lit, plainPng: plain, boxes: texts },
+        );
+        lowest = Math.min(lowest, worst.ratio);
+        if (worst.ratio < 4.5) {
+          failures.push(
+            `${path}: ${worst.label}: ${worst.ratio.toFixed(2)} on rgb(${worst.on.join(", ")})`,
+          );
         }
-      });
-      await page.waitForTimeout(1500);
-    }
-    console.log(`[light field peak behind text] ${width} px: rgb(${peak.join(", ")})`);
-    expect([...failures]).toEqual([]);
-  });
+      }
+      console.log(`[lowest contrast over a beam] ${scheme}, ${width} px: ${lowest.toFixed(2)}:1`);
+      expect(failures).toEqual([]);
+    });
+  }
 }
 
 test("reduced motion stops non-essential motion", async ({ page }) => {
@@ -468,6 +494,8 @@ test("no ambient motion runs longer than 5 seconds (2.2.2 needs a pause control 
           // motion tells that work goes on, as 2.2.2 allows, and it stops under reduced motion.
           const target = (animation.effect as KeyframeEffect | null)?.target;
           if (target?.matches("progress:indeterminate")) return false;
+          // The beams behind the page have a pause control, checked below.
+          if (target?.matches(".lm-beams line")) return false;
           return animation.playState === "running" && end > 5000;
         })
         .map((animation) => (animation as CSSAnimation).animationName ?? animation.id),
@@ -475,6 +503,19 @@ test("no ambient motion runs longer than 5 seconds (2.2.2 needs a pause control 
     // Adding one? Give it a visible pause button and stop it under prefers-reduced-motion, then
     // check here that the button pauses it.
     expect(long, path).toEqual([]);
+
+    // The beams: their control is on every page, and it pauses every beam.
+    await page.getByRole("checkbox", { name: "Pause background animation" }).check();
+    const beams = await page.evaluate(() =>
+      document
+        .getAnimations()
+        .filter((animation) =>
+          (animation.effect as KeyframeEffect | null)?.target?.matches(".lm-beams line"),
+        )
+        .map((animation) => animation.playState),
+    );
+    expect(beams.length, path).toBeGreaterThan(0);
+    expect(new Set(beams), path).toEqual(new Set(["paused"]));
   }
 });
 
