@@ -1,20 +1,24 @@
-// /benchmarks: the latest results as charts (moved from the landing, decision-37), then the
-// benchmark pages (TASK-163). The fullstack results viewer is copied by scripts/site.ts to
-// /benchmarks/fullstack/; the js-framework-benchmark results are a page of this site, with the
-// Lumiose benchmark app below it. Every number comes from the committed results (evidence.ts).
+// /benchmarks: the stack comparison table (moved from the landing, decision-90), the latest results
+// as charts (decision-37), then the benchmark pages (TASK-163). The fullstack results viewer is
+// copied by scripts/site.ts to /benchmarks/fullstack/; the js-framework-benchmark results are a
+// page of this site, with the Lumiose benchmark app below it. Every number comes from the committed
+// results (evidence.ts, stacks.ts).
 import { bp, color, layout, space, text } from "@lumiose/site-kit/tokens";
 import { href } from "lumiose";
 import { BarChart } from "../../components/BarChart.stsx";
 import { PageMeta } from "../../components/PageMeta.tsx";
 import { PageHead, ShowcaseGrid } from "../../components/Showcase.stsx";
+import { StackTable } from "../../components/StackTable.stsx";
 import { evidence } from "../../content/evidence.ts";
 import { benchmarks, REPOSITORY } from "../../content/showcase.ts";
+import { ASTRO_NOTE, stacks, tableNote } from "../../content/stacks.ts";
 import { link } from "../../lib/site.ts";
 
 const fixed = (digits: number) => (value: number) => value.toFixed(digits);
 
 export default function Benchmarks() {
   const results = evidence();
+  const rows = stacks();
 
   return (
     <div class="page">
@@ -30,7 +34,14 @@ export default function Benchmarks() {
         </p>
       </PageHead>
 
-      <section class="results" aria-labelledby="results-title">
+      <section class="block" id="stacks" aria-labelledby="stacks-title">
+        <h2 id="stacks-title">Compare the stacks</h2>
+        <StackTable rows={rows} labelledBy="stacks-title" />
+        <p class="note">{tableNote(results, rows)}</p>
+        <p class="note">{ASTRO_NOTE}</p>
+      </section>
+
+      <section class="block" aria-labelledby="results-title">
         <h2 id="results-title">Latest results</h2>
         <div class="charts">
           <BarChart
@@ -62,7 +73,7 @@ export default function Benchmarks() {
             format={fixed(1)}
           />
         </div>
-        <p class="source">
+        <p class="note">
           Fullstack: {results.fullstackRun}, in the{" "}
           <a href={link("/benchmarks/fullstack/")}>results viewer</a> (
           <a href={href("/benchmarks/fullstack-comparison")}>method and raw data</a>). Client:{" "}
@@ -73,7 +84,7 @@ export default function Benchmarks() {
         </p>
       </section>
 
-      <section class="pages" aria-labelledby="pages-title">
+      <section class="block" aria-labelledby="pages-title">
         <h2 id="pages-title">The benchmarks</h2>
         <ShowcaseGrid items={benchmarks()} open="See the results" />
       </section>
@@ -85,30 +96,34 @@ export default function Benchmarks() {
   .page {
     max-inline-size: $layout.page;
     margin-inline: auto;
-    padding: $space.xl $layout.gutter $space.xxl;
+    padding: 0 $layout.gutter $space.xxl;
   }
-  .results,
-  .pages {
+  .block {
     display: grid;
+    /* The stack table scrolls inside its column instead of widening the page. */
+    grid-template-columns: minmax(0, 1fr);
     gap: $space.md;
-    margin-block-end: $space.xxl;
+    margin-block-end: $space.xxxl;
   }
   h2 {
     margin: 0;
-    font-size: $text.xl;
+    font-size: $text.xxl;
+    line-height: 1.05;
+    letter-spacing: -0.035em;
   }
   .charts {
     display: grid;
-    gap: $space.md;
+    gap: $space.xl;
   }
   @media (width >= $bp.md) {
     .charts {
       grid-template-columns: repeat(2, minmax(0, 1fr));
     }
   }
-  .source {
+  .note {
+    max-inline-size: 62rem;
     margin: 0;
-    color: $color.subtle;
-    font-size: $text.sm;
+    color: $color.muted;
+    font-size: $text.xs;
   }
 </style>

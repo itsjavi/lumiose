@@ -2,7 +2,7 @@
 // RESULTS.md, rendered at build time) and a link to the Lumiose benchmark app, which scripts/site.ts
 // publishes below this page at app/ (TASK-163).
 import { LinkButton } from "@lumiose/site-kit";
-import { color, font, layout, radius, space, text } from "@lumiose/site-kit/tokens";
+import { color, font, label, layout, space, text } from "@lumiose/site-kit/tokens";
 import { PageMeta } from "../../../components/PageMeta.tsx";
 import { Marked } from "marked";
 import results from "../../../../../../benchmarks/js-framework-benchmark/RESULTS.md?raw";
@@ -47,7 +47,7 @@ export default function JsFrameworkBenchmark() {
   .page {
     max-inline-size: $layout.page;
     margin-inline: auto;
-    padding: $space.xl $layout.gutter $space.xxl;
+    padding: 0 $layout.gutter $space.xxl;
   }
   .actions {
     display: flex;
@@ -64,9 +64,23 @@ export default function JsFrameworkBenchmark() {
     margin-block: $space.md;
   }
   .results :deep(:is(th, td)) {
-    padding: $space.xxs $space.xs;
+    padding: $space.xxs $space.md $space.xxs 0;
     border-block-end: 1px solid $color.border;
+    text-align: start;
     white-space: nowrap;
+  }
+  .results :deep(thead th) {
+    color: $color.muted;
+    font-family: $label.font;
+    font-size: $label.size;
+    font-weight: 400;
+    letter-spacing: $label.tracking;
+    text-transform: $label.transform;
+  }
+  .results :deep(h2) {
+    margin-block: $space.xl $space.sm;
+    font-size: $text.xxl;
+    letter-spacing: -0.035em;
   }
   .results :deep(code) {
     font-family: $font.mono;
@@ -78,7 +92,7 @@ export default function JsFrameworkBenchmark() {
   }
   .results :deep(pre) {
     padding: $space.sm;
-    border-radius: $radius.md;
+    border: 1px solid $color.border;
     background: $color.sunken;
     overflow-x: auto;
   }

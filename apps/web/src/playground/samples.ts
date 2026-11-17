@@ -14,8 +14,8 @@ export const samples: Sample[] = [
     code: `import { computed, signal } from "lumiose";
 
 // Top-level constants can be used in <style> blocks as $name.
-const accent = "#5546ff";
-const radius = "10px";
+const accent = "#f5a300";
+const pad = "0.5rem 1rem";
 
 export default function Counter() {
   const count = signal(0);
@@ -46,17 +46,16 @@ function Reset(props: { onReset(): void }) {
     justify-items: start;
   }
   button {
-    padding: 0.5rem 1rem;
-    border: 0;
-    border-radius: $radius;
+    padding: $pad;
+    border: 1px solid $accent;
     background: $accent;
-    color: white;
+    color: black;
     font: inherit;
     cursor: pointer;
   }
   .ghost {
     background: transparent;
-    color: light-dark($accent, #a99fff);
+    color: inherit;
   }
 </style>
 `,
@@ -174,13 +173,11 @@ export default function Card() {
   .card {
     /* Custom properties: Badge, inside the card, inherits them. */
     --gap: 0.75rem;
-    --radius: 12px;
-    --hue: 265deg;
+    --line: color-mix(in oklab, currentColor 20%, transparent);
     display: grid;
     gap: var(--gap);
     padding: 1rem;
-    border: 1px solid color-mix(in oklab, currentColor 20%, transparent);
-    border-radius: var(--radius);
+    border: 1px solid var(--line);
   }
   h2 {
     margin: 0;
@@ -188,9 +185,8 @@ export default function Card() {
   }
   .badge {
     padding: 0.125rem 0.5rem;
-    border-radius: 999px;
-    background: oklch(0.92 0.05 var(--hue));
-    color: oklch(0.35 0.15 var(--hue));
+    border: 1px solid var(--line);
+    font-size: 0.75rem;
   }
 </style>
 `,

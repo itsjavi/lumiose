@@ -1,7 +1,7 @@
-// A small horizontal bar chart for benchmark results: one row per framework, Lumiose's bar in the
-// brand gradient. Plain HTML and CSS (bar widths are custom properties), so it prerenders and
+// A small horizontal bar chart for benchmark results: one row per framework, in grey, with
+// Lumiose's bar in amber and its row bold (decision-90). Plain HTML and CSS (bar widths are custom properties), so it prerenders and
 // reads well without JavaScript; the values are in the text for screen readers.
-import { color, font, radius, space, text, weight } from "@lumiose/site-kit/tokens";
+import { color, font, label, space, text, weight } from "@lumiose/site-kit/tokens";
 import type { Bar } from "../content/evidence.ts";
 
 export interface BarChartProps {
@@ -48,23 +48,34 @@ export function BarChart(props: BarChartProps) {
 <style>
   .chart {
     display: grid;
+    align-content: start;
     gap: $space.sm;
-    padding: $space.lg;
-    border: 1px solid $color.border;
-    border-radius: $radius.lg;
-    background: $color.surface;
+    margin: 0;
+    padding-block-start: $space.md;
+    border-block-start: 1px solid $color.text;
   }
   figcaption {
     display: grid;
-    gap: 0.15rem;
+    gap: $space.xxs;
+  }
+  figcaption strong {
+    font-size: $text.lg;
+    letter-spacing: -0.02em;
   }
   figcaption span {
     color: $color.muted;
-    font-size: $text.sm;
+    font-family: $label.font;
+    font-size: $label.size;
+    letter-spacing: $label.tracking;
+    line-height: 1.5;
+    text-transform: $label.transform;
   }
   ol {
     display: grid;
     gap: $space.xs;
+    margin: 0;
+    padding: 0;
+    list-style: none;
   }
   li {
     display: grid;
@@ -82,21 +93,18 @@ export function BarChart(props: BarChartProps) {
     font-weight: $weight.semibold;
   }
   .track {
-    block-size: 0.6rem;
-    border-radius: $radius.pill;
+    block-size: 0.5rem;
     background: $color.sunken;
-    overflow: hidden;
   }
   .bar {
     display: block;
     inline-size: var(--size);
     block-size: 100%;
-    border-radius: inherit;
     background: $color.borderStrong;
   }
   /* No minimum width: equal values draw equal bars, so a zero is empty for every stack. */
   .self .bar {
-    background: linear-gradient(90deg, $color.glowA, $color.glowB);
+    background: $color.accent;
   }
   .value {
     font-family: $font.mono;

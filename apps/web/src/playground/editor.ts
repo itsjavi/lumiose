@@ -57,36 +57,37 @@ const theme = EditorView.theme({
     fontSize: "0.875rem",
   },
   // The site's focus ring, inset because the panes clip their overflow (WCAG 2.4.7).
-  "&.cm-focused": { outline: "2px solid var(--lm-accent)", outlineOffset: "-2px" },
+  "&.cm-focused": { outline: "2px solid var(--lm-text)", outlineOffset: "-2px" },
   ".cm-scroller": {
     fontFamily:
       'ui-monospace, "JetBrains Mono", "SF Mono", Menlo, Consolas, "Liberation Mono", monospace',
     lineHeight: "1.6",
   },
-  ".cm-content": { caretColor: "var(--lm-accent)", paddingBlock: "0.75rem" },
-  ".cm-cursor, .cm-dropCursor": { borderLeftColor: "var(--lm-accent)" },
+  ".cm-content": { caretColor: "var(--lm-text)", paddingBlock: "0.75rem" },
+  ".cm-cursor, .cm-dropCursor": { borderLeftColor: "var(--lm-text)" },
   ".cm-gutters": {
     backgroundColor: "var(--lm-code-bg)",
     color: "var(--lm-subtle)",
     border: "none",
   },
-  ".cm-activeLine": { backgroundColor: "color-mix(in oklab, var(--lm-accent) 6%, transparent)" },
+  ".cm-activeLine": { backgroundColor: "color-mix(in oklab, var(--lm-text) 5%, transparent)" },
   ".cm-activeLineGutter": {
-    backgroundColor: "color-mix(in oklab, var(--lm-accent) 10%, transparent)",
+    backgroundColor: "color-mix(in oklab, var(--lm-text) 8%, transparent)",
     color: "var(--lm-text)",
   },
+  // The selection is the one amber tint: emphasis in code (decision-90).
   "&.cm-focused .cm-selectionBackground, .cm-selectionBackground, ::selection": {
     backgroundColor: "color-mix(in oklab, var(--lm-accent) 28%, transparent) !important",
   },
   ".cm-matchingBracket": {
-    backgroundColor: "color-mix(in oklab, var(--lm-accent) 20%, transparent)",
+    backgroundColor: "color-mix(in oklab, var(--lm-text) 18%, transparent)",
     outline: "none",
   },
   ".cm-tooltip": {
     backgroundColor: "var(--lm-surface)",
     color: "var(--lm-text)",
     border: "1px solid var(--lm-border)",
-    borderRadius: "6px",
+    borderRadius: "0",
   },
   ".cm-diagnostic": { fontFamily: "inherit", padding: "0.25rem 0.5rem" },
   ".cm-diagnostic-error": { borderLeftColor: "#e5484d" },

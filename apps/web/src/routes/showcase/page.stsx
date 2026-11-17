@@ -1,8 +1,7 @@
 // /showcase: the rendering modes with the apps that use them (moved from the landing,
 // decision-37), the real apps (in their own repository and deployment, decision-73), then the demos
 // with dummy content, built by scripts/site.ts below /demos/<slug>/ (TASK-163, TASK-215).
-import { Card } from "@lumiose/site-kit";
-import { color, font, layout, space, text } from "@lumiose/site-kit/tokens";
+import { bp, color, font, label, layout, space, text, weight } from "@lumiose/site-kit/tokens";
 import { href } from "lumiose";
 import { PageMeta } from "../../components/PageMeta.tsx";
 import { PageHead, ShowcaseGrid } from "../../components/Showcase.stsx";
@@ -32,22 +31,33 @@ export default function Showcase() {
       <section class="block" aria-labelledby="modes-title">
         <h2 id="modes-title">Every rendering mode</h2>
         <p>Each route picks how it renders, and the same components work in all four.</p>
-        <div class="modes">
-          {renderingModes().map((mode) => (
-            <Card title={mode.title} eyebrow={mode.option} href={mode.docs}>
-              <p>{mode.description}</p>
-              <p class="apps">
-                Running:{" "}
-                {mode.apps.map((app, index) => (
-                  <>
-                    {index > 0 && ", "}
-                    <a href={app.href}>{app.label}</a>
-                  </>
-                ))}
-              </p>
-            </Card>
+        <ol class="modes" role="list">
+          {renderingModes().map((mode, index) => (
+            <li class="mode">
+              <span class="label" aria-hidden="true">
+                {String(index + 1).padStart(2, "0")}
+              </span>
+              <div>
+                <h3>
+                  <a href={mode.docs}>{mode.title}</a>
+                </h3>
+                <p class="option">{mode.option}</p>
+              </div>
+              <div>
+                <p>{mode.description}</p>
+                <p class="apps">
+                  Running:{" "}
+                  {mode.apps.map((app, index) => (
+                    <>
+                      {index > 0 && ", "}
+                      <a href={app.href}>{app.label}</a>
+                    </>
+                  ))}
+                </p>
+              </div>
+            </li>
           ))}
-        </div>
+        </ol>
       </section>
 
       <section class="block" aria-labelledby="apps-title">
@@ -90,37 +100,73 @@ export default function Showcase() {
   .page {
     max-inline-size: $layout.page;
     margin-inline: auto;
-    padding: $space.xl $layout.gutter $space.xxl;
+    padding: 0 $layout.gutter $space.xxl;
   }
   .block {
     display: grid;
-    gap: $space.sm;
-    margin-block-end: $space.xxl;
+    gap: $space.md;
+    margin-block-end: $space.xxxl;
   }
   .block h2,
   .block > p {
     margin: 0;
   }
-  .modes {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
-    gap: $space.md;
+  .block h2 {
+    font-size: $text.xxl;
+    line-height: 1.05;
+    letter-spacing: -0.035em;
   }
-  .modes p {
+  .block > p {
+    max-inline-size: 46rem;
+    color: $color.muted;
+  }
+  /* The rendering modes: numbered rows between hairlines. */
+  .modes {
     margin: 0;
+    padding: 0;
+    list-style: none;
+    border-block-start: 1px solid $color.text;
+  }
+  .mode {
+    display: grid;
+    gap: $space.xs $space.xl;
+    padding-block: $space.lg;
+    border-block-end: 1px solid $color.border;
+  }
+  @media (width >= $bp.md) {
+    .mode {
+      grid-template-columns: 3rem minmax(0, 1fr) minmax(0, 2fr);
+      align-items: baseline;
+    }
+  }
+  .mode h3 {
+    margin: 0 0 $space.xxs;
+    font-size: $text.xl;
+    font-weight: $weight.semibold;
+    letter-spacing: -0.03em;
+  }
+  .mode p {
+    margin: 0;
+    color: $color.muted;
+  }
+  .label {
+    color: $color.muted;
+    font-family: $label.font;
+    font-size: $label.size;
+    letter-spacing: $label.tracking;
+    text-transform: $label.transform;
+  }
+  /* Code, so not uppercase like a label. */
+  .option {
+    font-family: $font.mono;
+    font-size: $text.xs;
   }
   .apps {
     margin-block-start: $space.xs;
-    color: $color.muted;
     font-size: $text.sm;
   }
   .used-by {
     margin: 0;
     padding-inline-start: $space.lg;
-  }
-  .apps a {
-    position: relative;
-    z-index: 1;
-    font-family: $font.sans;
   }
 </style>

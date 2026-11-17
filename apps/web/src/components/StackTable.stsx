@@ -1,0 +1,136 @@
+// The stack comparison table (decision-37, on /benchmarks since decision-90): Lumiose against the
+// stacks React and Next.js developers already know. The rows come from content/stacks.ts, whose
+// measured cells are read from the committed results. Lumiose's row is bold, with an amber marker.
+import { color, font, label, space, text, weight } from "@lumiose/site-kit/tokens";
+import { type Cell, COLUMNS, SERVER_SPEED, type StackRow } from "../content/stacks.ts";
+
+export interface StackTableProps {
+  /** The rows, from `stacks()` (content/stacks.ts). */
+  rows: readonly StackRow[];
+  /** The id of the heading that names the table's scrolling region. */
+  labelledBy: string;
+}
+
+function TableCell(props: { cell: Cell }) {
+  return props.cell.kind === "measuring" ? (
+    <span class="pending">measuring</span>
+  ) : (
+    <span class={[props.cell.kind, props.cell.kind === "fact" && props.cell.tone]}>
+      {props.cell.text}
+    </span>
+  );
+}
+
+export function StackTable(props: StackTableProps) {
+  return (
+    <div class="stack-table" role="region" aria-labelledby={props.labelledBy} tabindex="0">
+      <table>
+        <caption class="visually-hidden">Lumiose compared with other web framework stacks</caption>
+        <thead>
+          <tr>
+            {Object.values(COLUMNS).map((column) => (
+              <th scope="col">{column}</th>
+            ))}
+            {/* Over two cells, each self-describing by its unit: renders/s, then req/s. */}
+            <th scope="col" colspan="2">
+              {SERVER_SPEED}
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {props.rows.map((row) => (
+            <tr class={{ self: row.self === true }}>
+              <th scope="row">{row.stack}</th>
+              <td>
+                <TableCell cell={row.fullStack} />
+              </td>
+              <td>
+                <TableCell cell={row.styles} />
+              </td>
+              <td class="number">
+                <TableCell cell={row.serverJs} />
+              </td>
+              <td class="number">
+                <TableCell cell={row.clientSpeed} />
+              </td>
+              <td class="number">
+                <TableCell cell={row.rendering} />
+              </td>
+              <td class="number">
+                <TableCell cell={row.requests} />
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+<style>
+  .stack-table {
+    overflow-x: auto;
+    border-block-start: 1px solid $color.text;
+  }
+  table {
+    inline-size: 100%;
+    min-inline-size: 58rem;
+    border-collapse: collapse;
+    font-size: $text.sm;
+  }
+  th,
+  td {
+    padding: $space.sm $space.md $space.sm 0;
+    border-block-end: 1px solid $color.border;
+    text-align: start;
+    vertical-align: middle;
+  }
+  thead th {
+    color: $color.muted;
+    font-family: $label.font;
+    font-size: $label.size;
+    font-weight: $weight.regular;
+    letter-spacing: $label.tracking;
+    text-transform: $label.transform;
+  }
+  tbody th {
+    font-weight: $weight.medium;
+    white-space: nowrap;
+  }
+  td {
+    color: $color.muted;
+  }
+  .number .measured {
+    font-family: $font.mono;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+  .pending {
+    font-family: $font.mono;
+    font-size: $text.xs;
+  }
+  .yes {
+    color: $color.text;
+  }
+  /* Lumiose's row: the text colour and bold, with an amber square before its name. */
+  tr.self > * {
+    color: $color.text;
+    font-weight: $weight.bold;
+  }
+  tr.self th::before {
+    content: "";
+    display: inline-block;
+    inline-size: 0.5rem;
+    block-size: 0.5rem;
+    margin-inline-end: $space.xs;
+    background: $color.accent;
+  }
+  .visually-hidden {
+    position: absolute;
+    inline-size: 1px;
+    block-size: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+</style>

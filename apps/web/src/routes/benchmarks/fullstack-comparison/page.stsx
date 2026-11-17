@@ -3,7 +3,7 @@
 // results file and how to reproduce a run. The results viewer itself is published at
 // /benchmarks/fullstack/ by scripts/site.ts, with the same files below it.
 import { LinkButton } from "@lumiose/site-kit";
-import { color, font, layout, radius, space, text } from "@lumiose/site-kit/tokens";
+import { color, font, label, layout, space, text } from "@lumiose/site-kit/tokens";
 import { PageMeta } from "../../../components/PageMeta.tsx";
 import { Marked } from "marked";
 import method from "../../../content/fullstack-method.md?raw";
@@ -137,7 +137,7 @@ export default function FullstackComparison() {
   .page {
     max-inline-size: $layout.page;
     margin-inline: auto;
-    padding: $space.xl $layout.gutter $space.xxl;
+    padding: 0 $layout.gutter $space.xxl;
   }
   .actions {
     display: flex;
@@ -159,13 +159,15 @@ export default function FullstackComparison() {
   }
   .prose :deep(h2),
   .block h2 {
-    margin-block: $space.lg $space.sm;
-    font-size: $text.xl;
+    margin-block: $space.xl $space.sm;
+    font-size: $text.xxl;
+    line-height: 1.05;
+    letter-spacing: -0.035em;
   }
   .prose :deep(pre) {
     overflow-x: auto;
     padding: $space.sm;
-    border-radius: $radius.md;
+    border: 1px solid $color.border;
     background: $color.sunken;
     font-size: $text.sm;
   }
@@ -186,10 +188,19 @@ export default function FullstackComparison() {
   .prose :deep(td),
   th,
   td {
-    padding: $space.xs $space.sm;
+    padding: $space.xs $space.md $space.xs 0;
     border-block-end: 1px solid $color.border;
     text-align: start;
     vertical-align: top;
+  }
+  .prose :deep(thead th),
+  thead th {
+    color: $color.muted;
+    font-family: $label.font;
+    font-size: $label.size;
+    font-weight: 400;
+    letter-spacing: $label.tracking;
+    text-transform: $label.transform;
   }
   code,
   .prose :deep(code) {

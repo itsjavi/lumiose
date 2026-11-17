@@ -2,7 +2,7 @@
 // (content/ui-theme.ts): a preview of each scheme side by side, whatever the site's own scheme, then
 // every `--lu-` property with its two values. The /ui page shows it after the table of the theme's
 // properties, and loads the theme (the `lu-button` class).
-import { color, font, radius, space, text, weight } from "@lumiose/site-kit/tokens";
+import { color, font, label, space, text, weight } from "@lumiose/site-kit/tokens";
 import { schemeStyle, themeProperties } from "../content/ui-theme.ts";
 
 export function ThemePalette() {
@@ -82,14 +82,15 @@ export function ThemePalette() {
     gap: $space.md;
     padding: $space.md;
     border: 1px solid $color.border;
-    border-radius: $radius.lg;
     background: var(--lu-background);
     color: var(--lu-foreground);
     font-family: $font.sans;
   }
   figcaption {
-    font-size: $text.sm;
-    font-weight: $weight.semibold;
+    font-family: $label.font;
+    font-size: $label.size;
+    letter-spacing: $label.tracking;
+    text-transform: $label.transform;
   }
   .buttons {
     display: flex;
@@ -111,8 +112,7 @@ export function ThemePalette() {
   }
   .table {
     overflow-x: auto;
-    border: 1px solid $color.border;
-    border-radius: $radius.md;
+    border-block-start: 1px solid $color.text;
   }
   table {
     inline-size: 100%;
@@ -120,20 +120,21 @@ export function ThemePalette() {
     font-size: $text.sm;
   }
   :is(th, td) {
-    padding: $space.xs $space.sm;
+    padding: $space.xs $space.sm $space.xs 0;
     border-block-end: 1px solid $color.border;
     text-align: start;
     vertical-align: middle;
   }
   thead th {
-    background: $color.sunken;
-    font-weight: $weight.semibold;
+    color: $color.muted;
+    font-family: $label.font;
+    font-size: $label.size;
+    font-weight: $weight.regular;
+    letter-spacing: $label.tracking;
+    text-transform: $label.transform;
   }
   tbody th {
     font-weight: $weight.regular;
-  }
-  tr:last-child :is(th, td) {
-    border-block-end: 0;
   }
   code {
     font-family: $font.mono;
@@ -148,7 +149,6 @@ export function ThemePalette() {
     inline-size: 1.25rem;
     block-size: 1.25rem;
     border: 1px solid $color.borderStrong;
-    border-radius: $radius.sm;
   }
   .swatch.radius {
     border-width: 2px 0 0 2px;

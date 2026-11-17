@@ -1,7 +1,7 @@
 // A grid of example apps or benchmark pages (content/showcase.ts): what each one shows, its tags,
 // and links to the running app (on this site or its own) and to its source.
 import { LinkButton } from "@lumiose/site-kit";
-import { bp, color, radius, space, text, weight } from "@lumiose/site-kit/tokens";
+import { bp, color, label, space, text, weight } from "@lumiose/site-kit/tokens";
 import type { Showcase } from "../content/showcase.ts";
 
 export function ShowcaseGrid(props: { items: Showcase[]; open?: string }) {
@@ -77,14 +77,11 @@ export function PageHead(props: { kicker: string; title: string; children?: JSX.
     display: flex;
     flex-direction: column;
     gap: $space.xs;
-    padding: $space.lg;
-    border: 1px solid $color.border;
-    border-radius: $radius.lg;
-    background: $color.surface;
+    padding-block-start: $space.lg;
+    border-block-start: 1px solid $color.border;
   }
   .shot-link {
     display: block;
-    border-radius: $radius.md;
   }
   .shot {
     display: block;
@@ -93,13 +90,12 @@ export function PageHead(props: { kicker: string; title: string; children?: JSX.
     object-fit: cover;
     object-position: top;
     border: 1px solid $color.border;
-    border-radius: $radius.md;
     transition: border-color 0.15s;
   }
   /* Pointing at the screenshot, or at the title link, marks both as the way into the app. */
   .shot-link:hover .shot,
   .item:has(h3 a:is(:hover, :focus-visible)) .shot {
-    border-color: $color.accent;
+    border-color: $color.text;
   }
   @media (prefers-reduced-motion: reduce) {
     .shot {
@@ -108,8 +104,9 @@ export function PageHead(props: { kicker: string; title: string; children?: JSX.
   }
   h3 {
     margin: 0;
-    font-size: $text.lg;
+    font-size: $text.xl;
     font-weight: $weight.semibold;
+    letter-spacing: -0.02em;
   }
   .name {
     font-size: $text.xs;
@@ -122,16 +119,16 @@ export function PageHead(props: { kicker: string; title: string; children?: JSX.
   .tags {
     display: flex;
     flex-wrap: wrap;
-    gap: $space.xxs;
+    gap: $space.xxs $space.sm;
     margin: 0;
     padding: 0;
   }
   .tags li {
-    padding: 0 $space.xs;
-    border: 1px solid $color.border;
-    border-radius: $radius.pill;
-    font-size: $text.xs;
     color: $color.muted;
+    font-family: $label.font;
+    font-size: $label.size;
+    letter-spacing: $label.tracking;
+    text-transform: $label.transform;
   }
   .links {
     display: flex;
@@ -139,24 +136,38 @@ export function PageHead(props: { kicker: string; title: string; children?: JSX.
     padding-block-start: $space.xs;
   }
 
+  /* A page's head: a mono label, a large tight heading, then a rule in the text colour. */
   .head {
     display: grid;
-    gap: $space.sm;
+    gap: $space.md;
     margin-block-end: $space.xl;
+    padding-block: $space.xl;
+    border-block-end: 1px solid $color.text;
   }
   .kicker {
     margin: 0;
-    color: $color.accent;
-    font-size: $text.sm;
-    font-weight: $weight.semibold;
+    color: $color.muted;
+    font-family: $label.font;
+    font-size: $label.size;
+    letter-spacing: $label.tracking;
+    text-transform: $label.transform;
   }
   h1 {
     margin: 0;
-    font-size: $text.xxxl;
+    font-size: $text.display;
+    line-height: 0.95;
+    letter-spacing: -0.05em;
+    text-wrap: balance;
   }
   .lead {
     max-inline-size: 46rem;
     color: $color.muted;
     font-size: $text.lg;
+  }
+  .lead :deep(p) {
+    margin: 0;
+  }
+  .lead :deep(p + p) {
+    margin-block-start: $space.md;
   }
 </style>

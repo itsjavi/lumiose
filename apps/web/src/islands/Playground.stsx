@@ -493,7 +493,6 @@ export function Playground(props: PlaygroundProps) {
   .count {
     min-inline-size: 1.25rem;
     padding-inline: $space.xxs;
-    border-radius: 999px;
     background: $color.warnBg;
     color: $color.warnFg;
     font-size: $text.xs;
