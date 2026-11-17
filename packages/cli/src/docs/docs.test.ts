@@ -176,7 +176,13 @@ describe("docs contract", () => {
     for (const doc of docs) {
       if (
         /^(coming-from|concepts|guides|deploy|reference)\//.test(doc.topic) ||
-        ["getting-started", "requirements", "manual-setup", "stability", "when-not-to-use"].includes(doc.topic)
+        [
+          "getting-started",
+          "requirements",
+          "manual-setup",
+          "stability",
+          "when-not-to-use",
+        ].includes(doc.topic)
       ) {
         expect(readme, doc.topic).toContain(`](${doc.topic}.md)`);
       }
