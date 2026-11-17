@@ -1,11 +1,11 @@
 ---
 id: TASK-611
 title: Rewrite the guides, deploy, coming-from and top-level pages example first
-status: In Progress
+status: Done
 assignee:
   - '@Beacon'
 created_date: '2026-11-17T12:29:00Z'
-updated_date: '2026-11-17T17:08:00Z'
+updated_date: '2026-11-17T17:09:00Z'
 labels: []
 milestone: m-16
 dependencies:
@@ -23,7 +23,7 @@ Apply the docs writing guide to docs/guides, docs/deploy, docs/coming-from, stab
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Every page follows the guide and its examples compile
+- [x] #1 Every page follows the guide and its examples compile
 - [x] #2 No fact is lost: content cut from a page is in the reference or linked
 - [x] #3 docs:gen output, docs:check and the docs tests are green
 <!-- AC:END -->
@@ -86,4 +86,12 @@ Beacon (session beacon-20261117-docs-close), closing pass: the 12 Verify blocks 
 Totals: 4 confirmed by running, 2 by source, 2 corrected, 4 replaced.
 AWS Lambda handler: diffed against the pre-rewrite block; only reflowed (query, encoding and sent variables, wrapped lines), same behaviour; the dropped header comment's facts are in the sentence below the code.
 Viewed at 1280 px: guides/realtime, deploy/fly, and measured guides/stripe, guides/auth, deploy/netlify, vps, docker and coming-from/react: step bars present, no page overflow, tables full width. Left as is: code lines wider than the code column scroll inside their box (worst: the Dockerfile HEALTHCHECK line, kept as tested; many guide examples that oxfmt joins). Screenshots: backlog/assets/redesign/task-611-guide.jpg, task-611-deploy.jpg. Checks as in TASK-610. AC 1 left for Lux (page length).
+
+Lux: closed. Every page follows the guide in shape: guides and deploy pages are step pages, coming-from pages lead with side-by-side code. The half-length aim of the pilot was not met here and is not forced: these pages are mostly code, config and mapping tables, and no fact was cut. Whether to move the coming-from mapping tables to a reference page is listed for the user in doc-10. Verify blocks of the deploy pages: 4 confirmed by running, 2 by source, 2 corrected, 4 replaced with neutral text; the Docker and Netlify ones were not run.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Guides, deploy, coming-from and top-level pages are restructured to the docs guide (steps, side-by-side code) without losing facts; lengths are about unchanged, and the deploy Verify steps are checked or neutral.
+<!-- SECTION:FINAL_SUMMARY:END -->
