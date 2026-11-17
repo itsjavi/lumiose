@@ -2,24 +2,42 @@
 
 > Solid is the closest model, components set up once with fine-grained signals, so this guide is about the differences: signal and store APIs, props, control flow as plain JSX, async components, `.stsx` styles, islands, and SolidStart and Solid Router mapped to file routes, endpoints and form actions.
 
-This page maps Solid 1.x, Solid Router and SolidStart to Lumiose's current API. The linked pages
-have the full rules.
-
 ## Mental model
 
-**The same core idea.** As in Solid, a component body runs once, JSX expressions that read signals
-compile to bindings that update their part of the DOM, and there is no virtual DOM. Owners,
-`onCleanup`, context and `untrack` work the way you expect ([Signals](../concepts/signals.md)).
-Lumiose's names follow Solid and React where the behaviour matches, without Solid's `create`
-prefix: `signal`, `computed`, `effect`, `store`.
+```tsx
+// Solid
+import { createSignal } from "solid-js";
 
-**The differences are in the details:**
+function Counter() {
+  const [count, setCount] = createSignal(0);
+  return <button onClick={() => setCount((n) => n + 1)}>{count()}</button>;
+}
+```
 
-- **A signal is one function**, not a `[get, set]` tuple: `count()` reads, `count.set(1)` and
-  `count.update((n) => n + 1)` write.
-- **Props destructure safely.** The compiler rewrites destructured component parameters, with
-  defaults and `...rest`, into reads of `props.x`, so `({ title, size = "md" })` stays reactive. No
-  `splitProps` or `mergeProps`.
+```tsx check
+// Lumiose
+import { signal } from "lumiose";
+
+export function Counter() {
+  const count = signal(0);
+  return <button onClick={() => count.update((n) => n + 1)}>{count()}</button>;
+}
+```
+
+**The same core idea**: the body runs once, JSX that reads signals compiles to bindings that
+update their part of the DOM, and there is no virtual DOM. A signal is one function, not a
+`[get, set]` tuple: `count()` reads, `count.set(1)` and `count.update((n) => n + 1)` write, and
+`count.peek()` reads without subscribing.
+
+> **Scope:** this page maps Solid 1.x, Solid Router and SolidStart to Lumiose's current API.
+
+> **Names:** owners, `onCleanup`, context and `untrack` work the way you expect
+> ([Signals](../concepts/signals.md)). Lumiose's names follow Solid and React where the behaviour
+> matches, without Solid's `create` prefix: `signal`, `computed`, `effect`, `store`.
+
+### The differences
+
+- **A signal is one function**, and **props destructure safely**: both are shown on this page.
 - **Control flow is plain JSX.** There is no `<Show>`, `<For>` or `<Switch>`: the compiler turns
   `.map()` into a keyed list, ternaries and `&&` into memoised branches, and
   `item.id === selected()` inside `.map()` into a selector ([JSX](../concepts/jsx.md)).
@@ -29,19 +47,104 @@ prefix: `signal`, `computed`, `effect`, `store`.
 - **Styles live with the component.** `.stsx` files are TSX plus raw-CSS `<style>` blocks, scoped by
   where they are placed ([Styles](../concepts/styles.md)).
 
-**Server first, with islands.** SolidStart renders the app on the server and hydrates all of it. In
-Lumiose, `static` and `server` pages ship no JavaScript, and a `client:*` directive at the usage
-site makes one component instance an [island](../concepts/islands.md): `<Todos client:load />`.
-An `spa` route is the SolidStart experience: server-rendered, hydrated, client-side navigation with
-persistent layouts ([Rendering modes](../concepts/rendering-modes.md)).
+### Server first, with islands
+
+SolidStart renders the app on the server and hydrates all of it. In Lumiose, `static` and `server`
+pages ship no JavaScript, and a `client:*` directive at the usage site makes one component
+instance an [island](../concepts/islands.md): `<Todos client:load />`. An `spa` route is the
+SolidStart experience: server-rendered, hydrated, client-side navigation with persistent layouts
+([Rendering modes](../concepts/rendering-modes.md)).
 
 ## From Solid to Lumiose
+
+### Props
+
+```tsx
+// Solid
+import { mergeProps, splitProps } from "solid-js";
+
+function Badge(props: { label: string; size?: string }) {
+  const merged = mergeProps({ size: "md" }, props);
+  const [local, rest] = splitProps(merged, ["label", "size"]);
+  return (
+    <span class={local.size} {...rest}>
+      {local.label}
+    </span>
+  );
+}
+```
+
+```tsx check
+// Lumiose
+type BadgeProps = { label: string; size?: string; title?: string };
+
+export function Badge({ label, size = "md", ...rest }: BadgeProps) {
+  return (
+    <span class={size} {...rest}>
+      {label}
+    </span>
+  );
+}
+```
+
+The compiler rewrites destructured component parameters, with defaults and `...rest`, into reads
+of `props.x`, so they stay reactive. There is no `splitProps` or `mergeProps`.
+
+### Control flow
+
+```tsx
+// Solid
+import { createSignal, For, Show } from "solid-js";
+
+function Steps() {
+  const [steps] = createSignal(["Install", "Build"]);
+  return (
+    <Show when={steps().length > 0} fallback={<p>Nothing.</p>}>
+      <ol>
+        <For each={steps()}>
+          {(step, i) => (
+            <li>
+              {i() + 1}. {step}
+            </li>
+          )}
+        </For>
+      </ol>
+    </Show>
+  );
+}
+```
+
+```tsx check
+// Lumiose
+import { signal } from "lumiose";
+
+export function Steps() {
+  const steps = signal(["Install", "Build"]);
+  return (
+    <section>
+      {steps().length > 0 ? (
+        <ol>
+          {steps().map((step, i) => (
+            <li>
+              {i + 1}. {step}
+            </li>
+          ))}
+        </ol>
+      ) : (
+        <p>Nothing.</p>
+      )}
+    </section>
+  );
+}
+```
+
+A ternary replaces `<Show>` and `.map()` replaces `<For>`: the compiler makes both fine-grained.
+The index `i` is used as a number, not called.
 
 ### Reactivity
 
 | Solid                                                 | Lumiose                                                                                                                                              |
 | ----------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `const [count, setCount] = createSignal(0)`           | `const count = signal(0)`: `count()`, `count.set(1)`, `count.update((n) => n + 1)`, `count.peek()`.                                                  |
 | `createSignal(v, { equals: false })`                  | `signal(v, { equals: false })`.                                                                                                                      |
 | `createMemo(fn)`                                      | `computed(fn)`: lazy, cached, and `fn` receives the previous value.                                                                                  |
 | `createEffect(fn)`                                    | `effect(fn)`; it may return its cleanup, or call `onCleanup()`.                                                                                      |
@@ -63,7 +166,6 @@ persistent layouts ([Rendering modes](../concepts/rendering-modes.md)).
 
 | Solid                                                            | Lumiose                                                                                                                                                                                      |
 | ---------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `splitProps(props, ["a"])`, `mergeProps(defaults, props)`        | `({ a, size = "md", ...rest })`: destructuring with defaults and rest stays reactive.                                                                                                        |
 | `children(() => props.children)`                                 | Insert `children` once where it goes; take a render prop to render content several times.                                                                                                    |
 | `<Show when={user()} fallback={<Login />}>`                      | `{user() ? <Profile /> : <Login />}`, or `{user() && <Profile />}`.                                                                                                                          |
 | `<Show when={user()} keyed>{(u) => …}</Show>`                    | `{user() ? <Profile user={user()!} /> : null}`: the branch switches when the condition flips, and the prop stays live.                                                                       |
@@ -137,7 +239,8 @@ persistent layouts ([Rendering modes](../concepts/rendering-modes.md)).
 
 ## Example
 
-A filtered todo list, in Solid:
+A filtered todo list, in Solid and then in Lumiose, with its styles in the file. The props are
+destructured, the store is written directly, and the control flow is a ternary and `.map()`.
 
 ```tsx
 import { createMemo, createSignal, For, Show } from "solid-js";
@@ -183,9 +286,6 @@ export function Todos(props: { title: string }) {
 }
 ```
 
-The same list in Lumiose, with its styles in the file. The props are destructured, the store is
-written directly, and the control flow is a ternary and `.map()`:
-
 ```stsx check file=components/Todos.stsx
 // src/components/Todos.stsx
 import { computed, signal, store } from "lumiose";
@@ -230,9 +330,11 @@ export function Todos({ title }: { title: string }) {
 </style>
 ```
 
+### A SolidStart route
+
 A SolidStart route that reads with `query()` and `createAsync()` and writes with an `action()`
 becomes a page with an async component and a form action. Without JavaScript the form posts and
-the page re-renders with the action's data:
+the page re-renders with the action's data.
 
 ```stsx check file=routes/members/[id]/page.stsx
 // src/routes/members/[id]/page.stsx
