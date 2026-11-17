@@ -144,9 +144,10 @@ export function DocsShell(props: {
     padding-block: $space.xxs;
     cursor: pointer;
   }
+  /* Every link is at least 24 px tall (WCAG 2.5.8), the diagnostics' small codes included. */
   a {
     display: block;
-    padding-block: 0.2rem;
+    padding-block: 0.25rem;
     color: $color.muted;
     font-size: $text.sm;
     line-height: 1.4;

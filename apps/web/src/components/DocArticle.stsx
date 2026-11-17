@@ -306,8 +306,10 @@ export function DocArticle(props: DocArticleProps) {
   .words {
     max-inline-size: 68ch;
   }
+  /* One column that its content cannot widen: a demo's code scrolls inside its own box. */
   .aside {
     display: grid;
+    grid-template-columns: minmax(0, 1fr);
     gap: $space.md;
     min-inline-size: 0;
     margin-block-end: $space.md;
