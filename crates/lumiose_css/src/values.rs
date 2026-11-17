@@ -48,13 +48,22 @@ pub(crate) struct Substitution<'a> {
     pub value: Option<&'a RefValue>,
 }
 
-/// The `LUM3017`–`LUM3019` warnings of one block, with block-relative spans.
-pub(crate) fn check(
-    content: &str,
-    declarations: &[Declaration],
-    refs: &[Substitution],
-) -> Vec<CssDiagnostic> {
-    let mut diagnostics = Vec::new();
+/// What `check` found in one block.
+#[derive(Default)]
+pub(crate) struct Checked {
+    /// The `LUM3017`–`LUM3019` warnings, with block-relative spans.
+    pub diagnostics: Vec<CssDiagnostic>,
+    /// The names of the declarations whose value makes Lightning CSS panic (`shield`).
+    pub panicking: Vec<Range<usize>>,
+}
+
+/// Checks the declarations of one block.
+pub(crate) fn check(content: &str, declarations: &[Declaration], refs: &[Substitution]) -> Checked {
+    let mut checked = Checked::default();
+    let Checked {
+        diagnostics,
+        panicking,
+    } = &mut checked;
     let mut detached = Vec::new();
     for site in refs {
         if let Some(diagnostic) = detached_unit(content, site) {
@@ -71,10 +80,10 @@ pub(crate) fn check(
             .first()
             .is_some_and(|span| span.end as usize <= value.end);
         if !declaration.descriptor && !reported {
-            check_declaration(content, declaration, refs, &mut diagnostics);
+            check_declaration(content, declaration, refs, diagnostics, panicking);
         }
     }
-    diagnostics
+    checked
 }
 
 /// Units that are never a keyword of their own after a number. `in` (a gradient's colour
@@ -141,6 +150,7 @@ fn check_declaration(
     declaration: &Declaration,
     refs: &[Substitution],
     diagnostics: &mut Vec<CssDiagnostic>,
+    panicking: &mut Vec<Range<usize>>,
 ) {
     let name = content[declaration.name.clone()].to_ascii_lowercase();
     if name.starts_with('-') {
@@ -165,7 +175,14 @@ fn check_declaration(
         return;
     }
     let value = Value::new(content, range.clone(), &refs);
-    let Some(parsed) = parse_property(id.clone(), &value.text) else {
+    let parsed =
+        guarded(|| Property::parse_string(id.clone(), &value.text, ParserOptions::default()).ok());
+    let Some(parsed) = parsed else {
+        // Lightning CSS panicked: the declaration is kept as written (`shield`).
+        panicking.push(declaration.name.clone());
+        return;
+    };
+    let Some(parsed) = parsed else {
         // Lightning CSS drops the declaration and warns (`LUM3015`).
         return;
     };
@@ -490,8 +507,7 @@ fn unitless(
 
 /// `Property::parse_string`, with a Lightning CSS panic read as "does not parse". Its
 /// `<percentage>` parser has an `unreachable!()` that `scale: abs(-50%)` reaches (TASK-618, found
-/// by the nightly fuzzer): these checks run before the guarded `StyleSheet::parse`, which then
-/// reports the block (`LUM3014`).
+/// by the nightly fuzzer), and these checks run before the guarded `StyleSheet::parse`.
 fn parse_property<'i>(id: PropertyId<'i>, text: &'i str) -> Option<Property<'i>> {
     guarded(|| Property::parse_string(id, text, ParserOptions::default()).ok()).flatten()
 }
@@ -865,7 +881,7 @@ mod tests {
                     .filter(|_| site.hyphenated.is_none()),
             })
             .collect();
-        let mut diagnostics = check(css, &scan.declarations, &sites);
+        let mut diagnostics = check(css, &scan.declarations, &sites).diagnostics;
         diagnostics.sort_by_key(|d| d.span.start);
         diagnostics
             .iter()
@@ -1091,7 +1107,7 @@ mod tests {
                 value: Some(&x),
             })
             .collect();
-        let mut diagnostics = check(css, &scan.declarations, &sites);
+        let mut diagnostics = check(css, &scan.declarations, &sites).diagnostics;
         diagnostics.sort_by_key(|d| d.span.start);
         let fixes: Vec<String> = diagnostics
             .iter()

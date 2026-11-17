@@ -146,24 +146,26 @@ fn lightning_css_panics_become_diagnostics() {
 }
 
 /// The value checks parse each declaration with Lightning CSS before the stylesheet is parsed.
-/// `scale: abs(-50%)` reaches the same `unreachable!()` there (found by the nightly fuzzer,
-/// TASK-618): the panic must not escape `process`.
+/// `scale: abs(-50%)`, which is valid CSS, reaches the same `unreachable!()` there (found by the
+/// nightly fuzzer, TASK-618). The panic must not escape `process`, and the declaration is kept
+/// as written instead of costing the whole block (`shield`).
 #[test]
-fn a_panic_in_the_value_checks_does_not_escape() {
-    for css in [
-        ".a { scale: abs(-50%) }",
-        ".a { scale: abs(-50%); color: red }",
+fn a_declaration_that_panics_is_kept_as_written() {
+    for (css, expected) in [
+        (".a { scale: abs(-50%) }", ".a{scale:abs(-50%)}"),
+        (
+            ".a { color: red; scale: abs(-50%); --zz0: 1; top: 0 }",
+            ".a{color:red;scale:abs(-50%);--zz0:1;top:0}",
+        ),
+        (
+            ".a { scale: abs(-50%) } .b { scale: abs(-25%) }",
+            ".a{scale:abs(-50%)}.b{scale:abs(-25%)}",
+        ),
     ] {
-        for scope in [
-            Scope::Global { component: None },
-            Scope::Component {
-                name: "Card".into(),
-                token: "t".into(),
-            },
-        ] {
+        for source_map in [false, true] {
             let blocks = [CssBlock {
                 content: Span::new(0, css.len() as u32),
-                scope,
+                scope: Scope::Global { component: None },
                 svg: false,
             }];
             let output = process(
@@ -173,13 +175,19 @@ fn a_panic_in_the_value_checks_does_not_escape() {
                     blocks: &blocks,
                     ..CssInput::default()
                 },
-                &CssOptions::default(),
+                &CssOptions {
+                    minify: true,
+                    source_map,
+                    ..CssOptions::default()
+                },
             );
+            assert_eq!(output.css, expected, "{css}");
             assert!(
-                output.diagnostics.iter().any(|d| d.code.id() == "LUM3014"),
+                output.diagnostics.is_empty(),
                 "{css}: {:?}",
                 output.diagnostics
             );
+            assert_eq!(output.map.is_some(), source_map);
         }
     }
 }

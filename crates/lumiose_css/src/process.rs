@@ -16,6 +16,7 @@ use crate::edits::{Edit, Rewritten};
 use crate::lines::{LineIndex, Newlines};
 use crate::prepass::{self, RefSite};
 use crate::selector::{self, Rewrite, ScopeContext};
+use crate::shield::{self, Shield};
 use crate::values::Substitution;
 use crate::{CssBlock, CssInput, CssOptions, CssOutput, RefValue, Scope, Span, sourcemap};
 
@@ -35,9 +36,10 @@ pub fn process(input: &CssInput, options: &CssOptions) -> CssOutput {
         .iter()
         .map(|resolved| (resolved.span, &resolved.value))
         .collect();
+    let mut shields = Vec::new();
     let prepared: Vec<Prepared> = blocks
         .iter()
-        .map(|block| prepare(input, block, &values, &mut diagnostics))
+        .map(|block| prepare(input, block, &values, &mut diagnostics, &mut shields))
         .collect();
 
     let mut sheets = Vec::with_capacity(prepared.len());
@@ -109,7 +111,8 @@ pub fn process(input: &CssInput, options: &CssOptions) -> CssOutput {
         }
     }
 
-    let (css, map) = print(input, options, &prepared, sheets, &mut diagnostics);
+    let (mut css, map) = print(input, options, &prepared, sheets, &mut diagnostics);
+    shield::restore(&mut css, &shields);
     // A misused `:global`/`:deep` is already an error; Lightning CSS's warning about the
     // unknown pseudo-class at the same place adds nothing.
     let scope_errors: Vec<Span> = diagnostics
@@ -211,6 +214,7 @@ fn prepare<'a>(
     block: &'a CssBlock,
     values: &HashMap<Span, &RefValue>,
     diagnostics: &mut Vec<CssDiagnostic>,
+    shields: &mut Vec<Shield>,
 ) -> Prepared<'a> {
     let base = block.content.start;
     let content = &input.source[block.content.range()];
@@ -280,8 +284,10 @@ fn prepare<'a>(
             value,
         });
     }
+    let checked = crate::values::check(content, &scan.declarations, &substitutions);
     diagnostics.extend(
-        crate::values::check(content, &scan.declarations, &substitutions)
+        checked
+            .diagnostics
             .into_iter()
             .chain(crate::properties::check(
                 content,
@@ -292,6 +298,15 @@ fn prepare<'a>(
     );
     let clamps = clamp::guard(content, &scan.declarations, &edits);
     edits.extend(clamps);
+    // A placeholder must not appear in anything that reaches the output: the file's own text
+    // or a substituted constant.
+    let taken = |candidate: &str| {
+        input.source.contains(candidate)
+            || values
+                .values()
+                .any(|value| matches!(value, RefValue::String(text) if text.contains(candidate)))
+    };
+    edits.extend(shield::guard(content, &checked.panicking, taken, shields));
 
     let marker = block
         .scope

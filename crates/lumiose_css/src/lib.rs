@@ -86,6 +86,7 @@ mod prepass;
 mod process;
 mod properties;
 mod selector;
+mod shield;
 mod sourcemap;
 mod token;
 mod values;
