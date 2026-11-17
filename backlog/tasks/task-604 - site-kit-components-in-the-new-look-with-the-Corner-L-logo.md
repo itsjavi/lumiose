@@ -5,6 +5,7 @@ status: To Do
 assignee:
   - '@Halo'
 created_date: '2026-11-17T12:28:00Z'
+updated_date: '2026-11-17T12:57:00Z'
 labels: []
 milestone: m-16
 dependencies:
@@ -28,3 +29,9 @@ Restyle every site-kit component to the redesign reference: Logo (Corner L mark 
 - [ ] #4 Active navigation is marked by more than colour (the amber dot plus the text colour)
 - [ ] #5 Component tests and the a11y checks of site-kit pass in both themes
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+From TASK-602 (Lux): the Card focus outline still reads the accent token, so it is amber until restyled here; Button, Tabs, SiteNav and Logo still fill with amber.
+<!-- SECTION:NOTES:END -->

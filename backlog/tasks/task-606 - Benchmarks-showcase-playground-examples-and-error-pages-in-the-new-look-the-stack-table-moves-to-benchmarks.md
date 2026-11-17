@@ -7,6 +7,7 @@ status: To Do
 assignee:
   - '@Beacon'
 created_date: '2026-11-17T12:29:00Z'
+updated_date: '2026-11-17T12:57:00Z'
 labels: []
 milestone: m-16
 dependencies:
@@ -29,3 +30,9 @@ Restyle the remaining site pages to the redesign: /benchmarks, /showcase, /playg
 - [ ] #3 Each page is shorter or equal in length: no new copy blocks
 - [ ] #4 Unit and e2e suites of apps/web pass, a11y suite included
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+From TASK-602 (Lux): src/playground/samples.ts hard-codes old brand colours. The local build of the web app fails at the playground wasm step when the wasm-bindgen CLI version differs from the pinned one; lumiose build runs without it.
+<!-- SECTION:NOTES:END -->

@@ -5,6 +5,7 @@ status: To Do
 assignee:
   - '@Beacon'
 created_date: '2026-11-17T12:28:00Z'
+updated_date: '2026-11-17T12:57:00Z'
 labels: []
 milestone: m-16
 dependencies:
@@ -28,3 +29,9 @@ Replace the LightField three.js island with the beams of the reference: thin amb
 - [ ] #4 three.js and the LightField island are removed if nothing else uses them
 - [ ] #5 favicon.svg and the OG images use the Corner L mark and the new palette
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+From TASK-602 (Lux): apps/web still hard-codes old brand colours in scripts/og-images.ts and public/favicon.svg.
+<!-- SECTION:NOTES:END -->
