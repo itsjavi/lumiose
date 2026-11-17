@@ -4,7 +4,7 @@
 
 ## Concept
 
-### A mode per route
+### Static by default, with `staticPaths()`
 
 A route is `static` unless it says otherwise: this page is built once for each path that
 `staticPaths()` returns. `export const mode = "server"` (a string literal) changes the mode.
