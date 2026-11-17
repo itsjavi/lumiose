@@ -1,4 +1,4 @@
-// The landing page (decision-37): the hero on a night stage lit by the LightField island, the stack
+// The landing page (decision-37): the hero over the site's beams of light (the root layout), the stack
 // comparison table, four short sections and a closing call. Every number comes from the committed
 // results through content modules (content/evidence.ts, content/stacks.ts), and the compiled output
 // from this version's compiler (content/samples.ts), all checked by content.test.ts. The depth lives
@@ -18,7 +18,6 @@ import {
 } from "@lumiose/site-kit/tokens";
 import { href } from "lumiose";
 import { BarChart } from "../components/BarChart.stsx";
-import { LightField } from "../islands/LightField.stsx";
 import { Playground } from "../islands/Playground.stsx";
 import { evidence } from "../content/evidence.ts";
 import { prerelease, version } from "../content/release.ts";
@@ -110,15 +109,12 @@ export default function Home() {
         description={site.description}
       />
 
-      {/* A night stage in both themes: the light needs the dark. */}
-      <section class="stage" data-theme="dark" aria-labelledby="hero-title">
-        <LightField client:idle />
-        <div class="scrim" aria-hidden="true" />
+      <section class="stage" aria-labelledby="hero-title">
         <div class="hero">
           <p class="eyebrow">Static sites · Server-side rendering · Islands · SPAs</p>
           <h1 id="hero-title">
             <span class="line">One component model,</span>{" "}
-            <span class="line lit">from static pages to full-stack apps</span>
+            <span class="line">from static pages to full-stack apps</span>
           </h1>
           <p class="lead">
             Write components in <strong>TSX with their styles in the same file</strong>. Each route
@@ -332,56 +328,9 @@ export default function Home() {
 }
 
 <style>
-  .home {
-    background: $color.bg;
-  }
-
-  /* The stage: the CSS light is the fallback, under the LightField canvas once it draws. */
+  /* The stage has no background of its own: the site's beams (the root layout) show behind it. */
   .stage {
-    position: relative;
-    isolation: isolate;
-    overflow: hidden;
-    background:
-      radial-gradient(50% 70% at 82% 8%, rgb(255 191 107 / 0.32), transparent 60%),
-      radial-gradient(70% 90% at 75% 0%, rgb(143 132 255 / 0.28), transparent 70%), #07061a;
-    /* The copy is lighter than the site's dark theme, so it reads over the brightest frames. */
-    --lm-muted: #cfcee6;
-    color: $color.text;
-    /* A horizon of light where the night meets the page. */
     border-block-end: 1px solid $color.border;
-    border-image: linear-gradient(
-        90deg,
-        transparent,
-        color-mix(in oklab, $color.glowA 70%, transparent) 30%,
-        color-mix(in oklab, $color.glowB 70%, transparent) 70%,
-        transparent
-      )
-      1;
-  }
-  /* Keeps the copy readable over any frame of the light (decision-39): dark where the text is,
-     clear where the light is. Phones stack the copy across the whole width, so it covers more. */
-  .scrim {
-    position: absolute;
-    inset: 0;
-    z-index: -1;
-    pointer-events: none;
-    background: linear-gradient(
-      90deg,
-      rgb(7 6 26 / 0.9) 0%,
-      rgb(7 6 26 / 0.82) 50%,
-      rgb(7 6 26 / 0.72) 64%,
-      rgb(7 6 26 / 0) 92%
-    );
-  }
-  @media (width < $bp.lg) {
-    .scrim {
-      background: linear-gradient(
-        180deg,
-        rgb(7 6 26 / 0) 0,
-        rgb(7 6 26 / 0.84) 8rem,
-        rgb(7 6 26 / 0.88) 100%
-      );
-    }
   }
   .hero,
   .section {
@@ -393,14 +342,7 @@ export default function Home() {
     display: grid;
     justify-items: start;
     gap: $space.lg;
-    /* Room at the bottom for the pause button. */
-    padding-block: $space.xxxl calc($space.xxxl + $space.lg);
-  }
-  /* Narrow screens give the light the top of the stage; the copy starts below it. */
-  @media (width < $bp.lg) {
-    .hero {
-      padding-block-start: 9rem;
-    }
+    padding-block: $space.xxxl;
   }
   .eyebrow,
   .kicker {
@@ -426,40 +368,6 @@ export default function Home() {
   }
   .line {
     display: block;
-  }
-  /* The headline's light sweep: CSS only, once, and not under reduced motion. */
-  .lit {
-    background-image:
-      linear-gradient(100deg, transparent 38%, rgb(255 255 255 / 0.95) 50%, transparent 62%),
-      linear-gradient(90deg, #ffd9a3 0%, $color.glowB 30%, #fff1dc 60%, #b8b0ff 100%);
-    background-size:
-      300% 100%,
-      100% 100%;
-    background-position:
-      -30% 0,
-      0 0;
-    background-repeat: no-repeat;
-    background-clip: text;
-    -webkit-background-clip: text;
-    color: transparent;
-    animation: sweep 1.8s cubic-bezier(0.45, 0, 0.55, 1) 0.5s both;
-  }
-  @keyframes sweep {
-    from {
-      background-position:
-        120% 0,
-        0 0;
-    }
-    to {
-      background-position:
-        -30% 0,
-        0 0;
-    }
-  }
-  @media (prefers-reduced-motion: reduce) {
-    .lit {
-      animation: none;
-    }
   }
   .lead {
     margin: 0;

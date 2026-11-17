@@ -1,16 +1,20 @@
-// Root layout: the site header (with the theme toggle), the page and the footer, all from
-// @lumiose/site-kit. Every route is prerendered (`lumiose({ mode: "static" })`), so the site deploys
+// Root layout: the beams of light behind the page (components/Beams.stsx), brighter on the landing
+// than on inner pages, then the site header (with the theme toggle), the page and the footer, all
+// from @lumiose/site-kit. Every route is prerendered (`lumiose({ mode: "static" })`), so the site deploys
 // as plain files.
 import { Footer, GitHubLink, SiteHeader } from "@lumiose/site-kit";
 import { color, radius, space } from "@lumiose/site-kit/tokens";
 import { href, url, type LayoutProps } from "lumiose";
+import { Beams, BeamsPause } from "../components/Beams.stsx";
 import { footerColumns, link, navLinks, REPOSITORY, sitePath, site } from "../lib/site.ts";
 
 export default function RootLayout(props: LayoutProps<"/">) {
-  const current = link(sitePath(url().pathname));
+  const path = sitePath(url().pathname);
+  const current = link(path);
 
   return (
     <div class="site">
+      <Beams dim={path !== "/"} />
       <a class="skip" href="#content">
         Skip to content
       </a>
@@ -22,7 +26,8 @@ export default function RootLayout(props: LayoutProps<"/">) {
       />
       <main id="content">{props.children}</main>
       <Footer columns={footerColumns} tagline={site.tagline}>
-        <p>MIT licensed. This site is a static Lumiose app built with @lumiose/site-kit.</p>
+        MIT licensed. This site is a static Lumiose app built with @lumiose/site-kit.
+        <BeamsPause />
       </Footer>
     </div>
   );
@@ -30,6 +35,9 @@ export default function RootLayout(props: LayoutProps<"/">) {
 
 <style>
   .site {
+    /* The beams are placed in it, behind its content (`z-index: -1` inside this stacking context). */
+    position: relative;
+    isolation: isolate;
     display: flex;
     flex-direction: column;
     min-block-size: 100dvh;

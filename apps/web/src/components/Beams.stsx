@@ -1,0 +1,162 @@
+// The site's light (decision-90): thin amber beams and faint arcs that fan out from the top-left
+// corner, behind the logo, and pulse slowly. There is no sun disc. It is a static SVG, rendered on
+// the server and animated in CSS, so it needs no JavaScript.
+//
+// The beams sit at the top of the page (they scroll away with it) and fade with the distance from
+// the corner, so they are faint where body text starts; inner pages, whose text starts nearer the
+// corner, get the `dim` level. e2e/a11y.e2e.ts measures the contrast of the text over them.
+//
+// Accessibility (decision-39): the pulse never ends, so `BeamsPause` pauses it (WCAG 2.2.2). It is
+// a checkbox, read by `:has()`: it also works without JavaScript. Under
+// `prefers-reduced-motion: reduce` the beams are still, and the control is not shown.
+import { color, focus, space } from "@lumiose/site-kit/tokens";
+
+/** The drawing's size: the corner is its origin. */
+const WIDTH = 1100;
+const HEIGHT = 820;
+
+/** Past the far corner of the drawing, so every beam leaves it. */
+const REACH = 1400;
+
+/** The beams' angles below the top edge, in degrees: uneven, so the fan does not read as a grid. */
+const ANGLES = [6, 11, 15, 22, 26, 33, 37, 41, 48, 55, 59, 66, 73, 78];
+
+/** One beam: where it ends, and its own clock, so the beams never pulse together. */
+const BEAMS = ANGLES.map((degrees, index) => {
+  const angle = (degrees * Math.PI) / 180;
+  return {
+    x: Math.round(Math.cos(angle) * REACH),
+    y: Math.round(Math.sin(angle) * REACH),
+    wide: index % 4 === 2,
+    clock: `animation-delay:-${((index * 2.3) % 9).toFixed(1)}s;animation-duration:${(7 + (index % 5) * 1.6).toFixed(1)}s`,
+  };
+});
+
+/** The arcs' radii. */
+const ARCS = [180, 360, 540];
+
+/** How the light falls off with the distance from the corner: `[offset, opacity]`. */
+const FADE = [
+  [0, 1],
+  [0.12, 0.6],
+  [0.3, 0.3],
+  [0.65, 0.12],
+  [1, 0],
+] as const;
+
+export function Beams(props: { dim?: boolean }) {
+  return (
+    <svg
+      class={["lm-beams", { dim: props.dim }]}
+      viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
+      preserveAspectRatio="xMinYMin slice"
+      aria-hidden="true"
+    >
+      <defs>
+        <radialGradient id="lm-beam-fade" gradientUnits="userSpaceOnUse" cx="0" cy="0" r="1000">
+          {FADE.map(([offset, opacity]) => (
+            <stop offset={offset} stop-opacity={opacity} />
+          ))}
+        </radialGradient>
+      </defs>
+      {ARCS.map((radius) => (
+        <circle r={radius} />
+      ))}
+      {/* The gradient is an attribute: a `url(#…)` in a stylesheet may resolve against the sheet. */}
+      <g stroke="url(#lm-beam-fade)">
+        {BEAMS.map((beam) => (
+          <line class={{ wide: beam.wide }} x1="0" y1="0" x2={beam.x} y2={beam.y} style={beam.clock} />
+        ))}
+      </g>
+    </svg>
+  );
+}
+
+/** The pause control of the beams: a checkbox that works without JavaScript. */
+export function BeamsPause() {
+  return (
+    <label class="lm-beams-pause">
+      <input type="checkbox" />
+      Pause background animation
+    </label>
+  );
+}
+
+<style>
+  .lm-beams {
+    /* The opacity of a beam at the top of its pulse. */
+    --lm-beam: 0.55;
+    position: absolute;
+    inset-block-start: 0;
+    inset-inline-start: 0;
+    z-index: -1;
+    inline-size: min(1100px, 100%);
+    block-size: min(820px, 100svh);
+    max-inline-size: none;
+    pointer-events: none;
+  }
+  .lm-beams.dim {
+    --lm-beam: 0.26;
+  }
+  stop {
+    stop-color: $color.accent;
+  }
+  circle {
+    fill: none;
+    stroke: $color.border;
+  }
+  line {
+    stroke-width: 1;
+    opacity: 0.06;
+    animation: beam 9s ease-in-out infinite;
+  }
+  line.wide {
+    stroke-width: 3;
+  }
+  @keyframes beam {
+    0%,
+    100% {
+      opacity: 0.06;
+    }
+    50% {
+      opacity: var(--lm-beam);
+    }
+  }
+
+  .lm-beams-pause {
+    display: inline-flex;
+    align-items: center;
+    gap: $space.xs;
+    /* A pointer target of at least 24 px (WCAG 2.5.8). */
+    min-block-size: 1.5rem;
+    cursor: pointer;
+  }
+  input {
+    inline-size: 1rem;
+    block-size: 1rem;
+    margin: 0;
+    accent-color: $color.text;
+  }
+  input:focus-visible {
+    outline: $focus.ring;
+    outline-offset: $focus.offset;
+  }
+
+  /* Reduced motion: a still fan, a little under the middle of the pulse, and nothing to pause. */
+  @media (prefers-reduced-motion: reduce) {
+    line {
+      animation: none;
+      opacity: calc(var(--lm-beam) * 0.6);
+    }
+    .lm-beams-pause {
+      display: none;
+    }
+  }
+</style>
+
+<style global>
+  /* The control and the drawing are apart in the page, so this rule is not scoped. */
+  :root:has(.lm-beams-pause :checked) .lm-beams line {
+    animation-play-state: paused;
+  }
+</style>
