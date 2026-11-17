@@ -7,24 +7,14 @@ import {
   CodeBlock,
   Footer,
   LinkButton,
+  Logo,
   SiteHeader,
   Tabs,
   ThemeToggle,
   highlight,
   siteLinks,
 } from "../../src/index.ts";
-import {
-  bp,
-  color,
-  gradient,
-  layout,
-  leading,
-  radius,
-  shadow,
-  space,
-  text,
-  weight,
-} from "../../src/tokens.ts";
+import { bp, color, label, layout, leading, space, text, weight } from "../../src/tokens.ts";
 import { counterSample, cssSample, installSamples } from "./samples.ts";
 
 const SWATCHES = [
@@ -77,7 +67,7 @@ export function Showcase() {
         <section class="hero">
           <p class="eyebrow">@lumiose/site-kit</p>
           <h1>
-            The <span class="lit">light</span> design system
+            The light <span class="quiet">design system</span>
           </h1>
           <p class="lead">
             Tokens, a base stylesheet and <code>.stsx</code> components for the Lumiose website, docs
@@ -128,9 +118,20 @@ export function Showcase() {
         </Section>
 
         <Section
+          id="logo"
+          title="Logo"
+          lead="The Corner L: a wall and a floor in the text colour, a quarter of light in the accent, and the wordmark in mono uppercase. The mark also stands alone."
+        >
+          <div class="row logos">
+            <Logo />
+            <Logo wordmark={false} />
+          </div>
+        </Section>
+
+        <Section
           id="buttons"
           title="Button and LinkButton"
-          lead="Three variants and three sizes, as class objects. LinkButton is an anchor with the same look."
+          lead="Three variants and three sizes, as class objects. The primary button is the page inverted; LinkButton is an anchor with the same look."
         >
           <div class="row">
             <Button>Primary</Button>
@@ -155,7 +156,7 @@ export function Showcase() {
         <Section
           id="callouts"
           title="Callout"
-          lead="Notes, warnings and tips in prose. Each kind has its own colors and icon, AA contrast in both themes."
+          lead="Notes, warnings and tips in prose. The kinds share one look: the icon and the label tell them apart."
         >
           <Callout>
             Style blocks are scoped by placement. A block inside a component styles only that
@@ -173,7 +174,7 @@ export function Showcase() {
         <Section
           id="cards"
           title="Card"
-          lead="Content cards. With href the whole card is a link and lights up on hover or focus."
+          lead="Content cards. With href the whole card is a link, and its border takes the text colour on hover or focus."
         >
           <div class="cards">
             <Card title="Signals" href="#cards" eyebrow="Concepts" icon={<Sparkle />}>
@@ -192,7 +193,7 @@ export function Showcase() {
         <Section
           id="code"
           title="CodeBlock"
-          lead="Code with a title bar and a copy button (an island). Highlighting is a hook: the kit's highlighter knows .stsx, including $token references in style blocks."
+          lead="Code with a title bar and a copy button (an island). Highlighting is a hook and monochrome: bold keywords, grey comments, and an amber underline for emphasis, such as $token references in style blocks."
         >
           <CodeBlock code={counterSample} lang="stsx" title="Counter.stsx" highlight={highlight} />
           <div class="two">
@@ -288,12 +289,7 @@ export function Showcase() {
 
 <style>
   .shell {
-    background:
-      $gradient.glow no-repeat,
-      $color.bg;
-    background-size:
-      100% 36rem,
-      auto;
+    background: $color.bg;
   }
 
   .page {
@@ -304,27 +300,25 @@ export function Showcase() {
 
   .hero {
     padding-block: $space.xxxl $space.xxl;
-    text-align: center;
   }
   .eyebrow {
-    color: $color.accentText;
-    font-family: ui-monospace, monospace;
-    font-size: $text.sm;
-    font-weight: $weight.semibold;
+    color: $color.muted;
+    font-family: $label.font;
+    font-size: $label.size;
+    letter-spacing: $label.tracking;
+    text-transform: uppercase;
   }
   h1 {
-    margin-block: $space.sm $space.md;
+    margin-block: $space.lg $space.lg;
     font-size: $text.display;
+    line-height: 0.95;
+    letter-spacing: -0.055em;
   }
-  .lit {
-    background: $gradient.text;
-    background-clip: text;
-    -webkit-background-clip: text;
-    color: transparent;
+  .quiet {
+    color: $color.muted;
   }
   .lead {
     max-inline-size: $layout.prose;
-    margin-inline: auto;
     color: $color.muted;
     font-size: $text.lg;
     line-height: $leading.normal;
@@ -332,7 +326,6 @@ export function Showcase() {
   .actions {
     display: flex;
     flex-wrap: wrap;
-    justify-content: center;
     gap: $space.sm;
     margin-block-start: $space.xl;
   }
@@ -364,6 +357,9 @@ export function Showcase() {
   .sparkle {
     fill: currentColor;
   }
+  .logos {
+    gap: $space.xxl;
+  }
 
   .swatches {
     display: grid;
@@ -378,9 +374,7 @@ export function Showcase() {
   .swatch {
     block-size: 3.5rem;
     border: 1px solid $color.border;
-    border-radius: $radius.md;
     background: var(--swatch);
-    box-shadow: $shadow.sm;
   }
 
   .scales {
@@ -396,7 +390,7 @@ export function Showcase() {
     justify-content: space-between;
     gap: $space.md;
     padding-block: $space.xxs;
-    border-block-end: 1px dashed $color.border;
+    border-block-end: 1px solid $color.border;
   }
   .type .sample {
     font-size: var(--size);
@@ -411,8 +405,7 @@ export function Showcase() {
   .space .bar {
     inline-size: var(--step);
     block-size: 0.75rem;
-    border-radius: $radius.sm;
-    background: $gradient.brand;
+    background: $color.text;
   }
   .type code,
   .space code,
@@ -444,16 +437,15 @@ export function Showcase() {
   .scheme {
     padding: $space.lg;
     border: 1px solid $color.border;
-    border-radius: $radius.xl;
     background: $color.bg;
     color: $color.text;
   }
   .scheme-label {
     margin-block-end: $space.md;
     color: $color.muted;
-    font-size: $text.xs;
-    font-weight: $weight.semibold;
-    letter-spacing: 0.08em;
+    font-family: $label.font;
+    font-size: $label.size;
+    letter-spacing: $label.tracking;
     text-transform: uppercase;
   }
 
@@ -462,12 +454,6 @@ export function Showcase() {
     .two,
     .compare {
       grid-template-columns: 1fr;
-    }
-    .hero {
-      text-align: start;
-    }
-    .actions {
-      justify-content: flex-start;
     }
   }
 </style>

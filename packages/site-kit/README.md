@@ -51,19 +51,21 @@ grey on the page background.
 | Component              | Notes                                                                                    |
 | ---------------------- | ---------------------------------------------------------------------------------------- |
 | `SiteHeader`           | Logo (slot), navigation, actions (slot) and the theme toggle. Sticky.                    |
-| `SiteNav`              | Island inside SiteHeader: active link (`aria-current`), disclosure menu below `$bp.md`.  |
+| `SiteNav`              | Island inside SiteHeader: active link (`aria-current`, amber dot), menu below `$bp.md`.  |
 | `Footer`               | Logo, tagline, link columns, bottom line (children).                                     |
-| `Button`, `LinkButton` | `variant`: primary, secondary, ghost; `size`: sm, md, lg.                                |
-| `Callout`              | `kind`: info, warn, tip; optional `title`.                                               |
+| `Button`, `LinkButton` | `variant`: primary (the page inverted), secondary, ghost; `size`: sm, md, lg.            |
+| `Callout`              | `kind`: info, warn, tip (told apart by icon and label); optional `title`.                |
 | `Card`                 | `title`, optional `href` (whole card is a link), `eyebrow`, `icon` (slot).               |
 | `CodeBlock`            | `code`, `lang`, `title`, `highlight` hook (`highlight` from the kit, Shiki, …), copy.    |
 | `CopyButton`           | Island inside CodeBlock (`client:visible`).                                              |
 | `Tabs`                 | `labels` plus one child element per panel; WAI-ARIA keyboard pattern. Pass `id` for SSR. |
 | `ThemeToggle`          | Island inside SiteHeader (`client:load`); the icon follows the theme through CSS.        |
-| `Logo`                 | The mark and wordmark.                                                                   |
+| `Logo`                 | The Corner L mark (text colour, accent quarter) and the mono uppercase wordmark.         |
 
 `highlight` (`@lumiose/site-kit/highlight`) is a small highlighter for TS/TSX/`.stsx` (style blocks
-as CSS, `$` references included), CSS, shell and JSON, producing `tok-*` spans that CodeBlock colors.
+as CSS, `$` references included), CSS, shell and JSON, producing `tok-*` spans. CodeBlock styles them
+in one colour: keywords are bold, comments are grey, and emphasis (`tok-ref`, or `<u>` and `<mark>`
+from another highlighter) is an amber underline.
 
 ## Showcase
 
@@ -73,7 +75,7 @@ as CSS, `$` references included), CSS, shell and JSON, producing `tok-*` spans t
 pnpm --filter @lumiose/site-kit dev          # http://localhost:5173
 pnpm --filter @lumiose/site-kit typecheck    # lumiose check, kit and showcase
 pnpm --filter @lumiose/site-kit test:e2e     # Playwright, dev and production build
-pnpm --filter @lumiose/site-kit screenshots  # backlog/assets/task-59-*.png
+pnpm --filter @lumiose/site-kit screenshots  # backlog/assets/redesign/task-604-site-kit-*.jpg
 ```
 
 A Lumiose project that imports the kit (or, like the showcase, its `../../src` files) type-checks its

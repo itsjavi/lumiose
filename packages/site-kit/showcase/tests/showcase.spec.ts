@@ -21,7 +21,15 @@ test("renders every component without errors", async ({ page }) => {
   await page.goto("/");
   await expect(page.getByRole("banner")).toBeVisible();
   await expect(page.getByRole("navigation", { name: "Main" })).toBeVisible();
-  for (const name of ["Tokens", "Button and LinkButton", "Callout", "Card", "CodeBlock", "Tabs"]) {
+  for (const name of [
+    "Tokens",
+    "Logo",
+    "Button and LinkButton",
+    "Callout",
+    "Card",
+    "CodeBlock",
+    "Tabs",
+  ]) {
     await expect(page.getByRole("heading", { level: 2, name, exact: true })).toBeVisible();
   }
   await expect(page.getByRole("note")).toHaveCount(5);
@@ -44,6 +52,111 @@ test("the active link is marked as the current page", async ({ page }) => {
     page.getByRole("navigation", { name: "Main" }).getByRole("link", { name: "Playground" }),
   ).not.toHaveAttribute("aria-current");
 });
+
+// The identity of decision-90, measured on the rendered page in each theme.
+for (const theme of ["light", "dark"] as const) {
+  test.describe(`the identity, ${theme}`, () => {
+    test.beforeEach(async ({ page }) => {
+      await page.emulateMedia({ colorScheme: theme, reducedMotion: "reduce" });
+      await page.goto("/");
+    });
+
+    test("square corners, no shadows and no gradients", async ({ page }) => {
+      const offenders = await page.evaluate(() => {
+        const found: string[] = [];
+        for (const element of document.querySelectorAll("body, body *")) {
+          for (const pseudo of [null, "::before", "::after"]) {
+            const style = getComputedStyle(element, pseudo);
+            if (pseudo !== null && style.content === "none") continue;
+            const name = `${element.tagName.toLowerCase()}.${element.getAttribute("class")}${pseudo ?? ""}`;
+            // The one round shape: the dot of the active navigation link.
+            const dot = pseudo === "::before" && element.matches("nav a[aria-current]");
+            if (!dot && style.borderRadius.split(" ").some((r) => Number.parseFloat(r) !== 0)) {
+              found.push(`${name}: border-radius ${style.borderRadius}`);
+            }
+            if (style.boxShadow !== "none") found.push(`${name}: box-shadow ${style.boxShadow}`);
+            if (style.backgroundImage.includes("gradient")) found.push(`${name}: gradient`);
+          }
+        }
+        return found;
+      });
+      expect(offenders).toEqual([]);
+    });
+
+    test("amber is the logo's quarter, the active link's dot and emphasis in code", async ({
+      page,
+    }) => {
+      const colors = await page.evaluate(() => {
+        const probe = document.createElement("span");
+        // Without this, each new colour would start a (very short) transition from the last one.
+        probe.style.transitionProperty = "none";
+        document.body.append(probe);
+        const computed = (property: string) => {
+          probe.style.color = `var(${property})`;
+          return getComputedStyle(probe).color;
+        };
+        const result = {
+          accent: computed("--lm-accent"),
+          text: computed("--lm-text"),
+          bg: computed("--lm-bg"),
+          muted: computed("--lm-muted"),
+        };
+        probe.remove();
+        return result;
+      });
+      const style = (selector: string, property: string, pseudo?: string) =>
+        page
+          .locator(selector)
+          .first()
+          .evaluate(
+            (element, [name, pseudoElement]) =>
+              getComputedStyle(element, pseudoElement ?? null).getPropertyValue(name!),
+            [property, pseudo] as const,
+          );
+
+      // The logo: the L in the text colour, the quarter in the accent, the wordmark in uppercase.
+      expect(await style("header .logo .wall", "fill")).toBe(colors.text);
+      expect(await style("header .logo .light", "fill")).toBe(colors.accent);
+      expect(await style("header .logo", "text-transform")).toBe("uppercase");
+      expect(await style("header .logo", "font-family")).toContain("monospace");
+
+      // The active link: a dot (a shape) as well as the text colour. Other links have neither.
+      const active = "nav[aria-label=Main] a[aria-current=page]";
+      const idle = "nav[aria-label=Main] a:not([aria-current])";
+      expect(await style(active, "color")).toBe(colors.text);
+      expect(await style(active, "background-color", "::before")).toBe(colors.accent);
+      expect(Number.parseFloat(await style(active, "width", "::before"))).toBeGreaterThan(4);
+      expect(await style(idle, "color")).toBe(colors.muted);
+      expect(await style(idle, "content", "::before")).toBe("none");
+
+      // Buttons are the page inverted, never amber.
+      expect(await style(".btn.primary", "background-color")).toBe(colors.text);
+      expect(await style(".btn.primary", "color")).toBe(colors.bg);
+
+      // Code: bold keywords, grey comments, an amber underline for emphasis, one text colour.
+      expect(await style("pre .tok-keyword", "font-weight")).toBe("700");
+      expect(await style("pre .tok-keyword", "color")).toBe(colors.text);
+      expect(await style("pre .tok-string", "color")).toBe(colors.text);
+      expect(await style("pre .tok-comment", "color")).toBe(colors.muted);
+      expect(await style("pre .tok-ref", "text-decoration-line")).toBe("underline");
+      expect(await style("pre .tok-ref", "text-decoration-color")).toBe(colors.accent);
+      expect(await style("pre .tok-ref", "color")).toBe(colors.text);
+
+      // The selected tab: the text colour and a line in it.
+      expect(await style("[role=tab][aria-selected=true]", "border-bottom-color")).toBe(
+        colors.text,
+      );
+
+      // Focus rings use the text colour.
+      await page.keyboard.press("Tab");
+      const ring = await page.evaluate(() => {
+        const focused = getComputedStyle(document.activeElement!);
+        return [focused.outlineStyle, focused.outlineColor];
+      });
+      expect(ring).toEqual(["solid", colors.text]);
+    });
+  });
+}
 
 test("the theme toggle switches, persists and follows the system", async ({ page }) => {
   await page.emulateMedia({ colorScheme: "light" });
@@ -165,7 +278,7 @@ test.describe("on a phone", () => {
   });
 });
 
-// `pnpm --filter @lumiose/site-kit screenshots`: the evidence of TASK-59 (production build).
+// `pnpm --filter @lumiose/site-kit screenshots`: the showcase in both themes (production build).
 test.describe("screenshots", () => {
   test.beforeEach(() => {
     test.skip(!process.env.SCREENSHOTS || test.info().project.name !== "preview");
@@ -176,7 +289,11 @@ test.describe("screenshots", () => {
       await page.emulateMedia({ colorScheme: theme, reducedMotion: "reduce" });
       await page.setViewportSize({ width: 1280, height: 900 });
       await page.goto("/");
-      await page.screenshot({ path: `${ASSETS}/task-59-showcase-${theme}.png`, fullPage: true });
+      await page.screenshot({
+        path: `${ASSETS}/redesign/task-604-site-kit-${theme}.jpg`,
+        quality: 80,
+        fullPage: true,
+      });
     });
 
     test(`phone with the menu open, ${theme}`, async ({ page }) => {
@@ -186,7 +303,7 @@ test.describe("screenshots", () => {
       await page.getByRole("button", { name: "Menu" }).click();
       // The bars turn into a cross through a transition.
       await page.evaluate(() => Promise.all(document.getAnimations().map((a) => a.finished)));
-      await page.screenshot({ path: `${ASSETS}/task-59-phone-${theme}.png` });
+      await page.screenshot({ path: test.info().outputPath(`phone-${theme}.png`) });
     });
   }
 });

@@ -1,9 +1,10 @@
 // Code samples shown by the showcase.
 
 export const counterSample = `import { signal } from "lumiose";
-import { color, radius, space } from "@lumiose/site-kit/tokens";
+import { color, space } from "@lumiose/site-kit/tokens";
 
 export function Counter(props: { start?: number }) {
+  // Only the text node that reads the signal updates.
   const count = signal(props.start ?? 0);
 
   return (
@@ -16,16 +17,17 @@ export function Counter(props: { start?: number }) {
 <style>
   button {
     padding: $space.xs $space.md;
-    border-radius: $radius.pill;
-    background: $color.accent;
+    border: 1px solid $color.text;
+    background: $color.text;
+    color: $color.bg;
   }
-  .hot { box-shadow: 0 0 24px $color.glowA; }
+  .hot { text-decoration: underline $color.accent; }
 </style>
 `;
 
 export const cssSample = `:root {
   color-scheme: light dark;
-  --lm-bg: light-dark(#fcfcfe, #0a0a12);
+  --lm-bg: light-dark(#fff, #000);
 }
 :root[data-theme="dark"] { color-scheme: dark; }
 
