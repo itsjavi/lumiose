@@ -2,22 +2,7 @@
 
 > Push live updates to the browser with server-sent events or WebSockets, with proxy configs and notes per platform.
 
-**Server-sent events** (SSE) are a streamed `GET` response: the server pushes, the browser's
-`EventSource` reads and reconnects by itself, and they pass through proxies and CDNs as plain HTTP.
-Use them when updates flow from the server to the page (feeds, notifications, progress).
-**WebSockets** carry messages both ways, and need a server that keeps connections open:
-`@lumiose/adapter-node` on a VPS, in Docker or on Coolify.
-
-Both are in the [ssr-realtime sample](https://github.com/itsjavi/lumiose/tree/main/examples/ssr-realtime),
-with unit and e2e tests.
-
-## Server-sent events
-
-### The stream
-
-An endpoint returns a `Response` whose body is a `ReadableStream` in the `text/event-stream` format.
-This helper writes the events, sends a comment every 15 s so proxies keep an idle connection open,
-and runs a cleanup exactly once when the stream ends:
+## 1. Stream events
 
 ```ts
 // src/server/event-stream.server.ts
@@ -78,11 +63,24 @@ export function eventStream(
 }
 ```
 
-**Disconnects.** When the browser closes the connection (the tab closes, `EventSource.close()`),
-the adapter aborts `request.signal` and cancels the body; either one runs the cleanup. Without
-it, a closed tab would leave its subscription, timers and database listeners behind for good.
+An endpoint returns a `Response` whose body is a `ReadableStream` in the `text/event-stream` format.
+This helper writes the events, sends a comment every 15 s so proxies keep an idle connection open,
+and runs a cleanup exactly once when the stream ends.
 
-### The endpoint
+> **Disconnects:** when the browser closes the connection (the tab closes, `EventSource.close()`),
+> the adapter aborts `request.signal` and cancels the body; either one runs the cleanup. Without
+> it, a closed tab would leave its subscription, timers and database listeners behind for good.
+
+> **Which one:** **Server-sent events** (SSE) are a streamed `GET` response: the server pushes, the browser's
+> `EventSource` reads and reconnects by itself, and they pass through proxies and CDNs as plain HTTP.
+> Use them when updates flow from the server to the page (feeds, notifications, progress).
+> **WebSockets** carry messages both ways, and need a server that keeps connections open:
+> `@lumiose/adapter-node` on a VPS, in Docker or on Coolify.
+
+> **Sample:** both are in the [ssr-realtime sample](https://github.com/itsjavi/lumiose/tree/main/examples/ssr-realtime),
+> with unit and e2e tests.
+
+## 2. Add the endpoint
 
 ```ts
 // src/routes/api/events/route.ts
@@ -104,7 +102,7 @@ export const GET: Endpoint<"/api/events"> = ({ request }) =>
 several containers, serverless instances), publish through a shared channel instead: Redis
 pub/sub, Postgres `LISTEN`/`NOTIFY` or a hosted service.
 
-### The island
+## 3. Read it in an island
 
 ```stsx
 // src/islands/LiveFeed.stsx (shortened), used as <LiveFeed client:load />
@@ -142,14 +140,16 @@ export function LiveFeed() {
 also has a form that posts to the page's action with `submit()`: the page does not reload, so
 the stream stays open.
 
-**After a reconnect**, the browser sends the last `id:` it received as the `Last-Event-ID` request
-header; an endpoint that keeps recent events can send the missed ones first. The sample does not.
+> **After a reconnect:** the browser sends the last `id:` it received as the `Last-Event-ID` request
+> header; an endpoint that keeps recent events can send the missed ones first. The sample does not.
 
-**Compression.** The Node adapter compresses `text/event-stream` like any text response and
-flushes the compressor whenever the stream pauses, so every event reaches the browser at once
-(checked with brotli and gzip).
+> **Compression:** the Node adapter compresses `text/event-stream` like any text response and
+> flushes the compressor whenever the stream pauses, so every event reaches the browser at once
+> (checked with brotli and gzip).
 
 ## WebSockets
+
+### Handle the upgrade
 
 Lumiose has no WebSocket API of its own. On Node, `createServer()` returns the `node:http` server,
 and a WebSocket library attaches to its `upgrade` event. With [`ws`](https://github.com/websockets/ws):
@@ -203,6 +203,8 @@ function sameSite(request: IncomingMessage, origin: string | undefined): boolean
 }
 ```
 
+### Serve the app and the sockets
+
 One `server.ts` serves the app in dev and in production: [`createDevHandler()`](../reference/vite.md#createdevhandler)
 mounts `lumiose dev` in it (HMR and the error overlay included), and `@lumiose/adapter-node`'s
 `createHandler()` serves the build. The chat's upgrades attach to the same server in both:
@@ -230,19 +232,17 @@ server.listen(Number(process.env.PORT ?? 3000));
 ```
 
 In the browser, an island opens `new WebSocket(url)` in `onMount` (with `wss:` on an `https:` page)
-and closes it in `onCleanup`, like the `EventSource` above.
+and closes it in `onCleanup`, like the `EventSource` of step 3.
 
-**In dev**, run `node server.ts --dev` instead of `lumiose dev`: the WebSockets work as in
-production, with no Vite plugin. `lumiose dev` and `lumiose preview` do not run `server.ts`, so
-they have no WebSockets.
-
-**Signing in.** The browser sends its cookies with the handshake: read the session from
-`request.headers.cookie` before calling `handleUpgrade`, and refuse with `401` when it is missing.
-Upgrades bypass Lumiose's middleware, which runs for HTTP requests only.
-
-**Several processes** do not share `sockets.clients`: broadcast through a shared channel (Redis
-pub/sub, for example), as with SSE. On `SIGTERM`, close the sockets (`client.close(1001)`) before
-the server, as the sample's `server.ts` does.
+- **In dev**, run `node server.ts --dev` instead of `lumiose dev`: the WebSockets work as in
+  production, with no Vite plugin. `lumiose dev` and `lumiose preview` do not run `server.ts`, so
+  they have no WebSockets.
+- **Signing in.** The browser sends its cookies with the handshake: read the session from
+  `request.headers.cookie` before calling `handleUpgrade`, and refuse with `401` when it is
+  missing. Upgrades bypass Lumiose's middleware, which runs for HTTP requests only.
+- **Several processes** do not share `sockets.clients`: broadcast through a shared channel (Redis
+  pub/sub, for example), as with SSE. On `SIGTERM`, close the sockets (`client.close(1001)`)
+  before the server, as the sample's `server.ts` does.
 
 ## Behind a proxy
 
@@ -268,7 +268,7 @@ event at once:
 ```
 
 An event stream stays open past nginx's 60 s `proxy_read_timeout` thanks to the keep-alive
-comments (checked for 75 s through nginx and Caddy). A WebSocket that may stay quiet longer needs the longer timeout above, or pings.
+comments (checked for 75 s through nginx and Caddy). A WebSocket that may stay quiet longer needs the longer `proxy_read_timeout` of that location, or pings.
 
 ## Platforms
 
