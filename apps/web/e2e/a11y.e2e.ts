@@ -251,7 +251,7 @@ for (const scheme of ["light", "dark"] as const) {
 /**
  * The decorative layers axe cannot see through ("needs review"), each replaced by a solid color at
  * its strongest: the glows composited at their peak, and the sticky header's translucent background
- * (85% of the page's, routes/layout.stsx) over the page's darkest (light theme) or lightest (dark
+ * (85% of the page's, site-kit's SiteHeader) over the page's darkest (light theme) or lightest (dark
  * theme) content. The primary button is a solid fill, which axe sees as it is. The site's own
  * selectors: keep in sync.
  */

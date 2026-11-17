@@ -49,7 +49,10 @@ export function SiteHeader(props: SiteHeaderProps) {
     position: sticky;
     inset-block-start: 0;
     z-index: $z.header;
-    background: color-mix(in oklab, $color.bg 70%, transparent);
+    /* The page shows through, blurred. At 85% of the background the grey links keep 4.5:1 over the
+       darkest content that can scroll under the header, a black button in the light theme
+       (4.96:1; 70% gave 3.34:1). */
+    background: color-mix(in srgb, $color.bg 85%, transparent);
     backdrop-filter: blur(8px);
     /* A border rather than a pseudo-element, so contrast checkers can see the header's background
        behind its text (axe). */

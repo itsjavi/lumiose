@@ -3,7 +3,7 @@
 // from @lumiose/site-kit. Every route is prerendered (`lumiose({ mode: "static" })`), so the site deploys
 // as plain files.
 import { Footer, GitHubLink, SiteHeader } from "@lumiose/site-kit";
-import { color, radius, space } from "@lumiose/site-kit/tokens";
+import { color, space } from "@lumiose/site-kit/tokens";
 import { href, url, type LayoutProps } from "lumiose";
 import { Beams, BeamsPause } from "../components/Beams.stsx";
 import { footerColumns, link, navLinks, REPOSITORY, sitePath, site } from "../lib/site.ts";
@@ -19,7 +19,6 @@ export default function RootLayout(props: LayoutProps<"/">) {
         Skip to content
       </a>
       <SiteHeader
-        class="bar"
         links={navLinks}
         current={current}
         home={href("/")}
@@ -43,12 +42,6 @@ export default function RootLayout(props: LayoutProps<"/">) {
     flex-direction: column;
     min-block-size: 100dvh;
   }
-  /* The header lets the page show through: at 85% of the background its grey links keep 4.5:1
-     over the darkest content that scrolls under it, a black button in the light theme (4.96:1;
-     the kit's 70% gives 3.34:1). e2e/a11y.e2e.ts flattens it to the same mix. */
-  .site .bar {
-    background: color-mix(in srgb, $color.bg 85%, transparent);
-  }
   main {
     flex: 1;
   }
@@ -58,9 +51,9 @@ export default function RootLayout(props: LayoutProps<"/">) {
     inset-inline-start: $space.xs;
     z-index: 100;
     padding: $space.xs $space.sm;
-    border-radius: $radius.md;
-    background: $color.accent;
-    color: $color.accentFg;
+    /* Inverted, not amber: the accent is for the beams, the logo and markers (decision-90). */
+    background: $color.text;
+    color: $color.bg;
     translate: 0 -200%;
   }
   .skip:focus-visible {
