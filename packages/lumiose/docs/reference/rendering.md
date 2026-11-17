@@ -184,7 +184,7 @@ its SPA layouts and page (and their imports), so a deep link fetches them alongs
 instead of after it has run. When nothing in a build hydrates (every SPA page is
 `ssr = false` and the app has no islands), the SPA entry starts the router without the island
 loader, and the build ships no hydration code. With
-[`src/instrumentation.client.ts`](../concepts/islands.md#concept), the SPA root and the router start once its
+[`src/instrumentation.client.ts`](dom.md#client-instrumentation), the SPA root and the router start once its
 top-level code ran, on every page load (not on client navigations).
 
 - **`ssr` (the default):** the server renders the island and the browser hydrates it, replaying

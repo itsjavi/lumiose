@@ -123,7 +123,7 @@ page that renders an island (`<script type="module" async>`, see [Islands](../co
 with your own server, pass its URL as `renderToStream(root, { loaderUrl })`. It imports the app's
 island manifest (`virtual:lumiose/islands`, from `@lumiose/vite`), and (apps with
 `src/instrumentation.client.ts` get a variant from `lumiose dev` and `lumiose build` whose islands
-first wait for it, [Islands](../concepts/islands.md#concept)):
+first wait for it, [Client instrumentation](#client-instrumentation)):
 
 - reads the island records (`<script type="application/json" data-l-islands>`) as each streamed
   chunk arrives, and finds each island's range;
@@ -134,7 +134,7 @@ first wait for it, [Islands](../concepts/islands.md#concept)):
   (and the await records sent with it) arrives;
 - imports the island's module and calls `hydrate()`; in a build, it first adds module preloads for
   the island's chunk and the chunks it imports, which then load in parallel
-  ([How island chunks load](../concepts/islands.md#concept));
+  ([How island chunks load](#island-chunks-and-build-output));
 - catches `click`, `input`, `submit` and `keydown` on an island that is not hydrated yet: it
   hydrates that island at once and dispatches the events again on their targets afterwards (an
   `input` restores the value typed meanwhile). They are dispatched a task after hydration, in the
@@ -153,7 +153,7 @@ default actions run: a link navigates, a form submits to its `action`. A module 
 is imported again on the next interaction with the island; an island whose hydration threw stays
 server HTML. With `src/instrumentation.client.ts`, its `onError` receives
 the error too (`phase: "hydrate"`), and its `hydrate` wrappers observe each island
-([Islands](../concepts/islands.md#concept)).
+([Client instrumentation](#client-instrumentation)).
 
 The tag that `lumiose dev` and `lumiose build` add to a page with islands (the URL is the
 build's):

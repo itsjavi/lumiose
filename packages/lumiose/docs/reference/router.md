@@ -515,7 +515,7 @@ export function NextPage() {
   errors its `error` page (`{ status, error }` props), with the layouts kept. With
   `src/instrumentation.client.ts`, its `onError` receives the other errors (`phase: "navigate"`),
   and its `navigate` wrappers observe each navigation
-  ([Islands](../concepts/islands.md#concept)). A thrown `redirect()`
+  ([Client instrumentation](dom.md#client-instrumentation)). A thrown `redirect()`
   navigates. Without such a page, a minimal built-in error page replaces the SPA. A `not-found` page that
   the server rendered at the URL of a prerendered page with params (`404.html` on a static host)
   renders that page instead: see

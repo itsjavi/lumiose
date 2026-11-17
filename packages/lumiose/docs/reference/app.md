@@ -748,7 +748,7 @@ interface ServerInstrumentation {
 }
 ```
 
-The exports of `src/instrumentation.client.ts` ([Islands](../concepts/islands.md#concept)):
+The exports of `src/instrumentation.client.ts` ([Client instrumentation](dom.md#client-instrumentation)):
 `onError(error: unknown, info: ClientErrorInfo): unknown` and
 `instrumentations: ClientInstrumentation[]`.
 
@@ -1070,7 +1070,7 @@ does not, since errors there fail the build. Its three exports are optional:
 
 Without the file nothing loads; with it, a phase without wrappers costs one check. Its browser
 counterpart, `src/instrumentation.client.ts`, runs on every page before hydration
-([Islands](../concepts/islands.md#concept)).
+([Client instrumentation](dom.md#client-instrumentation)).
 
 ## Tracing phases with OpenTelemetry
 

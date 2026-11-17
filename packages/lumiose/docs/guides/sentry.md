@@ -115,7 +115,7 @@ export function onError(error: unknown, info: ClientErrorInfo) {
 ```
 
 The file's top-level code runs before any island hydrates, so the SDK is ready for hydration
-errors ([Islands](../concepts/islands.md#concept)). `onError` receives what Lumiose catches, with
+errors ([Client instrumentation](../reference/dom.md#client-instrumentation)). `onError` receives what Lumiose catches, with
 the island's module and export. Sentry's own handlers still catch everything else on the page.
 
 | `info.phase` | What failed                                                                                            |

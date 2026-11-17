@@ -145,7 +145,7 @@ export const instrumentations: ServerInstrumentation[] = [
 > **Details:** who loads the file, which errors arrive, and every phase with its `info`:
 > [The instrumentation file](../reference/app.md#the-instrumentation-file). Spans per phase:
 > [Tracing with OpenTelemetry](../guides/opentelemetry.md). The browser counterpart is
-> `src/instrumentation.client.ts` ([Islands](islands.md#concept)).
+> `src/instrumentation.client.ts` ([Client instrumentation](../reference/dom.md#client-instrumentation)).
 
 ## API
 

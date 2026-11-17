@@ -288,7 +288,7 @@ not. The plugin treats their modules like the app's own, whether the package is 
   `node_modules` to Vite; an explicit `exclude` replaces that rule, so `exclude: /node_modules/`
   compiles no installed package.
 - **Scanned with the project.** Builds find their island call sites, stylesheets and
-  [client scripts](../concepts/islands.md#concept) (`?client`) before the server graph
+  [client scripts](dom.md#client-scripts) (`?client`) before the server graph
   exists, so their islands get chunks and their pages load their scripts. An installed package is
   scanned whole, `dist/` included, but not the packages in its own `node_modules`; a linked one
   without its build output (`dist/`, `build/`) and nested projects (a folder with a

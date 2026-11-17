@@ -13,7 +13,7 @@ pnpm add @opentelemetry/resources @opentelemetry/semantic-conventions
 
 Lumiose has no tracing of its own: its instrumentation files hand every phase of a request, and
 every client navigation, submission, fetch and hydration, to observers you write
-([Server](../concepts/server.md#instrumentation), [Islands](../concepts/islands.md#concept)). This
+([Server](../concepts/server.md#instrumentation), [Client instrumentation](../reference/dom.md#client-instrumentation)). This
 guide makes those observers OpenTelemetry spans and exports them over OTLP, which every backend
 of [step 5](#5-choose-a-backend) accepts.
 
