@@ -220,6 +220,7 @@ work remains.
   - Pin Rust dependencies exactly, in `[workspace.dependencies]`.
 - **Docs.** Docs stay current with every change. A commit that changes user-facing API, syntax, behaviour, diagnostics or CLI output updates the affected pages in `packages/lumiose/docs/` (`packages/ui/docs/` for `@lumiose/ui`, decision-64) **in the same commit**, or at the latest in the next commit of the same task, before the task is marked Done.
   - Write for both agents and humans.
+  - Write pages by the docs writing guide in `apps/web/CONTRIBUTING.md` (Writing docs pages): example first, short sections shaped for the layout, facts moved and linked, never deleted.
   - Any agent may edit the doc pages for the features it implements. Beacon owns the docs structure, the generators and doc-wide consistency.
   - Regenerate with `pnpm --filter lumiose docs:gen`, and keep `pnpm --filter lumiose docs:check` and the docs tests green.
   - A task is not Done while its docs are stale.
