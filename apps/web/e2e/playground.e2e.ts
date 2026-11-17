@@ -97,7 +97,7 @@ test("is a page of the site, and only it loads the compiler", async ({ page }) =
 
   const fetched: string[] = [];
   page.on("request", (request) => fetched.push(request.url()));
-  // The landing's live demo loads it only once scrolled into view (below).
+  // Not the landing either: its code panel is static and its counter a small island (TASK-607).
   for (const path of ["/", "/docs/concepts/styles", "/benchmarks"]) {
     await page.goto(path);
     await page.waitForLoadState("networkidle");
@@ -107,64 +107,6 @@ test("is a page of the site, and only it loads the compiler", async ({ page }) =
 
 /** The editor island's code, CodeMirror, the WebAssembly compiler and the preview runtime. */
 const COMPILER = /Playground|codemirror|generated\/|lumiose_wasm/i;
-
-test("the landing's live demo loads when visible, and edits update the outputs", async ({
-  page,
-}) => {
-  const fetched: string[] = [];
-  page.on("request", (request) => fetched.push(request.url()));
-  await page.goto("/");
-  await page.waitForLoadState("networkidle");
-  // The initial JS stays as it was: nothing of the editor before the demo scrolls into view.
-  expect(fetched.filter((url) => COMPILER.test(url))).toEqual([]);
-  const demo = page.locator(".live-demo");
-  await expect(demo.getByText("You write")).toBeVisible();
-
-  await demo.scrollIntoViewIfNeeded();
-  await expect(demo.locator(".status")).toContainText("Compiled with lumiose_wasm", {
-    timeout: 20_000,
-  });
-  expect(fetched.some((url) => /lumiose_wasm/.test(url))).toBe(true);
-  await expect(demo.getByText("You write")).toBeHidden();
-  const button = preview(page).getByRole("button", { name: "Clicked 0 times" });
-  await button.click();
-  await expect(preview(page).getByRole("button", { name: "Clicked 1 times" })).toBeVisible();
-
-  await page.locator(".editor-pane .cm-line", { hasText: "Clicked {count()} times" }).click();
-  await page.keyboard.press("Home");
-  await page.keyboard.type("Pressed, ");
-  // `--space: 8px;` becomes `--space: 80px;`.
-  await page.locator(".editor-pane .cm-line", { hasText: "--space: 8px;" }).click();
-  await page.keyboard.press("End");
-  for (let i = 0; i < "px;".length; i++) await page.keyboard.press("ArrowLeft");
-  await page.keyboard.type("0");
-  await expect(
-    preview(page).getByRole("button", { name: "Pressed, Clicked 0 times" }),
-  ).toBeVisible();
-  await page.getByRole("tab", { name: "Client JS" }).click();
-  await expect(page.getByRole("tabpanel", { name: "Client JS" })).toContainText("Pressed, Clicked");
-  await page.getByRole("tab", { name: "CSS" }).click();
-  await expect(page.getByRole("tabpanel", { name: "CSS" })).toContainText("--space: 80px");
-});
-
-test.describe("without JavaScript", () => {
-  test.use({ javaScriptEnabled: false });
-
-  test("the landing's demo shows the sample and its output as tabs", async ({ page }) => {
-    await page.goto("/");
-    const demo = page.locator(".live-demo");
-    const panel = (n: number) => demo.locator(".static-panels > figure").nth(n);
-    const [source, js, css] = [panel(0), panel(1), panel(2)];
-    await expect(source).toBeVisible();
-    await expect(source).toContainText("export default function Counter()");
-    await expect(js).toBeHidden();
-    await demo.getByText("JS output").click();
-    await expect(js).toContainText('from "lumiose/dom"');
-    await expect(source).toBeHidden();
-    await demo.getByText("CSS output").click();
-    await expect(css).toContainText("[data-lum-");
-  });
-});
 
 const out = (name: string) => `../../backlog/assets/task-58-${name}.png`;
 

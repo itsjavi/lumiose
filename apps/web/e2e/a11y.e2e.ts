@@ -163,11 +163,7 @@ const OPEN_DEMOS: { name: string; path: string; open: (page: Page) => Promise<vo
 async function settle(page: Page) {
   await page.waitForLoadState("networkidle");
   const path = new URL(page.url()).pathname;
-  if (path === "/") {
-    // The live demo hydrates when visible: check it live (the static stand-in is checked below).
-    await page.locator(".live-demo").scrollIntoViewIfNeeded();
-  }
-  if (path === "/" || path.startsWith("/playground")) {
+  if (path.startsWith("/playground")) {
     await expect(page.locator(".playground .status")).toContainText("Compiled with lumiose_wasm", {
       timeout: 20_000,
     });
@@ -252,23 +248,6 @@ for (const scheme of ["light", "dark"] as const) {
   }
 }
 
-for (const scheme of ["light", "dark"] as const) {
-  test(`axe: landing with the demo's static stand-in (${scheme}) has no WCAG 2.2 AA violations`, async ({
-    page,
-  }) => {
-    // Before the live demo scrolls into view it shows what a visitor without JavaScript gets.
-    await page.emulateMedia({ colorScheme: scheme });
-    await page.goto("/");
-    await page.waitForLoadState("networkidle");
-    await expect(page.locator(".live-demo").getByText("You write")).toBeAttached();
-    const results = await new AxeBuilder({ page })
-      .include(".live-demo")
-      .withTags(WCAG_AA)
-      .analyze();
-    expect(describe(results.violations)).toEqual([]);
-  });
-}
-
 /**
  * The decorative layers axe cannot see through ("needs review"), each replaced by a solid color at
  * its strongest: the glows composited at their peak, and the sticky header's translucent background
@@ -278,12 +257,8 @@ for (const scheme of ["light", "dark"] as const) {
  */
 const FLATTENED = [
   // The beams behind the page are thin lines, which no solid color stands for: "text over the
-  // beams keeps AA contrast" below measures them. The install box lets a quarter of what is behind
-  // it through: here, a beam at full strength.
-  `.box { background: color-mix(in srgb, var(--lm-glow-b) 14%, var(--lm-surface)) !important; }
-   tr.self > * { background: color-mix(in srgb, var(--lm-accent) 10%, var(--lm-surface)) !important; }
-   .closing { background: color-mix(in srgb, var(--lm-glow-b) 12%, var(--lm-bg)) !important; }
-   .install { background: color-mix(in srgb, var(--lm-bg) 75%, var(--lm-accent)) !important; }
+  // beams keeps AA contrast" below measures them.
+  `tr.self > * { background: color-mix(in srgb, var(--lm-accent) 10%, var(--lm-surface)) !important; }
    .top { background: color-mix(in srgb, var(--lm-glow-a) 22%, var(--lm-bg)) !important; }
    .footer { background: color-mix(in srgb, var(--lm-glow-a) 8%, var(--lm-bg)) !important; }
    .card::before { display: none !important; }
@@ -589,12 +564,23 @@ test("keyboard focus is visible and not hidden by the sticky header", async ({ p
         return {
           label: `${element.tagName.toLowerCase()} "${element.textContent?.trim().slice(0, 30)}"`,
           indicator: focused !== blurred,
+          range: element.matches('input[type="range"]'),
+          box: { x: box.x - 6, y: box.y - 6, width: box.width + 12, height: box.height + 12 },
           bottom: box.bottom,
           // The skip link and the header's own controls sit above the content on purpose.
           aboveContent: element.closest("header") !== null || element.classList.contains("skip"),
         };
       });
       if (focus === null) continue;
+      if (!focus.indicator && focus.range) {
+        // A range input draws its ring on the thumb, a pseudo-element computed styles do not
+        // expose: compare how it is painted, focused and blurred.
+        const focused = await page.screenshot({ clip: focus.box });
+        await page.evaluate(() => (document.activeElement as HTMLElement).blur());
+        const blurred = await page.screenshot({ clip: focus.box });
+        await page.locator('input[type="range"]').first().focus();
+        focus.indicator = !focused.equals(blurred);
+      }
       expect(focus.indicator, `${path}: ${focus.label} has no focus indicator`).toBe(true);
       // 2.4.11: a focused element below the sticky header is not entirely covered by it.
       if (!focus.aboveContent && header !== null) {
