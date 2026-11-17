@@ -518,10 +518,11 @@ export function DocArticle(props: DocArticleProps) {
     text-decoration: underline;
   }
   .adjacent [rel="prev"] small::before {
-    content: "← ";
+    /* Two spaces: the first ends the escape, the second is the visible one. */
+    content: "\2190  ";
   }
   .adjacent .next small::after {
-    content: " →";
+    content: " \2192";
   }
   .next {
     text-align: end;
