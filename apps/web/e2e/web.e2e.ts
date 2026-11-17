@@ -158,7 +158,10 @@ test("docs pages render the Markdown with navigation, TOC and prev/next", async 
   await page.goto("/docs/concepts/styles");
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("Styles");
   const nav = page.getByRole("navigation", { name: "Docs" });
-  await expect(nav.getByRole("link", { name: "Styles" })).toHaveAttribute("aria-current", "page");
+  await expect(nav.getByRole("link", { name: "Styles", exact: true })).toHaveAttribute(
+    "aria-current",
+    "page",
+  );
   await expect(page.getByRole("navigation", { name: "On this page" })).toContainText(
     "Common mistakes",
   );

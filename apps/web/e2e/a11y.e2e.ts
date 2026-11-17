@@ -271,9 +271,10 @@ for (const scheme of ["light", "dark"] as const) {
 
 /**
  * The decorative layers axe cannot see through ("needs review"), each replaced by a solid color at
- * its strongest: the glows composited at their peak, the sticky header's translucent background
- * over the page's darkest (light theme) or lightest (dark theme) content, and the two ends of the
- * primary buttons' and the gradient text's gradients. The site's own selectors: keep in sync.
+ * its strongest: the glows composited at their peak, and the sticky header's translucent background
+ * (85% of the page's, routes/layout.stsx) over the page's darkest (light theme) or lightest (dark
+ * theme) content. The primary button is a solid fill, which axe sees as it is. The site's own
+ * selectors: keep in sync.
  */
 const FLATTENED = [
   // The beams behind the page are thin lines, which no solid color stands for: "text over the
@@ -288,9 +289,7 @@ const FLATTENED = [
    .card::before { display: none !important; }
    .card.linked { background: color-mix(in srgb, var(--lm-glow-a) 22%, var(--lm-surface)) !important; }
    header.header { backdrop-filter: none !important;
-     background: color-mix(in srgb, var(--lm-bg) 80%, var(--lm-text)) !important; }
-   .btn.primary { background: color-mix(in oklab, var(--lm-accent) 92%, white) !important; }`,
-  `.btn.primary { background: var(--lm-accent) !important; }`,
+     background: color-mix(in srgb, var(--lm-bg) 85%, var(--lm-text)) !important; }`,
 ];
 
 for (const scheme of ["light", "dark"] as const) {
