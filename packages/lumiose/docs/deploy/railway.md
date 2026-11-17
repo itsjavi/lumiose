@@ -37,12 +37,6 @@ app signs cookies, then generate a domain in the service's networking settings.
 
 ## 3. Verify
 
-```sh
-curl -sI https://my-app.up.railway.app/ | head -n 1
-```
-
-```text
-HTTP/2 200
-```
-
-Use the domain Railway generated. Railway sets `PORT`, which `createServer()` reads.
+Open the URL Railway generated for the service: the home page loads. From a terminal, `curl -sI` with
+that URL shows the status line, which should say `200`. Railway sets `PORT`,
+which `createServer()` reads.

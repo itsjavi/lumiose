@@ -38,15 +38,8 @@ Push to the branch the service follows: Render runs the build command, then the 
 
 ## 3. Verify
 
-```sh
-curl -sI https://my-app.onrender.com/ | head -n 1
-```
-
-```text
-HTTP/2 200
-```
-
-Use the URL the platform gives the app.
+Open the URL the platform gives the app: the home page loads. From a terminal, `curl -sI` with
+that URL shows the status line, which should say `200`.
 
 ## Notes
 

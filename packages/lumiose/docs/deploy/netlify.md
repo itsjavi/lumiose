@@ -58,13 +58,14 @@ Or push to a site connected to the repository: Netlify runs the build command it
 ## 4. Verify
 
 ```sh
-pnpm dlx netlify-cli serve
+pnpm dlx netlify-cli serve --port 8888
 # in a second terminal
-curl -sI http://localhost:8888/ | head -n 1
+curl -s -o /dev/null -w '%{http_code}\n' \
+  http://localhost:8888/
 ```
 
 ```text
-HTTP/1.1 200 OK
+200
 ```
 
 `netlify serve` runs the build and serves it locally.

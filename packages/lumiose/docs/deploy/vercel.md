@@ -51,15 +51,8 @@ This deploys the output as it is. To let Vercel build on each push instead, set 
 
 ## 4. Verify
 
-```sh
-curl -sI https://my-app.vercel.app/ | head -n 1
-```
-
-```text
-HTTP/2 200
-```
-
-Use the URL that `vercel deploy` prints.
+Open the URL that `vercel deploy` prints: the home page loads. From a terminal, `curl -sI` with
+that URL shows the status line, which should say `200`.
 
 ## What the build writes
 

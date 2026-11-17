@@ -204,7 +204,8 @@ HTTP/2 200
 HTTP/1.1 301 Moved Permanently
 ```
 
-The page arrives over HTTP/2, and plain HTTP redirects to HTTPS (Caddy answers `308`).
+The page arrives over HTTP/2, and plain HTTP redirects to HTTPS. The second line is the nginx
+config's `return 301`; Caddy redirects with a status of its own.
 
 ## Notes
 

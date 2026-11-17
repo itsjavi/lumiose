@@ -50,15 +50,8 @@ Secrets go in with `fly secrets set`. Fly builds the image and starts it behind 
 
 ## 3. Verify
 
-```sh
-curl -sI https://my-app.fly.dev/ | head -n 1
-```
-
-```text
-HTTP/2 200
-```
-
-Use the URL the platform gives the app.
+Open the URL the platform gives the app: the home page loads. From a terminal, `curl -sI` with
+that URL shows the status line, which should say `200`.
 
 ## Notes
 
