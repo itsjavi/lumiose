@@ -33,7 +33,7 @@ Two click dummies were compared. The user chose variant B, "First light", then a
 
 **Accessibility.** Text keeps at least 4.5:1 against what is behind it, a beam at its brightest included; the grey reaches 7:1 on the page background. Focus rings and control borders keep 3:1. State is never shown by colour alone.
 
-**Shape and type.** Square corners, hairline borders, no shadows and no gradients. Large, tight sans headings; small mono uppercase labels. Code highlighting is monochrome.
+**Shape and type.** Square corners, hairline borders, no shadows and no gradients. Large, tight sans headings; small mono uppercase labels. Code highlighting keeps syntax colours, the only hues besides the accent (amended by the user on 2026-11-17, after the monochrome highlighting of the first build read as "no highlighting").
 
 **Logo.** "Corner L": a capital L as a wall and a floor, with an amber quarter of light in the corner, beside the wordmark in mono uppercase. It ships only after a check against existing logos and trademarks (TASK-603).
 
