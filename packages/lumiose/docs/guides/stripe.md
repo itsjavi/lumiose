@@ -2,26 +2,14 @@
 
 > Start Stripe Checkout from a form action, fulfill orders in a `route.ts` endpoint that verifies Stripe's webhook signature, and show the result on a return page.
 
-Lumiose has no payments module: the `stripe` package runs in server code, and that is where form
-actions and endpoints run. This guide uses Stripe's hosted Checkout page, so the browser loads no
-Stripe script and the forms work without JavaScript.
-
-| File                                     | Role                                                                    |
-| ---------------------------------------- | ----------------------------------------------------------------------- |
-| `src/server/stripe.server.ts`            | The Stripe client and the products on sale. Server-only.                |
-| `src/routes/pricing/page.stsx`           | A form whose action creates a Checkout Session and redirects to it.     |
-| `src/routes/checkout/success/page.tsx`   | The return page: what the customer sees after paying.                   |
-| `src/routes/api/stripe/webhook/route.ts` | Stripe's events, with the signature verified: fulfillment happens here. |
-
-> **Status:** written against Stripe's API reference and the `stripe` package 23 (its types check
-> every example on this page); not run against a Stripe account.
-
-## Setup
+## 1. Install
 
 ```sh
 pnpm add stripe
 ```
 
+Lumiose has no payments module: the `stripe` package runs in server code. This guide uses Stripe's
+hosted Checkout page, so the browser loads no Stripe script and the forms work without JavaScript.
 The server needs two secrets, never `PUBLIC_*` variables:
 
 | Variable                | Where it comes from                                                                           |
@@ -29,15 +17,16 @@ The server needs two secrets, never `PUBLIC_*` variables:
 | `STRIPE_SECRET_KEY`     | The dashboard's API keys (`sk_test_…` while testing).                                         |
 | `STRIPE_WEBHOOK_SECRET` | The webhook endpoint's signing secret (`whsec_…`), or the one `stripe listen` prints locally. |
 
-The pages and the endpoint below render per request (`export const mode = "server"`), or the
-whole project does with `lumiose({ mode: "server" })`: a `static` endpoint can only answer `GET`
-([LUM5005](../errors/LUM5005.md)), and a form action needs a server anyway.
+> **Mode:** the pages and the endpoint of this guide render per request
+> (`export const mode = "server"`), or the whole project does with `lumiose({ mode: "server" })`:
+> a `static` endpoint can only answer `GET` ([LUM5005](../errors/LUM5005.md)), and a form action
+> needs a server anyway.
 
-## The client
+## 2. Create the client
 
 The client and the price list live in a `*.server.ts` module, so neither the secret key nor the
-prices can reach browser code ([LUM4003](../errors/LUM4003.md)). It is created on first use: `env()`
-reads the adapter's environment, which is only there during a request on some hosts.
+prices can reach browser code ([LUM4003](../errors/LUM4003.md)). The client is created on first
+use: `env()` reads the adapter's environment, which is only there during a request on some hosts.
 
 ```ts check file=server/stripe.server.ts
 // src/server/stripe.server.ts
@@ -65,11 +54,7 @@ export function isPlan(value: unknown): value is Plan {
 }
 ```
 
-## Checkout from a form action
-
-The form posts the plan to the page's `checkout` action. The action checks it against `PLANS`,
-creates a Checkout Session and redirects (303) to the URL Stripe returns. Stripe sends the customer
-back to `success_url`, with `{CHECKOUT_SESSION_ID}` replaced by the session's id, or to `cancel_url`.
+## 3. Start Checkout
 
 ```stsx check file=routes/pricing/page.stsx
 // src/routes/pricing/page.stsx
@@ -77,6 +62,8 @@ import { Title, actionData, fail, redirect, type ActionContext } from "lumiose";
 import { PLANS, isPlan, stripe } from "../../server/stripe.server.ts";
 
 export const mode = "server";
+
+const SUCCESS = "/checkout/success?session_id={CHECKOUT_SESSION_ID}";
 
 export const actions = {
   async checkout(ctx: ActionContext<"/pricing">) {
@@ -86,13 +73,15 @@ export const actions = {
     const session = await stripe().checkout.sessions.create({
       mode: "subscription",
       line_items: [{ price: PLANS[plan].price, quantity: 1 }],
-      success_url: new URL("/checkout/success?session_id={CHECKOUT_SESSION_ID}", ctx.url).href,
+      success_url: new URL(SUCCESS, ctx.url).href,
       cancel_url: new URL("/pricing", ctx.url).href,
       // Ties the payment to your user in the webhook.
       client_reference_id: ctx.locals.userId ?? undefined,
       metadata: { plan },
     });
-    if (session.url === null) return fail(502, { error: "Checkout is not available." });
+    if (session.url === null) {
+      return fail(502, { error: "Checkout is not available." });
+    }
     redirect(session.url, 303);
   },
 };
@@ -115,14 +104,20 @@ export default function Pricing() {
 }
 ```
 
-`ctx.locals.userId` is whatever your middleware puts on `locals` (here the `Locals` of the
-[Server](../concepts/server.md) page); pass `customer` or `customer_email` instead when you keep
-Stripe customers. `mode: "payment"` sells one-off items; `"subscription"` needs recurring prices.
+The form posts the plan to the page's `checkout` action. The action checks it against `PLANS`,
+creates a Checkout Session and redirects (303) to the URL Stripe returns. Stripe sends the
+customer back to `success_url`, with `{CHECKOUT_SESSION_ID}` replaced by the session's id, or to
+`cancel_url`.
 
-To post without a page load, put the form in an island with `onSubmit={submit}`: `submit()` follows
-the redirect to Stripe like the plain form. The form above needs no JavaScript at all.
+> **Options:** `ctx.locals.userId` is whatever your middleware puts on `locals` (here the `Locals`
+> of the [Server](../concepts/server.md) page); pass `customer` or `customer_email` instead when
+> you keep Stripe customers. `mode: "payment"` sells one-off items; `"subscription"` needs
+> recurring prices.
 
-## The return page
+> **Without a page load:** put the form in an island with `onSubmit={submit}`: `submit()` follows
+> the redirect to Stripe like the plain form. The form of this step needs no JavaScript at all.
+
+## 4. Show the result
 
 The return page shows the result. It does not fulfill the order: the customer may close the tab
 before it loads, and anyone can open the URL. Fulfillment happens in the webhook.
@@ -139,23 +134,18 @@ export default async function CheckoutSuccess() {
   const session = await stripe().checkout.sessions.retrieve(id);
   const paid =
     session.payment_status === "paid" || session.payment_status === "no_payment_required";
+  const email = session.customer_details?.email ?? "your email";
   return (
     <main>
       <Title>{paid ? "Thank you" : "Payment pending"}</Title>
       <h1>{paid ? "Thank you!" : "Your payment is being processed"}</h1>
-      <p>A receipt is on its way to {session.customer_details?.email ?? "your email"}.</p>
+      <p>A receipt is on its way to {email}.</p>
     </main>
   );
 }
 ```
 
-## Webhooks in an endpoint
-
-Stripe posts events to a `route.ts` endpoint. The signature covers the exact bytes of the body, so
-read it with `request.text()` (never parse and re-serialize it), and verify it with
-`constructEventAsync`, which uses the Web Crypto API and runs on every host Lumiose deploys to.
-Answer quickly with a 2xx: Stripe retries failed deliveries, and the same event may arrive twice,
-so make fulfillment idempotent.
+## 5. Fulfill in a webhook
 
 ```ts check file=routes/api/stripe/webhook/route.ts
 // src/routes/api/stripe/webhook/route.ts
@@ -168,7 +158,9 @@ export const mode = "server";
 export const POST: Endpoint<"/api/stripe/webhook"> = async ({ request, platform }) => {
   const signature = request.headers.get("stripe-signature");
   const secret = env("STRIPE_WEBHOOK_SECRET");
-  if (signature === null || secret === undefined) return new Response(null, { status: 400 });
+  if (signature === null || secret === undefined) {
+    return new Response(null, { status: 400 });
+  }
 
   let event: Stripe.Event;
   try {
@@ -202,18 +194,26 @@ async function fulfill(eventId: string, session: Stripe.Checkout.Session): Promi
 }
 ```
 
-Lumiose's cross-site check covers page form posts and form-encoded endpoint requests; Stripe posts
-JSON, so the endpoint answers it and the signature is the check. Keep the endpoint out of any
-middleware that requires a session.
+Stripe posts events to a `route.ts` endpoint. The signature covers the exact bytes of the body, so
+read it with `request.text()` (never parse and re-serialize it), and verify it with
+`constructEventAsync`, which uses the Web Crypto API and runs on every host Lumiose deploys to.
+Answer quickly with a 2xx: Stripe retries failed deliveries, and the same event may arrive twice,
+so make fulfillment idempotent.
 
-In the dashboard, add the endpoint's URL (`https://example.com/api/stripe/webhook`) with the events
-it handles. Locally, the Stripe CLI forwards them and prints the signing secret for
-`STRIPE_WEBHOOK_SECRET`:
+> **Cross-site check:** Lumiose's cross-site check covers page form posts and form-encoded
+> endpoint requests; Stripe posts JSON, so the endpoint answers it and the signature is the check.
+> Keep the endpoint out of any middleware that requires a session.
+
+## 6. Send test events
 
 ```sh
 stripe listen --forward-to localhost:5173/api/stripe/webhook
 stripe trigger checkout.session.completed
 ```
+
+Locally, the Stripe CLI forwards the events and prints the signing secret for
+`STRIPE_WEBHOOK_SECRET`. In the dashboard, add the endpoint's URL
+(`https://example.com/api/stripe/webhook`) with the events it handles.
 
 ## Production
 
@@ -239,3 +239,6 @@ stripe trigger checkout.session.completed
   `*.server.ts` makes it [LUM4003](../errors/LUM4003.md).
 - **Doing slow work before answering the webhook.** Stripe waits a few seconds, then retries. Answer
   first and hand the rest to `platform.waitUntil()`, or queue it.
+
+> **Status:** written against Stripe's API reference and the `stripe` package 23 (its types check
+> every example on this page); not run against a Stripe account.
