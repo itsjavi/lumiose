@@ -10,8 +10,11 @@ export interface DocStep {
   title: string;
 }
 
-/** How far below the viewport's top a heading counts as reached: the header, the bar and a line. */
-const REACHED = 170;
+/**
+ * How far below the viewport's top a heading counts as reached: where an anchor stops (the page's
+ * scroll padding and the bar, about 125 px), and a line more.
+ */
+const REACHED = 160;
 
 export function DocSteps(props: { steps: DocStep[] }) {
   const current = signal<string | undefined>(undefined);

@@ -193,12 +193,15 @@ export function DocArticle(props: DocArticleProps) {
 }
 
 <style>
-  /* Where sticky words and headings stop below the header: lower on a page with the step bar. */
+  /* Where sticky words stop below the header, and how far below the page's scroll padding (the
+     header) an anchor stops: both lower on a page with the step bar. */
   .doc {
     --doc-top: calc($layout.header + $space.lg);
+    --doc-anchor: 0px;
   }
   .doc.stepped {
     --doc-top: calc($layout.header + $space.xxxl);
+    --doc-anchor: $space.xxl;
   }
   article {
     min-inline-size: 0;
@@ -347,7 +350,7 @@ export function DocArticle(props: DocArticleProps) {
   }
   .chunk :deep(:is(h2, h3, h4)) {
     position: relative;
-    scroll-margin-block-start: var(--doc-top);
+    scroll-margin-block-start: var(--doc-anchor);
   }
   .chunk :deep(h2) {
     margin-block-end: $space.sm;
