@@ -160,11 +160,15 @@ export function DocsShell(props: {
     color: $color.text;
     font-weight: $weight.semibold;
   }
+  /* A drawn dot, not a character: it stays out of the link's accessible name. */
   a[aria-current="page"]::before {
-    content: "●";
+    content: "";
+    display: inline-block;
+    inline-size: 0.4em;
+    block-size: 0.4em;
     margin-inline-end: 0.5em;
-    color: $color.accent;
-    font-size: 0.6em;
+    border-radius: 50%;
+    background: $color.accent;
     vertical-align: 0.2em;
   }
   a:focus-visible {
