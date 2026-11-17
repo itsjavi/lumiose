@@ -13,7 +13,7 @@ the app on hot updates. Solid's `render` has the same signature, without `option
 [`useId()`](reactivity.md#useid) in the app returns `idPrefix` followed by a counter.
 
 ```ts
-function render(code: () => Renderable, container: Element, options?: RenderOptions): () => void;
+function render(code: () => JSX.Element, container: Element, options?: RenderOptions): () => void;
 
 interface RenderOptions {
   idPrefix?: string;
@@ -33,11 +33,11 @@ const dispose = render(() => <Cart />, document.body, {
 window.addEventListener("pagehide", dispose);
 ```
 
-| Name               | Type               | Default | Description                                                                               |
-| ------------------ | ------------------ | ------- | ----------------------------------------------------------------------------------------- |
-| `code`             | `() => Renderable` | —       | Returns what to render (JSX). It runs tracked, under the new root owner.                  |
-| `container`        | `Element`          | —       | The element to render into. The output is appended after its existing content.            |
-| `options.idPrefix` | `string`           | —       | Prepended to every `useId()` of the app: keeps the ids of several apps on one page apart. |
+| Name               | Type                | Default | Description                                                                               |
+| ------------------ | ------------------- | ------- | ----------------------------------------------------------------------------------------- |
+| `code`             | `() => JSX.Element` | —       | Returns what to render (JSX). It runs tracked, under the new root owner.                  |
+| `container`        | `Element`           | —       | The element to render into. The output is appended after its existing content.            |
+| `options.idPrefix` | `string`            | —       | Prepended to every `useId()` of the app: keeps the ids of several apps on one page apart. |
 
 ## Compiler-runtime contract
 
