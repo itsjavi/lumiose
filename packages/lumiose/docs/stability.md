@@ -12,7 +12,7 @@ change.
 That rule ends at the first known **external production app** or at 1.0, whichever comes first.
 From then on, every breaking change comes with a migration path.
 
-No external production app is known yet, so the rule above is in force.
+> **Status:** No external production app is known yet, so the rule is in force.
 
 ## External production apps
 
@@ -35,7 +35,7 @@ Lumiose becomes 1.0 when all of these hold:
 2. **The extension points are done**: folder middleware with `ctx.route`, a client entry hook,
    router lifecycle hooks, per-instance form submissions, server and client instrumentation, a dev
    handler for custom servers, and the Coming from guides (milestone M10).
-3. **The API is frozen** (below).
+3. **The API is frozen** ([What the freeze covers](#what-the-freeze-covers)).
 4. **Three external production apps** are on the Used by list.
 5. **An external security review** by an independent reviewer has been done.
 
@@ -82,14 +82,10 @@ as described in the [security policy](https://github.com/itsjavi/lumiose/blob/ma
 
 ## Maintenance
 
-- **Who:** Lumiose is designed and maintained by one person, Javi Aguilar
-  ([itsjavi](https://github.com/itsjavi)). A second human maintainer is a goal; it is not a 1.0
-  criterion.
-- **Releases:** there is no fixed schedule. A minor release ships when a batch of work is ready
-  (0.1 to 0.4 shipped within a week in October 2026), and security fixes ship in a new release of
-  the latest minor. `lumiose` and the `@lumiose/*` packages are released in lockstep, with one
-  version number.
-- **Intent:** to reach 1.0 on the criteria above and to keep Lumiose maintained after it, under the
-  stability rules on this page. Work is planned in the open, in the repository's backlog.
+| Topic    | Statement                                                                                                                                                                                                                                                                                    |
+| -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Who      | Lumiose is designed and maintained by one person, Javi Aguilar ([itsjavi](https://github.com/itsjavi)). A second human maintainer is a goal; it is not a 1.0 criterion.                                                                                                                      |
+| Releases | There is no fixed schedule. A minor release ships when a batch of work is ready (0.1 to 0.4 shipped within a week in October 2026), and security fixes ship in a new release of the latest minor. `lumiose` and the `@lumiose/*` packages are released in lockstep, with one version number. |
+| Intent   | To reach 1.0 on the criteria of this page and to keep Lumiose maintained after it, under the stability rules on this page. Work is planned in the open, in the repository's backlog.                                                                                                         |
 
 If these terms do not fit your project yet, read [When not to use Lumiose](when-not-to-use.md).
