@@ -193,7 +193,7 @@ export function Showcase() {
         <Section
           id="code"
           title="CodeBlock"
-          lead="Code with a title bar and a copy button (an island). Highlighting is a hook and monochrome: bold keywords, grey comments, and an amber underline for emphasis, such as $token references in style blocks."
+          lead="Code with a title bar and a copy button (an island). Highlighting is a hook, with syntax colours as the only hues besides amber, and an amber underline for emphasis, such as $token references in style blocks."
         >
           <CodeBlock code={counterSample} lang="stsx" title="Counter.stsx" highlight={highlight} />
           <div class="two">

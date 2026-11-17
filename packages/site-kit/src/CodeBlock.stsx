@@ -82,14 +82,34 @@ export function CodeBlock(props: CodeBlockProps) {
     font-size: inherit;
   }
 
-  /* Monochrome highlighting: keywords are bold, comments are grey, and the rest is the text
-     colour. Emphasis is an amber underline: the highlighter's `$token` references, and `<u>` or
-     `<mark>` from any other highlighter. */
-  code :deep(.tok-keyword) {
-    font-weight: $weight.bold;
-  }
+  /* Syntax colours are the one place with hues besides the amber accent (user, 2026-11-17:
+     monochrome code was hard to read). Emphasis is an amber underline: the highlighter's `$token`
+     references, and `<u>` or `<mark>` from any other highlighter. */
   code :deep(.tok-comment) {
     color: $syntax.comment;
+  }
+  code :deep(.tok-keyword) {
+    color: $syntax.keyword;
+  }
+  code :deep(.tok-string) {
+    color: $syntax.string;
+  }
+  code :deep(.tok-number) {
+    color: $syntax.number;
+  }
+  code :deep(.tok-tag) {
+    color: $syntax.tag;
+  }
+  code :deep(.tok-type),
+  code :deep(.tok-attr) {
+    color: $syntax.attr;
+  }
+  code :deep(.tok-fn),
+  code :deep(.tok-prop) {
+    color: $syntax.prop;
+  }
+  code :deep(.tok-punct) {
+    color: $syntax.punct;
   }
   code :deep(.tok-ref),
   code :deep(u),

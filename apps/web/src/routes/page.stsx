@@ -292,12 +292,32 @@ export default function Home() {
     background: none;
     font: inherit;
   }
-  /* Monochrome highlighting: keywords bold, comments grey, emphasis as an amber underline. */
-  pre :deep(.tok-keyword) {
-    font-weight: $weight.bold;
-  }
+  /* Syntax colours as in site-kit's CodeBlock; emphasis is an amber underline. */
   pre :deep(.tok-comment) {
-    color: $color.muted;
+    color: var(--lm-syn-comment);
+  }
+  pre :deep(.tok-keyword) {
+    color: var(--lm-syn-keyword);
+  }
+  pre :deep(.tok-string) {
+    color: var(--lm-syn-string);
+  }
+  pre :deep(.tok-number) {
+    color: var(--lm-syn-number);
+  }
+  pre :deep(.tok-tag) {
+    color: var(--lm-syn-tag);
+  }
+  pre :deep(.tok-type),
+  pre :deep(.tok-attr) {
+    color: var(--lm-syn-attr);
+  }
+  pre :deep(.tok-fn),
+  pre :deep(.tok-prop) {
+    color: var(--lm-syn-prop);
+  }
+  pre :deep(.tok-punct) {
+    color: var(--lm-syn-punct);
   }
   pre :deep(u) {
     text-decoration: underline 2px $color.accent;

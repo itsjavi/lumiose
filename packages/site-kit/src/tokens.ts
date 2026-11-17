@@ -13,8 +13,10 @@
 // the hairline, the soft surface and the amber accent.
 //
 // - `surface` is the background: cards and panels are set apart by a hairline, not a fill.
-// - `accentText`, `glowText` and every callout and code colour are the text colour or the grey.
-//   Callouts are told apart by their icon and label, and code highlighting is monochrome.
+// - `accentText`, `glowText` and every callout colour are the text colour or the grey. Callouts
+//   are told apart by their icon and label.
+// - The `syn*` syntax colours keep their hues (user, 2026-11-17): code is the one place with
+//   colours besides the amber accent.
 // - `accentFg`, the text on an amber fill, is black in both themes.
 
 /** Light palette. Read only by the base stylesheet, which turns it into theme custom properties. */
@@ -49,14 +51,14 @@ export const light = {
   tipFg: "#000",
   tipBg: "#f6f6f6",
   tipBorder: "#e2e2e2",
-  synKeyword: "#000",
-  synString: "#000",
-  synComment: "#595959",
-  synNumber: "#000",
-  synTag: "#000",
-  synAttr: "#000",
-  synProp: "#000",
-  synPunct: "#595959",
+  synKeyword: "#7a2fd6",
+  synString: "#0e7448",
+  synComment: "#62647d",
+  synNumber: "#a54a05",
+  synTag: "#b5179e",
+  synAttr: "#0a62a0",
+  synProp: "#b2134f",
+  synPunct: "#50526a",
 } as const;
 
 /** Dark palette, same keys as {@link light}. */
@@ -91,14 +93,14 @@ export const dark = {
   tipFg: "#fff",
   tipBg: "#0d0d0d",
   tipBorder: "#262626",
-  synKeyword: "#fff",
-  synString: "#fff",
-  synComment: "#a3a3a3",
-  synNumber: "#fff",
-  synTag: "#fff",
-  synAttr: "#fff",
-  synProp: "#fff",
-  synPunct: "#a3a3a3",
+  synKeyword: "#c5a8ff",
+  synString: "#79dfab",
+  synComment: "#9092ac",
+  synNumber: "#ffbf6b",
+  synTag: "#f59ad6",
+  synAttr: "#8bcbff",
+  synProp: "#ff9cc3",
+  synPunct: "#a8aac2",
 } as const;
 
 /**

@@ -133,11 +133,13 @@ for (const theme of ["light", "dark"] as const) {
       expect(await style(".btn.primary", "background-color")).toBe(colors.text);
       expect(await style(".btn.primary", "color")).toBe(colors.bg);
 
-      // Code: bold keywords, grey comments, an amber underline for emphasis, one text colour.
-      expect(await style("pre .tok-keyword", "font-weight")).toBe("700");
-      expect(await style("pre .tok-keyword", "color")).toBe(colors.text);
-      expect(await style("pre .tok-string", "color")).toBe(colors.text);
-      expect(await style("pre .tok-comment", "color")).toBe(colors.muted);
+      // Code keeps syntax colours (the only hues besides amber), with an amber underline for
+      // emphasis.
+      const keyword = await style("pre .tok-keyword", "color");
+      const string = await style("pre .tok-string", "color");
+      expect(keyword).not.toBe(colors.text);
+      expect(string).not.toBe(colors.text);
+      expect(string).not.toBe(keyword);
       expect(await style("pre .tok-ref", "text-decoration-line")).toBe("underline");
       expect(await style("pre .tok-ref", "text-decoration-color")).toBe(colors.accent);
       expect(await style("pre .tok-ref", "color")).toBe(colors.text);

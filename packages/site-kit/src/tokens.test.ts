@@ -125,7 +125,7 @@ describe.each(themes)("$name palette", ({ palette, bg, text, grey, accent }) => 
     for (const token of textTokens) expect(amber.has(palette[token]), token).toBe(false);
   });
 
-  it("uses only black, white, the grey, the hairline, the soft surface and amber", () => {
+  it("uses only black, white, the grey, the hairline, the soft surface and amber, except in code", () => {
     const allowed = new Set<string>([
       "#000",
       "#fff",
@@ -136,6 +136,8 @@ describe.each(themes)("$name palette", ({ palette, bg, text, grey, accent }) => 
       "transparent",
     ]);
     for (const [token, value] of Object.entries(palette)) {
+      // Syntax colours keep their hues; their contrast is checked with the other text tokens.
+      if (token.startsWith("syn")) continue;
       expect(allowed.has(value), `${token}: ${value}`).toBe(true);
     }
     // The hairline and the soft surface are greys: equal channels, no hue.
