@@ -225,6 +225,26 @@ test("llms.txt and llms-full.txt are served at the root, and the UI's below /ui"
   expect(await uiFull.text()).toContain("<!-- source: dialog.md -->");
 });
 
+test("/benchmarks compares the stacks from the committed results", async ({ page }) => {
+  await page.goto("/benchmarks");
+  // The stack table (decision-90): nine stacks, Lumiose first, no "not measured" cell.
+  const table = page.locator("#stacks table");
+  await expect(table.locator("tbody tr")).toHaveCount(9);
+  await expect(table.locator("tbody tr").first()).toHaveClass(/self/);
+  await expect(table.locator("tbody tr.self th")).toHaveText("Lumiose");
+  await expect(table.locator("tbody tr.self td").nth(2)).toHaveText("0 kB");
+  await expect(table).not.toContainText(/not measured/i);
+  // Server speed: one header over two cells, renders/s (SSR benchmark) then req/s (fullstack).
+  await expect(table.locator("thead th").last()).toHaveText("Server speed");
+  await expect(table.locator("thead th").last()).toHaveAttribute("colspan", "2");
+  await expect(table.locator("tbody tr.self td").nth(4)).toHaveText(/^\d[\d,]* renders\/s$/);
+  await expect(table.locator("tbody tr.self td").nth(5)).toHaveText(/^\d[\d,]* req\/s$/);
+  await expect(page.locator("#stacks .note").first()).toContainText(/^JS on a server page:/);
+  // Four charts, Lumiose's row marked in each.
+  await expect(page.locator("figure.chart")).toHaveCount(4);
+  await expect(page.locator("figure.chart li.self")).toHaveCount(4);
+});
+
 test("unknown URLs get the 404 page", async ({ page }) => {
   const response = await page.goto("/docs/nope");
   expect(response?.status()).toBe(404);
