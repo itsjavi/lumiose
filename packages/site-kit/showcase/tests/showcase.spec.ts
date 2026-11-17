@@ -86,7 +86,7 @@ test("a data-theme subtree has its own theme", async ({ page }) => {
       .first()
       .evaluate((card) => getComputedStyle(card).backgroundColor);
   expect(await background("light")).toBe("rgb(255, 255, 255)");
-  expect(await background("dark")).toBe("rgb(17, 17, 27)");
+  expect(await background("dark")).toBe("rgb(0, 0, 0)");
 });
 
 test("tabs follow the WAI-ARIA keyboard pattern", async ({ page }) => {

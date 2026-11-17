@@ -1,89 +1,104 @@
 // Design tokens of the Lumiose websites. Style blocks read them as `$color.text`, `$space.md`,
 // `@media (width < $bp.md)`, …; the compiler inlines the values at build time, so no runtime import
-// remains. Every text/background pair below meets WCAG AA (body text AAA) in both themes.
+// remains.
+//
+// The identity (decision-90) is black and white, one grey for secondary text, a hairline grey and a
+// soft-surface grey, and one amber accent. Amber is decoration only (beams, the logo, the marker of
+// the active item, emphasis in code): never a text colour and never a focus ring. Corners are
+// square; there are no shadows and no gradients. tokens.test.ts checks the contrast of every
+// text/surface pair in both themes.
+
+// Each palette is a literal object (the compiler inlines only literals), built from six values: the
+// background, the text colour, the grey (secondary text and control borders: 7:1 on the background),
+// the hairline, the soft surface and the amber accent.
+//
+// - `surface` is the background: cards and panels are set apart by a hairline, not a fill.
+// - `accentText`, `glowText` and every callout and code colour are the text colour or the grey.
+//   Callouts are told apart by their icon and label, and code highlighting is monochrome.
+// - `accentFg`, the text on an amber fill, is black in both themes.
 
 /** Light palette. Read only by the base stylesheet, which turns it into theme custom properties. */
 export const light = {
-  bg: "#fcfcfe",
-  surface: "#ffffff",
-  sunken: "#f4f4f9",
-  text: "#14141f",
-  muted: "#50526a",
-  subtle: "#62647d",
-  border: "#e3e3ee",
-  borderStrong: "#8e90a8",
-  accent: "#5546ff",
-  accentHover: "#4535ea",
-  accentFg: "#ffffff",
-  accentText: "#4a3af2",
-  accentSoft: "#efedff",
-  glowA: "#7c6cff",
-  glowB: "#ffb547",
-  glowText: "#a24b00",
-  shadow: "rgb(20 20 50 / 0.08)",
-  codeBg: "#f5f5fa",
-  codeFg: "#1d1d2c",
-  inlineCodeFg: "#161d2b",
-  inlineCodeBorder: "#bcc4d2",
-  infoFg: "#0a58a6",
-  infoBg: "#edf4ff",
-  infoBorder: "#b7d3f7",
-  warnFg: "#874600",
-  warnBg: "#fff5e2",
-  warnBorder: "#f1cf8d",
-  tipFg: "#0c673c",
-  tipBg: "#e9f8ef",
-  tipBorder: "#a6dcbd",
-  synKeyword: "#7a2fd6",
-  synString: "#0e7448",
-  synComment: "#62647d",
-  synNumber: "#a54a05",
-  synTag: "#b5179e",
-  synAttr: "#0a62a0",
-  synProp: "#b2134f",
-  synPunct: "#50526a",
+  bg: "#fff",
+  surface: "#fff",
+  sunken: "#f6f6f6",
+  text: "#000",
+  muted: "#595959",
+  subtle: "#595959",
+  border: "#e2e2e2",
+  borderStrong: "#595959",
+  accent: "#f5a300",
+  accentHover: "#f5a300",
+  accentFg: "#000",
+  accentText: "#000",
+  accentSoft: "#f6f6f6",
+  glowA: "#f5a300",
+  glowB: "#f5a300",
+  glowText: "#000",
+  shadow: "transparent",
+  codeBg: "#f6f6f6",
+  codeFg: "#000",
+  inlineCodeFg: "#000",
+  inlineCodeBorder: "#e2e2e2",
+  infoFg: "#000",
+  infoBg: "#f6f6f6",
+  infoBorder: "#e2e2e2",
+  warnFg: "#000",
+  warnBg: "#f6f6f6",
+  warnBorder: "#e2e2e2",
+  tipFg: "#000",
+  tipBg: "#f6f6f6",
+  tipBorder: "#e2e2e2",
+  synKeyword: "#000",
+  synString: "#000",
+  synComment: "#595959",
+  synNumber: "#000",
+  synTag: "#000",
+  synAttr: "#000",
+  synProp: "#000",
+  synPunct: "#595959",
 } as const;
 
 /** Dark palette, same keys as {@link light}. */
 export const dark = {
-  bg: "#0a0a12",
-  surface: "#11111b",
-  sunken: "#0d0d16",
-  text: "#ededf6",
-  muted: "#a8aac2",
-  subtle: "#9092ac",
-  border: "#262637",
-  borderStrong: "#5d5f7c",
-  accent: "#8f84ff",
-  accentHover: "#a69eff",
-  accentFg: "#0a0a12",
-  accentText: "#a99fff",
-  accentSoft: "#1c1940",
-  glowA: "#8f84ff",
-  glowB: "#ffbf6b",
-  glowText: "#ffc36e",
-  shadow: "rgb(0 0 0 / 0.5)",
-  codeBg: "#10101a",
-  codeFg: "#e3e3f0",
-  inlineCodeFg: "#f3f5fa",
-  inlineCodeBorder: "#4f5971",
-  infoFg: "#8fc3ff",
-  infoBg: "#0e1b31",
-  infoBorder: "#21406b",
-  warnFg: "#ffc978",
-  warnBg: "#251a07",
-  warnBorder: "#5c3f10",
-  tipFg: "#7ddfaa",
-  tipBg: "#0a2218",
-  tipBorder: "#1b4d36",
-  synKeyword: "#c5a8ff",
-  synString: "#79dfab",
-  synComment: "#9092ac",
-  synNumber: "#ffbf6b",
-  synTag: "#f59ad6",
-  synAttr: "#8bcbff",
-  synProp: "#ff9cc3",
-  synPunct: "#a8aac2",
+  bg: "#000",
+  surface: "#000",
+  sunken: "#0d0d0d",
+  text: "#fff",
+  muted: "#a3a3a3",
+  subtle: "#a3a3a3",
+  border: "#262626",
+  borderStrong: "#a3a3a3",
+  accent: "#ffd27a",
+  accentHover: "#ffd27a",
+  accentFg: "#000",
+  accentText: "#fff",
+  accentSoft: "#0d0d0d",
+  glowA: "#ffd27a",
+  glowB: "#ffd27a",
+  glowText: "#fff",
+  shadow: "transparent",
+  codeBg: "#0d0d0d",
+  codeFg: "#fff",
+  inlineCodeFg: "#fff",
+  inlineCodeBorder: "#262626",
+  infoFg: "#fff",
+  infoBg: "#0d0d0d",
+  infoBorder: "#262626",
+  warnFg: "#fff",
+  warnBg: "#0d0d0d",
+  warnBorder: "#262626",
+  tipFg: "#fff",
+  tipBg: "#0d0d0d",
+  tipBorder: "#262626",
+  synKeyword: "#fff",
+  synString: "#fff",
+  synComment: "#a3a3a3",
+  synNumber: "#fff",
+  synTag: "#fff",
+  synAttr: "#fff",
+  synProp: "#fff",
+  synPunct: "#a3a3a3",
 } as const;
 
 /**
@@ -106,12 +121,12 @@ export const color = {
   accentSoft: "var(--lm-accent-soft)",
   glowA: "var(--lm-glow-a)",
   glowB: "var(--lm-glow-b)",
-  /** The warm end of gradient text: readable on `bg` (AA), unlike `glowB`. */
+  /** The text colour (it was the readable end of gradient text). */
   glowText: "var(--lm-glow-text)",
   shadow: "var(--lm-shadow)",
   codeBg: "var(--lm-code-bg)",
   codeFg: "var(--lm-code-fg)",
-  /** Inline code in running text: a slate chip on the info background, apart from body text. */
+  /** Inline code in running text: a chip on the soft surface, apart from body text. */
   inlineCodeFg: "var(--lm-inline-code-fg)",
   inlineCodeBg: "var(--lm-inline-code-bg)",
   inlineCodeBorder: "var(--lm-inline-code-border)",
@@ -138,17 +153,27 @@ export const syntax = {
   punct: "var(--lm-syn-punct)",
 } as const;
 
-/** The brand gradient: the "light" of Lumiose, for accents, glows and highlights. */
+/**
+ * Flat colours since decision-90, which has no gradients. The names stay for the components and
+ * pages that still read them, each as a `background` value; new code uses {@link color}.
+ */
 export const gradient = {
-  brand: "linear-gradient(120deg, var(--lm-glow-a), var(--lm-glow-b))",
-  /** For gradient text (`background-clip: text`): both ends meet AA contrast on `bg`. */
-  text: "linear-gradient(100deg, var(--lm-accent-text) 20%, var(--lm-glow-text))",
-  glow: "radial-gradient(60% 120% at 50% 0%, color-mix(in oklab, var(--lm-glow-a) 22%, transparent), transparent 70%)",
+  brand: "var(--lm-accent)",
+  text: "var(--lm-text)",
+  glow: "transparent",
 } as const;
 
 export const font = {
-  sans: 'Inter, "Inter Variable", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", sans-serif',
-  mono: 'ui-monospace, "JetBrains Mono", "SF Mono", Menlo, Consolas, "Liberation Mono", monospace',
+  sans: '"Helvetica Neue", Helvetica, ui-sans-serif, system-ui, Arial, sans-serif',
+  mono: 'ui-monospace, "SF Mono", "JetBrains Mono", Menlo, monospace',
+} as const;
+
+/** Small labels (eyebrows, navigation, table heads): {@link font}'s mono stack, uppercase, widely spaced. */
+export const label = {
+  font: 'ui-monospace, "SF Mono", "JetBrains Mono", Menlo, monospace',
+  size: "0.6875rem",
+  tracking: "0.14em",
+  transform: "uppercase",
 } as const;
 
 /** Type scale (font sizes). `display` is fluid, for hero headings. */
@@ -179,12 +204,13 @@ export const space = {
   xxxl: "4.5rem",
 } as const;
 
+/** Square corners everywhere: every step is 0. The steps stay for the code that reads them. */
 export const radius = {
-  sm: "6px",
-  md: "10px",
-  lg: "16px",
-  xl: "24px",
-  pill: "999px",
+  sm: "0px",
+  md: "0px",
+  lg: "0px",
+  xl: "0px",
+  pill: "0px",
 } as const;
 
 /** Breakpoints, for `@media (width < $bp.md)` (mobile first: `width >= …` adds layout). */
@@ -203,11 +229,15 @@ export const layout = {
   gutter: "clamp(1rem, 4vw, 2rem)",
 } as const;
 
+/**
+ * No shadows. Each step is a zero-size transparent shadow rather than `none`, which is not valid
+ * inside a comma-separated `box-shadow` list.
+ */
 export const shadow = {
-  sm: "0 1px 2px var(--lm-shadow)",
-  md: "0 4px 16px -4px var(--lm-shadow), 0 1px 2px var(--lm-shadow)",
-  lg: "0 18px 50px -12px var(--lm-shadow), 0 2px 6px var(--lm-shadow)",
-  glow: "0 8px 28px -6px color-mix(in oklab, var(--lm-glow-a) 60%, transparent), 0 4px 18px -8px color-mix(in oklab, var(--lm-glow-b) 70%, transparent)",
+  sm: "0 0 0 0 transparent",
+  md: "0 0 0 0 transparent",
+  lg: "0 0 0 0 transparent",
+  glow: "0 0 0 0 transparent",
 } as const;
 
 export const motion = {
@@ -219,8 +249,11 @@ export const motion = {
 
 export const z = { header: 40, menu: 50 } as const;
 
-/** The focus ring, shared by every interactive element. */
+/**
+ * The focus ring, shared by every interactive element. It uses the text colour: amber on white is
+ * about 2:1, below the 3:1 a focus ring needs.
+ */
 export const focus = {
-  ring: "2px solid var(--lm-accent)",
-  offset: "2px",
+  ring: "2px solid var(--lm-text)",
+  offset: "3px",
 } as const;

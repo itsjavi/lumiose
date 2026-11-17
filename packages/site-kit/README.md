@@ -38,7 +38,13 @@ export default function Layout(props: { children: JSX.Element }) {
 Without a stored choice the site follows the system (`prefers-color-scheme`). `data-theme="light"`
 or `"dark"` on `<html>` pins a theme (ThemeToggle sets it and stores it in localStorage under
 `lumiose-theme`); on any other element it gives that subtree its own theme. Every color is a
-`light-dark()` pair; text and background pairs meet WCAG AA in both themes.
+`light-dark()` pair.
+
+The palette (decision-90) is black and white, one grey for secondary text, a hairline grey, a
+soft-surface grey and one amber accent. Amber is decoration: never a text colour and never a focus
+ring, which uses the text colour. Corners are square, and there are no shadows or gradients.
+`src/tokens.test.ts` checks every text token on every surface token: at least 4.5:1, and 7:1 for the
+grey on the page background.
 
 ## Components
 
