@@ -2,27 +2,45 @@
 
 > Lumiose JSX reads like React, but components run once and never re-render, render on the server by default, and ship JavaScript only where a page asks for it.
 
-This page maps React 19 habits to Lumiose's current API. The linked pages have the full rules.
-Using a React framework too? [Coming from Next.js](nextjs.md) and
-[Coming from React Router](react-router.md) cover its side.
-
 ## Mental model
 
-In React, a state change re-runs the component function. Hooks keep their state between runs
-by call order, and effects list their dependencies so React knows when to re-run them.
+```tsx
+// React 19
+function Counter() {
+  console.log("runs on every click");
+  const [count, setCount] = useState(0);
+  return <button onClick={() => setCount((n) => n + 1)}>{count}</button>;
+}
+```
 
-In Lumiose, the component body runs **once per instance**: it creates signals, effects and
-handlers, then returns JSX. JSX expressions that read signals compile to bindings that update
-their part of the DOM in place. When a signal changes, only the bindings, computeds and effects
-that read it run again. Local variables are ordinary variables, and a closure reads the current
-value because it calls `count()` when it runs ([Components](../concepts/components.md),
-[Signals](../concepts/signals.md)).
+```tsx check
+// Lumiose
+import { signal } from "lumiose";
 
-The exception is an **async component**: when a prop or signal read in its body changes, the body
-runs again, and signals created in the body start fresh ([Async components](../concepts/async.md)).
+export function Counter() {
+  console.log("runs once");
+  const count = signal(0);
+  return <button onClick={() => count.update((n) => n + 1)}>{count()}</button>;
+}
+```
 
-**Server first.** Every component renders on the server unless a page says otherwise, as React
-Server Components do. A page ships no JavaScript until a usage site adds a `client:*` directive
+React re-runs the component function on a state change. Lumiose runs the body **once per
+instance**: `signal(0)` returns one function, where `count()` reads and `count.set(1)` or
+`count.update(fn)` writes, and the JSX that reads it updates its part of the DOM in place
+([Components](../concepts/components.md), [Signals](../concepts/signals.md)).
+
+> **Scope:** this page maps React 19 habits to Lumiose's current API. Using a React framework
+> too? [Coming from Next.js](nextjs.md) and [Coming from React Router](react-router.md) cover
+> its side.
+
+> **Exception:** an **async component**. When a prop or signal read in its body changes, the body
+> runs again, and signals created in the body start fresh
+> ([Async components](../concepts/async.md)).
+
+### Server first
+
+Every component renders on the server unless a page says otherwise, as React Server Components
+do. A page ships no JavaScript until a usage site adds a `client:*` directive
 (`<Clock client:load />` makes that one instance an [island](../concepts/islands.md)) or the route
 is an `spa` route, whose whole subtree hydrates and navigates on the client
 ([Rendering modes](../concepts/rendering-modes.md)). There is no `"use client"` file boundary: the
@@ -30,35 +48,157 @@ same component is static on one page and interactive on another.
 
 ### What goes away
 
-- **The rules of hooks.** `signal`, `computed`, `effect`, `onCleanup` and `useContext` are ordinary
-  functions: call them in conditions, loops and helper functions. Nothing depends on call order.
-- **Dependency arrays.** Effects and computeds subscribe to the signals they read, and collect them
-  again on every run, so a dependency cannot be missing, and a branch that stops reading a signal
-  stops depending on it.
-- **Stale closures.** A handler or a timer callback calls `count()` when it runs, so it gets the
-  current value. There is no closure from an older render to capture.
-- **Memoization.** `useMemo`, `useCallback` and `React.memo` exist to limit re-renders, and there
-  are none. Use `computed` only to cache an expensive derivation.
-- **Context re-renders.** A context change does not re-render its consumers: provide a signal or a
-  store, and only the code that reads it updates.
+| In React           | Why Lumiose does not need it                                                                                                                                                                               |
+| ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| The rules of hooks | `signal`, `computed`, `effect`, `onCleanup` and `useContext` are ordinary functions: call them in conditions, loops and helper functions. Nothing depends on call order.                                   |
+| Dependency arrays  | Effects and computeds subscribe to the signals they read, and collect them again on every run, so a dependency cannot be missing, and a branch that stops reading a signal stops depending on it.          |
+| Stale closures     | A handler or a timer callback calls `count()` when it runs, so it gets the current value. There is no closure from an older render to capture. Local variables are ordinary variables.                     |
+| Memoization        | `useMemo`, `useCallback` and `React.memo` exist to limit re-renders, and there are none. Use `computed` only to cache an expensive derivation.                                                             |
+| Context re-renders | A context change does not re-render its consumers: provide a signal or a store, and only the code that reads it updates. When a signal changes, only the bindings, computeds and effects that read it run. |
 
 ## From React to Lumiose
 
+### Derived values
+
+```tsx
+// React 19
+function Cart() {
+  const [price] = useState(5);
+  const [qty, setQty] = useState(2);
+  const total = useMemo(() => price * qty, [price, qty]);
+  return <button onClick={() => setQty(qty + 1)}>{total}</button>;
+}
+```
+
+```tsx check
+// Lumiose
+import { computed, signal } from "lumiose";
+
+export function Cart() {
+  const price = signal(5);
+  const qty = signal(2);
+  const total = computed(() => price() * qty());
+  return <button onClick={() => qty.update((n) => n + 1)}>{total()}</button>;
+}
+```
+
+`useMemo(() => a * b, [a, b])` is `computed(() => a() * b())`, without the array. For a cheap
+derivation, a plain function `() => a() * b()` is enough.
+
+### Effects
+
+```tsx
+// React 19
+function Ticker({ ms }: { ms: number }) {
+  const [ticks, setTicks] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => setTicks((n) => n + 1), ms);
+    return () => clearInterval(id);
+  }, [ms]);
+  useEffect(() => {
+    console.log("mounted");
+  }, []);
+  return <p>{ticks}</p>;
+}
+```
+
+```tsx check
+// Lumiose
+import { effect, onMount, signal } from "lumiose";
+
+export function Ticker(props: { ms: number }) {
+  const ticks = signal(0);
+  effect(() => {
+    const id = setInterval(() => ticks.update((n) => n + 1), props.ms);
+    return () => clearInterval(id);
+  });
+  onMount(() => console.log("mounted"));
+  return <p>{ticks()}</p>;
+}
+```
+
+`useEffect(fn, [deps])` is `effect(fn)`: it tracks what it reads, and returns a cleanup as in
+React. `useEffect(fn, [])` is `onMount(fn)`: it runs once, untracked, after mount, and may return
+a cleanup. For a cleanup returned from `useEffect` or an `AbortController`, there are also
+`onCleanup(fn)` and `getAbortSignal()`, aborted when the owner is disposed or the effect re-runs.
+
+### Refs
+
+```tsx
+// React 19
+function Search() {
+  const input = useRef<HTMLInputElement>(null);
+  const clicks = useRef(0);
+  const focus = () => {
+    clicks.current++;
+    input.current?.focus();
+  };
+  return (
+    <label>
+      <input ref={input} />
+      <button onClick={focus}>Focus</button>
+    </label>
+  );
+}
+```
+
+```tsx check
+// Lumiose
+import { ref } from "lumiose";
+
+export function Search() {
+  const input = ref<HTMLInputElement>();
+  let clicks = 0;
+  const focus = () => {
+    console.log(++clicks);
+    input()?.focus();
+  };
+  return (
+    <label>
+      <input ref={input} />
+      <button onClick={focus}>Focus</button>
+    </label>
+  );
+}
+```
+
+`useRef<HTMLInputElement>(null)` is `ref<HTMLInputElement>()`, read by calling it. A `useRef(value)`
+for a mutable value is a `let` variable in the component body: the body runs once.
+
+### Data
+
+```tsx
+// React 19
+function BookTitle({ id }: { id: string }) {
+  const book = use(fetchBook(id));
+  return <h2>{book.title}</h2>;
+}
+```
+
+```tsx check
+// Lumiose
+import { fetchJSON } from "lumiose";
+
+export async function BookTitle(props: { id: string }) {
+  const url = `/api/books/${props.id}`;
+  const book = await fetchJSON<{ title: string }>(url);
+  return <h2>{book.title}</h2>;
+}
+```
+
+`use(promise)`, fetching in `useEffect` and TanStack Query become an `async` component that awaits
+`fetchJSON()` or `query()` ([Async components](../concepts/async.md)), or
+[`@lumiose/query`](../reference/query.md) for client-side polling and retries.
+
+### Everything else
+
 | React                                                   | Lumiose                                                                                                                                                                                                                                      |
 | ------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `const [count, setCount] = useState(0)`                 | `const count = signal(0)`: read `count()`, write `count.set(1)` or `count.update((n) => n + 1)`.                                                                                                                                             |
 | `useReducer(reducer, init)`                             | A `store()` plus the functions that change it ([a store with actions](../concepts/state.md#a-store-with-actions-zustand-style)).                                                                                                             |
-| `useMemo(() => a * b, [a, b])`                          | `computed(() => a() * b())`, or a plain function `() => a() * b()` for cheap derivations.                                                                                                                                                    |
 | `useCallback(fn, deps)`, `React.memo(Component)`        | Not needed: functions are created once and components don't re-render.                                                                                                                                                                       |
-| `useEffect(fn, [deps])`                                 | `effect(fn)`: it tracks what it reads. Return a cleanup, as in React.                                                                                                                                                                        |
-| `useEffect(fn, [])`                                     | `onMount(fn)`: runs once, untracked, after mount. It may return a cleanup.                                                                                                                                                                   |
 | `useLayoutEffect(fn, deps)`                             | `effect(fn)` or `onMount(fn)`: there is one kind of effect, and it runs after the DOM writes of the same flush. As with layout effects, its writes render once every effect of that flush has run.                                           |
-| Cleanup returned from `useEffect`, `AbortController`    | `onCleanup(fn)`, and `getAbortSignal()`, aborted when the owner is disposed or the effect re-runs.                                                                                                                                           |
-| `useRef<HTMLInputElement>(null)`                        | `const input = ref<HTMLInputElement>()`, then `<input ref={input} />` and `input()?.focus()`.                                                                                                                                                |
-| `useRef(value)` for a mutable value                     | A `let` variable in the component body: the body runs once.                                                                                                                                                                                  |
 | `<Ctx value={v}>` (`<Ctx.Provider>`), `useContext(Ctx)` | `<Ctx value={v}>`, `useContext(Ctx)`. The provider reads `value` once: provide a signal or a store for state that changes.                                                                                                                   |
 | `use(Context)`                                          | `useContext(Ctx)`, which may be called in conditions too.                                                                                                                                                                                    |
-| `use(promise)`, fetching in `useEffect`, TanStack Query | An `async` component that awaits `fetchJSON()` or `query()` ([Async components](../concepts/async.md)), or [`@lumiose/query`](../reference/query.md) for client-side polling and retries.                                                    |
 | `<Suspense>`, error boundary classes                    | `<Suspense fallback={…}>` and `<ErrorBoundary fallback={(error, reset) => …}>`.                                                                                                                                                              |
 | `useTransition`, `isPending`                            | A re-run of an async component keeps the old UI until it resolves: `isPending()` inside it, and `isBusy()` for anything in flight.                                                                                                           |
 | Server Components                                       | Every component, on `static` and `server` routes: it may be `async` and read server-only modules (`*.server.ts`).                                                                                                                            |
@@ -95,7 +235,8 @@ same component is static on one page and interactive on another.
 
 ## Example
 
-A clock that pauses, in React 19:
+A clock that pauses, in React 19 and then in Lumiose. The effect lists no dependencies, the
+handler needs no `useCallback`, and the title updates in place.
 
 ```tsx
 function Clock({ label }: { label: string }) {
@@ -117,9 +258,6 @@ function Clock({ label }: { label: string }) {
   );
 }
 ```
-
-The same clock in Lumiose. The effect lists no dependencies, the handler needs no `useCallback`,
-and the title updates in place:
 
 ```tsx check file=components/Clock.tsx
 // src/components/Clock.tsx
@@ -145,8 +283,7 @@ export function Clock({ label }: { label: string }) {
 }
 ```
 
-On a page, the directive makes this one usage interactive; the rest of the page stays server
-HTML without JavaScript:
+### On a page
 
 ```tsx check file=routes/clock/page.tsx
 // src/routes/clock/page.tsx
@@ -161,6 +298,9 @@ export default function ClockPage() {
   );
 }
 ```
+
+The directive makes this one usage interactive; the rest of the page stays server HTML without
+JavaScript.
 
 ## Common mistakes
 
