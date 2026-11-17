@@ -442,18 +442,18 @@ export function Clock() {
 **No state library needed.** Only the code that reads a signal (or a store property) re-runs, so
 selectors and re-render tuning are not needed. What the popular libraries offer maps to:
 
-| Library feature                                      | In Lumiose                                                                        |
-| ---------------------------------------------------- | --------------------------------------------------------------------------------- |
-| Jotai `atom(v)`, derived atoms                       | `signal(v)`, `computed(fn)`                                                       |
-| Jotai `atomFamily`                                   | a `store` keyed by id, or the family recipe below                                 |
-| Jotai `atomWithStorage`, Zustand `persist`           | the persisted signal recipe below                                                 |
-| Jotai `Provider`, Zustand `createStore` with context | a store with actions, provided through context (recipe below)                     |
-| Zustand selectors, `subscribeWithSelector`           | not needed: `computed` for the slice, `effect` to react to it                     |
-| Zustand `immer` middleware                           | `store()`: a mutable proxy, mutate it directly                                    |
-| Zustand `devtools`                                   | `effect(() => console.debug(JSON.stringify(state)))` (tracks every property read) |
-| Valtio `proxy`, `snapshot`                           | `store`, `snapshot`                                                               |
-| Solid `reconcile`, TanStack structural sharing       | `reconcile(store, data)`: patch fresh data in, keeping unchanged items            |
-| `zustand/vanilla`, a Jotai store, Redux              | the external store recipe below                                                   |
+| Library feature                                      | In Lumiose                                                                                                |
+| ---------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| Jotai `atom(v)`, derived atoms                       | `signal(v)`, `computed(fn)`                                                                               |
+| Jotai `atomFamily`                                   | a `store` keyed by id, or the family recipe below                                                         |
+| Jotai `atomWithStorage`, Zustand `persist`           | the persisted signal recipe below                                                                         |
+| Jotai `Provider`, Zustand `createStore` with context | a store with actions, provided through [context](../concepts/state.md#a-store-with-actions-zustand-style) |
+| Zustand selectors, `subscribeWithSelector`           | not needed: `computed` for the slice, `effect` to react to it                                             |
+| Zustand `immer` middleware                           | `store()`: a mutable proxy, mutate it directly                                                            |
+| Zustand `devtools`                                   | `effect(() => console.debug(JSON.stringify(state)))` (tracks every property read)                         |
+| Valtio `proxy`, `snapshot`                           | `store`, `snapshot`                                                                                       |
+| Solid `reconcile`, TanStack structural sharing       | `reconcile(store, data)`: patch fresh data in, keeping unchanged items                                    |
+| `zustand/vanilla`, a Jotai store, Redux              | the [external store recipe](../concepts/state.md#an-external-store-zustandvanilla-a-jotai-store-redux)    |
 
 ## Scoped state on the server and in tests
 
