@@ -1,0 +1,198 @@
+// The body of a /ui page (TASK-614): the Markdown blocks of a packages/ui/docs page in the
+// black-and-white look (decision-90), with each example's live demo above its code and the default
+// theme's palette. `top` names the demo the page already runs at its top: that example points
+// there instead, so no component renders twice (or its ids would).
+//
+// The Markdown's styles target only its own HTML (`.chunk`), so they never reach a demo.
+import { CodeBlock } from "@lumiose/site-kit";
+import { highlight } from "@lumiose/site-kit/highlight";
+import { color, font, label, layout, leading, space, text, weight } from "@lumiose/site-kit/tokens";
+import type { DocBlock } from "../content/docs.ts";
+import { UiPreview } from "./UiPreview.stsx";
+
+export interface UiProseProps {
+  blocks: readonly DocBlock[];
+  /** Renders an example's live demo by id. */
+  demo: (id: string) => JSX.Element;
+  /** Renders the default theme's palette. */
+  palette?: () => JSX.Element;
+  /** The id of the demo that runs at the top of the page. */
+  top?: string;
+}
+
+export function UiProse(props: UiProseProps) {
+  return (
+    <div class="prose">
+      {props.blocks.map((block) =>
+        block.kind === "palette" ? (
+          props.palette?.()
+        ) : block.kind === "html" ? (
+          <div class="chunk" innerHTML={block.html} />
+        ) : block.demo !== undefined ? (
+          <figure class="demo" id={`demo-${block.demo.id}`}>
+            {block.demo.id === props.top ? (
+              <figcaption class="note">
+                <a href="#live">Live at the top of the page</a>:{" "}
+                {block.demo.island ? "an island" : "server-rendered, no island"}
+              </figcaption>
+            ) : (
+              <>
+                <div class="live">
+                  <UiPreview id={block.demo.id}>{props.demo(block.demo.id)}</UiPreview>
+                </div>
+                <figcaption class="note">
+                  {block.demo.island
+                    ? "Live: an island, hydrated when it scrolls into view"
+                    : "Live: server-rendered, no island"}
+                </figcaption>
+              </>
+            )}
+            <CodeBlock code={block.code} lang={block.lang} title={block.title} highlight={highlight} />
+          </figure>
+        ) : (
+          <CodeBlock code={block.code} lang={block.lang} title={block.title} highlight={highlight} />
+        ),
+      )}
+    </div>
+  );
+}
+
+<style>
+  /* About 75 characters a line at the prose size, a comfortable measure for long reading. */
+  .prose {
+    max-inline-size: $layout.prose;
+    font-size: 1.0625rem;
+    line-height: $leading.normal;
+  }
+  .chunk {
+    display: contents;
+  }
+  .chunk :deep(:is(p, ul, ol, blockquote, .table, .nested-code)) {
+    margin-block: 0 $space.md;
+  }
+  .chunk :deep(:is(h2, h3, h4)) {
+    position: relative;
+    scroll-margin-block-start: calc($layout.header + $space.md);
+    letter-spacing: -0.02em;
+  }
+  .chunk :deep(h2) {
+    margin-block: $space.xxl $space.md;
+    padding-block-start: $space.lg;
+    border-block-start: 1px solid $color.border;
+    font-size: $text.xxl;
+  }
+  .chunk :deep(h3) {
+    margin-block: $space.xl $space.sm;
+    font-size: $text.xl;
+  }
+  .chunk :deep(h4) {
+    margin-block: $space.lg $space.xs;
+  }
+  .chunk :deep(.anchor) {
+    position: absolute;
+    inset-inline-start: -1.1em;
+    padding-inline-end: 0.3em;
+    color: $color.muted;
+    text-decoration: none;
+    opacity: 0;
+    transition: opacity 120ms;
+  }
+  .chunk :deep(:is(h2, h3, h4):hover .anchor),
+  .chunk :deep(.anchor:focus-visible) {
+    opacity: 1;
+  }
+  .chunk :deep(:is(ul, ol)) {
+    padding-inline-start: 1.4em;
+  }
+  /* List items are often whole paragraphs with a bold lead-in: space them like paragraphs. */
+  .chunk :deep(li + li) {
+    margin-block-start: $space.xs;
+  }
+  .chunk :deep(li::marker) {
+    color: $color.muted;
+  }
+  .chunk :deep(li > :is(ul, ol)) {
+    margin-block: $space.xxs 0;
+  }
+  .chunk :deep(blockquote) {
+    padding: $space.sm $space.md;
+    border: 1px solid $color.border;
+    background: $color.sunken;
+    color: $color.muted;
+  }
+  .chunk :deep(blockquote.status) {
+    color: $color.text;
+  }
+  .chunk :deep(blockquote > :last-child) {
+    margin-block-end: 0;
+  }
+  /* Wide reference tables scroll on their own instead of widening the page. */
+  .chunk :deep(.table) {
+    overflow-x: auto;
+  }
+  .chunk :deep(table) {
+    inline-size: 100%;
+    border-collapse: collapse;
+    font-size: $text.sm;
+  }
+  .chunk :deep(:is(th, td)) {
+    padding: $space.xs $space.md $space.xs 0;
+    border-block-end: 1px solid $color.border;
+    text-align: start;
+    vertical-align: top;
+  }
+  .chunk :deep(th) {
+    color: $color.muted;
+    font-family: $label.font;
+    font-size: $label.size;
+    font-weight: $weight.regular;
+    letter-spacing: $label.tracking;
+    text-transform: $label.transform;
+    white-space: nowrap;
+  }
+  .chunk :deep(td code) {
+    white-space: nowrap;
+  }
+  .chunk :deep(.nested-code) {
+    padding: $space.sm $space.md;
+    border: 1px solid $color.border;
+    background: $color.codeBg;
+    overflow-x: auto;
+    font-size: $text.sm;
+  }
+  .chunk :deep(code) {
+    font-family: $font.mono;
+  }
+  /* A long path or expression in a sentence or a heading (`Toast.createToastManager`) breaks rather
+     than widening a phone's page, also with WCAG's text-spacing overrides (1.4.10, 1.4.12). Table
+     cells keep theirs on one line. */
+  .chunk :deep(code),
+  .chunk :deep(h2),
+  .chunk :deep(h3) {
+    overflow-wrap: anywhere;
+  }
+
+  /* Live demos: the preview, a caption, then the example's code below it. */
+  .demo {
+    margin-block: $space.lg;
+  }
+  .demo :deep(.code) {
+    margin-block: 0;
+  }
+  .live {
+    display: grid;
+    place-items: center;
+    min-block-size: 9rem;
+    padding: $space.xl $space.lg;
+    border: 1px solid $color.border;
+    border-block-end: 0;
+    background: var(--lu-background);
+  }
+  .note {
+    padding: $space.xs $space.md;
+    border: 1px solid $color.border;
+    border-block-end: 0;
+    color: $color.muted;
+    font-size: $text.sm;
+  }
+</style>

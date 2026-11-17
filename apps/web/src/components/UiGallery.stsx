@@ -1,0 +1,216 @@
+// The /ui index (TASK-614, decision-90): a gallery of every @lumiose/ui component, each one live
+// in its cell, with the cell's footer linking to the component's page; then the introduction of
+// packages/ui/docs (its README), which keeps its anchors at /ui. The cells come from
+// content/ui-gallery.ts: one per page of the docs' Components section, running its first demo.
+import { bp, color, font, label, layout, space, text, weight } from "@lumiose/site-kit/tokens";
+import type { DocPage } from "../content/docs.ts";
+import type { GalleryCell } from "../content/ui-gallery.ts";
+import type { OgImage } from "../lib/site.ts";
+import { PageMeta } from "./PageMeta.tsx";
+import { UiPreview } from "./UiPreview.stsx";
+import { UiProse } from "./UiProse.stsx";
+
+export interface UiGalleryProps {
+  /** The introduction: packages/ui/docs/README.md. */
+  page: DocPage;
+  cells: readonly GalleryCell[];
+  /** The guides beside the components: Installation, Theming, … */
+  guides: readonly { href: string; label: string }[];
+  /** The document title. */
+  title: string;
+  description: string;
+  image?: OgImage;
+  /** Renders a live demo by id. */
+  demo: (id: string) => JSX.Element;
+}
+
+export function UiGallery(props: UiGalleryProps) {
+  return (
+    <div class="index">
+      <PageMeta title={props.title} description={props.description} image={props.image} />
+
+      <header class="head">
+        <div>
+          <p class="label">@lumiose/ui</p>
+          <h1>Components</h1>
+        </div>
+        <p class="lead">
+          Accessible behaviour on native HTML, in plain black and white. Every one is live: try
+          them.
+        </p>
+      </header>
+
+      <nav class="guides" aria-label="UI guides">
+        <ul role="list">
+          <li>
+            <a href="#introduction">Introduction</a>
+          </li>
+          {props.guides.map((guide) => (
+            <li>
+              <a href={guide.href}>{guide.label}</a>
+            </li>
+          ))}
+        </ul>
+      </nav>
+
+      <ul class="gal" role="list" aria-label="Components">
+        {props.cells.map((cell) => (
+          <li class="cell">
+            <div class="live">
+              <UiPreview id={cell.demo.id}>{props.demo(cell.demo.id)}</UiPreview>
+            </div>
+            <a class="foot" href={cell.page.url}>
+              <span>{cell.page.label}</span>
+              <span class="arr" aria-hidden="true">
+                →
+              </span>
+            </a>
+          </li>
+        ))}
+      </ul>
+
+      <section class="about" aria-labelledby="introduction">
+        <p class="label">Introduction</p>
+        <h2 id="introduction">{props.page.title}</h2>
+        {props.page.summary !== "" && <p class="lead" innerHTML={props.page.summaryHtml} />}
+        <UiProse blocks={props.page.blocks} demo={props.demo} />
+      </section>
+    </div>
+  );
+}
+
+<style>
+  .index {
+    max-inline-size: $layout.page;
+    margin-inline: auto;
+    padding: $space.xxl $layout.gutter $space.xxl;
+  }
+  .label {
+    margin: 0;
+    color: $color.muted;
+    font-family: $label.font;
+    font-size: $label.size;
+    letter-spacing: $label.tracking;
+    line-height: 1;
+    text-transform: $label.transform;
+  }
+  .head {
+    display: grid;
+    gap: $space.md $space.xl;
+    padding-block-end: $space.lg;
+    border-block-end: 1px solid $color.text;
+  }
+  @media (width >= $bp.md) {
+    .head {
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: end;
+    }
+    .head .lead {
+      max-inline-size: 30ch;
+    }
+  }
+  h1 {
+    margin-block: $space.md 0;
+    font-size: clamp(2.75rem, 1.9rem + 3.6vw, 4rem);
+    letter-spacing: -0.05em;
+    line-height: 0.95;
+  }
+  .lead {
+    margin: 0;
+    color: $color.muted;
+    text-wrap: pretty;
+  }
+
+  .guides ul {
+    display: flex;
+    flex-wrap: wrap;
+    gap: $space.xs $space.lg;
+    padding-block: $space.sm;
+  }
+  .guides a {
+    display: block;
+    padding-block: $space.xxs;
+    color: $color.muted;
+    font-family: $label.font;
+    font-size: $text.xs;
+    letter-spacing: 0.1em;
+    text-decoration: none;
+    text-transform: $label.transform;
+  }
+  .guides a:hover {
+    color: $color.text;
+  }
+
+  /* The grid: hairlines between the cells, drawn by each cell's end borders. */
+  .gal {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 17rem), 1fr));
+    border-block-start: 1px solid $color.border;
+    border-inline-start: 1px solid $color.border;
+  }
+  .cell {
+    display: flex;
+    flex-direction: column;
+    min-inline-size: 0;
+    min-block-size: 13rem;
+    border-block-end: 1px solid $color.border;
+    border-inline-end: 1px solid $color.border;
+    background: var(--lu-background);
+  }
+  .live {
+    flex: 1;
+    display: grid;
+    place-items: center;
+    min-inline-size: 0;
+    padding: $space.lg $space.md;
+  }
+  .foot {
+    display: flex;
+    justify-content: space-between;
+    gap: $space.sm;
+    padding: $space.sm $space.md;
+    border-block-start: 1px solid $color.border;
+    color: $color.text;
+    font-family: $font.mono;
+    font-size: $text.xs;
+    letter-spacing: 0.08em;
+    text-decoration: none;
+    text-transform: uppercase;
+  }
+  .foot:hover {
+    background: $color.sunken;
+  }
+  .foot:hover .arr {
+    color: $color.accent;
+  }
+  .foot:focus-visible {
+    outline-offset: -2px;
+  }
+
+  .about {
+    margin-block-start: $space.xxxl;
+    padding-block-start: $space.lg;
+    border-block-start: 1px solid $color.text;
+  }
+  .about h2 {
+    margin-block: $space.md;
+    font-size: $text.xxxl;
+    font-weight: $weight.bold;
+    letter-spacing: -0.04em;
+    scroll-margin-block-start: calc($layout.header + $space.md);
+  }
+  .about .lead {
+    max-inline-size: $layout.prose;
+    margin-block-end: $space.lg;
+    font-size: $text.lg;
+  }
+  .about .lead :deep(code) {
+    padding: 0;
+    border: 0;
+    background: none;
+    color: $color.text;
+    font-family: $font.mono;
+    font-size: 0.9em;
+    overflow-wrap: anywhere;
+  }
+</style>

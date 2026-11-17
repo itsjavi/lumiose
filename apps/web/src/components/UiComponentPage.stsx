@@ -1,0 +1,284 @@
+// A component page of the /ui section (TASK-614, decision-90): a large live preview first, then
+// the component's usage beside the props of its first part, then the page as packages/ui/docs
+// writes it (content/ui-gallery.ts reads the three from the page's sections). It renders inside the
+// docs shell of the section's layout.
+import { CodeBlock } from "@lumiose/site-kit";
+import { highlight } from "@lumiose/site-kit/highlight";
+import { bp, color, font, label, layout, space, text, weight } from "@lumiose/site-kit/tokens";
+import { adjacentDocs, type DocPage } from "../content/docs.ts";
+import { componentLayout } from "../content/ui-gallery.ts";
+import { site } from "../lib/site.ts";
+import { PageMeta } from "./PageMeta.tsx";
+import { UiPreview } from "./UiPreview.stsx";
+import { UiProse } from "./UiProse.stsx";
+
+export interface UiComponentPageProps {
+  page: DocPage;
+  /** The document title. */
+  title: string;
+  /** Renders an example's live demo by id. */
+  demo: (id: string) => JSX.Element;
+}
+
+export function UiComponentPage(props: UiComponentPageProps) {
+  const parts = () => componentLayout(props.page);
+  const around = () => adjacentDocs(props.page);
+  const sections = () => props.page.headings.filter((heading) => heading.depth === 2);
+
+  return (
+    <article class="component">
+      <PageMeta title={props.title} description={props.page.summary || site.description} />
+
+      <header class="head">
+        <p class="label">@lumiose/ui</p>
+        <h1>{props.page.title}</h1>
+        {props.page.summary !== "" && <p class="lead" innerHTML={props.page.summaryHtml} />}
+      </header>
+
+      {parts().demo !== undefined && (
+        <figure class="stage hero" id="live">
+          <figcaption class="label">Preview · default theme</figcaption>
+          <UiPreview id={parts().demo!.id}>{props.demo(parts().demo!.id)}</UiPreview>
+        </figure>
+      )}
+
+      {(parts().usage !== undefined || parts().props !== undefined) && (
+        <div class={{ two: true, single: parts().usage === undefined || parts().props === undefined }}>
+          {parts().usage !== undefined && (
+            <CodeBlock class="usage" code={parts().usage!} lang="tsx" title="Usage" highlight={highlight} />
+          )}
+          {parts().props !== undefined && (
+            <section class="props" aria-labelledby="props-summary">
+              <h2 class="label" id="props-summary">
+                Props{parts().props!.part === "" ? "" : ` · ${parts().props!.part}`}
+              </h2>
+              <div class="rows" innerHTML={parts().props!.html} />
+              <p class="more">
+                <a href="#api">Every part and prop</a>
+              </p>
+            </section>
+          )}
+        </div>
+      )}
+
+      {sections().length > 1 && (
+        <nav class="sections" aria-label="On this page">
+          <ol role="list">
+            {sections().map((heading) => (
+              <li>
+                <a href={`#${heading.id}`}>{heading.text}</a>
+              </li>
+            ))}
+          </ol>
+        </nav>
+      )}
+
+      <UiProse blocks={parts().blocks} demo={props.demo} top={parts().demo?.id} />
+
+      <nav class="adjacent" aria-label="Previous and next pages">
+        {around().prev === undefined ? (
+          <span />
+        ) : (
+          <a rel="prev" href={around().prev!.url}>
+            <small>Previous</small>
+            {around().prev!.label}
+          </a>
+        )}
+        {around().next === undefined ? (
+          <span />
+        ) : (
+          <a rel="next" class="next" href={around().next!.url}>
+            <small>Next</small>
+            {around().next!.label}
+          </a>
+        )}
+      </nav>
+    </article>
+  );
+}
+
+<style>
+  .component {
+    min-inline-size: 0;
+  }
+  .label {
+    margin: 0;
+    color: $color.muted;
+    font-family: $label.font;
+    font-size: $label.size;
+    font-weight: $weight.regular;
+    letter-spacing: $label.tracking;
+    line-height: 1;
+    text-transform: $label.transform;
+  }
+  .head {
+    padding-block-end: $space.lg;
+    border-block-end: 1px solid $color.text;
+  }
+  h1 {
+    margin-block: $space.md $space.md;
+    font-size: clamp(2.5rem, 1.9rem + 3vw, 4rem);
+    letter-spacing: -0.05em;
+    line-height: 0.95;
+    overflow-wrap: anywhere;
+  }
+  .lead {
+    max-inline-size: $layout.prose;
+    color: $color.muted;
+    line-height: 1.55;
+    text-wrap: pretty;
+  }
+  /* A subtitle reads as one sentence: its code is set in the code font, without chips. */
+  .lead :deep(code) {
+    padding: 0;
+    border: 0;
+    background: none;
+    color: $color.text;
+    font-family: $font.mono;
+    font-size: 0.9em;
+    overflow-wrap: anywhere;
+  }
+
+  /* The preview: the component on a dotted sheet, the first thing below the title. */
+  .stage {
+    position: relative;
+    display: grid;
+    place-items: center;
+    min-block-size: 18.75rem;
+    margin-block: $space.lg 0;
+    padding: $space.xxl $space.lg $space.xl;
+    border: 1px solid $color.border;
+    background-color: var(--lu-background);
+    background-image: radial-gradient($color.border 1px, transparent 1px);
+    background-size: 1.25rem 1.25rem;
+  }
+  .stage > .label {
+    position: absolute;
+    inset-block-start: $space.md;
+    inset-inline-start: $space.md;
+  }
+
+  /* Usage beside the props; one column on narrow screens. */
+  .two {
+    display: grid;
+    gap: $space.xl;
+    margin-block-start: $space.xl;
+  }
+  @media (width >= $bp.md) {
+    .two:not(.single) {
+      grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+    }
+  }
+  .two :deep(.usage) {
+    align-self: start;
+    margin-block: 0;
+  }
+  .props {
+    min-inline-size: 0;
+  }
+  .props > .label {
+    padding-block: $space.sm;
+    border-block-end: 1px solid $color.border;
+  }
+  .rows :deep(.table) {
+    overflow-x: auto;
+  }
+  .rows :deep(table) {
+    inline-size: 100%;
+    border-collapse: collapse;
+    font-size: $text.sm;
+  }
+  .rows :deep(:is(th, td)) {
+    padding: $space.xs $space.md $space.xs 0;
+    border-block-end: 1px solid $color.border;
+    text-align: start;
+    vertical-align: top;
+  }
+  .rows :deep(th) {
+    color: $color.muted;
+    font-family: $label.font;
+    font-size: $label.size;
+    font-weight: $weight.regular;
+    letter-spacing: $label.tracking;
+    text-transform: $label.transform;
+    white-space: nowrap;
+  }
+  .rows :deep(code) {
+    font-family: $font.mono;
+  }
+  /* The names stay on one line; a long type or default breaks rather than scrolling the table. */
+  .rows :deep(td:first-child code) {
+    white-space: nowrap;
+  }
+  .rows :deep(td:not(:first-child) code) {
+    overflow-wrap: anywhere;
+  }
+  .rows :deep(td:last-child) {
+    color: $color.muted;
+  }
+  .more {
+    margin-block-start: $space.sm;
+    font-size: $text.sm;
+  }
+
+  /* The page's sections, as a row of links between the head and the reference. */
+  .sections {
+    margin-block: $space.xl 0;
+    padding-block: $space.sm;
+    border-block: 1px solid $color.border;
+  }
+  .sections ol {
+    display: flex;
+    flex-wrap: wrap;
+    gap: $space.xs $space.lg;
+  }
+  .sections a {
+    display: block;
+    padding-block: $space.xxs;
+    color: $color.muted;
+    font-family: $label.font;
+    font-size: $label.size;
+    letter-spacing: $label.tracking;
+    text-decoration: none;
+    text-transform: $label.transform;
+  }
+  .sections a:hover {
+    color: $color.text;
+  }
+
+  /* Two equal columns that a long label ("Autocomplete") cannot widen: it breaks instead, at 320 px
+     with WCAG's text spacing (1.4.10, 1.4.12). */
+  .adjacent {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: $space.md;
+    margin-block-start: $space.xxl;
+    padding-block-start: $space.lg;
+    border-block-start: 1px solid $color.border;
+  }
+  .adjacent a {
+    display: grid;
+    gap: $space.xs;
+    padding: $space.sm $space.md;
+    border: 1px solid $color.border;
+    font-size: $text.xl;
+    font-weight: $weight.semibold;
+    letter-spacing: -0.03em;
+    text-decoration: none;
+    overflow-wrap: anywhere;
+  }
+  .adjacent a:hover {
+    border-color: $color.text;
+  }
+  .adjacent small {
+    color: $color.muted;
+    font-family: $label.font;
+    font-size: $label.size;
+    font-weight: $weight.regular;
+    letter-spacing: $label.tracking;
+    text-transform: $label.transform;
+  }
+  .next {
+    text-align: end;
+  }
+</style>

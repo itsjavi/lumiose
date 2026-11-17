@@ -1,0 +1,39 @@
+// A live @lumiose/ui demo on the site (TASK-614): the box a demo renders in, on the /ui gallery, at
+// the top of a component page and above an example's code. The site's base styles are unlayered,
+// so they would win over the theme's layered rules: inside a preview they step back to the theme
+// (lu.theme, lu.core) and the browser's defaults, and the components look as the default theme
+// draws them, in the site's light or dark scheme.
+import { font, space } from "@lumiose/site-kit/tokens";
+
+export function UiPreview(props: {
+  /** The demo's id (`dialog-1`). */
+  id: string;
+  children?: JSX.Element;
+}) {
+  return (
+    <div class="preview" data-demo={props.id}>
+      {props.children}
+    </div>
+  );
+}
+
+<style>
+  .preview {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: $space.md;
+    min-inline-size: 0;
+    max-inline-size: 100%;
+    color: var(--lu-foreground);
+    font-family: $font.sans;
+    font-size: 1rem;
+    line-height: 1.5;
+  }
+  .preview :deep(*),
+  .preview :deep(*::before),
+  .preview :deep(*::after) {
+    all: revert-layer;
+  }
+</style>

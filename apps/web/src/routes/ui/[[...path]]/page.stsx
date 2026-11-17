@@ -1,17 +1,26 @@
-// The /ui section (TASK-387): @lumiose/ui's docs, rendered from packages/ui/docs (the pages the
-// package ships, one source with its llms.txt) by DocArticle, with each example's live demo above
-// its code (src/ui-demos, generated from those examples) and the default theme's palette.
+// The /ui section (TASK-387, TASK-614): @lumiose/ui's docs, rendered from packages/ui/docs (the
+// pages the package ships, one source with its llms.txt).
 //
-// The demos use @lumiose/ui's stylesheets and default theme, imported here so that only the /ui
-// pages link them. The theme styles only its `lu-` classes and `--lu-` properties, and its
-// `color-scheme` sits in a layer, so the site's own (unlayered, set by the theme toggle) decides
-// light or dark for the demos too.
+// - `/ui` is the gallery: every component live in a cell that links to its page, then the
+//   introduction (UiGallery).
+// - A component page shows a large preview, its usage beside its props, then the page as written
+//   (UiComponentPage).
+// - The guides (Installation, Theming, Virtualizer) are docs pages (DocArticle), with each
+//   example's live demo above its code and the default theme's palette.
+//
+// The demos (src/ui-demos, generated from the pages' examples) use @lumiose/ui's stylesheets and
+// default theme, imported here so that only the /ui pages link them. The theme styles only its
+// `lu-` classes and `--lu-` properties, and its `color-scheme` sits in a layer, so the site's own
+// (unlayered, set by the theme toggle) decides light or dark for the demos too.
 import "@lumiose/ui/styles.css";
 import "@lumiose/ui/themes/default.css";
 import { notFound, type PageProps } from "lumiose";
 import { DocArticle } from "../../../components/DocArticle.stsx";
 import { ThemePalette } from "../../../components/ThemePalette.stsx";
+import { UiComponentPage } from "../../../components/UiComponentPage.stsx";
+import { UiGallery } from "../../../components/UiGallery.stsx";
 import { findUiPage, uiPages } from "../../../content/docs.ts";
+import { isComponentPage, uiGallery } from "../../../content/ui-gallery.ts";
 import { ogImages } from "../../../lib/site.ts";
 import { UiDemo } from "../../../ui-demos/index.tsx";
 
@@ -22,22 +31,37 @@ export function staticPaths() {
 export default function UiPage(props: PageProps<"/ui/[[...path]]">) {
   const page =
     findUiPage(props.params.path ?? "") ?? notFound(`No UI page "${props.params.path}".`);
+  const guides = () =>
+    uiPages()
+      .filter((other) => other.path !== "" && !isComponentPage(other))
+      .map((other) => ({ href: other.url, label: other.label }));
+
   return (
-    <DocArticle
-      page={page}
-      title={
-        page.path === ""
-          ? "Lumiose UI: accessible components on native HTML"
-          : `${page.title} · Lumiose UI`
-      }
-      description={
-        page.path === ""
-          ? "@lumiose/ui: accessible, unstyled components on native HTML (dialog, popover, menu, combobox), server-rendered without hydration, with an optional theme."
-          : undefined
-      }
-      image={page.path === "" ? ogImages.ui : undefined}
-      demo={(id) => <UiDemo id={id} />}
-      palette={() => <ThemePalette />}
-    />
+    <>
+      {page.path === "" ? (
+        <UiGallery
+          page={page}
+          cells={uiGallery()}
+          guides={guides()}
+          title="Lumiose UI: accessible components on native HTML"
+          description="@lumiose/ui: accessible, unstyled components on native HTML (dialog, popover, menu, combobox), server-rendered without hydration, with an optional theme."
+          image={ogImages.ui}
+          demo={(id) => <UiDemo id={id} />}
+        />
+      ) : isComponentPage(page) ? (
+        <UiComponentPage
+          page={page}
+          title={`${page.title} · Lumiose UI`}
+          demo={(id) => <UiDemo id={id} />}
+        />
+      ) : (
+        <DocArticle
+          page={page}
+          title={`${page.title} · Lumiose UI`}
+          demo={(id) => <UiDemo id={id} />}
+          palette={() => <ThemePalette />}
+        />
+      )}
+    </>
   );
 }

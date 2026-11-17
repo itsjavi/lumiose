@@ -1,5 +1,7 @@
-// The /ui section's shell (DocsShell): the @lumiose/ui pages (packages/ui/docs) in the order of the
-// UI's llms.txt, then links for agents and back to the Lumiose docs.
+// The /ui section's layout. The index is the gallery, on the full page width (TASK-614). Every
+// other page sits in the docs shell (DocsShell): a way back to the gallery, the guides and the
+// component pages of @lumiose/ui (packages/ui/docs) in the order of the UI's llms.txt, then links
+// for agents and back to the Lumiose docs.
 import { href, url, type LayoutProps } from "lumiose";
 import { DocsShell, type ShellSection } from "../../components/DocsShell.stsx";
 import { findUiPage, uiNav } from "../../content/docs.ts";
@@ -12,7 +14,8 @@ export default function UiLayout(props: LayoutProps<"/ui">) {
       title: section.title,
       links: section.pages.map((page) => ({
         href: page.url,
-        label: page.label,
+        // The index: the gallery, then the introduction.
+        label: page.path === "" ? "All components" : page.label,
         current: page === current,
       })),
     })),
@@ -26,8 +29,14 @@ export default function UiLayout(props: LayoutProps<"/ui">) {
   ];
 
   return (
-    <DocsShell label="UI" sections={sections()}>
-      {props.children}
-    </DocsShell>
+    <>
+      {current?.path === "" ? (
+        props.children
+      ) : (
+        <DocsShell label="UI" sections={sections()}>
+          {props.children}
+        </DocsShell>
+      )}
+    </>
   );
 }
