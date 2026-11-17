@@ -1,0 +1,107 @@
+// Island (client:idle): the step bar of a docs page whose sections are numbered steps (TASK-608).
+// The links work without JavaScript; the island marks the step being read (`aria-current="step"`)
+// and keeps it in view when the bar scrolls sideways on a phone.
+import { color, label, layout, space } from "@lumiose/site-kit/tokens";
+import { onMount, signal } from "lumiose";
+
+export interface DocStep {
+  id: string;
+  number: number;
+  title: string;
+}
+
+/** How far below the viewport's top a heading counts as reached: the header, the bar and a line. */
+const REACHED = 170;
+
+export function DocSteps(props: { steps: DocStep[] }) {
+  const current = signal<string | undefined>(undefined);
+  let bar: HTMLElement | undefined;
+
+  onMount(() => {
+    let frame = 0;
+    const update = () => {
+      frame = 0;
+      // The last step whose heading has passed the bar.
+      let reached: string | undefined;
+      for (const step of props.steps) {
+        const heading = document.getElementById(step.id);
+        if (heading !== null && heading.getBoundingClientRect().top <= REACHED) reached = step.id;
+      }
+      if (reached === current()) return;
+      current.set(reached);
+      const link = bar?.querySelector<HTMLElement>(`a[href="#${reached}"]`);
+      if (bar !== undefined && link != null && bar.scrollWidth > bar.clientWidth) {
+        bar.scrollTo({ left: link.offsetLeft - bar.clientWidth / 3 });
+      }
+    };
+    const onScroll = () => {
+      if (frame === 0) frame = requestAnimationFrame(update);
+    };
+    update();
+    addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      removeEventListener("scroll", onScroll);
+      cancelAnimationFrame(frame);
+    };
+  });
+
+  return (
+    <nav class="steps" aria-label="Steps" ref={(element) => (bar = element)}>
+      <ol role="list">
+        {props.steps.map((step) => (
+          <li>
+            <a href={`#${step.id}`} aria-current={current() === step.id ? "step" : undefined}>
+              <span class="n">{step.number}</span> {step.title}
+            </a>
+          </li>
+        ))}
+      </ol>
+    </nav>
+  );
+}
+
+<style>
+  .steps {
+    position: sticky;
+    inset-block-start: $layout.header;
+    z-index: 2;
+    border-block-end: 1px solid $color.border;
+    background: $color.bg;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  ol {
+    display: flex;
+  }
+  li {
+    flex: 1 0 auto;
+  }
+  li + li {
+    border-inline-start: 1px solid $color.border;
+  }
+  a {
+    display: block;
+    padding: $space.sm;
+    color: $color.muted;
+    font-family: $label.font;
+    font-size: $label.size;
+    letter-spacing: 0.06em;
+    text-decoration: none;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+  a:hover,
+  a[aria-current] {
+    color: $color.text;
+  }
+  /* The step being read: an amber rule below it (and the text colour, and aria-current). */
+  a[aria-current] {
+    box-shadow: inset 0 -2px $color.accent;
+  }
+  a:focus-visible {
+    outline-offset: -2px;
+  }
+  .n {
+    color: $color.text;
+  }
+</style>

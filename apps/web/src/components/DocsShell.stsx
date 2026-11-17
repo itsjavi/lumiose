@@ -1,7 +1,11 @@
 // The docs shell of /docs and /ui (TASK-387): search and the section navigation beside the page.
 // Below $bp.lg the navigation folds into a closed disclosure above the page, so the content comes
 // first on phones; on wide screens CSS shows the disclosure's content without its summary.
-import { bp, color, font, layout, radius, space, text, weight } from "@lumiose/site-kit/tokens";
+//
+// The sidebar is slim (TASK-608, decision-90): mono uppercase group labels, plain links, and an
+// amber dot before the current page (with the text colour and a heavier weight, so the state is
+// not shown by colour alone).
+import { bp, color, font, label, layout, space, text, weight } from "@lumiose/site-kit/tokens";
 import { href } from "lumiose";
 import { DocsSearch } from "../islands/DocsSearch.stsx";
 
@@ -33,11 +37,7 @@ export function DocsShell(props: {
     <ul role="list" class={{ codes: section.codes === true }}>
       {section.links.map((link) => (
         <li>
-          <a
-            href={link.href}
-            aria-current={link.current ? "page" : undefined}
-            title={link.title}
-          >
+          <a href={link.href} aria-current={link.current ? "page" : undefined} title={link.title}>
             {link.label}
           </a>
         </li>
@@ -83,19 +83,20 @@ export function DocsShell(props: {
   }
   @media (width >= $bp.lg) {
     .docs {
-      grid-template-columns: 15rem minmax(0, 1fr);
-      gap: $space.xl;
+      grid-template-columns: 12rem minmax(0, 1fr);
+      gap: $space.xxl;
+      padding-block-start: $space.xxl;
     }
     /* The navigation scrolls on its own, below the search box, whose results may overlap
        the page. */
     .side {
       position: sticky;
-      inset-block-start: calc($layout.header + $space.md);
+      inset-block-start: calc($layout.header + $space.lg);
       align-self: start;
-      z-index: 2;
+      z-index: 3;
     }
     nav {
-      max-block-size: calc(100dvh - $layout.header - 6rem);
+      max-block-size: calc(100dvh - $layout.header - 6.5rem);
       overflow-y: auto;
       overscroll-behavior: contain;
       padding-inline-end: $space.xs;
@@ -114,12 +115,20 @@ export function DocsShell(props: {
     align-content: start;
     min-inline-size: 0;
   }
+  .menu > summary,
+  .heading,
+  .group > summary {
+    color: $color.muted;
+    font-family: $label.font;
+    font-size: $label.size;
+    letter-spacing: $label.tracking;
+    line-height: 1.2;
+    text-transform: $label.transform;
+  }
   .menu > summary {
-    padding: $space.xs $space.sm;
+    padding: $space.sm;
     border: 1px solid $color.border;
-    border-radius: $radius.md;
-    background: $color.surface;
-    font-weight: $weight.semibold;
+    color: $color.text;
     cursor: pointer;
   }
   nav {
@@ -130,38 +139,38 @@ export function DocsShell(props: {
   .heading,
   .group > summary {
     margin-block-end: $space.xs;
-    color: $color.text;
-    font-size: $text.xs;
-    font-weight: $weight.semibold;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
   }
   .group > summary {
+    padding-block: $space.xxs;
     cursor: pointer;
-  }
-  ul {
-    display: grid;
-    gap: 1px;
   }
   a {
     display: block;
-    padding: 0.3rem $space.sm;
-    border-radius: $radius.sm;
+    padding-block: 0.2rem;
     color: $color.muted;
     font-size: $text.sm;
-    line-height: 1.35;
+    line-height: 1.4;
     text-decoration: none;
   }
   a:hover {
-    background: $color.sunken;
     color: $color.text;
   }
   a[aria-current="page"] {
-    background: $color.accentSoft;
-    color: $color.accentText;
+    color: $color.text;
     font-weight: $weight.semibold;
   }
+  a[aria-current="page"]::before {
+    content: "●";
+    margin-inline-end: 0.5em;
+    color: $color.accent;
+    font-size: 0.6em;
+    vertical-align: 0.2em;
+  }
+  a:focus-visible {
+    outline-offset: 1px;
+  }
   .codes {
+    display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
   .codes a {

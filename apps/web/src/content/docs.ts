@@ -49,6 +49,8 @@ export interface DocHeading {
   depth: 2 | 3;
   id: string;
   text: string;
+  /** The step's number, on a page whose `##` headings are numbered steps ({@link DocPage.steps}). */
+  step?: number;
 }
 
 /**
@@ -56,7 +58,12 @@ export interface DocHeading {
  * default theme's palette (after the table of its custom properties, on a UI page).
  */
 export type DocBlock =
-  | { kind: "html"; html: string }
+  | {
+      kind: "html";
+      html: string;
+      /** A table: it may be wider than the measure of running text. */
+      wide?: true;
+    }
   | {
       kind: "code";
       code: string;
@@ -66,6 +73,26 @@ export type DocBlock =
       demo?: { id: string; island: boolean };
     }
   | { kind: "palette" };
+
+export type DocCode = Extract<DocBlock, { kind: "code" }>;
+
+/**
+ * One row of a section's layout. A `pair` sets words beside the code they describe: `lead` (HTML)
+ * on the left, the code blocks on the right, and `tail`, the words after the code, below `lead`.
+ * A `full` row is one block on its own: running text at a readable measure, or a wide block.
+ */
+export type DocRow =
+  | { kind: "pair"; lead?: string; aside: DocCode[]; tail?: string }
+  | { kind: "full"; block: DocBlock };
+
+/**
+ * A `##` or `###` heading and what follows it, up to the next one (or the page's start, before
+ * its first heading), laid out in rows. See {@link layoutRows} for the rule.
+ */
+export interface DocSection {
+  heading?: DocHeading;
+  rows: DocRow[];
+}
 
 export interface DocPage {
   /** The docs path without `.md`: `concepts/signals`, `errors/LUM1001`, `README`. */
@@ -88,8 +115,15 @@ export interface DocPage {
   /** The navigation section: Start here, Concepts, Reference or Diagnostics; Overview or Components. */
   section: string;
   blocks: DocBlock[];
+  /** The same blocks by section, laid out in rows (words beside code). */
+  sections: DocSection[];
   /** `##` and `###` headings, for the table of contents. */
   headings: DocHeading[];
+  /**
+   * The numbered steps, for the step bar: the `##` headings that start with a number and a dot
+   * (`## 1. Install`), when there are at least two and they count 1, 2, 3, … in order. Else empty.
+   */
+  steps: DocHeading[];
   /** Plain text of the page, for search. */
   text: string;
 }
@@ -368,6 +402,9 @@ function plain(markdown: string): string {
 }
 
 const headingIds = new WeakMap<Tokens.Heading, string>();
+const headingSteps = new WeakMap<Tokens.Heading, number>();
+/** A step's heading: a number, a dot and the title (`1. Install`). */
+const STEP = /^(\d+)\.\s+\S/;
 let currentTopic = "README";
 const defaults = new Renderer();
 
@@ -378,7 +415,13 @@ const markdown = new Marked({
       const inner = this.parser.parseInline(token.tokens);
       const id = headingIds.get(token);
       if (id === undefined) return `<h${token.depth}>${inner}</h${token.depth}>\n`;
-      return `<h${token.depth} id="${id}"><a class="anchor" href="#${id}" aria-label="Link to this section">#</a>${inner}</h${token.depth}>\n`;
+      // A step shows its number as a label above the title ("Step 1"); its id keeps the number.
+      const step = headingSteps.get(token);
+      const text =
+        step === undefined
+          ? inner
+          : `<span class="step">Step ${step}</span> ${inner.replace(/^\d+\.\s+/, "")}`;
+      return `<h${token.depth} id="${id}"><a class="anchor" href="#${id}" aria-label="Link to this section">#</a>${text}</h${token.depth}>\n`;
     },
     link(token) {
       const href = docHref(token.href, currentTopic);
@@ -412,6 +455,7 @@ function renderDoc(topic: string, source: string, section: string, label?: strin
   let summary = "";
   let summaryHtml = "";
   const headings: DocHeading[] = [];
+  const headingOf = new Map<Token, DocHeading>();
   const used = new Map<string, number>();
   const body: Token[] = [];
   let beforeSections = true;
@@ -435,32 +479,39 @@ function renderDoc(topic: string, source: string, section: string, label?: strin
       used.set(base, count + 1);
       const id = count === 0 ? base : `${base}-${count}`;
       headingIds.set(token as Tokens.Heading, id);
-      headings.push({ depth: token.depth, id, text: plain(token.text) });
+      const heading: DocHeading = { depth: token.depth, id, text: plain(token.text) };
+      headings.push(heading);
+      headingOf.set(token, heading);
     }
     body.push(token);
   }
+  const steps = readSteps(headings);
+  for (const [token, heading] of headingOf) {
+    if (heading.step !== undefined) headingSteps.set(token as Tokens.Heading, heading.step);
+  }
 
   currentTopic = topic;
+  const render = (run: Token[]) => markdown.parser(Object.assign(run, { links: tokens.links }));
   const blocks: DocBlock[] = [];
+  const codes = new Map<Token, DocCode>();
   let run: Token[] = [];
   const flush = () => {
     if (run.length === 0) return;
-    blocks.push({
-      kind: "html",
-      html: markdown.parser(Object.assign(run, { links: tokens.links })),
-    });
+    blocks.push({ kind: "html", html: render(run) });
     run = [];
   };
   // A UI page's examples that have a live demo, and their count among its `tsx check` blocks.
   const ui = isUiTopic(topic);
   const name = topic.slice("ui/".length);
   const demos = new Map(ui ? uiDemos(name, source).map((demo) => [demo.id, demo.island]) : []);
+  // The default theme's palette follows the table of its custom properties.
+  const hasPalette = (token: Token) =>
+    ui && token.type === "table" && token.raw.includes("`--lu-background`");
   let examples = 0;
   for (const token of body) {
     if (token.type !== "code") {
       run.push(token);
-      // The default theme's palette follows the table of its custom properties.
-      if (ui && token.type === "table" && token.raw.includes("`--lu-background`")) {
+      if (hasPalette(token)) {
         flush();
         blocks.push({ kind: "palette" });
       }
@@ -472,15 +523,52 @@ function renderDoc(topic: string, source: string, section: string, label?: strin
     const file = meta.find((part) => part.startsWith("file="))?.slice("file=".length);
     const id = ui && isCheckedTsx(code.lang) ? `${name}-${++examples}` : "";
     const island = demos.get(id);
-    blocks.push({
+    const block: DocCode = {
       kind: "code",
       code: code.text,
       lang,
       ...(file ? { title: file } : {}),
       ...(island === undefined ? {} : { demo: { id, island } }),
-    });
+    };
+    codes.set(token, block);
+    blocks.push(block);
   }
   flush();
+
+  // The same content by section (the page's start, then one per `##` or `###` heading), cut finer
+  // than `blocks`: a table is an item of its own, so the page can give it more room than words.
+  const parts: { heading?: DocHeading; items: LayoutItem[] }[] = [{ items: [] }];
+  let words: Token[] = [];
+  const flushWords = (wide = false) => {
+    const said = words.filter((token) => token.type !== "space");
+    if (said.length > 0) {
+      parts.at(-1)!.items.push({
+        block: { kind: "html", html: render(words), ...(wide ? { wide: true as const } : {}) },
+        bare: said.every((token) => token.type === "heading"),
+      });
+    }
+    words = [];
+  };
+  for (const token of body) {
+    const heading = headingOf.get(token);
+    const code = codes.get(token);
+    if (heading !== undefined) {
+      flushWords();
+      parts.push({ heading, items: [] });
+    }
+    if (code !== undefined) {
+      flushWords();
+      parts.at(-1)!.items.push({ block: code, bare: false });
+    } else if (token.type === "table") {
+      flushWords();
+      words.push(token);
+      flushWords(true);
+      if (hasPalette(token)) parts.at(-1)!.items.push({ block: { kind: "palette" }, bare: false });
+    } else {
+      words.push(token);
+    }
+  }
+  flushWords();
 
   return {
     topic,
@@ -492,9 +580,84 @@ function renderDoc(topic: string, source: string, section: string, label?: strin
     summaryHtml,
     section,
     blocks,
+    sections: parts
+      .filter((part) => part.items.length > 0)
+      .map((part) => ({
+        ...(part.heading === undefined ? {} : { heading: part.heading }),
+        rows: layoutRows(part.items),
+      })),
     headings,
+    steps,
     text: searchText(body),
   };
+}
+
+/**
+ * The page's numbered steps: its `##` headings that start with a number and a dot, when there are
+ * at least two and they count 1, 2, 3, … in order. Marks each with its number.
+ */
+function readSteps(headings: readonly DocHeading[]): DocHeading[] {
+  const numbered = headings.filter((heading) => heading.depth === 2 && STEP.test(heading.text));
+  const counted = numbered.every((heading, at) => Number(STEP.exec(heading.text)![1]) === at + 1);
+  if (numbered.length < 2 || !counted) return [];
+  numbered.forEach((heading, at) => (heading.step = at + 1));
+  return numbered;
+}
+
+/** A section's block, and whether it is running text that holds only headings (`bare`). */
+export interface LayoutItem {
+  block: DocBlock;
+  bare: boolean;
+}
+
+/**
+ * Lays a section out in rows, from the Markdown's structure alone (decision-90: no authoring
+ * syntax):
+ *
+ * - Words followed by code blocks are a pair: the words on the left, the code on the right.
+ * - Words that follow the code go below the words on the left when those are only the heading
+ *   (or missing), and no other code follows them. Else they are a row of their own.
+ * - Words without code, and tables, are rows of their own. So a section without code is one
+ *   column, and so is code with no words around it.
+ */
+export function layoutRows(items: readonly LayoutItem[]): DocRow[] {
+  const isWords = (item: LayoutItem | undefined) =>
+    item !== undefined && item.block.kind === "html" && item.block.wide !== true;
+  const rows: DocRow[] = [];
+  for (let at = 0; at < items.length;) {
+    const lead = isWords(items[at]) && items[at + 1]?.block.kind === "code" ? items[at] : undefined;
+    const from = lead === undefined ? at : at + 1;
+    let to = from;
+    const aside: DocCode[] = [];
+    for (let block = items[to]?.block; block?.kind === "code"; block = items[++to]?.block) {
+      aside.push(block);
+    }
+    if (aside.length === 0) {
+      rows.push({ kind: "full", block: items[at]!.block });
+      at += 1;
+      continue;
+    }
+    const next = items[to];
+    const tail =
+      (lead === undefined || lead.bare) && isWords(next) && items[to + 1]?.block.kind !== "code"
+        ? next
+        : undefined;
+    if (lead === undefined && tail === undefined) {
+      for (const block of aside) rows.push({ kind: "full", block });
+    } else {
+      const html = (item: LayoutItem | undefined) =>
+        item?.block.kind === "html" ? item.block.html : undefined;
+      const [left, below] = [html(lead), html(tail)];
+      rows.push({
+        kind: "pair",
+        ...(left === undefined ? {} : { lead: left }),
+        aside,
+        ...(below === undefined ? {} : { tail: below }),
+      });
+    }
+    at = tail === undefined ? to : to + 1;
+  }
+  return rows;
 }
 
 /** The page's words: text of every token, code included (API names are search terms). */

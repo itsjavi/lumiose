@@ -1,8 +1,14 @@
-// A docs page: the header (section, title, lead), the Markdown blocks (the kit's CodeBlock for
-// code), prev/next links and the table of contents. Shared by /docs and /ui (TASK-387). A UI page
-// passes `demo`, which renders the live demo of an example (src/ui-demos), and `palette`, the default
-// theme's colours; the demos then appear above their code. The page's first demo runs at the top
-// instead, once: its example points there, so no component renders twice (or its ids would).
+// A docs page: the head (section, title, lead), the step bar of a page of numbered steps, the
+// Markdown in sections (the kit's CodeBlock for code) and prev/next links. Shared by /docs, /ui and
+// /stsx (TASK-387). A UI page passes `demo`, which renders the live demo of an example
+// (src/ui-demos), and `palette`, the default theme's colours; the demos then appear above their
+// code. The page's first demo runs at the top instead, once: its example points there, so no
+// component renders twice (or its ids would).
+//
+// The layout comes from the Markdown's structure (TASK-608, decision-90; the rule is `layoutRows`
+// in content/docs.ts): in a section, words sit on the left and the code they describe on the right,
+// from $bp.md up; below it the blocks stack in source order. Words without code are one column of
+// about 68 characters, and a table may take the page's width.
 //
 // The Markdown's styles target only its own HTML (`.chunk`), so they never reach a demo: a demo's
 // preview resets what the site's unlayered base styles set (`all: revert-layer`), so the components
@@ -13,18 +19,19 @@ import {
   bp,
   color,
   font,
+  label,
   layout,
   leading,
-  radius,
   space,
   text,
   weight,
 } from "@lumiose/site-kit/tokens";
-import { adjacentDocs, type DocBlock, type DocPage } from "../content/docs.ts";
+import { adjacentDocs, type DocBlock, type DocCode, type DocPage } from "../content/docs.ts";
+import { DocSteps } from "../islands/DocSteps.stsx";
 import { site, type OgImage } from "../lib/site.ts";
 import { PageMeta } from "./PageMeta.tsx";
 
-type Demo = NonNullable<Extract<DocBlock, { kind: "code" }>["demo"]>;
+type Demo = NonNullable<DocCode["demo"]>;
 
 export interface DocArticleProps {
   page: DocPage;
@@ -40,10 +47,19 @@ export interface DocArticleProps {
   palette?: () => JSX.Element;
 }
 
+/** A title longer than this is set smaller: a diagnostic's sentence, not a page's name. */
+const LONG_TITLE = 26;
+
 export function DocArticle(props: DocArticleProps) {
   const around = () => adjacentDocs(props.page);
   const toc = () =>
     props.page.headings.filter((heading) => heading.depth === 2 || props.page.headings.length < 14);
+  const steps = () =>
+    props.page.steps.map((heading) => ({
+      id: heading.id,
+      number: heading.step!,
+      title: heading.text.replace(/^\d+\.\s+/, ""),
+    }));
   const demos = () =>
     props.demo === undefined
       ? []
@@ -57,9 +73,40 @@ export function DocArticle(props: DocArticleProps) {
       {props.demo!(demo.id)}
     </div>
   );
+  const code = (block: DocCode) =>
+    block.demo !== undefined && props.demo !== undefined ? (
+      <figure class="demo" id={`demo-${block.demo.id}`}>
+        {block.demo.id === first()!.id ? (
+          <figcaption class="note">
+            <a href="#live">Live at the top of the page</a>:{" "}
+            {block.demo.island ? "an island" : "server-rendered, no island"}
+          </figcaption>
+        ) : (
+          <>
+            {preview(block.demo)}
+            <figcaption class="note">
+              {block.demo.island
+                ? "Live: an island, hydrated when it scrolls into view"
+                : "Live: server-rendered, no island"}
+            </figcaption>
+          </>
+        )}
+        <CodeBlock code={block.code} lang={block.lang} title={block.title} highlight={highlight} />
+      </figure>
+    ) : (
+      <CodeBlock code={block.code} lang={block.lang} title={block.title} highlight={highlight} />
+    );
+  const full = (block: DocBlock) =>
+    block.kind === "palette" ? (
+      props.palette?.()
+    ) : block.kind === "html" ? (
+      <div class={["chunk", block.wide ? "wide" : "words"]} innerHTML={block.html} />
+    ) : (
+      code(block)
+    );
 
   return (
-    <div class="doc">
+    <div class={{ doc: true, stepped: props.page.steps.length > 0 }}>
       <PageMeta
         title={props.title}
         description={props.description ?? (props.page.summary || site.description)}
@@ -68,10 +115,27 @@ export function DocArticle(props: DocArticleProps) {
 
       <article>
         <header class="head">
-          <p class="section">{props.page.section}</p>
-          <h1>{props.page.title}</h1>
+          <div class="name">
+            <p class="section">{props.page.section}</p>
+            <h1 class={{ long: props.page.title.length > LONG_TITLE }}>{props.page.title}</h1>
+          </div>
           {props.page.summary !== "" && <p class="lead" innerHTML={props.page.summaryHtml} />}
         </header>
+        {toc().length > 1 && (
+          <nav class="toc" aria-label="On this page">
+            <details>
+              <summary>On this page</summary>
+              <ol role="list">
+                {toc().map((heading) => (
+                  <li class={{ sub: heading.depth === 3 }}>
+                    <a href={`#${heading.id}`}>{heading.text}</a>
+                  </li>
+                ))}
+              </ol>
+            </details>
+          </nav>
+        )}
+        {steps().length > 0 && <DocSteps client:idle steps={steps()} />}
         {first() !== undefined && (
           <figure class="demo hero" id="live">
             {preview(first()!)}
@@ -81,39 +145,29 @@ export function DocArticle(props: DocArticleProps) {
           </figure>
         )}
         <div class="prose">
-          {props.page.blocks.map((block) =>
-            block.kind === "palette" ? (
-              props.palette?.()
-            ) : block.kind === "html" ? (
-              <div class="chunk" innerHTML={block.html} />
-            ) : block.demo !== undefined && props.demo !== undefined ? (
-              <figure class="demo" id={`demo-${block.demo.id}`}>
-                {block.demo.id === first()!.id ? (
-                  <figcaption class="note">
-                    <a href="#live">Live at the top of the page</a>:{" "}
-                    {block.demo.island ? "an island" : "server-rendered, no island"}
-                  </figcaption>
+          {props.page.sections.map((section) => (
+            <section
+              class={{
+                sec: true,
+                top: section.heading?.depth === 2,
+                sub: section.heading?.depth === 3,
+              }}
+            >
+              {section.rows.map((row) =>
+                row.kind === "full" ? (
+                  full(row.block)
                 ) : (
-                  <>
-                    {preview(block.demo)}
-                    <figcaption class="note">
-                      {block.demo.island
-                        ? "Live: an island, hydrated when it scrolls into view"
-                        : "Live: server-rendered, no island"}
-                    </figcaption>
-                  </>
-                )}
-                <CodeBlock code={block.code} lang={block.lang} title={block.title} highlight={highlight} />
-              </figure>
-            ) : (
-              <CodeBlock
-                code={block.code}
-                lang={block.lang}
-                title={block.title}
-                highlight={highlight}
-              />
-            ),
-          )}
+                  <div class={{ pair: true, tailed: row.tail !== undefined }}>
+                    {row.lead !== undefined && <div class="chunk words" innerHTML={row.lead} />}
+                    <div class="aside">{row.aside.map(code)}</div>
+                    {row.tail !== undefined && (
+                      <div class="chunk words tail" innerHTML={row.tail} />
+                    )}
+                  </div>
+                ),
+              )}
+            </section>
+          ))}
         </div>
         <nav class="adjacent" aria-label="Previous and next pages">
           {around().prev === undefined ? (
@@ -134,66 +188,62 @@ export function DocArticle(props: DocArticleProps) {
           )}
         </nav>
       </article>
-
-      {toc().length > 1 && (
-        <nav class="toc" aria-label="On this page">
-          <p>On this page</p>
-          <ol role="list">
-            {toc().map((heading) => (
-              <li class={{ sub: heading.depth === 3 }}>
-                <a href={`#${heading.id}`}>{heading.text}</a>
-              </li>
-            ))}
-          </ol>
-        </nav>
-      )}
     </div>
   );
 }
 
 <style>
+  /* Where sticky words and headings stop below the header: lower on a page with the step bar. */
   .doc {
-    display: grid;
-    gap: $space.xl;
+    --doc-top: calc($layout.header + $space.lg);
   }
-  @media (width >= $bp.xl) {
-    .doc {
-      grid-template-columns: minmax(0, 1fr) 13rem;
-    }
-    .toc {
-      position: sticky;
-      inset-block-start: calc($layout.header + $space.md);
-      align-self: start;
-      max-block-size: calc(100dvh - $layout.header - $space.xl);
-      overflow-y: auto;
-    }
+  .doc.stepped {
+    --doc-top: calc($layout.header + $space.xxxl);
   }
-  @media (width < $bp.xl) {
-    .toc {
-      display: none;
-    }
-  }
-  /* About 75 characters a line at the prose size, a comfortable measure for long reading. */
   article {
     min-inline-size: 0;
-    max-inline-size: 46rem;
   }
+
+  /* The head: the section and a large title, the summary beside them, and a rule below. */
   .head {
-    margin-block-end: $space.lg;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: end;
+    justify-content: space-between;
+    gap: $space.md $space.xl;
+    padding-block-end: $space.lg;
+    border-block-end: 1px solid $color.text;
   }
-  .section {
-    color: $color.accentText;
-    font-size: $text.sm;
-    font-weight: $weight.semibold;
+  .name {
+    flex: 1 1 18rem;
+    min-inline-size: 0;
+  }
+  .section,
+  .toc summary,
+  .adjacent small,
+  .chunk :deep(.step) {
+    color: $color.muted;
+    font-family: $label.font;
+    font-size: $label.size;
+    font-weight: $weight.regular;
+    letter-spacing: $label.tracking;
+    line-height: 1.2;
+    text-transform: $label.transform;
   }
   h1 {
-    margin-block: $space.xxs $space.sm;
+    margin-block-start: $space.md;
+    font-size: $text.display;
+    letter-spacing: -0.05em;
+    line-height: 0.98;
+  }
+  h1.long {
     font-size: $text.xxxl;
+    letter-spacing: -0.045em;
+    line-height: $leading.tight;
   }
   .lead {
-    max-inline-size: 40rem;
+    flex: 0 1 22rem;
     color: $color.muted;
-    font-size: $text.lg;
     line-height: 1.5;
     text-wrap: pretty;
   }
@@ -206,36 +256,118 @@ export function DocArticle(props: DocArticleProps) {
     font-size: 0.9em;
   }
 
-  .chunk {
-    display: contents;
+  /* The page's headings, folded: the sections are a scroll away, and a step page has its bar. */
+  .toc {
+    border-block-end: 1px solid $color.border;
   }
+  .toc summary {
+    padding-block: $space.sm;
+    cursor: pointer;
+  }
+  .toc ol {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr));
+    gap: 0 $space.lg;
+    padding-block-end: $space.md;
+  }
+  .toc a {
+    display: block;
+    padding-block: 0.25rem;
+    color: $color.muted;
+    font-size: $text.sm;
+    line-height: 1.35;
+    text-decoration: none;
+  }
+  .toc a:hover {
+    color: $color.text;
+  }
+  .toc .sub a {
+    padding-inline-start: $space.md;
+  }
+
+  /* Sections: a hairline above each `##`, words at a readable measure, and pairs in two columns. */
   .prose {
     font-size: 1.0625rem;
     line-height: $leading.normal;
   }
+  .sec {
+    padding-block-start: $space.xl;
+  }
+  .sec.top {
+    padding-block: $space.xxl $space.lg;
+    border-block-start: 1px solid $color.border;
+  }
+  .sec.top:first-child {
+    border-block-start: 0;
+  }
+  .words {
+    max-inline-size: 68ch;
+  }
+  .aside {
+    display: grid;
+    gap: $space.md;
+    min-inline-size: 0;
+    margin-block-end: $space.md;
+  }
+  .aside :deep(.code),
+  .aside > .demo {
+    margin-block: 0;
+  }
+  @media (width >= $bp.md) {
+    .pair {
+      display: grid;
+      grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+      grid-template-rows: auto 1fr;
+      column-gap: $space.xl;
+    }
+    .pair > .words {
+      grid-column: 1;
+      align-self: start;
+    }
+    .pair > .aside {
+      grid-area: 1 / 2 / span 2;
+      align-self: start;
+    }
+    /* The words stay in view while their code scrolls past. */
+    .pair:not(.tailed) > .words {
+      position: sticky;
+      inset-block-start: var(--doc-top);
+    }
+    .pair > .tail {
+      grid-row: 2;
+    }
+    /* Code beside words has less room: one size down, as many characters a line as it can. */
+    .aside :deep(pre) {
+      font-size: 0.8125rem;
+    }
+  }
+
   .chunk :deep(:is(p, ul, ol, blockquote, .table, .nested-code)) {
     margin-block: 0 $space.md;
   }
   .chunk :deep(:is(h2, h3, h4)) {
     position: relative;
-    scroll-margin-block-start: calc($layout.header + $space.md);
+    scroll-margin-block-start: var(--doc-top);
   }
   .chunk :deep(h2) {
-    margin-block: $space.xxl $space.md;
-    padding-block-start: $space.md;
-    border-block-start: 1px solid $color.border;
+    margin-block-end: $space.sm;
     font-size: $text.xxl;
   }
   .chunk :deep(h3) {
-    margin-block: $space.xl $space.sm;
+    margin-block-end: $space.sm;
     font-size: $text.xl;
   }
   .chunk :deep(h4) {
     margin-block: $space.lg $space.xs;
   }
+  .chunk :deep(.step) {
+    display: block;
+    margin-block-end: $space.sm;
+  }
   .chunk :deep(.anchor) {
     position: absolute;
     inset-inline-start: -1.1em;
+    inset-block-end: 0;
     padding-inline-end: 0.3em;
     color: $color.subtle;
     text-decoration: none;
@@ -262,7 +394,6 @@ export function DocArticle(props: DocArticleProps) {
   .chunk :deep(blockquote) {
     padding: $space.sm $space.md;
     border-inline-start: 3px solid $color.border;
-    border-radius: 0 $radius.md $radius.md 0;
     background: $color.sunken;
     color: $color.muted;
   }
@@ -277,7 +408,6 @@ export function DocArticle(props: DocArticleProps) {
   .chunk :deep(.table) {
     overflow-x: auto;
     border: 1px solid $color.border;
-    border-radius: $radius.md;
   }
   .chunk :deep(table) {
     inline-size: 100%;
@@ -304,7 +434,6 @@ export function DocArticle(props: DocArticleProps) {
   .chunk :deep(.nested-code) {
     padding: $space.sm $space.md;
     border: 1px solid $color.border;
-    border-radius: $radius.md;
     background: $color.codeBg;
     overflow-x: auto;
     font-size: $text.sm;
@@ -316,8 +445,6 @@ export function DocArticle(props: DocArticleProps) {
   }
   .demo :deep(.code) {
     margin-block: 0;
-    border-start-start-radius: 0;
-    border-start-end-radius: 0;
   }
   .preview {
     display: flex;
@@ -328,7 +455,6 @@ export function DocArticle(props: DocArticleProps) {
     min-block-size: 9rem;
     padding: $space.xl $space.lg;
     border: 1px solid $color.border;
-    border-radius: $radius.lg $radius.lg 0 0;
     background: var(--lu-background);
     color: var(--lu-foreground);
     font-family: $font.sans;
@@ -337,7 +463,6 @@ export function DocArticle(props: DocArticleProps) {
   }
   .hero .preview {
     min-block-size: 12rem;
-    border-radius: $radius.lg;
   }
   /* The site's base styles are unlayered, so they would win over the theme's layered rules: inside
      a demo they step back to the theme (lu.theme, lu.core) and the browser's defaults. */
@@ -355,7 +480,6 @@ export function DocArticle(props: DocArticleProps) {
   }
   .demo > .note:first-child {
     border-block-start: 1px solid $color.border;
-    border-radius: $radius.lg $radius.lg 0 0;
   }
   .hero .note {
     padding-inline: 0;
@@ -371,57 +495,33 @@ export function DocArticle(props: DocArticleProps) {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: $space.md;
     margin-block-start: $space.xxl;
-    padding-block-start: $space.lg;
-    border-block-start: 1px solid $color.border;
+    border-block-start: 1px solid $color.text;
   }
   .adjacent a {
     display: grid;
-    gap: 0.15rem;
-    padding: $space.sm $space.md;
-    border: 1px solid $color.border;
-    border-radius: $radius.md;
+    align-content: start;
+    gap: $space.xs;
+    padding-block: $space.lg;
+    font-size: $text.xl;
     font-weight: $weight.semibold;
+    letter-spacing: -0.03em;
+    line-height: $leading.tight;
     text-decoration: none;
     overflow-wrap: anywhere;
   }
   .adjacent a:hover {
-    border-color: $color.accent;
+    text-decoration: underline;
   }
-  .adjacent small {
-    color: $color.muted;
-    font-weight: $weight.regular;
+  .adjacent [rel="prev"] small::before {
+    content: "← ";
+  }
+  .adjacent .next small::after {
+    content: " →";
   }
   .next {
     text-align: end;
   }
 
-  .toc p {
-    margin-block-end: $space.xs;
-    font-size: $text.xs;
-    font-weight: $weight.semibold;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-  }
-  .toc ol {
-    display: grid;
-    gap: 0.2rem;
-    border-inline-start: 1px solid $color.border;
-  }
-  .toc a {
-    display: block;
-    padding: 0.15rem $space.sm;
-    color: $color.muted;
-    font-size: $text.sm;
-    line-height: 1.35;
-    text-decoration: none;
-  }
-  .toc a:hover {
-    color: $color.text;
-  }
-  .toc .sub a {
-    padding-inline-start: $space.lg;
-    font-size: $text.xs;
-  }
   .chunk :deep(code) {
     font-family: $font.mono;
   }
