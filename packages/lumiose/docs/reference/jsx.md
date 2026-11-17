@@ -78,7 +78,12 @@ pnpm's isolated layout.
 
 ### Without `extends`
 
-A tsconfig can also set the options itself:
+A tsconfig can also set the options itself, as in the example.
+
+Its `rootDirs` pair only `src` with `.lumiose/shadow/src`, so `.stsx` files must stay inside `src/`:
+a `.stsx` import that leaves `src/` does not resolve (TS2307), and the `.stsx` modules of workspace
+packages have no shadow. `lumiose check` warns (`LUM6001`) when a used package has `.stsx` files that
+the tsconfig's `rootDirs` leave out.
 
 ```json
 {
@@ -97,11 +102,6 @@ A tsconfig can also set the options itself:
   "include": ["src", ".lumiose/shadow", ".lumiose/types"]
 }
 ```
-
-Its `rootDirs` pair only `src` with `.lumiose/shadow/src`, so `.stsx` files must stay inside `src/`:
-a `.stsx` import that leaves `src/` does not resolve (TS2307), and the `.stsx` modules of workspace
-packages have no shadow. `lumiose check` warns (`LUM6001`) when a used package has `.stsx` files that
-the tsconfig's `rootDirs` leave out.
 
 ## The `JSX` namespace
 
@@ -143,7 +143,12 @@ event.
 ## Custom elements
 
 Undeclared custom elements accept global attributes and any other attribute. Type one by
-augmenting `IntrinsicElements`:
+augmenting `IntrinsicElements`, as the example does.
+
+A prop of a custom element goes to the element's property when the element defines one (not one
+every element has, such as `id`), else to the attribute, as in React 19; `on:name` listens to the
+event of that exact name. `bind:x` binds the `x` property to a signal; declare it on a typed
+element (`"bind:value"?: Signal<number>`). See [Web components](../guides/web-components.md).
 
 ```tsx check
 declare module "lumiose/jsx-runtime" {
@@ -164,12 +169,19 @@ export function Review() {
 }
 ```
 
-A prop of a custom element goes to the element's property when the element defines one (not one
-every element has, such as `id`), else to the attribute, as in React 19; `on:name` listens to the
-event of that exact name. `bind:x` binds the `x` property to a signal; declare it on a typed
-element (`"bind:value"?: Signal<number>`). See [Web components](../guides/web-components.md).
-
 ## `lumiose/env`
+
+The ambient types of a Lumiose project: `import.meta.env`, `Locals` and the modules of asset
+imports. Load them with `"types": ["lumiose/env"]` in the tsconfig.
+
+Declare known public variables by merging `interface ImportMetaEnv { readonly PUBLIC_API: string }`.
+The built-in members match `vite/client`, so both can be loaded. `vite/client` types the other
+asset imports, bare `.svg` URLs included (see [SVG imports](../concepts/svg.md)). TypeScript checks
+side-effect imports (`noUncheckedSideEffectImports`), hence `*.css`. CSS modules (`*.module.css`)
+are read-only class maps, with `lumiose/env` alone or with `vite/client` in either order: the
+pattern is declared before `*.css`, which would otherwise match them first, and leaves out the dot
+so that it does not merge with `vite/client`'s own `*.module.css` declaration (a duplicate default
+export when `skipLibCheck` is off). See [CSS Modules](../guides/stylesheets.md#css-modules) for using them.
 
 ```ts
 interface ImportMetaEnv {
@@ -220,15 +232,6 @@ declare module "*?client" {
   export default clientScript;
 }
 ```
-
-Declare known public variables by merging `interface ImportMetaEnv { readonly PUBLIC_API: string }`.
-The built-in members match `vite/client`, so both can be loaded. `vite/client` types the other
-asset imports, bare `.svg` URLs included (see [SVG imports](../concepts/svg.md)). TypeScript checks
-side-effect imports (`noUncheckedSideEffectImports`), hence `*.css`. CSS modules (`*.module.css`)
-are read-only class maps, with `lumiose/env` alone or with `vite/client` in either order: the
-pattern is declared before `*.css`, which would otherwise match them first, and leaves out the dot
-so that it does not merge with `vite/client`'s own `*.module.css` declaration (a duplicate default
-export when `skipLibCheck` is off). See [CSS Modules](../guides/stylesheets.md#css-modules) for using them.
 
 ## Bindings and compiled idioms
 
