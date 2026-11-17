@@ -228,4 +228,4 @@ side-effect imports (`noUncheckedSideEffectImports`), hence `*.css`. CSS modules
 are read-only class maps, with `lumiose/env` alone or with `vite/client` in either order: the
 pattern is declared before `*.css`, which would otherwise match them first, and leaves out the dot
 so that it does not merge with `vite/client`'s own `*.module.css` declaration (a duplicate default
-export when `skipLibCheck` is off). See [Styles](../concepts/styles.md) for using them.
+export when `skipLibCheck` is off). See [CSS Modules](../guides/stylesheets.md#css-modules) for using them.

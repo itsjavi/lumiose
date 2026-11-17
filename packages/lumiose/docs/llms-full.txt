@@ -34,7 +34,9 @@ mistakes** and **Related**.
 
 ## Start here
 
-- [Getting started](getting-started.md): Create a project, configure TypeScript and Vite, and render a first component.
+- [Getting started](getting-started.md): Create a project, write a first component, style it and check it, in four steps.
+- [Requirements](requirements.md): Node.js 24, TypeScript 7 and Vite 8; the platforms with a native compiler, and the WebAssembly fallback elsewhere.
+- [Manual setup](manual-setup.md): Add Lumiose to a project by hand (install, TypeScript, Vite, a first component, mounting it), and what `create-lumiose` sets up.
 - [Stability](stability.md): What 0.x allows, the 1.0 criteria and the API freeze, supported Node.js versions and browsers, and who maintains Lumiose.
 - [When not to use Lumiose](when-not-to-use.md): The cases where another framework is the better choice today, and what to use instead.
 
@@ -52,7 +54,7 @@ mistakes** and **Related**.
 - [Signals and reactivity](concepts/signals.md): `signal`, `computed`, `effect`, `store`, owners, context and scheduling.
 - [Sharing state](concepts/state.md): Component, context and module-scope state; recipes for stores with actions, families, persisted signals, external stores and state shared by islands.
 - [JSX](concepts/jsx.md): Bindings, compiled idioms (`.map`, ternaries), `class`, `style`, events, `bind:`, `attach` and `ref`.
-- [Styles](concepts/styles.md): Raw-CSS `<style>` blocks scoped by placement, `<style global>`, JS values in styles (`$name`), build-time math and runtime values.
+- [Styles](concepts/styles.md): Raw-CSS `<style>` blocks scoped by placement, `<style global>`, design tokens, JS values in styles (`$name`) and runtime values.
 - [Async components](concepts/async.md): `async` components on server and client, `<Suspense>`, `<ErrorBoundary>`, re-runs and in-flight state.
 - [Islands](concepts/islands.md): `client:*` directives, serializable props, slots and server-only boundaries.
 - [Routing](concepts/routing.md): File routes, layouts, params, typed `href()`, error pages and the SPA router.
@@ -79,6 +81,7 @@ mistakes** and **Related**.
 - [Tracing with OpenTelemetry](guides/opentelemetry.md): Spans for requests, their phases and client navigations from the instrumentation files, a relay for the browser's spans, and setups for OpenObserve, SigNoz and Datadog.
 - [Error reporting with Sentry](guides/sentry.md): Server errors from `onRequestError` and browser errors from `onError` reported to Sentry, with the source maps of both builds uploaded by Sentry's Vite plugin.
 - [Product analytics with PostHog](guides/posthog.md): PostHog started in `src/instrumentation.client.ts`, page views on MPA pages and SPA navigations (`afterNavigate`), events from islands and feature flags evaluated on the server.
+- [Stylesheets, CSS Modules and Tailwind](guides/stylesheets.md): Imported `.css` files, CSS Modules and Tailwind v4 next to `<style>` blocks, the cascade order, and why StyleX is not supported yet.
 - [Editors](guides/editors.md): The language server in Neovim and Helix (file type, root markers, the server command), what works in Zed today, and GitHub highlighting through `.gitattributes`.
 - [Web components](guides/web-components.md): Custom elements and web-component libraries: defining them in the browser, typing them in JSX, properties versus attributes (React 19's rule), events with `on:`, server rendering, and the Custom Elements Everywhere score (100).
 
@@ -116,6 +119,7 @@ mistakes** and **Related**.
 - [`lumiose/dom`](reference/dom.md): `render`, the compiler-runtime contract, `hydrate` (`lumiose/dom/hydrate`) and the island loader (`lumiose/dom/loader`).
 - [`lumiose/router`](reference/router.md): The SPA router: `Link`, `navigate`, `isNavigating`, `searchParams`, `beforeNavigate`/`afterNavigate` and reactive route state.
 - [`@lumiose/vite`](reference/vite.md): The Vite plugin and its options.
+- [Style blocks](reference/styles.md): How `<style>` blocks are scoped, class passthrough, the `scopedStyles` option, typed token names, the rules of `$` references, build-time math and the stylesheets a build writes.
 - [JSX types and tsconfig](reference/jsx.md): `lumiose/jsx-runtime`, `lumiose/env` and the required `tsconfig.json`.
 - [CLI](reference/cli.md): `lumiose dev`, `build`, `preview`, `check`, `typegen`, `routes`, `lint`, `fmt`, `docs`, `explain`, `agents init` and `mcp`; `--format json` and exit codes.
 - [MCP server](reference/mcp.md): `lumiose mcp` for coding agents: docs, `check` with fixes, routes, components, compiler output, rendered HTML and dev logs.
@@ -152,18 +156,157 @@ designed API; where this version does not implement something yet, the page says
 
 # Getting started
 
-> Set up a Lumiose project with TypeScript and Vite 8, write a first `.stsx` component and check it with `lumiose check`.
+> Create a Lumiose project, write a first `.stsx` component, style it and check it with `lumiose check`.
 
-## Requirements
+## 1. Create a project
 
-- Node.js 24 or later.
-- TypeScript (`typescript@^7`). Lumiose uses stock `tsc`, with no TypeScript plugins.
-- Vite 8.
-- macOS (arm64, x64), Linux (x64, arm64; glibc or musl) or Windows x64, where the compiler runs
-  natively. Elsewhere (Windows on Arm, FreeBSD, other CPUs) it runs as WebAssembly, which package
-  managers install only when you enable the `wasm32` architecture (see below).
+```sh
+pnpm create lumiose my-app --template ssr
+cd my-app && pnpm install && pnpm dev
+```
 
-On a platform without a native compiler, enable `wasm32` before you install:
+Pick a template, then open the URL that `pnpm dev` prints. The rendering mode can change later
+([Rendering modes](concepts/rendering-modes.md)).
+
+| Template  | `lumiose({ mode })` | What you get                                                 |
+| --------- | ------------------- | ------------------------------------------------------------ |
+| `minimal` | `static`            | One page.                                                    |
+| `static`  | `static`            | A layout, pages, a blog with `staticPaths()` and a 404 page. |
+| `ssr`     | `server`            | Streaming, a form action, a JSON endpoint and a Node server. |
+| `spa`     | `spa`               | Pages and a persistent layout rendered in the browser.       |
+
+> **Requirements:** Node.js 24, TypeScript 7 and Vite 8. Platforms and the WebAssembly fallback:
+> [Requirements](requirements.md).
+
+> **By hand:** to add Lumiose to an existing Vite project, and for what the templates set up
+> (a strict CSP, agent files, the MCP server): [Manual setup](manual-setup.md).
+
+## 2. Write a component
+
+A component is a function, and its body runs **once**. State is a signal: `count()` reads it,
+`count.update()` writes it, and the JSX that reads it updates on its own.
+
+```stsx check file=components/Counter.stsx
+// src/components/Counter.stsx
+import { signal } from "lumiose";
+
+export function Counter({ start = 0 }: { start?: number }) {
+  const count = signal(start);
+
+  return (
+    <button onClick={() => count.update((n) => n + 1)}>
+      Clicked {count()} times
+    </button>
+  );
+}
+```
+
+```stsx check file=routes/hello/page.stsx
+// src/routes/hello/page.stsx
+import { Counter } from "../../components/Counter.stsx";
+
+export default function Hello() {
+  return <Counter client:load start={1} />;
+}
+```
+
+Each folder in `src/routes` with a `page.stsx` is a page: open `/hello` and click. Pages ship no
+JavaScript by default, so `client:load` makes the counter an [island](concepts/islands.md) that
+runs in the browser.
+
+```text
+Clicked 2 times
+```
+
+## 3. Style it
+
+Add one `<style>` block at the end of the file. It is plain CSS, scoped to this file: `button`
+matches the buttons written here, and nothing else.
+
+```stsx check
+// src/components/Counter.stsx
+import { signal } from "lumiose";
+
+export function Counter({ start = 0 }: { start?: number }) {
+  const count = signal(start);
+
+  return (
+    <button
+      class={{ hot: count() > 5 }}
+      onClick={() => count.update((n) => n + 1)}
+    >
+      Clicked {count()} times
+    </button>
+  );
+}
+
+<style>
+  button { font: inherit; padding: 0.5rem 1rem; }
+  .hot { color: crimson; }
+</style>
+```
+
+After five clicks the text turns crimson. More in [Styles](concepts/styles.md).
+
+## 4. Check it
+
+```sh
+pnpm lumiose check   # types and Lumiose diagnostics
+pnpm lumiose lint    # oxlint, .stsx included
+pnpm lumiose fmt     # oxfmt, <style> blocks included
+```
+
+```text
+No problems found.
+```
+
+`lumiose check` runs typegen, writes the shadow files, runs `tsc` and adds Lumiose's diagnostics.
+It maps every TypeScript error back to the `.stsx` line and column. `--format json`
+prints machine-readable diagnostics, and `lumiose explain <code>` explains any Lumiose diagnostic
+by its stable code ([CLI](reference/cli.md)).
+
+## Editor
+
+Install the Lumiose VS Code extension (`lumiose.lumiose-vscode`) from the Marketplace: search for
+Lumiose in the Extensions view, or run `code --install-extension lumiose.lumiose-vscode`. What it
+adds, and Cursor, VSCodium, Neovim and Helix: [Editors](guides/editors.md#vs-code).
+
+## Next
+
+- [Components](concepts/components.md) and [Signals](concepts/signals.md): the component model.
+- [Styles](concepts/styles.md): scoping by placement, JS values in styles and build-time math.
+- [Rendering modes](concepts/rendering-modes.md): server-first pages with islands.
+
+<!-- source: requirements.md -->
+
+# Requirements
+
+> What Lumiose needs to run: Node.js 24, TypeScript 7, Vite 8, and a platform with a native compiler or the WebAssembly fallback.
+
+## Tools
+
+| Tool       | Version                                                                |
+| ---------- | ---------------------------------------------------------------------- |
+| Node.js    | 24 or later.                                                           |
+| TypeScript | `typescript@^7`. Lumiose uses stock `tsc`, with no TypeScript plugins. |
+| Vite       | 8.                                                                     |
+
+Supported Node.js versions and browsers over time: [Stability](stability.md).
+
+## Platforms
+
+The compiler runs natively on:
+
+- macOS (arm64, x64)
+- Linux (x64, arm64; glibc or musl)
+- Windows x64
+
+Elsewhere (Windows on Arm, FreeBSD, other CPUs) it runs as WebAssembly.
+
+## WebAssembly fallback
+
+Package managers install the WebAssembly compiler only when you enable the `wasm32` architecture.
+Enable it before you install.
 
 ```yaml
 # pnpm-workspace.yaml (pnpm), or .yarnrc.yml (Yarn 4)
@@ -175,40 +318,17 @@ supportedArchitectures:
 
 With npm, add `cpu=wasm32` to the project's `.npmrc` (or run `npm install --cpu=wasm32`).
 
-## Create a project
+Next: [Getting started](getting-started.md).
 
-```sh
-pnpm create lumiose my-app --template ssr   # or: minimal, static, spa
-cd my-app && pnpm install && pnpm dev
-```
+<!-- source: manual-setup.md -->
 
-| Template  | `lumiose({ mode })` | What you get                                                 |
-| --------- | ------------------- | ------------------------------------------------------------ |
-| `minimal` | `static`            | One page.                                                    |
-| `static`  | `static`            | A layout, pages, a blog with `staticPaths()` and a 404 page. |
-| `ssr`     | `server`            | Streaming, a form action, a JSON endpoint and a Node server. |
-| `spa`     | `spa`               | Pages and a persistent layout rendered in the browser.       |
+# Manual setup
 
-Every template also sets `lumiose({ csp: "strict" })`, so new projects start with a strict Content
-Security Policy: nonces on pages rendered per request, hashes on prerendered ones, and no inline
-scripts or styles that Lumiose did not write ([Security](concepts/security.md)). Remove the option
-to turn it off; projects set up by hand, as below, start without it.
+> Add Lumiose to a project by hand: install the packages, configure TypeScript and Vite, write a component and mount it. Also what `create-lumiose` sets up for you.
 
-Every project starts agent-ready: `AGENTS.md` (with a Lumiose section pointing at these docs),
-`CLAUDE.md` referencing it, the `lumiose` skill in `.claude/skills/lumiose`, and `.gitattributes`
-highlighting `.stsx` as TSX. In an existing project, `lumiose agents init` writes the same files
-(re-run it after upgrading Lumiose; it only touches its own parts). With `--mcp`, both also register
-the [Lumiose MCP server](reference/mcp.md) for Claude Code (`.mcp.json`) and Codex
-(`.codex/config.toml`). Run `create-lumiose --help` for the options (`--yes`, `--force`, `--mcp`,
-`--format json`).
-
-**Status:** `create-lumiose` will also offer `@lumiose/ui`, the accessible and unstyled UI
-components, with a question and `--ui`, once that package is on npm: it adds the dependency, imports
-its stylesheet and default theme in the root layout, and adds its agent files (a UI part in
-`AGENTS.md` and the `lumiose-ui` skill). In a project that already depends on it,
-`lumiose agents init` adds those agent files.
-
-The rest of this page sets a project up by hand, step by step.
+Most projects start from a template ([Getting started](getting-started.md)). Set a project up by
+hand to add Lumiose to an existing Vite project, or to see what each file is for. Check the
+[requirements](requirements.md) first.
 
 ## 1. Install
 
@@ -232,8 +352,8 @@ serve it on Node in production.
 
 ## 2. Configure TypeScript
 
-`tsconfig.json` extends the tsconfig that Lumiose generates (`lumiose check` prints this file when it
-is missing, and `lumiose agents init` writes it):
+`tsconfig.json` extends the tsconfig that Lumiose generates. `lumiose check` prints this file when
+it is missing, and `lumiose agents init` writes it.
 
 ```jsonc
 {
@@ -257,6 +377,8 @@ highlights `.stsx` files.
 
 ## 3. Configure Vite
 
+Add the plugin. Its options: [`@lumiose/vite`](reference/vite.md).
+
 ```ts
 // vite.config.ts
 import lumiose from "@lumiose/vite";
@@ -268,6 +390,8 @@ export default defineConfig({
 ```
 
 ## 4. Write a component
+
+The function body runs **once**. `count()` reads the signal; JSX that reads it updates on its own.
 
 ```stsx check file=Counter.stsx
 // src/Counter.stsx
@@ -289,12 +413,13 @@ export function Counter({ start = 0 }: { start?: number }) {
 </style>
 ```
 
-- The function body runs **once**. `count()` reads the signal; JSX that reads it updates on its own.
-- The `<style>` block at the end of the file is scoped to this file: it styles the components
-  defined here, and nothing else. One block per file, after the components, is the convention;
-  [Styles](./concepts/styles.md) covers blocks nested in JSX.
+The `<style>` block at the end of the file is scoped to this file: it styles the components
+defined here, and nothing else. One block per file, after the components, is the convention;
+[Styles](./concepts/styles.md) covers blocks nested in JSX.
 
 ## 5. Mount it
+
+`render` mounts a component into an element of `index.html`.
 
 ```html
 <!-- index.html -->
@@ -310,51 +435,33 @@ import { Counter } from "./Counter.stsx";
 render(() => <Counter start={1} />, document.getElementById("app")!);
 ```
 
-Run `pnpm vite` and open the printed URL.
+Run `pnpm vite` and open the printed URL. Then check the project:
+[Getting started, step 4](getting-started.md#4-check-it).
 
-## 6. Check the project
+## What create-lumiose sets up
 
-```sh
-pnpm lumiose check        # typegen + shadow files + tsc + Lumiose diagnostics
-pnpm lumiose lint         # oxlint, .stsx included
-pnpm lumiose fmt          # oxfmt for the TSX, plus each <style> block
-```
+The templates do the steps above, and add:
 
-`lumiose check` maps every TypeScript error in a shadow file back to the `.stsx` line and column.
-`--format json` prints machine-readable diagnostics; every Lumiose diagnostic has a stable code that
-`lumiose explain <code>` explains.
+- **A strict Content Security Policy.** Every template sets `lumiose({ csp: "strict" })`: nonces
+  on pages rendered per request, hashes on prerendered ones, and no inline scripts or styles that
+  Lumiose did not write ([Security](concepts/security.md)). Remove the option to turn it off;
+  projects set up by hand, as above, start without it.
+- **Agent files.** Every project starts agent-ready: `AGENTS.md` (with a Lumiose section pointing
+  at these docs), `CLAUDE.md` referencing it, the `lumiose` skill in `.claude/skills/lumiose`, and
+  `.gitattributes` highlighting `.stsx` as TSX. In an existing project,
+  [`lumiose agents init`](reference/cli.md#lumiose-agents-init) writes the same files (re-run it
+  after upgrading Lumiose; it only touches its own parts).
+- **The MCP server, with `--mcp`.** Both `create-lumiose` and `lumiose agents init` then register
+  the [Lumiose MCP server](reference/mcp.md) for Claude Code (`.mcp.json`) and Codex
+  (`.codex/config.toml`).
 
-## Editor
+Run `create-lumiose --help` for the options (`--yes`, `--force`, `--mcp`, `--format json`).
 
-Install the Lumiose VS Code extension (`lumiose.lumiose-vscode`) from the Marketplace: search for
-Lumiose in the Extensions view, or run `code --install-extension lumiose.lumiose-vscode`. Cursor,
-VSCodium and other forks, TypeScript 7 and takeover mode: [Editors](guides/editors.md#vs-code).
-
-The extension adds the `stsx` language and runs the Lumiose language server, which proxies
-TypeScript for `.ts`, `.tsx` and `.stsx` files and adds:
-
-- CSS features inside `<style>` blocks;
-- class completion, definitions and rename that follow placement: the blocks enclosing the
-  cursor (never a sibling subtree's), the file's, and the project's global classes (`<style global>`
-  blocks and imported global `.css` files);
-- `var(--…)` completion of every custom property declared in the project, with its value;
-- descriptions of `<style global>` and of Lumiose attributes (`client:*`, `bind:*`, `on:*`, `attach`,
-  `ref`, `key`), and the snippets `comp`, `acomp`, `route` and `island`;
-- the compiler's diagnostics, with the project-wide ones (`LUM4003` server-only imports in the
-  client graph, `LUM3012` unread custom properties) that follow the other files' edits;
-- hovers on JSX expressions with their execution contract: tracked (re-runs when the signals it
-  reads change, which it lists), once, untracked or deferred, and the runtime helper that runs it.
-
-The extension bundles the server (it runs on VS Code's own Node.js) and uses the project's
-`typescript`; install `@lumiose/language-server` as a dev dependency only to pin the server to your
-`lumiose` version. See [Compiler and diagnostics](concepts/compiler.md). Neovim and Helix run the
-same server: [Editors](guides/editors.md).
-
-## Next
-
-- [Components](concepts/components.md) and [Signals](concepts/signals.md): the component model.
-- [Styles](concepts/styles.md): scoping by placement, JS values in styles and build-time math.
-- [Rendering modes](concepts/rendering-modes.md): server-first pages with islands.
+> **Status:** `create-lumiose` will also offer `@lumiose/ui`, the accessible and unstyled UI
+> components, with a question and `--ui`, once that package is on npm: it adds the dependency,
+> imports its stylesheet and default theme in the root layout, and adds its agent files (a UI part
+> in `AGENTS.md` and the `lumiose-ui` skill). In a project that already depends on it,
+> `lumiose agents init` adds those agent files.
 
 <!-- source: stability.md -->
 
@@ -1870,7 +1977,7 @@ with the same URLs and look, its small scripts as `?client` custom elements, and
 | `<script>` (bundled, TypeScript)    | `import init from "./init.ts?client"` and `init()` while rendering: the pages that render the component load the script, without the island runtime ([Islands](../concepts/islands.md)).                                   |
 | `<script define:vars={{ id }}>`     | Attributes on a custom element, typed in `JSX.IntrinsicElements` and read in `connectedCallback` ([Web components](../guides/web-components.md)).                                                                          |
 | `<script is:inline>`                | A JSX `<script>`: its text is written as is ([JSX](../concepts/jsx.md)).                                                                                                                                                   |
-| Tailwind integration                | The Tailwind v4 Vite plugin works as in any Vite app ([Styles](../concepts/styles.md#stylesheets-css-modules-and-tailwind)).                                                                                               |
+| Tailwind integration                | The Tailwind v4 Vite plugin works as in any Vite app ([Styles](../guides/stylesheets.md#tailwind-v4)).                                                                                                                     |
 
 ### Islands
 
@@ -2135,118 +2242,97 @@ export default function BlogPost({ params }: PageProps<"/blog/[slug]">) {
 
 ## Concept
 
-**Files.** Components live in `.stsx` files (TSX plus raw-CSS `<style>` blocks) or plain `.tsx`
-files. A file may export many components. Logic, tokens, endpoints and server code live in `.ts`.
+### Setup runs once
 
-| Extension | Contents                                                              |
-| --------- | --------------------------------------------------------------------- |
-| `.stsx`   | TSX plus `<style>` blocks. Use it for components with styles.         |
-| `.tsx`    | Plain TSX. A `<style>` block here is `LUM1006` ("rename to `.stsx`"). |
-| `.ts`     | Everything else.                                                      |
+The body runs once per instance. Nothing re-renders: only JSX that reads a
+[signal](signals.md) updates.
 
-**Setup once.** The body of a component runs once per instance. There is no re-render: JSX
-expressions that read signals become fine-grained bindings, and only those update. Local variables
-are ordinary variables; state that changes lives in [signals](signals.md).
+```tsx check
+import { signal } from "lumiose";
 
-**Props.** Props are the single parameter. The compiler keeps them reactive, even when you
-destructure them: `({ title, count = 0 })` is rewritten to reads of `props.title` and
-`props.count`, so a parent passing a signal value keeps the child up to date. `...rest` stays
-reactive too. Destructuring the props object at the top of the body,
-`const { children, ...rest } = props`, is rewritten the same way, as long as you don't reassign
-the bindings; destructuring a nested prop (`const { name } = props.user`) reads it once.
+export function Likes() {
+  const count = signal(0);
+  return <button onClick={() => count.update((n) => n + 1)}>♥ {count()}</button>;
+}
+```
 
-On the server, where nothing is reactive, a prop expression is evaluated **lazily and at most once
-per component instance** (decision-28): the first read runs it, later reads reuse the value, and a
-prop the component never reads never runs. `<Filters labels={listLabels()} />` queries the labels
-once per render however often `Filters` reads `props.labels`. In the browser props stay live: each
-read re-evaluates the expression, so keep prop expressions free of side effects.
+### Props stay reactive
 
-**Children** are lazy: `children` is evaluated where you insert it. Insert it once; to render
-something several times, take a render function as a prop. Named slots are ordinary props that hold
-JSX. Spreading props onto an element without content of its own renders their `children`, as in
-React: `<button {...props} />` renders what the caller wrapped in the component. When the caller
-passes no `children`, the element's content is left alone (a script may fill it).
+Props are the single parameter. Destructured props stay live: the child follows the parent's
+signal.
+
+```tsx check
+import { signal } from "lumiose";
+
+function Badge({ label, count = 0 }: { label: string; count?: number }) {
+  return (
+    <span>
+      {label}: {count}
+    </span>
+  );
+}
+
+export function Inbox() {
+  const unread = signal(3);
+  return <Badge label="Unread" count={unread()} />;
+}
+```
+
+> **Details:** [props](../reference/components.md#props): `...rest`, nested destructuring, lazy
+> server props.
+
+### Children
+
+`children` is lazy: it renders where you insert it, once. Spreading props onto an empty element
+renders them too.
 
 ```tsx check
 function Button(props: JSX.HTMLProps<HTMLButtonElement>) {
   return <button type="button" {...props} />;
 }
 
-function Trigger(props: JSX.HTMLProps<HTMLButtonElement> & { label: string }) {
-  const { children, label, ...rest } = props;
-  return (
-    <button type="button" aria-label={label} {...rest}>
-      {children}
-    </button>
-  );
-}
-
-export function Toolbar() {
-  return (
-    <>
-      <Button class="primary">Save</Button>
-      <Trigger label="Close">×</Trigger>
-    </>
-  );
+export function Save() {
+  return <Button class="primary">Save</Button>;
 }
 ```
 
-**Refs.** `ref` takes a callback `(el) => void`. `ref<T>()` returns such a callback that can also be
-read like a signal.
-
-**Async.** Any component may be `async` and `await` data in its body; see
-[Async components](async.md).
+> **Also:** [named slots](../reference/components.md#children),
+> [file types](../reference/components.md#file-types), [async components](async.md).
 
 ## API
 
-| API                                      | Use                                                                             |
-| ---------------------------------------- | ------------------------------------------------------------------------------- |
-| `function Name(props) { return <… /> }`  | A component. PascalCase, returns JSX.                                           |
-| `children` prop                          | Lazy content passed between the tags. Insert once.                              |
-| `ref<T>()`                               | A ref callback that reads like a signal (`input()`), `undefined` until mounted. |
-| `useId()`                                | A unique id for `id`/`for` and `aria-*` pairs, the same after hydration.        |
-| `viewTransition(fn)`, `<ViewTransition>` | Animate a state update; name the elements that enter, exit or move.             |
-| `onMount(fn)`, `onCleanup(fn)`           | Run after mount; run when the component is disposed.                            |
-| `<Dynamic component={X} … />`            | Render a component (or tag name) chosen at runtime.                             |
-| `<Portal mount={node}>`                  | Render children elsewhere in the document.                                      |
+| API                                      | Use                                        |
+| ---------------------------------------- | ------------------------------------------ |
+| `function Name(props) { return <… /> }`  | A component: PascalCase, returns JSX.      |
+| `children` prop                          | Lazy content. Insert once.                 |
+| `ref<T>()`                               | A `ref` callback that reads like a signal. |
+| `useId()`                                | A unique id, the same after hydration.     |
+| `onMount(fn)`, `onCleanup(fn)`           | Run after mount; run on disposal.          |
+| `viewTransition(fn)`, `<ViewTransition>` | Animate a state update.                    |
+| `<Dynamic component={X} />`              | A component or tag chosen at runtime.      |
+| `<Portal mount={node}>`                  | Render children elsewhere.                 |
 
-Types: a component's return type is `JSX.Element`. Props are a plain interface; `children?:
-JSX.Element` for content.
+Signatures: [reference: components](../reference/components.md).
 
 ## Example
+
+`ref()` reads as the element once it is mounted; `onMount` runs then.
 
 ```stsx check
 import { onMount, ref, signal } from "lumiose";
 
-interface Props {
-  label: string;
-  initial?: string;
-  children?: JSX.Element;
-}
-
-export function SearchBox({ label, initial = "", children }: Props) {
-  const query = signal(initial);
+export function SearchBox(props: { label: string }) {
+  const query = signal("");
   const input = ref<HTMLInputElement>();
 
   onMount(() => input()?.focus());
 
   return (
-    <form class="search" onSubmit={(event) => event.preventDefault()}>
-      <label>
-        {label}
-        <input ref={input} bind:value={query} />
-      </label>
-      <p>Searching for “{query()}”</p>
-      {children}
-    </form>
-  );
-}
-
-export function Page() {
-  return (
-    <SearchBox label="Books">
-      <small>Try “Dune”.</small>
-    </SearchBox>
+    <label class="search">
+      {props.label}
+      <input ref={input} bind:value={query} />
+      <span>Searching for “{query()}”</span>
+    </label>
   );
 }
 
@@ -2255,38 +2341,26 @@ export function Page() {
 </style>
 ```
 
-Both components share the `<style>` block at the end of the file: by convention, each `.stsx`
-file has one, after its components ([Styles](styles.md)).
-
 ## Common mistakes
 
-- **Reading a signal once in setup and expecting it to update.** `const doubled = count() * 2`
-  is computed once. Use a function or `computed`: `const doubled = () => count() * 2`. The compiler
-  warns with `LUM2001`.
-- **Returning early on reactive state.** `if (!user()) return <Login />` runs once. Put the
-  condition in the JSX: `{user() ? <Profile /> : <Login />}` (`LUM2003`, an error). An early
-  return on a prop (`if (props.kind === "a")`) only goes stale when a parent passes a changing
-  value, so it is a warning, and fine in a component that only renders on the server.
-- **Calling a component as a function.** `{Card({ title })}` skips the component's owner and
-  props handling. Write `<Card title={title} />` (`LUM2004`).
-- **Inserting `children` twice.** The second insert moves or re-creates the nodes. Take a render
-  prop such as `renderItem: () => JSX.Element` instead (`LUM2005`).
-- **Writing a signal in the component body.** Setup runs during render; a write there
-  (`count.set(…)`) re-triggers bindings mid-render. Write in handlers or effects (`LUM2002`).
-- **Expecting React re-renders.** There are no hooks rules and no dependency arrays: nothing
-  re-runs except bindings and effects that read signals.
-- **`className`, `htmlFor`.** Use `class` and `for`; the React names are type errors.
+- **Reading a signal once in setup.** `const doubled = count() * 2` never updates. Use
+  `() => count() * 2` or `computed` (`LUM2001`).
+- **Returning early on reactive state.** Put the condition in the JSX:
+  `{user() ? <Profile /> : <Login />}` (`LUM2003`).
+- **Calling a component as a function.** Write `<Card title={title} />` (`LUM2004`).
+- **Inserting `children` twice.** Take a render prop instead (`LUM2005`).
+- **Writing a signal in the body.** Write in handlers or effects (`LUM2002`).
+- **React habits.** No hooks rules or dependency arrays; `class` and `for`, not `className` and
+  `htmlFor` ([Coming from React](../coming-from/react.md)).
 
 ## Related diagnostics
 
-- [LUM1006](../errors/LUM1006.md): raw CSS in a `.tsx` file.
-- [LUM2001](../errors/LUM2001.md): stale derived value.
-- [LUM2002](../errors/LUM2002.md): signal write during render.
-- [LUM2003](../errors/LUM2003.md): reactive early return.
-- [LUM2004](../errors/LUM2004.md): component called as a function.
-- [LUM2005](../errors/LUM2005.md): children inserted twice.
+- [LUM1006](../errors/LUM1006.md): CSS in `.tsx`.
+- The mistakes above: [LUM2001](../errors/LUM2001.md), [LUM2002](../errors/LUM2002.md),
+  [LUM2003](../errors/LUM2003.md), [LUM2004](../errors/LUM2004.md),
+  [LUM2005](../errors/LUM2005.md).
 
-See also: [JSX](jsx.md), [Signals](signals.md), [reference: components](../reference/components.md).
+See also: [JSX](jsx.md), [Styles](styles.md).
 
 <!-- source: concepts/signals.md -->
 
@@ -2296,119 +2370,114 @@ See also: [JSX](jsx.md), [Signals](signals.md), [reference: components](../refer
 
 ## Concept
 
-Lumiose's reactive core is a push-pull signal graph (the alien-signals algorithm). Reading a signal
-inside a tracked scope (a JSX binding, a `computed`, an `effect`) subscribes that scope; writing
-the signal marks it dirty and re-runs only what depends on it.
+### Read, write, derive
 
-- **Reads are synchronous.** `count()` always returns the current value, even right after a write.
-- **Writes are batched.** Writes inside an event handler are batched for the duration of the
-  handler: delegated `onX` handlers, native `on:x` listeners, the direct listeners of non-bubbling
-  events (`onFocus`, `onScroll`) and handlers passed in a spread. They render together when it
-  returns, so the DOM is current right after the event (decision-81). Any other write schedules a
-  microtask flush. `flush()` flushes immediately.
-- **Flush order:** computeds are pulled, then DOM bindings run (parents before children), then user
-  effects. The effects queued at that point all run before the DOM bindings that their own writes
-  trigger, so effects that measure the DOM and then write share one layout. Then those bindings
-  run, then the effects that the writes scheduled. A later effect of the same pass reads the new
-  signal values, but the DOM does not show them yet. A conditional or list around a queued effect
-  that such a write changed still updates first, so an effect never runs inside content that an
-  earlier effect's write removed.
-- **Owners.** Every component, effect and root is an _owner_. Owners scope cleanups
-  (`onCleanup`), context (`<Ctx value>`/`useContext`), error handling and `getAbortSignal()`. Disposing an owner
-  disposes everything created under it.
-- **Equality.** A write that is `Object.is`-equal to the current value is not a change. Pass
-  `{ equals }` to customize, or `{ equals: false }` to treat every write as a change.
-- **On the server** signals are plain cells, computeds run once, and effects never run.
+`qty()` reads, `update` writes, `computed` derives. A click re-runs only the text that read
+them.
+
+```tsx check
+import { computed, signal } from "lumiose";
+
+export function Price() {
+  const qty = signal(1);
+  const total = computed(() => qty() * 5);
+
+  return (
+    <button onClick={() => qty.update((n) => n + 1)}>
+      {qty()} × 5 = {total()}
+    </button>
+  );
+}
+```
+
+### Effects
+
+An effect runs after the DOM updates, and again when a signal it read changes.
+
+```tsx check
+import { effect, signal } from "lumiose";
+
+export function Search() {
+  const query = signal("");
+  effect(() => {
+    document.title = `Search: ${query()}`;
+  });
+  return <input bind:value={query} />;
+}
+```
+
+> **Timing:** reads are synchronous. Writes in an event handler render together when it returns
+> ([batch](../reference/reactivity.md#batch)); others flush in a microtask
+> ([flush](../reference/reactivity.md#flush)). On the server, effects never run.
+> [Owners](../reference/reactivity.md#owners) scope cleanups and context.
 
 ## API
 
-| API                                                             | Shape                                                                                                                                       |
-| --------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| `signal(value, { equals? })`                                    | `s()` reads, `s.set(v)` and `s.update(fn)` write, `s.peek()` reads untracked.                                                               |
-| `computed(fn, { equals? })`                                     | `c()` reads. Lazy, cached and glitch-free; `fn` receives the previous value.                                                                |
-| `effect(fn)`                                                    | Runs after the DOM updates and again when what it read changes. `fn` may return a cleanup. Returns a disposer.                              |
-| `onMount(fn)`                                                   | Runs `fn` once, untracked, after the owner's DOM is mounted. May return a cleanup.                                                          |
-| `onCleanup(fn)`                                                 | Runs `fn` when the current owner is disposed or re-runs.                                                                                    |
-| `store(obj)`                                                    | Deep, mutable reactive proxy over a plain object or array (like Valtio's `proxy` or Solid's `createMutable`): mutate it directly.           |
-| `snapshot(value)`                                               | A deep plain copy of a store, for `structuredClone`, `postMessage` and saving.                                                              |
-| `untrack(fn)`                                                   | Runs `fn` without subscribing to what it reads.                                                                                             |
-| `batch(fn)`                                                     | Groups writes; dependents run once at the end.                                                                                              |
-| `flush()`                                                       | Runs pending bindings and effects now.                                                                                                      |
-| `getAbortSignal()`                                              | An `AbortSignal` aborted when the owner is disposed, an effect re-runs, or an async run is superseded. On the server, the request's signal. |
-| `createContext(default?)`, `<Ctx value={v}>`, `useContext(ctx)` | Values passed down the owner tree; they survive `await`. The provider reads `value` once: provide a signal or store for changing state.     |
-| `resource(fetcher)`                                             | Low-level on-demand loading with `loading()`, `error()`, `refetch()`. Prefer [async components](async.md).                                  |
+| API                                                 | Use                                            |
+| --------------------------------------------------- | ---------------------------------------------- |
+| `signal(value, { equals? })`                        | `s()`, `s.set(v)`, `s.update(fn)`, `s.peek()`. |
+| `computed(fn, { equals? })`                         | Lazy, cached derived value.                    |
+| `effect(fn)`                                        | Side effect; may return a cleanup.             |
+| `onMount(fn)`, `onCleanup(fn)`                      | After mount; on disposal.                      |
+| `store(obj)`, `snapshot(value)`                     | Deep mutable proxy; its plain copy.            |
+| `untrack(fn)`, `batch(fn)`, `flush()`               | Read untracked; group writes; run pending now. |
+| `getAbortSignal()`                                  | Aborted when the owner is disposed or re-runs. |
+| `createContext()`, `<Ctx value>`, `useContext(ctx)` | Values passed down the tree.                   |
+| `resource(fetcher)`                                 | Prefer [async components](async.md).           |
 
-In-flight state (`isPending()`, `isBusy()`, `isSubmitting()`, `isNavigating()`) is covered in
-[Async components](async.md) and [Data and actions](data-and-actions.md).
+Signatures: [reference](../reference/reactivity.md). In-flight state (`isPending()`, `isBusy()`,
+`isSubmitting()`, `isNavigating()`): [Async components](async.md),
+[Data and actions](data-and-actions.md).
 
 ## Example
 
-```tsx check
-import { computed, createContext, effect, signal, store, useContext } from "lumiose";
+A store is mutated directly; a context passes a value down.
 
-const Theme = createContext<"light" | "dark">("light");
+```tsx check
+import { computed, createContext, store, useContext } from "lumiose";
+
+const Currency = createContext("EUR");
 
 export function Cart() {
   const items = store([{ name: "Pen", price: 2, qty: 1 }]);
-  const discount = signal(0);
-  const total = computed(
-    () => items.reduce((sum, item) => sum + item.price * item.qty, 0) * (1 - discount()),
-  );
-
-  effect(() => {
-    document.title = `Cart: ${total().toFixed(2)}`;
-  });
+  const total = computed(() => items.reduce((sum, item) => sum + item.price * item.qty, 0));
 
   return (
-    <Theme value="dark">
-      <section>
-        <button onClick={() => items.push({ name: "Ink", price: 5, qty: 1 })}>Add ink</button>
-        <button onClick={() => (items[0]!.qty += 1)}>One more pen</button>
-        <button onClick={() => discount.set(0.1)}>Apply 10%</button>
-        <p>Total: {total().toFixed(2)}</p>
-        <ThemeLabel />
-      </section>
-    </Theme>
+    <Currency value="USD">
+      <button onClick={() => items.push({ name: "Ink", price: 5, qty: 1 })}>Add ink</button>
+      <Total amount={total()} />
+    </Currency>
   );
 }
 
-function ThemeLabel() {
-  const theme = useContext(Theme);
-  return <small>Theme: {theme}</small>;
+function Total(props: { amount: number }) {
+  const currency = useContext(Currency);
+  return (
+    <p>
+      {props.amount} {currency}
+    </p>
+  );
 }
 ```
 
 ## Common mistakes
 
-- **Destructuring or copying a signal's value in setup.** `const n = count()` freezes the value.
-  Read `count()` where you need it, or derive: `const double = () => count() * 2` (`LUM2001`).
-- **Calling `set` with the same object after mutating it.** `list().push(x); list.set(list())` is
-  not a change (`Object.is`). Write a new value (`list.update((l) => [...l, x])`), use `store()`,
-  or create the signal with `{ equals: false }`.
-- **Writing signals in the component body or in a `computed`.** That is a write during render
-  (`LUM2002`). Computeds must be pure; write in handlers and effects.
-- **Using `effect` to derive state.** `effect(() => b.set(a() * 2))` adds a frame of staleness and
-  an extra flush. Use `computed(() => a() * 2)`.
-- **Expecting an effect to run synchronously.** Effects run after the DOM updates. In tests, call
-  `flush()` after a write before asserting.
-- **Measuring, in one effect, what another effect's write renders.** Effects of the same pass all
-  run before their writes reach the DOM, so the second effect measures the previous layout. Read the
-  written signal in the effect that measures: it re-runs once the DOM shows the write.
-- **Module-scope signals in server code.** On the server, a signal at module scope is shared by
-  every request. Keep request data in components or context (`LUM4008`).
-- **Posting a store to a worker.** `postMessage()` and `structuredClone()` throw on proxies: send
-  `snapshot(state)`.
-- **Expecting `store()` to wrap class instances, `Map`s or `Set`s.** Only plain objects and arrays
-  become reactive; other values are returned as is.
+- **Copying a value in setup.** `const n = count()` freezes it (`LUM2001`).
+- **Writing in the component body or a `computed`** (`LUM2002`). Write in handlers and effects.
+- **Mutating, then `set` with the same object.** Not a change:
+  [signal](../reference/reactivity.md#signal).
+- **Deriving or measuring in effects:** [effect](../reference/reactivity.md#effect).
+- **Module-scope signals in server code** are shared by every request (`LUM4008`).
+- **Stores:** `postMessage()` needs `snapshot(state)`; class instances, `Map`s and `Set`s are not
+  wrapped ([store](../reference/reactivity.md#store)).
 
 ## Related diagnostics
 
-- [LUM2001](../errors/LUM2001.md): stale derived value.
-- [LUM2002](../errors/LUM2002.md): signal write during render.
 - [LUM2007](../errors/LUM2007.md): own signal read in an async body.
-- [LUM4008](../errors/LUM4008.md): module-scope signal written during SSR.
+- The mistakes above: [LUM2001](../errors/LUM2001.md), [LUM2002](../errors/LUM2002.md),
+  [LUM4008](../errors/LUM4008.md).
 
-See also: [reference: reactivity](../reference/reactivity.md), [JSX bindings](jsx.md), [Sharing state](state.md).
+See also: [JSX bindings](jsx.md), [Sharing state](state.md).
 
 <!-- source: concepts/state.md -->
 
@@ -3041,9 +3110,11 @@ See also: [Components](components.md), [Styles](styles.md), [reference: JSX type
 
 ## Concept
 
-**One block per file, at the end.** The default is a single top-level `<style>` after the
-components. It styles every template in the file, so several components share it. The JSX stays
-free of CSS, and the file reads like a component file with its stylesheet:
+### One block per file, at the end
+
+A top-level `<style>` after the components styles every template in the file, and no other file.
+Here `button` matches the buttons of `Counter` and `Reset`. Blocks are plain CSS: no Sass, and no
+attributes except `global`.
 
 ```stsx check
 import { signal } from "lumiose";
@@ -3080,11 +3151,7 @@ export function Reset(props: { onReset: () => void }) {
 </style>
 ```
 
-`Counter` and `Reset` share the block: `button` matches the buttons of both, and of no other file.
-`--accent` and `--radius` are design tokens: custom properties declared once on `:root` (see
-"Design tokens" below).
-
-**Placement decides scope.**
+### Placement decides scope
 
 | Placement                                                                            | Scope                                                                                                                                                                                                                                                                                                                         |
 | ------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -3092,15 +3159,12 @@ export function Reset(props: { onReset: () => void }) {
 | Inside a component's JSX, as a child of an intrinsic element or fragment (any depth) | Its **enclosing element and everything written inside it** in that component, including `.map` callbacks and JSX passed as children there. A block directly under the component's root element therefore covers the whole component. Sibling subtrees are not affected, and it never reaches other components' own templates. |
 | `<style global>` (anywhere a block is valid)                                         | The whole app, unscoped. Usually at the end of the root `layout.stsx`.                                                                                                                                                                                                                                                        |
 
-**Nested blocks, for two jobs.** A block inside a component's JSX is still valid. Reach for one
-when the file-level block cannot do the job:
+### Nested blocks
 
-- **Scoping one element's subtree,** so a selector such as `p` or `.note` cannot match anything
-  else in the file.
-- **Reading a constant declared inside a component** (`const columns = 3` in its body, which its
-  JS uses too). A file-level block only sees top-level constants.
+A block inside a component's JSX styles its enclosing element's subtree. Use one to keep a selector
+such as `p` inside that subtree, or to read a constant declared inside the component.
 
-```stsx
+```stsx check
 export function Panel(props: { items: string[] }) {
   const columns = 3;
 
@@ -3121,123 +3185,21 @@ export function Panel(props: { items: string[] }) {
 </style>
 ```
 
-Everything else goes in the file-level block. Moving a block from a component's root to the end
-of the file widens its scope to every component in the file: check that its selectors (bare
-element selectors in particular) do not start matching another component's elements.
+> **Widening:** moving a block from a component's root to the end of the file widens its scope to
+> every component in the file. Check that its selectors (bare element selectors in particular) do
+> not start matching another component's elements.
 
-**How scoping works.** Each scope with styles gets a token, a stable hash of the file path plus
-the component name, with one token per style-bearing element. Every element in the scope carries
-the token as a marker, `data-lum-<hash>` by default: the whole file for top-level blocks, and the
-enclosing element's lexical subtree for blocks inside a component. The last compound of each
-selector gets `[data-lum-<hash>]`, a +0,1,0 specificity bump. Dynamic classes always work, because
-no element is pruned. `scopedStyles` changes the marker and the bump (see "Choosing the scope
-marker" below).
-
-- `:global(.sel)` leaves a selector unscoped; `:deep(.sel)` scopes only the part before it.
-- `@keyframes` names are scoped, and `animation` references are rewritten. A block sees its own
-  keyframes, then those of the blocks of enclosing elements (innermost first), then the file's, so
-  a nested block can animate with keyframes defined under the component's root. Custom properties
-  are not scoped.
-- **Class passthrough.** When a parent passes `class` to a child component, the parent's scope
-  tokens at that call site travel with it: the file token plus every enclosing style subtree. So
-  `.cta { … }` in the parent styles `<Button class="cta" />` wherever `Button` applies
-  `props.class`. The child applies it on every element whose `class` value may contain it:
-  `class={["btn", props.class]}`, a destructured `class` prop or `...rest`, a helper that gets
-  `props` (`class={variantClass(props)}`), or a local value or function built from them
-  (`const classes = () => ["btn", props.class]`). A class that reaches the element any other way
-  (a module-level variable, a context) loses the parent's scope, so read `props.class` in the
-  component. Forwarding works through intermediate components: when `Field` passes its own
-  `class` prop on (`<Input class={["field", props.class]} />`), `Input`'s element gets `Field`'s
-  tokens and those of `Field`'s caller.
-- Within a file, file-level CSS comes first, then component blocks in source order.
-- **In the editor**, class completion follows the same scopes: in a `class` attribute it offers
-  the classes of the blocks that apply there (innermost first), then the project's global classes
-  (`<style global>` blocks and imported global `.css` files), never a sibling subtree's.
-  `var(--…)` offers every custom property declared in the project, with its value.
-
-**Choosing the scope marker** (`scopedStyles`, decision-85). One app-wide option of `lumiose()`
-decides how elements carry their scope and how scoped selectors match it:
-
-```ts
-lumiose({
-  scopedStyles: {
-    strategy: "attribute", // or "class"
-    specificity: "default", // or "zero"
-    namespace: "lum", // the start of the marker name
-  },
-});
-```
-
-| `strategy`            | `specificity` | Element                     | `.note` becomes                    |
-| --------------------- | ------------- | --------------------------- | ---------------------------------- |
-| `attribute` (default) | `default`     | `data-lum-a1b2c3d4`         | `.note[data-lum-a1b2c3d4]`         |
-| `attribute`           | `zero`        | `data-lum-a1b2c3d4`         | `.note:where([data-lum-a1b2c3d4])` |
-| `class`               | `default`     | `class="note lum-a1b2c3d4"` | `.note.lum-a1b2c3d4`               |
-| `class`               | `zero`        | `class="note lum-a1b2c3d4"` | `.note:where(.lum-a1b2c3d4)`       |
-
-- **`strategy: "class"`** puts the marker in the element's `class`, next to its own classes, on the
-  client and in server-rendered HTML. Class handling never removes it. Pick it when attributes
-  get in the way, for example when HTML is post-processed by a tool that strips `data-*`.
-- **`specificity: "zero"`** wraps the marker in `:where()`, so the scope adds nothing: a scoped
-  `.note` ties with a global `.note`, and the one that comes later wins. Pick it when global styles
-  or utility classes should override component styles without `!important`. It needs `:where()`
-  support (every evergreen browser).
-- **`namespace`** starts with a lowercase letter and holds lowercase letters, digits and hyphens.
-  Change it to avoid clashes with another library's markers.
-- Class passthrough, `:global()`, `:deep()`, `@keyframes` scoping and placement work the same in
-  every combination.
-
-**Outside Lumiose.** `@lumiose/stsx` brings `.stsx` files and these style blocks to React, React
-Router and Solid through a Vite plugin, with the same placement rules, constants and
-`scopedStyles` option: see [STSX](https://lumiose.dev/stsx/).
-
-**Blocks are plain CSS:** no Sass, no `lang`, `media` or other attributes (only `global`). For CSS
-that is not a component's own (a reset, theme tokens, a stylesheet from another project, Tailwind),
-import `.css` files or CSS modules: see "Stylesheets, CSS Modules and Tailwind" below.
-
-> **Status:** available. `@lumiose/vite` serves each file's CSS as a CSS module, and style-only or
-> constant-only edits hot-update the CSS without remounting. `LUM3012` (a custom property set in a
-> `style` prop that no stylesheet reads) needs the whole project: `lumiose build`, `lumiose check` and
-> the language server report it.
-
-**In builds**, a page needs few render-blocking stylesheets. `lumiose build` groups each page's
-stylesheets into at most three tags, in the page's cascade order:
-
-1. A file with the stylesheets every page starts with (the document's, the root layouts', shared
-   components'), linked by all pages and cached across them.
-2. A file with the stylesheets a group of pages goes on with, such as a route group's layout and
-   the components it renders, linked by those pages only. A group gets its file when three routes
-   or more continue with the same stylesheets (routes with identical stylesheets count once) and
-   they total more than 4 kB; a smaller run stays in each page's own CSS. So a page without the
-   site chrome, such as a fullscreen editor outside the `(site)` group, no longer moves the
-   chrome's CSS into every other page's file.
-3. The page's own stylesheets: inline in one `<style>` when they total 4 kB or less, else merged
-   into one file for that page.
-
-The cascade order is the same as in dev, where each file's CSS stays a separate stylesheet for
-HMR. In the sample apps a first view went from 6–8 stylesheet requests to one, with about 30%
-fewer CSS bytes (brotli). On a 39-page site with one page outside its route group, a visit to
-every page went from 12 requests and 29 kB to 8 requests and 15 kB.
-A page that links a stylesheet also gets `<script>/* waits for the stylesheets above */</script>`
-after its stylesheet tags (54 bytes, in dev too). The browser parses the body only once the
-stylesheets before that script have loaded, so the body's first layout is styled. Without it,
-Chrome could lay out the unstyled body when a scrolled page is reloaded, restore the scroll
-position from that layout, and paint the first frames at the wrong place until `load`.
-The first paint waits for the stylesheets either way. With `csp: "strict"` the script gets the
-nonce or its hash (see [Security](security.md)).
-Each tag lists the stylesheets it holds in `data-l-css`, so an island or an SPA route that imports
-one does not load it again. Pages link the CSS files the build output contains: when another Vite
-plugin rewrites a stylesheet under a new name after Lumiose recorded it, the build follows it (by
-the chunks that import it, the name it was emitted with, or the one new CSS file), and warns about
-a linked stylesheet the output no longer has.
+> **Across files:** a file's blocks never style components defined in other files. Pass `class`
+> ([class passthrough](../reference/styles.md#class-passthrough)) or use `:deep(.sel)`;
+> `:global(.sel)` leaves a selector unscoped. The mechanics, and the `scopedStyles` option that
+> changes the marker: [How scoping works](../reference/styles.md#how-scoping-works).
 
 ### Design tokens
 
-Colors, spacing, radii, fonts and the other values of a design are CSS custom properties (decision-87).
-Declare them once on `:root`, usually in the root layout's `<style global>` (or an imported
-stylesheet), and read them with `var()` in every block. A theme or dark mode overrides them with a
-selector or a media query, a section of the page can override a few through the cascade, and they
-show up in devtools:
+Colors, spacing, radii and fonts are CSS custom properties (decision-87). Declare them once on
+`:root`, usually in the root layout's `<style global>` (or an imported stylesheet), and read them with `var()` in every block.
+A theme or dark mode overrides them with a selector or a media query, a section of the page can
+override a few through the cascade, and they show up in devtools.
 
 ```stsx check
 // src/routes/layout.stsx
@@ -3261,478 +3223,66 @@ export default function Layout(props: LayoutProps<"/">) {
 </style>
 ```
 
-**Typed names.** To catch a mistyped name, and to use the same names from JS, keep them in an
-`as const` module and read them with `var($vars.name)`. The module holds the names only; the values
-stay in CSS:
-
-```ts check file=vars.ts
-// src/vars.ts
-export const vars = {
-  accent: "--accent",
-  surface: "--surface",
-  radius: "--radius",
-  space: "--space",
-} as const;
-```
-
-```stsx check file=components/Chip.stsx
-// src/components/Chip.stsx
-import { vars } from "../vars.ts";
-
-export function Chip(props: { label: string; color: string }) {
-  return (
-    <span class="chip" style={{ [vars.accent]: props.color }}>
-      {props.label}
-    </span>
-  );
-}
-
-<style>
-  .chip {
-    padding: calc(var($vars.space) / 2) var($vars.space);
-    border-radius: var($vars.radius, 4px);
-    background: var($vars.surface);
-    color: var($vars.accent);
-  }
-</style>
-```
-
-`var($vars.accent)` ships as `var(--accent)`, and `var($vars.radius, 4px)` keeps its fallback. A
-mistyped member (`$vars.acent`) fails the build with [LUM3008](../errors/LUM3008.md), and
-TypeScript checks the JS side (`style={{ [vars.accent]: … }}`, `getPropertyValue(vars.accent)`).
-The declarations on `:root` still spell the names out, because `$` is not read in a property
-name. Plain `var(--accent)` needs no module: the names module is worth it when a project wants
-those checks.
-
-**When to use `$name` instead.** A custom property is resolved by the browser, which is what design
-tokens need. A `$` constant is fixed at build time: keep it for what custom properties cannot do,
-and for values that JS code also needs:
-
-- **Conditions** of `@media`, `@container` and `@supports`, where `var()` does not work: a
-  breakpoint (`@media (width < $narrow)`).
-- **Values shared with JS:** the breakpoint that `matchMedia` also checks, the grid columns that a
-  virtualizer also computes with, a duration that a timer also waits for, a color that a canvas
-  draws with or that JS color math derives.
+> **Typed names:** `var($vars.accent)` reads the name from an `as const` module, so a typo fails
+> the build: [Typed token names](../reference/styles.md#typed-token-names).
 
 ### JS values in styles
 
-`$name` and `$obj.key` put a JS value into CSS, for the cases above. The compiler evaluates the
-reference at build time and inlines the result, so the output is plain CSS: no runtime lookup and
-no JS inside CSS.
-TypeScript checks each reference like any other expression. Imports used only by `$` references
-are removed from the JS output, and editing them hot-reloads the CSS only.
-
-**What a reference can name:** a `const` whose value the compiler can work out without running the
-app.
-
-| Declared as                                                                                  | Readable from                                                                                                 |
-| -------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
-| A top-level `const` of the file                                                              | Every block of the file. A top-level block must come after it.                                                |
-| A `const` of the enclosing component                                                         | Blocks inside that component, `<style global>` included.                                                      |
-| An `export const` (or `export default`) of an imported `.ts`, `.tsx`, `.stsx` or JSON module | Every block of the importing file: named, default or namespace imports (`$scale.ticks`), re-exports included. |
-
-Imports are resolved the way the rest of the toolchain resolves them: by Vite in `lumiose dev` and
-builds (aliases included), and like TypeScript in `lumiose check` and the editor (relative paths,
-tsconfig `paths`, package `exports` and `imports`). An import that cannot be resolved, or that has
-no such export, is reported as [LUM3008](../errors/LUM3008.md) at each reference.
-
-The value may be built from literals, template literals, arithmetic (`+ - * / % **`, unary `-`),
-other constants, and object literals with their members at any depth (`$chart.series.sales`),
-including spreads, destructuring, `as const` and `satisfies`. Mark constant objects `as const`: a plain
-object literal folds too, as written, but only `as const` keeps the JS read-only like the CSS.
-
-**How values are written.** Strings are inserted verbatim, without quotes (`"12px"` becomes
-`12px`; for a CSS string, put the quotes inside: `'"→"'`). Numbers are inserted as plain numbers
-(`const gap = 8` gives `8`), so give them a unit with `calc($gap * 1px)` (which ships as `8px`, see below) or keep the unit in the
-constant (`"8px"`, `` `${gap}px` ``). A bare number where a length, angle or time is required
-(`gap: $gap`, `rotate: $angle`) is [LUM3018](../errors/LUM3018.md), with `calc($gap * 1px)` as the
-fix: Lightning CSS happens to read a bare length as pixels, but angles and times are dropped, and in
-custom properties or math functions the number stays unitless. A unit written after the reference
-(`$gap px`) does not attach to it ([LUM3019](../errors/LUM3019.md)).
-
-**What cannot be referenced.** The compiler reports it; the CSS keeps the `$` text, which browsers
-ignore.
-
-| Reference                                                                                                   | Diagnostic                      | Fix                                                                                                    |
-| ----------------------------------------------------------------------------------------------------------- | ------------------------------- | ------------------------------------------------------------------------------------------------------ |
-| `$space(2)`: a function call, or a `const` holding a function or a call's result (`Date.now()`, `signal()`) | [LUM3008](../errors/LUM3008.md) | Compute it as a constant: `calc($space * 2px)` with `const space = 4`, or name the steps: `$space.md`. |
-| `$count` where `count` is a `let` (or `var`)                                                                | [LUM3008](../errors/LUM3008.md) | Make it a `const`, or pass it at runtime (below).                                                      |
-| `$open`, `$props.width`: signals, props, parameters                                                         | [LUM3008](../errors/LUM3008.md) | Pass it at runtime (below).                                                                            |
-| `$sizes.0`: an array item (`sizes.0` is not JS)                                                             | [LUM3008](../errors/LUM3008.md) | An `as const` object with named keys: `$sizes.sm`.                                                     |
-| `$brand-primary`: a hyphen, read as `$brand` minus `primary`                                                | [LUM3009](../errors/LUM3009.md) | `$brand.primary`, or a camelCase constant: `$brandPrimary`.                                            |
-| A component's `const` in a block outside it (file level, or another component)                              | [LUM3008](../errors/LUM3008.md) | Move the `const` to the top level, or the block into the component.                                    |
-| A top-level block above the `const` it reads                                                                | [LUM3013](../errors/LUM3013.md) | Move the block below it; by convention, to the end of the file.                                        |
-
-`LUM3008`'s message says which case it is (a `let` binding, computed by a call at runtime, an array,
-not declared in scope, an import that does not export the name, …).
-
-**Where `$` is read:** in property values (`gap: calc($gap * 1px)`) and in `@media`, `@container`
-and `@supports` preludes (`@media (width < $narrow)`). Everywhere else `$` is left to CSS:
-
-- In selectors, `$` keeps its CSS meaning: `[href$=".pdf"]` is "ends with". `.size-$md` is not a
-  reference but an invalid selector, which Lightning CSS drops (`LUM3015`).
-- Property names, strings (`content: "$gap"`), comments and `url($file)` are not substituted. Put
-  the whole value in the constant instead: `const hero = 'url("/hero.png")'` and
-  `background-image: $hero`.
-
-**Runtime values.** A `$` reference is fixed at build time. For a value that changes (a signal, a
-prop, a measurement), set a custom property with the `style` prop and read it with `var()`. Custom
-properties are not scoped and inherit, so descendants can read them too.
-
-```stsx
-<div class="bar" style={{ "--fill": `${pct()}%` }}>
-  <style>
-    .bar { inline-size: var(--fill); }
-  </style>
-</div>
-```
-
-Values that the styles and the JS both use live in a module of their own, imported by the
-components and the code that need them. Here the meter's `ticks` decide both the labels it renders
-and the columns and marks of its CSS, and `narrow` is the breakpoint of its `@media` and of the
-app's `matchMedia` check. Its design values are custom properties:
-
-```ts check file=scale.ts
-// src/scale.ts: read by the styles and by the JS.
-export const ticks = 4;
-export const narrow = "40rem";
-export const isNarrow = () => matchMedia(`(width < ${narrow})`).matches;
-```
-
-```stsx check file=components/Meter.stsx
-// src/components/Meter.stsx
-import * as scale from "../scale.ts";
-
-const step = 100 / scale.ticks;
-
-export function Meter(props: { label: string; value: number }) {
-  return (
-    <div class="meter" style={{ "--value": `${props.value}%` }}>
-      <span>{props.label}</span>
-      <div class="track">
-        <div class="fill" />
-      </div>
-      <ol class="scale">
-        {Array.from({ length: scale.ticks }, (_, i) => (
-          <li key={i}>{(i + 1) * step}%</li>
-        ))}
-      </ol>
-
-      <style>
-        .meter {
-          display: grid;
-          gap: var(--space);
-          padding: calc(var(--space) * 2);
-          border-radius: var(--radius);
-          background: var(--surface);
-        }
-        .track {
-          block-size: 8px;
-          border-radius: 4px;
-          background: repeating-linear-gradient(to right, transparent 0 calc($step * 1% - 1px), currentColor 0 calc($step * 1%));
-          box-shadow: inset 0 1px 2px rgb(0 0 0 / 0.2);
-        }
-        .fill { inline-size: var(--value); block-size: 100%; background: var(--accent); }
-        .scale {
-          display: grid;
-          grid-template-columns: repeat($scale.ticks, 1fr);
-          margin: 0;
-          padding: 0;
-          list-style: none;
-          text-align: end;
-        }
-        @media (width < $scale.narrow) {
-          .scale { display: none; }
-        }
-      </style>
-    </div>
-  );
-}
-```
-
-The compiler's CSS output for that file (`data-lum-lw1tegds` is the component's scope token). Every
-`$` reference and every constant `calc()` is gone; the `var()` reads, which the browser resolves,
-and the `%`-relative stop are left as written:
-
-```css
-.meter[data-lum-lw1tegds] {
-  gap: var(--space);
-  padding: calc(var(--space) * 2);
-  border-radius: var(--radius);
-  background: var(--surface);
-  display: grid;
-}
-
-.track[data-lum-lw1tegds] {
-  background: repeating-linear-gradient(to right, #0000 0 calc(25% - 1px), currentColor 0 25%);
-  border-radius: 4px;
-  block-size: 8px;
-  box-shadow: inset 0 1px 2px #0003;
-}
-
-.fill[data-lum-lw1tegds] {
-  inline-size: var(--value);
-  background: var(--accent);
-  block-size: 100%;
-}
-
-.scale[data-lum-lw1tegds] {
-  text-align: end;
-  grid-template-columns: repeat(4, 1fr);
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  display: grid;
-}
-
-@media (width < 40rem) {
-  .scale[data-lum-lw1tegds] {
-    display: none;
-  }
-}
-```
-
-Lightning CSS also minifies values (`rgb(0 0 0 / 0.2)` becomes `#0003`) and may reorder or merge
-declarations, so the output is equivalent to the source, not identical.
-
-#### Build-time math
-
-Constant math never reaches the browser. It is computed in two steps:
-
-1. **JS math, by the Lumiose compiler.** Arithmetic in constants and template literals is evaluated
-   before the value is inserted: `const step = 100 / scale.ticks` inlines `25`.
-2. **CSS math, by Lightning CSS.** After substitution, Lightning CSS reduces `calc()`, `min()`,
-   `max()`, `clamp()`, `round()`, `abs()`, the trigonometric functions and the other CSS math
-   functions whenever the operands are concrete values in compatible units. `calc($gap * 2px)`
-   becomes `calc(8 * 2px)`, which ships as `16px`.
-
-| Source (`$gap` is `8`)                    | Output                                | Why                                            |
-| ----------------------------------------- | ------------------------------------- | ---------------------------------------------- |
-| `padding: calc($gap * 2px)`               | `padding: 16px`                       | `calc(8 * 2px)` reduces.                       |
-| `inline-size: min(10px, 20px)`            | `inline-size: 10px`                   |                                                |
-| `block-size: clamp(4px, 8px, 12px)`       | `block-size: 8px`                     |                                                |
-| `transform: rotate(calc(45deg * 2))`      | `transform: rotate(90deg)`            | Math inside other functions reduces too.       |
-| `inset: calc(2px + 3px) calc(1rem + 4px)` | `inset: 5px calc(1rem + 4px)`         | Each value on its own: `rem` plus `px` stays.  |
-| `width: calc(100% - $gap * 2px)`          | `width: calc(100% - 16px)`            | The constant part reduces; `%` stays.          |
-| `font-size: calc(2 * 1rem)`               | `font-size: 2rem`                     | One unit: nothing to convert.                  |
-| `font-size: clamp(1rem, 2vw, 3rem)`       | unchanged                             | `rem` and `vw` are only known in the browser.  |
-| `max-width: calc(var(--w) + $gap * 2px)`  | `max-width: calc(var(--w) + 8 * 2px)` | A declaration with `var()` is kept as written. |
-| `--space: calc($gap * 2px)`               | `--space: 16px`                       | A custom property, folded by Lumiose (below).  |
-| `padding-left: calc($gap * 1px - 12px)`   | `padding-left: 0`                     | Negative in a non-negative property (below).   |
-| `margin-left: calc($gap * 1px - 12px)`    | `margin-left: -4px`                   | Margins can be negative.                       |
-
-**What cannot fold.** A math function is replaced only by a value that means the same thing
-wherever it is used. Absolute units convert into each other (`calc(1in + 4px)` is `100px`) and a
-unit combines with itself (`calc(2 * 1rem)` is `2rem`), but context-dependent units mixed with
-others need the browser: `%` resolves against the containing block (or the font size, depending on
-the property), `vw` and `vh` against the viewport, `em` against the element's font size and `rem`
-against the root's. A `var()` is only known when the browser computes styles, so Lightning CSS keeps
-any declaration containing one exactly as written, constant parts included. To precompute those,
-do the arithmetic in JS: with `` const extra = `${gap * 2}px` ``, `calc(var(--w) + $extra)` ships as
-`calc(var(--w) + 16px)`.
-
-**Custom properties.** Lightning CSS keeps custom property values as written, because it cannot
-know where they will be used. Lumiose folds each math function in them that reduces to a single value
-in compatible units: `--space: calc($gap * 2px)` becomes `16px`, `--turn: rotate(calc(45deg * 2))`
-becomes `rotate(90deg)`, and `var(--x, calc($gap * 3px))` becomes `var(--x, 24px)`. Anything with
-`var()`, `env()` or context-dependent units mixed with other units stays whole, without the partial
-reduction regular properties get (`--inset: calc(100% - $gap * 2px)` stays `calc(100% - 8 * 2px)`).
-Negative results and fractional numbers stay inside `calc()` (`calc(-3px)`, `calc(.333333)`),
-because a bare value can behave differently where the property is read: `calc()` clamps to the
-property's range and rounds where an integer is expected.
-
-**Negative results.** Some properties cannot be negative: padding, sizes (`width`, `min-height`,
-…), border widths, `gap`, `font-size`, `line-height` and others. In the browser, a `calc()` that
-comes out negative there is clamped to 0, while a negative value written out is invalid and the
-whole declaration is dropped. So that folding does not change the meaning, a negative result in such
-a property ships as `0`: `padding-left: calc($gap * 1px - 12px)` gives `padding-left: 0`, and
-`font-size: calc(1rem - 2rem)` gives `font-size: 0`. This mirrors the upstream Lightning CSS fix
-([lightningcss#1329](https://github.com/parcel-bundler/lightningcss/pull/1329)), which Lumiose
-applies until a release includes it. Properties that accept negative values, such as margins and
-`inset`, keep them.
-
-Folding regular properties, minification and browser targets come from
-[Lightning CSS](https://lightningcss.dev), the CSS parser, transformer and minifier from the Parcel
-project, which Lumiose's CSS compiler is built on. Lumiose adds `$` constants, scoping and the
-custom-property folding.
-
-Production builds minify CSS for the [supported browsers](../stability.md#browsers), which all
-have `:dir()`, nesting, `light-dark()` and the other modern syntax, so it ships as written. With an
-older `build.cssTarget` (or `build.target`) in your Vite config, Lightning CSS lowers what those
-browsers lack: `:dir(rtl)` becomes a list of `:lang()` selectors, which miss a `dir` attribute, and
-`light-dark()` becomes variables that follow the system's colour scheme only, so a `color-scheme`
-set on an element, inline or from a script no longer switches the colours.
-
-### Stylesheets, CSS Modules and Tailwind
-
-Style blocks hold a component's own styles. Three other ways to style work next to them through
-Vite, in `lumiose dev` and in builds: imported `.css` files, CSS modules and Tailwind v4. A smoke
-test (`examples/ssr-styles-e2e`) checks each one in Chromium: server-rendered, without
-JavaScript, and in a hydrated island. StyleX is not supported yet (below); Sass is not covered.
-
-**Imported `.css` files are global.** Nothing in them is scoped, and `$` references are not read.
-A page links a stylesheet when its import graph reaches it: the page, its layouts and the
-components they import. Import a stylesheet from the root layout to link it on every page, or from
-one route's page or layout to link it on that route only. The server-rendered HTML links it, so
-the page is styled before any script runs; builds merge it with the page's other stylesheets (see
-"In builds" above).
+`$name` inlines a JS constant at build time. Use it where `var()` cannot work, such as a `@media`
+condition, and for values that JS also uses.
 
 ```stsx check
-// src/routes/layout.stsx
-// Global CSS first: the file's style block comes after it in the cascade.
-import "../styles/app.css";
+// Also read by the app's JS: matchMedia(`(width < ${narrow})`).
+export const narrow = "40rem";
+const columns = 3;
 
-export default function Root(props: { children?: JSX.Element }) {
-  return <div class="shell">{props.children}</div>;
+export function Grid(props: { children?: JSX.Element }) {
+  return <div class="grid">{props.children}</div>;
 }
 
 <style>
-  .shell { max-inline-size: 60rem; margin-inline: auto; }
+  .grid { display: grid; grid-template-columns: repeat($columns, 1fr); }
+  @media (width < $narrow) {
+    .grid { grid-template-columns: 1fr; }
+  }
 </style>
 ```
 
-**Cascade order.** A page's stylesheets come in import order: a file's imports (stylesheets and
-the components it renders) before its own style blocks, and a layout before its page. Rules of the
-same specificity resolve in that order. A scoped selector carries an extra attribute (+0,1,0), so a
-block's `.card` beats a stylesheet's `.card` wherever the two come. Keep base styles (resets,
-typography, tokens) in a global stylesheet and refine them in blocks.
+The CSS ships as `repeat(3, 1fr)` and `@media (width < 40rem)`: no runtime lookup.
 
-**CSS Modules** suit stylesheets shared by several files or brought from another project. Vite
-processes `*.module.css` files: it hashes each class name (`.pill` becomes `_pill_1x2y3_1`), and
-the default export maps the names to the hashed classes, typed as a read-only class map by
-`lumiose/env`. The server render and the browser get the same names in `lumiose dev` and in builds,
-so islands hydrate without mismatches. Pass the classes to `class` like any string, alone or in an
-array with other classes:
+> **Rules:** what a reference can name, units and the diagnostics:
+> [JS values in styles](../reference/styles.md#js-values-in-styles). Constant `calc()`, `min()`
+> and `clamp()` are computed at build time too:
+> [Build-time math](../reference/styles.md#build-time-math).
 
-```css
-/* src/components/Badge.module.css */
-.pill {
-  border-radius: 999px;
-  padding: 0 0.5rem;
-}
-.warn {
-  background: gold;
-}
-```
+### Runtime values
 
-```stsx check file=components/Badge.stsx
-// src/components/Badge.stsx
-import styles from "./Badge.module.css";
+For a value that changes (a signal, a prop, a measurement), set a custom property with the `style`
+prop and read it with `var()`. Custom properties are not scoped and inherit, so descendants can
+read them too.
 
-export function Badge(props: { warn?: boolean; class?: string; children?: JSX.Element }) {
-  return (
-    <span class={["badge", styles.pill, props.warn && styles.warn, props.class]}>
-      {props.children}
-    </span>
-  );
+```stsx check
+export function Progress(props: { pct: number }) {
+  return <div class="bar" style={{ "--fill": `${props.pct}%` }} />;
 }
 
 <style>
-  .badge { display: inline-flex; align-items: center; }
+  .bar { inline-size: var(--fill); block-size: 4px; background: var(--accent); }
 </style>
 ```
 
-A CSS module is global CSS with unique names: placement scoping, `$name` constants and the
-`LUM3xxx` diagnostics apply to style blocks only. Prefer a style block for a component's own
-styles; class completion in the editor covers style blocks and global stylesheets, not CSS
-modules. Other preprocessors' module files (`.module.scss`) work through Vite, typed by
-`vite/client`.
+### Other stylesheets
 
-**Tailwind v4.** Install `tailwindcss` and `@tailwindcss/vite`, add Tailwind's Vite plugin next to
-Lumiose's, and import Tailwind from a global stylesheet that the root layout imports (the
-`src/styles/app.css` of the layout above):
+Style blocks hold a component's own styles. For a reset, a stylesheet from another project or
+Tailwind, import `.css` files or CSS modules:
+[Stylesheets, CSS Modules and Tailwind](../guides/stylesheets.md).
 
-```ts
-// vite.config.ts
-import lumiose from "@lumiose/vite";
-import tailwindcss from "@tailwindcss/vite";
-import { defineConfig } from "vite";
+> **Builds:** `lumiose build` groups each page's stylesheets into at most three tags
+> ([Build output](../reference/styles.md#build-output)).
 
-export default defineConfig({ plugins: [tailwindcss(), lumiose()] });
-```
-
-```css
-/* src/styles/app.css */
-@import "tailwindcss";
-```
-
-Tailwind's scanner reads every source file Git does not ignore, `.stsx` files included, and
-generates the utilities it finds. Write them in `class` as a string, an array or a record. As
-Tailwind requires, each class appears whole in the source, also the ones a signal turns on later:
-
-```stsx check file=components/Toggle.stsx
-// src/components/Toggle.stsx
-import { signal } from "lumiose";
-
-export function Toggle(props: { label: string }) {
-  const on = signal(false);
-
-  return (
-    <button
-      type="button"
-      class={[
-        "rounded-lg px-3 py-1",
-        { "font-bold": on(), underline: on() },
-        on() ? "bg-emerald-500 text-white" : "bg-gray-200",
-      ]}
-      onClick={() => on.update((value) => !value)}
-    >
-      {props.label}
-    </button>
-  );
-}
-```
-
-- **Utilities lose to style blocks.** Tailwind v4 puts utilities in `@layer utilities`. Style
-  blocks and the unlayered rules of your stylesheets are in no layer, so they win at any
-  specificity: `<p class="note p-8">` keeps a block's `.note { padding: 2px; }`. Set a property in
-  one place, or make the utility important (`p-8!`).
-- **In style blocks, read Tailwind's theme variables:** `color: var(--color-emerald-500)`,
-  `padding: calc(var(--spacing) * 4)`. Tailwind emits the variables it finds in the sources.
-- **`@apply`, `theme()` and `--spacing()`** work in a block that starts with
-  `@reference "../styles/app.css";` (the stylesheet that imports Tailwind), as in any CSS that
-  Tailwind processes on its own. Without it, the build fails with "Cannot apply unknown utility
-  class". The block's selectors stay scoped: `.card { @apply p-6; }` styles only this file's
-  `.card`.
-
-  ```stsx
-  <style>
-    @reference "../styles/app.css";
-    .card {
-      @apply rounded-lg p-6 font-bold;
-      margin: --spacing(4);
-      border: 2px solid theme(--color-red-500);
-    }
-  </style>
-  ```
-
-  The compiler keeps Tailwind's at-rules as written for Tailwind's Vite plugin and does not report
-  them: `@apply`, `@reference`, `@theme`, `@utility`, `@variant`, `@custom-variant` (with
-  `@slot`), `@source`, `@plugin` and `@config`. Other unknown at-rules are still
-  [LUM3015](../errors/LUM3015.md) warnings, and so is `@APPLY`: Tailwind matches the names
-  case-sensitively.
-
-- **In the editor,** Lumiose's class completion lists the classes of style blocks and global
-  stylesheets, not Tailwind's utilities. Tailwind CSS IntelliSense for VS Code gives those once it
-  treats `.stsx` like JSX, in the workspace settings:
-  `"tailwindCSS.includeLanguages": { "stsx": "javascriptreact" }`.
-
-**StyleX is not supported yet** in server-rendered apps (spiked with StyleX 0.19 and its Vite
-plugin, `@stylexjs/unplugin`):
-
-- **`.stsx` files are not compiled.** The plugin only transforms `.js`, `.ts`, `.jsx` and `.tsx`
-  files, so `stylex.create()` in an `.stsx` file throws when the page renders. In `.ts` and `.tsx`
-  modules it compiles.
-- **Production builds lose rules.** The plugin appends all rules to one stylesheet (renamed under
-  a new hash, which pages follow), while Lumiose links each route's own stylesheets: only the pages
-  that link that one file get the rules. Pointing its `cssInjectionTarget` at a stylesheet the root
-  layout imports stops the build in Vite (`vite:css-post`), since the plugin deletes a file Vite
-  still reads.
-- **In `lumiose dev`** the rules are served at `/virtual:stylex.css` but not linked; a document
-  must link them itself: `{import.meta.env.DEV && <link rel="stylesheet" href="/virtual:stylex.css" />}`.
-- **Apply styles with `stylex.attrs()`,** which returns `class` and a `style` string, the attributes
-  Lumiose's JSX takes: `<h1 {...stylex.attrs(styles.title)}>`. `stylex.props()` returns React's
-  `className` and a camelCase `style` object, which Lumiose does not read.
+> **Outside Lumiose:** `@lumiose/stsx` brings `.stsx` files and these style blocks to React, React
+> Router and Solid through a Vite plugin, with the same placement rules, constants and
+> `scopedStyles` option: see [STSX](https://lumiose.dev/stsx/).
 
 ## API
 
@@ -3794,7 +3344,7 @@ export function Dashboard(props: { stats: { title: string; progress: number }[] 
 ```
 
 `Card` and `Dashboard` share the file-level block, which reads the design tokens declared on
-`:root` (see "Design tokens"). `.featured` is set by `Dashboard` and styles the `<article>`
+`:root` ([Design tokens](#design-tokens)). `.featured` is set by `Dashboard` and styles the `<article>`
 inside `Card`: both are in the file's scope (from another file, the class would get there through
 class passthrough). The nested block in `Dashboard` is there because it reads `columns`, a
 constant the component's JS also uses. `BREAKPOINT` is a `$` constant because `var()` does not
@@ -3802,53 +3352,20 @@ work in `@media`, and the app's JS checks the same width.
 
 ## Common mistakes
 
-- **A design system in `$` constants.** Colors, spacing and radii folded at build time cannot
-  change with a theme, a media query or the cascade, and devtools do not show them. Declare them
-  as custom properties on `:root` and read them with `var()`; keep `$` for breakpoints and values
-  JS also uses (see "Design tokens").
-- **`"var(--brand)"` in a names module.** Store the bare name (`brand: "--brand"`) and write
-  `var($vars.brand)`: the same string then works in JS (`style={{ [vars.brand]: … }}`), and
-  fallbacks work (`var($vars.brand, #000)`).
-- **A block inside `{…}`, a conditional, a `.map` callback, or a component element** such as
-  `<Suspense>` or `<Card>`. Move it into an intrinsic element of the component (`LUM3010`).
-- **Returning a block, or using it as an expression** (`return <style>…`, `=> <style>`). Put it
-  inside the returned element (`LUM3011`).
-- **Hyphenated references.** `$brand-primary` reads `$brand` minus `primary`. Use an object
-  member: `$brand.primary` (`LUM3009`).
-- **Non-constant references.** `$count` where `count` is a signal, a prop or a `let`, or a call
-  such as `$space(2)`, is `LUM3008`. Pass runtime values with `style={{ "--count": count() }}` and
-  `var(--count)`; replace calls with constant math (`calc($space * 2px)`).
-- **Array items.** `$sizes.0` is not JS (`LUM3008`). Use an `as const` object: `$sizes.sm`.
-- **A unit after a reference.** `margin: $gap px` ships as `8 px`, which browsers ignore
-  (`LUM3019`). Write `calc($gap * 1px)` or keep the unit in the constant.
-- **A unitless number in a length, angle or time.** `gap: $gap` with `const gap = 8` relies on
-  Lightning CSS reading `8` as pixels, and `rotate: $angle` is dropped (`LUM3018`). Multiply by the
-  unit (`calc($angle * 1deg)`) or keep the unit in the constant.
-- **`$` in selectors, strings or `url()`.** It is not substituted there (`[href$=".pdf"]` is CSS's
-  "ends with"). Put the whole value in a constant, `url()` included.
-- **A top-level block before the `const`s it reads.** Move the block to the end of the file
-  (`LUM3013`).
-- **`<style>` in a `.tsx` file.** It is a type error in `.tsx` (and `LUM1006` for raw CSS); rename the file to `.stsx`.
-- **Attributes on `<style>`.** Only `global` is allowed (`LUM1005`).
-- **Expecting a parent's styles to reach into children from another file.** A file's blocks
-  never style the templates of components defined in other files; pass `class` (passthrough) or
-  use `:deep()`.
-- **Expecting a nested block to style sibling subtrees.** A `<style>` inside an element only
-  styles that element's subtree. Move its rules to the file-level block at the end of the file,
-  or the block up to the common ancestor.
-- **Styling JSX returned by a helper function.** In `const field = () => <label class="field">…`
-  inside a component, the helper's JSX is not inside the element that holds a nested `<style>`, so
-  `.field` matches nothing there (`LUM3005`). Move the block to the top level of the file (it
-  styles every element of the file), or render that JSX inside the styled element.
-- **Expecting a Tailwind utility to override a style block.** Utilities are in a cascade layer,
-  which loses to every style block. Set the property in one place, or make the utility important
-  (`p-8!`).
-- **`@apply` without `@reference`** fails the build ("Cannot apply unknown utility class"). Start
-  the block with `@reference` to the stylesheet that imports Tailwind.
-- **Tailwind classes built from pieces** (`` `bg-${color}-500` ``). Tailwind's scanner cannot find
-  them; write every class whole, for example in a record (`{ "bg-red-500": error() }`).
-- **`stylex.create()` in an `.stsx` file.** StyleX does not compile `.stsx` files and is not
-  supported yet in server-rendered apps.
+- **A design system in `$` constants.** They cannot change with a theme, a media query or the
+  cascade. Use custom properties; keep `$` for breakpoints and values JS also uses.
+- **A block inside `{…}`, a conditional, a `.map` callback or a component element.** Move it into
+  an intrinsic element of the component (`LUM3010`).
+- **Returning a block** (`return <style>…`). Put it inside the returned element (`LUM3011`).
+- **Non-constant references.** `$count` for a signal, a prop or a `let` is `LUM3008`: pass it with
+  `style={{ "--count": count() }}` and `var(--count)`.
+- **A unitless number or a detached unit.** Write `calc($gap * 1px)`, not `$gap` or `$gap px`
+  (`LUM3018`, `LUM3019`).
+- **Expecting a nested block to style sibling subtrees.** Move its rules to the file-level block.
+- **`<style>` in a `.tsx` file.** Rename the file to `.stsx` (`LUM1006`).
+
+The full lists: [style blocks](../reference/styles.md#common-mistakes) and
+[stylesheets and Tailwind](../guides/stylesheets.md#common-mistakes).
 
 ## Related diagnostics
 
@@ -3862,7 +3379,7 @@ work in `@media`, and the app's JS checks the same width.
 - [LUM3020](../errors/LUM3020.md): an unknown property name, with a fix for close typos.
 - [LUM3018](../errors/LUM3018.md), [LUM3019](../errors/LUM3019.md): a unitless `$` number, a unit separated from a reference.
 
-See also: [Components](components.md), [JSX `style` and `class`](jsx.md).
+See also: [Components](components.md), [JSX `style` and `class`](jsx.md), [reference: style blocks](../reference/styles.md).
 
 <!-- source: concepts/async.md -->
 
@@ -10452,6 +9969,204 @@ export default async function Pricing() {
 - **The server key in browser code.** Only `PUBLIC_*` variables reach `import.meta.env`; keep
   `posthog-node` in `*.server.ts` modules.
 
+<!-- source: guides/stylesheets.md -->
+
+# Stylesheets, CSS Modules and Tailwind
+
+> Imported `.css` files, CSS Modules and Tailwind v4 next to `<style>` blocks: where each is linked, the cascade order, and why StyleX is not supported yet.
+
+[Style blocks](../concepts/styles.md) hold a component's own styles. Three other ways to style work next to them through
+Vite, in `lumiose dev` and in builds: imported `.css` files, CSS modules and Tailwind v4. A smoke
+test (`examples/ssr-styles-e2e`) checks each one in Chromium: server-rendered, without
+JavaScript, and in a hydrated island. StyleX is not supported yet ([below](#stylex)); Sass is not covered.
+
+## Imported stylesheets
+
+Imported `.css` files are global. Nothing in them is scoped, and `$` references are not read.
+A page links a stylesheet when its import graph reaches it: the page, its layouts and the
+components they import. Import a stylesheet from the root layout to link it on every page, or from
+one route's page or layout to link it on that route only. The server-rendered HTML links it, so
+the page is styled before any script runs; builds merge it with the page's other stylesheets ([Build output](../reference/styles.md#build-output)).
+
+```stsx check
+// src/routes/layout.stsx
+// Global CSS first: the file's style block comes after it in the cascade.
+import "../styles/app.css";
+
+export default function Root(props: { children?: JSX.Element }) {
+  return <div class="shell">{props.children}</div>;
+}
+
+<style>
+  .shell { max-inline-size: 60rem; margin-inline: auto; }
+</style>
+```
+
+## Cascade order
+
+A page's stylesheets come in import order: a file's imports (stylesheets and
+the components it renders) before its own style blocks, and a layout before its page. Rules of the
+same specificity resolve in that order. A scoped selector carries an extra attribute (+0,1,0), so a
+block's `.card` beats a stylesheet's `.card` wherever the two come. Keep base styles (resets,
+typography, tokens) in a global stylesheet and refine them in blocks.
+
+## CSS Modules
+
+CSS Modules suit stylesheets shared by several files or brought from another project. Vite
+processes `*.module.css` files: it hashes each class name (`.pill` becomes `_pill_1x2y3_1`), and
+the default export maps the names to the hashed classes, typed as a read-only class map by
+`lumiose/env`. The server render and the browser get the same names in `lumiose dev` and in builds,
+so islands hydrate without mismatches. Pass the classes to `class` like any string, alone or in an
+array with other classes:
+
+```css
+/* src/components/Badge.module.css */
+.pill {
+  border-radius: 999px;
+  padding: 0 0.5rem;
+}
+.warn {
+  background: gold;
+}
+```
+
+```stsx check file=components/Badge.stsx
+// src/components/Badge.stsx
+import styles from "./Badge.module.css";
+
+export function Badge(props: { warn?: boolean; class?: string; children?: JSX.Element }) {
+  return (
+    <span class={["badge", styles.pill, props.warn && styles.warn, props.class]}>
+      {props.children}
+    </span>
+  );
+}
+
+<style>
+  .badge { display: inline-flex; align-items: center; }
+</style>
+```
+
+A CSS module is global CSS with unique names: placement scoping, `$name` constants and the
+`LUM3xxx` diagnostics apply to style blocks only. Prefer a style block for a component's own
+styles; class completion in the editor covers style blocks and global stylesheets, not CSS
+modules. Other preprocessors' module files (`.module.scss`) work through Vite, typed by
+`vite/client`.
+
+## Tailwind v4
+
+Install `tailwindcss` and `@tailwindcss/vite`, add Tailwind's Vite plugin next to
+Lumiose's, and import Tailwind from a global stylesheet that the root layout imports (the
+`src/styles/app.css` of the layout above):
+
+```ts
+// vite.config.ts
+import lumiose from "@lumiose/vite";
+import tailwindcss from "@tailwindcss/vite";
+import { defineConfig } from "vite";
+
+export default defineConfig({ plugins: [tailwindcss(), lumiose()] });
+```
+
+```css
+/* src/styles/app.css */
+@import "tailwindcss";
+```
+
+Tailwind's scanner reads every source file Git does not ignore, `.stsx` files included, and
+generates the utilities it finds. Write them in `class` as a string, an array or a record. As
+Tailwind requires, each class appears whole in the source, also the ones a signal turns on later:
+
+```stsx check file=components/Toggle.stsx
+// src/components/Toggle.stsx
+import { signal } from "lumiose";
+
+export function Toggle(props: { label: string }) {
+  const on = signal(false);
+
+  return (
+    <button
+      type="button"
+      class={[
+        "rounded-lg px-3 py-1",
+        { "font-bold": on(), underline: on() },
+        on() ? "bg-emerald-500 text-white" : "bg-gray-200",
+      ]}
+      onClick={() => on.update((value) => !value)}
+    >
+      {props.label}
+    </button>
+  );
+}
+```
+
+- **Utilities lose to style blocks.** Tailwind v4 puts utilities in `@layer utilities`. Style
+  blocks and the unlayered rules of your stylesheets are in no layer, so they win at any
+  specificity: `<p class="note p-8">` keeps a block's `.note { padding: 2px; }`. Set a property in
+  one place, or make the utility important (`p-8!`).
+- **In style blocks, read Tailwind's theme variables:** `color: var(--color-emerald-500)`,
+  `padding: calc(var(--spacing) * 4)`. Tailwind emits the variables it finds in the sources.
+- **`@apply`, `theme()` and `--spacing()`** work in a block that starts with
+  `@reference "../styles/app.css";` (the stylesheet that imports Tailwind), as in any CSS that
+  Tailwind processes on its own. Without it, the build fails with "Cannot apply unknown utility
+  class". The block's selectors stay scoped: `.card { @apply p-6; }` styles only this file's
+  `.card`.
+
+  ```stsx
+  <style>
+    @reference "../styles/app.css";
+    .card {
+      @apply rounded-lg p-6 font-bold;
+      margin: --spacing(4);
+      border: 2px solid theme(--color-red-500);
+    }
+  </style>
+  ```
+
+  The compiler keeps Tailwind's at-rules as written for Tailwind's Vite plugin and does not report
+  them: `@apply`, `@reference`, `@theme`, `@utility`, `@variant`, `@custom-variant` (with
+  `@slot`), `@source`, `@plugin` and `@config`. Other unknown at-rules are still
+  [LUM3015](../errors/LUM3015.md) warnings, and so is `@APPLY`: Tailwind matches the names
+  case-sensitively.
+
+- **In the editor,** Lumiose's class completion lists the classes of style blocks and global
+  stylesheets, not Tailwind's utilities. Tailwind CSS IntelliSense for VS Code gives those once it
+  treats `.stsx` like JSX, in the workspace settings:
+  `"tailwindCSS.includeLanguages": { "stsx": "javascriptreact" }`.
+
+## StyleX
+
+StyleX is not supported yet in server-rendered apps (spiked with StyleX 0.19 and its Vite
+plugin, `@stylexjs/unplugin`):
+
+- **`.stsx` files are not compiled.** The plugin only transforms `.js`, `.ts`, `.jsx` and `.tsx`
+  files, so `stylex.create()` in an `.stsx` file throws when the page renders. In `.ts` and `.tsx`
+  modules it compiles.
+- **Production builds lose rules.** The plugin appends all rules to one stylesheet (renamed under
+  a new hash, which pages follow), while Lumiose links each route's own stylesheets: only the pages
+  that link that one file get the rules. Pointing its `cssInjectionTarget` at a stylesheet the root
+  layout imports stops the build in Vite (`vite:css-post`), since the plugin deletes a file Vite
+  still reads.
+- **In `lumiose dev`** the rules are served at `/virtual:stylex.css` but not linked; a document
+  must link them itself: `{import.meta.env.DEV && <link rel="stylesheet" href="/virtual:stylex.css" />}`.
+- **Apply styles with `stylex.attrs()`,** which returns `class` and a `style` string, the attributes
+  Lumiose's JSX takes: `<h1 {...stylex.attrs(styles.title)}>`. `stylex.props()` returns React's
+  `className` and a camelCase `style` object, which Lumiose does not read.
+
+## Common mistakes
+
+- **Expecting a Tailwind utility to override a style block.** Utilities are in a cascade layer,
+  which loses to every style block. Set the property in one place, or make the utility important
+  (`p-8!`).
+- **`@apply` without `@reference`** fails the build ("Cannot apply unknown utility class"). Start
+  the block with `@reference` to the stylesheet that imports Tailwind.
+- **Tailwind classes built from pieces** (`` `bg-${color}-500` ``). Tailwind's scanner cannot find
+  them; write every class whole, for example in a record (`{ "bg-red-500": error() }`).
+- **`stylex.create()` in an `.stsx` file.** StyleX does not compile `.stsx` files and is not
+  supported yet in server-rendered apps.
+
+See also: [Styles](../concepts/styles.md), [Style blocks](../reference/styles.md), [`@lumiose/vite`](../reference/vite.md).
+
 <!-- source: guides/editors.md -->
 
 # Editors: VS Code, Neovim, Helix and Zed
@@ -10491,6 +10206,24 @@ The extension starts in workspaces with `.stsx` files or the `lumiose` package, 
   in Lumiose projects; **Lumiose: Set Up Takeover Mode** shows the steps (in the Extensions view,
   **TypeScript and JavaScript Language Features**, **Disable (Workspace)**, then reload the window).
   With `lumiose.takeover` set to `off`, it serves `.stsx` files only.
+
+The extension adds the `stsx` language and runs the Lumiose language server, which proxies
+TypeScript for `.ts`, `.tsx` and `.stsx` files and adds:
+
+- CSS features inside `<style>` blocks;
+- class completion, definitions and rename that follow placement: the blocks enclosing the
+  cursor (never a sibling subtree's), the file's, and the project's global classes (`<style global>`
+  blocks and imported global `.css` files);
+- `var(--…)` completion of every custom property declared in the project, with its value;
+- descriptions of `<style global>` and of Lumiose attributes (`client:*`, `bind:*`, `on:*`, `attach`,
+  `ref`, `key`), and the snippets `comp`, `acomp`, `route` and `island`;
+- the compiler's diagnostics, with the project-wide ones (`LUM4003` server-only imports in the
+  client graph, `LUM3012` unread custom properties) that follow the other files' edits;
+- hovers on JSX expressions with their execution contract: tracked (re-runs when the signals it
+  reads change, which it lists), once, untracked or deferred, and the runtime helper that runs it.
+
+Install `@lumiose/language-server` as a dev dependency only to pin the server to your `lumiose`
+version. See [Compiler and diagnostics](../concepts/compiler.md).
 
 **Lumiose: Restart Language Server** restarts it, and the extension's
 [README](https://github.com/itsjavi/lumiose/tree/main/packages/vscode#readme) lists its settings
@@ -12183,6 +11916,17 @@ All of these are exported by `lumiose` in the browser and on the server. On the 
 entry) signals are plain cells, computeds evaluate once per request, and `effect`/`onMount` never
 run. Concepts: [Signals and reactivity](../concepts/signals.md).
 
+The reactive core is a push-pull signal graph (the alien-signals algorithm). Reading a signal
+inside a tracked scope (a JSX binding, a `computed`, an `effect`) subscribes that scope; writing
+the signal marks it dirty and re-runs only what depends on it. Reads are synchronous: `count()`
+always returns the current value, even right after a write.
+
+## Owners
+
+Every component, effect and root is an _owner_. Owners scope cleanups (`onCleanup`), context
+(`<Ctx value>`/`useContext`), error handling and `getAbortSignal()`. Disposing an owner disposes
+everything created under it.
+
 ## signal
 
 ```ts
@@ -12199,6 +11943,10 @@ interface SignalOptions<T> {
   equals?: false | ((a: T, b: T) => boolean);
 }
 ```
+
+A write that is `Object.is`-equal to the current value is not a change. So
+`list().push(x); list.set(list())` changes nothing: write a new value
+(`list.update((l) => [...l, x])`), use `store()`, or create the signal with `{ equals: false }`.
 
 ## computed
 
@@ -12225,6 +11973,12 @@ The effects queued in a flush all run before the DOM bindings that their writes 
 writes then render together, and the effects they schedule run after that, in the same flush. So
 an effect sees the current value of a signal that an earlier effect of the same pass wrote, but
 not yet its DOM.
+
+- **Measuring, in one effect, what another effect's write renders** measures the previous layout,
+  because the effects of a pass all run before their writes reach the DOM. Read the written signal
+  in the effect that measures: it re-runs once the DOM shows the write.
+- **Deriving state in an effect** (`effect(() => b.set(a() * 2))`) adds a frame of staleness and an
+  extra flush. Use `computed(() => a() * 2)`.
 
 ## onMount
 
@@ -12267,9 +12021,11 @@ Runs `fn` without subscribing the current scope to the signals it reads.
 function batch<T>(fn: () => T): T;
 ```
 
-Defers dependents until `fn` returns, so they run once. Event handlers are batched automatically:
-`onX` handlers, `on:x` listeners and handlers passed in a spread, so the DOM is current right after
-the event.
+Defers dependents until `fn` returns, so they run once. Event handlers are batched automatically,
+for the duration of the handler: delegated `onX` handlers, native `on:x` listeners, the direct
+listeners of non-bubbling events (`onFocus`, `onScroll`) and handlers passed in a spread. Their
+writes render together when the handler returns, so the DOM is current right after the event
+(decision-81). Any other write schedules a microtask flush.
 
 ## flush
 
@@ -12277,7 +12033,16 @@ the event.
 function flush(): void;
 ```
 
-Runs pending computeds, DOM bindings and effects now, instead of in the next microtask.
+Runs pending computeds, DOM bindings and effects now, instead of in the next microtask. Effects
+never run synchronously with a write: in tests, call `flush()` after a write before asserting.
+
+**Flush order:** computeds are pulled, then DOM bindings run (parents before children), then user
+effects. The effects queued at that point all run before the DOM bindings that their own writes
+trigger, so effects that measure the DOM and then write share one layout. Then those bindings
+run, then the effects that the writes scheduled. A later effect of the same pass reads the new
+signal values, but the DOM does not show them yet. A conditional or list around a queued effect
+that such a write changed still updates first, so an effect never runs inside content that an
+earlier effect's write removed.
 
 ## store
 
@@ -12591,6 +12356,70 @@ export function Clock() {
 All are exported by `lumiose` in the browser and on the server. Concepts:
 [Components](../concepts/components.md), [Async components](../concepts/async.md),
 [Head and document](../concepts/head.md).
+
+## Component functions
+
+A component is a function that returns JSX (`JSX.Element`), named in PascalCase. Its body runs once
+per instance. Concept: [Components](../concepts/components.md).
+
+### File types
+
+| Extension | Contents                                                              |
+| --------- | --------------------------------------------------------------------- |
+| `.stsx`   | TSX plus `<style>` blocks. Use it for components with styles.         |
+| `.tsx`    | Plain TSX. A `<style>` block here is `LUM1006` ("rename to `.stsx`"). |
+| `.ts`     | Everything else: logic, tokens, endpoints and server code.            |
+
+A file may export many components.
+
+### Props
+
+Props are the single parameter, a plain interface; `children?: JSX.Element` for content.
+
+The compiler keeps props reactive, even when you destructure them: `({ title, count = 0 })` is
+rewritten to reads of `props.title` and `props.count`, so a parent passing a signal value keeps
+the child up to date. `...rest` stays reactive too. Destructuring the props object at the top of
+the body, `const { children, ...rest } = props`, is rewritten the same way, as long as you don't
+reassign the bindings; destructuring a nested prop (`const { name } = props.user`) reads it once.
+
+On the server, where nothing is reactive, a prop expression is evaluated **lazily and at most once
+per component instance** (decision-28): the first read runs it, later reads reuse the value, and a
+prop the component never reads never runs. `<Filters labels={listLabels()} />` queries the labels
+once per render however often `Filters` reads `props.labels`. In the browser props stay live: each
+read re-evaluates the expression, so keep prop expressions free of side effects.
+
+### children
+
+`children` is lazy: it is evaluated where you insert it. Insert it once; to render something
+several times, take a render function as a prop. Named slots are ordinary props that hold JSX.
+
+Spreading props onto an element without content of its own renders their `children`, as in React:
+`<button {...props} />` renders what the caller wrapped in the component. When the caller passes no
+`children`, the element's content is left alone (a script may fill it).
+
+```tsx check
+function Button(props: JSX.HTMLProps<HTMLButtonElement>) {
+  return <button type="button" {...props} />;
+}
+
+function Trigger(props: JSX.HTMLProps<HTMLButtonElement> & { label: string }) {
+  const { children, label, ...rest } = props;
+  return (
+    <button type="button" aria-label={label} {...rest}>
+      {children}
+    </button>
+  );
+}
+
+export function Toolbar() {
+  return (
+    <>
+      <Button class="primary">Save</Button>
+      <Trigger label="Close">×</Trigger>
+    </>
+  );
+}
+```
 
 ## Suspense
 
@@ -14152,7 +13981,7 @@ origins such as `"https://app.example.com"`, without a path or trailing slash.
 and how scoped selectors match it: `data-lum-<hash>` attributes with a +0,1,0 bump by default;
 `strategy: "class"` uses `lum-<hash>` classes merged into each element's `class`, `specificity:
 "zero"` wraps the marker in `:where()`, and `namespace` replaces `lum`. Every compile of the app
-uses it, so templates and CSS agree. See [Choosing the scope marker](../concepts/styles.md).
+uses it, so templates and CSS agree. See [scopedStyles](styles.md#scopedstyles).
 
 **Response headers** (`headers`). Declare them once: a record applies to every response; rules
 apply to the paths they match, below Vite's `base` (`*` matches one segment, `**` any number,
@@ -14419,6 +14248,477 @@ export default defineConfig({
 });
 ```
 
+<!-- source: reference/styles.md -->
+
+# Style blocks
+
+> How `<style>` blocks are scoped, the `scopedStyles` option, typed token names, what a `$` reference can name, build-time math, and the stylesheets a build writes.
+
+The rules behind [Styles](../concepts/styles.md), which introduces them with examples. Imported
+stylesheets, CSS Modules and Tailwind have a guide:
+[Stylesheets, CSS Modules and Tailwind](../guides/stylesheets.md).
+
+## How scoping works
+
+Each scope with styles gets a token, a stable hash of the file path plus
+the component name, with one token per style-bearing element. Every element in the scope carries
+the token as a marker, `data-lum-<hash>` by default: the whole file for top-level blocks, and the
+enclosing element's lexical subtree for blocks inside a component. The last compound of each
+selector gets `[data-lum-<hash>]`, a +0,1,0 specificity bump. Dynamic classes always work, because
+no element is pruned. `scopedStyles` changes the marker and the bump (see [scopedStyles](#scopedstyles)).
+
+- `:global(.sel)` leaves a selector unscoped; `:deep(.sel)` scopes only the part before it.
+- `@keyframes` names are scoped, and `animation` references are rewritten. A block sees its own
+  keyframes, then those of the blocks of enclosing elements (innermost first), then the file's, so
+  a nested block can animate with keyframes defined under the component's root. Custom properties
+  are not scoped.
+- Within a file, file-level CSS comes first, then component blocks in source order.
+- **In the editor**, class completion follows the same scopes: in a `class` attribute it offers
+  the classes of the blocks that apply there (innermost first), then the project's global classes
+  (`<style global>` blocks and imported global `.css` files), never a sibling subtree's.
+  `var(--…)` offers every custom property declared in the project, with its value.
+
+### Class passthrough
+
+When a parent passes `class` to a child component, the parent's scope
+tokens at that call site travel with it: the file token plus every enclosing style subtree. So
+`.cta { … }` in the parent styles `<Button class="cta" />` wherever `Button` applies
+`props.class`. The child applies it on every element whose `class` value may contain it:
+`class={["btn", props.class]}`, a destructured `class` prop or `...rest`, a helper that gets
+`props` (`class={variantClass(props)}`), or a local value or function built from them
+(`const classes = () => ["btn", props.class]`). A class that reaches the element any other way
+(a module-level variable, a context) loses the parent's scope, so read `props.class` in the
+component. Forwarding works through intermediate components: when `Field` passes its own
+`class` prop on (`<Input class={["field", props.class]} />`), `Input`'s element gets `Field`'s
+tokens and those of `Field`'s caller.
+
+## scopedStyles
+
+One app-wide option of `lumiose()` decides how elements carry their scope and how scoped selectors
+match it (decision-85).
+
+```ts
+lumiose({
+  scopedStyles: {
+    strategy: "attribute", // or "class"
+    specificity: "default", // or "zero"
+    namespace: "lum", // the start of the marker name
+  },
+});
+```
+
+| `strategy`            | `specificity` | Element                     | `.note` becomes                    |
+| --------------------- | ------------- | --------------------------- | ---------------------------------- |
+| `attribute` (default) | `default`     | `data-lum-a1b2c3d4`         | `.note[data-lum-a1b2c3d4]`         |
+| `attribute`           | `zero`        | `data-lum-a1b2c3d4`         | `.note:where([data-lum-a1b2c3d4])` |
+| `class`               | `default`     | `class="note lum-a1b2c3d4"` | `.note.lum-a1b2c3d4`               |
+| `class`               | `zero`        | `class="note lum-a1b2c3d4"` | `.note:where(.lum-a1b2c3d4)`       |
+
+- **`strategy: "class"`** puts the marker in the element's `class`, next to its own classes, on the
+  client and in server-rendered HTML. Class handling never removes it. Pick it when attributes
+  get in the way, for example when HTML is post-processed by a tool that strips `data-*`.
+- **`specificity: "zero"`** wraps the marker in `:where()`, so the scope adds nothing: a scoped
+  `.note` ties with a global `.note`, and the one that comes later wins. Pick it when global styles
+  or utility classes should override component styles without `!important`. It needs `:where()`
+  support (every evergreen browser).
+- **`namespace`** starts with a lowercase letter and holds lowercase letters, digits and hyphens.
+  Change it to avoid clashes with another library's markers.
+- Class passthrough, `:global()`, `:deep()`, `@keyframes` scoping and placement work the same in
+  every combination.
+
+## Typed token names
+
+Design tokens are custom properties declared on `:root`
+([Design tokens](../concepts/styles.md#design-tokens)). To catch a mistyped name, and to use the
+same names from JS, keep them in an `as const` module and read them with `var($vars.name)`. The
+module holds the names only; the values stay in CSS.
+
+```ts check file=vars.ts
+// src/vars.ts
+export const vars = {
+  accent: "--accent",
+  surface: "--surface",
+  radius: "--radius",
+  space: "--space",
+} as const;
+```
+
+```stsx check file=components/Chip.stsx
+// src/components/Chip.stsx
+import { vars } from "../vars.ts";
+
+export function Chip(props: { label: string; color: string }) {
+  return (
+    <span class="chip" style={{ [vars.accent]: props.color }}>
+      {props.label}
+    </span>
+  );
+}
+
+<style>
+  .chip {
+    padding: calc(var($vars.space) / 2) var($vars.space);
+    border-radius: var($vars.radius, 4px);
+    background: var($vars.surface);
+    color: var($vars.accent);
+  }
+</style>
+```
+
+`var($vars.accent)` ships as `var(--accent)`, and `var($vars.radius, 4px)` keeps its fallback. A
+mistyped member (`$vars.acent`) fails the build with [LUM3008](../errors/LUM3008.md), and
+TypeScript checks the JS side (`style={{ [vars.accent]: … }}`, `getPropertyValue(vars.accent)`).
+The declarations on `:root` still spell the names out, because `$` is not read in a property
+name. Plain `var(--accent)` needs no module: the names module is worth it when a project wants
+those checks.
+
+## JS values in styles
+
+`$name` and `$obj.key` put a JS value into CSS. The compiler evaluates the reference at build
+time and inlines the result, so the output is plain CSS: no runtime lookup and no JS inside CSS.
+TypeScript checks each reference like any other expression. Imports used only by `$` references
+are removed from the JS output, and editing them hot-reloads the CSS only.
+
+### When to use `$name`
+
+A custom property is resolved by the browser, which is what design
+tokens need. A `$` constant is fixed at build time: keep it for what custom properties cannot do,
+and for values that JS code also needs:
+
+- **Conditions** of `@media`, `@container` and `@supports`, where `var()` does not work: a
+  breakpoint (`@media (width < $narrow)`).
+- **Values shared with JS:** the breakpoint that `matchMedia` also checks, the grid columns that a
+  virtualizer also computes with, a duration that a timer also waits for, a color that a canvas
+  draws with or that JS color math derives.
+
+### What a reference can name
+
+A `const` whose value the compiler can work out without running the app.
+
+| Declared as                                                                                  | Readable from                                                                                                 |
+| -------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| A top-level `const` of the file                                                              | Every block of the file. A top-level block must come after it.                                                |
+| A `const` of the enclosing component                                                         | Blocks inside that component, `<style global>` included.                                                      |
+| An `export const` (or `export default`) of an imported `.ts`, `.tsx`, `.stsx` or JSON module | Every block of the importing file: named, default or namespace imports (`$scale.ticks`), re-exports included. |
+
+Imports are resolved the way the rest of the toolchain resolves them: by Vite in `lumiose dev` and
+builds (aliases included), and like TypeScript in `lumiose check` and the editor (relative paths,
+tsconfig `paths`, package `exports` and `imports`). An import that cannot be resolved, or that has
+no such export, is reported as [LUM3008](../errors/LUM3008.md) at each reference.
+
+The value may be built from literals, template literals, arithmetic (`+ - * / % **`, unary `-`),
+other constants, and object literals with their members at any depth (`$chart.series.sales`),
+including spreads, destructuring, `as const` and `satisfies`. Mark constant objects `as const`: a plain
+object literal folds too, as written, but only `as const` keeps the JS read-only like the CSS.
+
+### How values are written
+
+Strings are inserted verbatim, without quotes (`"12px"` becomes
+`12px`; for a CSS string, put the quotes inside: `'"→"'`). Numbers are inserted as plain numbers
+(`const gap = 8` gives `8`), so give them a unit with `calc($gap * 1px)` (which ships as `8px`, see [Build-time math](#build-time-math)) or keep the unit in the
+constant (`"8px"`, `` `${gap}px` ``). A bare number where a length, angle or time is required
+(`gap: $gap`, `rotate: $angle`) is [LUM3018](../errors/LUM3018.md), with `calc($gap * 1px)` as the
+fix: Lightning CSS happens to read a bare length as pixels, but angles and times are dropped, and in
+custom properties or math functions the number stays unitless. A unit written after the reference
+(`$gap px`) does not attach to it ([LUM3019](../errors/LUM3019.md)).
+
+### What cannot be referenced
+
+The compiler reports it; the CSS keeps the `$` text, which browsers ignore. "Pass it at runtime"
+means a custom property set with the `style` prop
+([Runtime values](../concepts/styles.md#runtime-values)).
+
+| Reference                                                                                                   | Diagnostic                      | Fix                                                                                                    |
+| ----------------------------------------------------------------------------------------------------------- | ------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| `$space(2)`: a function call, or a `const` holding a function or a call's result (`Date.now()`, `signal()`) | [LUM3008](../errors/LUM3008.md) | Compute it as a constant: `calc($space * 2px)` with `const space = 4`, or name the steps: `$space.md`. |
+| `$count` where `count` is a `let` (or `var`)                                                                | [LUM3008](../errors/LUM3008.md) | Make it a `const`, or pass it at runtime.                                                              |
+| `$open`, `$props.width`: signals, props, parameters                                                         | [LUM3008](../errors/LUM3008.md) | Pass it at runtime.                                                                                    |
+| `$sizes.0`: an array item (`sizes.0` is not JS)                                                             | [LUM3008](../errors/LUM3008.md) | An `as const` object with named keys: `$sizes.sm`.                                                     |
+| `$brand-primary`: a hyphen, read as `$brand` minus `primary`                                                | [LUM3009](../errors/LUM3009.md) | `$brand.primary`, or a camelCase constant: `$brandPrimary`.                                            |
+| A component's `const` in a block outside it (file level, or another component)                              | [LUM3008](../errors/LUM3008.md) | Move the `const` to the top level, or the block into the component.                                    |
+| A top-level block above the `const` it reads                                                                | [LUM3013](../errors/LUM3013.md) | Move the block below it; by convention, to the end of the file.                                        |
+
+`LUM3008`'s message says which case it is (a `let` binding, computed by a call at runtime, an array,
+not declared in scope, an import that does not export the name, …).
+
+### Where `$` is read
+
+In property values (`gap: calc($gap * 1px)`) and in `@media`, `@container`
+and `@supports` preludes (`@media (width < $narrow)`). Everywhere else `$` is left to CSS:
+
+- In selectors, `$` keeps its CSS meaning: `[href$=".pdf"]` is "ends with". `.size-$md` is not a
+  reference but an invalid selector, which Lightning CSS drops (`LUM3015`).
+- Property names, strings (`content: "$gap"`), comments and `url($file)` are not substituted. Put
+  the whole value in the constant instead: `const hero = 'url("/hero.png")'` and
+  `background-image: $hero`.
+
+## Values shared with JS
+
+Values that the styles and the JS both use live in a module of their own, imported by the
+components and the code that need them. Here the meter's `ticks` decide both the labels it renders
+and the columns and marks of its CSS, and `narrow` is the breakpoint of its `@media` and of the
+app's `matchMedia` check. Its design values are custom properties:
+
+```ts check file=scale.ts
+// src/scale.ts: read by the styles and by the JS.
+export const ticks = 4;
+export const narrow = "40rem";
+export const isNarrow = () => matchMedia(`(width < ${narrow})`).matches;
+```
+
+```stsx check file=components/Meter.stsx
+// src/components/Meter.stsx
+import * as scale from "../scale.ts";
+
+const step = 100 / scale.ticks;
+
+export function Meter(props: { label: string; value: number }) {
+  return (
+    <div class="meter" style={{ "--value": `${props.value}%` }}>
+      <span>{props.label}</span>
+      <div class="track">
+        <div class="fill" />
+      </div>
+      <ol class="scale">
+        {Array.from({ length: scale.ticks }, (_, i) => (
+          <li key={i}>{(i + 1) * step}%</li>
+        ))}
+      </ol>
+
+      <style>
+        .meter {
+          display: grid;
+          gap: var(--space);
+          padding: calc(var(--space) * 2);
+          border-radius: var(--radius);
+          background: var(--surface);
+        }
+        .track {
+          block-size: 8px;
+          border-radius: 4px;
+          background: repeating-linear-gradient(to right, transparent 0 calc($step * 1% - 1px), currentColor 0 calc($step * 1%));
+          box-shadow: inset 0 1px 2px rgb(0 0 0 / 0.2);
+        }
+        .fill { inline-size: var(--value); block-size: 100%; background: var(--accent); }
+        .scale {
+          display: grid;
+          grid-template-columns: repeat($scale.ticks, 1fr);
+          margin: 0;
+          padding: 0;
+          list-style: none;
+          text-align: end;
+        }
+        @media (width < $scale.narrow) {
+          .scale { display: none; }
+        }
+      </style>
+    </div>
+  );
+}
+```
+
+The compiler's CSS output for that file (`data-lum-lw1tegds` is the component's scope token). Every
+`$` reference and every constant `calc()` is gone; the `var()` reads, which the browser resolves,
+and the `%`-relative stop are left as written:
+
+```css
+.meter[data-lum-lw1tegds] {
+  gap: var(--space);
+  padding: calc(var(--space) * 2);
+  border-radius: var(--radius);
+  background: var(--surface);
+  display: grid;
+}
+
+.track[data-lum-lw1tegds] {
+  background: repeating-linear-gradient(to right, #0000 0 calc(25% - 1px), currentColor 0 25%);
+  border-radius: 4px;
+  block-size: 8px;
+  box-shadow: inset 0 1px 2px #0003;
+}
+
+.fill[data-lum-lw1tegds] {
+  inline-size: var(--value);
+  background: var(--accent);
+  block-size: 100%;
+}
+
+.scale[data-lum-lw1tegds] {
+  text-align: end;
+  grid-template-columns: repeat(4, 1fr);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+}
+
+@media (width < 40rem) {
+  .scale[data-lum-lw1tegds] {
+    display: none;
+  }
+}
+```
+
+Lightning CSS also minifies values (`rgb(0 0 0 / 0.2)` becomes `#0003`) and may reorder or merge
+declarations, so the output is equivalent to the source, not identical.
+
+## Build-time math
+
+Constant math never reaches the browser. It is computed in two steps:
+
+1. **JS math, by the Lumiose compiler.** Arithmetic in constants and template literals is evaluated
+   before the value is inserted: `const step = 100 / scale.ticks` inlines `25`.
+2. **CSS math, by Lightning CSS.** After substitution, Lightning CSS reduces `calc()`, `min()`,
+   `max()`, `clamp()`, `round()`, `abs()`, the trigonometric functions and the other CSS math
+   functions whenever the operands are concrete values in compatible units. `calc($gap * 2px)`
+   becomes `calc(8 * 2px)`, which ships as `16px`.
+
+| Source (`$gap` is `8`)                    | Output                                | Why                                            |
+| ----------------------------------------- | ------------------------------------- | ---------------------------------------------- |
+| `padding: calc($gap * 2px)`               | `padding: 16px`                       | `calc(8 * 2px)` reduces.                       |
+| `inline-size: min(10px, 20px)`            | `inline-size: 10px`                   |                                                |
+| `block-size: clamp(4px, 8px, 12px)`       | `block-size: 8px`                     |                                                |
+| `transform: rotate(calc(45deg * 2))`      | `transform: rotate(90deg)`            | Math inside other functions reduces too.       |
+| `inset: calc(2px + 3px) calc(1rem + 4px)` | `inset: 5px calc(1rem + 4px)`         | Each value on its own: `rem` plus `px` stays.  |
+| `width: calc(100% - $gap * 2px)`          | `width: calc(100% - 16px)`            | The constant part reduces; `%` stays.          |
+| `font-size: calc(2 * 1rem)`               | `font-size: 2rem`                     | One unit: nothing to convert.                  |
+| `font-size: clamp(1rem, 2vw, 3rem)`       | unchanged                             | `rem` and `vw` are only known in the browser.  |
+| `max-width: calc(var(--w) + $gap * 2px)`  | `max-width: calc(var(--w) + 8 * 2px)` | A declaration with `var()` is kept as written. |
+| `--space: calc($gap * 2px)`               | `--space: 16px`                       | A custom property, folded by Lumiose (below).  |
+| `padding-left: calc($gap * 1px - 12px)`   | `padding-left: 0`                     | Negative in a non-negative property (below).   |
+| `margin-left: calc($gap * 1px - 12px)`    | `margin-left: -4px`                   | Margins can be negative.                       |
+
+### What cannot fold
+
+A math function is replaced only by a value that means the same thing
+wherever it is used. Absolute units convert into each other (`calc(1in + 4px)` is `100px`) and a
+unit combines with itself (`calc(2 * 1rem)` is `2rem`), but context-dependent units mixed with
+others need the browser: `%` resolves against the containing block (or the font size, depending on
+the property), `vw` and `vh` against the viewport, `em` against the element's font size and `rem`
+against the root's. A `var()` is only known when the browser computes styles, so Lightning CSS keeps
+any declaration containing one exactly as written, constant parts included. To precompute those,
+do the arithmetic in JS: with `` const extra = `${gap * 2}px` ``, `calc(var(--w) + $extra)` ships as
+`calc(var(--w) + 16px)`.
+
+### Folding in custom properties
+
+Lightning CSS keeps custom property values as written, because it cannot
+know where they will be used. Lumiose folds each math function in them that reduces to a single value
+in compatible units: `--space: calc($gap * 2px)` becomes `16px`, `--turn: rotate(calc(45deg * 2))`
+becomes `rotate(90deg)`, and `var(--x, calc($gap * 3px))` becomes `var(--x, 24px)`. Anything with
+`var()`, `env()` or context-dependent units mixed with other units stays whole, without the partial
+reduction regular properties get (`--inset: calc(100% - $gap * 2px)` stays `calc(100% - 8 * 2px)`).
+Negative results and fractional numbers stay inside `calc()` (`calc(-3px)`, `calc(.333333)`),
+because a bare value can behave differently where the property is read: `calc()` clamps to the
+property's range and rounds where an integer is expected.
+
+### Negative results
+
+Some properties cannot be negative: padding, sizes (`width`, `min-height`,
+…), border widths, `gap`, `font-size`, `line-height` and others. In the browser, a `calc()` that
+comes out negative there is clamped to 0, while a negative value written out is invalid and the
+whole declaration is dropped. So that folding does not change the meaning, a negative result in such
+a property ships as `0`: `padding-left: calc($gap * 1px - 12px)` gives `padding-left: 0`, and
+`font-size: calc(1rem - 2rem)` gives `font-size: 0`. This mirrors the upstream Lightning CSS fix
+([lightningcss#1329](https://github.com/parcel-bundler/lightningcss/pull/1329)), which Lumiose
+applies until a release includes it. Properties that accept negative values, such as margins and
+`inset`, keep them.
+
+Folding regular properties, minification and browser targets come from
+[Lightning CSS](https://lightningcss.dev), the CSS parser, transformer and minifier from the Parcel
+project, which Lumiose's CSS compiler is built on. Lumiose adds `$` constants, scoping and the
+custom-property folding.
+
+## Browser targets
+
+Production builds minify CSS for the [supported browsers](../stability.md#browsers), which all
+have `:dir()`, nesting, `light-dark()` and the other modern syntax, so it ships as written. With an
+older `build.cssTarget` (or `build.target`) in your Vite config, Lightning CSS lowers what those
+browsers lack: `:dir(rtl)` becomes a list of `:lang()` selectors, which miss a `dir` attribute, and
+`light-dark()` becomes variables that follow the system's colour scheme only, so a `color-scheme`
+set on an element, inline or from a script no longer switches the colours.
+
+## Build output
+
+A page needs few render-blocking stylesheets. `lumiose build` groups each page's
+stylesheets into at most three tags, in the page's cascade order:
+
+1. A file with the stylesheets every page starts with (the document's, the root layouts', shared
+   components'), linked by all pages and cached across them.
+2. A file with the stylesheets a group of pages goes on with, such as a route group's layout and
+   the components it renders, linked by those pages only. A group gets its file when three routes
+   or more continue with the same stylesheets (routes with identical stylesheets count once) and
+   they total more than 4 kB; a smaller run stays in each page's own CSS. So a page without the
+   site chrome, such as a fullscreen editor outside the `(site)` group, no longer moves the
+   chrome's CSS into every other page's file.
+3. The page's own stylesheets: inline in one `<style>` when they total 4 kB or less, else merged
+   into one file for that page.
+
+The cascade order is the same as in dev, where each file's CSS stays a separate stylesheet for
+HMR. In the sample apps a first view went from 6–8 stylesheet requests to one, with about 30%
+fewer CSS bytes (brotli). On a 39-page site with one page outside its route group, a visit to
+every page went from 12 requests and 29 kB to 8 requests and 15 kB.
+A page that links a stylesheet also gets `<script>/* waits for the stylesheets above */</script>`
+after its stylesheet tags (54 bytes, in dev too). The browser parses the body only once the
+stylesheets before that script have loaded, so the body's first layout is styled. Without it,
+Chrome could lay out the unstyled body when a scrolled page is reloaded, restore the scroll
+position from that layout, and paint the first frames at the wrong place until `load`.
+The first paint waits for the stylesheets either way. With `csp: "strict"` the script gets the
+nonce or its hash (see [Security](../concepts/security.md)).
+Each tag lists the stylesheets it holds in `data-l-css`, so an island or an SPA route that imports
+one does not load it again. Pages link the CSS files the build output contains: when another Vite
+plugin rewrites a stylesheet under a new name after Lumiose recorded it, the build follows it (by
+the chunks that import it, the name it was emitted with, or the one new CSS file), and warns about
+a linked stylesheet the output no longer has.
+
+> **Status:** available. `@lumiose/vite` serves each file's CSS as a CSS module, and style-only or
+> constant-only edits hot-update the CSS without remounting. `LUM3012` (a custom property set in a
+> `style` prop that no stylesheet reads) needs the whole project: `lumiose build`, `lumiose check` and
+> the language server report it.
+
+## Common mistakes
+
+- **A design system in `$` constants.** Colors, spacing and radii folded at build time cannot
+  change with a theme, a media query or the cascade, and devtools do not show them. Declare them
+  as custom properties on `:root` and read them with `var()`; keep `$` for breakpoints and values
+  JS also uses (see [Design tokens](../concepts/styles.md#design-tokens)).
+- **`"var(--brand)"` in a names module.** Store the bare name (`brand: "--brand"`) and write
+  `var($vars.brand)`: the same string then works in JS (`style={{ [vars.brand]: … }}`), and
+  fallbacks work (`var($vars.brand, #000)`).
+- **A block inside `{…}`, a conditional, a `.map` callback, or a component element** such as
+  `<Suspense>` or `<Card>`. Move it into an intrinsic element of the component (`LUM3010`).
+- **Returning a block, or using it as an expression** (`return <style>…`, `=> <style>`). Put it
+  inside the returned element (`LUM3011`).
+- **Hyphenated references.** `$brand-primary` reads `$brand` minus `primary`. Use an object
+  member: `$brand.primary` (`LUM3009`).
+- **Non-constant references.** `$count` where `count` is a signal, a prop or a `let`, or a call
+  such as `$space(2)`, is `LUM3008`. Pass runtime values with `style={{ "--count": count() }}` and
+  `var(--count)`; replace calls with constant math (`calc($space * 2px)`).
+- **Array items.** `$sizes.0` is not JS (`LUM3008`). Use an `as const` object: `$sizes.sm`.
+- **A unit after a reference.** `margin: $gap px` ships as `8 px`, which browsers ignore
+  (`LUM3019`). Write `calc($gap * 1px)` or keep the unit in the constant.
+- **A unitless number in a length, angle or time.** `gap: $gap` with `const gap = 8` relies on
+  Lightning CSS reading `8` as pixels, and `rotate: $angle` is dropped (`LUM3018`). Multiply by the
+  unit (`calc($angle * 1deg)`) or keep the unit in the constant.
+- **`$` in selectors, strings or `url()`.** It is not substituted there (`[href$=".pdf"]` is CSS's
+  "ends with"). Put the whole value in a constant, `url()` included.
+- **A top-level block before the `const`s it reads.** Move the block to the end of the file
+  (`LUM3013`).
+- **`<style>` in a `.tsx` file.** It is a type error in `.tsx` (and `LUM1006` for raw CSS); rename the file to `.stsx`.
+- **Attributes on `<style>`.** Only `global` is allowed (`LUM1005`).
+- **Expecting a parent's styles to reach into children from another file.** A file's blocks
+  never style the templates of components defined in other files; pass `class` (passthrough) or
+  use `:deep()`.
+- **Expecting a nested block to style sibling subtrees.** A `<style>` inside an element only
+  styles that element's subtree. Move its rules to the file-level block at the end of the file,
+  or the block up to the common ancestor.
+- **Styling JSX returned by a helper function.** In `const field = () => <label class="field">…`
+  inside a component, the helper's JSX is not inside the element that holds a nested `<style>`, so
+  `.field` matches nothing there (`LUM3005`). Move the block to the top level of the file (it
+  styles every element of the file), or render that JSX inside the styled element.
+
+See also: [Styles](../concepts/styles.md), [`@lumiose/vite`](vite.md), [JSX `style` and `class`](../concepts/jsx.md).
+
 <!-- source: reference/jsx.md -->
 
 # JSX types and tsconfig
@@ -14651,7 +14951,7 @@ side-effect imports (`noUncheckedSideEffectImports`), hence `*.css`. CSS modules
 are read-only class maps, with `lumiose/env` alone or with `vite/client` in either order: the
 pattern is declared before `*.css`, which would otherwise match them first, and leaves out the dot
 so that it does not merge with `vite/client`'s own `*.module.css` declaration (a duplicate default
-export when `skipLibCheck` is off). See [Styles](../concepts/styles.md) for using them.
+export when `skipLibCheck` is off). See [CSS Modules](../guides/stylesheets.md#css-modules) for using them.
 
 <!-- source: reference/cli.md -->
 
@@ -17210,7 +17510,7 @@ selector (`.list :deep(.item .icon)`). For app-wide CSS, prefer a `<style global
 
 ## Related
 
-- [Styles: how scoping works](../concepts/styles.md)
+- [Style blocks: how scoping works](../reference/styles.md#how-scoping-works)
 
 <!-- source: errors/LUM3017.md -->
 

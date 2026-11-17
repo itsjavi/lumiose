@@ -82,7 +82,7 @@ origins such as `"https://app.example.com"`, without a path or trailing slash.
 and how scoped selectors match it: `data-lum-<hash>` attributes with a +0,1,0 bump by default;
 `strategy: "class"` uses `lum-<hash>` classes merged into each element's `class`, `specificity:
 "zero"` wraps the marker in `:where()`, and `namespace` replaces `lum`. Every compile of the app
-uses it, so templates and CSS agree. See [Choosing the scope marker](../concepts/styles.md).
+uses it, so templates and CSS agree. See [scopedStyles](styles.md#scopedstyles).
 
 **Response headers** (`headers`). Declare them once: a record applies to every response; rules
 apply to the paths they match, below Vite's `base` (`*` matches one segment, `**` any number,

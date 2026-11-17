@@ -92,7 +92,7 @@ with the same URLs and look, its small scripts as `?client` custom elements, and
 | `<script>` (bundled, TypeScript)    | `import init from "./init.ts?client"` and `init()` while rendering: the pages that render the component load the script, without the island runtime ([Islands](../concepts/islands.md)).                                   |
 | `<script define:vars={{ id }}>`     | Attributes on a custom element, typed in `JSX.IntrinsicElements` and read in `connectedCallback` ([Web components](../guides/web-components.md)).                                                                          |
 | `<script is:inline>`                | A JSX `<script>`: its text is written as is ([JSX](../concepts/jsx.md)).                                                                                                                                                   |
-| Tailwind integration                | The Tailwind v4 Vite plugin works as in any Vite app ([Styles](../concepts/styles.md#stylesheets-css-modules-and-tailwind)).                                                                                               |
+| Tailwind integration                | The Tailwind v4 Vite plugin works as in any Vite app ([Styles](../guides/stylesheets.md#tailwind-v4)).                                                                                                                     |
 
 ### Islands
 

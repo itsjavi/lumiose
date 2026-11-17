@@ -25,7 +25,9 @@ mistakes** and **Related**.
 
 ## Start here
 
-- [Getting started](getting-started.md): Create a project, configure TypeScript and Vite, and render a first component.
+- [Getting started](getting-started.md): Create a project, write a first component, style it and check it, in four steps.
+- [Requirements](requirements.md): Node.js 24, TypeScript 7 and Vite 8; the platforms with a native compiler, and the WebAssembly fallback elsewhere.
+- [Manual setup](manual-setup.md): Add Lumiose to a project by hand (install, TypeScript, Vite, a first component, mounting it), and what `create-lumiose` sets up.
 - [Stability](stability.md): What 0.x allows, the 1.0 criteria and the API freeze, supported Node.js versions and browsers, and who maintains Lumiose.
 - [When not to use Lumiose](when-not-to-use.md): The cases where another framework is the better choice today, and what to use instead.
 
@@ -43,7 +45,7 @@ mistakes** and **Related**.
 - [Signals and reactivity](concepts/signals.md): `signal`, `computed`, `effect`, `store`, owners, context and scheduling.
 - [Sharing state](concepts/state.md): Component, context and module-scope state; recipes for stores with actions, families, persisted signals, external stores and state shared by islands.
 - [JSX](concepts/jsx.md): Bindings, compiled idioms (`.map`, ternaries), `class`, `style`, events, `bind:`, `attach` and `ref`.
-- [Styles](concepts/styles.md): Raw-CSS `<style>` blocks scoped by placement, `<style global>`, JS values in styles (`$name`), build-time math and runtime values.
+- [Styles](concepts/styles.md): Raw-CSS `<style>` blocks scoped by placement, `<style global>`, design tokens, JS values in styles (`$name`) and runtime values.
 - [Async components](concepts/async.md): `async` components on server and client, `<Suspense>`, `<ErrorBoundary>`, re-runs and in-flight state.
 - [Islands](concepts/islands.md): `client:*` directives, serializable props, slots and server-only boundaries.
 - [Routing](concepts/routing.md): File routes, layouts, params, typed `href()`, error pages and the SPA router.
@@ -70,6 +72,7 @@ mistakes** and **Related**.
 - [Tracing with OpenTelemetry](guides/opentelemetry.md): Spans for requests, their phases and client navigations from the instrumentation files, a relay for the browser's spans, and setups for OpenObserve, SigNoz and Datadog.
 - [Error reporting with Sentry](guides/sentry.md): Server errors from `onRequestError` and browser errors from `onError` reported to Sentry, with the source maps of both builds uploaded by Sentry's Vite plugin.
 - [Product analytics with PostHog](guides/posthog.md): PostHog started in `src/instrumentation.client.ts`, page views on MPA pages and SPA navigations (`afterNavigate`), events from islands and feature flags evaluated on the server.
+- [Stylesheets, CSS Modules and Tailwind](guides/stylesheets.md): Imported `.css` files, CSS Modules and Tailwind v4 next to `<style>` blocks, the cascade order, and why StyleX is not supported yet.
 - [Editors](guides/editors.md): The language server in Neovim and Helix (file type, root markers, the server command), what works in Zed today, and GitHub highlighting through `.gitattributes`.
 - [Web components](guides/web-components.md): Custom elements and web-component libraries: defining them in the browser, typing them in JSX, properties versus attributes (React 19's rule), events with `on:`, server rendering, and the Custom Elements Everywhere score (100).
 
@@ -107,6 +110,7 @@ mistakes** and **Related**.
 - [`lumiose/dom`](reference/dom.md): `render`, the compiler-runtime contract, `hydrate` (`lumiose/dom/hydrate`) and the island loader (`lumiose/dom/loader`).
 - [`lumiose/router`](reference/router.md): The SPA router: `Link`, `navigate`, `isNavigating`, `searchParams`, `beforeNavigate`/`afterNavigate` and reactive route state.
 - [`@lumiose/vite`](reference/vite.md): The Vite plugin and its options.
+- [Style blocks](reference/styles.md): How `<style>` blocks are scoped, class passthrough, the `scopedStyles` option, typed token names, the rules of `$` references, build-time math and the stylesheets a build writes.
 - [JSX types and tsconfig](reference/jsx.md): `lumiose/jsx-runtime`, `lumiose/env` and the required `tsconfig.json`.
 - [CLI](reference/cli.md): `lumiose dev`, `build`, `preview`, `check`, `typegen`, `routes`, `lint`, `fmt`, `docs`, `explain`, `agents init` and `mcp`; `--format json` and exit codes.
 - [MCP server](reference/mcp.md): `lumiose mcp` for coding agents: docs, `check` with fixes, routes, components, compiler output, rendered HTML and dev logs.
