@@ -23,6 +23,70 @@ base) or from each package's own build (`apps/web/scripts/dev-mounts.ts`); an ap
 naming the command that builds it. The `dev` Playwright project (`*.dev.e2e.ts`) runs against
 `lumiose dev` on port 5196.
 
+## Writing docs pages
+
+The guide for every page in `packages/lumiose/docs` (and the docs of `@lumiose/ui` and
+`@lumiose/stsx`), for agents and humans (decision-90, TASK-609). The pilot pages show it applied:
+`getting-started.md`, `concepts/components.md`, `concepts/signals.md` and `concepts/styles.md`.
+
+**The rules.**
+
+1. **Lead with a runnable example.** Each page and each section opens on code a reader can paste
+   and run: a whole component or file, not a fragment.
+2. **One idea per section.** A second idea gets its own `###` heading and its own example.
+3. **At most three short sentences before the code.** Say what the code shows, in plain, direct
+   sentences. No history, no internals.
+4. **Show the result** after the code where it helps: the text on screen or the command's output
+   in a `text` block, or the CSS that ships.
+5. **Requirements, platform notes, status notes and edge cases are callouts or reference pages.**
+   A callout is a blockquote that starts with a bold label (`> **Status:** …`,
+   `> **Details:** …`) and holds one or two sentences with a link to where the rest lives.
+6. **No fact is deleted.** A fact that leaves a page moves to a reference page, a guide or a
+   diagnostic page, and the page it left links to it. Check that the destination really has it.
+7. **A page reads in a few minutes.** A concept page that grows past about 600 words (code
+   included) is two pages, or has reference material to move.
+
+**Shape sections for the layout.** The site lays a page out from plain Markdown
+(`layoutRows` in `src/content/docs.ts`). There is no layout syntax, and none may be invented. A
+section is a `##` or `###` heading up to the next one. On desktop:
+
+| You write                             | You get                                                 |
+| ------------------------------------- | ------------------------------------------------------- |
+| Heading, words, then code             | Words on the left, the code on the right.               |
+| Heading, code, then words             | The heading and the words on the left, beside the code. |
+| Heading, words, code, then more words | A pair, then the later words as a full-width row.       |
+| Several code blocks in a row          | All of them on the right, stacked.                      |
+| Words without code, or a table        | One column. Tables are always full width.               |
+
+So put all the words of a section either before its code or after it, not both. Keep the words
+beside a block shorter than the block. Keep code lines under about 60 characters, since the code
+column is narrow. Code nested in a list item is not paired: use top-level blocks.
+
+**Step pages.** A page whose `##` headings are `## 1. Title`, `## 2. Title`, … (at least two,
+counting from 1 in order) gets the sticky step bar. Keep step titles to two or three words, and
+put unnumbered sections (Editor, Next) after the steps.
+
+**What the generators and tests require.**
+
+- **Concept pages** keep exactly these `##` sections, in order: Concept, API, Example, Common
+  mistakes, Related diagnostics. Put the example-first sections under Concept as `###`. Coming
+  from guides keep their own outline (`packages/cli/src/docs/docs.test.ts`).
+- **Every page** starts with `# Title`, then a one-line `> summary`.
+- **Examples are checked.** A `tsx`, `stsx` or `ts` block with `check` in its info string is
+  type-checked and must compile without warnings. `file=path` places it below `src/` so examples
+  can import each other; every `file=` name is unique across all docs, and it shows as the block's
+  title. Do not invent API: check the source when unsure.
+- **Links** are relative `.md` links that resolve. When a heading changes, search the repository
+  for its anchor.
+- **A new page** gets an entry in `packages/lumiose/docs/README.md` (the index gives the
+  navigation and its order). A new top-level page is also added to `SECTIONS` in
+  `packages/cli/src/docs/index.ts` and to the index test's list.
+- **Reference pages:** a `##` or `###` heading that is an export's name is what
+  `lumiose docs <name>` prints, so keep those headings to the bare names.
+- **After editing:** `pnpm --filter lumiose docs:gen`, then `pnpm --filter lumiose docs:check`,
+  `pnpm --filter @lumiose/cli exec vitest run src/docs` and
+  `pnpm --filter @lumiose/web exec vitest run`. Look at the page at 1280 px.
+
 ## The UI section (`/ui`)
 
 `/ui` is `@lumiose/ui`'s documentation (TASK-387). Its pages are the Markdown that the package
