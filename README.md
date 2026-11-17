@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="apps/web/public/favicon.svg" width="96" height="96" alt="Lumiose logo: a violet-to-amber glowing sphere">
+  <img src="apps/web/public/favicon.svg" width="96" height="96" alt="Lumiose logo: a capital L drawn as a wall and a floor, with an amber quarter of light in its corner">
 </p>
 
 <h1 align="center">Lumiose</h1>
@@ -50,7 +50,7 @@ something interactive. The compiler, written in Rust, turns components into dire
 ```tsx
 import { signal } from "lumiose";
 
-const accent = "#5546ff";
+const accent = "#f5a300";
 
 export default function Counter() {
   const count = signal(0);
@@ -69,7 +69,7 @@ export default function Counter() {
     border: 0;
     border-radius: 999px;
     background: $accent;
-    color: white;
+    color: black;
   }
   .hot {
     outline: 2px solid tomato;

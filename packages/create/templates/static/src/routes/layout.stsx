@@ -45,6 +45,6 @@ export default function Layout(props: LayoutProps<"/">) {
     line-height: 1.6;
   }
   a {
-    color: #4338ca;
+    color: inherit;
   }
 </style>
