@@ -7,12 +7,7 @@ Concepts: [Rendering modes](../concepts/rendering-modes.md) (the build), [Server
 
 ## default export
 
-```ts
-declare const handler: {
-  fetch(request: Request, platform?: Partial<Platform>): Promise<Response>;
-};
-export default handler;
-```
+The whole server as one web-standard fetch handler: static files, then the app.
 
 A request goes through, in order:
 
@@ -38,39 +33,49 @@ The function works detached (`const { fetch } = handler`). Builds made with a de
 (Cloudflare, Vercel, Netlify) leave the static files to the platform, which serves `dist/client`
 before calling the function.
 
-## platform
-
 ```ts
-interface Platform {
-  /** The platform's bindings (Cloudflare's env); {} where there are none. */
-  readonly env: PlatformEnv;
-  /** Keeps the host running `promise` after the response; elsewhere it just runs. */
-  waitUntil(promise: Promise<unknown>): void;
-  /** The client's IP address as the host sees it (a proxy's, behind one). */
-  readonly clientAddress: string | undefined;
-}
-interface PlatformEnv {} // augment: declare module "lumiose" { interface PlatformEnv { … } }
+declare const handler: {
+  fetch(request: Request, platform?: Partial<Platform>): Promise<Response>;
+};
+export default handler;
 ```
 
-The second argument becomes `ctx.platform` in middleware, endpoints and actions
-([Server](../concepts/server.md)). Every field has a fallback: `env` is `{}`, `waitUntil` lets the
-promise run and reports a rejection like any server error, `clientAddress` is `undefined`.
-Server environment variables stay in `ctx.env` and `env(name)`.
+```ts
+// probe.ts: run with `node probe.ts` after `lumiose build`
+import handler from "./dist/server/entry.js";
 
-What each host passes:
+const request = new Request("http://localhost/about");
+const response = await handler.fetch(request);
+console.log(response.status);
+```
 
-| Host                                   | `env`         | `waitUntil`     | `clientAddress`             |
-| -------------------------------------- | ------------- | --------------- | --------------------------- |
-| `@lumiose/adapter-node`, `lumiose dev` | `{}`          | fallback        | the socket's remote address |
-| Bun (`Bun.serve` passes its server)    | `{}`          | fallback        | `server.requestIP(request)` |
-| Deno (`deno serve` passes its info)    | `{}`          | fallback        | `info.remoteAddr.hostname`  |
-| workerd (`fetch(request, env, ctx)`)   | the bindings  | `ctx.waitUntil` | `CF-Connecting-IP`          |
-| Your own server                        | what you pass | what you pass   | what you pass               |
+| Name       | Type                | Default | Description                                                              |
+| ---------- | ------------------- | ------- | ------------------------------------------------------------------------ |
+| `request`  | `Request`           | —       | The request to answer.                                                   |
+| `platform` | `Partial<Platform>` | `{}`    | What the host knows about the request: see [platform](#platform), below. |
+
+## platform
+
+What the host passes with each request, as the second argument of `fetch`.
+
+It becomes `ctx.platform` in middleware, endpoints and actions ([Server](../concepts/server.md)).
+Every field has a fallback: `env` is `{}`, `waitUntil` lets the promise run and reports a rejection
+like any server error, `clientAddress` is `undefined`. Server environment variables stay in
+`ctx.env` and `env(name)`.
 
 Behind a reverse proxy, `clientAddress` is the proxy's: read the header your proxy sets
 (`X-Forwarded-For`, `X-Real-IP`) in middleware if you trust it.
 
-Type your platform's bindings by augmenting `PlatformEnv`:
+Type your platform's bindings by augmenting `PlatformEnv`, as the example does.
+
+```ts
+interface Platform {
+  readonly env: PlatformEnv;
+  waitUntil(promise: Promise<unknown>): void;
+  readonly clientAddress: string | undefined;
+}
+interface PlatformEnv {} // augment: declare module "lumiose" { interface PlatformEnv { … } }
+```
 
 ```ts
 // src/env.d.ts
@@ -82,19 +87,26 @@ declare module "lumiose" {
 export {};
 ```
 
+| Name            | Type                                  | Default     | Description                                                                  |
+| --------------- | ------------------------------------- | ----------- | ---------------------------------------------------------------------------- |
+| `env`           | `PlatformEnv`                         | `{}`        | The platform's bindings (Cloudflare's `env`); `{}` where there are none.     |
+| `waitUntil`     | `(promise: Promise<unknown>) => void` | —           | Keeps the host running `promise` after the response; elsewhere it just runs. |
+| `clientAddress` | `string \| undefined`                 | `undefined` | The client's IP address as the host sees it (a proxy's, behind one).         |
+
+### What each host passes
+
+| Host                                   | `env`         | `waitUntil`     | `clientAddress`             |
+| -------------------------------------- | ------------- | --------------- | --------------------------- |
+| `@lumiose/adapter-node`, `lumiose dev` | `{}`          | fallback        | the socket's remote address |
+| Bun (`Bun.serve` passes its server)    | `{}`          | fallback        | `server.requestIP(request)` |
+| Deno (`deno serve` passes its info)    | `{}`          | fallback        | `info.remoteAddr.hostname`  |
+| workerd (`fetch(request, env, ctx)`)   | the bindings  | `ctx.waitUntil` | `CF-Connecting-IP`          |
+| Your own server                        | what you pass | what you pass   | what you pass               |
+
 ## createHandler
 
-```ts
-export function createHandler(options?: {
-  /** ctx.env and env(). Default: process.env. */
-  env?: Readonly<Record<string, string | undefined>>;
-  /** Unexpected errors (not redirect(), notFound() or error(status)). Default: console.error. */
-  onError?: (error: unknown, request: Request) => void;
-}): { fetch(request: Request, platform?: Partial<Platform>): Promise<Response> };
-```
-
-The app alone: no static files and no `lumiose({ headers })`. `@lumiose/adapter-node` uses it
-behind its own static file server.
+Returns the app alone: no static files and no `lumiose({ headers })`. `@lumiose/adapter-node` uses
+it behind its own static file server.
 
 `onError` is the host's log. With a [`src/instrumentation.server.ts`](../concepts/server.md#instrumentation),
 the build bundles it into the server entry: every handler (the default export, `createHandler()`,
@@ -102,40 +114,86 @@ the adapters') runs its `register()` before the first request, once per server i
 `onRequestError()` receives the same errors with the route and the phase, after `onError`.
 Prerendering at build time does not load it.
 
+```ts
+export function createHandler(options?: {
+  env?: Readonly<Record<string, string | undefined>>;
+  onError?: (error: unknown, request: Request) => void;
+}): { fetch(request: Request, platform?: Partial<Platform>): Promise<Response> };
+```
+
+```ts
+// server.ts: the app with your own error log, for Bun or Deno
+import { createHandler } from "./dist/server/entry.js";
+
+export default createHandler({
+  onError(error, request) {
+    console.error(request.method, request.url, error);
+  },
+});
+```
+
+| Name      | Type                                            | Default         | Description                                                            |
+| --------- | ----------------------------------------------- | --------------- | ---------------------------------------------------------------------- |
+| `env`     | `Readonly<Record<string, string \| undefined>>` | `process.env`   | `ctx.env` and `env()`.                                                 |
+| `onError` | `(error: unknown, request: Request) => void`    | `console.error` | Unexpected errors (not `redirect()`, `notFound()` or `error(status)`). |
+
 ## config
+
+What servers of `dist/client` need to know about the build.
 
 ```ts
 export const config: {
-  base: string; // Vite's base, with slashes: "/" or "/docs/"
+  base: string;
   trailingSlash: "ignore" | "always" | "never";
-  assetsDir: string; // "assets": content-hashed files
-  headers?: HeadersOption; // lumiose({ headers })
+  assetsDir: string;
+  headers?: HeadersOption;
 };
 ```
 
-What servers of `dist/client` need to know about the build.
+```ts
+// where.ts: run with `node where.ts` after `lumiose build`
+import { config } from "./dist/server/entry.js";
+
+console.log(`Serving below ${config.base}`);
+console.log(`Hashed files in ${config.assetsDir}/`);
+```
+
+| Name            | Type                              | Default | Description                                                      |
+| --------------- | --------------------------------- | ------- | ---------------------------------------------------------------- |
+| `base`          | `string`                          | —       | Vite's `base`, with slashes: `"/"` or `"/docs/"`.                |
+| `trailingSlash` | `"ignore" \| "always" \| "never"` | —       | The build's trailing slash policy for page URLs.                 |
+| `assetsDir`     | `string`                          | —       | Vite's `build.assetsDir` (`"assets"`): the content-hashed files. |
+| `headers`       | `HeadersOption`                   | —       | `lumiose({ headers })`; absent when the app sets none.           |
 
 ## Run it
 
 Build first (`lumiose build`), then start the entry from the project directory, so that the npm
 dependencies it imports resolve from `node_modules`.
 
-**Bun** starts a server for a module whose default export has `fetch`
-(`PORT`, default 3000):
+For Cloudflare, Vercel, Netlify, static hosts and the rest, see the
+[deploy guides](../deploy/README.md).
+
+### Bun
+
+Bun starts a server for a module whose default export has `fetch` (`PORT`, default 3000).
 
 ```sh
 NODE_ENV=production PORT=3000 bun dist/server/entry.js
 ```
 
-**Deno** serves it with `deno serve` (`--port`, default 8000). It reads `dist/client` and the
-environment:
+### Deno
+
+Deno serves it with `deno serve` (`--port`, default 8000). It reads `dist/client` and the
+environment.
 
 ```sh
 deno serve --allow-net --allow-read --allow-env --port 3000 dist/server/entry.js
 ```
 
-**Node**: use [`@lumiose/adapter-node`](adapter-node.md) (`createServer()`), which adds on-the-fly
-compression and Node's streaming. Any server that takes a fetch handler works too:
+### Node
+
+Use [`@lumiose/adapter-node`](adapter-node.md) (`createServer()`), which adds on-the-fly
+compression and Node's streaming. Any server that takes a fetch handler works too.
 
 ```ts
 // server.ts, with Hono's Node server: `node server.ts`
@@ -144,9 +202,6 @@ import handler from "./dist/server/entry.js";
 
 serve({ fetch: (request) => handler.fetch(request), port: 3000 });
 ```
-
-For Cloudflare, Vercel, Netlify, static hosts and the rest, see the
-[deploy guides](../deploy/README.md).
 
 ## Example
 
