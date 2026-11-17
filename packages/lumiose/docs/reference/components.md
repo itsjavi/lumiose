@@ -6,6 +6,70 @@ All are exported by `lumiose` in the browser and on the server. Concepts:
 [Components](../concepts/components.md), [Async components](../concepts/async.md),
 [Head and document](../concepts/head.md).
 
+## Component functions
+
+A component is a function that returns JSX (`JSX.Element`), named in PascalCase. Its body runs once
+per instance. Concept: [Components](../concepts/components.md).
+
+### File types
+
+| Extension | Contents                                                              |
+| --------- | --------------------------------------------------------------------- |
+| `.stsx`   | TSX plus `<style>` blocks. Use it for components with styles.         |
+| `.tsx`    | Plain TSX. A `<style>` block here is `LUM1006` ("rename to `.stsx`"). |
+| `.ts`     | Everything else: logic, tokens, endpoints and server code.            |
+
+A file may export many components.
+
+### Props
+
+Props are the single parameter, a plain interface; `children?: JSX.Element` for content.
+
+The compiler keeps props reactive, even when you destructure them: `({ title, count = 0 })` is
+rewritten to reads of `props.title` and `props.count`, so a parent passing a signal value keeps
+the child up to date. `...rest` stays reactive too. Destructuring the props object at the top of
+the body, `const { children, ...rest } = props`, is rewritten the same way, as long as you don't
+reassign the bindings; destructuring a nested prop (`const { name } = props.user`) reads it once.
+
+On the server, where nothing is reactive, a prop expression is evaluated **lazily and at most once
+per component instance** (decision-28): the first read runs it, later reads reuse the value, and a
+prop the component never reads never runs. `<Filters labels={listLabels()} />` queries the labels
+once per render however often `Filters` reads `props.labels`. In the browser props stay live: each
+read re-evaluates the expression, so keep prop expressions free of side effects.
+
+### children
+
+`children` is lazy: it is evaluated where you insert it. Insert it once; to render something
+several times, take a render function as a prop. Named slots are ordinary props that hold JSX.
+
+Spreading props onto an element without content of its own renders their `children`, as in React:
+`<button {...props} />` renders what the caller wrapped in the component. When the caller passes no
+`children`, the element's content is left alone (a script may fill it).
+
+```tsx check
+function Button(props: JSX.HTMLProps<HTMLButtonElement>) {
+  return <button type="button" {...props} />;
+}
+
+function Trigger(props: JSX.HTMLProps<HTMLButtonElement> & { label: string }) {
+  const { children, label, ...rest } = props;
+  return (
+    <button type="button" aria-label={label} {...rest}>
+      {children}
+    </button>
+  );
+}
+
+export function Toolbar() {
+  return (
+    <>
+      <Button class="primary">Save</Button>
+      <Trigger label="Close">×</Trigger>
+    </>
+  );
+}
+```
+
 ## Suspense
 
 ```ts

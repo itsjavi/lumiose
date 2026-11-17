@@ -6,6 +6,17 @@ All of these are exported by `lumiose` in the browser and on the server. On the 
 entry) signals are plain cells, computeds evaluate once per request, and `effect`/`onMount` never
 run. Concepts: [Signals and reactivity](../concepts/signals.md).
 
+The reactive core is a push-pull signal graph (the alien-signals algorithm). Reading a signal
+inside a tracked scope (a JSX binding, a `computed`, an `effect`) subscribes that scope; writing
+the signal marks it dirty and re-runs only what depends on it. Reads are synchronous: `count()`
+always returns the current value, even right after a write.
+
+## Owners
+
+Every component, effect and root is an _owner_. Owners scope cleanups (`onCleanup`), context
+(`<Ctx value>`/`useContext`), error handling and `getAbortSignal()`. Disposing an owner disposes
+everything created under it.
+
 ## signal
 
 ```ts
@@ -22,6 +33,10 @@ interface SignalOptions<T> {
   equals?: false | ((a: T, b: T) => boolean);
 }
 ```
+
+A write that is `Object.is`-equal to the current value is not a change. So
+`list().push(x); list.set(list())` changes nothing: write a new value
+(`list.update((l) => [...l, x])`), use `store()`, or create the signal with `{ equals: false }`.
 
 ## computed
 
@@ -48,6 +63,12 @@ The effects queued in a flush all run before the DOM bindings that their writes 
 writes then render together, and the effects they schedule run after that, in the same flush. So
 an effect sees the current value of a signal that an earlier effect of the same pass wrote, but
 not yet its DOM.
+
+- **Measuring, in one effect, what another effect's write renders** measures the previous layout,
+  because the effects of a pass all run before their writes reach the DOM. Read the written signal
+  in the effect that measures: it re-runs once the DOM shows the write.
+- **Deriving state in an effect** (`effect(() => b.set(a() * 2))`) adds a frame of staleness and an
+  extra flush. Use `computed(() => a() * 2)`.
 
 ## onMount
 
@@ -90,9 +111,11 @@ Runs `fn` without subscribing the current scope to the signals it reads.
 function batch<T>(fn: () => T): T;
 ```
 
-Defers dependents until `fn` returns, so they run once. Event handlers are batched automatically:
-`onX` handlers, `on:x` listeners and handlers passed in a spread, so the DOM is current right after
-the event.
+Defers dependents until `fn` returns, so they run once. Event handlers are batched automatically,
+for the duration of the handler: delegated `onX` handlers, native `on:x` listeners, the direct
+listeners of non-bubbling events (`onFocus`, `onScroll`) and handlers passed in a spread. Their
+writes render together when the handler returns, so the DOM is current right after the event
+(decision-81). Any other write schedules a microtask flush.
 
 ## flush
 
@@ -100,7 +123,16 @@ the event.
 function flush(): void;
 ```
 
-Runs pending computeds, DOM bindings and effects now, instead of in the next microtask.
+Runs pending computeds, DOM bindings and effects now, instead of in the next microtask. Effects
+never run synchronously with a write: in tests, call `flush()` after a write before asserting.
+
+**Flush order:** computeds are pulled, then DOM bindings run (parents before children), then user
+effects. The effects queued at that point all run before the DOM bindings that their own writes
+trigger, so effects that measure the DOM and then write share one layout. Then those bindings
+run, then the effects that the writes scheduled. A later effect of the same pass reads the new
+signal values, but the DOM does not show them yet. A conditional or list around a queued effect
+that such a write changed still updates first, so an effect never runs inside content that an
+earlier effect's write removed.
 
 ## store
 

@@ -4,116 +4,111 @@
 
 ## Concept
 
-Lumiose's reactive core is a push-pull signal graph (the alien-signals algorithm). Reading a signal
-inside a tracked scope (a JSX binding, a `computed`, an `effect`) subscribes that scope; writing
-the signal marks it dirty and re-runs only what depends on it.
+### Read, write, derive
 
-- **Reads are synchronous.** `count()` always returns the current value, even right after a write.
-- **Writes are batched.** Writes inside an event handler are batched for the duration of the
-  handler: delegated `onX` handlers, native `on:x` listeners, the direct listeners of non-bubbling
-  events (`onFocus`, `onScroll`) and handlers passed in a spread. They render together when it
-  returns, so the DOM is current right after the event (decision-81). Any other write schedules a
-  microtask flush. `flush()` flushes immediately.
-- **Flush order:** computeds are pulled, then DOM bindings run (parents before children), then user
-  effects. The effects queued at that point all run before the DOM bindings that their own writes
-  trigger, so effects that measure the DOM and then write share one layout. Then those bindings
-  run, then the effects that the writes scheduled. A later effect of the same pass reads the new
-  signal values, but the DOM does not show them yet. A conditional or list around a queued effect
-  that such a write changed still updates first, so an effect never runs inside content that an
-  earlier effect's write removed.
-- **Owners.** Every component, effect and root is an _owner_. Owners scope cleanups
-  (`onCleanup`), context (`<Ctx value>`/`useContext`), error handling and `getAbortSignal()`. Disposing an owner
-  disposes everything created under it.
-- **Equality.** A write that is `Object.is`-equal to the current value is not a change. Pass
-  `{ equals }` to customize, or `{ equals: false }` to treat every write as a change.
-- **On the server** signals are plain cells, computeds run once, and effects never run.
+`qty()` reads, `update` writes, `computed` derives. A click re-runs only the text that read
+them.
+
+```tsx check
+import { computed, signal } from "lumiose";
+
+export function Price() {
+  const qty = signal(1);
+  const total = computed(() => qty() * 5);
+
+  return (
+    <button onClick={() => qty.update((n) => n + 1)}>
+      {qty()} × 5 = {total()}
+    </button>
+  );
+}
+```
+
+### Effects
+
+An effect runs after the DOM updates, and again when a signal it read changes.
+
+```tsx check
+import { effect, signal } from "lumiose";
+
+export function Search() {
+  const query = signal("");
+  effect(() => {
+    document.title = `Search: ${query()}`;
+  });
+  return <input bind:value={query} />;
+}
+```
+
+> **Timing:** reads are synchronous. Writes in an event handler render together when it returns
+> ([batch](../reference/reactivity.md#batch)); others flush in a microtask
+> ([flush](../reference/reactivity.md#flush)). On the server, effects never run.
+> [Owners](../reference/reactivity.md#owners) scope cleanups and context.
 
 ## API
 
-| API                                                             | Shape                                                                                                                                       |
-| --------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| `signal(value, { equals? })`                                    | `s()` reads, `s.set(v)` and `s.update(fn)` write, `s.peek()` reads untracked.                                                               |
-| `computed(fn, { equals? })`                                     | `c()` reads. Lazy, cached and glitch-free; `fn` receives the previous value.                                                                |
-| `effect(fn)`                                                    | Runs after the DOM updates and again when what it read changes. `fn` may return a cleanup. Returns a disposer.                              |
-| `onMount(fn)`                                                   | Runs `fn` once, untracked, after the owner's DOM is mounted. May return a cleanup.                                                          |
-| `onCleanup(fn)`                                                 | Runs `fn` when the current owner is disposed or re-runs.                                                                                    |
-| `store(obj)`                                                    | Deep, mutable reactive proxy over a plain object or array (like Valtio's `proxy` or Solid's `createMutable`): mutate it directly.           |
-| `snapshot(value)`                                               | A deep plain copy of a store, for `structuredClone`, `postMessage` and saving.                                                              |
-| `untrack(fn)`                                                   | Runs `fn` without subscribing to what it reads.                                                                                             |
-| `batch(fn)`                                                     | Groups writes; dependents run once at the end.                                                                                              |
-| `flush()`                                                       | Runs pending bindings and effects now.                                                                                                      |
-| `getAbortSignal()`                                              | An `AbortSignal` aborted when the owner is disposed, an effect re-runs, or an async run is superseded. On the server, the request's signal. |
-| `createContext(default?)`, `<Ctx value={v}>`, `useContext(ctx)` | Values passed down the owner tree; they survive `await`. The provider reads `value` once: provide a signal or store for changing state.     |
-| `resource(fetcher)`                                             | Low-level on-demand loading with `loading()`, `error()`, `refetch()`. Prefer [async components](async.md).                                  |
+| API                                                 | Use                                            |
+| --------------------------------------------------- | ---------------------------------------------- |
+| `signal(value, { equals? })`                        | `s()`, `s.set(v)`, `s.update(fn)`, `s.peek()`. |
+| `computed(fn, { equals? })`                         | Lazy, cached derived value.                    |
+| `effect(fn)`                                        | Side effect; may return a cleanup.             |
+| `onMount(fn)`, `onCleanup(fn)`                      | After mount; on disposal.                      |
+| `store(obj)`, `snapshot(value)`                     | Deep mutable proxy; its plain copy.            |
+| `untrack(fn)`, `batch(fn)`, `flush()`               | Read untracked; group writes; run pending now. |
+| `getAbortSignal()`                                  | Aborted when the owner is disposed or re-runs. |
+| `createContext()`, `<Ctx value>`, `useContext(ctx)` | Values passed down the tree.                   |
+| `resource(fetcher)`                                 | Prefer [async components](async.md).           |
 
-In-flight state (`isPending()`, `isBusy()`, `isSubmitting()`, `isNavigating()`) is covered in
-[Async components](async.md) and [Data and actions](data-and-actions.md).
+Signatures: [reference](../reference/reactivity.md). In-flight state (`isPending()`, `isBusy()`,
+`isSubmitting()`, `isNavigating()`): [Async components](async.md),
+[Data and actions](data-and-actions.md).
 
 ## Example
 
-```tsx check
-import { computed, createContext, effect, signal, store, useContext } from "lumiose";
+A store is mutated directly; a context passes a value down.
 
-const Theme = createContext<"light" | "dark">("light");
+```tsx check
+import { computed, createContext, store, useContext } from "lumiose";
+
+const Currency = createContext("EUR");
 
 export function Cart() {
   const items = store([{ name: "Pen", price: 2, qty: 1 }]);
-  const discount = signal(0);
-  const total = computed(
-    () => items.reduce((sum, item) => sum + item.price * item.qty, 0) * (1 - discount()),
-  );
-
-  effect(() => {
-    document.title = `Cart: ${total().toFixed(2)}`;
-  });
+  const total = computed(() => items.reduce((sum, item) => sum + item.price * item.qty, 0));
 
   return (
-    <Theme value="dark">
-      <section>
-        <button onClick={() => items.push({ name: "Ink", price: 5, qty: 1 })}>Add ink</button>
-        <button onClick={() => (items[0]!.qty += 1)}>One more pen</button>
-        <button onClick={() => discount.set(0.1)}>Apply 10%</button>
-        <p>Total: {total().toFixed(2)}</p>
-        <ThemeLabel />
-      </section>
-    </Theme>
+    <Currency value="USD">
+      <button onClick={() => items.push({ name: "Ink", price: 5, qty: 1 })}>Add ink</button>
+      <Total amount={total()} />
+    </Currency>
   );
 }
 
-function ThemeLabel() {
-  const theme = useContext(Theme);
-  return <small>Theme: {theme}</small>;
+function Total(props: { amount: number }) {
+  const currency = useContext(Currency);
+  return (
+    <p>
+      {props.amount} {currency}
+    </p>
+  );
 }
 ```
 
 ## Common mistakes
 
-- **Destructuring or copying a signal's value in setup.** `const n = count()` freezes the value.
-  Read `count()` where you need it, or derive: `const double = () => count() * 2` (`LUM2001`).
-- **Calling `set` with the same object after mutating it.** `list().push(x); list.set(list())` is
-  not a change (`Object.is`). Write a new value (`list.update((l) => [...l, x])`), use `store()`,
-  or create the signal with `{ equals: false }`.
-- **Writing signals in the component body or in a `computed`.** That is a write during render
-  (`LUM2002`). Computeds must be pure; write in handlers and effects.
-- **Using `effect` to derive state.** `effect(() => b.set(a() * 2))` adds a frame of staleness and
-  an extra flush. Use `computed(() => a() * 2)`.
-- **Expecting an effect to run synchronously.** Effects run after the DOM updates. In tests, call
-  `flush()` after a write before asserting.
-- **Measuring, in one effect, what another effect's write renders.** Effects of the same pass all
-  run before their writes reach the DOM, so the second effect measures the previous layout. Read the
-  written signal in the effect that measures: it re-runs once the DOM shows the write.
-- **Module-scope signals in server code.** On the server, a signal at module scope is shared by
-  every request. Keep request data in components or context (`LUM4008`).
-- **Posting a store to a worker.** `postMessage()` and `structuredClone()` throw on proxies: send
-  `snapshot(state)`.
-- **Expecting `store()` to wrap class instances, `Map`s or `Set`s.** Only plain objects and arrays
-  become reactive; other values are returned as is.
+- **Copying a value in setup.** `const n = count()` freezes it (`LUM2001`).
+- **Writing in the component body or a `computed`** (`LUM2002`). Write in handlers and effects.
+- **Mutating, then `set` with the same object.** Not a change:
+  [signal](../reference/reactivity.md#signal).
+- **Deriving or measuring in effects:** [effect](../reference/reactivity.md#effect).
+- **Module-scope signals in server code** are shared by every request (`LUM4008`).
+- **Stores:** `postMessage()` needs `snapshot(state)`; class instances, `Map`s and `Set`s are not
+  wrapped ([store](../reference/reactivity.md#store)).
 
 ## Related diagnostics
 
-- [LUM2001](../errors/LUM2001.md): stale derived value.
-- [LUM2002](../errors/LUM2002.md): signal write during render.
 - [LUM2007](../errors/LUM2007.md): own signal read in an async body.
-- [LUM4008](../errors/LUM4008.md): module-scope signal written during SSR.
+- The mistakes above: [LUM2001](../errors/LUM2001.md), [LUM2002](../errors/LUM2002.md),
+  [LUM4008](../errors/LUM4008.md).
 
-See also: [reference: reactivity](../reference/reactivity.md), [JSX bindings](jsx.md), [Sharing state](state.md).
+See also: [JSX bindings](jsx.md), [Sharing state](state.md).
