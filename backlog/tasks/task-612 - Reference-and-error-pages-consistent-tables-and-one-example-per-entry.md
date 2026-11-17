@@ -5,7 +5,7 @@ status: In Progress
 assignee:
   - '@Beacon'
 created_date: '2026-11-17T12:29:00Z'
-updated_date: '2026-11-17T16:54:00Z'
+updated_date: '2026-11-17T17:08:00Z'
 labels: []
 milestone: m-16
 dependencies:
@@ -25,7 +25,7 @@ Bring docs/reference and docs/errors in line with the writing guide: a signature
 <!-- AC:BEGIN -->
 - [x] #1 Every reference entry has a signature, a summary and an example
 - [x] #2 Every error page shows a failing example and its fix
-- [ ] #3 docs:gen output, docs:check and the docs tests are green
+- [x] #3 docs:gen output, docs:check and the docs tests are green
 <!-- AC:END -->
 
 ## Implementation Notes
@@ -40,4 +40,6 @@ Reference pages: adapter-node, app, cli, components, dom, query, reactivity, rou
 Links: client instrumentation, island chunk and ?client links that pointed at concepts/islands.md#concept now point at reference/dom.md#client-instrumentation, #island-chunks-and-build-output and #client-scripts. The writing guide (apps/web/CONTRIBUTING.md) describes both page shapes.
 
 Not done: the sections that TASK-610/611 appended to reference pages (app, components, dom, jsx, router, vite) are kept as written after each page's Example and were not merged with the entries; some of their text repeats entry text. query.md's examples are unchecked (the examples test does not link @lumiose/query). Not viewed in the browser at 1280 px. llms.txt and llms-full.txt are stale until docs:gen runs.
+
+Beacon (session beacon-20261117-docs-close), closing pass, with three sub-workers for the merge. The sections appended by TASK-610 are folded in: app (entries under Data, Form actions, Routing, Request APIs, Cookies, Context types, a new Instrumentation section; Example last), vite (compiler, SVG, Markdown/HTML, inspector and testing sections before Lumiose packages), components (async detail after ErrorBoundary, head detail after Head), router (SPA router overview first, locale routing before Example), dom (islands detail before Example; loader text in the loader entry), jsx (element props, attach and bind under The JSX namespace; lists under Bindings), reactivity (scoped state under defineState; recipes before Example). Duplicates removed where two passages stated one fact (fetchJSON cache, enhancing forms, refreshing, control flow, cookies, Suspense/ErrorBoundary and Title/Meta/Head bullets, inspector option text, hydration and loader repeats, defineState payload text); every original sentence missing from a result was checked to be stated elsewhere in the page. No heading id renamed or removed; several went from ## to ###. rendering.md and security.md: bold labels that repeated their heading dropped; option signatures, examples and Name/Type/Default/Description tables added for the route exports (mode, ssr, prerender), csp and limits, a table for the default headers; security statements unchanged. The CSP header example is wrapped (with a note that it is one line). JSON script escape: the source writes every < as backslash-u003c; reference/security.md already said so, concepts/security.md was corrected. Viewed at 1280 px: reference/security, app, rendering, errors/LUM5001; measured reference/vite, components and errors/LUM2002. Left as is: signatures and examples wider than the code column scroll inside their box. Screenshot: backlog/assets/redesign/task-612-reference.jpg. Checks: docs:gen, docs:check (error docs included), cli src/docs 32 passed, web vitest 56 passed, typecheck, lint. Generated llms.txt and llms-full.txt committed.
 <!-- SECTION:NOTES:END -->

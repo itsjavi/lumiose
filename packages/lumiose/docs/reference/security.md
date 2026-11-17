@@ -36,9 +36,14 @@ With `lumiose({ csp: "strict" })`:
   streamed `<Suspense>` swaps, the speculation rules, the View Transitions opt-in and module
   preloads. The response gets this header:
 
+  ```text
+  Content-Security-Policy: script-src 'nonce-…'
+    'strict-dynamic'; style-src 'self' 'nonce-…';
+    object-src 'none'; base-uri 'self';
+    frame-ancestors 'self'
   ```
-  Content-Security-Policy: script-src 'nonce-…' 'strict-dynamic'; style-src 'self' 'nonce-…'; object-src 'none'; base-uri 'self'; frame-ancestors 'self'
-  ```
+
+  The header is one line, wrapped here to fit.
 
   `'strict-dynamic'` lets the scripts the page loads import their own modules (islands, SPA
   routes). Stylesheets from your own origin are allowed; inline styles need the nonce.
@@ -175,9 +180,8 @@ lands wherever a link sends them:
 ```ts
 // A `next` parameter as a path of this site, else the fallback.
 function safeNext(next: string | null, fallback = "/"): string {
-  if (next === null || !next.startsWith("/") || next.startsWith("//") || next.startsWith("/\\")) {
-    return fallback;
-  }
+  if (next === null || !next.startsWith("/")) return fallback;
+  if (next.startsWith("//") || next.startsWith("/\\")) return fallback;
   return next;
 }
 redirect(safeNext(url.searchParams.get("next")));

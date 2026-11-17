@@ -5,7 +5,7 @@ status: In Progress
 assignee:
   - '@Beacon'
 created_date: '2026-11-17T12:29:00Z'
-updated_date: '2026-11-17T16:33:00Z'
+updated_date: '2026-11-17T17:08:00Z'
 labels: []
 milestone: m-16
 dependencies:
@@ -24,8 +24,8 @@ Apply the docs writing guide to the remaining pages under docs/concepts.
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
 - [ ] #1 Every concept page follows the guide and its examples compile
-- [ ] #2 No fact is lost: content cut from a page is in the reference or linked
-- [ ] #3 docs:gen output, docs:check and the docs tests are green
+- [x] #2 No fact is lost: content cut from a page is in the reference or linked
+- [x] #3 docs:gen output, docs:check and the docs tests are green
 <!-- AC:END -->
 
 ## Implementation Notes
@@ -74,4 +74,6 @@ Examples: all checked ones pass; newly checked: the content page's config and Ma
 Checks: docs:gen, docs:check, cli src/docs tests (32) and web vitest (56) pass. Not run: Playwright, pnpm check as a whole; pages not looked at in a browser at 1280 px. Generated llms.txt and llms-full.txt left uncommitted for Lux.
 
 Commits: reference moves dbb3ef9d, 433b825b, 08d2819c, 238e8498, a4f0b5db, f0453dac, 860c3f4f, dc387ffd, 7606f077, cc133c07; pages 8774757a (compiler), 4f9e8b17 (async), 3f384df8 (head), adf36004 (dev-tools), b44060f5 (content), 3a9c6a40 (i18n), 40ce276c (data-and-actions), 7ef33bf3 (islands).
+
+Beacon (session beacon-20261117-docs-close), closing pass. The facts moved out of the concept pages are now folded into the reference entries (see TASK-612) and were re-checked against the pre-merge text: nothing dropped. Corrected concepts/security.md: a JSON script writes every < as the six characters backslash-u003c (packages/lumiose/src/server/node.ts, jsonForScript: replace(/</g, "\\u003c"); the compiler's client codegen does the same); the page had lost the escape and read 'as <'. The safeNext example has two short conditions instead of one 100-character line (same behaviour). Viewed at 1280 px: concepts/security (screenshot), and measured concepts/routing and rendering-modes (no page overflow; some code blocks still scroll sideways inside their box). Screenshot: backlog/assets/redesign/task-610-concepts.jpg. Checks: docs:gen, docs:check, cli src/docs 32 passed, web vitest 56 passed, pnpm typecheck, pnpm lint (warnings only). AC 1 left for Lux: not every concept page was viewed.
 <!-- SECTION:NOTES:END -->

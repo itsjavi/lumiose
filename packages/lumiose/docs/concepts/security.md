@@ -98,9 +98,8 @@ a link sends them.
 ```ts
 // A `next` parameter as a path of this site.
 function safeNext(next: string | null, fallback = "/") {
-  if (next === null || !next.startsWith("/") || next.startsWith("//") || next.startsWith("/\\")) {
-    return fallback;
-  }
+  if (next === null || !next.startsWith("/")) return fallback;
+  if (next.startsWith("//") || next.startsWith("/\\")) return fallback;
   return next;
 }
 redirect(safeNext(url.searchParams.get("next")));
