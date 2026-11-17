@@ -72,31 +72,44 @@ export function Toolbar() {
 
 ## Suspense
 
-```ts
-function Suspense(props: SuspenseProps): JSX.Element;
-interface SuspenseProps {
-  /** Shown while new content below is pending. */
-  fallback?: JSX.Element;
-  children?: JSX.Element;
-}
-```
-
 Shows `fallback` while **new** async content below it is pending: the first load, and async
 components or resources that a branch mounts later. Re-runs of revealed content keep their stale UI
 (`isPending()` tells them apart). Hidden content stays alive. A shown fallback counts for `isBusy()`.
 On the server, a boundary marks content that streams after the shell; with prerendering it is
 resolved inline.
 
-## ErrorBoundary
-
 ```ts
-function ErrorBoundary(props: ErrorBoundaryProps): JSX.Element;
-interface ErrorBoundaryProps {
-  /** Rendered instead of the children after an error. */
-  fallback?: JSX.Element | ((error: unknown, reset: () => void) => JSX.Element);
+function Suspense(props: SuspenseProps): JSX.Element;
+
+interface SuspenseProps {
+  fallback?: JSX.Element;
   children?: JSX.Element;
 }
 ```
+
+```tsx check
+import { Suspense, fetchJSON } from "lumiose";
+
+async function Stats() {
+  const stats = await fetchJSON<{ books: number }>("/api/stats");
+  return <p>{stats.books} books</p>;
+}
+
+export function Dashboard() {
+  return (
+    <Suspense fallback={<p>Loading…</p>}>
+      <Stats />
+    </Suspense>
+  );
+}
+```
+
+| Name       | Type          | Default | Description                                   |
+| ---------- | ------------- | ------- | --------------------------------------------- |
+| `fallback` | `JSX.Element` | —       | Shown while new content below is pending.     |
+| `children` | `JSX.Element` | —       | The content, which may hold async components. |
+
+## ErrorBoundary
 
 Renders `fallback` when its children throw while rendering, an effect below throws, or an async
 component below rejects. `reset()` disposes the fallback and renders the children again. On the
@@ -110,30 +123,77 @@ property, so a user's report can be matched to the log entry. `HttpError`s (`not
 `error(403, …)`) reach the fallback as they are, development keeps the raw error, and boundaries
 that catch in the browser get the error itself (decision-29).
 
+```ts
+function ErrorBoundary(props: ErrorBoundaryProps): JSX.Element;
+
+interface ErrorBoundaryProps {
+  fallback?: JSX.Element | ((error: unknown, reset: () => void) => JSX.Element);
+  children?: JSX.Element;
+}
+```
+
+```tsx check
+import { ErrorBoundary } from "lumiose";
+
+function Broken(): JSX.Element {
+  throw new Error("No data");
+}
+
+export function Panel() {
+  const retry = (error: unknown, reset: () => void) => (
+    <button onClick={reset}>Retry: {String(error)}</button>
+  );
+  return (
+    <ErrorBoundary fallback={retry}>
+      <Broken />
+    </ErrorBoundary>
+  );
+}
+```
+
+| Name       | Type                                                                  | Default | Description                                                                               |
+| ---------- | --------------------------------------------------------------------- | ------- | ----------------------------------------------------------------------------------------- |
+| `fallback` | `JSX.Element \| ((error: unknown, reset: () => void) => JSX.Element)` | —       | Rendered instead of the children after an error: content, or `(error, reset) => content`. |
+| `children` | `JSX.Element`                                                         | —       | The content whose errors the boundary catches.                                            |
+
 ## Portal
+
+Renders `children` into a `<div>` appended to `mount`, removed with the owner. Delegated events
+from the portal's content continue at the portal's position in the component tree.
 
 ```ts
 function Portal(props: PortalProps): JSX.Element;
+
 interface PortalProps {
-  /** Where the content goes. Default: document.body. */
   mount?: Node;
   children?: JSX.Element;
 }
 ```
 
-Renders `children` into a `<div>` appended to `mount`, removed with the owner. Delegated events
-from the portal's content continue at the portal's position in the component tree.
+```tsx check
+import { Portal, signal } from "lumiose";
 
-## Dynamic
-
-```ts
-function Dynamic(props: DynamicProps): JSX.Element;
-interface DynamicProps {
-  /** A component or an intrinsic tag name. Nothing renders while it is nullish or false. */
-  component: Component | string | null | undefined | false;
-  [prop: string]: unknown;
+export function SaveButton() {
+  const saved = signal(false);
+  return (
+    <>
+      <button onClick={() => saved.set(true)}>Save</button>
+      {saved() && (
+        <Portal>
+          <p role="status">Saved</p>
+        </Portal>
+      )}
+    </>
+  );
 }
 ```
+
+| Name       | Type          | Default         | Description                  |
+| ---------- | ------------- | --------------- | ---------------------------- |
+| `mount`    | `Node`        | `document.body` | Where the content goes.      |
+| `children` | `JSX.Element` | —               | The content to render there. |
+
+## Dynamic
 
 Renders `component` with the other props, re-creating it only when `component` changes. With a tag
 name, the props are the element's written props. The text of a `<script>` or `<style>` (children,
@@ -144,30 +204,81 @@ name, the props are the element's written props. The text of a `<script>` or `<s
 > props, which a spread never does. Never spread an untrusted object (a JSON payload) into
 > `Dynamic`.
 
+```ts
+function Dynamic(props: DynamicProps): JSX.Element;
+
+interface DynamicProps {
+  component: Component<any> | string | null | undefined | false;
+  [prop: string]: unknown;
+}
+```
+
+```tsx check
+import { Dynamic } from "lumiose";
+
+interface HeadingProps {
+  level: 1 | 2 | 3;
+  children?: JSX.Element;
+}
+
+export function Heading(props: HeadingProps) {
+  const tag = () => `h${props.level}`;
+  return <Dynamic component={tag()}>{props.children}</Dynamic>;
+}
+```
+
+| Name        | Type                                                     | Default | Description                                                                         |
+| ----------- | -------------------------------------------------------- | ------- | ----------------------------------------------------------------------------------- |
+| `component` | `Component<any> \| string \| null \| undefined \| false` | —       | A component or an intrinsic tag name. Nothing renders while it is nullish or false. |
+| `[prop]`    | `unknown`                                                | —       | Every other prop goes to the component, or to the element as its written props.     |
+
 ## ref
+
+A callback for the `ref` prop that can also be read like a signal: `input()` is `undefined` until
+the element exists. Pass it as `ref={input}`.
 
 ```ts
 function ref<T extends Element>(): JSX.Ref<T>;
 ```
 
-A callback for the `ref` prop that can also be read like a signal: `input()` is `undefined` until
-the element exists. Pass it as `ref={input}`.
+```tsx check
+import { onMount, ref } from "lumiose";
+
+export function SearchField() {
+  const input = ref<HTMLInputElement>();
+  onMount(() => input()?.focus());
+  return <input ref={input} type="search" />;
+}
+```
 
 ## Title
-
-```ts
-function Title(props: { children?: JSX.Element }): JSX.Element;
-```
 
 Sets the document title. The deepest `<Title>` wins, so a page overrides its layouts. It replaces
 the `<title>` that `src/document.stsx` writes in `<head>`, which comes back after an SPA navigation to
 a page without a `<Title>` ([head defaults](../concepts/head.md)).
 
-## Meta
-
 ```ts
-function Meta(props: Record<string, unknown>): JSX.Element;
+function Title(props: { children?: JSX.Element }): JSX.Element;
 ```
+
+```tsx check
+import { Title } from "lumiose";
+
+export function AboutPage() {
+  return (
+    <main>
+      <Title>About us</Title>
+      <h1>About us</h1>
+    </main>
+  );
+}
+```
+
+| Name       | Type          | Default | Description     |
+| ---------- | ------------- | ------- | --------------- |
+| `children` | `JSX.Element` | —       | The title text. |
+
+## Meta
 
 Adds or updates a `<meta>` in `<head>`, with the given attributes. Metas with the same `charset`,
 `name`, `property`, `http-equiv` or `itemprop` dedupe: the deepest wins, and the previous one comes
@@ -175,20 +286,55 @@ back when it is removed. A `<Meta>` replaces the `<meta>` with the same key that
 in `<head>` (`src/document.stsx`, or the default document's `charset` and `viewport`), which comes
 back after an SPA navigation to a page without one.
 
+```ts
+function Meta(props: Record<string, unknown>): JSX.Element;
+```
+
+```tsx check
+import { Meta } from "lumiose";
+
+export function AboutMeta() {
+  return (
+    <>
+      <Meta name="description" content="Who we are." />
+      <Meta property="og:title" content="About us" />
+    </>
+  );
+}
+```
+
+| Name          | Type      | Default | Description                                                                                                     |
+| ------------- | --------- | ------- | --------------------------------------------------------------------------------------------------------------- |
+| `[attribute]` | `unknown` | —       | The attributes of the `<meta>`, as in HTML: `name`, `property`, `content`, `charset`, `http-equiv`, `itemprop`. |
+
 ## Head
+
+Appends its children to `<head>` and removes them on disposal. Elements equal to one already in
+`<head>` (for example rendered by the server) are skipped.
 
 ```ts
 function Head(props: { children?: JSX.Element }): JSX.Element;
 ```
 
-Appends its children to `<head>` and removes them on disposal. Elements equal to one already in
-`<head>` (for example rendered by the server) are skipped.
+```tsx check
+import { Head } from "lumiose";
+
+export function Canonical(props: { href: string }) {
+  return (
+    <Head>
+      <link rel="canonical" href={props.href} />
+    </Head>
+  );
+}
+```
+
+| Name       | Type          | Default | Description                         |
+| ---------- | ------------- | ------- | ----------------------------------- |
+| `children` | `JSX.Element` | —       | The elements to append to `<head>`. |
 
 ## viewTransition
 
-```ts
-function viewTransition(fn: () => void): Promise<void>;
-```
+Runs a state update inside a view transition.
 
 Runs `fn`, a state update (signal and store writes), inside
 [`document.startViewTransition`](https://developer.mozilla.org/docs/Web/API/Document/startViewTransition),
@@ -201,21 +347,31 @@ so `fn` runs a frame later. The promise resolves when the transition finished, a
 With [`lumiose({ viewTransitions: true })`](vite.md#lumiose), SPA navigations to another page swap
 the page inside `viewTransition()` ([Routing](../concepts/routing.md)).
 
-## ViewTransition
-
 ```ts
-function ViewTransition(props: ViewTransitionProps): JSX.Element;
-interface ViewTransitionProps {
-  /** The child's view-transition-name. Default: a useId() id, unique in the page. */
-  name?: string;
-  /** The child's view-transition-class while it enters in a viewTransition(). */
-  enter?: string;
-  /** The child's view-transition-class while it exits in a viewTransition(). */
-  exit?: string;
-  /** A single element. */
-  children?: JSX.Element;
+function viewTransition(fn: () => void): Promise<void>;
+```
+
+```tsx check
+import { signal, viewTransition } from "lumiose";
+
+export function Tabs() {
+  const tab = signal("one");
+  const show = (name: string) => viewTransition(() => tab.set(name));
+  return (
+    <section>
+      <button onClick={() => show("one")}>One</button>
+      <button onClick={() => show("two")}>Two</button>
+      <p>{tab() === "one" ? "First tab" : "Second tab"}</p>
+    </section>
+  );
 }
 ```
+
+| Name | Type         | Default | Description                                |
+| ---- | ------------ | ------- | ------------------------------------------ |
+| `fn` | `() => void` | —       | The state update: signal and store writes. |
+
+## ViewTransition
 
 Gives its single child element a `view-transition-name`, so that in a `viewTransition()` it
 animates on its own instead of with the page:
@@ -235,6 +391,17 @@ pseudo-elements, by name or by class: `::view-transition-new(.slide-in)` for ent
 element is created or hydrated; for cross-document transitions between MPA pages, set
 `view-transition-name` in CSS ([Routing](../concepts/routing.md)). Anything but one element child
 renders unnamed, with a warning in development.
+
+```ts
+function ViewTransition(props: ViewTransitionProps): JSX.Element;
+
+interface ViewTransitionProps {
+  name?: string;
+  enter?: string;
+  exit?: string;
+  children?: JSX.Element;
+}
+```
 
 ```tsx check
 import { signal, viewTransition, ViewTransition } from "lumiose";
@@ -285,6 +452,13 @@ export function Notifications() {
   }
 }
 ```
+
+| Name       | Type          | Default   | Description                                                                            |
+| ---------- | ------------- | --------- | -------------------------------------------------------------------------------------- |
+| `name`     | `string`      | `useId()` | The child's `view-transition-name`. The default is a `useId()` id, unique in the page. |
+| `enter`    | `string`      | —         | The child's `view-transition-class` while it enters in a `viewTransition()`.           |
+| `exit`     | `string`      | —         | The child's `view-transition-class` while it exits in a `viewTransition()`.            |
+| `children` | `JSX.Element` | —         | A single element.                                                                      |
 
 ## Example
 
