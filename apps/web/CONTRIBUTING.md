@@ -31,6 +31,15 @@ ships, `packages/ui/docs`, in the order of `packages/ui/docs/llms.txt`. Nothing 
 - **Pages.** `src/content/docs.ts` renders them, and `src/routes/ui/[[...path]]/page.stsx` serves
   them at `/ui/<page>` (the README at `/ui`). The docs navigation lists them in its UI section,
   and the old `/docs/ui/*` URLs are static redirects.
+- **Gallery.** `/ui` opens on a grid of every component, live (TASK-614): one cell per page of
+  the `llms.txt` Components section, running that page's first live demo, with a footer that
+  links to the page. The README follows the grid. `src/content/ui-gallery.ts` builds the cells
+  and fails the build when a component page has no live demo.
+- **Component pages.** A page of the Components section shows its first demo as a large preview,
+  then its usage beside its props, then the page as written. `ui-gallery.ts` reads the three
+  from the template every component page follows: usage is the import block before the first
+  section plus the Anatomy snippet, and the props are the first table of the API section. The
+  guides (Installation, Theming, Virtualizer) render as docs pages.
 - **Live demos.** Every ` ```tsx check ` example (the ones the docs tests type-check) that
   exports one component without props is also a live demo. It is shown above its code, except
   the page's first one, which runs at the top instead: a component rendered twice would repeat its
@@ -47,8 +56,8 @@ ships, `packages/ui/docs`, in the order of `packages/ui/docs/llms.txt`. Nothing 
 **Adding a component** (such as Combobox, once its page lands in `packages/ui/docs`):
 
 1. Its page follows `dialog.md`'s sections and is listed in the UI `llms.txt`
-   (`pnpm --filter @lumiose/ui docs:gen`). The page and its navigation entry then appear on
-   their own.
+   (`pnpm --filter @lumiose/ui docs:gen`). The page, its navigation entry and its gallery cell
+   then appear on their own.
 2. Run `pnpm --filter @lumiose/web ui:demos` and commit `src/ui-demos/`.
    `src/content/ui-demos.test.ts` fails in `pnpm check` until the generated demos match the
    examples. Two examples must not export the same name.
@@ -73,15 +82,16 @@ component's first demo also open).
 
   A new gradient, glow or translucent layer behind text needs an entry in `FLATTENED`.
 
-- **The landing's light field.** Axe cannot see into the WebGL canvas behind the hero. A test hides
-  the copy, captures the stage at 1440, 820 and 390 px over several seconds of light, and compares
-  each text color with the brightest pixel behind it (4.5:1, or 3:1 for large text). It prints the
-  peak it found; `STAGE_PEAK` in `FLATTENED` must stay at or above it. Other tests check that the
-  "Pause animation" button and scrolling the hero away stop the loop, and that reduced motion draws
-  one still frame.
+- **The beams of light.** Axe cannot see the beams behind the text (`src/components/Beams.stsx`, an
+  SVG behind every page). A test sets every beam to the top of its pulse, hides the text, and
+  captures the landing, docs, `/ui`, benchmarks and playground pages with and without the beams, at
+  1440, 820 and 390 px in both themes. The pixels that differ inside a text's box are the beams
+  behind it; each must keep 4.5:1 with the text's color, large text included. It prints the lowest
+  ratio it found. Other tests check that the "Pause background animation" checkbox pauses the
+  beams, also without JavaScript, and that reduced motion leaves them still.
 
-- **Motion.** No animation runs longer than 5 seconds, and none runs longer than 1 second under
-  `prefers-reduced-motion: reduce`.
+- **Motion.** Apart from the beams, which have their pause control, no animation runs longer than
+  5 seconds, and none runs longer than 1 second under `prefers-reduced-motion: reduce`.
 - **Focus.** Tabbing through the landing, a docs page, the showcase and the benchmarks, every
   focused element changes how it, or a near ancestor such as a card, looks. No focused element
   below the header is covered by it.

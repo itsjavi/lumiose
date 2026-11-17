@@ -217,8 +217,13 @@ export function UiComponentPage(props: UiComponentPageProps) {
     color: $color.muted;
   }
   .more {
-    margin-block-start: $space.sm;
+    margin-block-start: $space.xs;
     font-size: $text.sm;
+  }
+  /* A pointer target of its own, below the table: at least 24 px tall (2.5.8). */
+  .more a {
+    display: inline-block;
+    padding-block: $space.xxs;
   }
 
   /* The page's sections, as a row of links between the head and the reference. */

@@ -114,6 +114,8 @@ export function UiGallery(props: UiGalleryProps) {
     font-size: clamp(2.75rem, 1.9rem + 3.6vw, 4rem);
     letter-spacing: -0.05em;
     line-height: 0.95;
+    /* At 320 px with WCAG's text spacing the word breaks rather than widening the page. */
+    overflow-wrap: anywhere;
   }
   .lead {
     margin: 0;
