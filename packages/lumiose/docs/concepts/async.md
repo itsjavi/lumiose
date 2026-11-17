@@ -4,125 +4,118 @@
 
 ## Concept
 
-Async components are **the** way to read data in Lumiose (there are no route loaders). The same
-component works in every rendering mode.
+### Await in a component
 
-**The await rewrite.** The compiler rewrites `await` only where the nearest enclosing function is
-the component itself; awaits inside handlers and callbacks are ordinary awaits. Around each
-component-level `await`, the runtime restores the owner, context and tracking, so `useContext()`,
-`getAbortSignal()` and signal reads keep working after it.
+An `async` component awaits its data, in every rendering mode: there are no route loaders.
+`<Suspense>` shows its fallback for the first load.
 
-**Re-runs.** Props and signals read in the body (before or after an `await`) are tracked. When one
-changes, the component **re-runs**:
+```tsx check
+import { Suspense, fetchJSON } from "lumiose";
 
-- the previous run's `getAbortSignal()` signal aborts (cancel your fetches with it);
-- the old UI stays on screen until the new run resolves, then swaps atomically;
-- signals created in the body start fresh on each run;
-- `isPending()` is true while the re-run is in flight.
+async function Title(props: { id: string }) {
+  const url = `/api/books/${props.id}`;
+  const book = await fetchJSON<{ title: string }>(url);
+  return <h2>{book.title}</h2>;
+}
 
-**Boundaries.**
+export function TitlePage() {
+  return (
+    <Suspense fallback={<p>Loading…</p>}>
+      <Title id="1" />
+    </Suspense>
+  );
+}
+```
 
-- `<Suspense fallback={…}>` shows its fallback for **new** pending content: the first load, and
-  branches mounted later. Re-runs of content already shown keep the stale UI instead (use
-  `isPending()` to dim it).
-- `<ErrorBoundary fallback={(error, reset) => …}>` catches rejections and render errors below it.
-- With no boundary: on the server the component becomes part of the page shell (the response waits
-  for it); on the client nothing renders until it resolves; errors go to the `error` page.
+### The cache
 
-**In-flight state** (all are reactive and safe to read anywhere):
+```tsx check
+import { invalidate, query } from "lumiose";
 
-| Helper                | True while                                                                                             |
-| --------------------- | ------------------------------------------------------------------------------------------------------ |
-| `isPending()`         | this async component's own re-run is in flight (inside the component or its UI).                       |
-| `isSubmitting(name?)` | a form action submission is in flight. See [Data and actions](data-and-actions.md).                    |
-| `isNavigating()`      | an SPA navigation is in flight. See [Routing](routing.md).                                             |
-| `isBusy()`            | anything above is in flight, or any `<Suspense>` shows its fallback. Use it for a global progress bar. |
+declare const db: {
+  stats(): Promise<{ total: number }>;
+  addBook(title: string): Promise<void>;
+};
 
-**Caching.** Component-level awaits of `fetchJSON` and `query` go through a keyed cache:
+export async function Stats() {
+  const stats = await query(["stats", "books"], () => db.stats());
+  return <p>{stats.total} books</p>;
+}
 
-- A GET `await fetchJSON(url)` is keyed by its absolute URL, so it needs no key.
-- `await query(key, fn)` caches anything else (a database call, an SDK) under a TanStack-style
-  array key such as `["stats", "books"]`: JSON-serializable values, hashed stably. `fn` receives
-  `{ signal, queryKey }` (TanStack's query function context); pass `signal` on to cancel the work
-  once no component waits for it.
-- Components awaiting the same entry share one request: per request on the server, per page in the
-  browser (every island and the SPA tree, kept across client navigations).
-- In the browser, a cached entry shows at once (no `<Suspense>` fallback for a new component) and
-  refetches in the background (stale-while-revalidate, TanStack defaults: `staleTime` 0, `gcTime`
-  5 minutes). If the data changed, the components that awaited it re-run.
-- `invalidate("/api/books/1")` refetches that URL's entry and `invalidate(["stats"])` the entries
-  whose key starts with `["stats"]`. Only the components that awaited them re-run, keeping their
-  UI until the new data arrives. `invalidate()` with no target refreshes the whole page.
-- Only awaits in async component bodies are cached. `fetchJSON` in event handlers, middleware,
-  endpoints and actions is a plain request, and so are non-GET requests and
-  `fetchJSON(url, { cache: "no-store" })`, the opt-out for data that must always be fresh: never
-  deduped, kept or sent with the page payload.
-- Errors are never cached: the next await tries again. Aborting one component's wait (a superseded
-  run) never cancels a request another component still awaits.
+export function AddBook() {
+  const add = async () => {
+    await db.addBook("Dune");
+    await invalidate(["stats"], "/api/books");
+  };
+  return <button onClick={add}>Add</button>;
+}
+```
 
-**Islands.** Inside an [island](islands.md), each awaited value is recorded during SSR and
-replayed during hydration, so the client does not fetch it again. Cached values (`fetchJSON`,
-`query`) are sent once per page instead, however many islands await them, and fill the browser
-cache. Those values must be plain data (`LUM4007`), and **everything awaited inside an island is
-sent to the browser**.
+Components that await the same `fetchJSON` URL or `query` key share one request and one cached
+value. `invalidate` refetches the entries of a key prefix or a URL, and re-runs only the
+components that awaited them.
 
-> **Status:** async components, the `await` rewrite, re-runs, `<Suspense>`, `<ErrorBoundary>`,
-> `isPending()`, `isBusy()`, server streaming and the keyed cache (`fetchJSON`, `query`,
-> `invalidate(...targets)`) are available, and so is replaying awaited values when an island
-> hydrates (see [Islands](islands.md)).
+> **Details:** the `await` rewrite, boundaries, the cache's rules, what islands send to the
+> browser, and the status of each part:
+> [Async components in detail](../reference/components.md#async-components-in-detail).
 
 ## API
 
-| API                                                              | Shape                                                                                                      |
-| ---------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
-| `async function Name(props) { const x = await …; return <… /> }` | An async component.                                                                                        |
-| `<Suspense fallback={…}>`                                        | Fallback for new pending content below.                                                                    |
-| `<ErrorBoundary fallback={(error, reset) => …}>`                 | Fallback after an error below; `reset()` renders the children again. `fallback` may also be plain content. |
-| `isPending()`                                                    | Whether this component's re-run is in flight.                                                              |
-| `isBusy()`                                                       | Whether anything in the app is in flight.                                                                  |
-| `getAbortSignal()`                                               | `AbortSignal` of the current run; aborted when superseded or disposed.                                     |
-| `fetchJSON<T>(url, init?)`                                       | Isomorphic JSON fetch that returns plain data; cached by URL when awaited in a component.                  |
-| `query(key, fn)`                                                 | Awaited in a component, caches what `fn` resolves to under `key` (an array).                               |
-| `invalidate(...targets)`                                         | Refetches the entries of URLs and key prefixes, re-running their components; no target: the whole page.    |
+| API                                | Use                                                       |
+| ---------------------------------- | --------------------------------------------------------- |
+| `async function Name(props) { … }` | An async component: `await`, then return JSX.             |
+| `<Suspense fallback>`              | Fallback for new pending content below.                   |
+| `<ErrorBoundary fallback>`         | Content or `(error, reset) => …`, shown after an error.   |
+| `isPending()`                      | This component's re-run is in flight.                     |
+| `isBusy()`                         | Anything in the app is in flight.                         |
+| `getAbortSignal()`                 | The current run's signal: aborted when superseded.        |
+| `fetchJSON<T>(url, init?)`         | JSON fetch, cached by URL when awaited in a component.    |
+| `query(key, fn)`                   | Caches what `fn` resolves to under an array key.          |
+| `invalidate(...targets)`           | Refetch URLs and key prefixes; no target: the whole page. |
+
+Signatures: [components](../reference/components.md#suspense),
+[data](../reference/app.md#data), [in-flight state](../reference/reactivity.md#ispending).
 
 ## Example
+
+Clicking another id re-runs `BookDetails`. The old book stays, dimmed through `isPending()`, until
+the new one arrives. A book seen before shows at once from the cache, then revalidates.
 
 ```tsx check
 import { ErrorBoundary, Suspense, fetchJSON, getAbortSignal, isPending, signal } from "lumiose";
 
 interface Book {
-  id: string;
   title: string;
   summary: string;
 }
 
-export async function BookDetails({ id }: { id: string }) {
-  const book = await fetchJSON<Book>(`/api/books/${id}`, { signal: getAbortSignal() });
-  const expanded = signal(false);
+async function BookDetails(props: { id: string }) {
+  const book = await fetchJSON<Book>(`/api/books/${props.id}`, {
+    signal: getAbortSignal(),
+  });
+  const open = signal(false);
 
   return (
     <article class={{ stale: isPending() }}>
       <h2>{book.title}</h2>
-      <button onClick={() => expanded.update((open) => !open)}>Details</button>
-      {expanded() && <p>{book.summary}</p>}
+      <button onClick={() => open.update((o) => !o)}>Details</button>
+      {open() && <p>{book.summary}</p>}
     </article>
   );
 }
 
-export function BookPage({ ids }: { ids: string[] }) {
-  const current = signal(ids[0] ?? "");
+export function BookPage(props: { ids: string[] }) {
+  const current = signal(props.ids[0] ?? "");
 
   return (
     <main>
-      <nav>
-        {ids.map((id) => (
-          <button onClick={() => current.set(id)}>{id}</button>
-        ))}
-      </nav>
+      {props.ids.map((id) => (
+        <button onClick={() => current.set(id)}>{id}</button>
+      ))}
       <ErrorBoundary
         fallback={(error, reset) => (
           <p>
-            Could not load the book ({String(error)}). <button onClick={reset}>Retry</button>
+            {String(error)} <button onClick={reset}>Retry</button>
           </p>
         )}
       >
@@ -135,58 +128,20 @@ export function BookPage({ ids }: { ids: string[] }) {
 }
 ```
 
-Clicking another id re-runs `BookDetails`: the old book stays (dimmed through `isPending()`) until
-the new one arrives; `<Suspense>` only showed its fallback for the first load. Going back to a book
-already seen shows it at once from the cache, then revalidates it.
-
-Data that does not come from `fetchJSON` goes through `query`, and a mutation refreshes only what it
-changed:
-
-```tsx check
-import { invalidate, query } from "lumiose";
-
-declare const db: { stats(): Promise<{ total: number }>; addBook(title: string): Promise<void> };
-
-export async function Stats() {
-  const stats = await query(["stats", "books"], () => db.stats());
-  return <p>{stats.total} books</p>;
-}
-
-export function AddBook() {
-  return (
-    <button
-      onClick={async () => {
-        await db.addBook("Dune");
-        await invalidate(["stats"], "/api/books"); // re-runs Stats and the components of /api/books
-      }}
-    >
-      Add
-    </button>
-  );
-}
-```
-
 ## Common mistakes
 
-- **Reading the component's own signals in its body.** A signal created in the body and read in
-  the body re-runs the component, which re-creates the signal. Read it in JSX or handlers instead
-  (`LUM2007`).
-- **Not passing `getAbortSignal()` to fetches.** Without it, a superseded run's request keeps going. Pass
-  `{ signal: getAbortSignal() }`.
-- **Passing a key as a string to `invalidate()`.** A string is a URL: `invalidate("stats")` matches
-  no `query()` entry (development builds warn). Pass the key array: `invalidate(["stats"])`.
-- **Mutating cached data.** Every component that awaited an entry gets the same object. Copy it
-  before changing it, or keep editable state in a signal or `store`.
-- **Expecting `fetchJSON` in an event handler to use the cache.** Only component-level awaits are
-  cached; a handler's call is a plain request (call `invalidate(url)` after a mutation instead).
-- **Awaiting a `Response` inside an island.** `await fetch(url)` gives a non-serializable value.
-  Use `await fetchJSON(url)` (`LUM4007`).
-- **Putting secrets in awaited values inside islands.** They are serialized into the HTML. Fetch
-  only what the browser may see.
-- **Wrapping a re-run in `<Suspense>` and expecting the fallback again.** Revealed content keeps
-  its stale UI; show progress with `isPending()` or `isBusy()`.
-- **`await using` in a component body.** Not supported in v1 (`LUM1007`).
-- **Expecting `resource()` on the server.** It never runs there; use an async component.
+Each in full: [Async components in detail](../reference/components.md#async-components-in-detail).
+
+- **Reading the component's own signals in its body** re-runs it (`LUM2007`).
+- **Not passing `getAbortSignal()` to fetches.** A superseded run's request keeps going.
+- **`invalidate("stats")`.** A string is a URL; pass the key array, `invalidate(["stats"])`.
+- **Mutating cached data.** Every component that awaited the entry gets the same object.
+- **Expecting the cache in an event handler.** Only component-level awaits are cached.
+- **Awaiting a `Response` or a secret inside an island.** Awaited values are serialized into the
+  HTML (`LUM4007`).
+- **Expecting the `<Suspense>` fallback on a re-run.** Use `isPending()` or `isBusy()`.
+- **`await using` in a component body** (`LUM1007`), and **`resource()` on the server**: neither
+  works.
 
 ## Related diagnostics
 
