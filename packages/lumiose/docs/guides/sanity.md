@@ -2,25 +2,7 @@
 
 > Read Sanity content in async components and prerender it, preview drafts on server-rendered routes behind a secret, and rebuild the static pages when editors publish.
 
-[Sanity](https://www.sanity.io) keeps the content and its editing studio; Lumiose reads it with
-`@sanity/client`, which runs in server code. Published content is read at build time, so the
-pages are static files; drafts are read per request on a separate, server-rendered preview route.
-
-| File                                          | Role                                                                      |
-| --------------------------------------------- | ------------------------------------------------------------------------- |
-| `src/server/sanity.server.ts`                 | The Sanity clients, the queries and the preview cookie. Server-only.      |
-| `src/components/Story.stsx`                   | A story, rendered the same way for published content and drafts.          |
-| `src/routes/stories/page.stsx`                | The list of stories, prerendered.                                         |
-| `src/routes/stories/[slug]/page.stsx`         | One page per published story, prerendered with `staticPaths()`.           |
-| `src/routes/api/preview/route.ts`             | Turns preview on (a signed cookie) when the secret matches.               |
-| `src/routes/preview/stories/[slug]/page.stsx` | The draft of a story, rendered per request for previewers.                |
-| `src/routes/api/sanity/webhook/route.ts`      | Optional: Sanity's publish webhook, verified, then the host's build hook. |
-
-> **Status:** written against Sanity's documentation and the `@sanity/client` 8 and
-> `@sanity/webhook` 4 packages (their types check every example on this page); not run against a
-> Sanity project.
-
-## Setup
+## 1. Install
 
 ```sh
 pnpm add @sanity/client
@@ -35,12 +17,16 @@ pnpm add @sanity/webhook   # only for the webhook endpoint
 | `SANITY_PREVIEW_SECRET` | A random string the studio's preview link carries (`openssl rand -base64 32`). |
 | `LUMIOSE_SECRET`        | Signs the preview cookie ([Server](../concepts/server.md)).                    |
 
-The pages here are `static` (the project default) except the preview route and the endpoints,
-which say `export const mode = "server"`. A site with no server at all can skip previews and the
-webhook endpoint, and point Sanity's webhook straight at the host's build hook
-([below](#rebuilding-when-content-changes)).
+[Sanity](https://www.sanity.io) keeps the content and its editing studio; Lumiose reads it with
+`@sanity/client`, which runs in server code. Published content is read at build time, so the
+pages are static files; drafts are read per request on a separate, server-rendered preview route.
 
-## The clients and queries
+> **Modes:** the pages here are `static` (the project default) except the preview route and the
+> endpoints, which say `export const mode = "server"`. A site with no server at all can skip
+> previews and the webhook endpoint, and point Sanity's webhook straight at the host's build hook
+> ([step 5](#5-rebuild-on-publish)).
+
+## 2. Create the clients
 
 One client reads published content through Sanity's CDN. The preview client reads drafts with a
 token, without the CDN. Both live in a `*.server.ts` module, so the token never reaches browser code
@@ -103,14 +89,15 @@ export function getStory(slug: string, preview = false): Promise<Story | null> {
 }
 ```
 
-Rich text (Portable Text) renders to HTML with a framework-agnostic library such as
-`@portabletext/to-html`, written with `innerHTML`; this guide keeps a plain `summary` field.
+> **Rich text:** Portable Text renders to HTML with a framework-agnostic library such as
+> `@portabletext/to-html`, written with `innerHTML`; this guide keeps a plain `summary` field.
 
-## Reading content
+## 3. Read content
 
 Pages await their content in async components. `query()` caches each result for the request (or
 the build), so a layout and a page that need the same story share one fetch
-([Async components](../concepts/async.md)).
+([Async components](../concepts/async.md)). The list is built once per deploy, and `staticPaths()`
+writes one file per published story.
 
 ```stsx check file=components/Story.stsx
 // src/components/Story.stsx
@@ -175,7 +162,7 @@ export default async function StoryPage({ params }: PageProps<"/stories/[slug]">
 }
 ```
 
-## Previewing drafts
+## 4. Preview drafts
 
 Drafts change on every keystroke and need a token, so they cannot be prerendered. A preview route
 renders them per request, for people who opened the studio's preview link. The link carries the
@@ -224,23 +211,20 @@ export default async function StoryPreview({ params }: PageProps<"/preview/stori
 }
 ```
 
-In the studio, point the preview link (the Presentation tool's preview URL, or a document action)
-at `https://example.com/api/preview?secret=<SANITY_PREVIEW_SECRET>&slug=<slug>`. To refresh the
-preview while an editor types, reload the page, or poll from an island that calls
-`invalidate()` on an interval.
+> **Studio:** point the preview link (the Presentation tool's preview URL, or a document action)
+> at `https://example.com/api/preview?secret=<SANITY_PREVIEW_SECRET>&slug=<slug>`. To refresh the
+> preview while an editor types, reload the page, or poll from an island that calls
+> `invalidate()` on an interval.
 
-## Rebuilding when content changes
+## 5. Rebuild on publish
 
 Published pages are files, so new content needs a new build. Most hosts give a build hook: a URL
 that starts a deploy when something posts to it (Netlify build hooks, Vercel deploy hooks,
 Cloudflare Pages deploy hooks, a CI workflow dispatch).
 
-**Without a server:** in Sanity's dashboard, create a webhook that posts to the build hook on
-create, update and delete, with the filter `_type == "story"`. No code runs in the app.
-
-**With a server:** point the webhook at an endpoint instead. It verifies Sanity's signature (set a
+With a server, point Sanity's webhook at an endpoint. It verifies Sanity's signature (set a
 secret on the webhook), so nobody else can trigger builds, keeps the build hook's URL off Sanity,
-and can skip changes that do not affect the site:
+and can skip changes that do not affect the site.
 
 ```ts check file=routes/api/sanity/webhook/route.ts
 // src/routes/api/sanity/webhook/route.ts
@@ -266,9 +250,12 @@ export const POST: Endpoint<"/api/sanity/webhook"> = async ({ request, platform 
 };
 ```
 
-The webhook posts JSON, which Lumiose's cross-site check leaves to the endpoint: the signature is
-the check. Set the webhook's projection to `{_type}` (or more) so the body carries what the
-endpoint reads.
+> **Webhook settings:** the webhook posts JSON, which Lumiose's cross-site check leaves to the
+> endpoint: the signature is the check. Set the webhook's projection to `{_type}` (or more) so the
+> body carries what the endpoint reads.
+
+> **Without a server:** in Sanity's dashboard, create a webhook that posts to the build hook on
+> create, update and delete, with the filter `_type == "story"`. No code runs in the app.
 
 ## Common mistakes
 
@@ -283,3 +270,7 @@ endpoint reads.
   `isValidSignature`, then parse.
 - **A preview page without `noindex` and `no-store`.** Search engines and shared caches would keep
   a draft. The preview page sets both.
+
+> **Status:** written against Sanity's documentation and the `@sanity/client` 8 and
+> `@sanity/webhook` 4 packages (their types check every example on this page); not run against a
+> Sanity project.
