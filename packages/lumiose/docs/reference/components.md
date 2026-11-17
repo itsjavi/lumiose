@@ -320,3 +320,97 @@ export function Dialog() {
   );
 }
 ```
+
+## Async components in detail
+
+**The await rewrite.** The compiler rewrites `await` only where the nearest enclosing function is
+the component itself; awaits inside handlers and callbacks are ordinary awaits. Around each
+component-level `await`, the runtime restores the owner, context and tracking, so `useContext()`,
+`getAbortSignal()` and signal reads keep working after it.
+
+**Re-runs.** Props and signals read in the body (before or after an `await`) are tracked. When one
+changes, the component **re-runs**:
+
+- the previous run's `getAbortSignal()` signal aborts (cancel your fetches with it);
+- the old UI stays on screen until the new run resolves, then swaps atomically;
+- signals created in the body start fresh on each run;
+- `isPending()` is true while the re-run is in flight.
+
+**Boundaries.**
+
+- `<Suspense fallback={…}>` shows its fallback for **new** pending content: the first load, and
+  branches mounted later. Re-runs of content already shown keep the stale UI instead (use
+  `isPending()` to dim it).
+- `<ErrorBoundary fallback={(error, reset) => …}>` catches rejections and render errors below it.
+- With no boundary: on the server the component becomes part of the page shell (the response waits
+  for it); on the client nothing renders until it resolves; errors go to the `error` page.
+
+**In-flight state** (all are reactive and safe to read anywhere):
+
+| Helper                | True while                                                                                             |
+| --------------------- | ------------------------------------------------------------------------------------------------------ |
+| `isPending()`         | this async component's own re-run is in flight (inside the component or its UI).                       |
+| `isSubmitting(name?)` | a form action submission is in flight. See [Data and actions](../concepts/data-and-actions.md).        |
+| `isNavigating()`      | an SPA navigation is in flight. See [Routing](../concepts/routing.md).                                 |
+| `isBusy()`            | anything above is in flight, or any `<Suspense>` shows its fallback. Use it for a global progress bar. |
+
+**Caching.** Component-level awaits of `fetchJSON` and `query` go through a keyed cache:
+
+- A GET `await fetchJSON(url)` is keyed by its absolute URL, so it needs no key.
+- `await query(key, fn)` caches anything else (a database call, an SDK) under a TanStack-style
+  array key such as `["stats", "books"]`: JSON-serializable values, hashed stably. `fn` receives
+  `{ signal, queryKey }` (TanStack's query function context); pass `signal` on to cancel the work
+  once no component waits for it.
+- Components awaiting the same entry share one request: per request on the server, per page in the
+  browser (every island and the SPA tree, kept across client navigations).
+- In the browser, a cached entry shows at once (no `<Suspense>` fallback for a new component) and
+  refetches in the background (stale-while-revalidate, TanStack defaults: `staleTime` 0, `gcTime`
+  5 minutes). If the data changed, the components that awaited it re-run.
+- `invalidate("/api/books/1")` refetches that URL's entry and `invalidate(["stats"])` the entries
+  whose key starts with `["stats"]`. Only the components that awaited them re-run, keeping their
+  UI until the new data arrives. `invalidate()` with no target refreshes the whole page.
+- Only awaits in async component bodies are cached. `fetchJSON` in event handlers, middleware,
+  endpoints and actions is a plain request, and so are non-GET requests and
+  `fetchJSON(url, { cache: "no-store" })`, the opt-out for data that must always be fresh: never
+  deduped, kept or sent with the page payload.
+- Errors are never cached: the next await tries again. Aborting one component's wait (a superseded
+  run) never cancels a request another component still awaits.
+
+**Islands.** Inside an [island](../concepts/islands.md), each awaited value is recorded during SSR and
+replayed during hydration, so the client does not fetch it again. Cached values (`fetchJSON`,
+`query`) are sent once per page instead, however many islands await them, and fill the browser
+cache. Those values must be plain data (`LUM4007`), and **everything awaited inside an island is
+sent to the browser**.
+
+> **Status:** async components, the `await` rewrite, re-runs, `<Suspense>`, `<ErrorBoundary>`,
+> `isPending()`, `isBusy()`, server streaming and the keyed cache (`fetchJSON`, `query`,
+> `invalidate(...targets)`) are available, and so is replaying awaited values when an island
+> hydrates (see [Islands](../concepts/islands.md)).
+
+**Mistakes with async components.**
+
+    </button>
+
+);
+}
+
+```
+
+## Common mistakes
+
+- **Reading the component's own signals in its body.** A signal created in the body and read in
+  the body re-runs the component, which re-creates the signal. Read it in JSX or handlers instead
+  (`LUM2007`).
+- **Not passing `getAbortSignal()` to fetches.** Without it, a superseded run's request keeps going. Pass
+  `{ signal: getAbortSignal() }`.
+- **Passing a key as a string to `invalidate()`.** A string is a URL: `invalidate("stats")` matches
+  no `query()` entry (development builds warn). Pass the key array: `invalidate(["stats"])`.
+- **Mutating cached data.** Every component that awaited an entry gets the same object. Copy it
+  before changing it, or keep editable state in a signal or `store`.
+- **Expecting `fetchJSON` in an event handler to use the cache.** Only component-level awaits are
+  cached; a handler's call is a plain request (call `invalidate(url)` after a mutation instead).
+- **Awaiting a `Response` inside an island.** `await fetch(url)` gives a non-serializable value.
+  Use `await fetchJSON(url)` (`LUM4007`).
+- **Putting secrets in awaited values inside islands.** They are serialized into the HTML. Fetch
+  only what the browser may see.
+```
