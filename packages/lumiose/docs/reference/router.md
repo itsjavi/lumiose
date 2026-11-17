@@ -11,6 +11,48 @@ request's values, `<Link>` renders its `<a>`, `isNavigating()` is `false`, `befo
 event handlers and effects). Concepts:
 [Routing](../concepts/routing.md), [Rendering modes](../concepts/rendering-modes.md).
 
+## The SPA router in short
+
+Routes with `mode = "spa"` use the client router `lumiose/router`:
+
+- The SPA starts at the outermost `spa` layout (or the page itself) and covers every `spa` page
+  below it; links between them navigate on the client, other links load the document.
+- `<Link href prefetch>` (plain `<a>` links work too), `navigate(href, { replace })`, reactive
+  `params()`, `route()` (the matched pattern), `url()`, `searchParams()` (`searchParams.set()` changes the
+  query) and `isNavigating()`.
+- Layouts persist: a layout's `children` is the outlet, and layouts shared by the old and the new
+  page keep their state. A page with other param values (`songs/[id]`) is a new page.
+- A navigation holds the old page until the new page's async content is ready, then swaps. With
+  `viewTransitions: true`, a navigation to another page swaps inside
+  [`viewTransition()`](components.md#viewtransition) (a query change on the same page
+  does not), and `<ViewTransition>` names the elements that morph.
+- Scroll restoration, focus reset, an announcement of each new page for screen readers (its
+  `<Title>`, else its first `<h1>`), `not-found` for unknown URLs and `notFound()`, `error` for
+  errors. See [Behaviour](#behaviour).
+- Navigation hooks: `beforeNavigate(fn)` runs before each navigation and may `cancel()` it (to
+  confirm leaving unsaved changes; the page stays, and for `"leave"`, such as closing the tab, the
+  browser asks), and `afterNavigate(fn)` runs after each completed one and once on mount (page
+  views, focus). They belong to the component that calls them during setup, and work in islands of
+  MPA pages too (link clicks, `"leave"` and `"enter"`). See
+  [Navigation hooks](#navigation-hooks), and
+  [Unsaved changes](#unsaved-changes) for a guard with your own dialog.
+
+```tsx
+import { signal } from "lumiose";
+import { afterNavigate, beforeNavigate } from "lumiose/router";
+
+export function Editor() {
+  const dirty = signal(false);
+  beforeNavigate((navigation) => {
+    if (!dirty()) return;
+    if (navigation.type === "leave") navigation.cancel(); // the browser asks
+    else if (!confirm("Discard your changes?")) navigation.cancel();
+  });
+  afterNavigate((navigation) => console.info("page view", navigation.to?.url.pathname));
+  return <textarea onInput={() => dirty.set(true)} />;
+}
+```
+
 ## Components
 
 ### Link
@@ -396,7 +438,8 @@ export function CurrentPath() {
 With `lumiose({ i18n })`, the locale of the current URL (its prefix, else the default locale),
 reactive inside SPA routes; in islands of other routes, the page's. `undefined` without
 `lumiose({ i18n })`, typed `string | undefined`. A navigation to another locale renders every level again, and `<html lang>`
-follows. See [Internationalization](../concepts/i18n.md).
+follows. See [Locale routing in detail](#locale-routing-in-detail) and
+[Internationalization](../concepts/i18n.md).
 
 ```ts
 function locale(): Locale;
@@ -526,129 +569,6 @@ export function NextPage() {
 - **Stale modules.** A page module that fails to load (an old chunk after a deploy) loads the URL
   as a document instead (its hooks already ran: no `"leave"`).
 
-## Example
-
-```tsx check file=routes/music/layout.tsx
-// src/routes/music/layout.tsx: an SPA under /music, with a persistent layout
-import { href, type LayoutProps } from "lumiose";
-import { Link, isNavigating } from "lumiose/router";
-
-export const mode = "spa";
-
-export default function Layout(props: LayoutProps<"/music">) {
-  return (
-    <div class="app">
-      <nav>
-        <Link href={href("/music")}>Songs</Link>
-        <Link href={href("/music/settings")} prefetch="viewport">
-          Settings
-        </Link>
-      </nav>
-      {isNavigating() && <progress />}
-      <main>{props.children}</main>
-    </div>
-  );
-}
-```
-
-```tsx check file=routes/music/page.tsx
-// src/routes/music/page.tsx: a filter kept in the query
-import { searchParams } from "lumiose/router";
-
-export default function Songs() {
-  const query = () => searchParams().get("q") ?? "";
-  return (
-    <input
-      type="search"
-      value={query()}
-      onInput={(event) =>
-        searchParams.set({ q: event.currentTarget.value || null }, { replace: true })
-      }
-    />
-  );
-}
-```
-
-```tsx check file=routes/music/settings/page.tsx
-// src/routes/music/settings/page.tsx: asks before leaving unsaved changes
-import { href, signal } from "lumiose";
-import { afterNavigate, beforeNavigate, navigate } from "lumiose/router";
-
-export default function Settings() {
-  const dirty = signal(false);
-
-  beforeNavigate((navigation) => {
-    if (!dirty()) return;
-    if (navigation.type === "leave") navigation.cancel(); // the browser asks
-    else if (!confirm("Discard your changes?")) navigation.cancel();
-  });
-
-  afterNavigate((navigation) => {
-    if (navigation.to !== null) console.info("page view", navigation.to.url.pathname);
-  });
-
-  return (
-    <form>
-      <input name="volume" onInput={() => dirty.set(true)} />
-      <button
-        type="button"
-        onClick={() => {
-          dirty.set(false);
-          void navigate(href("/music"), { replace: true });
-        }}
-      >
-        Done
-      </button>
-    </form>
-  );
-}
-```
-
-See also: [Routing](../concepts/routing.md), [Rendering modes](../concepts/rendering-modes.md),
-[`lumiose`: app layer](app.md).
-
-## The SPA router in short
-
-Routes with `mode = "spa"` use the client router `lumiose/router` ([reference](../reference/router.md)):
-
-- The SPA starts at the outermost `spa` layout (or the page itself) and covers every `spa` page
-  below it; links between them navigate on the client, other links load the document.
-- `<Link href prefetch>` (plain `<a>` links work too), `navigate(href, { replace })`, reactive
-  `params()`, `route()` (the matched pattern), `url()`, `searchParams()` (`searchParams.set()` changes the
-  query) and `isNavigating()`.
-- Layouts persist: a layout's `children` is the outlet, and layouts shared by the old and the new
-  page keep their state. A page with other param values (`songs/[id]`) is a new page.
-- A navigation holds the old page until the new page's async content is ready, then swaps. With
-  `viewTransitions: true`, a navigation to another page swaps inside
-  [`viewTransition()`](components.md#viewtransition) (a query change on the same page
-  does not), and `<ViewTransition>` names the elements that morph.
-- Scroll restoration, focus reset, an announcement of each new page for screen readers (its
-  `<Title>`, else its first `<h1>`), `not-found` for unknown URLs and `notFound()`, `error` for
-  errors. See [Behaviour](#behaviour).
-- Navigation hooks: `beforeNavigate(fn)` runs before each navigation and may `cancel()` it (to
-  confirm leaving unsaved changes; the page stays, and for `"leave"`, such as closing the tab, the
-  browser asks), and `afterNavigate(fn)` runs after each completed one and once on mount (page
-  views, focus). They belong to the component that calls them during setup, and work in islands of
-  MPA pages too (link clicks, `"leave"` and `"enter"`). See
-  [Navigation hooks](#navigation-hooks), and
-  [Unsaved changes](#unsaved-changes) for a guard with your own dialog.
-
-```tsx
-import { signal } from "lumiose";
-import { afterNavigate, beforeNavigate } from "lumiose/router";
-
-export function Editor() {
-  const dirty = signal(false);
-  beforeNavigate((navigation) => {
-    if (!dirty()) return;
-    if (navigation.type === "leave") navigation.cancel(); // the browser asks
-    else if (!confirm("Discard your changes?")) navigation.cancel();
-  });
-  afterNavigate((navigation) => console.info("page view", navigation.to?.url.pathname));
-  return <textarea onInput={() => dirty.set(true)} />;
-}
-```
-
 ## Locale routing in detail
 
 ```ts
@@ -776,3 +696,84 @@ again.
   request.
 - **No `site` for a prerendered site.** `hreflang` and canonical URLs stay root-relative, which
   search engines ignore; `lumiose build` warns.
+
+## Example
+
+```tsx check file=routes/music/layout.tsx
+// src/routes/music/layout.tsx: an SPA under /music, with a persistent layout
+import { href, type LayoutProps } from "lumiose";
+import { Link, isNavigating } from "lumiose/router";
+
+export const mode = "spa";
+
+export default function Layout(props: LayoutProps<"/music">) {
+  return (
+    <div class="app">
+      <nav>
+        <Link href={href("/music")}>Songs</Link>
+        <Link href={href("/music/settings")} prefetch="viewport">
+          Settings
+        </Link>
+      </nav>
+      {isNavigating() && <progress />}
+      <main>{props.children}</main>
+    </div>
+  );
+}
+```
+
+```tsx check file=routes/music/page.tsx
+// src/routes/music/page.tsx: a filter kept in the query
+import { searchParams } from "lumiose/router";
+
+export default function Songs() {
+  const query = () => searchParams().get("q") ?? "";
+  return (
+    <input
+      type="search"
+      value={query()}
+      onInput={(event) =>
+        searchParams.set({ q: event.currentTarget.value || null }, { replace: true })
+      }
+    />
+  );
+}
+```
+
+```tsx check file=routes/music/settings/page.tsx
+// src/routes/music/settings/page.tsx: asks before leaving unsaved changes
+import { href, signal } from "lumiose";
+import { afterNavigate, beforeNavigate, navigate } from "lumiose/router";
+
+export default function Settings() {
+  const dirty = signal(false);
+
+  beforeNavigate((navigation) => {
+    if (!dirty()) return;
+    if (navigation.type === "leave") navigation.cancel(); // the browser asks
+    else if (!confirm("Discard your changes?")) navigation.cancel();
+  });
+
+  afterNavigate((navigation) => {
+    if (navigation.to !== null) console.info("page view", navigation.to.url.pathname);
+  });
+
+  return (
+    <form>
+      <input name="volume" onInput={() => dirty.set(true)} />
+      <button
+        type="button"
+        onClick={() => {
+          dirty.set(false);
+          void navigate(href("/music"), { replace: true });
+        }}
+      >
+        Done
+      </button>
+    </form>
+  );
+}
+```
+
+See also: [Routing](../concepts/routing.md), [Rendering modes](../concepts/rendering-modes.md),
+[`lumiose`: app layer](app.md).

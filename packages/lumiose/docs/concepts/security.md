@@ -72,7 +72,7 @@ export function Profile(props: {
 
 `innerHTML={…}` and an iframe's `srcdoc={…}` render a string as HTML, as it is: a script in it
 runs. Pass them only HTML you trust, your own or sanitized. Write JSON for a `<script>` as a text
-child: every `<` is written as `<`, so a value cannot close the element.
+child: every `<` is written as `\u003c`, so a value cannot close the element.
 
 ```tsx check
 export function ArticleData(props: { title: string }) {

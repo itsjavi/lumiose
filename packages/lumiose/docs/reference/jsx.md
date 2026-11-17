@@ -117,19 +117,37 @@ the tsconfig's `rootDirs` leave out.
 | `JSX.Ref<T>`                                                | What `ref<T>()` returns: callable with the element, readable as `() => T \| undefined`.                                                                 |
 | `JSX.HTMLProps<T>`, `JSX.SVGProps<T>`, `JSX.MathMLProps<T>` | Props of an element type, for wrappers.                                                                                                                 |
 
-**Element props.** Every element accepts `children`, `class`, `style`, `ref`, `attach`, `innerHTML`,
+**Rejected on purpose** (type errors with a hint): `className` (use `class`), `htmlFor` (use
+`for`), camelCase `style` keys, exact-case or lowercase handlers (`onKeydown`, `onclick`), and
+`<style>` in `.tsx` files.
+
+### Element props
+
+Every element accepts `children`, `class`, `style`, `ref`, `attach`, `innerHTML`,
 `key`, its attributes, `onX` handlers and `on:x` listeners (a spread never sets `innerHTML`,
 `textContent` or `srcdoc`). `input` also accepts `bind:value`
 (string or number signal) and `bind:checked` (boolean signal); `select` and `textarea` accept
 `bind:value`.
 
-**Component props.** A component accepts `bind:x` (a writable signal of the type of `x`) for each
-prop `x` that comes with an `onXChange` callback; when `x` or `onXChange` is required, `bind:x`
-stands in for both ([`bind:` on components](../concepts/jsx.md)).
+| Prop                         | Rule                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| ---------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `class`                      | A string, an array, or a `{ name: boolean }` record (nested arrays allowed). `className` is a type error.                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| `style`                      | A string, or an object with **kebab-case** keys, including `--custom` properties. Each key updates on its own.                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| `aria-*`, `spellcheck`, …    | Booleans are written as `"true"`/`"false"` (`aria-pressed={false}` renders `aria-pressed="false"`): `aria-*`, `contenteditable`, `draggable`, `spellcheck` and the other enumerated attributes, static or not. Other attributes: `true` adds the attribute empty (`hidden`); `false`, `null` and `undefined` leave it out. A function is never an attribute: it is left out too.                                                                                                                                                                                |
+| `onClick`, `onKeyDown`, …    | camelCase handlers. Bubbling events are delegated (one listener per type at `document`); non-bubbling ones (`onFocus`, `onMouseEnter`, `onScroll`) get a direct listener.                                                                                                                                                                                                                                                                                                                                                                                       |
+| `on:click`, `on:my-event`    | A native `addEventListener` listener with the exact event name. Use it for custom and web-component events. Like `onX` handlers, it runs inside a batch: its writes render together, and the DOM is current when the event returns.                                                                                                                                                                                                                                                                                                                             |
+| Props of a custom element    | The element's property when it defines one (arrays and objects as they are), else the attribute, as in React 19. See [Web components](../guides/web-components.md).                                                                                                                                                                                                                                                                                                                                                                                             |
+| `bind:value`, `bind:checked` | Two-way binding to a writable signal, on `input`, `select` and `textarea`. `bind:x` also works on components and custom elements (below).                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| `attach={[fn]}`              | Runs `fn(el)` with the element in a tracked scope, once the element is in the document (below); it may return a cleanup. Next to a spread it works the same, in either order, and attachments add up: an `attach` the spread carries (a wrapper's `<li {...props} />` given `attach`) runs too.                                                                                                                                                                                                                                                                 |
+| `ref={fn}`                   | Called with the element. `ref<T>()` makes a callback you can read like a signal. Next to a spread, `ref` is a prop like any other: the last one wins, so a wrapper that sets its own calls the caller's (`ref={(el) => { mine(el); rest.ref?.(el); }}`).                                                                                                                                                                                                                                                                                                        |
+| `innerHTML`                  | Sets unescaped HTML. The lint rule `no-unsafe-html` warns. Only as a written prop: a spread drops `innerHTML`, `textContent` and `srcdoc`, on the server and the client, so an object from JSON cannot inject markup. Written next to a spread (`<div {...rest} innerHTML={html} />`), they apply as written, and replace the spread's `children`.                                                                                                                                                                                                              |
+| `key`                        | Allowed on intrinsic elements and components (list identity).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| `<script>`, `<style>` text   | Raw text: written as it is, never `&lt;`; the character after a `<` that could open a tag is escaped (`<\u0069mg`, in a style `<\69 mg`; `<\/`, `<\!`), so a value can neither end the element nor open a tag inside `<svg>` or `<math>`. In a JSON script every `<` is `\u003c`. See [Security](../concepts/security.md), and [Head](../concepts/head.md) for JSON-LD.                                                                                                                                                                                         |
+| `{...props}`, `children`     | A spread applies every prop it carries, in order with the other attributes; written `attach` and `bind:` apply on their own (above). A nullish or `false` spread (`{...props.extra}`, `{...(open && attrs)}`) applies nothing. An element without content of its own renders the `children` of its spreads or of a `children` attribute, as in React: `<button {...props} />` renders what the caller passed. Written content wins. When the spread has no `children` prop at all, the element's content is left alone, so a script or the browser may fill it. |
+| `client:*`                   | Island directives, on components only. See [Islands](../concepts/islands.md).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
 
-**Rejected on purpose** (type errors with a hint): `className` (use `class`), `htmlFor` (use
-`for`), camelCase `style` keys, exact-case or lowercase handlers (`onKeydown`, `onclick`), and
-`<style>` in `.tsx` files.
+Handlers receive the **native** event, with `currentTarget` typed as the element. There are no
+synthetic events.
 
 **Event names.** `onX` handlers use React-style camelCase after `on` (`onClick`, `onKeyDown`,
 `onDblClick`, `onPointerDown`, `onMouseEnter`); the DOM event is the suffix lowercased. Bubbling
@@ -139,6 +157,68 @@ events are delegated; non-bubbling ones (`focus`, `blur`, `mouseenter`, `mousele
 events. Every handler (delegated, direct or `on:`, and one passed in a spread) runs inside a
 batch: what it writes renders together when it returns, so the DOM is current right after the
 event.
+
+### When attach runs
+
+An attachment is an effect: it runs after the update that created its
+element has written all of its DOM, so the element is already inserted and can be measured. A new
+list row goes into the document complete, with its nested lists, conditionals and components, in
+one insertion, and only then do the attachments inside it run. The exception is content that a
+`<Suspense>` holds back while it shows its fallback: it waits in a fragment, so its attachments run
+before it is in the document (`el.isConnected` is `false`), and do not run again when it appears.
+
+The attachments and effects that one update queues all run before the DOM shows their own writes.
+When each attachment measures (`getBoundingClientRect`) and then sets a signal the page renders,
+every measurement reads the same layout, and the writes reach the DOM together after the last
+attachment has run: N elements cost one layout, not N. Reading the signal still returns the new
+value at once; only the DOM lags. To measure what such a write renders, read the signal in an
+effect (it re-runs once the DOM shows the write), or measure in the next frame or in a
+`ResizeObserver`.
+
+### bind: on components and custom elements
+
+`bind:x={signal}` works on any component with an
+`x` prop and an `onXChange` callback, like `bind:value` on inputs: `bind:open` on `Dialog.Root`,
+`bind:value` on `Combobox.Root`, `bind:checked` on `Menu.CheckboxItem`. The compiler expands it to
+both props, `x={signal()}` and `onXChange={(value) => signal.set(value)}`, in server and client
+output. An `onXChange` written next to it still runs, after the signal is set. The types come from
+the component's props: a component without `x` or without `onXChange` has no `bind:x`, so the
+attribute is a type error. `bind:x` takes a writable signal of the type of `x`; when `x` or
+`onXChange` is required, `bind:x` stands in for both.
+
+On a custom element (a tag with a dash), `bind:x` sets the element's `x` property and reads it back
+into the signal when the element dispatches `input`, `change` or `xchange` (lowercase:
+`openchange`, `checkedchange`); events bubbling up from its children are ignored. The server
+renders the signal's value as the attribute (`<lu-menu open>`). Declare `bind:x` on a typed custom
+element (`"bind:open"?: Signal<boolean>`); undeclared ones accept it untyped.
+
+```tsx check
+import { signal } from "lumiose";
+
+function Disclosure(props: {
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  children?: JSX.Element;
+}) {
+  return (
+    <details open={props.open} onToggle={(event) => props.onOpenChange?.(event.currentTarget.open)}>
+      {props.children}
+    </details>
+  );
+}
+
+export function Faq() {
+  const open = signal(false);
+  return (
+    <>
+      <Disclosure bind:open={open}>
+        <summary>Shipping</summary>2 to 4 days.
+      </Disclosure>
+      <button onClick={() => open.set(!open())}>{open() ? "Collapse" : "Expand"}</button>
+    </>
+  );
+}
+```
 
 ## Custom elements
 
@@ -254,92 +334,7 @@ the efficient form:
 | `{row.label()}`, `{id}`, `{props.title}`            | Maybe text, alone between nodes (or the only child): also a text node of the template, written by `insertText`. Text values update the node in place; nodes, arrays and other values render in a region before it.                    |
 | `{fn()}` next to text or another `{…}`              | A dynamic insert (a region), since adjacent text nodes would merge when the HTML is parsed.                                                                                                                                           |
 
-## Element props
-
-**Elements.**
-
-| Prop                         | Rule                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
-| ---------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `class`                      | A string, an array, or a `{ name: boolean }` record (nested arrays allowed). `className` is a type error.                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
-| `style`                      | A string, or an object with **kebab-case** keys, including `--custom` properties. Each key updates on its own.                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
-| `aria-*`, `spellcheck`, …    | Booleans are written as `"true"`/`"false"` (`aria-pressed={false}` renders `aria-pressed="false"`): `aria-*`, `contenteditable`, `draggable`, `spellcheck` and the other enumerated attributes, static or not. Other attributes: `true` adds the attribute empty (`hidden`); `false`, `null` and `undefined` leave it out. A function is never an attribute: it is left out too.                                                                                                                                                                                |
-| `onClick`, `onKeyDown`, …    | camelCase handlers. Bubbling events are delegated (one listener per type at `document`); non-bubbling ones (`onFocus`, `onMouseEnter`, `onScroll`) get a direct listener.                                                                                                                                                                                                                                                                                                                                                                                       |
-| `on:click`, `on:my-event`    | A native `addEventListener` listener with the exact event name. Use it for custom and web-component events. Like `onX` handlers, it runs inside a batch: its writes render together, and the DOM is current when the event returns.                                                                                                                                                                                                                                                                                                                             |
-| Props of a custom element    | The element's property when it defines one (arrays and objects as they are), else the attribute, as in React 19. See [Web components](../guides/web-components.md).                                                                                                                                                                                                                                                                                                                                                                                             |
-| `bind:value`, `bind:checked` | Two-way binding to a writable signal, on `input`, `select` and `textarea`. `bind:x` also works on components and custom elements (below).                                                                                                                                                                                                                                                                                                                                                                                                                       |
-| `attach={[fn]}`              | Runs `fn(el)` with the element in a tracked scope, once the element is in the document (below); it may return a cleanup. Next to a spread it works the same, in either order, and attachments add up: an `attach` the spread carries (a wrapper's `<li {...props} />` given `attach`) runs too.                                                                                                                                                                                                                                                                 |
-| `ref={fn}`                   | Called with the element. `ref<T>()` makes a callback you can read like a signal. Next to a spread, `ref` is a prop like any other: the last one wins, so a wrapper that sets its own calls the caller's (`ref={(el) => { mine(el); rest.ref?.(el); }}`).                                                                                                                                                                                                                                                                                                        |
-| `innerHTML`                  | Sets unescaped HTML. The lint rule `no-unsafe-html` warns. Only as a written prop: a spread drops `innerHTML`, `textContent` and `srcdoc`, on the server and the client, so an object from JSON cannot inject markup. Written next to a spread (`<div {...rest} innerHTML={html} />`), they apply as written, and replace the spread's `children`.                                                                                                                                                                                                              |
-| `key`                        | Allowed on intrinsic elements and components (list identity).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
-| `<script>`, `<style>` text   | Raw text: written as it is, never `&lt;`; the character after a `<` that could open a tag is escaped (`<\u0069mg`, in a style `<\69 mg`; `<\/`, `<\!`), so a value can neither end the element nor open a tag inside `<svg>` or `<math>`. In a JSON script every `<` is `\u003c`. See [Security](../concepts/security.md), and [Head](../concepts/head.md) for JSON-LD.                                                                                                                                                                                         |
-| `{...props}`, `children`     | A spread applies every prop it carries, in order with the other attributes; written `attach` and `bind:` apply on their own (above). A nullish or `false` spread (`{...props.extra}`, `{...(open && attrs)}`) applies nothing. An element without content of its own renders the `children` of its spreads or of a `children` attribute, as in React: `<button {...props} />` renders what the caller passed. Written content wins. When the spread has no `children` prop at all, the element's content is left alone, so a script or the browser may fill it. |
-| `client:*`                   | Island directives, on components only. See [Islands](../concepts/islands.md).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
-
-Handlers receive the **native** event, with `currentTarget` typed as the element. There are no
-synthetic events.
-
-## When attach runs
-
-**When `attach` runs.** An attachment is an effect: it runs after the update that created its
-element has written all of its DOM, so the element is already inserted and can be measured. A new
-list row goes into the document complete, with its nested lists, conditionals and components, in
-one insertion, and only then do the attachments inside it run. The exception is content that a
-`<Suspense>` holds back while it shows its fallback: it waits in a fragment, so its attachments run
-before it is in the document (`el.isConnected` is `false`), and do not run again when it appears.
-
-The attachments and effects that one update queues all run before the DOM shows their own writes.
-When each attachment measures (`getBoundingClientRect`) and then sets a signal the page renders,
-every measurement reads the same layout, and the writes reach the DOM together after the last
-attachment has run: N elements cost one layout, not N. Reading the signal still returns the new
-value at once; only the DOM lags. To measure what such a write renders, read the signal in an
-effect (it re-runs once the DOM shows the write), or measure in the next frame or in a
-`ResizeObserver`.
-
-## bind: on components and custom elements
-
-**`bind:` on components and custom elements.** `bind:x={signal}` works on any component with an
-`x` prop and an `onXChange` callback, like `bind:value` on inputs: `bind:open` on `Dialog.Root`,
-`bind:value` on `Combobox.Root`, `bind:checked` on `Menu.CheckboxItem`. The compiler expands it to
-both props, `x={signal()}` and `onXChange={(value) => signal.set(value)}`, in server and client
-output. An `onXChange` written next to it still runs, after the signal is set. The types come from
-the component's props: a component without `x` or without `onXChange` has no `bind:x`, so the
-attribute is a type error.
-
-On a custom element (a tag with a dash), `bind:x` sets the element's `x` property and reads it back
-into the signal when the element dispatches `input`, `change` or `xchange` (lowercase:
-`openchange`, `checkedchange`); events bubbling up from its children are ignored. The server
-renders the signal's value as the attribute (`<lu-menu open>`). Declare `bind:x` on a typed custom
-element (`"bind:open"?: Signal<boolean>`); undeclared ones accept it untyped.
-
-```tsx check
-import { signal } from "lumiose";
-
-function Disclosure(props: {
-  open?: boolean;
-  onOpenChange?: (open: boolean) => void;
-  children?: JSX.Element;
-}) {
-  return (
-    <details open={props.open} onToggle={(event) => props.onOpenChange?.(event.currentTarget.open)}>
-      {props.children}
-    </details>
-  );
-}
-
-export function Faq() {
-  const open = signal(false);
-  return (
-    <>
-      <Disclosure bind:open={open}>
-        <summary>Shipping</summary>2 to 4 days.
-      </Disclosure>
-      <button onClick={() => open.set(!open())}>{open() ? "Collapse" : "Expand"}</button>
-    </>
-  );
-}
-```
-
-## Lists and keys in depth
+### Lists and keys in depth
 
 `{items().map((item, i) => …)}` compiles to a list that reconciles its rows when the array changes:
 it keeps, moves, creates and removes rows instead of rendering them all again.

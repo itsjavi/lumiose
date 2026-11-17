@@ -14,6 +14,27 @@ renders an `spa` page (or, in a layout, every `spa` page below it) at build time
 request, and `lumiose({ prerender: true })` makes that the default for every `spa` page (see
 [Prerendered SPA routes](#prerendered-spa-routes)).
 
+```ts
+export const mode: "static" | "server" | "spa";
+export const ssr: boolean;
+export const prerender: boolean;
+```
+
+```stsx
+// src/routes/app/layout.stsx
+export const mode = "spa";
+export const prerender = true;
+```
+
+| Name        | Type                            | Default                                             | Description                                                                                                 |
+| ----------- | ------------------------------- | --------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `mode`      | `"static" \| "server" \| "spa"` | The nearest layout's, else `lumiose({ mode })`      | The route's rendering mode, a string literal. Layouts, pages and endpoints take it.                         |
+| `ssr`       | `boolean`                       | The nearest layout's, else `lumiose({ ssr })`       | For `spa` routes: `false` builds a static shell, and the page renders in the browser.                       |
+| `prerender` | `boolean`                       | The nearest layout's, else `lumiose({ prerender })` | For `spa` pages: `true` renders the page at build time instead of per request. A literal `true` or `false`. |
+
+The project defaults are `mode: "static"`, `ssr: true` and `prerender: false`
+([`lumiose()` options](vite.md#lumiose)).
+
 ## Choosing a mode
 
 Pick the mode by what the page needs, per route, not once for the whole app:
@@ -210,13 +231,15 @@ see the content, and a static host can serve the page.
   whose mode is `static` or `server`, it has no effect (a `LUM5002` warning).
 
   ```stsx
-  // src/routes/layout.stsx: every page below is prerendered…
+  // src/routes/layout.stsx:
+  // every page below is prerendered…
   export const mode = "spa";
   export const prerender = true;
   ```
 
   ```stsx
-  // src/routes/account/page.stsx: …except this one, which reads cookies per request
+  // src/routes/account/page.stsx:
+  // …except this one, which reads cookies per request
   export const prerender = false;
   ```
 
@@ -255,12 +278,18 @@ fully resolved as the build does, so hydration problems show up there first.
 
 ## Build
 
-`lumiose build` runs: 1. client build (islands, SPA, CSS, assets, `public/`), 2. server
-build, 3. prerender of every `static` route and every `spa` page with `prerender` (each
-`staticPaths()` entry for routes with params) and every static `GET` endpoint, in-process through the built handler and fully resolved (no fallbacks
-or swap scripts), 4. precompression: a `.br` and a `.gz` copy next to every text file of
-`dist/client` of at least 1 kB, which `@lumiose/adapter-node` (and most static hosts and CDNs) serve
-to browsers that accept them. Output:
+`lumiose build` runs:
+
+1. The client build (islands, SPA, CSS, assets, `public/`).
+2. The server build.
+3. The prerender of every `static` route and every `spa` page with `prerender` (each
+   `staticPaths()` entry for routes with params) and every static `GET` endpoint, in-process
+   through the built handler and fully resolved (no fallbacks or swap scripts).
+4. Precompression: a `.br` and a `.gz` copy next to every text file of `dist/client` of at least
+   1 kB, which `@lumiose/adapter-node` (and most static hosts and CDNs) serve to browsers that
+   accept them.
+
+Output:
 
 - `dist/client`: assets and prerendered files. Assets include those only server-rendered code
   imports (`import photo from "./photo.png"` in a route, a relative `<img src>` in a `.md`

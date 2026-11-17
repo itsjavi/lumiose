@@ -4,10 +4,30 @@
 
 ## Strict Content Security Policy
 
-**Strict Content Security Policy.** A strict CSP lets the browser run only the scripts and apply
+A strict CSP lets the browser run only the scripts and apply
 only the styles the page meant to include, so injected markup cannot run code. **New projects start
 with it:** every `create-lumiose` template sets `csp: "strict"` in `vite.config.ts`. The framework
-default stays off, so a project set up by hand opts in. With `lumiose({ csp: "strict" })`:
+default stays off, so a project set up by hand opts in.
+
+```ts
+csp?: "strict";
+```
+
+```ts
+// vite.config.ts
+import { lumiose } from "@lumiose/vite";
+import { defineConfig } from "vite";
+
+export default defineConfig({
+  plugins: [lumiose({ csp: "strict" })],
+});
+```
+
+| Name  | Type       | Default | Description                                                                          |
+| ----- | ---------- | ------- | ------------------------------------------------------------------------------------ |
+| `csp` | `"strict"` | —       | A strict Content Security Policy: nonces per response, hashes for prerendered pages. |
+
+With `lumiose({ csp: "strict" })`:
 
 - **Pages rendered per request** (`server` routes, `spa` routes that reach the server) get a new
   random nonce for each response. Every inline `<script>` and `<style>` Lumiose writes carries it:
@@ -76,7 +96,7 @@ file's `<style>` block.
 
 ## Client navigation and spread props
 
-**Client navigation.** `navigate()` and the redirects of enhanced form actions only
+`navigate()` and the redirects of enhanced form actions only
 follow `http:` and `https:` URLs (relative ones included); a `javascript:` or `data:` location
 throws a `TypeError` instead of running in the page. Spread props drop lowercase `on*` keys
 (`{...{ onclick: "…" }}`): an inline handler attribute is a script sink, so handlers are only
@@ -91,7 +111,7 @@ spread too (`<div {...rest} innerHTML={html} />`).
 
 ## Unsafe URLs
 
-**Unsafe URLs.** A dynamic value for a URL attribute (`href`, `src`, `action`, `formaction`,
+A dynamic value for a URL attribute (`href`, `src`, `action`, `formaction`,
 `xlink:href`, `poster`, `data`, …) whose scheme is `javascript:`, `vbscript:` or `data:text/html`
 renders as `about:blank#blocked`, on the server and in the browser, with a
 [LUM4009](../errors/LUM4009.md) warning in development. Case, leading spaces and control
@@ -100,7 +120,7 @@ are left as written.
 
 ## Raw HTML
 
-**Raw HTML.** `innerHTML={…}` and an iframe's `srcdoc={…}` render a string as HTML, as it is: a
+`innerHTML={…}` and an iframe's `srcdoc={…}` render a string as HTML, as it is: a
 script in it runs, in a `srcdoc` frame with the page's origin and access to the page. Pass them only
 HTML you trust (your own, or sanitized). With `csp: "strict"` the browser refuses a script injected
 either way: neither gets a nonce, and a `srcdoc` frame inherits the page's policy (checked in
@@ -142,13 +162,13 @@ or MathML element: its text is escaped as usual, and the parser decodes it. See
 
 ## Error details
 
-**Error details.** In production server rendering, `<ErrorBoundary>` fallbacks receive a generic
+In production server rendering, `<ErrorBoundary>` fallbacks receive a generic
 error with a short `digest`, and the original error is logged with the same digest
 ([ErrorBoundary](components.md#errorboundary)).
 
 ## Redirects
 
-**Redirects.** `redirect()` accepts paths and `http(s)` URLs only; a `javascript:` or `data:`
+`redirect()` accepts paths and `http(s)` URLs only; a `javascript:` or `data:`
 location throws. For a user-supplied target (`?next=`), accept only same-origin paths, or the user
 lands wherever a link sends them:
 
@@ -170,7 +190,7 @@ would resolve into another route.
 
 ## Files from elsewhere
 
-**Files from elsewhere.** Icon sets, Markdown and HTML often come from outside the project. The
+Icon sets, Markdown and HTML often come from outside the project. The
 compiler guards against what such files could carry:
 
 - **SVG imports** are untrusted input. They keep an allowlist of SVG elements and attributes: no
@@ -191,12 +211,12 @@ compiler guards against what such files could carry:
 
 ## Cross-site form posts
 
-**Cross-site form posts.** Form actions and form-encoded posts to endpoints are checked against
+Form actions and form-encoded posts to endpoints are checked against
 the `Origin` header (on by default, `lumiose({ csrf })`); see [Data and actions](../concepts/data-and-actions.md).
 
 ## Request URLs
 
-**Request URLs.** `lumiose dev`, `lumiose preview` and `@lumiose/adapter-node` build each request's URL
+`lumiose dev`, `lumiose preview` and `@lumiose/adapter-node` build each request's URL
 from the server's origin (`ORIGIN`, else the socket's protocol and the `Host` header) plus the
 request target's path, appended as is: a request for `//attacker.test/reset` stays on your origin
 with that path, so `ctx.url`, `url()`, the cross-site check and `fetchJSON()`'s same-origin test
@@ -206,7 +226,7 @@ host, set `ORIGIN` (or the adapter's `origin`) so a client cannot choose the ori
 
 ## Request body limits
 
-**Request body limits.** Every request body is bounded (decision-29): URL-encoded forms, JSON and
+Every request body is bounded (decision-29): URL-encoded forms, JSON and
 other bodies at 1 MB, `multipart/form-data` (uploads) at 10 MB. A larger request gets `413 Payload
 Too Large`, refused before reading when its `Content-Length` says so, else as soon as the bytes
 read pass the limit; nothing buffers an unbounded body. The limits hold for form actions
@@ -218,38 +238,62 @@ a multipart parser of your own) of a multipart body get the upload limit. A `req
 these limits; a request re-wrapped with `new Request(request)` keeps the Content-Type's limit only,
 so its `json()` and `text()` read a body declared multipart up to the upload limit: call them on
 the request itself or a clone. Raise or lower the limits for the app with
-`lumiose({ limits: { body: "2mb", upload: "50mb" } })`, and for one route with
-`export const limits = { upload: "200mb" }` in its page or endpoint file.
+`lumiose({ limits })`, and for one route with `export const limits` in its page or endpoint file.
+
+```ts
+limits?: { body?: number | string; upload?: number | string };
+```
+
+```ts
+// vite.config.ts: for the app
+lumiose({ limits: { body: "2mb", upload: "50mb" } });
+```
+
+```ts
+// A page or endpoint file: for one route
+export const limits = { upload: "200mb" };
+```
+
+| Name            | Type               | Default  | Description                                               |
+| --------------- | ------------------ | -------- | --------------------------------------------------------- |
+| `limits.body`   | `number \| string` | `"1mb"`  | URL-encoded forms, JSON and any other non-multipart body. |
+| `limits.upload` | `number \| string` | `"10mb"` | `multipart/form-data` bodies (uploads).                   |
+
+Sizes are bytes or a string such as `"512kb"` or `"1mb"` ([`lumiose()` options](vite.md#lumiose)).
 
 ## Default response headers
 
-**Default response headers.** `X-Content-Type-Options: nosniff` (no MIME sniffing of uploads and
-JSON) and `Referrer-Policy: strict-origin-when-cross-origin` (no full URLs to other sites) go on
-every response; override them in `lumiose({ headers })`, or remove one with `""`.
+Two headers go on every response; override them in `lumiose({ headers })`, or remove one with
+`""`.
+
+| Header                   | Value                             | Effect                                |
+| ------------------------ | --------------------------------- | ------------------------------------- |
+| `X-Content-Type-Options` | `nosniff`                         | No MIME sniffing of uploads and JSON. |
+| `Referrer-Policy`        | `strict-origin-when-cross-origin` | No full URLs to other sites.          |
 
 ## Server-only code
 
-**Server-only code** (`*.server.*` files, `src/server/`) never reaches the browser: imports from
+Server-only code (`*.server.*` files, `src/server/`) never reaches the browser: imports from
 client code fail `lumiose dev`/`lumiose build` (`LUM4003`), `lumiose dev` refuses to serve the files
 (`server.fs.deny`), and only `import.meta.env.PUBLIC_*` variables reach client code (`envPrefix`).
 See [Server](../concepts/server.md).
 
 ## What the page sends
 
-**What the page sends.** Island props, values awaited inside islands and the scoped state islands
+Island props, values awaited inside islands and the scoped state islands
 use (`defineState`) are serialized into the page as plain data (JSON in
 `<script type="application/json">`, escaped so it cannot end the element): anyone who loads the
 page can read them. Never pass a secret there; keep it in server-only modules.
 
 ## Secrets
 
-**Secrets.** `signedCookie()` needs a secret of at least 32 bytes in production
+`signedCookie()` needs a secret of at least 32 bytes in production
 (`LUMIOSE_SECRET`); a shorter one throws when the cookie is used (in development it warns).
 `{ allowWeakSecret: true }` opts out.
 
 ## Compression
 
-**Compression.** `@lumiose/adapter-node` compresses responses; for pages that render a secret next
+`@lumiose/adapter-node` compresses responses; for pages that render a secret next
 to reflected input, see BREACH in the [adapter reference](adapter-node.md).
 
 ## Common mistakes

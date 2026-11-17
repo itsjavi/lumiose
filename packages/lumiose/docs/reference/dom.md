@@ -155,25 +155,20 @@ server HTML. With `src/instrumentation.client.ts`, its `onError` receives
 the error too (`phase: "hydrate"`), and its `hydrate` wrappers observe each island
 ([Client instrumentation](#client-instrumentation)).
 
+**The loader script.** `lumiose dev` and `lumiose build` add the loader to every page that renders an
+island, once, as `<script type="module" async>`: in the `<head>` when the shell has islands,
+otherwise with the first streamed chunk that does. In a build, pages without islands load no
+JavaScript; the loader is the client entry, and each island is a chunk it imports when the island's
+trigger fires. The loader's chunk also holds the Lumiose runtime the islands share (signals, DOM,
+hydration), so a page loads one runtime file before its islands: about 8 to 10 kB min+brotli in
+the sample apps (`pnpm --filter lumiose size:apps` reports them; `pnpm --filter lumiose size` checks
+the 10 kB cap on what an islands page ships and the 15 kB cap on the whole client runtime).
+
 The tag that `lumiose dev` and `lumiose build` add to a page with islands (the URL is the
 build's):
 
 ```html
 <script type="module" async src="/assets/loader-B1x2.js"></script>
-```
-
-## Example
-
-```tsx check
-import { signal } from "lumiose";
-import { render } from "lumiose/dom";
-
-function App() {
-  const name = signal("world");
-  return <input bind:value={name} placeholder={`Hello, ${name()}`} />;
-}
-
-render(() => <App />, document.getElementById("app")!);
 ```
 
 ## Islands in detail
@@ -232,20 +227,22 @@ island renders, and the server throws "Combobox parts must be inside <Combobox.R
 data as a prop and render the parts inside the island:
 
 ```tsx
-// Throws: the items render in the page, outside the island's <Combobox.Root>.
-<CityPicker client:load options={cities.map((c) => <Combobox.Item value={c}>{c}</Combobox.Item>)} />
+// Throws: the items render in the page, outside
+// the island's <Combobox.Root>.
+<CityPicker
+  client:load
+  options={cities.map((c) => (
+    <Combobox.Item value={c}>{c}</Combobox.Item>
+  ))}
+/>
 
 // Works: the island renders the items from a prop.
 <CityPicker client:load cities={cities} />
 ```
 
 **What hydration does.** The island's component runs again in the browser, with the props the
-server serialized, and its compiled code claims the server's nodes instead of creating new ones:
-the DOM, focus and text selections stay. Awaits replay the values recorded during SSR instead of
-fetching again, while still tracking what they read, so a later change re-runs the component and
-fetches. Everything outside islands stays server HTML that never hydrates. `client:only` renders on
-the client without server HTML. An island inside a streamed `<Suspense>` waits for its content
-before hydrating.
+server serialized, and claims the server's nodes ([`hydrate`](#lumiosedomhydrate)). Everything
+outside islands stays server HTML that never hydrates.
 
 **Nested directives.** A `client:*` inside an island's own render is just a component: it is
 already client-side.
@@ -285,17 +282,11 @@ reaches one, and `lumiose check` reports the import. Server-only APIs (`request(
 browser does not fetch it again; it must be plain data (`LUM4007`), and it is visible in the page
 source. Cached awaits (`fetchJSON`, `query`) are sent once per page however many islands await
 them, and fill the browser cache, so later awaits and `invalidate(url)` start from them. So are the values of scoped state that islands import (`defineState`, `LUM4011`): the page
-sends them once, before the islands that read them hydrate. The loader and `hydrate()` are described in [`lumiose/dom`](dom.md).
+sends them once, before the islands that read them hydrate. The loader and `hydrate()` are described in [`lumiose/dom/loader`](#lumiosedomloader) and
+[`lumiose/dom/hydrate`](#lumiosedomhydrate).
 
-**The loader script.** `lumiose dev` and `lumiose build` add the loader to every page that renders an
-island, once, as `<script type="module" async>`: in the `<head>` when the shell has islands,
-otherwise with the first streamed chunk that does. In a build, pages without islands load no
-JavaScript; the loader is the client entry, and each island is a chunk it imports when the island's
-trigger fires. The loader's chunk also holds the Lumiose runtime the islands share (signals, DOM,
-hydration), so a page loads one runtime file before its islands: about 8 to 10 kB min+brotli in
-the sample apps (`pnpm --filter lumiose size:apps` reports them; `pnpm --filter lumiose size` checks
-the 10 kB cap on what an islands page ships and the 15 kB cap on the whole client runtime). With your own server, pass its URL as
-`renderToStream(root, { loaderUrl })`.
+> **Status:** available: island calls and records (`LUM4001`, `LUM4002`), the loader with its
+> triggers and event replay, and hydration (`LUM4006` on a mismatch), in `lumiose dev` and builds.
 
 ### Client instrumentation
 
@@ -480,9 +471,6 @@ their islands gets its chunk even when only server code renders it. Folders insi
 package that are projects of their own (with a `package.json`, `tsconfig.json` or
 `vite.config.*`, such as a showcase app) are left out.
 
-> **Status:** available: island calls and records (`LUM4001`, `LUM4002`), the loader with its
-> triggers and event replay, and hydration (`LUM4006` on a mismatch), in `lumiose dev` and builds.
-
 ### Mistakes with islands
 
 - **A non-exported island.** `function Counter` used with `client:load` cannot be imported by the
@@ -512,3 +500,17 @@ package that are projects of their own (with a `package.json`, `tsconfig.json` o
   `searchParams.set(next, { shallow: true })` does not re-render the page, so a table the server
   rendered from `url().searchParams` keeps the old rows. Drop `shallow` to load the page, or render
   that table inside the island, from props and an endpoint.
+
+## Example
+
+```tsx check
+import { signal } from "lumiose";
+import { render } from "lumiose/dom";
+
+function App() {
+  const name = signal("world");
+  return <input bind:value={name} placeholder={`Hello, ${name()}`} />;
+}
+
+render(() => <App />, document.getElementById("app")!);
+```

@@ -501,11 +501,12 @@ not sent; the factory runs again in the browser and the server values replace it
 stores before any island reads them, so hydration matches. Values go once per page, in the chunk
 (shell or streamed boundary) where the state was first used, and must be plain data like island
 props ([LUM4011](../errors/LUM4011.md)). States that only server code imports are never sent.
-Everything a sent state holds is public: never put secrets in it.
+Everything a sent state holds is **public**: everyone who can load the page can read it in its
+source. Never put secrets in a state that islands use.
 
 Define states at module scope with `export const x = defineState(…)` (or export the binding):
-`@lumiose/vite` names each one after its module and export, the way it names islands. States
-created elsewhere (inside a function) are never sent.
+`@lumiose/vite` names each one after its module and export (`/src/lib/cart.ts#cart`), the way it
+names islands. States created elsewhere (inside a function) are never sent.
 
 ```ts
 function defineState<T>(factory: () => T): () => T;
@@ -524,6 +525,26 @@ export const prefs = defineState(() => {
 | Name      | Type      | Default | Description                                                                |
 | --------- | --------- | ------- | -------------------------------------------------------------------------- |
 | `factory` | `() => T` | —       | Creates the state. Runs on the first call of the accessor, once per scope. |
+
+### Scoped state on the server and in tests
+
+**Islands.** Each [island](../concepts/islands.md) hydrates as its own root, so context provided by the page
+does not reach an island, and one island cannot provide to another. The server renders islands
+the same way, so their HTML matches. Islands share the Lumiose runtime and the modules they import,
+so islands share state through **scoped state**.
+
+**Scoped state on the server.** The factory runs per request, so it can seed itself from the
+request (`cookies()`, `locals()`, …); there is no separate seed API. What the page then sends to
+the browser is under **Sent to the browser**, above.
+
+**Scoped state in tests.** Under Vitest, `@lumiose/vite` resets scoped state before each test: each
+test starts with fresh instances, in DOM tests and in server tests (where calls outside a render
+share one instance per test).
+
+In the [cart example](../concepts/state.md#state-shared-by-islands-definestate), what the page
+sends is `cart`'s store (`{ items: [...] }`): `count` and `add` are created again in the browser.
+For state that lives only in the browser, a module-scope `signal` works too,
+as long as it is written only in handlers and effects, which never run on the server.
 
 ## isServer
 
@@ -685,41 +706,6 @@ export function LikeButton(props: { likes: number }) {
 | `set(value, promise)` | `void` | Shows `value` until `promise` settles.                                                               |
 | `update(fn, promise)` | `void` | Shows `fn` applied to the current value until `promise` settles; re-applied when the source changes. |
 
-## Example
-
-```tsx check
-import { batch, effect, getAbortSignal, onCleanup, resource, signal, untrack } from "lumiose";
-
-export function Clock() {
-  const now = signal(new Date());
-  const timer = setInterval(() => now.set(new Date()), 1000);
-  onCleanup(() => clearInterval(timer));
-
-  const first = signal("Ada");
-  const last = signal("Lovelace");
-  const rename = () =>
-    batch(() => {
-      first.set("Grace");
-      last.set("Hopper");
-    });
-
-  effect(() => {
-    console.log(`${first()} ${last()} at`, untrack(now).toISOString());
-  });
-
-  const user = resource((signal) =>
-    fetch(`/api/users/${first()}`, { signal }).then((res) => res.json() as Promise<{ id: string }>),
-  );
-
-  return (
-    <p onClick={rename}>
-      {now().toLocaleTimeString()} · {user.loading() ? "…" : user()?.id}
-      {String(getAbortSignal().aborted)}
-    </p>
-  );
-}
-```
-
 ## State libraries mapped
 
 **No state library needed.** Only the code that reads a signal (or a store property) re-runs, so
@@ -737,33 +723,6 @@ selectors and re-render tuning are not needed. What the popular libraries offer 
 | Valtio `proxy`, `snapshot`                           | `store`, `snapshot`                                                                                       |
 | Solid `reconcile`, TanStack structural sharing       | `reconcile(store, data)`: patch fresh data in, keeping unchanged items                                    |
 | `zustand/vanilla`, a Jotai store, Redux              | the [external store recipe](../concepts/state.md#an-external-store-zustandvanilla-a-jotai-store-redux)    |
-
-## Scoped state on the server and in tests
-
-**Islands.** Each [island](../concepts/islands.md) hydrates as its own root, so context provided by the page
-does not reach an island, and one island cannot provide to another. The server renders islands
-the same way, so their HTML matches. Islands share the Lumiose runtime and the modules they import,
-so islands share state through **scoped state**: `defineState(factory)` returns an accessor whose
-factory runs on first use, once per page in the browser and once per request on the server.
-
-**Scoped state on the server.** The factory runs per request, so it can seed itself from the
-request (`cookies()`, `locals()`, …); there is no separate seed API. When islands (or SPA routes)
-import a state, the page sends its server values: the signals and stores the factory returned,
-once per page, in the chunk where the state was first used. In the browser the factory runs again
-(rebuilding computeds and functions) and the server values replace its signals and stores before
-any island reads them, so hydration matches. A state that only server code imports is never sent.
-Sent values must be plain data, like island props (`LUM4011`), and they are **public**: everyone
-who can load the page can read them in its source. Never put secrets in a state that islands use.
-
-**Scoped state in tests.** Under Vitest, `@lumiose/vite` resets scoped state before each test: each
-test starts with fresh instances, in DOM tests and in server tests (where calls outside a render
-share one instance per test).
-
-What the page sends is `cart`'s store (`{ items: [...] }`): `count` and `add` are created again in
-the browser. `@lumiose/vite` names each state after its module and export
-(`/src/lib/cart.ts#cart`), the way it names islands, so define states at module scope and export
-them (or the binding). For state that lives only in the browser, a module-scope `signal` works too,
-as long as it is written only in handlers and effects, which never run on the server.
 
 ## State recipes
 
@@ -812,8 +771,7 @@ object, so a list re-renders every row and loses its local state. `reconcile` pa
 instead: rows are matched by `id` (or by `{ key }`), unchanged rows keep their identity, and only
 the fields that changed notify.
 
-It works on a part of a store too: `reconcile(state.books, fresh)`. Keys missing from the new
-data are deleted, nested objects are merged, and other values are replaced.
+It works on a part of a store too; [`reconcile`](#reconcile) has the matching rules.
 
 ```ts check
 import { reconcile, store } from "lumiose";
@@ -902,3 +860,38 @@ export function ThemeToggle() {
   every row, so lists re-create their rows and lose row state. Use `reconcile(state.rows, data)`.
 - **Wrapping a class instance, `Map` or `Set` in `store()`.** Only plain objects and arrays become
   reactive. Use a record keyed by id, or the family recipe.
+
+## Example
+
+```tsx check
+import { batch, effect, getAbortSignal, onCleanup, resource, signal, untrack } from "lumiose";
+
+export function Clock() {
+  const now = signal(new Date());
+  const timer = setInterval(() => now.set(new Date()), 1000);
+  onCleanup(() => clearInterval(timer));
+
+  const first = signal("Ada");
+  const last = signal("Lovelace");
+  const rename = () =>
+    batch(() => {
+      first.set("Grace");
+      last.set("Hopper");
+    });
+
+  effect(() => {
+    console.log(`${first()} ${last()} at`, untrack(now).toISOString());
+  });
+
+  const user = resource((signal) =>
+    fetch(`/api/users/${first()}`, { signal }).then((res) => res.json() as Promise<{ id: string }>),
+  );
+
+  return (
+    <p onClick={rename}>
+      {now().toLocaleTimeString()} · {user.loading() ? "…" : user()?.id}
+      {String(getAbortSignal().aborted)}
+    </p>
+  );
+}
+```
