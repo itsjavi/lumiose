@@ -2,21 +2,13 @@
 
 > Run a Lumiose app on Render as a Node web service, with the Node adapter or the Docker guide's image.
 
-Not tested on Render yet: see the [verification table](README.md#verification).
+> **Status:** Not tested on Render yet ([verification table](README.md#verification)).
 
-Create a **Web Service** from the repository with the Node runtime:
+## 1. Configure
 
-| Setting       | Value                                                             |
-| ------------- | ----------------------------------------------------------------- |
-| Build command | `corepack enable && pnpm install --frozen-lockfile && pnpm build` |
-| Start command | `node server.ts`                                                  |
-| Health check  | `/` (or a cheap endpoint such as `/healthz`)                      |
-
-Set the environment variable `NODE_VERSION` to `24` (Lumiose needs Node 24 or later), and
-`LUMIOSE_SECRET` when the app signs cookies. Render sets `PORT`, which `createServer()` reads; its
-proxy terminates TLS and forwards the `Host` header, so `ORIGIN` is not needed.
-
-Or as a blueprint:
+Create a **Web Service** from the repository with the Node runtime, with these settings or the
+blueprint beside them. Set the environment variable `NODE_VERSION` to `24` (Lumiose needs Node 24
+or later), and `LUMIOSE_SECRET` when the app signs cookies.
 
 ```yaml
 # render.yaml
@@ -34,8 +26,33 @@ services:
         generateValue: true
 ```
 
-With the Docker runtime instead, Render builds the Dockerfile from [Docker](docker.md) and runs it
-as is.
+| Setting       | Value                                                             |
+| ------------- | ----------------------------------------------------------------- |
+| Build command | `corepack enable && pnpm install --frozen-lockfile && pnpm build` |
+| Start command | `node server.ts`                                                  |
+| Health check  | `/` (or a cheap endpoint such as `/healthz`)                      |
 
-A site whose every route is prerendered can be a **Static Site** instead: build command as above,
-publish directory `dist/client` (see [Static hosts](static.md)).
+## 2. Deploy
+
+Push to the branch the service follows: Render runs the build command, then the start command.
+
+## 3. Verify
+
+```sh
+curl -sI https://my-app.onrender.com/ | head -n 1
+```
+
+```text
+HTTP/2 200
+```
+
+Use the URL the platform gives the app.
+
+## Notes
+
+- Render sets `PORT`, which `createServer()` reads. Its proxy terminates TLS and forwards the
+  `Host` header, so `ORIGIN` is not needed.
+- With the Docker runtime instead, Render builds the Dockerfile from [Docker](docker.md) and runs
+  it as is.
+- A site whose every route is prerendered can be a **Static Site** instead: build command as in
+  step 1, publish directory `dist/client` (see [Static hosts](static.md)).

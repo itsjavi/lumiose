@@ -4,26 +4,35 @@
 
 ## What to deploy
 
+```sh
+pnpm lumiose build
+```
+
+```text
+dist/client/
+dist/server/entry.js
+```
+
 `lumiose build` writes `dist/` ([Rendering modes](../concepts/rendering-modes.md)):
 
-- `dist/client`: the browser assets (content-hashed, under `assets/`), the files of `public/`, and
-  the prerendered pages, with `.br` and `.gz` copies of every text file of 1 kB or more.
-- `dist/server/entry.js`: the request handler for server-rendered pages, endpoints and form
-  actions. It bundles your server code and the Lumiose runtime; other npm packages stay imports,
-  so production needs the app's `dependencies` installed.
+| Output                 | What it holds                                                                                                                                                                                                            |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `dist/client`          | The browser assets (content-hashed, under `assets/`), the files of `public/`, and the prerendered pages, with `.br` and `.gz` copies of every text file of 1 kB or more.                                                 |
+| `dist/server/entry.js` | The request handler for server-rendered pages, endpoints and form actions. It bundles your server code and the Lumiose runtime; other npm packages stay imports, so production needs the app's `dependencies` installed. |
 
-A site whose every route is prerendered builds no `dist/server`: any static host serves
-`dist/client`. Anything else needs a runtime for `dist/server/entry.js`. On Node,
-`@lumiose/adapter-node` serves both directories, from the `server.ts` that
-`create-lumiose --template ssr` writes ([reference](../reference/adapter-node.md)); the guides
-below run it on Docker, a VPS, Coolify, Fly.io, Render and Railway. `dist/server/entry.js` exports
-a web-standard `{ fetch }` ([the server build](../reference/server-entry.md)), which Bun and Deno
-serve as it is.
+What runs it depends on the app:
 
-For Cloudflare, Vercel and Netlify, a deploy adapter in the Vite config writes the platform's
-output after the build: `lumiose({ adapter: cloudflare() })`, `vercel()` or `netlify()`. Those
-platforms serve `dist/client` themselves and compress on their own, so the build then writes no
-`.br`/`.gz` copies.
+- **Every route prerendered.** The build writes no `dist/server`: any static host serves
+  `dist/client`.
+- **Node.** `@lumiose/adapter-node` serves both directories, from the `server.ts` that
+  `create-lumiose --template ssr` writes ([reference](../reference/adapter-node.md)). The guides
+  run it on Docker, a VPS, Coolify, Fly.io, Render and Railway.
+- **Bun and Deno.** `dist/server/entry.js` exports a web-standard `{ fetch }`
+  ([the server build](../reference/server-entry.md)), which they serve as it is.
+- **Cloudflare, Vercel and Netlify.** A deploy adapter in the Vite config writes the platform's
+  output after the build: `lumiose({ adapter: cloudflare() })`, `vercel()` or `netlify()`. Those
+  platforms serve `dist/client` themselves and compress on their own, so the build then writes no
+  `.br`/`.gz` copies.
 
 ## Production settings
 
@@ -55,11 +64,12 @@ The Node adapter and the request handler read these environment variables:
 
 Each target's status says how far its guide has been checked:
 
-- **Verified on the platform**: deployed to the real service by hand, on the date given.
-- **Tested locally**: run on a development machine in the target's own runtime (a container, the
-  platform's emulator), by the script named or by hand; not on the real service.
-- **Not tested**: written from the platform's documentation only.
-- **Planned**: no guide yet.
+| Status                       | Meaning                                                                                                                                                   |
+| ---------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Verified on the platform** | Deployed to the real service by hand, on the date given.                                                                                                  |
+| **Tested locally**           | Run on a development machine in the target's own runtime (a container, the platform's emulator), by the script named or by hand; not on the real service. |
+| **Not tested**               | Written from the platform's documentation only.                                                                                                           |
+| **Planned**                  | No guide yet.                                                                                                                                             |
 
 <!-- To add a target: a page in this directory, a link in the Deploy list of ../README.md (which
      also places it in the website's navigation and llms.txt), and a row below. -->
