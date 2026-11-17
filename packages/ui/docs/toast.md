@@ -216,7 +216,7 @@ export const toasts = Toast.createToastManager();
 **With the default theme**, put `lu-toast-viewport` on `Viewport` and `lu-toast` on each `Root`: a
 column at the window's bottom end, popover surfaces with the title, description and a 28px close
 button, a slide in, a fade out, and a swipe that leaves in its direction. `data-type="error"`
-adds a red edge.
+adds a thick edge at its start, in `--lu-destructive`.
 
 **With your own CSS**, style the parts through `class` and the script's state:
 

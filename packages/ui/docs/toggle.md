@@ -60,7 +60,7 @@ Give an icon-only toggle an `aria-label` that names the action ("Bold"), not its
 ## Styling
 
 **With the default theme**, put `lu-toggle` on it: a bordered 36px button that, pressed, takes a
-filled surface and a bar along its bottom edge, so the state shows by shape and not by colour alone.
+grey surface and a bar along its bottom edge, so the state shows by shape and not by colour alone.
 
 **With your own CSS**, style the button and its state: `[aria-pressed="true"]`, `:hover`,
 `:focus-visible`, `:disabled`.

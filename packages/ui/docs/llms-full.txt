@@ -74,8 +74,9 @@ and how to style the parts yourself.
 
 ### The default theme
 
-`@lumiose/ui/themes/default.css` is a ready look for demos, prototypes and getting started: neutral
-surfaces, a blue primary, light and dark. Its classes (`lu-button`, `lu-dialog`, …) and its `--lu-`
+`@lumiose/ui/themes/default.css` is a ready look with no opinions, for demos, prototypes and getting
+started: black, white and greys, square corners, no shadows and one accent colour you can set,
+light and dark. Its classes (`lu-button`, `lu-dialog`, …) and its `--lu-`
 custom properties, named as in shadcn/ui, are listed in [Theming](theming.md#the-default-theme).
 
 ## Components
@@ -288,9 +289,14 @@ If your app orders its own layers, put `lu` first: `@layer lu, reset, components
 
 ## The default theme
 
-`@lumiose/ui/themes/default.css` is a ready look for demos, prototypes and getting started: neutral
-surfaces, a blue primary, light and dark. It styles a few classes, which you put on the parts
-through their `class` prop:
+`@lumiose/ui/themes/default.css` is a ready look with no opinions, for demos, prototypes and getting
+started: black, white and greys, square corners, no shadows, light and dark. A dialog, a menu or
+any other layer is told from the page by an edge in its text colour. A state is a shape or an
+inversion, not a hue: a highlighted menu item swaps text and background, an invalid field has an
+edge twice as thick, the selected tab and a pressed toggle have a bar. One colour, `--lu-accent`,
+is yours to set ([The accent](#the-accent)).
+
+It styles a few classes, which you put on the parts through their `class` prop:
 
 | Class                | On                                             | Variants                                                                                    |
 | -------------------- | ---------------------------------------------- | ------------------------------------------------------------------------------------------- |
@@ -302,17 +308,17 @@ through their `class` prop:
 | `lu-menu`            | every `Menu.Popup`                             | Styles the items, their checkbox and radio marks, separators and labels                     |
 | `lu-combobox`        | `Combobox.Root`, `Autocomplete.Root`           | Lays out the field (label, chips, input, buttons) and styles the popup                      |
 | `lu-select`          | `Select.Root`                                  | Makes it a customizable select and styles the control and the picker                        |
-| `lu-field`           | `Field.Root`                                   | Stacks the label, control, description and errors; errors in red                            |
-| `lu-input`           | `Input`, `Field.Control`                       | A text field with a focus ring and a red border when invalid                                |
+| `lu-field`           | `Field.Root`                                   | Stacks the label, control, description and errors; errors in a medium weight                |
+| `lu-input`           | `Input`, `Field.Control`                       | A text field with a focus ring and an edge twice as thick when invalid                      |
 | `lu-fieldset`        | `Fieldset.Root`, `CheckboxGroup`, `RadioGroup` | The legend and the items in a column                                                        |
 | `lu-checkbox`        | `Checkbox.Root`                                | An 18px box in a 24px target, a ✓ or a dash                                                 |
 | `lu-radio`           | `Radio.Root`                                   | An 18px circle in a 24px target, a thick ring when checked                                  |
-| `lu-switch`          | `Switch.Root`                                  | A track and a thumb on the side that tells on from off                                      |
+| `lu-switch`          | `Switch.Root`                                  | A square track, filled when on, and a thumb on the side that tells on from off              |
 | `lu-collapsible`     | `Collapsible.Root`                             | Styles the trigger (a chevron) and animates the panel's height                              |
 | `lu-accordion`       | `Accordion.Root`                               | Items between borders; styles the triggers and animates the panels                          |
 | `lu-toast-viewport`  | `Toast.Viewport`                               | A column at the window's bottom end                                                         |
 | `lu-toast`           | every `Toast.Root`                             | Styles the title, description and close button; `data-type="error"`                         |
-| `lu-toggle`          | `Toggle`                                       | Pressed: a filled surface and a bar along the bottom                                        |
+| `lu-toggle`          | `Toggle`                                       | Pressed: a grey surface and a bar along the bottom                                          |
 | `lu-toggle-group`    | `ToggleGroup`                                  | The toggles in a row, or a column when vertical                                             |
 | `lu-progress`        | `Progress.Root`                                | The label and value above a bar; a sliding segment when indeterminate                       |
 | `lu-meter`           | `Meter.Root`                                   | The label and value above a bar                                                             |
@@ -324,25 +330,24 @@ through their `class` prop:
 | `lu-scroll-area`     | `ScrollArea.Root`                              | A bordered box; 10px scrollbars shown on hover, scroll or focus                             |
 | `lu-drawer`          | `Drawer.Popup`                                 | A surface against its edge (a handle on a bottom sheet), title, description, footer; slides |
 | `lu-separator`       | `Separator`                                    | A 1px line in `--lu-border`, horizontal or vertical                                         |
-| `lu-avatar`          | `Avatar.Root`                                  | A 40px circle on a muted surface, the image covering it, the initials centred               |
+| `lu-avatar`          | `Avatar.Root`                                  | A 40px square on a muted surface, the image covering it, the initials centred               |
 | `lu-menubar`         | `Menubar`                                      | A bordered bar of the triggers, the open one filled; `lu-menu` on each popup                |
-| `lu-navigation-menu` | `NavigationMenu.Root`                          | The list in a row, the current page underlined, contents as surfaces that slide in          |
+| `lu-navigation-menu` | `NavigationMenu.Root`                          | The list in a row, the current page underlined and marked, contents as surfaces that slide  |
 
-Its colours and radius are custom properties with shadcn/ui's names and a `--lu-` prefix, so a
-shadcn palette carries over:
+Its colours and radius are custom properties with shadcn/ui's names and a `--lu-` prefix:
 
-| Property                                          | Used for                            |
-| ------------------------------------------------- | ----------------------------------- |
-| `--lu-background`, `--lu-foreground`              | Page-level surfaces and text        |
-| `--lu-card`, `--lu-card-foreground`               | Cards                               |
-| `--lu-popover`, `--lu-popover-foreground`         | Dialogs, popovers, menus            |
-| `--lu-primary`, `--lu-primary-foreground`         | Primary actions                     |
-| `--lu-secondary`, `--lu-secondary-foreground`     | Secondary actions                   |
-| `--lu-muted`, `--lu-muted-foreground`             | Subdued surfaces and text           |
-| `--lu-accent`, `--lu-accent-foreground`           | Hover and highlighted items         |
-| `--lu-destructive`, `--lu-destructive-foreground` | Destructive actions                 |
-| `--lu-border`, `--lu-input`, `--lu-ring`          | Borders, field borders, focus rings |
-| `--lu-radius`                                     | Corner radius                       |
+| Property                                          | Used for                                                                             |
+| ------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| `--lu-background`, `--lu-foreground`              | Page-level surfaces and text: white and black, black and white in dark               |
+| `--lu-card`, `--lu-card-foreground`               | Cards                                                                                |
+| `--lu-popover`, `--lu-popover-foreground`         | Dialogs, popovers, menus, and the edge that tells them from the page                 |
+| `--lu-primary`, `--lu-primary-foreground`         | Primary actions and inverted states (highlighted, pressed, checked): the text colour |
+| `--lu-secondary`, `--lu-secondary-foreground`     | Secondary surfaces, such as a combobox's chips                                       |
+| `--lu-muted`, `--lu-muted-foreground`             | Hover and subdued surfaces, secondary text (`#595959`, `#a3a3a3` in dark)            |
+| `--lu-accent`, `--lu-accent-foreground`           | The one colour, for decoration (`#f5a300`, `#ffd27a` in dark), and text on it        |
+| `--lu-destructive`, `--lu-destructive-foreground` | Destructive actions, errors and invalid edges: the text colour by default            |
+| `--lu-border`, `--lu-input`, `--lu-ring`          | Hairlines, the edges of fields and controls, focus rings                             |
+| `--lu-radius`                                     | Corner radius: `0` by default                                                        |
 
 The theme sets `color-scheme: light dark` on `:root` and every colour with `light-dark()`, so it
 follows the system. Set `color-scheme: light` (or `dark`) on `:root` or on any element, in CSS,
@@ -353,14 +358,98 @@ that follow the system only). Redefine a property outside layers to change it:
 ```css
 :root {
   --lu-primary: #7c3aed;
+  --lu-primary-foreground: #fff;
+  --lu-ring: light-dark(#7c3aed, #a78bfa);
+  --lu-destructive: light-dark(#dc2626, #f87171);
+  --lu-destructive-foreground: light-dark(#fff, #000);
   --lu-radius: 0.375rem;
 }
 ```
 
-The theme meets WCAG 2.2 AA in light and dark: each `-foreground` colour reaches 4.5:1 on its
-surface, and `--lu-input` (the borders of fields and controls) and `--lu-ring` (the focus ring)
-reach 3:1 on the surfaces they sit on. `--lu-border` is for decoration, such as a dialog's edge:
-it is too light to outline a control. Keep those ratios when you change the colours.
+A shadcn/ui palette carries over under the same names, with one difference: `--lu-accent` is the
+decorative colour here, and hover surfaces use `--lu-muted`. Shadows are yours to add, on the
+classes above, outside layers.
+
+### The accent
+
+`--lu-accent` is the only colour in the theme: amber, `#f5a300` in light and `#ffd27a` in dark. It
+is a decoration. The theme uses it for one thing, the small square before the current page of a
+navigation menu, which the underline beside it does not depend on. Use it for your own marks:
+
+```css
+:root {
+  --lu-accent: light-dark(#0f766e, #5eead4);
+}
+```
+
+Never rely on it: it is not a text colour, a control's edge or a focus ring. The light amber is
+2:1 on white, below the 3:1 a boundary needs and the 4.5:1 text needs. Text on an accent surface
+uses `--lu-accent-foreground` (black, 10:1 on the light amber and 14.7:1 on the dark one).
+
+### Contrast
+
+The theme meets WCAG 2.2 AA in light and dark, in every state:
+
+| Pair                                                       | Light  | Dark   | Needs |
+| ---------------------------------------------------------- | ------ | ------ | ----- |
+| Text on the page                                           | 21:1   | 21:1   | 4.5:1 |
+| Control edges (`--lu-input`) and focus rings (`--lu-ring`) | 21:1   | 21:1   | 3:1   |
+| Text and rings on a hovered surface (`--lu-muted`)         | 18.4:1 | 17.4:1 | 4.5:1 |
+| Text on a pressed button (`--lu-border`)                   | 16.2:1 | 15.1:1 | 4.5:1 |
+| A filled button's text, hovered                            | 15.1:1 | 14.8:1 | 4.5:1 |
+| A filled button's text, pressed                            | 8.5:1  | 10:1   | 4.5:1 |
+| Secondary text (`--lu-muted-foreground`) on the page       | 7:1    | 8.3:1  | 4.5:1 |
+| Secondary text on `--lu-muted` (an avatar's initials)      | 6.1:1  | 6.9:1  | 4.5:1 |
+| The scroll thumb on the page                               | 7:1    | 8.3:1  | 3:1   |
+
+Focus rings are `--lu-ring`, the text colour. On an inverted item (a highlighted menu item or
+option, the open menu of a menubar) the ring is drawn inside the item in `--lu-primary-foreground`,
+21:1 against its fill. Disabled controls are dimmed; WCAG asks no contrast of them. `--lu-border`
+is for decoration, such as a separator: it is too light to outline a control. Keep those ratios
+when you change the colours.
+
+### Changes in the black and white theme
+
+The theme was neutral greys with a blue primary, red errors, rounded corners and shadows. What
+changed:
+
+- No property was renamed or removed. Their default values changed: `--lu-primary` and `--lu-ring`
+  are the text colour (they were blue), `--lu-destructive` is the text colour (it was red),
+  `--lu-input` is the text colour (it was a mid grey), and `--lu-radius` is `0` (it was `0.625rem`).
+- `--lu-accent` changed meaning: it was the hover surface, a grey, and is now the decorative
+  colour. Hover surfaces use `--lu-muted`. If you set `--lu-accent` to restyle hovers, set
+  `--lu-muted` instead.
+- Layers have no shadow, and their edge is `--lu-popover-foreground` (it was `--lu-border`).
+- A highlighted menu item or option and the open menu of a menubar are inverted: the text colour
+  as their background.
+- Errors and invalid controls are not red: an error is full-strength text in a medium weight, and
+  an invalid control has an edge twice as thick. A destructive button looks like a primary one.
+- The switch, the slider's thumbs, the avatar, progress and meter bars and scroll thumbs are square.
+  They follow `--lu-radius`; a radio stays round.
+
+To get the previous colours and corners back, set the properties to their former values:
+
+```css
+:root {
+  --lu-background: light-dark(#fff, #09090b);
+  --lu-foreground: light-dark(#09090b, #fafafa);
+  --lu-popover: light-dark(#fff, #18181b);
+  --lu-popover-foreground: light-dark(#09090b, #fafafa);
+  --lu-primary: #2563eb;
+  --lu-primary-foreground: #fff;
+  --lu-muted: light-dark(#f4f4f5, #27272a);
+  --lu-muted-foreground: light-dark(#67676f, #a1a1aa);
+  --lu-destructive: light-dark(#dc2626, #f87171);
+  --lu-destructive-foreground: light-dark(#fff, #000);
+  --lu-border: light-dark(#e4e4e7, #3f3f46);
+  --lu-input: light-dark(#85858e, #71717a);
+  --lu-ring: light-dark(#2563eb, #60a5fa);
+  --lu-radius: 0.625rem;
+}
+```
+
+The inversions, the square switch and the missing shadows stay: restyle those parts with your own
+CSS.
 
 In forced colours (Windows' contrast themes), the browser drops shadows and gradients and paints
 backgrounds in its own palette, which would erase the state a colour shows. The theme draws those
@@ -1146,7 +1235,7 @@ JavaScript. A missing `src` is `"error"`, not `"idle"`. No `render`.
 ## Example
 
 Two people in a server-rendered page, with no island: an image that loads, and one that fails and
-leaves the initials. The default theme draws the circles.
+leaves the initials. The default theme draws the squares.
 
 ```tsx check
 import { Avatar } from "@lumiose/ui";
@@ -1222,8 +1311,9 @@ export function ProfilePicture() {
 
 ## Styling
 
-**With the default theme**, put `lu-avatar` on `Root`: a 40px circle on a muted surface, the image
-covering it, the fallback's initials centred.
+**With the default theme**, put `lu-avatar` on `Root`: a 40px square on a muted surface, the image
+covering it, the fallback's initials centred. Set `--lu-radius` (or `border-radius: 50%` on the
+root) for rounded ones.
 
 **With your own CSS**, give the root a size, so the image loading or failing never changes the
 layout, and style the parts through `class`, `[data-loaded]`, `[data-loading]`, `[data-error]` and
@@ -1353,8 +1443,10 @@ export function SavingButton() {
 ## Styling
 
 **With the default theme**, put `lu-button` on it (`data-variant="primary"` or
-`data-variant="destructive"` for the others): a 36px tall button with a focus ring, faded when
-`:disabled` or `[aria-disabled="true"]`.
+`data-variant="destructive"` for the others): a 36px tall, square, outlined button with a focus ring, a grey
+surface while hovered or pressed, faded when `:disabled` or `[aria-disabled="true"]`. The two
+variants are filled with the text colour (`--lu-primary`, `--lu-destructive`): the theme has no red,
+so set `--lu-destructive` for one ([Theming](theming.md#the-default-theme)).
 
 **With your own CSS**, style the button and its states: `:hover`, `:focus-visible`, `:disabled`,
 `[aria-disabled="true"]`.
@@ -1463,7 +1555,8 @@ export function NewsletterOptIn() {
 
 **With the default theme**, put `lu-checkbox` on `Root`: an 18px box drawn by `::before` inside a
 24px target, a ✓ when checked and a dash when indeterminate (a symbol, not only a colour), the
-primary colour for both, a focus ring, a red border with `aria-invalid="true"`.
+box filled with the primary colour for both, a focus ring around the target, an edge twice as thick
+with `aria-invalid="true"`.
 
 **With your own CSS**, style the input and its state: `:checked`, `:indeterminate` (and
 `[data-indeterminate]` before the script runs), `:disabled`, `:focus-visible`,
@@ -2758,8 +2851,8 @@ export function NavigationDrawer() {
 
 ## Styling
 
-**With the default theme**, put `lu-drawer` on `Popup`: a surface against its edge, rounded on the
-inside, with a handle on a bottom sheet, the title, the description and a `<footer>` styled. It
+**With the default theme**, put `lu-drawer` on `Popup`: a surface against its edge (`--lu-radius`
+rounds its inner corners), with a handle on a bottom sheet, the title, the description and a `<footer>` styled. It
 slides in and out from its edge, follows a swipe, and leaves from where the swipe let go; the
 backdrop fades with it.
 
@@ -3045,8 +3138,9 @@ export function HandleField() {
 ## Styling
 
 **With the default theme**, put `lu-field` on `Root` and `lu-input` on the control: the parts
-stack with a small gap, the label is medium weight, the description muted, the errors red (a
-lighter red in dark, to keep 4.5:1), and an invalid control gets a red border.
+stack with a small gap, the label is medium weight, the description muted, the errors
+full-strength text in a medium weight, and an invalid control gets an edge twice as thick. Neither
+is red: set `--lu-destructive` for a colour, one that keeps 4.5:1 on the page in light and dark.
 
 **With your own CSS**, style the parts through `class` and state:
 
@@ -3438,7 +3532,7 @@ export function BookSearch() {
 ## Styling
 
 **With the default theme**, put `lu-input` on it: a bordered field, a muted placeholder, a focus
-ring, a red border with `aria-invalid="true"`.
+ring, an edge twice as thick with `aria-invalid="true"`.
 
 **With your own CSS**, style the `input` and its state: `:focus-visible`, `:disabled`,
 `:read-only`, `:placeholder-shown`, `:user-invalid`, `[aria-invalid="true"]`.
@@ -3975,7 +4069,7 @@ export function DocumentMenus() {
 ## Styling
 
 **With the default theme**, put `lu-menubar` on `Menubar` and `lu-menu` on each `Menu.Popup`: a
-bordered bar of the triggers, the one whose menu is open filled, with a focus ring.
+bordered bar of the triggers, the one whose menu is open inverted, with a focus ring.
 
 **With your own CSS**, style the bar through `class` and `[data-orientation]`, the items as
 `lu-menubar > lu-menu > [role="menuitem"]` with `[aria-expanded="true"]` for the open one, and
@@ -4100,8 +4194,8 @@ export function StorageMeter() {
 ## Styling
 
 **With the default theme**, put `lu-meter` on `Root`: the label and the value on a row above a 10px
-bar, its edge in `--lu-input` (3:1, so the whole range shows) and its value in the primary colour
-(a lighter blue in dark mode), whatever band it is in.
+bar, its edge in `--lu-input` (so the whole range shows) and its value in the primary colour, 21:1
+against the empty part, whatever band it is in.
 
 **With your own CSS**, style the bar with `appearance: none` and its pseudo-elements:
 `::-webkit-meter-bar`, `::-webkit-meter-optimum-value`, `::-webkit-meter-suboptimum-value`,
@@ -4311,8 +4405,8 @@ export function SiteNavigation() {
 ## Styling
 
 **With the default theme**, put `lu-navigation-menu` on `Root`: the list in a row (a column when
-vertical), the triggers and links as 36px targets, the current page underlined, an open trigger
-filled with its icon turned, and each content a surface of links that fades and slides in.
+vertical), the triggers and links as 36px targets, the current page underlined (with a small square in
+`--lu-accent` before it, a decoration), an open trigger filled with its icon turned, and each content a surface of links that fades and slides in.
 
 **With your own CSS**, style the parts through `class`, the triggers' `[aria-expanded="true"]`,
 links' `[aria-current="page"]`, and the contents' `:popover-open`, `[data-side]` and
@@ -5233,8 +5327,8 @@ export function UploadProgress() {
 ## Styling
 
 **With the default theme**, put `lu-progress` on `Root`: the label and the value on a row above a
-10px bar, its edge in `--lu-input` (3:1 against the page, so the whole range shows) and its value in
-the primary colour (a lighter blue in dark mode). Indeterminate, a segment slides along it; it
+10px bar, its edge in `--lu-input` (so the whole range shows) and its value in the primary
+colour, 21:1 against the empty part. Indeterminate, a segment slides along it; it
 stands still where motion is reduced.
 
 **With your own CSS**, style the bar with `appearance: none` and its pseudo-elements:
@@ -5357,7 +5451,7 @@ export function ShippingChoice() {
 
 **With the default theme**, put `lu-fieldset` on the group and `lu-radio` on each radio: an 18px
 circle in a 24px target, a thick primary ring when checked (a shape, not only a colour), a focus
-ring.
+ring around the target.
 
 **With your own CSS**, style the inputs and their state: `:checked`, `:disabled`,
 `:focus-visible`; the group: `[role="radiogroup"]`, `[aria-invalid="true"]`.
@@ -5500,7 +5594,7 @@ export function ReleaseList() {
 ## Styling
 
 **With the default theme**, put `lu-scroll-area` on `Root`: a bordered box, padded content, 10px
-scrollbars whose rounded thumbs (`--lu-muted-foreground`, 3:1) show while the pointer is over the
+scrollbars whose thumbs (`--lu-muted-foreground`, 7:1) show while the pointer is over the
 area, while it scrolls and while it has focus, and an inward focus ring on the viewport. Each
 thumb takes presses over 24 by 24 px at least (WCAG 2.5.8), reaching 16px into the content; the
 track stays 10px, which the wheel, the keyboard and the thumb stand in for.
@@ -6052,8 +6146,8 @@ export function PriceRange() {
 ## Styling
 
 **With the default theme**, put `lu-slider` on `Root`: the label and the value on a row above a 24px
-tall control, an 8px track edged in `--lu-input` (3:1), the selected part in the primary colour,
-and 24px round thumbs (`--lu-slider-thumb-size`) with a focus ring around the thumb. Vertical
+tall control, an 8px track edged in `--lu-input`, the selected part in the primary colour,
+and 24px square thumbs (`--lu-slider-thumb-size`) with a focus ring around the thumb. Vertical
 sliders are 10rem tall. A center-aligned control is inset by half a thumb, so its thumbs overhang
 it inside the slider's box.
 
@@ -6173,8 +6267,9 @@ export function AirplaneMode() {
 
 ## Styling
 
-**With the default theme**, put `lu-switch` on `Root`: a 40 by 24px track (`--lu-input` when off,
-the primary colour when on) and a white thumb on the side that tells on from off, a focus ring.
+**With the default theme**, put `lu-switch` on `Root`: a 40 by 24px square track (outlined when
+off, filled with the primary colour when on) and a 16px thumb on the side that tells on from off
+(the text colour when off, the page's when on), a focus ring.
 
 **With your own CSS**, style the input and its state: `:checked`, `:disabled`, `:focus-visible`,
 `[aria-readonly="true"]`, `[aria-invalid="true"]`.
@@ -6683,7 +6778,7 @@ export const toasts = Toast.createToastManager();
 **With the default theme**, put `lu-toast-viewport` on `Viewport` and `lu-toast` on each `Root`: a
 column at the window's bottom end, popover surfaces with the title, description and a 28px close
 button, a slide in, a fade out, and a swipe that leaves in its direction. `data-type="error"`
-adds a red edge.
+adds a thick edge at its start, in `--lu-destructive`.
 
 **With your own CSS**, style the parts through `class` and the script's state:
 
@@ -6841,7 +6936,7 @@ Give an icon-only toggle an `aria-label` that names the action ("Bold"), not its
 ## Styling
 
 **With the default theme**, put `lu-toggle` on it: a bordered 36px button that, pressed, takes a
-filled surface and a bar along its bottom edge, so the state shows by shape and not by colour alone.
+grey surface and a bar along its bottom edge, so the state shows by shape and not by colour alone.
 
 **With your own CSS**, style the button and its state: `[aria-pressed="true"]`, `:hover`,
 `:focus-visible`, `:disabled`.

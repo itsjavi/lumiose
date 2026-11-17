@@ -57,7 +57,7 @@ JavaScript. A missing `src` is `"error"`, not `"idle"`. No `render`.
 ## Example
 
 Two people in a server-rendered page, with no island: an image that loads, and one that fails and
-leaves the initials. The default theme draws the circles.
+leaves the initials. The default theme draws the squares.
 
 ```tsx check
 import { Avatar } from "@lumiose/ui";
@@ -133,8 +133,9 @@ export function ProfilePicture() {
 
 ## Styling
 
-**With the default theme**, put `lu-avatar` on `Root`: a 40px circle on a muted surface, the image
-covering it, the fallback's initials centred.
+**With the default theme**, put `lu-avatar` on `Root`: a 40px square on a muted surface, the image
+covering it, the fallback's initials centred. Set `--lu-radius` (or `border-radius: 50%` on the
+root) for rounded ones.
 
 **With your own CSS**, give the root a size, so the image loading or failing never changes the
 layout, and style the parts through `class`, `[data-loaded]`, `[data-loading]`, `[data-error]` and

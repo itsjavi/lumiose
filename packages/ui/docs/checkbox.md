@@ -72,7 +72,8 @@ export function NewsletterOptIn() {
 
 **With the default theme**, put `lu-checkbox` on `Root`: an 18px box drawn by `::before` inside a
 24px target, a ✓ when checked and a dash when indeterminate (a symbol, not only a colour), the
-primary colour for both, a focus ring, a red border with `aria-invalid="true"`.
+box filled with the primary colour for both, a focus ring around the target, an edge twice as thick
+with `aria-invalid="true"`.
 
 **With your own CSS**, style the input and its state: `:checked`, `:indeterminate` (and
 `[data-indeterminate]` before the script runs), `:disabled`, `:focus-visible`,

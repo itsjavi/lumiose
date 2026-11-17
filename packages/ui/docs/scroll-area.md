@@ -101,7 +101,7 @@ export function ReleaseList() {
 ## Styling
 
 **With the default theme**, put `lu-scroll-area` on `Root`: a bordered box, padded content, 10px
-scrollbars whose rounded thumbs (`--lu-muted-foreground`, 3:1) show while the pointer is over the
+scrollbars whose thumbs (`--lu-muted-foreground`, 7:1) show while the pointer is over the
 area, while it scrolls and while it has focus, and an inward focus ring on the viewport. Each
 thumb takes presses over 24 by 24 px at least (WCAG 2.5.8), reaching 16px into the content; the
 track stays 10px, which the wheel, the keyboard and the thumb stand in for.

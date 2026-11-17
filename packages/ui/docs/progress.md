@@ -82,8 +82,8 @@ export function UploadProgress() {
 ## Styling
 
 **With the default theme**, put `lu-progress` on `Root`: the label and the value on a row above a
-10px bar, its edge in `--lu-input` (3:1 against the page, so the whole range shows) and its value in
-the primary colour (a lighter blue in dark mode). Indeterminate, a segment slides along it; it
+10px bar, its edge in `--lu-input` (so the whole range shows) and its value in the primary
+colour, 21:1 against the empty part. Indeterminate, a segment slides along it; it
 stands still where motion is reduced.
 
 **With your own CSS**, style the bar with `appearance: none` and its pseudo-elements:

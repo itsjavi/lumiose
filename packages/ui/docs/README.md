@@ -63,8 +63,9 @@ and how to style the parts yourself.
 
 ### The default theme
 
-`@lumiose/ui/themes/default.css` is a ready look for demos, prototypes and getting started: neutral
-surfaces, a blue primary, light and dark. Its classes (`lu-button`, `lu-dialog`, …) and its `--lu-`
+`@lumiose/ui/themes/default.css` is a ready look with no opinions, for demos, prototypes and getting
+started: black, white and greys, square corners, no shadows and one accent colour you can set,
+light and dark. Its classes (`lu-button`, `lu-dialog`, …) and its `--lu-`
 custom properties, named as in shadcn/ui, are listed in [Theming](theming.md#the-default-theme).
 
 ## Components

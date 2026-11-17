@@ -6,11 +6,17 @@
  * `lu.theme` layer, above `lu.core`: any app CSS outside layers wins, so set a property on `:root`
  * (or any subtree) to restyle everything.
  *
- * WCAG 2.2 AA (decision-62, doc-9 section 17), light / dark: every `-foreground` reaches 4.5:1 on
- * its surface, muted text included (5.1 / 5.8 on --lu-muted, 5.6 / 6.9 on --lu-popover); field
- * and control borders (--lu-input) and the focus ring 3:1 on the surfaces they sit on (3.3 / 3.1
- * on --lu-muted; ring 5.2 / 7.0). --lu-border is for decoration only: it is not enough to outline
- * a control. The ratios per pair are in TASK-392.
+ * The look has no opinions (decision-90): black, white and greys, square corners, no shadows, and
+ * a layer told from the page by an edge in its text colour. --lu-accent is the one colour, a
+ * decoration: never text, a control's edge or a focus ring (the light one is 2:1 on white). A
+ * state is a shape or an inversion, not a hue: a filled box, a thicker edge, a bar, a mark.
+ *
+ * WCAG 2.2 AA (decision-62, doc-9 section 17), light / dark: text, control edges (--lu-input) and
+ * the focus ring (--lu-ring) are the text colour, 21:1 on the page and 18.4 / 17.4 on --lu-muted,
+ * the hover surface; muted text reaches 7.0 / 8.3 on the page and 6.1 / 6.9 on --lu-muted; a
+ * filled button's text keeps 14.8:1 hovered and 8.5:1 pressed. On an inverted item the ring is
+ * drawn inside it, in the colour of its text. --lu-border is for decoration only: it is not
+ * enough to outline a control.
  *
  *   .lu-button                          a button; data-variant="primary" | "destructive"
  *   .lu-dialog                          a Dialog.Popup: surface, backdrop, title (h2),
@@ -47,13 +53,14 @@
  *   .lu-drawer                          a Drawer.Popup: a surface against its edge (a handle on
  *                                       a bottom sheet), title, description, footer; slides
  *   .lu-separator                       a Separator: a 1px line, horizontal or vertical
- *   .lu-avatar                          an Avatar.Root: a 40px circle, the image covering it,
+ *   .lu-avatar                          an Avatar.Root: a 40px square, the image covering it,
  *                                       the fallback's initials centred on a muted surface
  *   .lu-menubar                         a Menubar: a bordered bar of its menus' triggers (the
  *                                       open one filled); `lu-menu` on each Menu.Popup
  *   .lu-navigation-menu                 a NavigationMenu.Root: its list in a row (a column when
  *                                       vertical), triggers and links, the current page
- *                                       underlined, contents as surfaces of links that slide in
+ *                                       underlined and marked with the accent, contents as
+ *                                       surfaces of links that slide in
  *   .lu-number-field                    a NumberField.Root: label, one bordered group with the
  *                                       input between its buttons
  *   .lu-otp-field                       an OTPField.Root: a box per character, the caret's box
@@ -69,26 +76,28 @@
 @layer lu.theme {
   :root {
     color-scheme: light dark;
-    --lu-background: light-dark(#fff, #09090b);
-    --lu-foreground: light-dark(#09090b, #fafafa);
-    --lu-card: light-dark(#fff, #18181b);
-    --lu-card-foreground: light-dark(#09090b, #fafafa);
-    --lu-popover: light-dark(#fff, #18181b);
-    --lu-popover-foreground: light-dark(#09090b, #fafafa);
-    --lu-primary: #2563eb;
-    --lu-primary-foreground: #fff;
-    --lu-secondary: light-dark(#f4f4f5, #27272a);
-    --lu-secondary-foreground: light-dark(#18181b, #fafafa);
-    --lu-muted: light-dark(#f4f4f5, #27272a);
-    --lu-muted-foreground: light-dark(#67676f, #a1a1aa);
-    --lu-accent: light-dark(#f4f4f5, #27272a);
-    --lu-accent-foreground: light-dark(#18181b, #fafafa);
-    --lu-destructive: #dc2626;
-    --lu-destructive-foreground: #fff;
-    --lu-border: light-dark(#e4e4e7, #3f3f46);
-    --lu-input: light-dark(#85858e, #71717a);
-    --lu-ring: light-dark(#2563eb, #60a5fa);
-    --lu-radius: 0.625rem;
+    --lu-background: light-dark(#fff, #000);
+    --lu-foreground: light-dark(#000, #fff);
+    --lu-card: light-dark(#fff, #000);
+    --lu-card-foreground: light-dark(#000, #fff);
+    --lu-popover: light-dark(#fff, #000);
+    --lu-popover-foreground: light-dark(#000, #fff);
+    --lu-primary: light-dark(#000, #fff);
+    --lu-primary-foreground: light-dark(#fff, #000);
+    --lu-secondary: light-dark(#f0f0f0, #1a1a1a);
+    --lu-secondary-foreground: light-dark(#000, #fff);
+    --lu-muted: light-dark(#f0f0f0, #1a1a1a);
+    --lu-muted-foreground: light-dark(#595959, #a3a3a3);
+    /* The one colour. Decoration only: never text, a control's edge or a focus ring. */
+    --lu-accent: light-dark(#f5a300, #ffd27a);
+    --lu-accent-foreground: #000;
+    /* No red by default: a destructive action and an error are told by their words and shape. */
+    --lu-destructive: light-dark(#000, #fff);
+    --lu-destructive-foreground: light-dark(#fff, #000);
+    --lu-border: light-dark(#e2e2e2, #262626);
+    --lu-input: light-dark(#000, #fff);
+    --lu-ring: light-dark(#000, #fff);
+    --lu-radius: 0;
   }
 
   /* Button ------------------------------------------------------------------------------------ */
@@ -111,8 +120,10 @@
     cursor: pointer;
   }
   .lu-button:hover {
-    background: var(--lu-accent);
-    color: var(--lu-accent-foreground);
+    background: var(--lu-muted);
+  }
+  .lu-button:active {
+    background: var(--lu-border);
   }
   .lu-button:focus-visible {
     outline: 2px solid var(--lu-ring);
@@ -137,8 +148,18 @@
     background: var(--lu-destructive);
     color: var(--lu-destructive-foreground);
   }
-  .lu-button[data-variant]:hover {
-    background-image: linear-gradient(rgb(0 0 0 / 0.1), rgb(0 0 0 / 0.1));
+  /* Filled buttons step towards their text colour: 14.8:1 hovered, 8.5:1 pressed at the least. */
+  .lu-button[data-variant="primary"]:hover {
+    background: color-mix(in srgb, var(--lu-primary) 85%, var(--lu-primary-foreground));
+  }
+  .lu-button[data-variant="primary"]:active {
+    background: color-mix(in srgb, var(--lu-primary) 70%, var(--lu-primary-foreground));
+  }
+  .lu-button[data-variant="destructive"]:hover {
+    background: color-mix(in srgb, var(--lu-destructive) 85%, var(--lu-destructive-foreground));
+  }
+  .lu-button[data-variant="destructive"]:active {
+    background: color-mix(in srgb, var(--lu-destructive) 70%, var(--lu-destructive-foreground));
   }
 
   /* Dialog ------------------------------------------------------------------------------------ */
@@ -148,13 +169,10 @@
     inline-size: min(32rem, 100vw - 2rem);
     max-block-size: calc(100dvh - 2rem);
     padding: 1.5rem;
-    border: 1px solid var(--lu-border);
+    border: 1px solid var(--lu-popover-foreground);
     border-radius: var(--lu-radius);
     background: var(--lu-popover);
     color: var(--lu-popover-foreground);
-    box-shadow:
-      0 10px 15px -3px rgb(0 0 0 / 0.1),
-      0 4px 6px -4px rgb(0 0 0 / 0.1);
   }
   .lu-dialog::backdrop {
     background: rgb(0 0 0 / 0.5);
@@ -217,13 +235,10 @@
     inline-size: max-content;
     max-inline-size: min(20rem, 100vw - 1rem);
     padding: 1rem;
-    border: 1px solid var(--lu-border);
+    border: 1px solid var(--lu-popover-foreground);
     border-radius: var(--lu-radius);
     background: var(--lu-popover);
     color: var(--lu-popover-foreground);
-    box-shadow:
-      0 10px 15px -3px rgb(0 0 0 / 0.1),
-      0 4px 6px -4px rgb(0 0 0 / 0.1);
   }
   .lu-popover :where(h2) {
     margin: 0 0 0.25rem;
@@ -288,7 +303,7 @@
   /* Tabs -------------------------------------------------------------------------------------- */
 
   /*
-   * The selected tab is marked by a 2px bar in the foreground colour (19:1, against 3:1 for
+   * The selected tab is marked by a 2px bar in the foreground colour (21:1, against 3:1 for
    * WCAG 1.4.11) and by its text colour, not by colour alone.
    */
   .lu-tabs [role="tablist"] {
@@ -384,15 +399,12 @@
     max-block-size: min(24rem, var(--lu-available-height, 100dvh - 1rem));
     overflow-y: auto;
     padding: 0.25rem;
-    border: 1px solid var(--lu-border);
+    border: 1px solid var(--lu-popover-foreground);
     border-radius: calc(var(--lu-radius) - 2px);
     background: var(--lu-popover);
     color: var(--lu-popover-foreground);
     font-size: 0.875rem;
     line-height: 1.25;
-    box-shadow:
-      0 10px 15px -3px rgb(0 0 0 / 0.1),
-      0 4px 6px -4px rgb(0 0 0 / 0.1);
     --lu-side-offset: 0.25rem;
   }
   /* A submenu's first item lines up with its trigger. */
@@ -416,13 +428,27 @@
     text-decoration: none;
     cursor: default;
   }
-  .lu-menu :where([role^="menuitem"][data-highlighted], [aria-expanded="true"]) {
-    background: var(--lu-accent);
-    color: var(--lu-accent-foreground);
+  /* The highlighted item inverts. A disabled one does not: its dimmed text would be lost. */
+  .lu-menu
+    :where(
+      [role^="menuitem"]:is([data-highlighted], [aria-expanded="true"]):not([aria-disabled="true"])
+    ) {
+    background: var(--lu-primary);
+    color: var(--lu-primary-foreground);
   }
   .lu-menu :where([role^="menuitem"]:focus-visible) {
     outline: 2px solid var(--lu-ring);
     outline-offset: -2px;
+  }
+  /* On the inverted item the ring is drawn inside it, in the colour of its text. */
+  .lu-menu
+    :where(
+      [role^="menuitem"]:is([data-highlighted], [aria-expanded="true"]):not(
+          [aria-disabled="true"]
+        ):focus-visible
+    ) {
+    outline-color: var(--lu-primary-foreground);
+    outline-offset: -4px;
   }
   /* Dimmed by its text, not `opacity`, which would fade its focus ring to 2:1 (TASK-455, L34). */
   .lu-menu :where([role^="menuitem"][aria-disabled="true"]) {
@@ -564,8 +590,8 @@
     grid-column: 2;
   }
   .lu-combobox > :where(button[command]:hover) {
-    background: var(--lu-accent);
-    color: var(--lu-accent-foreground);
+    background: var(--lu-muted);
+    color: var(--lu-foreground);
   }
   .lu-combobox > :where(button[command="--toggle"]:empty)::before {
     content: "⌄" / "";
@@ -606,7 +632,7 @@
     font: inherit;
   }
   .lu-combobox :where([role="listitem"] > button:hover) {
-    background: var(--lu-accent);
+    background: var(--lu-border);
   }
   /* A chip the arrow keys reach (TASK-461). */
   .lu-combobox :where([role="listitem"]:focus-visible) {
@@ -619,15 +645,12 @@
     box-sizing: border-box;
     min-inline-size: 12rem;
     padding: 0.25rem;
-    border: 1px solid var(--lu-border);
+    border: 1px solid var(--lu-popover-foreground);
     border-radius: calc(var(--lu-radius) - 2px);
     background: var(--lu-popover);
     color: var(--lu-popover-foreground);
     font-size: 0.875rem;
     line-height: 1.25;
-    box-shadow:
-      0 10px 15px -3px rgb(0 0 0 / 0.1),
-      0 4px 6px -4px rgb(0 0 0 / 0.1);
   }
   @supports (anchor-name: --a) {
     .lu-combobox :where([popover]) {
@@ -647,12 +670,15 @@
     border-radius: calc(var(--lu-radius) - 4px);
     cursor: default;
   }
-  /* The highlighted option has no focus of its own: it gets the focus ring the input passes on. */
+  /*
+   * The highlighted option has no focus of its own: it inverts and gets the focus ring the input
+   * passes on, drawn inside it in the colour of its text.
+   */
   .lu-combobox :where([role="option"][data-highlighted]) {
-    background: var(--lu-accent);
-    color: var(--lu-accent-foreground);
-    outline: 2px solid var(--lu-ring);
-    outline-offset: -2px;
+    background: var(--lu-primary);
+    color: var(--lu-primary-foreground);
+    outline: 2px solid var(--lu-primary-foreground);
+    outline-offset: -4px;
   }
   .lu-combobox :where([role="option"][aria-disabled="true"]) {
     opacity: 0.5;
@@ -760,13 +786,10 @@
     max-block-size: min(20rem, 100dvh - 1rem);
     margin-block: 0.25rem;
     padding: 0.25rem;
-    border: 1px solid var(--lu-border);
+    border: 1px solid var(--lu-popover-foreground);
     border-radius: calc(var(--lu-radius) - 2px);
     background: var(--lu-popover);
     color: var(--lu-popover-foreground);
-    box-shadow:
-      0 10px 15px -3px rgb(0 0 0 / 0.1),
-      0 4px 6px -4px rgb(0 0 0 / 0.1);
   }
   .lu-select :where(option) {
     gap: 0.5rem;
@@ -775,12 +798,12 @@
     border-radius: calc(var(--lu-radius) - 4px);
   }
   .lu-select :where(option:hover, option:focus-visible) {
-    background: var(--lu-accent);
-    color: var(--lu-accent-foreground);
+    background: var(--lu-primary);
+    color: var(--lu-primary-foreground);
   }
   .lu-select :where(option:focus-visible) {
-    outline: 2px solid var(--lu-ring);
-    outline-offset: -2px;
+    outline: 2px solid var(--lu-primary-foreground);
+    outline-offset: -4px;
   }
   .lu-select :where(option:disabled) {
     opacity: 0.5;
@@ -817,10 +840,11 @@
     color: var(--lu-muted-foreground);
     font-size: 0.8125rem;
   }
-  /* Errors: the destructive red where it reaches 4.5:1 on the page, a lighter red in dark. */
+  /* Errors: full-strength text in a medium weight, where the description is muted. */
   .lu-field > :where(output) {
-    color: light-dark(var(--lu-destructive), #f87171);
+    color: var(--lu-destructive);
     font-size: 0.8125rem;
+    font-weight: 500;
   }
   .lu-input {
     box-sizing: border-box;
@@ -844,8 +868,10 @@
     opacity: 0.5;
     cursor: not-allowed;
   }
+  /* Invalid: an edge twice as thick (a 1px ring around the border), a shape and not a colour. */
   .lu-input[aria-invalid="true"] {
-    border-color: light-dark(var(--lu-destructive), #f87171);
+    border-color: var(--lu-destructive);
+    box-shadow: 0 0 0 1px var(--lu-destructive);
   }
   .lu-fieldset {
     display: grid;
@@ -926,35 +952,39 @@
     block-size: 1.5rem;
     margin: 0;
     border: 1px solid var(--lu-input);
-    border-radius: 999px;
-    background: var(--lu-input);
+    border-radius: var(--lu-radius);
+    background: var(--lu-background);
     vertical-align: middle;
     cursor: pointer;
   }
-  /* The thumb's side tells on from off, not only the track's colour. */
+  /*
+   * The thumb's side tells on from off, and so does the fill: off, an outlined track with a
+   * filled thumb; on, a filled track with a thumb in the page's colour.
+   */
   .lu-switch::before {
     content: "";
     position: absolute;
-    inset-block: 1px;
-    inset-inline-start: 1px;
-    inline-size: calc(1.5rem - 4px);
-    border-radius: 50%;
-    background: #fff;
-    box-shadow: 0 1px 2px rgb(0 0 0 / 0.3);
+    inset-block: 3px;
+    inset-inline-start: 3px;
+    inline-size: calc(1.5rem - 8px);
+    border-radius: calc(var(--lu-radius) - 3px);
+    background: var(--lu-foreground);
   }
   .lu-switch:checked {
     border-color: var(--lu-primary);
     background: var(--lu-primary);
   }
   .lu-switch:checked::before {
-    inset-inline-start: calc(100% - 1.5rem + 3px);
+    inset-inline-start: calc(100% - 1.5rem + 5px);
+    background: var(--lu-primary-foreground);
   }
   :is(.lu-checkbox, .lu-radio, .lu-switch):focus-visible {
     outline: 2px solid var(--lu-ring);
     outline-offset: 2px;
   }
+  /* Around the 24px target: 3px of the page between the ring and the box, both in the text colour. */
   :is(.lu-checkbox, .lu-radio):focus-visible {
-    outline-offset: -1px;
+    outline-offset: 0;
     border-radius: calc(var(--lu-radius) - 4px);
   }
   :is(.lu-checkbox, .lu-radio, .lu-switch):disabled {
@@ -963,7 +993,8 @@
   }
   :is(.lu-checkbox, .lu-radio)[aria-invalid="true"]::before,
   .lu-switch[aria-invalid="true"] {
-    border-color: light-dark(var(--lu-destructive), #f87171);
+    border-color: var(--lu-destructive);
+    box-shadow: 0 0 0 1px var(--lu-destructive);
   }
   @media (prefers-reduced-motion: no-preference) {
     .lu-switch,
@@ -1078,8 +1109,8 @@
   /*
    * The viewport: a column at the window's bottom end, the newest toast nearest the corner. A toast:
    * a popover surface with its title, description and buttons, the close button a 28px target. It
-   * slides in, fades out, follows a swipe and leaves in its direction. An error toast has a red
-   * edge besides its text.
+   * slides in, fades out, follows a swipe and leaves in its direction. An error toast has a thick
+   * edge at its start, in --lu-destructive, besides its text.
    */
   .lu-toast-viewport {
     box-sizing: border-box;
@@ -1100,13 +1131,10 @@
     align-items: start;
     gap: 0.25rem 0.75rem;
     padding: 0.875rem 0.75rem 0.875rem 1rem;
-    border: 1px solid var(--lu-border);
+    border: 1px solid var(--lu-popover-foreground);
     border-radius: var(--lu-radius);
     background: var(--lu-popover);
     color: var(--lu-popover-foreground);
-    box-shadow:
-      0 10px 15px -3px rgb(0 0 0 / 0.1),
-      0 4px 6px -4px rgb(0 0 0 / 0.1);
     font-size: 0.875rem;
     line-height: 1.4;
     translate: var(--lu-toast-swipe-movement-x, 0) var(--lu-toast-swipe-movement-y, 0);
@@ -1146,8 +1174,8 @@
     cursor: pointer;
   }
   .lu-toast > [command="--close-toast"]:hover {
-    background: var(--lu-accent);
-    color: var(--lu-accent-foreground);
+    background: var(--lu-muted);
+    color: var(--lu-foreground);
   }
   .lu-toast > [command="--close-toast"]:focus-visible {
     outline: 2px solid var(--lu-ring);
@@ -1205,12 +1233,11 @@
     cursor: pointer;
   }
   .lu-toggle:hover {
-    background: var(--lu-accent);
+    background: var(--lu-muted);
   }
-  /* Pressed: a filled surface and a bar along the bottom, a shape and not only a colour. */
+  /* Pressed: a grey surface and a bar along the bottom, a shape and not only a colour. */
   .lu-toggle[aria-pressed="true"] {
-    background: var(--lu-accent);
-    color: var(--lu-accent-foreground);
+    background: var(--lu-muted);
     box-shadow: inset 0 -3px 0 var(--lu-foreground);
   }
   .lu-toggle:focus-visible {
@@ -1251,8 +1278,8 @@
     font-variant-numeric: tabular-nums;
   }
   /*
-   * The bar: its edge in --lu-input (3:1, so the full range shows), the value in the primary
-   * colour (a lighter blue in dark, 3:1 against the bar there too).
+   * The bar: its edge in --lu-input (so the full range shows), the value in the primary colour,
+   * 21:1 against the empty part.
    */
   .lu-progress > :where(progress),
   .lu-meter > :where(meter) {
@@ -1262,10 +1289,10 @@
     inline-size: 100%;
     block-size: 0.625rem;
     border: 1px solid var(--lu-input);
-    border-radius: 999px;
+    border-radius: var(--lu-radius);
     background: var(--lu-background);
     overflow: hidden;
-    --lu-bar: light-dark(var(--lu-primary), #60a5fa);
+    --lu-bar: var(--lu-primary);
   }
   .lu-progress > progress::-webkit-progress-bar {
     background: transparent;
@@ -1338,7 +1365,7 @@
     gap: 0.25rem 1rem;
     inline-size: min(20rem, 100%);
     font-size: 0.875rem;
-    --lu-bar: light-dark(var(--lu-primary), #60a5fa);
+    --lu-bar: var(--lu-primary);
     /* The thumbs' size: slider.css lines the track up with their centres. */
     --lu-slider-thumb-size: 1.5rem;
   }
@@ -1368,7 +1395,7 @@
     box-sizing: border-box;
     block-size: 0.5rem;
     border: 1px solid var(--lu-input);
-    border-radius: 999px;
+    border-radius: var(--lu-radius);
     background: var(--lu-background);
   }
   .lu-slider[data-orientation="vertical"] > div > :where(div) {
@@ -1384,25 +1411,23 @@
     block-size: var(--lu-slider-thumb-size);
     cursor: pointer;
   }
-  /* The thumb: a 24px circle with a primary edge; focus adds a ring around it. */
+  /* The thumb: a 24px square with a primary edge; focus adds a ring around it, 2px away. */
   .lu-slider input[type="range"]::-webkit-slider-thumb {
     appearance: none;
     box-sizing: border-box;
     inline-size: var(--lu-slider-thumb-size);
     block-size: var(--lu-slider-thumb-size);
     border: 2px solid var(--lu-bar);
-    border-radius: 50%;
+    border-radius: var(--lu-radius);
     background: var(--lu-background);
-    box-shadow: 0 1px 3px rgb(0 0 0 / 0.3);
   }
   .lu-slider input[type="range"]::-moz-range-thumb {
     box-sizing: border-box;
     inline-size: var(--lu-slider-thumb-size);
     block-size: var(--lu-slider-thumb-size);
     border: 2px solid var(--lu-bar);
-    border-radius: 50%;
+    border-radius: var(--lu-radius);
     background: var(--lu-background);
-    box-shadow: 0 1px 3px rgb(0 0 0 / 0.3);
   }
   .lu-slider input[type="range"]:focus-visible {
     outline: none;
@@ -1423,19 +1448,16 @@
   /* Drawer (TASK-382) ------------------------------------------------------------------------- */
 
   /*
-   * A popover surface against its edge, rounded on the inside; a bottom sheet has a handle (a
+   * A popover surface against its edge (--lu-radius rounds its inner corners); a bottom sheet has a handle (a
    * decoration: the close buttons and Escape do what a swipe does). It slides in and out from its
    * edge, follows a swipe, and leaves from where the swipe let go; the backdrop fades with it.
    */
   .lu-drawer {
     box-sizing: border-box;
     padding: 1.5rem;
-    border: 1px solid var(--lu-border);
+    border: 1px solid var(--lu-popover-foreground);
     background: var(--lu-popover);
     color: var(--lu-popover-foreground);
-    box-shadow:
-      0 10px 15px -3px rgb(0 0 0 / 0.1),
-      0 4px 6px -4px rgb(0 0 0 / 0.1);
     translate: var(--lu-drawer-swipe-movement-x, 0) var(--lu-drawer-swipe-movement-y, 0);
   }
   .lu-drawer::backdrop {
@@ -1455,7 +1477,7 @@
     inset-inline-start: 50%;
     inline-size: 2.5rem;
     block-size: 0.25rem;
-    border-radius: 999px;
+    border-radius: var(--lu-radius);
     background: var(--lu-input);
     translate: -50% 0;
   }
@@ -1607,7 +1629,7 @@
     border-inline-start: 1px solid var(--lu-input);
   }
   .lu-number-field button[data-action]:hover:not(:disabled) {
-    background: var(--lu-accent);
+    background: var(--lu-border);
   }
   .lu-number-field button[data-action]:disabled {
     color: var(--lu-muted-foreground);
@@ -1639,7 +1661,7 @@
     inline-size: 2.5rem;
     block-size: 2.5rem;
     overflow: hidden;
-    border-radius: 50%;
+    border-radius: var(--lu-radius);
     background: var(--lu-muted);
     color: var(--lu-muted-foreground);
     font-size: 0.875rem;
@@ -1728,15 +1750,12 @@
     inline-size: max-content;
     max-inline-size: min(20rem, 100vw - 1rem);
     padding: 1rem;
-    border: 1px solid var(--lu-border);
+    border: 1px solid var(--lu-popover-foreground);
     border-radius: var(--lu-radius);
     background: var(--lu-popover);
     color: var(--lu-popover-foreground);
     font-size: 0.875rem;
     line-height: 1.5;
-    box-shadow:
-      0 10px 15px -3px rgb(0 0 0 / 0.1),
-      0 4px 6px -4px rgb(0 0 0 / 0.1);
   }
   .lu-preview-card :where(img) {
     display: block;
@@ -1864,10 +1883,10 @@
       transition: opacity 150ms ease-out;
     }
   }
-  /* The thumb: --lu-muted-foreground, 3:1 against the area, rounded. */
+  /* The thumb: --lu-muted-foreground, 7:1 against the area. */
   .lu-scroll-area :where([data-thumb]) {
     position: relative;
-    border-radius: 999px;
+    border-radius: var(--lu-radius);
     background: var(--lu-muted-foreground);
   }
   /*
@@ -1908,13 +1927,21 @@
     text-align: start;
     cursor: pointer;
   }
-  .lu-menubar > lu-menu > [role="menuitem"]:is(:hover, [aria-expanded="true"]) {
-    background: var(--lu-accent);
-    color: var(--lu-accent-foreground);
+  .lu-menubar > lu-menu > [role="menuitem"]:hover {
+    background: var(--lu-muted);
+  }
+  /* The open menu's trigger inverts, like a menu's highlighted item. */
+  .lu-menubar > lu-menu > [role="menuitem"][aria-expanded="true"] {
+    background: var(--lu-primary);
+    color: var(--lu-primary-foreground);
   }
   .lu-menubar > lu-menu > [role="menuitem"]:focus-visible {
     outline: 2px solid var(--lu-ring);
     outline-offset: -2px;
+  }
+  .lu-menubar > lu-menu > [role="menuitem"][aria-expanded="true"]:focus-visible {
+    outline-color: var(--lu-primary-foreground);
+    outline-offset: -4px;
   }
   .lu-menubar > lu-menu > [role="menuitem"]:disabled {
     opacity: 0.5;
@@ -1957,13 +1984,26 @@
     cursor: pointer;
   }
   .lu-navigation-menu > ul > li > :is(button, a):is(:hover, [aria-expanded="true"]) {
-    background: var(--lu-accent);
-    color: var(--lu-accent-foreground);
+    background: var(--lu-muted);
   }
-  /* The current page: underlined, a shape and not only a colour. */
+  /*
+   * The current page: underlined in the text colour, a shape and not only a colour. The square
+   * before it is the theme's one use of --lu-accent: a decoration, which the underline does not
+   * depend on (the light accent is 2:1 on white).
+   */
   .lu-navigation-menu a[aria-current="page"] {
     text-decoration: underline 2px;
     text-underline-offset: 0.35em;
+  }
+  .lu-navigation-menu a[aria-current="page"]::before {
+    content: "";
+    display: inline-block;
+    flex: none;
+    inline-size: 0.375rem;
+    block-size: 0.375rem;
+    margin-inline-end: 0.375rem;
+    background: var(--lu-accent);
+    vertical-align: 0.125em;
   }
   .lu-navigation-menu :is(button, a):focus-visible {
     outline: 2px solid var(--lu-ring);
@@ -1978,13 +2018,10 @@
     min-inline-size: 12rem;
     max-inline-size: min(28rem, 100vw - 1rem);
     padding: 0.375rem;
-    border: 1px solid var(--lu-border);
+    border: 1px solid var(--lu-popover-foreground);
     border-radius: var(--lu-radius);
     background: var(--lu-popover);
     color: var(--lu-popover-foreground);
-    box-shadow:
-      0 10px 15px -3px rgb(0 0 0 / 0.1),
-      0 4px 6px -4px rgb(0 0 0 / 0.1);
   }
   .lu-navigation-menu [popover] a {
     display: block;
@@ -1995,8 +2032,8 @@
     text-decoration: none;
   }
   .lu-navigation-menu [popover] a:is(:hover, :focus-visible) {
-    background: var(--lu-accent);
-    color: var(--lu-accent-foreground);
+    background: var(--lu-primary);
+    color: var(--lu-primary-foreground);
   }
   /* Fade in and out, sliding in from where the previous content was; `overlay` keeps a content in
      the top layer while it fades out, in Chromium only. */

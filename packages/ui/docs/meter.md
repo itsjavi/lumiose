@@ -74,8 +74,8 @@ export function StorageMeter() {
 ## Styling
 
 **With the default theme**, put `lu-meter` on `Root`: the label and the value on a row above a 10px
-bar, its edge in `--lu-input` (3:1, so the whole range shows) and its value in the primary colour
-(a lighter blue in dark mode), whatever band it is in.
+bar, its edge in `--lu-input` (so the whole range shows) and its value in the primary colour, 21:1
+against the empty part, whatever band it is in.
 
 **With your own CSS**, style the bar with `appearance: none` and its pseudo-elements:
 `::-webkit-meter-bar`, `::-webkit-meter-optimum-value`, `::-webkit-meter-suboptimum-value`,

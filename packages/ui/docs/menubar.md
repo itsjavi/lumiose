@@ -138,7 +138,7 @@ export function DocumentMenus() {
 ## Styling
 
 **With the default theme**, put `lu-menubar` on `Menubar` and `lu-menu` on each `Menu.Popup`: a
-bordered bar of the triggers, the one whose menu is open filled, with a focus ring.
+bordered bar of the triggers, the one whose menu is open inverted, with a focus ring.
 
 **With your own CSS**, style the bar through `class` and `[data-orientation]`, the items as
 `lu-menubar > lu-menu > [role="menuitem"]` with `[aria-expanded="true"]` for the open one, and

@@ -194,8 +194,9 @@ export function HandleField() {
 ## Styling
 
 **With the default theme**, put `lu-field` on `Root` and `lu-input` on the control: the parts
-stack with a small gap, the label is medium weight, the description muted, the errors red (a
-lighter red in dark, to keep 4.5:1), and an invalid control gets a red border.
+stack with a small gap, the label is medium weight, the description muted, the errors
+full-strength text in a medium weight, and an invalid control gets an edge twice as thick. Neither
+is red: set `--lu-destructive` for a colour, one that keeps 4.5:1 on the page in light and dark.
 
 **With your own CSS**, style the parts through `class` and state:
 

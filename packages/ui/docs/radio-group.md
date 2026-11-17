@@ -88,7 +88,7 @@ export function ShippingChoice() {
 
 **With the default theme**, put `lu-fieldset` on the group and `lu-radio` on each radio: an 18px
 circle in a 24px target, a thick primary ring when checked (a shape, not only a colour), a focus
-ring.
+ring around the target.
 
 **With your own CSS**, style the inputs and their state: `:checked`, `:disabled`,
 `:focus-visible`; the group: `[role="radiogroup"]`, `[aria-invalid="true"]`.

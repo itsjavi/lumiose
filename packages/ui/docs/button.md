@@ -63,8 +63,10 @@ export function SavingButton() {
 ## Styling
 
 **With the default theme**, put `lu-button` on it (`data-variant="primary"` or
-`data-variant="destructive"` for the others): a 36px tall button with a focus ring, faded when
-`:disabled` or `[aria-disabled="true"]`.
+`data-variant="destructive"` for the others): a 36px tall, square, outlined button with a focus ring, a grey
+surface while hovered or pressed, faded when `:disabled` or `[aria-disabled="true"]`. The two
+variants are filled with the text colour (`--lu-primary`, `--lu-destructive`): the theme has no red,
+so set `--lu-destructive` for one ([Theming](theming.md#the-default-theme)).
 
 **With your own CSS**, style the button and its states: `:hover`, `:focus-visible`, `:disabled`,
 `[aria-disabled="true"]`.

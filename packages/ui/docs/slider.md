@@ -130,8 +130,8 @@ export function PriceRange() {
 ## Styling
 
 **With the default theme**, put `lu-slider` on `Root`: the label and the value on a row above a 24px
-tall control, an 8px track edged in `--lu-input` (3:1), the selected part in the primary colour,
-and 24px round thumbs (`--lu-slider-thumb-size`) with a focus ring around the thumb. Vertical
+tall control, an 8px track edged in `--lu-input`, the selected part in the primary colour,
+and 24px square thumbs (`--lu-slider-thumb-size`) with a focus ring around the thumb. Vertical
 sliders are 10rem tall. A center-aligned control is inset by half a thumb, so its thumbs overhang
 it inside the slider's box.
 

@@ -64,8 +64,9 @@ export function AirplaneMode() {
 
 ## Styling
 
-**With the default theme**, put `lu-switch` on `Root`: a 40 by 24px track (`--lu-input` when off,
-the primary colour when on) and a white thumb on the side that tells on from off, a focus ring.
+**With the default theme**, put `lu-switch` on `Root`: a 40 by 24px square track (outlined when
+off, filled with the primary colour when on) and a 16px thumb on the side that tells on from off
+(the text colour when off, the page's when on), a focus ring.
 
 **With your own CSS**, style the input and its state: `:checked`, `:disabled`, `:focus-visible`,
 `[aria-readonly="true"]`, `[aria-invalid="true"]`.

@@ -115,8 +115,8 @@ export function NavigationDrawer() {
 
 ## Styling
 
-**With the default theme**, put `lu-drawer` on `Popup`: a surface against its edge, rounded on the
-inside, with a handle on a bottom sheet, the title, the description and a `<footer>` styled. It
+**With the default theme**, put `lu-drawer` on `Popup`: a surface against its edge (`--lu-radius`
+rounds its inner corners), with a handle on a bottom sheet, the title, the description and a `<footer>` styled. It
 slides in and out from its edge, follows a swipe, and leaves from where the swipe let go; the
 backdrop fades with it.
 
