@@ -22,7 +22,7 @@ import { llmsText, uiLlmsText } from "./llms.ts";
 import { fillReadme, generateReadme, readmeRegions } from "./readme.ts";
 import rootReadme from "../../../../README.md?raw";
 import { FILENAME, ROOT } from "../playground/compiler.ts";
-import { counterCss, counterOutput, counterSource } from "./samples.ts";
+import { counterHtml, counterSource, emphasize } from "./samples.ts";
 
 const binding = await import("@lumiose/compiler").catch(() => undefined);
 
@@ -400,15 +400,36 @@ describe("search", () => {
   });
 });
 
-describe.skipIf(!binding)("landing page samples", () => {
-  it("show what this compiler produces for the Counter, as the playground compiles it", () => {
+describe("landing page samples", () => {
+  it.skipIf(!binding)("show a Counter this compiler builds without a diagnostic", () => {
     const result = binding!.compile(counterSource, FILENAME, {
       target: "client",
       root: ROOT,
       sourceMap: false,
     });
     expect(result.diagnostics).toEqual([]);
-    expect(result.css).toBe(counterCss);
-    expect(result.code).toBe(counterOutput);
+    expect(result.code).toContain("export default function Counter()");
+  });
+
+  it("show the source of the island that runs under the code", () => {
+    expect(counterSource).toBe(
+      readFileSync(new URL("../islands/Counter.stsx", import.meta.url), "utf8"),
+    );
+    expect(counterSource.split("\n").length).toBeLessThan(24);
+  });
+
+  it("underline where the signal is made and where it is read, and nothing else", () => {
+    const html = counterHtml();
+    const underlined = [...html.matchAll(/<u>([\s\S]*?)<\/u>/g)].map((match) => match[1]);
+    // `signal(0)` spans several tokens, each underlined on its own.
+    expect(underlined.join("")).toBe("signal(0)count()");
+    expect(html.replace(/<[^>]+>/g, "")).toContain("&lt;button onClick=");
+  });
+
+  it("emphasize across tokens and entities, and reject a fragment the code lacks", () => {
+    expect(emphasize('<span class="k">a</span> &lt;b', "a <b", ["a <"])).toBe(
+      '<span class="k"><u>a</u></span><u> &lt;</u>b',
+    );
+    expect(() => emphasize("a", "a", ["z"])).toThrow(/does not contain/);
   });
 });

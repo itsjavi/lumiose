@@ -1,106 +1,62 @@
-// The landing page (decision-37): the hero over the site's beams of light (the root layout), the stack
-// comparison table, four short sections and a closing call. Every number comes from the committed
-// results through content modules (content/evidence.ts, content/stacks.ts), and the compiled output
-// from this version's compiler (content/samples.ts), all checked by content.test.ts. The depth lives
-// elsewhere: charts on /benchmarks, rendering modes and apps on /showcase, tooling in the docs.
-import { CodeBlock, CopyButton, LinkButton } from "@lumiose/site-kit";
-import { highlight } from "@lumiose/site-kit/highlight";
-import {
-  bp,
-  color,
-  font,
-  layout,
-  leading,
-  radius,
-  space,
-  text,
-  weight,
-} from "@lumiose/site-kit/tokens";
+// The landing page (decision-90, which amends decision-37): a hero beside one code example that
+// runs, four numbered rows, a strip of live @lumiose/ui components and a closing install box, over
+// the site's beams of light (the root layout). Everything else is one click deeper: the stack table
+// and the charts on /benchmarks, rendering modes and apps on /showcase, tooling in the docs.
+//
+// Nothing on it moves after the first paint. The code is highlighted on the server; the counter
+// under it is the island whose source the panel shows (content/samples.ts), rendered on the server
+// at its final size; the UI components are server HTML. The editor lives on /playground only.
+import "@lumiose/ui/tabs.css";
+import "@lumiose/ui/slider.css";
+import "@lumiose/ui/themes/default.css";
+import { CopyButton, LinkButton } from "@lumiose/site-kit";
+import { color, font, label, layout, motion, space, weight } from "@lumiose/site-kit/tokens";
+import { Button } from "@lumiose/ui/button";
+import { Slider } from "@lumiose/ui/slider";
+import { Switch } from "@lumiose/ui/switch";
+import { Tabs } from "@lumiose/ui/tabs";
 import { href } from "lumiose";
-import { BarChart } from "../components/BarChart.stsx";
-import { Playground } from "../islands/Playground.stsx";
-import { evidence } from "../content/evidence.ts";
-import { prerelease, version } from "../content/release.ts";
-import {
-  checkText,
-  counterCss,
-  counterOutput,
-  counterSource,
-  installCommand,
-} from "../content/samples.ts";
-import { renderingModes } from "../content/showcase.ts";
-import {
-  ASTRO_NOTE,
-  type Cell,
-  COLUMNS,
-  SERVER_SPEED,
-  headlines,
-  kilobytes,
-  stacks,
-  tableNote,
-} from "../content/stacks.ts";
 import { PageMeta } from "../components/PageMeta.tsx";
+import { UiPreview } from "../components/UiPreview.stsx";
+import { counterHtml, installCommand } from "../content/samples.ts";
+import Counter from "../islands/Counter.stsx";
 import { site } from "../lib/site.ts";
 
-interface StaticTab {
-  label: string;
-  title: string;
-  lang: string;
-  code: string;
-}
+const docs = (path: string) => href("/docs/[[...path]]", { path });
 
-/** Tabs that work without JavaScript: radio buttons pick the panel shown (CSS `:checked`). */
-function StaticTabs(props: { name: string; label: string; items: StaticTab[] }) {
-  return (
-    <div class="static-tabs">
-      <fieldset class="choices">
-        <legend class="visually-hidden">{props.label}</legend>
-        {props.items.map((item, i) => (
-          <label>
-            <input type="radio" name={props.name} value={String(i)} checked={i === 0} />
-            <span>{item.label}</span>
-          </label>
-        ))}
-      </fieldset>
-      <div class="static-panels">
-        {props.items.map((item) => (
-          <CodeBlock
-            code={item.code}
-            lang={item.lang}
-            title={item.title}
-            highlight={highlight}
-            copy={false}
-          />
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function TableCell(props: { cell: Cell }) {
-  return props.cell.kind === "measuring" ? (
-    <span class="pending">measuring</span>
-  ) : (
-    <span class={[props.cell.kind, props.cell.kind === "fact" && props.cell.tone]}>
-      {props.cell.text}
-    </span>
-  );
-}
-
-/** A section's link: "Label →", with the arrow hidden from screen readers. */
-function More(props: { href: string; children: JSX.Element }) {
-  return (
-    <a class="more" href={props.href}>
-      {props.children} <span aria-hidden="true">→</span>
-    </a>
-  );
-}
+/** The four rows: what you do with Lumiose, each one sentence and one link. */
+const ROWS = [
+  {
+    title: "Write",
+    href: docs("concepts/components"),
+    text: (
+      <>
+        TSX and its styles in one <code>.stsx</code> file, typed by stock TypeScript.
+      </>
+    ),
+  },
+  {
+    title: "Render",
+    href: docs("concepts/rendering-modes"),
+    text: <>Each route picks static, server or SPA. The component doesn't change.</>,
+  },
+  {
+    title: "Hydrate",
+    href: docs("concepts/islands"),
+    text: (
+      <>
+        Add <code>client:idle</code> where you use a component. It becomes an island.
+      </>
+    ),
+  },
+  {
+    title: "Measure",
+    href: href("/benchmarks"),
+    text: <>Compared with the stacks you know, from committed benchmark runs.</>,
+  },
+];
 
 export default function Home() {
-  const results = evidence();
-  const rows = stacks();
-  const getStarted = href("/docs/[[...path]]", { path: "getting-started" });
-
   return (
     <div class="home">
       <PageMeta
@@ -109,217 +65,119 @@ export default function Home() {
         description={site.description}
       />
 
-      <section class="stage" aria-labelledby="hero-title">
-        <div class="hero">
-          <p class="eyebrow">Static sites · Server-side rendering · Islands · SPAs</p>
+      <section class="hero" aria-labelledby="hero-title">
+        <div class="pitch">
+          <p class="label">Static sites · Server-side rendering · Islands · SPAs</p>
           <h1 id="hero-title">
             <span class="line">One component model,</span>{" "}
-            <span class="line">from static pages to full-stack apps</span>
+            <span class="line dim">from static pages to full-stack apps</span>
           </h1>
           <p class="lead">
-            Write components in <strong>TSX with their styles in the same file</strong>. Each route
-            picks how it renders, and a component becomes interactive where you use it,{" "}
-            <strong>with no rewrite</strong>.
+            Write components in TSX with their styles in the same file. Each route picks how it
+            renders, with no rewrite.
           </p>
-          <div class="actions">
-            <LinkButton href={getStarted} size="lg">
+          <div class="cta">
+            <LinkButton href={docs("getting-started")} size="lg">
               Get started
             </LinkButton>
-            <LinkButton href="#compare" variant="secondary" size="lg">
-              Compare the stacks
-            </LinkButton>
             <LinkButton href={href("/playground")} variant="secondary" size="lg">
-              Playground
+              Open playground
             </LinkButton>
           </div>
-          <div class="install">
-            <code>
-              <span class="prompt" aria-hidden="true">
-                ${" "}
+        </div>
+
+        <figure class="code">
+          <figcaption class="bar label">
+            <span class="file">Counter.stsx</span>
+            <span>live</span>
+          </figcaption>
+          <pre tabindex="0">
+            <code innerHTML={counterHtml()} />
+          </pre>
+          <div class="out">
+            <Counter client:load />
+            <span class="label">
+              <span aria-hidden="true">← </span>try it
+            </span>
+          </div>
+        </figure>
+      </section>
+
+      <ol class="rows" role="list">
+        {ROWS.map((row, index) => (
+          <li>
+            <a class="row" href={row.href}>
+              <span class="label">{String(index + 1).padStart(2, "0")}</span>
+              <h2>{row.title}</h2>
+              <p>{row.text}</p>
+              <span class="arr" aria-hidden="true">
+                →
               </span>
-              {installCommand}
-            </code>
+            </a>
+          </li>
+        ))}
+      </ol>
+
+      <section class="strip" aria-labelledby="ui-title">
+        <div>
+          <p class="label">@lumiose/ui</p>
+          <h2 id="ui-title">Components without opinions.</h2>
+          <p>Accessible behaviour on native HTML, in plain black and white. Style them your way.</p>
+          <LinkButton href={href("/ui/[[...path]]", { path: "" })} variant="secondary" size="sm">
+            Browse components
+          </LinkButton>
+        </div>
+        <ul class="tray" role="list" aria-label="Live components">
+          <li>
+            <UiPreview id="landing-switch">
+              <Switch.Root class="lu-switch" defaultChecked aria-label="Demo switch" />
+            </UiPreview>
+          </li>
+          <li>
+            <UiPreview id="landing-tabs">
+              <Tabs.Root class="lu-tabs" defaultValue="one">
+                <Tabs.List aria-label="Demo tabs">
+                  <Tabs.Tab value="one">One</Tabs.Tab>
+                  <Tabs.Tab value="two">Two</Tabs.Tab>
+                </Tabs.List>
+                <Tabs.Panel value="one">First panel</Tabs.Panel>
+                <Tabs.Panel value="two">Second panel</Tabs.Panel>
+              </Tabs.Root>
+            </UiPreview>
+          </li>
+          <li>
+            <UiPreview id="landing-slider">
+              <Slider.Root class="lu-slider" defaultValue={40} style="inline-size: 7rem">
+                <Slider.Control>
+                  <Slider.Track>
+                    <Slider.Indicator />
+                  </Slider.Track>
+                  <Slider.Thumb aria-label="Demo slider" />
+                </Slider.Control>
+              </Slider.Root>
+            </UiPreview>
+          </li>
+          <li>
+            <UiPreview id="landing-button">
+              <Button class="lu-button" data-variant="primary">
+                Button
+              </Button>
+            </UiPreview>
+          </li>
+        </ul>
+      </section>
+
+      <section class="end" aria-labelledby="start-title">
+        <h2 id="start-title">
+          <span class="line">Enlighten your</span> <span class="line">next project.</span>
+        </h2>
+        <div class="start">
+          <div class="install">
+            <code>{installCommand}</code>
             <CopyButton client:visible text={installCommand} label="Copy the install command" />
           </div>
-          {prerelease && <p class="badge">{version} · pre-release</p>}
-          <ul class="proof" role="list">
-            {headlines(results).map((item) => (
-              <li>
-                <strong>{item.value}</strong>
-                <span>{item.label}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-      </section>
-
-      <section class="section" id="compare" aria-labelledby="compare-title">
-        <p class="kicker">Compare the stacks</p>
-        <h2 id="compare-title">{site.tagline}</h2>
-        <p class="intro">
-          Components, styles, routing and the server in one project, measured against the stacks you
-          already know.
-        </p>
-        <div class="table" role="region" aria-labelledby="compare-title" tabindex="0">
-          <table>
-            <caption class="visually-hidden">
-              Lumiose compared with other web framework stacks
-            </caption>
-            <thead>
-              <tr>
-                {Object.values(COLUMNS).map((label) => (
-                  <th scope="col">{label}</th>
-                ))}
-                {/* Over two cells, each self-describing by its unit: renders/s, then req/s. */}
-                <th scope="col" colspan="2">
-                  {SERVER_SPEED}
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((row) => (
-                <tr class={{ self: row.self === true }}>
-                  <th scope="row">{row.stack}</th>
-                  <td>
-                    <TableCell cell={row.fullStack} />
-                  </td>
-                  <td>
-                    <TableCell cell={row.styles} />
-                  </td>
-                  <td class="number">
-                    <TableCell cell={row.serverJs} />
-                  </td>
-                  <td class="number">
-                    <TableCell cell={row.clientSpeed} />
-                  </td>
-                  <td class="number">
-                    <TableCell cell={row.rendering} />
-                  </td>
-                  <td class="number">
-                    <TableCell cell={row.requests} />
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        <p class="note">
-          {tableNote(results, rows)} Method and every run:{" "}
-          <a href={href("/benchmarks")}>benchmarks</a>.
-        </p>
-        <p class="note">{ASTRO_NOTE}</p>
-        <p class="note">
-          Before you pick Lumiose: what 0.x allows and who maintains it, in{" "}
-          <a href={href("/docs/[[...path]]", { path: "stability" })}>Stability</a>, and the cases
-          where another stack fits better, in{" "}
-          <a href={href("/docs/[[...path]]", { path: "when-not-to-use" })}>
-            When not to use Lumiose
-          </a>
-          .
-        </p>
-      </section>
-
-      <section class="section" aria-labelledby="why-title">
-        <p class="kicker">Why it feels light</p>
-        <h2 id="why-title">Four things, each one click deep</h2>
-        <div class="boxes">
-          <article class="box wide" aria-labelledby="familiar-title">
-            <div class="copy">
-              <h3 id="familiar-title">Familiar to write</h3>
-              <p>
-                A <code>.stsx</code> file is React-like JSX with scoped CSS built in: one{" "}
-                <code>&lt;style&gt;</code> at the end of the file serves every component in it,
-                typed by stock TypeScript. Edit the sample: it compiles in your browser.
-              </p>
-              <More href={href("/playground")}>Open the playground</More>
-            </div>
-            <div class="live-demo">
-              {/* The live editor loads (compiler, WebAssembly) when it scrolls into view; until
-                  then, and without JavaScript, the sample and its output show as static tabs. */}
-              <Playground client:visible embedded code={counterSource}>
-                <StaticTabs
-                  name="counter-view"
-                  label="Counter sample"
-                  items={[
-                    { label: "You write", title: "App.stsx", lang: "stsx", code: counterSource },
-                    { label: "JS output", title: "App.js", lang: "js", code: counterOutput },
-                    { label: "CSS output", title: "App.css", lang: "css", code: counterCss },
-                  ]}
-                />
-              </Playground>
-            </div>
-          </article>
-
-          <article class="box wide" aria-labelledby="modes-title">
-            <h3 id="modes-title">Every rendering mode</h3>
-            <p>Choose per route, from static to SPA: the same components work in all four.</p>
-            <ol class="modes" role="list">
-              {renderingModes().map((mode) => (
-                <li class="mode">
-                  <strong>{mode.title}</strong>
-                  <span>{mode.summary}</span>
-                  <ul class="apps" role="list">
-                    {mode.apps.map((app) => (
-                      <li>
-                        <a href={app.href}>{app.label}</a>
-                      </li>
-                    ))}
-                  </ul>
-                </li>
-              ))}
-            </ol>
-            <More href={href("/showcase")}>See the showcase</More>
-          </article>
-
-          <article class="box" aria-labelledby="fast-title">
-            <h3 id="fast-title">Light and fast, measured</h3>
-            <p>
-              The same issue tracker built three ways: the JavaScript a server-rendered page loads.
-            </p>
-            <BarChart
-              title="JS on a server page"
-              unit="kB, brotli"
-              better="lower"
-              bars={results.serverJs}
-              format={(value) => kilobytes(value).replace(" kB", "")}
-            />
-            <More href={href("/benchmarks")}>All benchmarks</More>
-          </article>
-
-          <article class="box" aria-labelledby="explicit-title">
-            <h3 id="explicit-title">Explicit, for you and your agent</h3>
-            <p>
-              No hidden machinery: client boundaries where you write them, every diagnostic with a{" "}
-              <code>LUMxxxx</code> code and a fix, and the docs in the package, served to your agent
-              over MCP.
-            </p>
-            <CodeBlock
-              code={checkText}
-              lang="sh"
-              title="terminal"
-              highlight={highlight}
-              copy={false}
-            />
-            <More href={href("/docs/[[...path]]", { path: "reference/mcp" })}>
-              Docs and MCP for agents
-            </More>
-          </article>
-        </div>
-      </section>
-
-      <section class="section closing" aria-labelledby="start-title">
-        <p class="kicker">Start</p>
-        <h2 id="start-title">Enlighten your next project.</h2>
-        <div class="actions">
-          <LinkButton href={getStarted} size="lg">
-            Get started
-          </LinkButton>
-          <LinkButton
-            href={href("/docs/[[...path]]", { path: "coming-from/react" })}
-            variant="secondary"
-            size="lg"
-          >
-            Coming from React
+          <LinkButton href={docs("")} size="lg">
+            Read the docs
           </LinkButton>
         </div>
       </section>
@@ -328,73 +186,278 @@ export default function Home() {
 }
 
 <style>
-  /* The stage has no background of its own: the site's beams (the root layout) show behind it. */
-  .stage {
-    border-block-end: 1px solid $color.border;
-  }
-  .hero,
-  .section {
+  .home {
     max-inline-size: $layout.page;
     margin-inline: auto;
     padding-inline: $layout.gutter;
+    padding-block-end: $space.xxl;
   }
-  .hero {
-    display: grid;
-    justify-items: start;
-    gap: $space.lg;
-    padding-block: $space.xxxl;
-  }
-  .eyebrow,
-  .kicker {
+  .label {
     margin: 0;
-    font-family: $font.mono;
-    font-size: $text.sm;
-    font-weight: $weight.semibold;
-  }
-  .eyebrow {
-    color: $color.glowText;
-  }
-  .kicker {
-    color: $color.accentText;
-  }
-  h1 {
-    margin: 0;
-    max-inline-size: 16ch;
-    font-size: clamp(2.6rem, 1.2rem + 4.2vw, 4.75rem);
-    font-weight: 800;
-    line-height: 1;
-    letter-spacing: -0.045em;
-    text-wrap: balance;
+    color: $color.muted;
+    font-family: $label.font;
+    font-size: $label.size;
+    letter-spacing: $label.tracking;
+    line-height: 1.3;
+    text-transform: $label.transform;
   }
   .line {
     display: block;
   }
-  .lead {
+  h2 {
     margin: 0;
-    max-inline-size: 58ch;
+  }
+
+  /* The hero: the pitch beside the code, both sitting on the same bottom line. */
+  .hero {
+    display: grid;
+    gap: $space.xxl;
+    padding-block: clamp(3.5rem, 9vw, 7.5rem) clamp(3rem, 7vw, 5.5rem);
+  }
+  .hero > * {
+    min-inline-size: 0;
+  }
+  @media (width >= 54rem) {
+    .hero {
+      grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+      gap: 4rem;
+      align-items: end;
+    }
+  }
+  h1 {
+    margin-block: 1.75rem;
+    font-size: clamp(2.5rem, 4.3vw, 3.5rem);
+    font-weight: $weight.bold;
+    line-height: 0.95;
+    letter-spacing: -0.055em;
+    text-wrap: balance;
+  }
+  .dim {
     color: $color.muted;
-    font-size: clamp(1.05rem, 0.98rem + 0.3vw, 1.2rem);
+  }
+  .lead {
+    max-inline-size: 30em;
+    margin-block: 0 $space.xl;
+    color: $color.muted;
+    font-size: 1.1875rem;
     line-height: 1.55;
   }
-  .lead strong {
-    color: $color.text;
-    font-weight: $weight.semibold;
-  }
-  .actions {
+  .cta {
     display: flex;
     flex-wrap: wrap;
     gap: $space.sm;
+  }
+
+  /* The code panel: a title bar, the code, and the row where it runs. */
+  .code {
+    margin: 0;
+    border: 1px solid $color.border;
+    background: $color.sunken;
+  }
+  .bar {
+    display: flex;
+    justify-content: space-between;
+    gap: $space.md;
+    padding: $space.sm $space.md;
+    border-block-end: 1px solid $color.border;
+  }
+  /* A file name keeps its case. */
+  .file {
+    text-transform: none;
+  }
+  pre {
+    margin: 0;
+    padding: 1.125rem $space.md;
+    overflow-x: auto;
+    color: $color.text;
+    font-family: $font.mono;
+    font-size: 0.8125rem;
+    line-height: 1.75;
+    tab-size: 2;
+  }
+  pre:focus-visible {
+    outline-offset: -2px;
+  }
+  pre code {
+    padding: 0;
+    border: 0;
+    background: none;
+    font: inherit;
+  }
+  /* Monochrome highlighting: keywords bold, comments grey, emphasis as an amber underline. */
+  pre :deep(.tok-keyword) {
+    font-weight: $weight.bold;
+  }
+  pre :deep(.tok-comment) {
+    color: $color.muted;
+  }
+  pre :deep(u) {
+    text-decoration: underline 2px $color.accent;
+    text-underline-offset: 4px;
+  }
+  .out {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.875rem;
+    min-block-size: 4.625rem;
+    padding: 1.125rem $space.md;
+    border-block-start: 1px solid $color.border;
+    background: $color.bg;
+  }
+  /* The counter brings its own padding and border (the code above); the page sets its line. */
+  .out :deep(button) {
+    border-color: $color.borderStrong;
+    font-size: 0.875rem;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.25;
+  }
+  .out :deep(button:hover) {
+    border-color: $color.text;
+  }
+
+  /* The rows: each one a link across the page. */
+  .rows {
+    margin: 0;
+    padding: 0;
+    border-block-start: 1px solid $color.text;
+  }
+  .row {
+    display: grid;
+    grid-template-columns: 2.5rem minmax(0, 1fr) 1.5rem;
+    gap: $space.md;
+    align-items: center;
+    padding-block: 1.625rem;
+    border-block-end: 1px solid $color.border;
+    color: $color.text;
+    text-decoration: none;
+  }
+  .row:hover {
+    background: $color.sunken;
+  }
+  .row:focus-visible {
+    outline-offset: -2px;
+  }
+  .row h2 {
+    font-size: 1.625rem;
+    font-weight: $weight.semibold;
+    letter-spacing: -0.03em;
+    line-height: 1.2;
+  }
+  .row p {
+    display: none;
+    margin: 0;
+    color: $color.muted;
+  }
+  .row code {
+    padding: 0;
+    border: 0;
+    border-block-end: 1px solid $color.border;
+    background: none;
+    color: inherit;
+    font-family: $font.mono;
+    font-size: 0.88em;
+  }
+  .arr {
+    font-size: 1.25rem;
+    transition:
+      color $motion.fast,
+      translate $motion.fast;
+  }
+  .row:hover .arr {
+    color: $color.accent;
+    translate: 4px 0;
+  }
+  @media (width >= 54rem) {
+    .row {
+      grid-template-columns: 5rem minmax(0, 1fr) minmax(0, 1.3fr) 2.5rem;
+      gap: $space.xl;
+    }
+    .row p {
+      display: block;
+    }
+  }
+
+  /* The UI strip: the pitch beside a tray of four live components. */
+  .strip {
+    display: grid;
+    gap: $space.xl;
+    align-items: center;
+    margin-block-start: 6rem;
+  }
+  .strip > * {
+    min-inline-size: 0;
+  }
+  .strip h2,
+  .end h2 {
+    font-size: clamp(2rem, 1.5rem + 2vw, 2.5rem);
+    letter-spacing: -0.04em;
+    line-height: 1.02;
+  }
+  .strip h2 {
+    margin-block: 0.875rem $space.sm;
+  }
+  .strip p:not(.label) {
+    margin-block: 0 1.25rem;
+    color: $color.muted;
+  }
+  /* Hairlines between the cells, drawn by each cell's end borders, in two columns or four. */
+  .tray {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    margin: 0;
+    padding: 0;
+    border-block-start: 1px solid $color.border;
+    border-inline-start: 1px solid $color.border;
+  }
+  .tray li {
+    display: grid;
+    place-items: center;
+    min-inline-size: 0;
+    block-size: 8.125rem;
+    padding-inline: $space.xs;
+    border-block-end: 1px solid $color.border;
+    border-inline-end: 1px solid $color.border;
+    background: var(--lu-background);
+  }
+  @media (width >= 54rem) {
+    .strip {
+      grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+      gap: 4rem;
+    }
+    .tray {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+  }
+
+  /* The closing box. */
+  .end {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: $space.xl;
+    margin-block-start: 6.875rem;
+    padding: clamp(1rem, 5vw, 3rem);
+    border: 1px solid $color.border;
+  }
+  .start {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: $space.sm;
+    min-inline-size: 0;
+    max-inline-size: 100%;
   }
   .install {
     display: flex;
     align-items: center;
     gap: $space.xs;
+    min-inline-size: 0;
     max-inline-size: 100%;
-    padding: $space.xxs $space.xxs $space.xxs $space.md;
+    min-block-size: 2.875rem;
+    padding-inline: $space.md $space.xs;
     border: 1px solid $color.border;
-    border-radius: $radius.md;
-    background: color-mix(in oklab, $color.bg 75%, transparent);
-    font-size: $text.sm;
   }
   .install code {
     padding: 0;
@@ -402,327 +465,12 @@ export default function Home() {
     background: none;
     overflow-x: auto;
     color: $color.text;
-    white-space: nowrap;
-  }
-  .prompt {
-    color: $color.glowText;
-  }
-  .badge {
-    margin: 0;
-    padding: 0.1rem $space.xs;
-    border: 1px solid $color.borderStrong;
-    border-radius: $radius.pill;
-    color: $color.muted;
     font-family: $font.mono;
-    font-size: $text.xs;
-  }
-  .proof {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    inline-size: min(100%, 52rem);
-    margin: $space.md 0 0;
-    padding: 0;
-    border-block-start: 1px solid $color.border;
-  }
-  .proof li {
-    display: grid;
-    align-content: start;
-    gap: $space.xxs;
-    padding: $space.md $space.lg 0 0;
-  }
-  .proof li + li {
-    padding-inline-start: $space.lg;
-    border-inline-start: 1px solid $color.border;
-  }
-  .proof strong {
-    color: $color.text;
-    font-size: clamp(1.6rem, 1.2rem + 1.4vw, 2.4rem);
-    font-weight: $weight.bold;
-    font-variant-numeric: tabular-nums;
-    line-height: 1.1;
-    letter-spacing: -0.03em;
-  }
-  .proof span {
-    color: $color.muted;
-    font-size: $text.sm;
-    line-height: $leading.snug;
-  }
-  @media (width < $bp.md) {
-    .proof {
-      grid-template-columns: minmax(0, 1fr);
-    }
-    .proof li,
-    .proof li + li {
-      padding: $space.sm 0;
-      border-inline-start: 0;
-    }
-    .proof li + li {
-      border-block-start: 1px solid $color.border;
-    }
-  }
-
-  .section {
-    padding-block: $space.xxxl;
-  }
-  .section > h2 {
-    margin-block: $space.xs 0;
-    font-size: clamp(1.8rem, 1.4rem + 1.6vw, 2.6rem);
-    line-height: 1.1;
-    letter-spacing: -0.035em;
-    text-wrap: balance;
-  }
-  .intro {
-    max-inline-size: 62ch;
-    margin-block: $space.sm 0;
-    color: $color.muted;
-    font-size: $text.lg;
-  }
-
-  /* The stack table. */
-  .table {
-    margin-block-start: $space.xl;
-    overflow-x: auto;
-    border: 1px solid $color.border;
-    border-radius: $radius.lg;
-    background: $color.surface;
-  }
-  table {
-    inline-size: 100%;
-    min-inline-size: 58rem;
-    border-collapse: collapse;
-    font-size: $text.sm;
-  }
-  th,
-  td {
-    padding: $space.sm $space.md;
-    border-block-end: 1px solid $color.border;
-    text-align: start;
-    vertical-align: middle;
-  }
-  thead th {
-    color: $color.subtle;
-    font-size: $text.xs;
-    font-weight: $weight.semibold;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-  }
-  tbody th {
-    font-weight: $weight.semibold;
+    font-size: clamp(0.75rem, 3.1vw, 0.9375rem);
     white-space: nowrap;
   }
-  tbody tr:last-child > * {
-    border-block-end: 0;
-  }
-  .number .measured {
-    font-family: $font.mono;
-    font-variant-numeric: tabular-nums;
-    white-space: nowrap;
-  }
-  .pending,
-  .no {
-    color: $color.subtle;
-  }
-  .pending {
-    font-family: $font.mono;
-    font-size: $text.xs;
-  }
-  .yes {
-    color: $color.accentText;
-  }
-  /* Lumiose's row: one flat tint across every cell. */
-  tr.self > * {
-    background: color-mix(in srgb, $color.accent 10%, $color.surface);
-  }
-  tr.self .measured {
-    font-weight: $weight.bold;
-  }
-  .note {
-    max-inline-size: 62rem;
-    margin-block: $space.sm 0;
-    color: $color.subtle;
-    font-size: $text.xs;
-  }
-
-  /* The four sections, each a box with a soft glow in the corner. */
-  .boxes {
-    display: grid;
-    gap: $space.lg;
-    margin-block-start: $space.xl;
-  }
-  @media (width >= $bp.lg) {
-    .boxes {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-    .wide {
-      grid-column: 1 / -1;
-    }
-    .box.wide:has(.live-demo) {
-      grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
-      column-gap: $space.xxl;
-    }
-  }
-  .box {
-    display: grid;
-    align-content: start;
-    gap: $space.md;
-    min-inline-size: 0;
-    padding: $space.lg;
-    border: 1px solid $color.border;
-    border-radius: $radius.lg;
-    background:
-      radial-gradient(
-        120% 90% at 100% 0%,
-        color-mix(in oklab, $color.glowB 14%, transparent),
-        transparent 55%
-      ),
-      radial-gradient(
-        90% 70% at 0% 0%,
-        color-mix(in oklab, $color.glowA 10%, transparent),
-        transparent 60%
-      ),
-      $color.surface;
-  }
-  .copy {
-    display: grid;
-    align-content: start;
-    gap: $space.md;
-  }
-  .box h3 {
-    margin: 0;
-    font-size: $text.xl;
-    letter-spacing: -0.02em;
-  }
-  .box p {
-    max-inline-size: 60ch;
-    margin: 0;
-    color: $color.muted;
-  }
-  .box :deep(.code) {
-    margin: 0;
-  }
-  /* The check output wraps like a terminal, so it reads in a narrow box. */
-  .box :deep(.code pre) {
-    white-space: pre-wrap;
-  }
-  .more {
-    justify-self: start;
-    font-weight: $weight.semibold;
-  }
-  .live-demo {
-    min-inline-size: 0;
-  }
-  .live-demo :deep(pre) {
-    white-space: pre;
-  }
-
-  .modes {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
-    gap: $space.sm;
-    margin: 0;
-    padding: 0;
-  }
-  .mode {
-    display: grid;
-    align-content: start;
-    gap: $space.xxs;
-    padding: $space.md;
-    border: 1px solid $color.border;
-    border-radius: $radius.md;
-    background: $color.bg;
-  }
-  .mode > span {
-    color: $color.muted;
-    font-size: $text.sm;
-  }
-  .apps {
-    display: grid;
-    gap: $space.xxs;
-    margin: $space.xs 0 0;
-    padding: 0;
-    font-size: $text.sm;
-  }
-  .apps a {
-    display: inline-block;
-    min-block-size: 24px;
-    font-weight: $weight.medium;
-  }
-
-  /* StaticTabs: the label of each radio button is a tab; the checked one shows its panel. */
-  .choices {
-    display: flex;
-    gap: $space.xxs;
-    margin: 0;
-    padding: 0;
-    border: 0;
-    border-block-end: 1px solid $color.border;
-  }
-  .choices label {
-    position: relative;
-    padding: $space.xs $space.md;
-    border-radius: $radius.sm $radius.sm 0 0;
-    color: $color.muted;
-    font-size: $text.sm;
-    font-weight: $weight.medium;
-    cursor: pointer;
-  }
-  .choices label:hover {
-    color: $color.text;
-  }
-  .choices label:has(:checked) {
-    color: $color.text;
-    box-shadow: inset 0 -2px 0 $color.accent;
-  }
-  .choices label:has(:focus-visible) {
-    outline: 2px solid $color.accent;
-    outline-offset: 2px;
-  }
-  .choices input {
-    position: absolute;
-    opacity: 0;
-    pointer-events: none;
-  }
-  .static-panels > :global(*) {
-    display: none;
-  }
-  /* About the live editor's height, so the swap barely moves the page. */
-  .static-panels :global(pre) {
-    max-block-size: 38rem;
-    overflow: auto;
-  }
-  .static-tabs:has(label:nth-of-type(1) :checked) .static-panels > :global(:nth-child(1)),
-  .static-tabs:has(label:nth-of-type(2) :checked) .static-panels > :global(:nth-child(2)),
-  .static-tabs:has(label:nth-of-type(3) :checked) .static-panels > :global(:nth-child(3)) {
-    display: block;
-  }
-  .visually-hidden {
-    position: absolute;
-    inline-size: 1px;
-    block-size: 1px;
-    overflow: hidden;
-    clip-path: inset(50%);
-    white-space: nowrap;
-  }
-
-  .closing {
-    display: grid;
-    justify-items: start;
-    gap: $space.md;
-    padding-block-end: calc($space.xxxl + $space.lg);
-    border-block-start: 1px solid $color.border;
-    background:
-      radial-gradient(
-        60% 120% at 0% 100%,
-        color-mix(in oklab, $color.glowB 12%, transparent),
-        transparent 60%
-      ),
-      radial-gradient(
-        50% 100% at 30% 100%,
-        color-mix(in oklab, $color.glowA 10%, transparent),
-        transparent 70%
-      );
-  }
-  .closing h2 {
-    font-size: clamp(2.2rem, 1.6rem + 2.6vw, 3.6rem);
+  .install code::before {
+    content: "$ ";
+    color: $color.accent;
   }
 </style>

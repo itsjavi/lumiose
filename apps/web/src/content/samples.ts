@@ -1,118 +1,50 @@
-// Code shown on the landing page. The live demo (the Playground island) starts from
-// `counterSource`; `counterOutput` and `counterCss` are what this version of the compiler produces
-// for it as the playground compiles it (client target, `/src/App.stsx`), shown before the editor
-// loads and without JavaScript. content.test.ts checks them.
+// Code shown on the landing page. The hero's code panel shows `counterSource`, which is the source
+// of the island that runs under it (islands/Counter.stsx, read as text): what the page shows is
+// what this version of the compiler builds for it. content.test.ts compiles it too.
+import { highlight } from "@lumiose/site-kit/highlight";
+import counterSource from "../islands/Counter.stsx?raw";
 
-export const counterSource = `import { signal } from "lumiose";
+export { counterSource };
 
-export default function Counter() {
-  const count = signal(0);
+/** The parts of the counter the hero underlines: where the signal is made, and where it is read. */
+export const COUNTER_EMPHASIS = ["signal(0)", "count()"] as const;
 
-  return (
-    <div class="counter">
-      <button class={{ pill: true, hot: count() > 9 }} onClick={() => count.update((n) => n + 1)}>
-        Clicked {count()} times
-      </button>
-      <Reset onReset={() => count.set(0)} />
-    </div>
-  );
-}
-
-function Reset(props: { onReset(): void }) {
-  return (
-    <button class="pill ghost" onClick={props.onReset}>
-      Reset
-    </button>
-  );
-}
-
-// One block at the end of the file styles both components.
-<style>
-  .counter {
-    --accent: #5546ff;
-    --space: 8px;
-    display: flex;
-    gap: var(--space);
+/**
+ * Wraps the first occurrence of each fragment of `source` in `<u>`, in the HTML a highlighter made
+ * from it. A fragment may span several tokens: each run of text inside it gets its own `<u>`.
+ */
+export function emphasize(html: string, source: string, fragments: readonly string[]): string {
+  const ranges = fragments.map((fragment) => {
+    const start = source.indexOf(fragment);
+    if (start < 0) throw new Error(`The sample does not contain "${fragment}".`);
+    return [start, start + fragment.length] as const;
+  });
+  let offset = 0;
+  let out = "";
+  for (const part of html.split(/(<[^>]+>)/)) {
+    if (part.startsWith("<")) {
+      out += part;
+      continue;
+    }
+    let open = false;
+    // One unit of the HTML's text is one character of the source: an entity or a character.
+    for (const [unit] of part.matchAll(/&[a-z]+;|[\s\S]/g)) {
+      const inside = ranges.some(([start, end]) => offset >= start && offset < end);
+      if (inside !== open) out += inside ? "<u>" : "</u>";
+      open = inside;
+      out += unit;
+      offset += 1;
+    }
+    if (open) out += "</u>";
   }
-  .pill {
-    padding: var(--space) calc(var(--space) * 2);
-    border: 2px solid var(--accent);
-    border-radius: 999px;
-    background: var(--accent);
-    color: white;
-    font: inherit;
-  }
-  .ghost {
-    background: transparent;
-    color: inherit;
-  }
-  .hot {
-    outline: 2px solid tomato;
-  }
-</style>
-`;
-
-export const counterOutput = `import { signal } from "lumiose";
-import { template, bind, toggleClass, insert, createComponent, delegateEvents } from "lumiose/dom";
-import "/src/App.stsx?lumiose&type=style&lang.css";
-const _t0 = /* @__PURE__ */ template(\`<div class=counter data-lum-rdjmzp3m><button class=pill data-lum-rdjmzp3m>Clicked <!> times\`);
-const _t1 = /* @__PURE__ */ template(\`<button class="pill ghost" data-lum-rdjmzp3m>Reset\`);
-const _a0 = (el, v) => toggleClass(el, "hot", v);
-export default function Counter() {
-\tconst count = signal(0);
-\tconst _el = _t0(), _button = _el.firstChild, _marker = _button.firstChild.nextSibling;
-\tbind(_button, () => count() > 9, _a0);
-\t_button.$$click = () => count.update((n) => n + 1);
-\tinsert(_button, count, _marker);
-\tinsert(_el, createComponent(Reset, { onReset: () => count.set(0) }));
-\treturn _el;
-}
-function Reset(props) {
-\tconst _el2 = _t1();
-\t_el2.$$click = props.onReset;
-\treturn _el2;
-}
-delegateEvents(["click"]);
-// One block at the end of the file styles both components.
-`;
-
-export const counterCss = `.counter[data-lum-rdjmzp3m] {
-  --accent: #5546ff;
-  --space: 8px;
-  gap: var(--space);
-  display: flex;
+  return out;
 }
 
-.pill[data-lum-rdjmzp3m] {
-  padding: var(--space) calc(var(--space) * 2);
-  border: 2px solid var(--accent);
-  background: var(--accent);
-  color: #fff;
-  font: inherit;
-  border-radius: 999px;
+/** The counter's source as highlighted HTML, with its emphasis. */
+export function counterHtml(): string {
+  const source = counterSource.replace(/\n$/, "");
+  return emphasize(highlight(source, "stsx"), source, COUNTER_EMPHASIS);
 }
 
-.ghost[data-lum-rdjmzp3m] {
-  color: inherit;
-  background: none;
-}
-
-.hot[data-lum-rdjmzp3m] {
-  outline: 2px solid tomato;
-}
-`;
-
-/** The hero's install command (the docs list the other package managers). */
+/** The closing box's install command (the docs list the other package managers). */
 export const installCommand = "npm create lumiose@latest my-app";
-
-/** A LUM2001 warning in `lumiose check`'s human format. */
-export const checkText = `$ lumiose check
-src/Counter.stsx:5:9 - warning LUM2001: \`doubled\` is computed once from a reactive value, so the JSX that uses it never updates
-
-5 |   const doubled = count() * 2;
-  |         ~~~~~~~~~~~~~~~~~~~~~
-
-  help: Derive it lazily: \`const x = () => …\` (called as \`x()\` in JSX) or \`computed(() => …)\`.
-  docs: lumiose docs errors/LUM2001
-
-Found 0 errors, 1 warning in 1 file.`;

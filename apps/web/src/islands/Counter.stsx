@@ -1,0 +1,18 @@
+import { signal } from "lumiose";
+
+export default function Counter() {
+  const count = signal(0);
+  return (
+    <button onClick={() => count.update((n) => n + 1)}>
+      Clicked {count()} times
+    </button>
+  );
+}
+
+<style>
+  button {
+    padding: 8px 16px;
+    border: 1px solid;
+    background: none;
+  }
+</style>
