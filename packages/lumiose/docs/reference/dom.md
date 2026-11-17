@@ -4,20 +4,40 @@
 
 ## render
 
-```ts
-function render(code: () => JSX.Element, container: Element, options?: RenderOptions): () => void;
-
-interface RenderOptions {
-  /** Prepended to every useId() of the app: keeps the ids of several apps on one page apart. */
-  idPrefix?: string;
-}
-```
+Mounts a component tree into a container element and returns a function that removes it.
 
 Renders `code()` into `container` (appended after its existing content) under a new root owner, and
 marks the container as a delegation boundary. Returns a disposer that disposes the owner and
 removes the rendered nodes. With the Vite plugin, an entry module that imports `render` re-renders
 the app on hot updates. Solid's `render` has the same signature, without `options`.
 [`useId()`](reactivity.md#useid) in the app returns `idPrefix` followed by a counter.
+
+```ts
+function render(code: () => Renderable, container: Element, options?: RenderOptions): () => void;
+
+interface RenderOptions {
+  idPrefix?: string;
+}
+```
+
+```tsx check
+import { render } from "lumiose/dom";
+
+function Cart() {
+  return <p>Your cart is empty.</p>;
+}
+
+const dispose = render(() => <Cart />, document.body, {
+  idPrefix: "cart-",
+});
+window.addEventListener("pagehide", dispose);
+```
+
+| Name               | Type               | Default | Description                                                                               |
+| ------------------ | ------------------ | ------- | ----------------------------------------------------------------------------------------- |
+| `code`             | `() => Renderable` | —       | Returns what to render (JSX). It runs tracked, under the new root owner.                  |
+| `container`        | `Element`          | —       | The element to render into. The output is appended after its existing content.            |
+| `options.idPrefix` | `string`           | —       | Prepended to every `useId()` of the app: keeps the ids of several apps on one page apart. |
 
 ## Compiler-runtime contract
 
@@ -28,18 +48,7 @@ not an application API and may change between versions; write JSX instead.
 
 ## `lumiose/dom/hydrate`
 
-```ts
-function hydrate<P extends object>(
-  component: Component<P>,
-  props: P,
-  start: Node,
-  end: Node,
-  awaits?: Record<string, unknown>,
-  slots?: readonly string[],
-  fresh?: boolean,
-  idPrefix?: string,
-): () => void;
-```
+Exports `hydrate`, which makes a server-rendered island interactive without re-creating its DOM.
 
 Hydrates the server-rendered range between the comments `start` and `end` (an island's
 `<!--l:ID-->` and `<!--/l:ID-->`): it renders `component` with `props`, and the compiled code
@@ -66,9 +75,50 @@ selections survive. Returns a disposer.
 Importing `lumiose/dom/hydrate` also installs the hydration cursor that the compiled walk uses. Only
 the island loader and hydrating entries import it; bundles that never hydrate do not include it.
 
+```ts
+function hydrate<P extends object>(
+  component: Component<P>,
+  props: P,
+  start: Node,
+  end: Node,
+  awaits?: Record<string, unknown>,
+  slots?: readonly string[],
+  fresh?: boolean,
+  idPrefix?: string,
+): () => void;
+```
+
+```tsx check
+import { signal } from "lumiose";
+import { hydrate } from "lumiose/dom/hydrate";
+
+function Counter(props: { start: number }) {
+  const count = signal(props.start);
+  return <button onClick={() => count.update((n) => n + 1)}>{count()}</button>;
+}
+
+// start and end: the island's <!--l:ID--> and <!--/l:ID-->.
+export function hydrateCounter(start: Comment, end: Comment) {
+  return hydrate(Counter, { start: 0 }, start, end);
+}
+```
+
+| Name        | Type                      | Default | Description                                                                             |
+| ----------- | ------------------------- | ------- | --------------------------------------------------------------------------------------- |
+| `component` | `Component<P>`            | —       | The island's component.                                                                 |
+| `props`     | `P`                       | —       | Its props, as the server rendered it.                                                   |
+| `start`     | `Node`                    | —       | The comment that opens the island's range (`<!--l:ID-->`).                              |
+| `end`       | `Node`                    | —       | The comment that closes it (`<!--/l:ID-->`).                                            |
+| `awaits`    | `Record<string, unknown>` | —       | The values the server recorded for each first-run `await`, replayed instead of fetched. |
+| `slots`     | `readonly string[]`       | —       | The names of children and JSX props, which become props holding the server's HTML.      |
+| `fresh`     | `boolean`                 | —       | `true` (`client:only`) renders on the client without claiming.                          |
+| `idPrefix`  | `string`                  | `""`    | The server render's `idPrefix` (the island record's).                                   |
+
 ## `lumiose/dom/loader`
 
-The island loader: a client entry, with no exports, that `lumiose dev` and `lumiose build` add to every
+The island loader: the client script that finds a page's islands and hydrates them.
+
+It is a client entry, with no exports, that `lumiose dev` and `lumiose build` add to every
 page that renders an island (`<script type="module" async>`, see [Islands](../concepts/islands.md));
 with your own server, pass its URL as `renderToStream(root, { loaderUrl })`. It imports the app's
 island manifest (`virtual:lumiose/islands`, from `@lumiose/vite`), and (apps with
@@ -104,6 +154,13 @@ is imported again on the next interaction with the island; an island whose hydra
 server HTML. With `src/instrumentation.client.ts`, its `onError` receives
 the error too (`phase: "hydrate"`), and its `hydrate` wrappers observe each island
 ([Islands](../concepts/islands.md#concept)).
+
+The tag that `lumiose dev` and `lumiose build` add to a page with islands (the URL is the
+build's):
+
+```html
+<script type="module" async src="/assets/loader-B1x2.js"></script>
+```
 
 ## Example
 
