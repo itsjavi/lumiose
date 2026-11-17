@@ -2,21 +2,58 @@
 
 > Lumiose keeps Astro's page model, server HTML with no JavaScript by default and `client:*` islands with the same directive names, and swaps `.astro` files plus a second UI framework for one component model: TSX components that render on the server, become islands where you use them, or run as SPA routes. This guide maps the APIs and says where Astro is still ahead.
 
-This page maps Astro 7 to Lumiose's current API. The linked pages have the full rules.
-
 ## Mental model
 
-**The same page model.** As in Astro, pages render to HTML at build time or per request, and a
-page ships no JavaScript until something on it needs some. A `client:*` directive at the usage
-site makes one component instance an [island](../concepts/islands.md), with Astro's directive
-names. File routes, layouts, endpoints, middleware, Markdown imports and deploy adapters all have a
-counterpart below.
+```astro
+---
+// src/components/Card.astro
+interface Props { title: string }
+const { title } = Astro.props;
+---
+<article>
+  <h2>{title}</h2>
+  <slot />
+</article>
 
-**One component model instead of two.** In Astro, `.astro` components render on the server only,
-and anything interactive is written in React, Preact, Svelte, Vue or Solid. Moving a piece of UI
-from one side to the other means rewriting it. In Lumiose every component is TSX, in a `.stsx` file
-(TSX plus `<style>` blocks) or a `.tsx` file, set up once and updated by
-[signals](../concepts/signals.md):
+<style>
+  h2 { margin: 0; }
+</style>
+```
+
+```stsx check
+// src/components/Card.stsx
+type CardProps = { title: string; children?: JSX.Element };
+
+export function Card({ title, children }: CardProps) {
+  return (
+    <article>
+      <h2>{title}</h2>
+      {children}
+    </article>
+  );
+}
+
+<style>
+  h2 { margin: 0; }
+</style>
+```
+
+**The same page model.** As in Astro, pages render to HTML at build time or per request, and a
+page ships no JavaScript until a `client:*` directive at the usage site makes one component
+instance an [island](../concepts/islands.md), with Astro's directive names. The component is a
+TSX function instead of a frontmatter fence and a template.
+
+> **Scope:** this page maps Astro 7 to Lumiose's current API. File routes, layouts, endpoints,
+> middleware, Markdown imports and deploy adapters all have a counterpart on this page.
+
+> **Before you switch:** read [Where Astro is ahead today](#where-astro-is-ahead-today).
+
+### One component model instead of two
+
+In Astro, `.astro` components render on the server only, and anything interactive is written in
+React, Preact, Svelte, Vue or Solid. Moving a piece of UI from one side to the other means
+rewriting it. In Lumiose every component is TSX, in a `.stsx` file (TSX plus `<style>` blocks) or
+a `.tsx` file, set up once and updated by [signals](../concepts/signals.md):
 
 - **The same component works on both sides.** It renders as static HTML on one page and as an
   island on another (`<Search client:idle />`), with no rewrite.
@@ -28,45 +65,66 @@ from one side to the other means rewriting it. In Lumiose every component is TSX
 - **A route can become an SPA.** Set it to `spa` and it gets client navigation with persistent
   layouts, using the same components ([Rendering modes](../concepts/rendering-modes.md)).
 
-**Typed client scripts.** Astro bundles `<script>` tags as TypeScript, but server values only reach
-them through `define:vars` (which makes the script inline and untyped) or `data-*` attributes read
-by hand. In Lumiose, a component imports a browser script with `?client`, and only the pages that
-render that component load it, without the island runtime. Server data goes through the attributes
-of a custom element whose props are typed in JSX ([the example](#example) shows both).
+### Typed client scripts
 
-**Styles live in the component file**, as in Astro, with raw CSS in `<style>` blocks. They are
-scoped by where the block is placed: at the top level of the file, or nested inside an element to
-scope one subtree ([Styles](../concepts/styles.md)).
+Astro bundles `<script>` tags as TypeScript, but server values only reach them through
+`define:vars` (which makes the script inline and untyped) or `data-*` attributes read by hand. In
+Lumiose, a component imports a browser script with `?client`, and only the pages that render that
+component load it, without the island runtime. Server data goes through the attributes of a
+custom element whose props are typed in JSX ([the example](#example) shows both).
 
-**Where Astro is ahead today.** Be clear about these before you switch:
+### Styles
 
-- **Islands in React, Vue or Svelte**, or several frameworks on one page. Lumiose has one component
-  model and no React interop ([When not to use Lumiose](../when-not-to-use.md)).
-- **The integrations ecosystem.** `astro add` installs sitemaps, RSS, MDX, image services and CMS
-  loaders. In Lumiose a sitemap or an RSS feed is a short `route.ts` endpoint you write, and some
-  pieces have no counterpart yet (see [What has no equivalent](#what-has-no-equivalent)).
-- **Content collections and `<Image>`.** Lumiose imports Markdown as components with validated
-  frontmatter, but it has no collections API or image pipeline.
-- **Requests for small scripts.** Astro inlines a small `<script>` into the HTML. A `?client`
-  script is a module file of its own, so a page with a few of them makes a few more requests. A
-  Lumiose page with an island also loads the island runtime, about 10 kB gzip: use `?client` for
-  small scripts and keep islands for reactive UI.
-- **Maturity.** Astro is past 1.0, with a team behind it. Lumiose is 0.x, with one maintainer
-  ([Stability](../stability.md)).
-
-**What a real port showed.** The author's Astro site, itsjavi.com, was ported to Lumiose 0.5.0
-with the same URLs and look, its small scripts as `?client` custom elements, and measured on
-2026-10-21:
-
-- JavaScript per page was 1.7-2.4 kB gzip, against 1.3-1.7 kB for Astro's inline scripts, and every
-  page but the code editor was lighter in total, with 2 to 4 more requests.
-- Type checking took 1.2 s with `lumiose check`, against 5.8 s with `astro check`.
-- A fresh install had 175 packages, against 433.
-- Per-page CSS was 30-50% smaller than the site's Tailwind build.
-- Builds were on par (4.7 s cold, 2.2 s warm, against 4.3 s and 2.3 s); the dev server's first
-  start was slower (4.7 s against 2.0 s).
+Styles live in the component file, as in Astro, with raw CSS in `<style>` blocks. They are scoped
+by where the block is placed: at the top level of the file, or nested inside an element to scope
+one subtree ([Styles](../concepts/styles.md)).
 
 ## From Astro to Lumiose
+
+### An island
+
+```astro
+---
+// src/pages/index.astro
+import Counter from "../components/Counter.tsx"; // React
+---
+<Counter client:load start={1} />
+```
+
+```stsx
+// src/routes/page.stsx
+import { Counter } from "../components/Counter.stsx";
+
+export default function Home() {
+  return <Counter client:load start={1} />;
+}
+```
+
+The directive is the same. `Counter` is a Lumiose component, which may also render without a
+directive on another page.
+
+### An endpoint
+
+```ts
+// src/pages/api/feed.json.ts
+import type { APIRoute } from "astro";
+
+export const GET: APIRoute = () => {
+  return Response.json({ posts: [] });
+};
+```
+
+```ts check file=routes/api/feed.json/route.ts
+// src/routes/api/feed.json/route.ts
+import type { Endpoint } from "lumiose";
+
+export const GET: Endpoint<"/api/feed.json"> = () => {
+  return Response.json({ posts: [] });
+};
+```
+
+The file is `route.ts` in a folder named after the URL, and the handler is typed by its path.
+Static builds accept only `GET`.
 
 ### Components and templates
 
@@ -172,10 +230,30 @@ with the same URLs and look, its small scripts as `?client` custom elements, and
 | `redirects` in the config                             | `redirect()` in a page (a static build writes a redirect page) or in middleware.                                                        |
 | `server:defer` on prerendered pages                   | An island that fetches an endpoint, or a `server` page with `<Suspense>`.                                                               |
 
+### Where Astro is ahead today
+
+Be clear about these before you switch:
+
+- **Islands in React, Vue or Svelte**, or several frameworks on one page. Lumiose has one component
+  model and no React interop ([When not to use Lumiose](../when-not-to-use.md)).
+- **The integrations ecosystem.** `astro add` installs sitemaps, RSS, MDX, image services and CMS
+  loaders. In Lumiose a sitemap or an RSS feed is a short `route.ts` endpoint you write, and some
+  pieces have no counterpart yet (see the table of this section).
+- **Content collections and `<Image>`.** Lumiose imports Markdown as components with validated
+  frontmatter, but it has no collections API or image pipeline.
+- **Requests for small scripts.** Astro inlines a small `<script>` into the HTML. A `?client`
+  script is a module file of its own, so a page with a few of them makes a few more requests. A
+  Lumiose page with an island also loads the island runtime, about 10 kB gzip: use `?client` for
+  small scripts and keep islands for reactive UI.
+- **Maturity.** Astro is past 1.0, with a team behind it. Lumiose is 0.x, with one maintainer
+  ([Stability](../stability.md)).
+
 ## Example
 
 A header with a search box as a React island, a theme toggle in a bundled `<script>`, and scoped
-styles, in Astro:
+styles, in Astro and then in Lumiose. The search box is a Lumiose component, which could render
+without a directive on another page. The theme toggle is a typed browser script that only the
+pages rendering the header load. Its data goes through a typed attribute.
 
 ```astro
 ---
@@ -202,10 +280,6 @@ const { title } = Astro.props;
   header { display: flex; gap: 1rem; align-items: center; }
 </style>
 ```
-
-In Lumiose, the search box is a Lumiose component, which could render without a directive on
-another page. The theme toggle is a typed browser script that only the pages rendering the header
-load. Its data goes through a typed attribute:
 
 ```ts check file=components/theme-toggle.ts
 // src/components/theme-toggle.ts: runs in the browser only
@@ -270,7 +344,11 @@ export function Header({ title }: { title: string }) {
 </style>
 ```
 
-A blog post page built from a collection, in Astro:
+### A page from a collection
+
+A blog post page built from a collection, in Astro and then in Lumiose. The Markdown files are
+imported as components. `staticPaths()` lists the slugs, and the page looks its post up from
+`params`. `src/routes/layout.stsx` wraps it without an import.
 
 ```astro
 ---
@@ -290,9 +368,6 @@ const { Content } = await render(post);
   <article><Content /></article>
 </Layout>
 ```
-
-In Lumiose, the Markdown files are imported as components. `staticPaths()` lists the slugs, and
-the page looks its post up from `params`. `src/routes/layout.stsx` wraps it without an import:
 
 ```stsx
 // src/routes/blog/[slug]/page.stsx
@@ -319,6 +394,19 @@ export default function BlogPost({ params }: PageProps<"/blog/[slug]">) {
   );
 }
 ```
+
+### What a real port showed
+
+The author's Astro site, itsjavi.com, was ported to Lumiose 0.5.0 with the same URLs and look, its
+small scripts as `?client` custom elements, and measured on 2026-10-21:
+
+- JavaScript per page was 1.7-2.4 kB gzip, against 1.3-1.7 kB for Astro's inline scripts, and every
+  page but the code editor was lighter in total, with 2 to 4 more requests.
+- Type checking took 1.2 s with `lumiose check`, against 5.8 s with `astro check`.
+- A fresh install had 175 packages, against 433.
+- Per-page CSS was 30-50% smaller than the site's Tailwind build.
+- Builds were on par (4.7 s cold, 2.2 s warm, against 4.3 s and 2.3 s); the dev server's first
+  start was slower (4.7 s against 2.0 s).
 
 ## Common mistakes
 
