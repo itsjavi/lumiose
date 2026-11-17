@@ -5,6 +5,7 @@ status: To Do
 assignee:
   - '@Lux'
 created_date: '2026-11-17T12:29:00Z'
+updated_date: '2026-11-17T12:52:00Z'
 labels: []
 milestone: m-16
 dependencies:
@@ -14,6 +15,7 @@ dependencies:
   - TASK-612
   - TASK-614
   - TASK-603
+  - TASK-616
 references:
   - backlog/assets/redesign/b-first-light.html
 ordinal: 607000
