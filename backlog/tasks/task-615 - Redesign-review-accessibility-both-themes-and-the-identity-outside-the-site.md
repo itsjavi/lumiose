@@ -5,7 +5,7 @@ status: In Progress
 assignee:
   - '@Lux'
 created_date: '2026-11-17T12:29:00Z'
-updated_date: '2026-11-17T17:33:00Z'
+updated_date: '2026-11-17T17:34:00Z'
 labels: []
 milestone: m-16
 dependencies:
@@ -53,4 +53,6 @@ Verification (static build of both base paths by lumiose build, served by e2e/se
 Not verified: the playground wasm build (wasm-bindgen CLI 0.2.129, the workspace pins 0.2.130; the suites used the wasm built earlier), the mounted showcase apps, the extension icon inside the Marketplace and VS Code, hover and open states in the rendered scan (the a11y suite opens the UI demos), cargo test.
 
 Screenshots: backlog/assets/redesign/final-landing-dark.jpg, final-landing-light.jpg, final-docs-dark.jpg, final-docs-light.jpg, final-ui-dark.jpg, final-ui-light.jpg, final-benchmarks-dark.jpg.
+
+Lux, 2026-11-17: every other M16 task is Done (602 to 614, 617). Added after planning, at the user request: syntax colours restored in code (decision-90 amended), the dev tools restyled (TASK-617), icon glyphs of the UI theme written as CSS escapes. Open: AC #4 (the user signs off; nothing is pushed) and TASK-616 (manual logo checks). Open questions for the user are R1 to R6 in doc-10; one more from the review: the amber bars and row marker on /benchmarks are outside the accent list of decision-90 and were left.
 <!-- SECTION:NOTES:END -->
