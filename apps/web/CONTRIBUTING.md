@@ -83,6 +83,17 @@ put unnumbered sections (Editor, Next) after the steps.
   `packages/cli/src/docs/index.ts` and to the index test's list.
 - **Reference pages:** a `##` or `###` heading that is an export's name is what
   `lumiose docs <name>` prints, so keep those headings to the bare names.
+  Every entry (function, component, option group, command) has, in this order: a one-line summary
+  and its details, the signature as the source has it, one short example (`check`ed when it can
+  compile on its own), and a table of its options, parameters or props with the columns Name,
+  Type, Default, Description (`—` for no default).
+- **Diagnostic pages** (`errors/LUMxxxx.md`): the header above the end marker is generated from
+  the compiler's registry (`pnpm --filter lumiose docs:gen`), and the body below it is written by
+  hand. The body has, in this order: a `>` summary and a **Reported by** line, `## What it means`
+  (one short paragraph), `## Example` (code that reports the diagnostic), `## How to fix it`
+  (words, then the corrected example), `## Details` when there are rules and edge cases to keep,
+  and `## Related` (links to the concept page). Keep codes, titles and section names: the CLI,
+  the language server and tests read them.
 - **After editing:** `pnpm --filter lumiose docs:gen`, then `pnpm --filter lumiose docs:check`,
   `pnpm --filter @lumiose/cli exec vitest run src/docs` and
   `pnpm --filter @lumiose/web exec vitest run`. Look at the page at 1280 px.
