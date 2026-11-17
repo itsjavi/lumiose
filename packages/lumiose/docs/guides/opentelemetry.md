@@ -2,47 +2,27 @@
 
 > Trace requests, their phases and the browser's navigations with OpenTelemetry from `src/instrumentation.server.ts` and `src/instrumentation.client.ts`, and send them to OpenObserve, SigNoz or Datadog.
 
+## 1. Install
+
+```sh
+pnpm add @opentelemetry/api @opentelemetry/sdk-node
+pnpm add @opentelemetry/exporter-trace-otlp-http
+pnpm add @opentelemetry/sdk-trace-web @opentelemetry/sdk-trace-base
+pnpm add @opentelemetry/resources @opentelemetry/semantic-conventions
+```
+
 Lumiose has no tracing of its own: its instrumentation files hand every phase of a request, and
 every client navigation, submission, fetch and hydration, to observers you write
 ([Server](../concepts/server.md#instrumentation), [Islands](../concepts/islands.md#concept)). This
 guide makes those observers OpenTelemetry spans and exports them over OTLP, which every backend
-below accepts.
+of [step 5](#5-choose-a-backend) accepts.
 
-| File                                     | Role                                                                         |
-| ---------------------------------------- | ---------------------------------------------------------------------------- |
-| `src/instrumentation.server.ts`          | Starts the Node SDK; a span per request and per phase; errors as spans.      |
-| `src/instrumentation.client.ts`          | A browser tracer; spans for navigations, submissions, fetches and hydration. |
-| `src/routes/api/otel/v1/traces/route.ts` | Relays the browser's spans to the backend with the server's credentials.     |
+> **Platforms:** the Node SDK runs where the server runs on Node: `lumiose dev`,
+> `lumiose preview`, `@lumiose/adapter-node` and the Docker and VPS targets. On Cloudflare Workers
+> or Vercel's Edge runtime, start that platform's OpenTelemetry integration in `register()`
+> instead; the wrappers of steps 2 and 3 stay the same.
 
-> **Status:** checked end to end on 2026-10-15 with a Lumiose app built with `lumiose build` and
-> served by `lumiose preview`, against OpenObserve and self-hosted SigNoz 0.129 (its last Docker Compose release) in Docker (server spans
-> nested by phase, failed requests, a continued `traceparent`, and browser navigation and
-> hydration spans through the relay). The Datadog setup follows Datadog's documentation; it was not
-> run. Packages: `@opentelemetry/api` 1.9, `@opentelemetry/sdk-node` and
-> `@opentelemetry/exporter-trace-otlp-http` 0.223, `@opentelemetry/sdk-trace-web` 2.12.
-
-## Setup
-
-```sh
-pnpm add @opentelemetry/api @opentelemetry/sdk-node @opentelemetry/exporter-trace-otlp-http
-pnpm add @opentelemetry/sdk-trace-web @opentelemetry/sdk-trace-base @opentelemetry/resources @opentelemetry/semantic-conventions
-```
-
-The Node SDK runs where the server runs on Node: `lumiose dev`, `lumiose preview`,
-`@lumiose/adapter-node` and the Docker and VPS targets. On Cloudflare Workers or Vercel's Edge
-runtime, start that platform's OpenTelemetry integration in `register()` instead; the wrappers
-below stay the same.
-
-## Server spans
-
-`register()` starts the SDK once per server instance, before the first request. The
-`instrumentations` wrappers open a span per request (`SERVER` kind, named after the route
-pattern, as OpenTelemetry's HTTP conventions ask) and a child span per phase: each middleware file,
-the action, the endpoint, the render until the shell is ready, and each streamed boundary. The
-SDK's context manager makes each phase's span a child of the one around it, so a trace shows the
-request, then its middleware, then its render, then its streamed parts. A `traceparent` header
-from a proxy or another service continues its trace. `onRequestError` records unexpected errors
-with the phase and the `digest` that an `<ErrorBoundary>` fallback shows.
+## 2. Trace the server
 
 ```ts check
 // src/instrumentation.server.ts
@@ -60,7 +40,7 @@ import type { RequestErrorInfo, ServerInstrumentation } from "lumiose";
 export async function register() {
   const { NodeSDK } = await import("@opentelemetry/sdk-node");
   const { OTLPTraceExporter } = await import("@opentelemetry/exporter-trace-otlp-http");
-  // The endpoint and headers come from the OTEL_EXPORTER_OTLP_* variables (see the backends).
+  // The endpoint and headers come from the OTEL_EXPORTER_OTLP_* variables (step 5).
   new NodeSDK({ serviceName: "my-app", traceExporter: new OTLPTraceExporter() }).start();
 }
 
@@ -83,7 +63,7 @@ function end(span: Span, result: Result): void {
   span.end();
 }
 
-/** The endpoint that relays the browser's spans (below): no spans for the relay itself. */
+/** The endpoint that relays the browser's spans (step 4): no spans for the relay itself. */
 const RELAY = "/api/otel/v1/traces";
 
 /** A child span around one phase: `call()` runs it, inside the span. */
@@ -143,13 +123,16 @@ export function onRequestError(error: unknown, info: RequestErrorInfo) {
 }
 ```
 
-## Client spans
+`register()` starts the SDK once per server instance, before the first request. The
+`instrumentations` wrappers open a span per request (`SERVER` kind, named after the route
+pattern, as OpenTelemetry's HTTP conventions ask) and a child span per phase: each middleware file,
+the action, the endpoint, the render until the shell is ready, and each streamed boundary. The
+SDK's context manager makes each phase's span a child of the one around it, so a trace shows the
+request, then its middleware, then its render, then its streamed parts. A `traceparent` header
+from a proxy or another service continues its trace. `onRequestError` records unexpected errors
+with the phase and the `digest` that an `<ErrorBoundary>` fallback shows.
 
-`src/instrumentation.client.ts` runs on every page before islands hydrate and before the SPA
-router starts, so its tracer sees the first hydration. The `navigate` wrapper covers a client
-navigation of an SPA until the new page is on screen; `submit`, `fetch` and `hydrate` cover form
-submissions, `fetchJSON()` and `query()` requests, and each island. MPA pages have no client
-navigations: their page loads are the server's `request` spans.
+## 3. Trace the browser
 
 ```ts check
 // src/instrumentation.client.ts
@@ -163,7 +146,7 @@ import type { ClientErrorInfo, ClientInstrumentation } from "lumiose";
 
 const provider = new WebTracerProvider({
   resource: resourceFromAttributes({ [ATTR_SERVICE_NAME]: "my-app-browser" }),
-  // The app's own endpoint forwards the spans with the server's credentials (below).
+  // The app's own endpoint forwards the spans with the server's credentials (step 4).
   spanProcessors: [new BatchSpanProcessor(new OTLPTraceExporter({ url: "/api/otel/v1/traces" }))],
 });
 provider.register();
@@ -215,16 +198,22 @@ export function onError(error: unknown, info: ClientErrorInfo) {
 addEventListener("pagehide", () => void provider.forceFlush());
 ```
 
-The web SDK adds about 58 kB of JavaScript (16 kB brotli) to every page, since every page loads
-the file. The `@opentelemetry/api` calls in the wrappers do nothing until a provider is registered,
-so a site that only needs a sample can load the SDK with `import()` for some page loads and leave
-the rest without it.
+`src/instrumentation.client.ts` runs on every page before islands hydrate and before the SPA
+router starts, so its tracer sees the first hydration. The `navigate` wrapper covers a client
+navigation of an SPA until the new page is on screen; `submit`, `fetch` and `hydrate` cover form
+submissions, `fetchJSON()` and `query()` requests, and each island. MPA pages have no client
+navigations: their page loads are the server's `request` spans.
 
-## The relay endpoint
+> **Size:** the web SDK adds about 58 kB of JavaScript (16 kB brotli) to every page, since every page loads
+> the file. The `@opentelemetry/api` calls in the wrappers do nothing until a provider is
+> registered, so a site that only needs a sample can load the SDK with `import()` for some page
+> loads and leave the rest without it.
+
+## 4. Relay browser spans
 
 Backends need credentials that must not ship to the browser, and most do not accept cross-origin
 requests. The browser exporter posts to the app instead, and this endpoint forwards the spans with
-the same `OTEL_EXPORTER_OTLP_*` settings the server uses. The server instrumentation above skips
+the same `OTEL_EXPORTER_OTLP_*` settings the server uses. The server instrumentation of step 2 skips
 it, so relaying spans creates none. The body limit keeps it from relaying anything larger than a
 batch of spans.
 
@@ -265,7 +254,7 @@ export const POST: Endpoint<"/api/otel/v1/traces"> = async ({ request }) => {
 };
 ```
 
-## Backends
+## 5. Choose a backend
 
 The server exporter and the relay read OpenTelemetry's standard variables:
 
@@ -325,7 +314,7 @@ OTEL_EXPORTER_OTLP_ENDPOINT=http://datadog-agent:4318
 ```
 
 The spans appear in Datadog APM under the service name. For the browser, Datadog's own RUM SDK
-started in `src/instrumentation.client.ts` is the usual choice; the relay above works too, through
+started in `src/instrumentation.client.ts` is the usual choice; the relay of step 4 works too, through
 the Agent.
 
 ## Common mistakes
@@ -340,3 +329,10 @@ the Agent.
   them; prerendered pages are static files.
 - **Changing the request in a wrapper.** Wrappers observe: they cannot change arguments, results or
   the response. Use middleware for that.
+
+> **Status:** checked end to end on 2026-10-15 with a Lumiose app built with `lumiose build` and
+> served by `lumiose preview`, against OpenObserve and self-hosted SigNoz 0.129 (its last Docker Compose release) in Docker (server spans
+> nested by phase, failed requests, a continued `traceparent`, and browser navigation and
+> hydration spans through the relay). The Datadog setup follows Datadog's documentation; it was not
+> run. Packages: `@opentelemetry/api` 1.9, `@opentelemetry/sdk-node` and
+> `@opentelemetry/exporter-trace-otlp-http` 0.223, `@opentelemetry/sdk-trace-web` 2.12.
