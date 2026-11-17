@@ -208,11 +208,12 @@ export default function Home() {
     margin: 0;
   }
 
-  /* The hero: the pitch beside the code, both sitting on the same bottom line. */
+  /* The hero: the pitch beside the code, both starting on the same top line, with less room above
+     than the reference has (user, 2026-11-17). */
   .hero {
     display: grid;
     gap: $space.xxl;
-    padding-block: clamp(3.5rem, 9vw, 7.5rem) clamp(3rem, 7vw, 5.5rem);
+    padding-block: clamp(2.5rem, 5.5vw, 4.5rem) clamp(3rem, 7vw, 5.5rem);
   }
   .hero > * {
     min-inline-size: 0;
@@ -221,24 +222,31 @@ export default function Home() {
     .hero {
       grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
       gap: 4rem;
-      align-items: end;
+      align-items: start;
     }
+  }
+  /* The pitch starts near the corner the beams fan out from. Its label takes the text colour, and
+     the headline's grey line and the lead a stronger grey than the page's (30% of the way to the
+     text colour, in each scheme), so they keep 4.5:1 over a beam at its brightest
+     (e2e/a11y.e2e.ts measures it). */
+  .hero .pitch > .label {
+    color: $color.text;
+  }
+  .dim,
+  .lead {
+    color: light-dark(#3e3e3e, #bfbfbf);
   }
   h1 {
     margin-block: 1.75rem;
-    font-size: clamp(2.5rem, 4.3vw, 3.5rem);
+    font-size: clamp(2.5rem, 5.2vw, 4.25rem);
     font-weight: $weight.bold;
     line-height: 0.95;
     letter-spacing: -0.055em;
     text-wrap: balance;
   }
-  .dim {
-    color: $color.muted;
-  }
   .lead {
     max-inline-size: 30em;
     margin-block: 0 $space.xl;
-    color: $color.muted;
     font-size: 1.1875rem;
     line-height: 1.55;
   }
@@ -342,7 +350,7 @@ export default function Home() {
     font-size: 1.625rem;
     font-weight: $weight.semibold;
     letter-spacing: -0.03em;
-    line-height: 1.2;
+    line-height: 1.55;
   }
   .row p {
     display: none;
