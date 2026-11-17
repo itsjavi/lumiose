@@ -4,174 +4,146 @@
 
 ## Concept
 
-**Bindings.** The compiler looks at each JSX expression:
+### Expressions are bindings
 
-- Literals and plain identifiers are **static**: written once.
-- Calls and member access (`count()`, `user.name`, `props.title`) become **bindings** that re-run
-  when a signal they read changes, and write only the part of the DOM they own.
-- `untrack(() => …)` opts an expression out.
-
-**Compiled idioms.** There are no `<For>` or `<Show>` components; ordinary JavaScript compiles to
-the efficient form:
-
-| Source                                              | Compiled to                                                                                                                                                                                                                           |
-| --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `{items().map((item, i) => <Row key={item.id} />)}` | A keyed list. `key` is optional (items are keyed by reference otherwise). `i` becomes a reactive index only if you use it. See [Lists and keys](#lists-and-keys).                                                                     |
-| `item.id === selected()` inside `.map`              | An O(1) selector: a selection change touches two rows.                                                                                                                                                                                |
-| `{c() ? <A /> : <B />}`, `{c() && <A />}`           | A memoised branch: switches only when the condition flips.                                                                                                                                                                            |
-| `{count() * 2}`, ``{`#${id}`}``, `{String(x)}`      | Provably text: a text node of the template, updated with `setText` (written once when nothing reactive is read). Applies to sole children and to children between elements; a `const` initialised with such an expression counts too. |
-| `{row.label()}`, `{id}`, `{props.title}`            | Maybe text, alone between nodes (or the only child): also a text node of the template, written by `insertText`. Text values update the node in place; nodes, arrays and other values render in a region before it.                    |
-| `{fn()}` next to text or another `{…}`              | A dynamic insert (a region), since adjacent text nodes would merge when the HTML is parsed.                                                                                                                                           |
-
-**Elements.**
-
-| Prop                         | Rule                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
-| ---------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `class`                      | A string, an array, or a `{ name: boolean }` record (nested arrays allowed). `className` is a type error.                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
-| `style`                      | A string, or an object with **kebab-case** keys, including `--custom` properties. Each key updates on its own.                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
-| `aria-*`, `spellcheck`, …    | Booleans are written as `"true"`/`"false"` (`aria-pressed={false}` renders `aria-pressed="false"`): `aria-*`, `contenteditable`, `draggable`, `spellcheck` and the other enumerated attributes, static or not. Other attributes: `true` adds the attribute empty (`hidden`); `false`, `null` and `undefined` leave it out. A function is never an attribute: it is left out too.                                                                                                                                                                                |
-| `onClick`, `onKeyDown`, …    | camelCase handlers. Bubbling events are delegated (one listener per type at `document`); non-bubbling ones (`onFocus`, `onMouseEnter`, `onScroll`) get a direct listener.                                                                                                                                                                                                                                                                                                                                                                                       |
-| `on:click`, `on:my-event`    | A native `addEventListener` listener with the exact event name. Use it for custom and web-component events. Like `onX` handlers, it runs inside a batch: its writes render together, and the DOM is current when the event returns.                                                                                                                                                                                                                                                                                                                             |
-| Props of a custom element    | The element's property when it defines one (arrays and objects as they are), else the attribute, as in React 19. See [Web components](../guides/web-components.md).                                                                                                                                                                                                                                                                                                                                                                                             |
-| `bind:value`, `bind:checked` | Two-way binding to a writable signal, on `input`, `select` and `textarea`. `bind:x` also works on components and custom elements (below).                                                                                                                                                                                                                                                                                                                                                                                                                       |
-| `attach={[fn]}`              | Runs `fn(el)` with the element in a tracked scope, once the element is in the document (below); it may return a cleanup. Next to a spread it works the same, in either order, and attachments add up: an `attach` the spread carries (a wrapper's `<li {...props} />` given `attach`) runs too.                                                                                                                                                                                                                                                                 |
-| `ref={fn}`                   | Called with the element. `ref<T>()` makes a callback you can read like a signal. Next to a spread, `ref` is a prop like any other: the last one wins, so a wrapper that sets its own calls the caller's (`ref={(el) => { mine(el); rest.ref?.(el); }}`).                                                                                                                                                                                                                                                                                                        |
-| `innerHTML`                  | Sets unescaped HTML. The lint rule `no-unsafe-html` warns. Only as a written prop: a spread drops `innerHTML`, `textContent` and `srcdoc`, on the server and the client, so an object from JSON cannot inject markup. Written next to a spread (`<div {...rest} innerHTML={html} />`), they apply as written, and replace the spread's `children`.                                                                                                                                                                                                              |
-| `key`                        | Allowed on intrinsic elements and components (list identity).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
-| `<script>`, `<style>` text   | Raw text: written as it is, never `&lt;`; the character after a `<` that could open a tag is escaped (`<\u0069mg`, in a style `<\69 mg`; `<\/`, `<\!`), so a value can neither end the element nor open a tag inside `<svg>` or `<math>`. In a JSON script every `<` is `\u003c`. See [Security](security.md), and [Head](head.md) for JSON-LD.                                                                                                                                                                                                                 |
-| `{...props}`, `children`     | A spread applies every prop it carries, in order with the other attributes; written `attach` and `bind:` apply on their own (above). A nullish or `false` spread (`{...props.extra}`, `{...(open && attrs)}`) applies nothing. An element without content of its own renders the `children` of its spreads or of a `children` attribute, as in React: `<button {...props} />` renders what the caller passed. Written content wins. When the spread has no `children` prop at all, the element's content is left alone, so a script or the browser may fill it. |
-| `client:*`                   | Island directives, on components only. See [Islands](islands.md).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
-
-Handlers receive the **native** event, with `currentTarget` typed as the element. There are no
-synthetic events.
-
-**When `attach` runs.** An attachment is an effect: it runs after the update that created its
-element has written all of its DOM, so the element is already inserted and can be measured. A new
-list row goes into the document complete, with its nested lists, conditionals and components, in
-one insertion, and only then do the attachments inside it run. The exception is content that a
-`<Suspense>` holds back while it shows its fallback: it waits in a fragment, so its attachments run
-before it is in the document (`el.isConnected` is `false`), and do not run again when it appears.
-
-The attachments and effects that one update queues all run before the DOM shows their own writes.
-When each attachment measures (`getBoundingClientRect`) and then sets a signal the page renders,
-every measurement reads the same layout, and the writes reach the DOM together after the last
-attachment has run: N elements cost one layout, not N. Reading the signal still returns the new
-value at once; only the DOM lags. To measure what such a write renders, read the signal in an
-effect (it re-runs once the DOM shows the write), or measure in the next frame or in a
-`ResizeObserver`.
-
-**`bind:` on components and custom elements.** `bind:x={signal}` works on any component with an
-`x` prop and an `onXChange` callback, like `bind:value` on inputs: `bind:open` on `Dialog.Root`,
-`bind:value` on `Combobox.Root`, `bind:checked` on `Menu.CheckboxItem`. The compiler expands it to
-both props, `x={signal()}` and `onXChange={(value) => signal.set(value)}`, in server and client
-output. An `onXChange` written next to it still runs, after the signal is set. The types come from
-the component's props: a component without `x` or without `onXChange` has no `bind:x`, so the
-attribute is a type error.
-
-On a custom element (a tag with a dash), `bind:x` sets the element's `x` property and reads it back
-into the signal when the element dispatches `input`, `change` or `xchange` (lowercase:
-`openchange`, `checkedchange`); events bubbling up from its children are ignored. The server
-renders the signal's value as the attribute (`<lu-menu open>`). Declare `bind:x` on a typed custom
-element (`"bind:open"?: Signal<boolean>`); undeclared ones accept it untyped.
+A call or a member access (`count()`, `props.label`) re-runs when a signal it read changes, and
+writes only its own part of the DOM. Literals and plain identifiers such as `step` are written
+once.
 
 ```tsx check
 import { signal } from "lumiose";
 
-function Disclosure(props: {
-  open?: boolean;
-  onOpenChange?: (open: boolean) => void;
-  children?: JSX.Element;
-}) {
+export function Clicker(props: { label: string }) {
+  const count = signal(0);
+  const step = 2;
+
   return (
-    <details open={props.open} onToggle={(event) => props.onOpenChange?.(event.currentTarget.open)}>
-      {props.children}
-    </details>
+    <button onClick={() => count.update((n) => n + step)}>
+      {props.label}: {count()} (+{step})
+    </button>
   );
 }
+```
 
-export function Faq() {
-  const open = signal(false);
+> **Details:** `untrack(() => …)` opts an expression out. What each expression compiles to:
+> [Bindings and compiled idioms](../reference/jsx.md#bindings-and-compiled-idioms).
+
+### Conditions and lists
+
+There is no `<For>` or `<Show>`. `.map` compiles to a keyed list, `? :` and `&&` to a branch that
+switches only when its condition flips, and `tab.id === selected()` to an O(1) selector.
+
+```tsx check
+import { signal } from "lumiose";
+
+export function Tabs() {
+  const tabs = signal([
+    { id: "home", label: "Home" },
+    { id: "docs", label: "Docs" },
+  ]);
+  const selected = signal("home");
+
   return (
-    <>
-      <Disclosure bind:open={open}>
-        <summary>Shipping</summary>2 to 4 days.
-      </Disclosure>
-      <button onClick={() => open.set(!open())}>{open() ? "Collapse" : "Expand"}</button>
-    </>
+    <nav>
+      {tabs().map((tab) => (
+        <button
+          key={tab.id}
+          class={{ active: tab.id === selected() }}
+          onClick={() => selected.set(tab.id)}
+        >
+          {tab.label}
+        </button>
+      ))}
+      {selected() === "docs" ? <p>Reading.</p> : null}
+    </nav>
   );
 }
 ```
 
 ### Lists and keys
 
-`{items().map((item, i) => …)}` compiles to a list that reconciles its rows when the array changes:
-it keeps, moves, creates and removes rows instead of rendering them all again.
+With a `key`, the key alone decides whether a row is kept. Here the reload brings a new object
+with the same id: the `<li>` and its checked box stay, and only the title updates. Without a key,
+rows match by item reference, so a new object makes a new row.
 
-- **With a `key`** on the element the callback returns, the key alone decides whether a row is
-  kept, as in React, Vue or Svelte. A kept row whose item is a new object (a refetch, an array
-  derived again) keeps its DOM, its components with their local state, and its effects; the item
-  updates in place. Reads of the item in JSX, in props passed to components and in effects re-run,
-  as reads of props do, and so do reads of a destructured item (`({ id, name }) => …`).
-- **Without a key**, rows match by item reference: a row is kept while its item is the same
-  object, and a new object makes a new row.
+```tsx check
+import { signal } from "lumiose";
 
-The callback itself runs once per row. A value it reads from the item at the top, outside JSX and
-functions, is a copy taken when the row was created: `const label = format(item.name)` keeps the
-first name when the item changes in place, which [LUM2001](../errors/LUM2001.md) reports where the
-JSX uses it (and [LUM2003](../errors/LUM2003.md) an early return on the item). Read the item where
-it is used instead (`{format(item.name)}`), or derive lazily (`const label = () => format(item.name)`,
-called as `label()`). Copies of the key are fine (`const id = item.id` with `key={item.id}`): a
-different id is a different row. To make a new row when some field changes (to reset a row's state,
-or for setup code that must run again), put that field in the key:
-``key={`${item.id}:${item.version}`}``.
+export function Todos() {
+  const todos = signal([{ id: 1, title: "Write docs" }]);
+  const reload = () => {
+    todos.set([{ id: 1, title: "Write the docs" }]);
+  };
 
-The index stays reactive (`i` is compiled to `i()`), and a row keyed by its index
-(`key={i}`) keeps its place while its item changes, like Solid's `<Index>`.
-
-Key rows that hold user state by the record's id, never by the index or position. That state might
-be a checked box, a typed value, an expanded panel or an open menu. A kept row keeps its DOM state
-when another record arrives under its key. A "delete selected" form whose rows are keyed by index
-would still have a box checked after a filter or a sort, now next to a different record. React and
-Vue behave the same way.
-
-The compiler moves the key into a function that the list calls for every item, so the key may
-read the item (or the bindings of its destructuring pattern), the index, bindings it declares
-itself (`key={row.map((p) => p.id).join("|")}`), `const`s at the top of the callback that copy item
-fields (`const id = item.id`), and anything declared outside the callback. A callback that returns
-in several places keeps its key when every returned element carries the same one. A key the
-compiler cannot use, such as one that reads a value computed in the row, is
-[LUM2008](../errors/LUM2008.md), and the list matches rows by reference.
-
-```tsx
-<section class="grid">
-  {entries().map(({ row, index }) => (
-    <div key={`${index}:${row.map((card) => card.id).join("|")}`}>
-      {row.map((card) => (
-        <Card key={card.id} card={card} />
-      ))}
-    </div>
-  ))}
-</section>
+  return (
+    <>
+      <ul>
+        {todos().map((todo) => (
+          <li key={todo.id}>
+            <input type="checkbox" />
+            <span>{todo.title}</span>
+          </li>
+        ))}
+      </ul>
+      <button onClick={reload}>Reload</button>
+    </>
+  );
+}
 ```
 
-Here a refetch that returns new card objects with the same ids keeps every row and every `Card`:
-only the bindings whose values changed write to the DOM.
+> **Details:** key rows that hold user state by the record's id, never by the index. What a key
+> may read, reactive indexes, and values copied at the top of the callback:
+> [Lists and keys in depth](../reference/jsx.md#lists-and-keys-in-depth).
+
+### Element props
+
+`class` takes a string, an array or a record, and `style` an object with kebab-case keys.
+`bind:value` binds a signal both ways, `ref` gives the element, and `attach` runs with the element
+once it is in the document.
+
+```tsx check
+import { ref, signal } from "lumiose";
+
+export function NameField() {
+  const name = signal("");
+  const input = ref<HTMLInputElement>();
+  const focus = (el: HTMLInputElement) => el.focus();
+
+  return (
+    <label
+      class={["field", { empty: name() === "" }]}
+      style={{ "font-weight": name() === "" ? 400 : 600 }}
+    >
+      <input ref={input} bind:value={name} attach={[focus]} />
+      <button onClick={() => input()?.select()}>Select</button>
+    </label>
+  );
+}
+```
+
+> **Details:** every prop and its rules (boolean attributes, spreads, `innerHTML`, raw text):
+> [Element props](../reference/jsx.md#element-props). `attach` timing:
+> [When attach runs](../reference/jsx.md#when-attach-runs). `bind:x` on components and custom
+> elements: [bind:](../reference/jsx.md#bind-on-components-and-custom-elements).
 
 ## API
 
-JSX types come from `lumiose/jsx-runtime` (via `jsxImportSource: "lumiose"`) and the global `JSX`
-namespace from `lumiose/env`:
+| Prop                         | Rule                                                         |
+| ---------------------------- | ------------------------------------------------------------ |
+| `class`, `style`             | Not `className`; kebab-case style keys and `--custom` ones.  |
+| `onClick`, `onKeyDown`       | camelCase handlers. They get the native event, never a copy. |
+| `on:click`, `on:my-event`    | A native listener with the exact event name.                 |
+| `bind:value`, `bind:checked` | Two-way binding to a signal; `bind:x` on components too.     |
+| `ref={fn}`, `attach={[fn]}`  | The element; an effect on the element, with a cleanup.       |
+| `key`                        | List identity, on elements and components.                   |
+| `innerHTML`                  | Unescaped HTML ([Security](security.md)).                    |
+| `{...props}`                 | Applies each prop in order, `children` included.             |
+| `client:*`                   | Island directives, on components ([Islands](islands.md)).    |
 
-| Type                     | Meaning                                                                      |
-| ------------------------ | ---------------------------------------------------------------------------- |
-| `JSX.Element`            | Anything JSX can render: nodes, strings, numbers, arrays, functions, `null`. |
-| `JSX.ClassValue`         | The `class` prop value.                                                      |
-| `JSX.CSSProperties`      | The `style` object (kebab-case keys and `--custom` properties).              |
-| `JSX.EventHandler<E, T>` | A handler: the native event `E` with `currentTarget: T`.                     |
-| `JSX.Ref<T>`             | The value of `ref<T>()`.                                                     |
-| `JSX.HTMLProps<T>`       | Props of an HTML element, for wrappers and custom elements.                  |
-
-See [JSX types and tsconfig](../reference/jsx.md) for custom elements and the full rules.
+Types come from `lumiose/jsx-runtime` (`jsxImportSource: "lumiose"`) and the global `JSX`
+namespace of `lumiose/env`: `JSX.Element`, `JSX.ClassValue`, `JSX.CSSProperties`,
+`JSX.EventHandler<E, T>`, `JSX.Ref<T>` and `JSX.HTMLProps<T>`. Their meaning, custom elements and
+the tsconfig: [JSX types and tsconfig](../reference/jsx.md).
 
 ## Example
 
@@ -190,16 +162,16 @@ export function TodoList() {
   ]);
   const selected = signal(1);
   const draft = signal("");
-  const progress = signal(40);
 
   const add = (event: SubmitEvent) => {
     event.preventDefault();
-    todos.update((list) => [...list, { id: Date.now(), title: draft() }]);
+    const todo = { id: Date.now(), title: draft() };
+    todos.update((list) => [...list, todo]);
     draft.set("");
   };
 
   return (
-    <section style={{ "--progress": `${progress()}%`, "max-inline-size": "40rem" }}>
+    <section style={{ "max-inline-size": "40rem" }}>
       <form onSubmit={add}>
         <input bind:value={draft} on:focus={(event) => event.currentTarget.select()} />
         <button disabled={draft() === ""}>Add</button>
@@ -226,25 +198,15 @@ export function TodoList() {
 
 ## Common mistakes
 
-- **React prop names.** `className` → `class`, `htmlFor` → `for`, `onclick`/`onKeydown` →
-  `onClick`/`onKeyDown` (camelCase after `on`). The wrong forms are type errors.
-- **camelCase style keys.** `style={{ fontWeight: 600 }}` is a type error; write
-  `{ "font-weight": 600 }`, as in CSS. Numbers get no units: write `"12px"`.
-- **Passing a value to `bind:value`.** It needs the signal itself: `bind:value={draft}`, not
-  `bind:value={draft()}`.
-- **`bind:x` on a component without `onXChange`.** The component must take both `x` and
-  `onXChange`; otherwise pass `x={signal()}` and handle the change yourself. An island call site
-  (`client:*`) has no `bind:`: a signal cannot be serialized.
-- **Custom events with `onX`.** `onMyEvent` is not an event prop; write `on:my-event`.
-- **Using the index outside the row.** The `i` of `.map((item, i) => …)` is a reactive index that
-  belongs to its row; storing it in an outer variable or closure that outlives the row is
-  `LUM2006`.
-- **Reading the item once in a keyed row.** `const name = item.name` at the top of the callback
-  keeps the first name when a same-key item replaces it (`LUM2001`). Read `item.name` in the JSX,
-  or put the field in the key to make a new row when it changes.
-- **Wrapping lists in helper components.** `{items().map(…)}` already compiles to a keyed list;
-  there is no `<For>`.
-- **`innerHTML` with user input.** It is not escaped. Prefer text children.
+- **React prop names.** `className`, `htmlFor`, `onclick` and camelCase style keys are type
+  errors: write `class`, `for`, `onClick`, `"font-weight"`.
+- **`bind:value={draft()}`.** Pass the signal itself: `bind:value={draft}`.
+- **Custom events with `onX`.** Write `on:my-event`.
+- **Using the index outside its row** (`LUM2006`).
+- **Copying the item at the top of a keyed row** (`LUM2001`). Read `item.name` in the JSX.
+- **`innerHTML` with user input.** It is not escaped.
+
+The full list: [Common JSX mistakes](../reference/jsx.md#common-jsx-mistakes).
 
 ## Related diagnostics
 
