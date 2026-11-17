@@ -144,15 +144,13 @@ describe("docs", () => {
     expect(properties.find((property) => property.name === "--lu-background")).toEqual({
       name: "--lu-background",
       light: "#fff",
-      dark: "#09090b",
+      dark: "#000",
     });
     expect(properties.find((property) => property.name === "--lu-primary")).toMatchObject({
-      light: "#2563eb",
-      dark: "#2563eb",
+      light: "#000",
+      dark: "#fff",
     });
-    expect(schemeStyle("dark", properties)).toMatch(
-      /^color-scheme: dark; --lu-background: #09090b;/,
-    );
+    expect(schemeStyle("dark", properties)).toMatch(/^color-scheme: dark; --lu-background: #000;/);
   });
 
   it("links only to pages and anchors that exist", () => {

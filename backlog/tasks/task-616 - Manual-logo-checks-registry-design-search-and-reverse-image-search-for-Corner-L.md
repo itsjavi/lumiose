@@ -7,6 +7,7 @@ status: To Do
 assignee:
   - '@Lux'
 created_date: '2026-11-17T12:52:00Z'
+updated_date: '2026-11-17T13:06:00Z'
 labels:
   - needs-decision
 milestone: m-16
@@ -31,3 +32,9 @@ TASK-603 could only search the open web. Before the Corner L mark is final, a pe
 - [ ] #4 Logo galleries (Brandfetch, SVGL, Simple Icons) searched for an L with a quarter circle
 - [ ] #5 The user decides: keep, adjust or replace the mark; decision-90 is updated if it changes
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Also for the user (from TASK-613): the default UI theme has no red. --lu-destructive defaults to the text colour, so a destructive button looks like a primary one. Confirm, or ask for a distinct destructive look.
+<!-- SECTION:NOTES:END -->

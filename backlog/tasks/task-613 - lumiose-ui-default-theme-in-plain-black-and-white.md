@@ -5,7 +5,7 @@ status: Done
 assignee:
   - '@Halo'
 created_date: '2026-11-17T12:29:00Z'
-updated_date: '2026-11-17T13:05:00Z'
+updated_date: '2026-11-17T13:06:00Z'
 labels: []
 milestone: m-16
 dependencies: []
@@ -38,6 +38,8 @@ Contrast (light / dark): text, control edges and rings 21:1; on --lu-muted 18.4 
 Checks: ui unit tests 654 passed; pnpm typecheck and pnpm lint clean; ui docs:check clean; examples/ui-e2e in Chromium (dev and build): 1070 passed, 24 skipped, and the 2 toggle failures of the first run pass after restoring the bar (toggle, forced-colors, color-scheme, theme-lows re-run: 41 passed). Not run: Firefox and WebKit projects. Showcase on :5420: all 28 pages render in both schemes; the only chromatic computed colour is the accent square.
 Changelog: not hand-edited; the feat(ui) commit subject carries the visual change for the release tooling.
 Follow-up outside packages/ui (not done, Beacon's area): apps/web/src/content/content.test.ts 'shows the default theme's palette' hardcodes the old values (--lu-background dark #09090b, --lu-primary #2563eb) and now fails; it needs #000, and #000 / #fff.
+
+Lux (solo takeover of a Beacon file): apps/web/src/content/content.test.ts asserted the old palette values and now expects the black-and-white ones.
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary
