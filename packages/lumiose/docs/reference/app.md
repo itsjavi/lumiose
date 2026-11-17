@@ -11,10 +11,6 @@ Concepts: [Data and actions](../concepts/data-and-actions.md), [Server](../conce
 
 ### fetchJSON
 
-```ts
-function fetchJSON<T = unknown>(input: string | URL, init?: RequestInit): Promise<T>;
-```
-
 Fetches and parses JSON (`Accept: application/json` unless `init` sets it); an empty body is
 `undefined`. Non-2xx responses throw a `FetchError`. During SSR, same-origin URLs are served
 in-process through the request handler, with the page request's cookies and headers. Returns plain
@@ -32,19 +28,29 @@ request, not deduped with other components, not kept, and not sent with the page
 island, its value is still recorded for hydration like any other await). Other `cache` values keep
 the default behaviour; `init` always reaches `fetch` as given.
 
-### query
-
 ```ts
-function query<T, const TKey extends readonly unknown[]>(
-  key: TKey,
-  fn: (context: QueryFunctionContext<TKey>) => T | PromiseLike<T>,
-): Promise<T>;
+function fetchJSON<T = unknown>(input: string | URL, init?: RequestInit): Promise<T>;
+```
 
-interface QueryFunctionContext<TKey extends readonly unknown[] = readonly unknown[]> {
-  signal: AbortSignal; // the shared request's signal
-  queryKey: TKey; // `key`
+```tsx check
+import { fetchJSON } from "lumiose";
+
+interface Book {
+  title: string;
+}
+
+export async function BookTitle(props: { id: string }) {
+  const book = await fetchJSON<Book>(`/api/books/${props.id}`);
+  return <h1>{book.title}</h1>;
 }
 ```
+
+| Name    | Type            | Default | Description                                                                      |
+| ------- | --------------- | ------- | -------------------------------------------------------------------------------- |
+| `input` | `string \| URL` | —       | The URL; a relative one resolves against the page (the request, during SSR).     |
+| `init`  | `RequestInit`   | —       | Passed to `fetch` as given. `{ cache: "no-store" }` opts a GET out of the cache. |
+
+### query
 
 Awaited in an async component, caches what `fn` resolves to under `key`, an array of
 JSON-serializable values hashed stably (object key order does not matter), as TanStack Query's
@@ -74,60 +80,79 @@ The cache behind `fetchJSON` and `query`:
   old data.
 - Cached data is shared, not copied: treat it as read-only.
 
+```ts
+function query<T, const TKey extends readonly unknown[]>(
+  key: TKey,
+  fn: (context: QueryFunctionContext<TKey>) => T | PromiseLike<T>,
+): Promise<T>;
+
+interface QueryFunctionContext<TKey extends readonly unknown[] = readonly unknown[]> {
+  signal: AbortSignal;
+  queryKey: TKey;
+}
+```
+
+```tsx check
+import { query } from "lumiose";
+
+async function loadUser(id: string, signal: AbortSignal) {
+  const url = `https://api.example.com/users/${id}`;
+  const response = await fetch(url, { signal });
+  return (await response.json()) as { name: string };
+}
+
+export async function UserName(props: { id: string }) {
+  const user = await query(["user", props.id], ({ signal }) => loadUser(props.id, signal));
+  return <p>{user.name}</p>;
+}
+```
+
+| Name          | Type                                                           | Default | Description                                                                 |
+| ------------- | -------------------------------------------------------------- | ------- | --------------------------------------------------------------------------- |
+| `key`         | `readonly unknown[]`                                           | —       | The cache key: JSON-serializable values, hashed stably.                     |
+| `fn`          | `(context: QueryFunctionContext<TKey>) => T \| PromiseLike<T>` | —       | Loads the data.                                                             |
+| `fn.signal`   | `AbortSignal`                                                  | —       | The shared request's signal, aborted once no component waits for the entry. |
+| `fn.queryKey` | `TKey`                                                         | —       | `key`.                                                                      |
+
 ### FetchError, isFetchError
+
+Thrown by `fetchJSON()` and by `submit()` for unexpected errors. An `HttpError`, so if a server
+component lets it escape, the page renders the `error` (or `not-found`) page with the same status.
 
 ```ts
 interface FetchError extends HttpError {
-  readonly status: number; // 0 for network failures
+  readonly status: number;
   readonly url: string;
-  /** Parsed JSON body for JSON responses, else text; undefined when empty. */
   readonly data: unknown;
 }
 function isFetchError(value: unknown): value is FetchError;
 ```
 
-Thrown by `fetchJSON()` and by `submit()` for unexpected errors. An `HttpError`, so if a server
-component lets it escape, the page renders the `error` (or `not-found`) page with the same status.
+```ts check
+import { fetchJSON, isFetchError } from "lumiose";
+
+export async function loadStock(sku: string) {
+  try {
+    return await fetchJSON<{ count: number }>(`/api/stock/${sku}`);
+  } catch (error) {
+    if (isFetchError(error) && error.status === 404) return undefined;
+    throw error;
+  }
+}
+```
+
+| Name     | Type      | Default | Description                                                                 |
+| -------- | --------- | ------- | --------------------------------------------------------------------------- |
+| `status` | `number`  | —       | The response's status; `0` for network failures.                            |
+| `url`    | `string`  | —       | The requested URL.                                                          |
+| `data`   | `unknown` | —       | The parsed JSON body for JSON responses, else text; `undefined` when empty. |
 
 ## Form actions
 
 ### submit
 
-```ts
-function submit(target: SubmitTarget, options?: SubmitOptions): Promise<ActionResult>;
-// Typed by the action it posts to: submit<typeof actions.save>(event)
-function submit<A extends ActionsExport>(
-  target: SubmitTarget,
-  options?: SubmitOptions,
-): Promise<ActionResult<ActionSuccessData<A>, ActionFailureData<A>>>;
-
-type SubmitTarget =
-  | HTMLFormElement
-  | Event // a submit event: onSubmit={submit}
-  | FormData
-  | URLSearchParams
-  | Record<string, string | Blob | readonly (string | Blob)[]>;
-
-interface SubmitOptions {
-  /** A URL, or "?/name" for a named action. Default: the submitter's formaction, else the
-   *  form's action, else the current URL. */
-  action?: string;
-  /** Default POST. A form must say method="post". */
-  method?: string;
-  signal?: AbortSignal;
-  /** After a success: true (default) refreshes the whole page with invalidate() on client-routed
-   *  (SPA) pages, false keeps the page, and a list of targets (URLs, query() keys) refetches only
-   *  those, on SPA and MPA pages. MPA pages never refresh as a whole on their own. */
-  invalidate?: boolean | readonly (string | readonly unknown[])[];
-}
-
-type ActionResult<Data = unknown, Failure = unknown> =
-  | { type: "success"; status: number; data: Data }
-  | { type: "failure"; status: number; data: Failure }
-  | { type: "redirect"; status: number; location: string };
-```
-
-Posts without a page load. `success` and `failure` set `actionData()`; `redirect` navigates.
+Posts a form without a page load. The second overload is typed by the action it posts to:
+`submit<typeof actions.save>(event)`. `success` and `failure` set `actionData()`; `redirect` navigates.
 On client-routed (SPA) pages, after a `success`, `submit()` runs [`invalidate()`](#invalidate) and
 resolves once the page's data is fresh (decision-20); `{ invalidate: false }` skips it, and
 `{ invalidate: ["/api/books/1", ["stats"]] }` refetches only those targets instead, on SPA and MPA
@@ -137,40 +162,79 @@ Failures, redirects and errors do not invalidate. Rejects only for unexpected er
 failure) with a `FetchError`, and with a `TypeError` for a redirect to a URL that is not `http(s)`
 (a `javascript:` location never runs). Browser only: rejects on the server.
 
+```ts
+function submit(target: SubmitTarget, options?: SubmitOptions): Promise<ActionResult>;
+function submit<A extends ActionsExport>(
+  target: SubmitTarget,
+  options?: SubmitOptions,
+): Promise<ActionResult<ActionSuccessData<A>, ActionFailureData<A>>>;
+
+type SubmitTarget =
+  | HTMLFormElement
+  | Event
+  | FormData
+  | URLSearchParams
+  | Record<string, string | Blob | readonly (string | Blob)[]>;
+
+interface SubmitOptions {
+  action?: string;
+  method?: string;
+  signal?: AbortSignal;
+  invalidate?: boolean | readonly (string | readonly unknown[])[];
+}
+
+type ActionResult<Data = unknown, Failure = unknown> =
+  | { type: "success"; status: number; data: Data }
+  | { type: "failure"; status: number; data: Failure }
+  | { type: "redirect"; status: number; location: string };
+```
+
+```tsx check
+import { isSubmitting, submit } from "lumiose";
+
+export function Subscribe() {
+  return (
+    <form method="post" action="?/subscribe" onSubmit={submit}>
+      <input name="email" type="email" required />
+      <button disabled={isSubmitting("subscribe")}>Subscribe</button>
+    </form>
+  );
+}
+```
+
+| Name                 | Type                                                   | Default                                                                      | Description                                                                                                                                                                                                                                                          |
+| -------------------- | ------------------------------------------------------ | ---------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `target`             | `SubmitTarget`                                         | —                                                                            | A form, a submit event (`onSubmit={submit}`), a `FormData`, a `URLSearchParams` or a record of fields.                                                                                                                                                               |
+| `options.action`     | `string`                                               | The submitter's `formaction`, else the form's `action`, else the current URL | A URL, or `"?/name"` for a named action.                                                                                                                                                                                                                             |
+| `options.method`     | `string`                                               | `"POST"`                                                                     | The request method. A form must say `method="post"`.                                                                                                                                                                                                                 |
+| `options.signal`     | `AbortSignal`                                          | —                                                                            | Aborts the submission.                                                                                                                                                                                                                                               |
+| `options.invalidate` | `boolean \| readonly (string \| readonly unknown[])[]` | `true`                                                                       | After a success: `true` refreshes the whole page with `invalidate()` on client-routed (SPA) pages, `false` keeps the page, and a list of targets (URLs, `query()` keys) refetches only those, on SPA and MPA pages. MPA pages never refresh as a whole on their own. |
+
 ### isSubmitting
+
+Whether a `submit()` is in flight; with a name, one to that named action (`?/name`). Reactive.
+`false` on the server. Submissions of `submission()` handles count too.
 
 ```ts
 function isSubmitting(name?: string): boolean;
 ```
 
-Whether a `submit()` is in flight; with a name, one to that named action (`?/name`). Reactive.
-`false` on the server. Submissions of `submission()` handles count too.
+```tsx check
+import { isSubmitting } from "lumiose";
 
-### submission
-
-```ts
-function submission(): Submission;
-// Typed by the action it posts to: submission<typeof actions.toggle>()
-function submission<A extends ActionsExport>(): Submission<
-  ActionSuccessData<A>,
-  ActionFailureData<A>
->;
-
-interface Submission<Data = unknown, Failure = unknown> {
-  /** submit() for this handle: aborts its submission in flight, returns submit()'s promise. */
-  submit(target: SubmitTarget, options?: SubmitOptions): Promise<ActionResult<Data, Failure>>;
-  isSubmitting(): boolean; // this handle's submission is in flight
-  result():
-    | { type: "success"; status: number; data: Data }
-    | { type: "failure"; status: number; data: Failure }
-    | undefined; // the last settled result
-  error(): FetchError | undefined; // the last unexpected error
-  abort(): void; // cancels the submission in flight; the handle is idle at once
-  reset(): void; // clears result() and error()
+export function SaveButton() {
+  return <button disabled={isSubmitting("save")}>Save</button>;
 }
 ```
 
-The submissions of one component instance (decision-51, after Solid Router's `useSubmission` and
+| Name   | Type     | Default | Description                                                   |
+| ------ | -------- | ------- | ------------------------------------------------------------- |
+| `name` | `string` | —       | A named action (`?/name`); without it, any submission counts. |
+
+### submission
+
+A handle for the submissions of one component instance, typed by the action it posts to with
+`submission<typeof actions.toggle>()` (decision-51, after Solid Router's `useSubmission` and
 React Router's `useFetcher`). Call it during component setup: disposing the component aborts its
 submission in flight. Its results never set `actionData()`, and [`isSubmitting(name)`](#issubmitting)
 still counts them; invalidation and redirects behave as with `submit()`. The promise `submit()`
@@ -178,44 +242,118 @@ returns rejects for errors (also in `error()`) and aborts (`AbortError`, not an 
 handle), but an unawaited one (`onSubmit={handle.submit}`) reports no unhandled rejection. On the
 server the handle is idle and its `submit()` rejects.
 
-### actionData
-
 ```ts
-function actionData(): unknown;
-// Typed by the page's actions: actionData<typeof actions>() or actionData<typeof action>()
-function actionData<A extends ActionsExport>(): ActionData<A> | undefined;
-type ActionData<A extends ActionsExport> =
-  | ActionSuccessData<A> // what the actions return (not fail() or a Response); void → undefined
-  | ActionFailureData<A>; // the data they pass to fail()
-// typeof action, typeof actions or typeof actions.name
-type ActionsExport =
-  | ((ctx: never) => unknown)
-  | { readonly [name: string]: (ctx: never) => unknown };
+function submission(): Submission;
+function submission<A extends ActionsExport>(): Submission<
+  ActionSuccessData<A>,
+  ActionFailureData<A>
+>;
+
+interface Submission<Data = unknown, Failure = unknown> {
+  submit(target: SubmitTarget, options?: SubmitOptions): Promise<ActionResult<Data, Failure>>;
+  isSubmitting(): boolean;
+  result():
+    | { type: "success"; status: number; data: Data }
+    | { type: "failure"; status: number; data: Failure }
+    | undefined;
+  error(): FetchError | undefined;
+  abort(): void;
+  reset(): void;
+}
 ```
 
+```tsx check
+import { submission } from "lumiose";
+
+export function LikeButton(props: { id: string }) {
+  const like = submission();
+  return (
+    <form method="post" action="?/like" onSubmit={like.submit}>
+      <input type="hidden" name="id" value={props.id} />
+      <button disabled={like.isSubmitting()}>Like</button>
+    </form>
+  );
+}
+```
+
+| Name             | Type                                   | Default | Description                                                                                   |
+| ---------------- | -------------------------------------- | ------- | --------------------------------------------------------------------------------------------- |
+| `submit()`       | `Promise<ActionResult<Data, Failure>>` | —       | `submit()` for this handle: aborts its submission in flight and returns `submit()`'s promise. |
+| `isSubmitting()` | `boolean`                              | —       | Whether this handle's submission is in flight.                                                |
+| `result()`       | `ActionResult \| undefined`            | —       | The last settled `success` or `failure` result.                                               |
+| `error()`        | `FetchError \| undefined`              | —       | The last unexpected error.                                                                    |
+| `abort()`        | `void`                                 | —       | Cancels the submission in flight; the handle is idle at once.                                 |
+| `reset()`        | `void`                                 | —       | Clears `result()` and `error()`.                                                              |
+
+### actionData
+
 The data of the last action result: what the action returned, or its `fail()` data. The type
-argument is the actions export itself, never a data type: the result types are inferred from it.
+argument is the actions export itself (`typeof action`, `typeof actions` or `typeof actions.name`),
+never a data type: the result types are inferred from it. `ActionSuccessData<A>` is what the
+actions return (not `fail()` or a `Response`; `void` becomes `undefined`) and `ActionFailureData<A>`
+the data they pass to `fail()`.
 `ActionData<typeof actions>` names the same type, for the props of a component that receives it
 (`failed: ActionData<typeof action> | undefined`). Success and failure data are told apart by
 their shape, as with React Router's `useActionData` and SvelteKit's `form`. Reactive in
 the browser; after a no-JS form post it starts with the data the page was rendered with. On the
 server: the current request's action result while the page re-renders after a post.
 
+```ts
+function actionData(): unknown;
+function actionData<A extends ActionsExport>(): ActionData<A> | undefined;
+
+type ActionData<A extends ActionsExport> = ActionSuccessData<A> | ActionFailureData<A>;
+type ActionsExport =
+  | ((ctx: never) => unknown)
+  | { readonly [name: string]: (ctx: never) => unknown };
+```
+
+```tsx check
+import { actionData } from "lumiose";
+
+export function Saved() {
+  return <p hidden={actionData() === undefined}>Saved</p>;
+}
+```
+
 ### fail, ActionFailure
+
+A failed action result, usually for validation errors: `return fail(400, { errors })`. Without
+JavaScript the page re-renders with `status`; `submit()` resolves with `{ type: "failure" }`.
 
 ```ts
 function fail(status: number): ActionFailure<undefined>;
 function fail<Data>(status: number, data: Data): ActionFailure<Data>;
 ```
 
-A failed action result, usually for validation errors: `return fail(400, { errors })`. Without
-JavaScript the page re-renders with `status`; `submit()` resolves with `{ type: "failure" }`.
+```stsx check file=routes/newsletter/page.stsx
+// src/routes/newsletter/page.stsx
+import { fail, type ActionContext } from "lumiose";
+
+export const mode = "server";
+
+export async function action(ctx: ActionContext<"/newsletter">) {
+  const email = String((await ctx.formData()).get("email"));
+  if (!email.includes("@")) return fail(400, { error: "Enter an email" });
+  return { email };
+}
+
+export default function Newsletter() {
+  return (
+    <form method="post">
+      <input name="email" type="email" />
+      <button>Subscribe</button>
+    </form>
+  );
+}
+```
+
+| Name     | Type     | Default     | Description                                            |
+| -------- | -------- | ----------- | ------------------------------------------------------ |
+| `status` | `number` | —           | The status the page re-renders with, such as `400`.    |
+| `data`   | `Data`   | `undefined` | What `actionData()` and `submit()`'s `failure` return. |
 
 ### invalidate
-
-```ts
-function invalidate(...targets: (string | readonly unknown[])[]): Promise<void>;
-```
 
 With targets, refetches only the matching [cache](#query) entries and re-runs the async components
 that awaited them, on SPA and MPA pages alike; their UI stays until the new data arrives. A string
@@ -235,13 +373,26 @@ HTML.
 Resolves once nothing is in flight anymore (`isBusy()` is false). Browser only: rejects on the
 server.
 
+```ts
+function invalidate(...targets: (string | readonly unknown[])[]): Promise<void>;
+```
+
+```tsx check
+import { invalidate } from "lumiose";
+
+export function RefreshStats() {
+  const refresh = () => void invalidate("/api/stats", ["stats"]);
+  return <button onClick={refresh}>Refresh</button>;
+}
+```
+
+| Name         | Type                               | Default | Description                                                                                             |
+| ------------ | ---------------------------------- | ------- | ------------------------------------------------------------------------------------------------------- |
+| `...targets` | `(string \| readonly unknown[])[]` | —       | A string is the URL of a `fetchJSON()` entry; an array is a `query()` key prefix. None: the whole page. |
+
 ## Routing
 
 ### href
-
-```ts
-function href<P extends Routes>(pattern: P, ...args: HrefArgs<P>): string;
-```
 
 Builds a path from a route pattern, encoding each param; `params` is required when the pattern has
 params. A `[...rest]` param keeps its `/` separators; an optional `[[param]]` or `[[...rest]]`
@@ -268,7 +419,27 @@ route param: `href("/blog/[slug]", { slug, locale: "es" })` is `/es/blog/hello`,
 page declares the locale: `alternates()` lists the URLs that exist. See
 [Internationalization](../concepts/i18n.md).
 
+```ts
+function href<P extends Routes>(pattern: P, ...args: HrefArgs<P>): string;
+```
+
+```tsx check
+import { href } from "lumiose";
+
+export function HomeLink() {
+  return <a href={href("/")}>Home</a>;
+}
+```
+
+| Name      | Type                                   | Default | Description                                                                       |
+| --------- | -------------------------------------- | ------- | --------------------------------------------------------------------------------- |
+| `pattern` | `Routes`                               | —       | A route pattern, such as `"/blog/[slug]"`.                                        |
+| `params`  | `RouteParams<P> & { locale?: Locale }` | —       | The pattern's params, required when it has some; `locale` picks the URL's locale. |
+
 ### Route types
+
+The types that typegen fills in from `src/routes`: route patterns, their params and the props of
+pages and layouts. Before typegen runs, `Routes` and `Locale` are `string`.
 
 ```ts
 interface RouteMap {}                  // augmented by .lumiose/types/routes.d.ts (typegen)
@@ -284,41 +455,54 @@ interface LayoutProps<P extends /* a layout pattern */> {
 }
 ```
 
+```tsx check file=routes/notes/[slug]/page.tsx
+// src/routes/notes/[slug]/page.tsx
+import type { PageProps } from "lumiose";
+
+export default function Note(props: PageProps<"/notes/[slug]">) {
+  return <h1>{props.params.slug}</h1>;
+}
+```
+
 ## Control flow
+
+Functions that end a request with a redirect or an error page. They throw; the framework renders a
+redirect, the nearest `not-found` page (404) or the nearest `error` page. Without a status,
+`redirect()` uses 302 for GET/HEAD and 303 otherwise. `HttpError` is an `Error` with a `status`.
 
 ```ts
 function redirect(location: string | URL, status?: 301 | 302 | 303 | 307 | 308): never;
 function notFound(message?: string): never;
-function error(status: number, message?: string): never; // 400-599
+function error(status: number, message?: string): never;
 function isRedirect(value: unknown): value is Redirect;
 function isHttpError(value: unknown): value is HttpError;
 ```
 
-They throw; the framework renders a redirect, the nearest `not-found` page (404) or the nearest
-`error` page.
-Without a status, `redirect()` uses 302 for GET/HEAD and 303 otherwise. `HttpError` is an `Error`
-with a `status`.
+```ts check
+import { error, notFound, redirect } from "lumiose";
+
+const posts = new Map([["hello", { title: "Hello", draft: false }]]);
+
+export function findPost(slug: string, signedIn: boolean) {
+  if (!signedIn) redirect("/login");
+  const post = posts.get(slug) ?? notFound();
+  if (post.draft) error(403, "Drafts are private");
+  return post;
+}
+```
+
+| Name                  | Type                              | Default                        | Description               |
+| --------------------- | --------------------------------- | ------------------------------ | ------------------------- |
+| `redirect` `location` | `string \| URL`                   | —                              | Where to send the client. |
+| `redirect` `status`   | `301 \| 302 \| 303 \| 307 \| 308` | `302` for GET/HEAD, else `303` | The redirect's status.    |
+| `notFound` `message`  | `string`                          | `"Not Found"`                  | The error's message.      |
+| `error` `status`      | `number`                          | —                              | A status from 400 to 599. |
+| `error` `message`     | `string`                          | The status text                | The error's message.      |
 
 ## Request APIs (server)
 
-```ts
-function request(): Request;
-function url(): URL;
-function params<P extends Routes = never>(): RouteParams<P>; // Record<string, string> without P
-function route(): Routes | undefined; // the matched pattern, "/blog/[slug]"; undefined if none
-function locals(): Locals;
-function cookies(): Cookies;
-function response(): ResponseContext;
-function env(name: string): string | undefined;
-function publicEnv(source?: ServerEnv): Record<string, string>;
-function cspNonce(): string | undefined; // lumiose({ csp: "strict" }): the response's nonce
-function locale(): Locale; // lumiose({ i18n }): the request's locale; string | undefined without it
-function alternates(): { locale: Locale; href: string }[]; // the page in each declared locale
-function alternates<P extends Routes>(
-  pattern: P,
-  params?: RouteParams<P>,
-): { locale: Locale; href: string }[];
-```
+Functions that read the current request during a server render, and `response()` to shape the
+response.
 
 `locale()` is the locale of the request's URL prefix (`/es/about` → `"es"`), else the default
 locale, also while prerendering (each locale renders separately); without `lumiose({ i18n })` it
@@ -341,23 +525,76 @@ server rendering, so use them in code that runs in the browser (SPA routes, isla
 `publicEnv()` returns the `PUBLIC_*` subset.
 
 ```ts
-interface ResponseContext {
-  readonly status: number;
-  setStatus(status: number): void;
-  getHeader(name: string): string | null;
-  setHeader(name: string, value: string): void;
-  setStreaming(streaming: boolean): void; // false: one fully resolved document
+function request(): Request;
+function url(): URL;
+function params<P extends Routes = never>(): RouteParams<P>; // Record<string, string> without P
+function route(): Routes | undefined; // the matched pattern, "/blog/[slug]"; undefined if none
+function locals(): Locals;
+function cookies(): Cookies;
+function response(): ResponseContext;
+function env(name: string): string | undefined;
+function publicEnv(source?: ServerEnv): Record<string, string>;
+function cspNonce(): string | undefined; // lumiose({ csp: "strict" }): the response's nonce
+function locale(): Locale; // lumiose({ i18n }): the request's locale; string | undefined without it
+function alternates(): { locale: Locale; href: string }[]; // the page in each declared locale
+function alternates<P extends Routes>(
+  pattern: P,
+  params?: RouteParams<P>,
+): { locale: Locale; href: string }[];
+```
+
+```tsx check
+import { cookies, response, url } from "lumiose";
+
+export function Results() {
+  const term = url().searchParams.get("q") ?? "";
+  const theme = cookies().get("theme") ?? "light";
+  response().setHeader("Cache-Control", "private");
+  return <h1 class={theme}>Results for {term}</h1>;
 }
 ```
 
-Writable until the shell is sent; later writes throw `LUM5004`. `setStreaming(false)` makes the
+### ResponseContext
+
+What `response()` returns: the status and headers of the response being rendered. It is writable until the shell is sent; later writes throw `LUM5004`. `setStreaming(false)` makes the
 response wait for every `<Suspense>` boundary and send one complete document, without fallbacks
 or swap scripts, as prerendering renders; call it in middleware, or in a page before its first
 `<Suspense>`. It is meant for crawlers: see
 [the middleware recipe](../concepts/server.md#crawlers-get-one-resolved-document). The response
 still waits at most `lumiose({ streamTimeout })` ([`LUM5009`](../errors/LUM5009.md)).
 
+```ts
+interface ResponseContext {
+  readonly status: number;
+  setStatus(status: number): void;
+  getHeader(name: string): string | null;
+  setHeader(name: string, value: string): void;
+  setStreaming(streaming: boolean): void;
+}
+```
+
+```tsx check
+import { response } from "lumiose";
+
+export function Gone() {
+  response().setStatus(410);
+  return <h1>This page is gone</h1>;
+}
+```
+
+| Name                      | Type             | Default | Description                                                              |
+| ------------------------- | ---------------- | ------- | ------------------------------------------------------------------------ |
+| `status`                  | `number`         | —       | The response's status.                                                   |
+| `setStatus(status)`       | `void`           | —       | Sets the status.                                                         |
+| `getHeader(name)`         | `string \| null` | —       | Reads a response header.                                                 |
+| `setHeader(name, value)`  | `void`           | —       | Sets a response header.                                                  |
+| `setStreaming(streaming)` | `void`           | —       | `false`: the response is one fully resolved document, without streaming. |
+
 ## Cookies
+
+`Cookies` reads the request's cookies and writes the response's (`cookies()`, `ctx.cookies`).
+`signedCookie()` makes a cookie whose value carries an HMAC signature, so a value the client
+changed reads as `undefined`.
 
 ```ts
 interface Cookies {
@@ -367,33 +604,63 @@ interface Cookies {
   delete(name: string, options?: CookieDeleteOptions): void;
 }
 interface CookieOptions {
-  path?: string; // default "/"
+  path?: string;
   domain?: string;
-  maxAge?: number; // seconds
+  maxAge?: number;
   expires?: Date;
-  httpOnly?: boolean; // default true
-  secure?: boolean; // default: true in production and on https
-  sameSite?: "lax" | "strict" | "none"; // default "lax"; "none" forces secure
-  partitioned?: boolean; // CHIPS; forces secure
+  httpOnly?: boolean;
+  secure?: boolean;
+  sameSite?: "lax" | "strict" | "none";
+  partitioned?: boolean;
 }
 type CookieDeleteOptions = Pick<CookieOptions, "path" | "domain" | "secure" | "sameSite">;
 
 function signedCookie(name: string, options?: SignedCookieOptions): SignedCookie;
 interface SignedCookieOptions extends CookieOptions {
-  /** HMAC secret; an array rotates keys (the first signs). Default: env LUMIOSE_SECRET. */
   secret?: string | readonly string[];
-  /** Accept secrets under 32 bytes (else they throw in production, warn in dev). */
   allowWeakSecret?: boolean;
 }
 interface SignedCookie {
   readonly name: string;
-  get(cookies: Cookies): Promise<string | undefined>; // undefined when the signature is invalid
+  get(cookies: Cookies): Promise<string | undefined>;
   set(cookies: Cookies, value: string, options?: CookieOptions): Promise<void>;
   delete(cookies: Cookies, options?: CookieDeleteOptions): void;
 }
 ```
 
+```ts check
+import { signedCookie, type RequestContext } from "lumiose";
+
+const session = signedCookie("session", { maxAge: 60 * 60 * 24 });
+
+export async function signIn(ctx: RequestContext, userId: string) {
+  await session.set(ctx.cookies, userId);
+  ctx.cookies.set("theme", "dark", { httpOnly: false });
+}
+
+export function currentUser(ctx: RequestContext) {
+  return session.get(ctx.cookies);
+}
+```
+
+| Name              | Type                          | Default                           | Description                                                                                           |
+| ----------------- | ----------------------------- | --------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| `path`            | `string`                      | `"/"`                             | The cookie's path.                                                                                    |
+| `domain`          | `string`                      | —                                 | The cookie's domain.                                                                                  |
+| `maxAge`          | `number`                      | —                                 | The cookie's lifetime, in seconds.                                                                    |
+| `expires`         | `Date`                        | —                                 | When the cookie expires.                                                                              |
+| `httpOnly`        | `boolean`                     | `true`                            | Hides the cookie from scripts.                                                                        |
+| `secure`          | `boolean`                     | `true` in production and on https | Sends the cookie over https only.                                                                     |
+| `sameSite`        | `"lax" \| "strict" \| "none"` | `"lax"`                           | The same-site policy; `"none"` forces `secure`.                                                       |
+| `partitioned`     | `boolean`                     | —                                 | CHIPS; forces `secure`.                                                                               |
+| `secret`          | `string \| readonly string[]` | The env variable `LUMIOSE_SECRET` | `signedCookie()` only: the HMAC secret; an array rotates keys (the first signs).                      |
+| `allowWeakSecret` | `boolean`                     | `false`                           | `signedCookie()` only: accept secrets under 32 bytes (else they throw in production and warn in dev). |
+
+A `SignedCookie`'s `get()` resolves to `undefined` when the signature is invalid.
+
 ## Context types
+
+The types of what Lumiose passes to middleware, endpoints, actions, error pages and the document.
 
 ```ts
 // P is a route pattern ("/books/[isbn]"); without one, params is Record<string, string>.
@@ -442,6 +709,16 @@ interface DocumentProps {
 }
 interface Locals {} // augment: declare module "lumiose" { interface Locals { … } }
 interface PlatformEnv {} // augment: declare module "lumiose" { interface PlatformEnv { … } }
+```
+
+```ts check file=routes/api/time/route.ts
+// src/routes/api/time/route.ts
+import type { Endpoint } from "lumiose";
+
+export const mode = "server";
+
+export const GET: Endpoint<"/api/time"> = (ctx) =>
+  Response.json({ now: Date.now(), from: ctx.platform.clientAddress });
 ```
 
 ### Instrumentation types
