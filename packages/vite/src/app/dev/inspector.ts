@@ -75,6 +75,28 @@ function h(
   return el;
 }
 
+const SVG_NS = "http://www.w3.org/2000/svg";
+/** The Corner L logo on a 24×24 grid: the L as a wall and a floor, and the quarter of light. */
+const MARK_PATHS: readonly [string, string][] = [
+  ["wall", "M2 2h3v17h17v3H2z"],
+  ["light", "M7.5 16.5v-10a10 10 0 0 1 10 10z"],
+];
+
+/** The logo as an SVG element; the stylesheet colours its paths by class (no `style` attributes). */
+function mark(): SVGElement {
+  const svg = document.createElementNS(SVG_NS, "svg");
+  svg.setAttribute("class", "mark");
+  svg.setAttribute("viewBox", "0 0 24 24");
+  svg.setAttribute("aria-hidden", "true");
+  for (const [name, d] of MARK_PATHS) {
+    const path = document.createElementNS(SVG_NS, "path");
+    path.setAttribute("class", name);
+    path.setAttribute("d", d);
+    svg.append(path);
+  }
+  return svg;
+}
+
 function readRegistry(): Registry | undefined {
   return (globalThis as Record<symbol, Registry | undefined>)[REGISTRY_KEY];
 }
@@ -116,7 +138,7 @@ export function mountInspector(options: InspectorOptions): Inspector {
       "aria-label": "Lumiose inspector",
       onclick: () => setOpen(!open),
     },
-    h("span", { class: "mark", "aria-hidden": "true" }),
+    mark(),
   );
   const highlightBox = h("div", { class: "highlight", hidden: true });
   const highlightLabel = h("span", { class: "label" });
@@ -141,7 +163,7 @@ export function mountInspector(options: InspectorOptions): Inspector {
     h(
       "header",
       {},
-      h("span", { class: "title" }, h("span", { class: "mark", "aria-hidden": "true" }), "Lumiose"),
+      h("span", { class: "title" }, mark(), "Lumiose"),
       h("div", { role: "tablist", "aria-label": "Panels" }, ...tabButtons),
       h("span", { class: "spacer" }),
       pickButton,
@@ -780,97 +802,113 @@ function islandNodes(island: IslandRecord): Node[] {
   return nodes;
 }
 
+// The look follows decision-90: black and white, one grey, hairlines, square corners, no gradients
+// or shadows, mono uppercase labels, and amber only as the marker of what is selected. The tools sit
+// on pages of any colour, so every colour is set here (none is inherited), the panel is opaque, and
+// its edge and the launcher's are in the text colour. Focus rings are in the text colour too: amber
+// on white is 2:1. `--bad` is the one status hue; the state's word carries the meaning with it.
 const STYLES = `
 :host { all: initial; }
 * { box-sizing: border-box; }
 .toggle, .panel, .highlight {
-  --bg: #ffffff; --fg: #18181f; --muted: #6b6b7b; --line: #e4e4ee; --soft: #f4f3ff;
-  --accent: #5546ff; --accent-text: #4a3af2; --ok: #157f3b; --warn: #a15c00; --bad: #c4231c;
-  font: 12px/1.45 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --bg: #fff; --fg: #000; --mid: #595959; --line: #e2e2e2; --soft: #f2f2f2;
+  --accent: #f5a300; --bad: #b42318;
+  --mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, monospace;
+  font: 12px/1.45 "Helvetica Neue", Helvetica, ui-sans-serif, system-ui, Arial, sans-serif;
   color: var(--fg);
 }
 @media (prefers-color-scheme: dark) {
   .toggle, .panel, .highlight {
-    --bg: #14141c; --fg: #ececf3; --muted: #9a9aab; --line: #2b2b38; --soft: #1c1940;
-    --accent: #8f84ff; --accent-text: #a99fff; --ok: #5bd28a; --warn: #f0b45c; --bad: #ff7a72;
+    --bg: #000; --fg: #fff; --mid: #a3a3a3; --line: #262626; --soft: #171717;
+    --accent: #ffd27a; --bad: #ff8a80;
   }
 }
 [hidden] { display: none !important; }
-button { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; }
-button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; border-radius: 4px; }
-.mark {
-  display: inline-block; inline-size: 14px; block-size: 14px; border-radius: 50%;
-  background: radial-gradient(circle at 34% 30%, #fff 0 14%, transparent 42%), linear-gradient(135deg, #7c6cff, #ffb547);
-  box-shadow: 0 0 6px color-mix(in oklab, #7c6cff 55%, transparent);
-}
+button { font: inherit; color: inherit; background: none; border: 0; border-radius: 0; padding: 0; cursor: pointer; }
+button:focus-visible { outline: 2px solid var(--fg); outline-offset: 2px; }
+.mark { display: inline-block; inline-size: 14px; block-size: 14px; flex: none; }
+.mark .wall { fill: currentColor; }
+.mark .light { fill: var(--accent); }
 .toggle {
   position: fixed; inset-block-end: 12px; inset-inline-start: 12px; z-index: 2147483646;
-  inline-size: 34px; block-size: 34px; border-radius: 50%; display: grid; place-items: center;
-  background: var(--bg); border: 1px solid var(--line); box-shadow: 0 2px 10px rgb(0 0 0 / 0.18);
-  opacity: 0.7; transition: opacity 0.15s;
+  inline-size: 32px; block-size: 32px; display: grid; place-items: center;
+  background: var(--bg); border: 1px solid var(--fg);
 }
-.toggle:hover, .toggle:focus-visible { opacity: 1; }
+.toggle:hover { background: var(--soft); }
+/* Inside the button, against its own background: the page around it can be any colour. */
+.toggle:focus-visible { outline-offset: -5px; }
 .toggle .mark { inline-size: 16px; block-size: 16px; }
 .panel {
   position: fixed; inset-inline: 0; inset-block-end: 0; z-index: 2147483646; block-size: 42vh;
   min-block-size: 220px; display: flex; flex-direction: column; background: var(--bg);
-  border-block-start: 1px solid var(--line); box-shadow: 0 -4px 18px rgb(0 0 0 / 0.14);
+  border-block-start: 1px solid var(--fg);
 }
 header {
-  display: flex; align-items: center; gap: 4px; padding: 4px 8px;
+  display: flex; align-items: center; gap: 6px; padding: 0 8px;
   border-block-end: 1px solid var(--line); flex-wrap: wrap;
 }
-.title { display: inline-flex; align-items: center; gap: 6px; font-weight: 700; margin-inline-end: 8px; }
+.title {
+  display: inline-flex; align-items: center; gap: 8px; margin-inline-end: 10px;
+  font: 600 11px/1 var(--mono); letter-spacing: 0.2em; text-transform: uppercase;
+}
 [role="tablist"] { display: flex; gap: 2px; flex-wrap: wrap; }
-[role="tab"], .pick { padding: 4px 8px; border-radius: 6px; color: var(--muted); }
-[role="tab"]:hover, .pick:hover { color: var(--fg); background: var(--soft); }
-[role="tab"][aria-selected="true"] { color: var(--accent-text); background: var(--soft); font-weight: 600; }
-.pick[aria-pressed="true"] { color: var(--bg); background: var(--accent); }
+[role="tab"] {
+  padding: 9px 8px 7px; border-block-end: 2px solid transparent; color: var(--mid);
+  font: 11px/1 var(--mono); letter-spacing: 0.08em; text-transform: uppercase;
+}
+[role="tab"]:hover { color: var(--fg); }
+[role="tab"][aria-selected="true"] { color: var(--fg); font-weight: 700; border-block-end-color: var(--accent); }
+.pick, .close { block-size: 22px; padding: 0 8px; border: 1px solid var(--mid); font: 11px/1 var(--mono); }
+.pick:hover, .close:hover { border-color: var(--fg); }
+.pick[aria-pressed="true"] { color: var(--bg); background: var(--fg); border-color: var(--fg); }
 .spacer { flex: 1; }
-.close { font-size: 18px; line-height: 1; padding: 2px 8px; color: var(--muted); }
-.close:hover { color: var(--fg); }
+.close { font-size: 14px; }
 .body { flex: 1; min-block-size: 0; display: flex; }
 .body > * { flex: 1; min-inline-size: 0; }
 .split { display: flex; min-block-size: 0; }
 .pane { flex: 1; overflow: auto; padding: 6px 0; min-inline-size: 0; }
 .pane.details { flex: 1.3; padding: 8px 12px; border-inline-start: 1px solid var(--line); }
 .scroll { overflow: auto; padding: 8px 12px; }
-.empty { margin: auto; padding: 24px; color: var(--muted); max-inline-size: 60ch; text-align: center; }
+.empty { margin: auto; padding: 24px; color: var(--mid); max-inline-size: 60ch; text-align: center; }
 ul { list-style: none; margin: 0; padding: 0; }
 .row {
   display: flex; align-items: baseline; gap: 6px; inline-size: 100%; text-align: start;
   padding-block: 2px; padding-inline-end: 8px; white-space: nowrap;
+  border-inline-start: 2px solid transparent;
 }
 .row:hover { background: var(--soft); }
-[aria-selected="true"] > .row { background: var(--soft); box-shadow: inset 2px 0 var(--accent); }
-.name { font-weight: 600; color: var(--accent-text); }
-.muted, .internal { color: var(--muted); }
+.row:focus-visible { outline-offset: -2px; }
+[aria-selected="true"] > .row { background: var(--soft); border-inline-start-color: var(--accent); }
+[aria-selected="true"] > .row .name { text-decoration: underline; text-underline-offset: 2px; }
+.name { font-weight: 600; }
+.muted, .internal { color: var(--mid); }
 .badge {
-  font-size: 10px; padding: 0 5px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted);
-  white-space: nowrap;
+  font: 10px/1.5 var(--mono); letter-spacing: 0.06em; text-transform: uppercase; padding: 0 4px;
+  border: 1px solid var(--line); color: var(--mid); white-space: nowrap;
 }
-h2 { font-size: 14px; margin: 0 0 2px; }
-h3 { font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); margin: 12px 0 4px; }
+h2 { font-size: 14px; margin: 0 0 2px; letter-spacing: -0.01em; }
+h3, th { font: 400 10px/1.4 var(--mono); letter-spacing: 0.14em; text-transform: uppercase; color: var(--mid); }
+h3 { margin: 14px 0 4px; }
 p { margin: 4px 0; }
-code { font: 11px ui-monospace, SFMono-Regular, Menlo, monospace; }
-.link { color: var(--accent-text); text-decoration: underline; text-underline-offset: 2px; }
-.source { font: 11px ui-monospace, SFMono-Regular, Menlo, monospace; text-align: start; }
+code { font: 11px var(--mono); }
+.link { text-decoration: underline; text-underline-offset: 2px; }
+.link:hover { text-decoration-thickness: 2px; }
+.source { font: 11px var(--mono); text-align: start; }
 table { border-collapse: collapse; inline-size: 100%; }
-th, td { text-align: start; vertical-align: top; padding: 3px 8px 3px 0; border-block-end: 1px solid var(--line); }
-th { font-weight: 600; color: var(--muted); font-size: 11px; }
-td { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11px; overflow-wrap: anywhere; }
+th, td { text-align: start; vertical-align: top; padding: 4px 8px 4px 0; border-block-end: 1px solid var(--line); }
+td { font-family: var(--mono); font-size: 11px; overflow-wrap: anywhere; }
 td:first-child { inline-size: 28%; }
 .state { font-weight: 600; }
-.state.hydrated { color: var(--ok); }
-.state.waiting, .state.loading, .state.hydrating { color: var(--warn); }
+.state.waiting, .state.loading, .state.hydrating { color: var(--mid); }
 .state.failed, .error { color: var(--bad); }
+/* Two tones, so the outline shows on a page of any colour. */
 .highlight {
-  position: fixed; z-index: 2147483645; pointer-events: none; border: 1.5px solid var(--accent);
-  background: color-mix(in oklab, var(--accent) 14%, transparent); border-radius: 3px;
+  position: fixed; z-index: 2147483645; pointer-events: none; border: 1px solid var(--fg);
+  outline: 1px solid var(--bg); background: color-mix(in srgb, var(--accent) 18%, transparent);
 }
 .label {
-  position: absolute; inset-block-end: 100%; inset-inline-start: -1.5px; margin-block-end: 2px;
-  padding: 1px 6px; border-radius: 4px; background: var(--accent); color: #fff; white-space: nowrap;
-  font: 11px ui-monospace, SFMono-Regular, Menlo, monospace;
+  position: absolute; inset-block-end: 100%; inset-inline-start: -1px; margin-block-end: 2px;
+  padding: 2px 6px; background: var(--fg); color: var(--bg); outline: 1px solid var(--bg);
+  white-space: nowrap; font: 11px var(--mono);
 }
 `;

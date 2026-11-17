@@ -169,6 +169,13 @@ describe("the inspector", () => {
     expect(host.shadowRoot).toBeNull();
     expect(panel(root).hidden).toBe(true);
     expect(root.querySelector(".toggle")!.getAttribute("aria-label")).toBe("Lumiose inspector");
+    // The Corner L logo, hidden from assistive technology: the button's label names it.
+    const logo = root.querySelector(".toggle svg.mark")!;
+    expect(logo.getAttribute("aria-hidden")).toBe("true");
+    expect([...logo.querySelectorAll("path")].map((path) => path.getAttribute("class"))).toEqual([
+      "wall",
+      "light",
+    ]);
     press({ code: "KeyL", key: "Ò", altKey: true, shiftKey: true });
     expect(panel(root).hidden).toBe(false);
     press({ code: "KeyL", key: "Ò", altKey: true, shiftKey: true });

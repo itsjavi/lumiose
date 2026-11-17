@@ -555,9 +555,11 @@ the element from a `.stsx` component with a `?client` script, and pass the data 
 ## The dev inspector
 
 `lumiose dev` adds an **inspector** to every page, in place of a browser extension such as React
-DevTools. Press **Alt+Shift+L**, or click the small orb in the bottom-left corner, to open it at the
-bottom of the window. It renders in a closed shadow root, so your styles do not reach it and your
-tests' locators do not find it, and it works under `lumiose({ csp: "strict" })`.
+DevTools. Press **Alt+Shift+L**, or click the square button with the Lumiose logo in the bottom-left
+corner, to open it at the bottom of the window. It renders in a closed shadow root, so your styles
+do not reach it and your tests' locators do not find it, and it works under
+`lumiose({ csp: "strict" })`. It sets its own colours, black on white or white on black after the
+system's colour scheme (`prefers-color-scheme`), not after your page's theme.
 
 It has four panels:
 

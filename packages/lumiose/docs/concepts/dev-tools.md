@@ -6,8 +6,8 @@
 
 ### Open the inspector
 
-`lumiose dev` adds an inspector to every page. Press **Alt+Shift+L**, or click the orb in the
-bottom-left corner. Builds contain none of it.
+`lumiose dev` adds an inspector to every page. Press **Alt+Shift+L**, or click the square
+button with the Lumiose logo in the bottom-left corner. Builds contain none of it.
 
 ```sh
 $ lumiose dev
