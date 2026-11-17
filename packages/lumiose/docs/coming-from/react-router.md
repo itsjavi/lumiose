@@ -2,35 +2,172 @@
 
 > React Router 7's framework mode mapped to Lumiose: file routes instead of `routes.ts`, async components instead of loaders, form actions and `submit()` instead of actions and fetchers, middleware, the document and custom servers.
 
-This page maps React Router 7 in framework mode (the successor of Remix) to Lumiose's current API.
-For components and hooks, read [Coming from React](react.md) first; this page covers the framework.
-
 ## Mental model
 
-**Data lives in components, not in route modules.** A React Router route module exports a
-`loader` that runs before the route renders, and the component reads `loaderData`. Lumiose has no
-loaders: the page component is `async` and awaits its data where it uses it, on
-every rendering mode. Components that await the same `fetchJSON()` URL or `query()` key share one
-request, so a layout and a page, or two widgets, can each await what they need
+```tsx
+// app/routes/notes.tsx
+import type { Route } from "./+types/notes";
+import { getNotes } from "~/notes.server";
+
+export async function loader() {
+  return { notes: await getNotes() };
+}
+
+export default function Notes({ loaderData }: Route.ComponentProps) {
+  return (
+    <ul>
+      {loaderData.notes.map((note) => (
+        <li key={note.id}>{note.text}</li>
+      ))}
+    </ul>
+  );
+}
+```
+
+```tsx check
+// src/routes/notes/page.tsx
+declare const db: {
+  notes(): Promise<{ id: number; text: string }[]>;
+};
+
+export default async function Notes() {
+  const notes = await db.notes();
+  return (
+    <ul>
+      {notes.map((note) => (
+        <li key={note.id}>{note.text}</li>
+      ))}
+    </ul>
+  );
+}
+```
+
+**Data lives in components, not in route modules.** Lumiose has no loaders: the page component is
+`async` and awaits its data where it uses it, on every rendering mode
 ([Async components](../concepts/async.md)).
 
-**Actions are the familiar part.** A page exports `action` (or named `actions`), which receives the
-request's `FormData` and returns data, `fail(status, data)` or a redirect. A plain
-`<form method="post">` posts to it and works without JavaScript; `onSubmit={submit}` posts it
-without a page load ([Data and actions](../concepts/data-and-actions.md)).
+> **Scope:** this page maps React Router 7 in framework mode (the successor of Remix) to
+> Lumiose's current API. For components and hooks, read [Coming from React](react.md) first; this
+> page covers the framework.
 
-**Navigation is a choice per route.** React Router hydrates the whole app and navigates on the
-client. In Lumiose, `static` and `server` routes are pages that ship no JavaScript except their
-islands, and links load the next document (prefetched on hover, with optional View Transitions).
-An `spa` route is the React Router experience: rendered on the server, hydrated, client-side
-navigation with persistent layouts ([Rendering modes](../concepts/rendering-modes.md)). Most apps
-mix them: `static` marketing pages, `server` account pages, an `spa` dashboard.
+> **Details:** a React Router `loader` runs before the route renders, and the component reads
+> `loaderData`. In Lumiose, components that await the same `fetchJSON()` URL or `query()` key
+> share one request, so a layout and a page, or two widgets, can each await what they need.
 
-**Routes are files only.** There is no `routes.ts` and no route config in code: a
-folder under `src/routes` is a URL segment, and `page`, `layout`, `route`, `error` and
-`not-found` files give it behavior ([Routing](../concepts/routing.md)).
+### Actions are the familiar part
+
+A page exports `action` (or named `actions`), which receives the request's `FormData` and returns
+data, `fail(status, data)` or a redirect. A plain `<form method="post">` posts to it and works
+without JavaScript; `onSubmit={submit}` posts it without a page load
+([Data and actions](../concepts/data-and-actions.md)).
+
+### Navigation is a choice per route
+
+React Router hydrates the whole app and navigates on the client. In Lumiose, `static` and `server`
+routes are pages that ship no JavaScript except their islands, and links load the next document
+(prefetched on hover, with optional View Transitions). An `spa` route is the React Router
+experience: rendered on the server, hydrated, client-side navigation with persistent layouts
+([Rendering modes](../concepts/rendering-modes.md)). Most apps mix them: `static` marketing pages,
+`server` account pages, an `spa` dashboard.
+
+### Routes are files only
+
+There is no `routes.ts` and no route config in code: a folder under `src/routes` is a URL segment,
+and `page`, `layout`, `route`, `error` and `not-found` files give it behavior
+([Routing](../concepts/routing.md)).
 
 ## From React Router to Lumiose
+
+### Several actions on one page
+
+```tsx
+// app/routes/inbox.tsx
+import { Form } from "react-router";
+import type { Route } from "./+types/inbox";
+import { archiveAll, deleteAll } from "~/inbox.server";
+
+export async function action({ request }: Route.ActionArgs) {
+  const form = await request.formData();
+  if (form.get("intent") === "archive") await archiveAll();
+  else await deleteAll();
+  return null;
+}
+
+export default function Inbox() {
+  return (
+    <Form method="post">
+      <button name="intent" value="archive">
+        Archive all
+      </button>
+      <button name="intent" value="delete">
+        Delete all
+      </button>
+    </Form>
+  );
+}
+```
+
+```stsx check file=routes/inbox/page.stsx
+// src/routes/inbox/page.stsx
+const inbox = { archived: 0, deleted: 0 }; // a database in a real app
+
+export const mode = "server";
+
+export const actions = {
+  async archive() {
+    inbox.archived++;
+  },
+  async remove() {
+    inbox.deleted++;
+  },
+};
+
+export default function Inbox() {
+  return (
+    <form method="post">
+      <button formaction="?/archive">Archive all</button>
+      <button formaction="?/remove">Delete all</button>
+    </form>
+  );
+}
+```
+
+An `intent` field becomes named actions: `action="?/archive"` on the form, or
+`formaction="?/archive"` on its button.
+
+### Links and navigation
+
+```tsx
+// app/components/nav.tsx
+import { NavLink, useNavigate } from "react-router";
+
+export function Nav() {
+  const navigate = useNavigate();
+  return (
+    <nav>
+      <NavLink to="/inbox">Inbox</NavLink>
+      <button onClick={() => navigate("/", { replace: true })}>Home</button>
+    </nav>
+  );
+}
+```
+
+```tsx check
+// src/components/Nav.tsx
+import { Link, navigate } from "lumiose/router";
+
+export function Nav() {
+  return (
+    <nav>
+      <Link href="/inbox">Inbox</Link>
+      <button onClick={() => navigate("/", { replace: true })}>Home</button>
+    </nav>
+  );
+}
+```
+
+`<Link>` sets `aria-current="page"` on the active link, as `<NavLink>` does, and `navigate()` is
+a plain import instead of a hook.
 
 ### Routes and types
 
@@ -120,7 +257,8 @@ folder under `src/routes` is a URL segment, and `page`, `layout`, `route`, `erro
 
 ## Example
 
-A project page with a loader, an action and a form, in React Router:
+A project page with a loader, an action and a form, in React Router and then in Lumiose. The data
+access is unchanged.
 
 ```tsx
 // app/routes/projects.$id.tsx
@@ -165,8 +303,6 @@ export default function Project({ loaderData, actionData }: Route.ComponentProps
 }
 ```
 
-The same page in Lumiose. The data access is unchanged:
-
 ```ts check file=lib/projects.server.ts
 // src/lib/projects.server.ts: a database in a real app
 interface Task {
@@ -185,8 +321,7 @@ export async function addTask(id: string, title: string) {
 }
 ```
 
-The page awaits the project in its component, and its action returns `fail()` for validation
-errors. It is a `server` page: no JavaScript ships except the form's island.
+### The page
 
 ```stsx check file=routes/projects/[id]/page.stsx
 // src/routes/projects/[id]/page.stsx
@@ -222,10 +357,10 @@ export default async function Project({ params }: PageProps<"/projects/[id]">) {
 }
 ```
 
-The form is an island in its own module, so the server-only import above never reaches the
-browser; it imports the action's type only. Without JavaScript the form posts and the page
-re-renders with the error or follows the redirect; with it, `submit()` does the same without a
-page load:
+The page awaits the project in its component, and its action returns `fail()` for validation
+errors. It is a `server` page: no JavaScript ships except the form's island.
+
+### The form
 
 ```stsx check file=components/AddTask.stsx
 // src/components/AddTask.stsx
@@ -247,7 +382,16 @@ export function AddTask() {
 </style>
 ```
 
-Context from middleware, where React Router uses `context.set()` in a `middleware` export:
+The form is an island in its own module, so the page's server-only import never reaches the
+browser; it imports the action's type only. Without JavaScript the form posts and the page
+re-renders with the error or follows the redirect; with it, `submit()` does the same without a
+page load.
+
+### Middleware
+
+Context from middleware, where React Router uses `context.set()` in a `middleware` export. A
+route's `middleware` for its subtree is a `middleware.ts` in its folder. It runs after
+`src/middleware.ts`, for every page, action and endpoint below the folder.
 
 ```ts check
 // src/middleware.ts
@@ -269,9 +413,6 @@ const middleware: Middleware = async (ctx, next) => {
 export default middleware;
 ```
 
-A route's `middleware` for its subtree is a `middleware.ts` in its folder. It runs after
-`src/middleware.ts`, for every page, action and endpoint below the folder:
-
 ```ts check file=routes/projects/middleware.ts
 // src/routes/projects/middleware.ts
 import type { Middleware } from "lumiose";
@@ -282,7 +423,9 @@ const requireUser: Middleware<"/projects"> = (ctx, next) =>
 export default requireUser;
 ```
 
-A custom server, where React Router uses `createRequestHandler()`:
+### A custom server
+
+Where React Router uses `createRequestHandler()`.
 
 ```ts check
 // server.ts: node server.ts after lumiose build
@@ -307,7 +450,7 @@ createServer((req, res) => {
   document. Make app-like areas `spa` (in their layout), and keep the rest as pages.
 - **Expecting an MPA page to revalidate after `submit()`.** React Router reloads loaders after an
   action; on a `static` or `server` page `submit()` does not refresh the page. Redirect from the
-  action (as above), update the island from the result, or call `invalidate()`. On `spa` routes a
+  action (as the example does), update the island from the result, or call `invalidate()`. On `spa` routes a
   successful `submit()` refreshes the page's data.
 - **Server code in an island's module.** An island's module ships to the browser, so importing a
   `*.server.ts` there is `LUM4003`. Keep islands in their own files and import action types with
