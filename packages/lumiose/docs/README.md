@@ -107,6 +107,7 @@ mistakes** and **Related**.
 - [`lumiose`: components](reference/components.md): `Suspense`, `ErrorBoundary`, `Portal`, `Dynamic`, `ref`, `Head`, `Title`, `Meta`, `ViewTransition`, `viewTransition`.
 - [`lumiose`: app layer](reference/app.md): `fetchJSON`, `submit`, `isSubmitting`, `actionData`, `invalidate`, `fail`, `redirect`, `notFound`, `error`, `href`, request APIs and types.
 - [`lumiose`: server rendering](reference/server.md): `renderToStream`, `renderToString` and the `lumiose/server` subpath.
+- [Rendering modes in depth](reference/rendering.md): How a mode is set and inherited, choosing and combining modes, partial prerendering patterns, the comparison with Astro islands, streaming and hydration, prerendered SPA routes and the build output.
 - [`lumiose/dom`](reference/dom.md): `render`, the compiler-runtime contract, `hydrate` (`lumiose/dom/hydrate`) and the island loader (`lumiose/dom/loader`).
 - [`lumiose/router`](reference/router.md): The SPA router: `Link`, `navigate`, `isNavigating`, `searchParams`, `beforeNavigate`/`afterNavigate` and reactive route state.
 - [`@lumiose/vite`](reference/vite.md): The Vite plugin and its options.
