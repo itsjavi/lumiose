@@ -30,13 +30,21 @@ gives you:
 
 ## QueryClientProvider
 
-```ts
-function QueryClientProvider(props: { client: QueryClient; children?: JSX.Element }): JSX.Element;
-```
-
 Provides `client` to everything rendered inside it, through a context. Once mounted it calls `client.mount()`, which refetches on window focus and reconnect and resumes
 paused mutations, and `client.unmount()` when it is disposed. A client is usually created once, at
-module scope:
+module scope.
+
+Islands start a new root and do not see context provided outside them: wrap each island that uses
+queries in its own provider. Pass the same module-scope client to share one cache between islands.
+
+```ts
+interface QueryClientProviderProps {
+  client: QueryClient;
+  children?: JSX.Element;
+}
+
+function QueryClientProvider(props: QueryClientProviderProps): JSX.Element;
+```
 
 ```tsx
 import { QueryClient, QueryClientProvider } from "@lumiose/query";
@@ -52,33 +60,110 @@ export default function App() {
 }
 ```
 
-Islands start a new root and do not see context provided outside them: wrap each island that uses
-queries in its own provider. Pass the same module-scope client to share one cache between islands.
+| Name       | Type          | Default | Description                                                                      |
+| ---------- | ------------- | ------- | -------------------------------------------------------------------------------- |
+| `client`   | `QueryClient` | —       | The `QueryClient` to provide. Required.                                          |
+| `children` | `JSX.Element` | —       | The components that read it with `useQueryClient`, `useQuery` and `useMutation`. |
 
 ## useQueryClient
+
+Returns `queryClient` if given, else the client of the nearest `QueryClientProvider`. Throws "No
+QueryClient set, use QueryClientProvider to set one" when there is none. Call it while the
+component sets up, and use the client later (`client.invalidateQueries(...)` in a handler).
 
 ```ts
 function useQueryClient(queryClient?: QueryClient): QueryClient;
 ```
 
-`queryClient` if given, else the client of the nearest `QueryClientProvider`. Throws "No
-QueryClient set, use QueryClientProvider to set one" when there is none. Call it while the
-component sets up, and use the client later (`client.invalidateQueries(...)` in a handler).
+```tsx
+import { useQueryClient } from "@lumiose/query";
+
+export function RefreshBooks() {
+  const client = useQueryClient();
+  const refresh = () => client.invalidateQueries({ queryKey: ["books"] });
+  return <button onClick={refresh}>Refresh</button>;
+}
+```
+
+| Name          | Type          | Default | Description                                                  |
+| ------------- | ------------- | ------- | ------------------------------------------------------------ |
+| `queryClient` | `QueryClient` | —       | A client to return as is, instead of the nearest provider's. |
 
 ## useQuery
-
-```ts
-function useQuery<TQueryFnData, TError, TData, TQueryKey>(
-  options: () => QueryOptions<TQueryFnData, TError, TData, TQueryKey>,
-  queryClient?: () => QueryClient,
-): UseQueryResult<TData, TError>;
-```
 
 Subscribes to a query. `options` takes every [`QueryObserverOptions`](https://tanstack.com/query/latest/docs/reference/QueryObserver)
 field except `structuralSharing`, plus `reconcile` (below). It is an accessor: when a signal it
 reads changes, such as a part of the key or `enabled`, the query switches to the new options.
 
+The result is a [store](reactivity.md#store) with the fields of TanStack's `QueryObserverResult`
+(`data`, `error`, `status`, `isPending`, `isFetching`, `refetch`, …). Read fields where they are
+used, as with any store: destructuring (`const { data } = book`) reads once and loses updates.
+
+- **Structural sharing through `reconcile`.** A new `data` is written into the store with
+  [`reconcile()`](reactivity.md#reconcile): array items are matched by `id`, unchanged objects keep
+  their identity, and only the fields that changed notify. List rows and effects that read an
+  unchanged item do not re-run after a refetch. `reconcile: "slug"` matches by another key;
+  `reconcile: false` stores `data` as the cache holds it (replaced on each change);
+  `reconcile: (old, next) => data` decides. query-core's own `structuralSharing` is turned off.
+- **The store holds a copy of `data`.** The cache's object is shared by every observer of the
+  query, and a store writes into the object it wraps. Writing to `book.data` therefore changes
+  this component only: update the cache with `client.setQueryData()`.
+- **Lifetime.** The observer subscribes after the component mounts, so the fetch starts then, and
+  it unsubscribes when the component (its owner) is disposed. What `queryFn` reads is not tracked.
+- Two `useQuery` calls with the same key share one fetch and one cache entry.
+
+```ts
+function useQuery<
+  TQueryFnData = unknown,
+  TError = DefaultError,
+  TData = TQueryFnData,
+  TQueryKey extends QueryKey = QueryKey,
+>(
+  options: UndefinedInitialDataOptions<TQueryFnData, TError, TData, TQueryKey>,
+  queryClient?: () => QueryClient,
+): UseQueryResult<TData, TError>;
+
+// With `initialData`, `data` is never undefined.
+function useQuery<
+  TQueryFnData = unknown,
+  TError = DefaultError,
+  TData = TQueryFnData,
+  TQueryKey extends QueryKey = QueryKey,
+>(
+  options: DefinedInitialDataOptions<TQueryFnData, TError, TData, TQueryKey>,
+  queryClient?: () => QueryClient,
+): DefinedUseQueryResult<TData, TError>;
+
+// Both option types are accessors of QueryOptions; they differ
+// in `initialData` only.
+type UseQueryOptions<TQueryFnData, TError, TData, TQueryKey> = () => QueryOptions<
+  TQueryFnData,
+  TError,
+  TData,
+  TQueryKey
+>;
+
+interface QueryOptions<TQueryFnData, TError, TData, TQueryKey> extends OmitKeyof<
+  QueryObserverOptions<TQueryFnData, TError, TData, TQueryFnData, TQueryKey>,
+  "structuralSharing"
+> {
+  reconcile?: ReconcileOption<TData>;
+}
+
+type ReconcileOption<TData> =
+  | string
+  | false
+  | ((oldData: TData | undefined, newData: TData) => TData);
+```
+
 ```tsx
+import { fetchJSON } from "lumiose";
+import { useQuery } from "@lumiose/query";
+
+interface Book {
+  title: string;
+}
+
 function Book(props: { id: number }) {
   const book = useQuery(() => ({
     queryKey: ["book", props.id],
@@ -99,45 +184,56 @@ function Book(props: { id: number }) {
 }
 ```
 
-The result is a [store](reactivity.md#store) with the fields of TanStack's `QueryObserverResult`
-(`data`, `error`, `status`, `isPending`, `isFetching`, `refetch`, …). Read fields where they are
-used, as with any store: destructuring (`const { data } = book`) reads once and loses updates.
-
-- **Structural sharing through `reconcile`.** A new `data` is written into the store with
-  [`reconcile()`](reactivity.md#reconcile): array items are matched by `id`, unchanged objects keep
-  their identity, and only the fields that changed notify. List rows and effects that read an
-  unchanged item do not re-run after a refetch. `reconcile: "slug"` matches by another key;
-  `reconcile: false` stores `data` as the cache holds it (replaced on each change);
-  `reconcile: (old, next) => data` decides. query-core's own `structuralSharing` is turned off.
-- **The store holds a copy of `data`.** The cache's object is shared by every observer of the
-  query, and a store writes into the object it wraps. Writing to `book.data` therefore changes
-  this component only: update the cache with `client.setQueryData()`.
-- **Lifetime.** The observer subscribes after the component mounts, so the fetch starts then, and
-  it unsubscribes when the component (its owner) is disposed. What `queryFn` reads is not tracked.
-- Two `useQuery` calls with the same key share one fetch and one cache entry.
+| Name          | Type                                               | Default | Description                                                                                                   |
+| ------------- | -------------------------------------------------- | ------- | ------------------------------------------------------------------------------------------------------------- |
+| `options`     | `() => QueryOptions`                               | —       | An accessor that returns the query's options. Required. Signals it reads are tracked.                         |
+| `queryClient` | `() => QueryClient`                                | —       | An accessor for the client to use instead of the nearest provider's. Called once, when the component sets up. |
+| `reconcile`   | `string \| false \| ((oldData, newData) => TData)` | `"id"`  | A field of what `options` returns: how a new `data` is written into the result store.                         |
 
 ## useMutation
 
-```ts
-function useMutation<TData, TError, TVariables, TOnMutateResult>(
-  options: () => MutationOptions<TData, TError, TVariables, TOnMutateResult>,
-  queryClient?: () => QueryClient,
-): UseMutationResult<TData, TError, TVariables, TOnMutateResult>;
-```
-
-A mutation. The result is a store with TanStack's `MutationObserverResult` fields (`status`,
+Creates a mutation. The result is a store with TanStack's `MutationObserverResult` fields (`status`,
 `isPending`, `data`, `error`, `variables`, `reset`, …), plus:
 
 - `mutate(variables, { onSuccess, onError, onSettled }?)`: runs `mutationFn`. It never rejects;
   errors go to `error` and the callbacks.
 - `mutateAsync(variables, callbacks?)`: the same, as a promise that rejects on error.
 
+```ts
+function useMutation<
+  TData = unknown,
+  TError = DefaultError,
+  TVariables = void,
+  TOnMutateResult = unknown,
+>(
+  options: UseMutationOptions<TData, TError, TVariables, TOnMutateResult>,
+  queryClient?: () => QueryClient,
+): UseMutationResult<TData, TError, TVariables, TOnMutateResult>;
+
+type UseMutationOptions<TData, TError, TVariables, TOnMutateResult> = () => MutationOptions<
+  TData,
+  TError,
+  TVariables,
+  TOnMutateResult
+>;
+```
+
 ```tsx
+import { fetchJSON } from "lumiose";
+import { useMutation, useQueryClient } from "@lumiose/query";
+
+interface Book {
+  title: string;
+}
+
 function AddBook() {
   const client = useQueryClient();
   const add = useMutation(() => ({
     mutationFn: (title: string) =>
-      fetchJSON<Book>("/api/books", { method: "POST", body: JSON.stringify({ title }) }),
+      fetchJSON<Book>("/api/books", {
+        method: "POST",
+        body: JSON.stringify({ title }),
+      }),
     onSuccess: () => client.invalidateQueries({ queryKey: ["books"] }),
   }));
   return (
@@ -147,6 +243,11 @@ function AddBook() {
   );
 }
 ```
+
+| Name          | Type                    | Default | Description                                                                                                           |
+| ------------- | ----------------------- | ------- | --------------------------------------------------------------------------------------------------------------------- |
+| `options`     | `() => MutationOptions` | —       | An accessor that returns query-core's `MutationObserverOptions` (`mutationFn`, `onMutate`, `onSuccess`, …). Required. |
+| `queryClient` | `() => QueryClient`     | —       | An accessor for the client to use instead of the nearest provider's. Called once, when the component sets up.         |
 
 ## Re-exports
 
