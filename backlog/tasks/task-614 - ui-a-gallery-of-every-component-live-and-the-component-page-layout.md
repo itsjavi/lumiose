@@ -1,11 +1,11 @@
 ---
 id: TASK-614
 title: '/ui: a gallery of every component, live, and the component page layout'
-status: In Progress
+status: Done
 assignee:
   - '@Beacon'
 created_date: '2026-11-17T12:29:00Z'
-updated_date: '2026-11-17T14:27:00Z'
+updated_date: '2026-11-17T16:30:00Z'
 labels: []
 milestone: m-16
 dependencies:
@@ -24,10 +24,10 @@ Rebuild the /ui section to the reference: the index is a grid of every @lumiose/
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 The index lists every component exported by @lumiose/ui, generated from the package so new components appear without hand edits
-- [ ] #2 Each demo on the index is interactive and each cell links to its component page
-- [ ] #3 A component page shows the preview first, then usage beside the props table
-- [ ] #4 ui docs:check and the ui e2e and a11y suites pass
+- [x] #1 The index lists every component exported by @lumiose/ui, generated from the package so new components appear without hand edits
+- [x] #2 Each demo on the index is interactive and each cell links to its component page
+- [x] #3 A component page shows the preview first, then usage beside the props table
+- [x] #4 ui docs:check and the ui e2e and a11y suites pass
 <!-- AC:END -->
 
 ## Implementation Notes
@@ -39,4 +39,15 @@ Verified: lumiose check, web vitest (53), pnpm typecheck, pnpm lint, ui docs:che
 Left: rerun e2e/ui.e2e.ts (the fixed component-page test, and SCREENSHOTS=1 to retake task-614-tabs-*.jpg at viewport size: the committed ones are full-page) and the a11y reflow, pointer-target and keyboard-focus tests. In the first run those stopped at pages outside this task (/ui/installation overflow at 320 px via DocArticle, /docs/concepts/styles sidebar targets, header contrast in the flattened-layers test); a manual check of all 43 /ui pages on the dev server found no reflow overflow and one small target, fixed in 42ecc27d.
 Notes: Playwright's static webServer fails at scripts/playground-assets.ts (wasm-bindgen cannot read the wasm): build both variants by hand and start e2e/serve.ts on 5194 first. Commit 42ecc27d also carries another worker's pending edits to apps/web/CONTRIBUTING.md (the beams and motion paragraphs of TASK-605), swept in by the pathspec commit. UiProse duplicates DocArticle's prose styles: share them once TASK-608 lands.
 Next step: take e2e.lock, build, serve, run 'playwright test e2e/ui.e2e.ts e2e/a11y.e2e.ts --project static' with SCREENSHOTS=1, then check off the criteria and set Done.
+
+Beacon (beacon-20261117-verify): end-to-end verification on the static build served by e2e/serve.ts. ui.e2e.ts 12 passed with SCREENSHOTS=1 (11 passed, 1 skipped without it), the fixed component-page test included; a11y.e2e.ts 149 passed, 0 failed: every 'axe: UI' page and open-demo test in both themes, reflow at 320 px with text spacing on every /ui page, pointer targets and keyboard focus. ui docs:check passes.
+AC1: 'the UI section opens on a gallery of every component, each cell linking to its page' and src/content/ui-gallery.test.ts. AC2: 'the gallery's demos are live'. AC3: 'a component page shows the preview first, then usage beside the props' and 'usage and props sit side by side on a wide screen and stack on a phone'. AC4: the counts above.
+The reflow failure at 320 px did not come back: no /ui page overflows on the current build. Screenshots retaken at viewport size (564da5d6): backlog/assets/redesign/task-614-{index,tabs,dialog-open}-{light,dark}.jpg and task-614-{index,tabs}-phone.jpg.
+Not verified: the playground wasm build (local wasm-bindgen CLI version differs from the pinned one). Still open as noted before: UiProse duplicates DocArticle's prose styles.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+/ui opens on a gallery with one live demo per @lumiose/ui component, generated from the package's llms.txt, each cell linking to its page. A component page shows the preview, then usage beside the props table, then the page as written. Verified by ui.e2e.ts (12 passed with the screenshot capture) and the a11y suite (149 passed), which checks every /ui page in both themes and at 320 px.
+<!-- SECTION:FINAL_SUMMARY:END -->
