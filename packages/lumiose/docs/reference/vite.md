@@ -8,65 +8,7 @@ dependencies, so the plugin, the compiled modules and its Vitest setup share the
 
 ## lumiose()
 
-```ts
-import lumiose from "@lumiose/vite";
-
-function lumiose(options?: LumioseOptions): Plugin[];
-
-interface LumioseOptions {
-  /** Modules compiled by Lumiose. Default: .stsx and .tsx files. */
-  include?: RegExp;
-  /** Modules left to Vite. Default: node_modules, except the Lumiose packages installed there. */
-  exclude?: RegExp;
-  /** The project's default route mode; a layout's or route's `export const mode` overrides it. */
-  mode?: "static" | "server" | "spa"; // default "static"
-  /** Whether spa routes render their content on the server (false: the shell only). */
-  ssr?: boolean; // default true
-  /** Whether spa pages that render on the server are prerendered at build time; a layout's or page's `export const prerender` overrides it. */
-  prerender?: boolean; // default false, and not with ssr: false
-  /** Trailing slashes of page URLs: "always"/"never" redirect to the canonical form. */
-  trailingSlash?: "ignore" | "always" | "never"; // default "ignore"
-  /** The origin check of form posts (on by default); false turns it off. */
-  csrf?: false | { allowedOrigins?: readonly string[] };
-  /** `.svg?component` imports as inline components; false leaves them to Vite (URLs). */
-  svg?: boolean | { optimize?: boolean | SvgoConfig; currentColor?: boolean }; // default true
-  /** `.md` imports as components; the hook validates or transforms each file's frontmatter. */
-  md?: boolean | { frontmatter?(data: Record<string, unknown>, ctx: { file: string }): unknown }; // default false
-  /** `.html` imports as components. */
-  html?: boolean; // default false
-  /** View Transitions (not under reduced motion): between MPA pages, and for SPA navigations. */
-  viewTransitions?: boolean; // default false
-  /** Speculation rules that prefetch the same-origin links of MPA pages. */
-  prefetch?: "hover" | "viewport" | "none"; // default "hover"
-  /** A strict Content Security Policy: nonces per response, hashes for prerendered pages. */
-  csp?: "strict";
-  /** How scoped <style> blocks mark and match their elements (decision-85). */
-  scopedStyles?: {
-    strategy?: "attribute" | "class"; // default "attribute": data-lum-<hash>; "class": lum-<hash>
-    specificity?: "default" | "zero"; // default "default": +0,1,0; "zero": :where(), +0
-    namespace?: string; // default "lum"
-  };
-  /** Response headers: a record for every response, or rules by path (below base). */
-  headers?: Record<string, string> | { path: string; headers: Record<string, string> }[];
-  /** Request body limits, in bytes or "512kb"/"1mb": larger requests get 413. */
-  limits?: { body?: number | string; upload?: number | string }; // default { body: "1mb", upload: "10mb" }
-  /** How long a page render waits for pending <Suspense> boundaries: milliseconds, "30s", "500ms", "2m", or false. */
-  streamTimeout?: number | string | false; // default "30s"
-  /** The deploy adapter: cloudflare(), vercel() or netlify() from their @lumiose/adapter-* packages. */
-  adapter?: Adapter; // default: none, the Node build
-  /** Locale routing: unprefixed default locale, prefixed others, per-page locale declarations. */
-  i18n?: {
-    locales: string[]; // URL path segments, such as "en" or "pt-BR"
-    defaultLocale: string; // served without a prefix
-    missing?: "404" | "redirect"; // default "404"
-    detect?: false | { cookie?: string; acceptLanguage?: boolean }; // default false
-  };
-  /** The site's URL, for the absolute URLs of prerendered pages (hreflang, canonical); a path is the base. */
-  site?: string; // such as "https://example.com" or "https://example.com/docs"
-  /** The in-page inspector of `lumiose dev` (Alt+Shift+L, Alt+click to the source); dev only. */
-  inspector?: boolean; // default true
-}
-```
+Returns the Vite plugins that compile Lumiose modules and carry the project's options.
 
 The project options (`mode`, `ssr`, `prerender`, `trailingSlash`, `csrf`, `viewTransitions`,
 `prefetch`, `headers`, `limits`, `streamTimeout`, `adapter`, `i18n`, `site`, `inspector`) are
@@ -78,21 +20,96 @@ writes and on those written in JSX, static `style` strings as nonce'd rules, a `
 `<meta>` in prerendered pages. `allowedOrigins` takes full
 origins such as `"https://app.example.com"`, without a path or trailing slash.
 
+```ts
+import lumiose from "@lumiose/vite";
+
+function lumiose(options?: LumioseOptions): Plugin<LumiosePluginApi>[];
+
+interface LumioseOptions {
+  include?: RegExp;
+  exclude?: RegExp;
+  mode?: RouteMode; // "static" | "server" | "spa"
+  ssr?: boolean;
+  prerender?: boolean;
+  trailingSlash?: TrailingSlash;
+  csrf?: false | CsrfOptions;
+  svg?: boolean | SvgOptions;
+  md?: boolean | MarkdownOptions;
+  html?: boolean;
+  viewTransitions?: boolean;
+  prefetch?: "hover" | "viewport" | "none";
+  csp?: "strict";
+  scopedStyles?: ScopedStylesOption;
+  headers?: HeadersOption;
+  limits?: LimitsOption;
+  streamTimeout?: StreamTimeoutOption;
+  adapter?: Adapter;
+  i18n?: I18nOptions;
+  site?: string;
+  inspector?: boolean;
+}
+```
+
+```ts check
+// vite.config.ts
+import lumiose from "@lumiose/vite";
+import { defineConfig } from "vite";
+
+export default defineConfig({
+  plugins: [
+    lumiose({
+      mode: "server",
+      trailingSlash: "never",
+      limits: { upload: "50mb" },
+    }),
+  ],
+});
+```
+
+| Name                       | Type                                                                            | Default                           | Description                                                                                                                                                                      |
+| -------------------------- | ------------------------------------------------------------------------------- | --------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `include`                  | `RegExp`                                                                        | —                                 | Modules compiled by Lumiose. Without it: `.stsx` and `.tsx` files.                                                                                                               |
+| `exclude`                  | `RegExp`                                                                        | —                                 | Modules left to Vite. Without it: anything in `node_modules`, except the modules of the [Lumiose packages](#lumiose-packages) installed there. A value replaces that whole rule. |
+| `mode`                     | `"static" \| "server" \| "spa"`                                                 | `"static"`                        | The project's default route mode; a layout's or route's `export const mode` overrides it.                                                                                        |
+| `ssr`                      | `boolean`                                                                       | `true`                            | Whether `spa` routes render their content on the server (`false`: the shell only). A layout's or route's `export const ssr` overrides it.                                        |
+| `prerender`                | `boolean`                                                                       | `false`                           | Whether `spa` pages that render on the server are prerendered at build time; a layout's or page's `export const prerender` overrides it. Not with `ssr: false`.                  |
+| `trailingSlash`            | `"ignore" \| "always" \| "never"`                                               | `"ignore"`                        | Trailing slashes of page URLs: `"always"` and `"never"` redirect to the canonical form.                                                                                          |
+| `csrf`                     | `false \| { allowedOrigins?: readonly string[] }`                               | —                                 | The origin check of form posts, on by default; `false` turns it off.                                                                                                             |
+| `csrf.allowedOrigins`      | `readonly string[]`                                                             | —                                 | Full origins whose cross-site form posts are accepted.                                                                                                                           |
+| `svg`                      | `boolean \| SvgOptions`                                                         | `true`                            | `.svg?component` imports as inline components; `false` leaves them to Vite (URLs).                                                                                               |
+| `svg.optimize`             | `boolean \| SvgoConfig`                                                         | `true`                            | Optimise with SVGO: Lumiose's defaults, your own SVGO config, or `false` to skip SVGO.                                                                                           |
+| `svg.currentColor`         | `boolean`                                                                       | `false`                           | Replace every colour with `currentColor`.                                                                                                                                        |
+| `md`                       | `boolean \| MarkdownOptions`                                                    | `false`                           | `.md` imports as components.                                                                                                                                                     |
+| `md.frontmatter`           | `(data: Record<string, unknown>, context: { file: string }) => unknown`         | —                                 | A hook that validates or transforms each file's frontmatter.                                                                                                                     |
+| `html`                     | `boolean`                                                                       | `false`                           | `.html` imports as components.                                                                                                                                                   |
+| `viewTransitions`          | `boolean`                                                                       | `false`                           | View Transitions (not under reduced motion): between MPA pages, and for SPA navigations.                                                                                         |
+| `prefetch`                 | `"hover" \| "viewport" \| "none"`                                               | `"hover"`                         | Speculation rules that prefetch the same-origin links of MPA pages.                                                                                                              |
+| `csp`                      | `"strict"`                                                                      | —                                 | A strict Content Security Policy: nonces per response, hashes for prerendered pages.                                                                                             |
+| `scopedStyles`             | `ScopedStylesOption`                                                            | —                                 | How scoped `<style>` blocks mark and match their elements (decision-85).                                                                                                         |
+| `scopedStyles.strategy`    | `"attribute" \| "class"`                                                        | `"attribute"`                     | `"attribute"`: `data-lum-<hash>`; `"class"`: `lum-<hash>`.                                                                                                                       |
+| `scopedStyles.specificity` | `"default" \| "zero"`                                                           | `"default"`                       | `"default"`: the scope adds +0,1,0; `"zero"`: `:where()`, +0.                                                                                                                    |
+| `scopedStyles.namespace`   | `string`                                                                        | `"lum"`                           | The start of the marker name.                                                                                                                                                    |
+| `headers`                  | `Record<string, string> \| { path: string; headers: Record<string, string> }[]` | —                                 | Response headers: a record for every response, or rules by path (below `base`).                                                                                                  |
+| `limits`                   | `{ body?: number \| string; upload?: number \| string }`                        | `{ body: "1mb", upload: "10mb" }` | Request body limits, in bytes or `"512kb"`/`"1mb"`: larger requests get 413.                                                                                                     |
+| `limits.body`              | `number \| string`                                                              | `"1mb"`                           | URL-encoded forms, JSON and any other non-multipart body.                                                                                                                        |
+| `limits.upload`            | `number \| string`                                                              | `"10mb"`                          | `multipart/form-data` bodies.                                                                                                                                                    |
+| `streamTimeout`            | `number \| string \| false`                                                     | `"30s"`                           | How long a page render waits for pending `<Suspense>` boundaries: milliseconds, `"30s"`, `"500ms"`, `"2m"`, or `false`.                                                          |
+| `adapter`                  | `Adapter`                                                                       | —                                 | The deploy adapter: `cloudflare()`, `vercel()` or `netlify()` from their `@lumiose/adapter-*` packages. Without it: the Node build.                                              |
+| `i18n`                     | `I18nOptions`                                                                   | —                                 | Locale routing: unprefixed default locale, prefixed others, per-page locale declarations.                                                                                        |
+| `i18n.locales`             | `readonly string[]`                                                             | —                                 | The site's locales: URL path segments, such as `"en"` or `"pt-BR"`. Required.                                                                                                    |
+| `i18n.defaultLocale`       | `string`                                                                        | —                                 | The locale served without a prefix. Required.                                                                                                                                    |
+| `i18n.missing`             | `"404" \| "redirect"`                                                           | `"404"`                           | What a page requested in a locale it does not declare answers.                                                                                                                   |
+| `i18n.detect`              | `false \| { cookie?: string; acceptLanguage?: boolean }`                        | `false`                           | Redirects visitors to their locale, on entry only.                                                                                                                               |
+| `site`                     | `string`                                                                        | —                                 | The site's URL, for the absolute URLs of prerendered pages (`hreflang`, canonical), such as `"https://example.com"` or `"https://example.com/docs"`; a path is the base.         |
+| `inspector`                | `boolean`                                                                       | `true`                            | The in-page inspector of `lumiose dev` (Alt+Shift+L, Alt+click to the source); dev only.                                                                                         |
+
+### Option details
+
 **Scope markers** (`scopedStyles`, decision-85). How elements carry the scope of `<style>` blocks
 and how scoped selectors match it: `data-lum-<hash>` attributes with a +0,1,0 bump by default;
 `strategy: "class"` uses `lum-<hash>` classes merged into each element's `class`, `specificity:
 "zero"` wraps the marker in `:where()`, and `namespace` replaces `lum`. Every compile of the app
 uses it, so templates and CSS agree. See [scopedStyles](styles.md#scopedstyles).
-
-**Response headers** (`headers`). Declare them once: a record applies to every response; rules
-apply to the paths they match, below Vite's `base` (`*` matches one segment, `**` any number,
-later rules win for the same header). `lumiose dev`, `lumiose preview` and `@lumiose/adapter-node` send
-them on every response, static files included, and `lumiose build` writes them to
-`dist/client/_headers`, the file Netlify and Cloudflare Pages read (`**` becomes `*`, a `*`
-segment a `:name` placeholder). Headers that middleware, endpoints or `response().setHeader()` set
-win. Two headers are sent by default, as Rails and Django do: `X-Content-Type-Options: nosniff` and
-`Referrer-Policy: strict-origin-when-cross-origin`; give them another value in `headers`, or `""`
-to remove one (`_headers` gets `! name`).
 
 **Locales** (`i18n`) and **site** (`site`). With `i18n`, route files stay unprefixed: the
 default locale is served at `/about`, the others under their prefix (`/es/about`), and a page
@@ -131,43 +148,6 @@ every host, also to responses that `response().setStreaming(false)` resolves in 
 ignores it. `false` waits as long as the client stays connected. Values past 2^31 - 1 ms are an
 error. See [Rendering modes](../concepts/rendering-modes.md#how-pages-render).
 
-```ts
-lumiose({
-  headers: [
-    { path: "/**", headers: { "cross-origin-opener-policy": "same-origin" } },
-    { path: "/admin/**", headers: { "x-robots-tag": "noindex" } },
-  ],
-});
-```
-
-| Deployment                         | Where the headers come from                                                         |
-| ---------------------------------- | ----------------------------------------------------------------------------------- |
-| `lumiose dev`, `lumiose preview`   | `lumiose({ headers })`                                                              |
-| `@lumiose/adapter-node`            | `lumiose({ headers })`, from the build (`config.headers` of `dist/server/entry.js`) |
-| `dist/server/entry.js` (Bun, Deno) | `lumiose({ headers })`, from the build, on static files and the app's responses     |
-| Cloudflare, Netlify adapters       | `dist/client/_headers` for static files; the build's handler for the rest           |
-| Vercel adapter                     | `config.json` routes                                                                |
-| Netlify, Cloudflare Pages          | `lumiose({ headers })`, as `dist/client/_headers`                                   |
-| Other static hosts and CDNs        | The host's own header configuration, copied from `lumiose({ headers })`             |
-
-Per-response headers that depend on the request belong in middleware or `response().setHeader()`.
-
-**Deploy adapters** (`adapter`, decision-45). After prerendering, `lumiose build` hands the build to
-the adapter, which writes the platform's output: `cloudflare()` from
-`@lumiose/adapter-cloudflare` ([guide](../deploy/cloudflare.md)), `vercel({ runtime })` from
-`@lumiose/adapter-vercel` ([guide](../deploy/vercel.md)), `netlify()` from
-`@lumiose/adapter-netlify` ([guide](../deploy/netlify.md)). These platforms serve `dist/client`
-themselves and compress on their own, so the build writes no `.br`/`.gz` copies and the server
-build has no static file layer. Without an adapter, the output is the Node build that
-`@lumiose/adapter-node`, Bun and Deno serve ([Deploy](../deploy/README.md)). The adapter packages
-have named exports only:
-
-```ts
-import { cloudflare } from "@lumiose/adapter-cloudflare";
-
-lumiose({ adapter: cloudflare() });
-```
-
 MPA navigation ([Routing](../concepts/routing.md)): the page documents that `lumiose dev` and
 `lumiose build` render get, in `<head>`:
 
@@ -187,6 +167,59 @@ MPA navigation ([Routing](../concepts/routing.md)): the page documents that `lum
 Both are inline elements: a Content-Security-Policy you set without `'unsafe-inline'` needs
 `'inline-speculation-rules'` in `script-src` for the rules, and the hash of the `<style>` in
 `style-src`.
+
+### Response headers
+
+**Response headers** (`headers`). Declare them once: a record applies to every response; rules
+apply to the paths they match, below Vite's `base` (`*` matches one segment, `**` any number,
+later rules win for the same header). `lumiose dev`, `lumiose preview` and `@lumiose/adapter-node` send
+them on every response, static files included, and `lumiose build` writes them to
+`dist/client/_headers`, the file Netlify and Cloudflare Pages read (`**` becomes `*`, a `*`
+segment a `:name` placeholder). Headers that middleware, endpoints or `response().setHeader()` set
+win. Two headers are sent by default, as Rails and Django do: `X-Content-Type-Options: nosniff` and
+`Referrer-Policy: strict-origin-when-cross-origin`; give them another value in `headers`, or `""`
+to remove one (`_headers` gets `! name`).
+
+Per-response headers that depend on the request belong in middleware or `response().setHeader()`.
+
+```ts
+lumiose({
+  headers: [
+    { path: "/**", headers: { "cross-origin-opener-policy": "same-origin" } },
+    { path: "/admin/**", headers: { "x-robots-tag": "noindex" } },
+  ],
+});
+```
+
+| Deployment                         | Where the headers come from                                                         |
+| ---------------------------------- | ----------------------------------------------------------------------------------- |
+| `lumiose dev`, `lumiose preview`   | `lumiose({ headers })`                                                              |
+| `@lumiose/adapter-node`            | `lumiose({ headers })`, from the build (`config.headers` of `dist/server/entry.js`) |
+| `dist/server/entry.js` (Bun, Deno) | `lumiose({ headers })`, from the build, on static files and the app's responses     |
+| Cloudflare, Netlify adapters       | `dist/client/_headers` for static files; the build's handler for the rest           |
+| Vercel adapter                     | `config.json` routes                                                                |
+| Netlify, Cloudflare Pages          | `lumiose({ headers })`, as `dist/client/_headers`                                   |
+| Other static hosts and CDNs        | The host's own header configuration, copied from `lumiose({ headers })`             |
+
+### Deploy adapters
+
+**Deploy adapters** (`adapter`, decision-45). After prerendering, `lumiose build` hands the build to
+the adapter, which writes the platform's output: `cloudflare()` from
+`@lumiose/adapter-cloudflare` ([guide](../deploy/cloudflare.md)), `vercel({ runtime })` from
+`@lumiose/adapter-vercel` ([guide](../deploy/vercel.md)), `netlify()` from
+`@lumiose/adapter-netlify` ([guide](../deploy/netlify.md)). These platforms serve `dist/client`
+themselves and compress on their own, so the build writes no `.br`/`.gz` copies and the server
+build has no static file layer. Without an adapter, the output is the Node build that
+`@lumiose/adapter-node`, Bun and Deno serve ([Deploy](../deploy/README.md)). The adapter packages
+have named exports only:
+
+```ts
+import { cloudflare } from "@lumiose/adapter-cloudflare";
+
+lumiose({ adapter: cloudflare() });
+```
+
+### What the plugin does
 
 What it does:
 
@@ -289,30 +322,7 @@ compiles them for its own server and browser targets. List client scripts and st
 
 ## createDevHandler()
 
-```ts
-import { createDevHandler } from "@lumiose/vite/dev";
-
-function createDevHandler(options?: DevHandlerOptions): Promise<DevHandler>;
-
-interface DevHandlerOptions {
-  /** Your HTTP server: Vite's HMR WebSocket upgrades there. Default: HMR on a port of its own. */
-  server?: import("node:http").Server;
-  root?: string; // default: the current directory
-  configFile?: string | false; // default: vite.config.* in the root
-  mode?: string; // Vite mode (.env files), default "development"
-  routesDir?: string; // default "src/routes"
-  logLevel?: LogLevel;
-  customLogger?: Logger;
-}
-
-interface DevHandler {
-  (req: IncomingMessage, res: ServerResponse, next?: (error?: unknown) => void): void;
-  readonly vite: ViteDevServer; // Vite in middleware mode
-  close(): Promise<void>; // stops Vite (watcher, HMR); your server stays open
-}
-```
-
-`lumiose dev` inside your own Node server (decision-52). It starts Vite in middleware mode with the
+Runs `lumiose dev` inside your own Node server (decision-52). It starts Vite in middleware mode with the
 project's `vite.config.ts` and returns a handler of the same kind as `@lumiose/adapter-node`'s
 [`createHandler()`](adapter-node.md#createhandler): a request listener, or connect/Express
 middleware (errors go to `next`). Everything `lumiose dev` does works through it: modules and
@@ -322,6 +332,21 @@ Pass your server as `server` so HMR shares its port: Vite takes only its own upg
 leave an upgrade alone, rather than destroying it, when your code does not handle it in dev.
 `lumiose dev` stays the default; this is for projects that own their server. `@lumiose/vite` is a
 dev dependency: import it only in dev, and production never loads Vite.
+
+The handler also has `vite`, the Vite dev server in middleware mode, and `close()`, which stops
+Vite (the file watcher and HMR) while your server stays open.
+
+```ts
+import { createDevHandler } from "@lumiose/vite/dev";
+
+function createDevHandler(options?: DevHandlerOptions): Promise<DevHandler>;
+
+interface DevHandler {
+  (req: IncomingMessage, res: ServerResponse, next?: (error?: unknown) => void): void;
+  readonly vite: ViteDevServer;
+  close(): Promise<void>;
+}
+```
 
 ```ts
 // server.ts: `node server.ts --dev` in dev, `node server.ts` after `lumiose build`
@@ -336,6 +361,16 @@ const handler = dev
 server.on("request", handler);
 server.listen(3000);
 ```
+
+| Name           | Type                          | Default         | Description                                                                                          |
+| -------------- | ----------------------------- | --------------- | ---------------------------------------------------------------------------------------------------- |
+| `server`       | `Server \| Http2SecureServer` | —               | Your HTTP server: Vite's HMR WebSocket upgrades there. Without it, HMR listens on a port of its own. |
+| `root`         | `string`                      | —               | Project root. Without it: the current directory.                                                     |
+| `configFile`   | `string \| false`             | —               | Vite config file, or `false` for none. Without it: `vite.config.*` in the root, if any.              |
+| `mode`         | `string`                      | `"development"` | Vite mode (`.env.[mode]` files), not the route mode.                                                 |
+| `routesDir`    | `string`                      | `"src/routes"`  | Project-relative routes directory.                                                                   |
+| `logLevel`     | `LogLevel`                    | —               | Vite's `logLevel`.                                                                                   |
+| `customLogger` | `Logger`                      | —               | Vite's `customLogger`.                                                                               |
 
 ## Example
 
