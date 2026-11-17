@@ -7,26 +7,10 @@
 
 ## createServer
 
-```ts
-function createServer(options?: ServerOptions): Promise<LumioseServer>;
-
-interface ServerOptions extends HandlerOptions {
-  /** Default: the `PORT` env variable, else 3000. `0` picks a free port. */
-  port?: number;
-  /** Default: the `HOST` env variable, else every address. */
-  host?: string;
-}
-
-interface LumioseServer {
-  readonly server: import("node:http").Server;
-  /** The URL it listens on, e.g. `http://localhost:3000/` (with the app's `base`). */
-  readonly url: string;
-  close(): Promise<void>;
-}
-```
-
 Loads the build and starts an HTTP server; resolves once it listens. A missing build fails with
 "No build in dist … Run `lumiose build` first."
+
+It takes every option of [`createHandler`](#createhandler), plus `port` and `host`.
 
 **`NODE_ENV`.** A build runs in production: `createServer` and `createHandler` set
 `process.env.NODE_ENV` to `"production"` when it is unset, before they load the build, so the
@@ -34,37 +18,51 @@ app and every library it imports (many branch on `NODE_ENV`) see it from their f
 explicit value is kept (`NODE_ENV=staging node server.ts`). `dist/server/entry.js` does the same
 when another server imports it directly.
 
-## createHandler
-
 ```ts
-function createHandler(options?: HandlerOptions): Promise<NodeHandler>;
+function createServer(options?: ServerOptions): Promise<LumioseServer>;
 
-interface HandlerOptions {
-  /** The build output directory, holding `client/` and `server/entry.js`. Default: `dist`. */
-  dir?: string | URL;
-  /** The public origin (`https://example.com`) behind a proxy. Default: `ORIGIN`, else the request's. */
-  origin?: string;
-  /** `ctx.env` and `env()` of requests. Default: `process.env`. */
-  env?: Readonly<Record<string, string | undefined>>;
-  /** The app's unexpected errors, with the request. Default: `console.error`. */
-  onError?: (error: unknown, request: Request) => void;
-  /** Headers for every response; a response's own header of the same name wins. */
-  headers?: import("node:http").OutgoingHttpHeaders;
-  /** Compress responses for clients that accept brotli or gzip. Default: true. */
-  compress?: boolean;
-  /** Symbolic links in dist/client: follow them (warning about escapes) or "contain". */
-  symlinks?: "follow" | "contain"; // default "follow"
+interface ServerOptions extends HandlerOptions {
+  port?: number;
+  host?: string;
 }
-
-type NodeHandler = (
-  req: IncomingMessage,
-  res: ServerResponse,
-  next?: (error?: unknown) => void,
-) => void;
 ```
 
-The same request handling as a Node request listener, for your own `http.createServer` or as
-connect/Express middleware (errors go to `next`). The app is the build's `createHandler()`
+```ts
+// server.ts: run with `node server.ts` after `lumiose build`
+import { createServer } from "@lumiose/adapter-node";
+
+const app = await createServer({ port: 0 });
+console.log(`Listening on ${app.url}`);
+process.on("SIGTERM", () => void app.close());
+```
+
+| Name   | Type     | Default                    | Description                                           |
+| ------ | -------- | -------------------------- | ----------------------------------------------------- |
+| `port` | `number` | `process.env.PORT ?? 3000` | The port to listen on. `0` picks a free port.         |
+| `host` | `string` | `process.env.HOST`         | The address to listen on. Without one: every address. |
+
+### LumioseServer
+
+What `createServer` resolves with: the running server.
+
+```ts
+interface LumioseServer {
+  readonly server: import("node:http").Server;
+  readonly url: string;
+  close(): Promise<void>;
+}
+```
+
+| Name     | Type                         | Default | Description                                                                   |
+| -------- | ---------------------------- | ------- | ----------------------------------------------------------------------------- |
+| `server` | `import("node:http").Server` | —       | Node's server, for its timeouts and events.                                   |
+| `url`    | `string`                     | —       | The URL it listens on, e.g. `http://localhost:3000/` (with the app's `base`). |
+| `close`  | `() => Promise<void>`        | —       | Stops listening and closes every connection.                                  |
+
+## createHandler
+
+Loads the build and returns its request handling as a Node request listener, for your own
+`http.createServer` or as connect/Express middleware (errors go to `next`). The app is the build's `createHandler()`
 ([server build](./server-entry.md#createhandler)); `ctx.platform.clientAddress` is the socket's
 remote address (a proxy's, behind one). Set `origin` (or `ORIGIN`) when a proxy terminates
 TLS or rewrites the host: request URLs, and the cross-site check of form posts, use it.
@@ -114,22 +112,39 @@ uploads, `lumiose({ limits })`; see [Security](../concepts/security.md)).
 (nginx, Caddy, a load balancer) in front for TLS, connection limits and tighter timeouts, or set
 them on `createServer(…).server` (`server.requestTimeout = 30_000`).
 
-## createStaticHandler
+```ts
+function createHandler(options?: HandlerOptions): Promise<NodeHandler>;
+
+type NodeHandler = (
+  req: IncomingMessage,
+  res: ServerResponse,
+  next?: (error?: unknown) => void,
+) => void;
+```
 
 ```ts
-function createStaticHandler(
-  dir: string,
-  config: BuiltAppConfig,
-  options?: StaticOptions,
-): StaticHandler;
-type StaticHandler = (req: IncomingMessage, res: ServerResponse) => Promise<boolean>;
-interface StaticOptions {
-  /** Serve the precompressed `.br`/`.gz` copies to clients that accept them. Default: true. */
-  compress?: boolean;
-  /** Follow symbolic links that leave `dir` (with a warning), or "contain" them. */
-  symlinks?: "follow" | "contain"; // default "follow"
-}
+// server.ts: run with `node server.ts` after `lumiose build`
+import { createServer } from "node:http";
+import { createHandler } from "@lumiose/adapter-node";
+
+const handler = await createHandler({
+  origin: "https://example.com",
+  compress: false,
+});
+createServer((req, res) => handler(req, res)).listen(3000);
 ```
+
+| Name       | Type                                            | Default              | Description                                                                                                                                            |
+| ---------- | ----------------------------------------------- | -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `dir`      | `string \| URL`                                 | `"dist"`             | The build output directory, holding `client/` and `server/entry.js`.                                                                                   |
+| `origin`   | `string`                                        | `process.env.ORIGIN` | The public origin (`https://example.com`) behind a proxy. Without either, the request's protocol and `Host` header.                                    |
+| `env`      | `Readonly<Record<string, string \| undefined>>` | `process.env`        | `ctx.env` and `env()` of requests.                                                                                                                     |
+| `onError`  | `(error: unknown, request: Request) => void`    | `console.error`      | The app's unexpected errors, with the request.                                                                                                         |
+| `headers`  | `import("node:http").OutgoingHttpHeaders`       | —                    | Headers for every response; a response's own header of the same name wins.                                                                             |
+| `compress` | `boolean`                                       | `true`               | Compress responses for clients that accept brotli or gzip.                                                                                             |
+| `symlinks` | `"follow" \| "contain"`                         | `"follow"`           | Symbolic links in `dist/client`: `"follow"` serves their targets and warns at startup about links that leave the directory; `"contain"` ignores those. |
+
+## createStaticHandler
 
 Serves `GET` and `HEAD` requests below the app's `base` from `dir` (the build's `client/`), and
 resolves `false` when no file answers. The files the build named by content hash (Vite's
@@ -148,7 +163,44 @@ warning. Symbolic links are followed (as serve-static and nginx do); links that 
 are listed in a warning at startup, and `symlinks: "contain"` leaves them out.
 `_headers` (rules for static hosts) and the `.br`/`.gz` copies are not served as files of their own.
 
+```ts
+function createStaticHandler(
+  dir: string,
+  config: BuiltAppConfig,
+  options?: StaticOptions,
+): StaticHandler;
+
+type StaticHandler = (req: IncomingMessage, res: ServerResponse) => Promise<boolean>;
+
+interface StaticOptions {
+  compress?: boolean;
+  symlinks?: "follow" | "contain";
+}
+```
+
+```ts
+// static.ts: the build's files alone, `node static.ts`
+import { createServer } from "node:http";
+import { createStaticHandler } from "@lumiose/adapter-node";
+import { config } from "./dist/server/entry.js";
+
+const files = createStaticHandler("dist/client", config);
+createServer(async (req, res) => {
+  if (await files(req, res)) return;
+  res.writeHead(404).end("Not found");
+}).listen(3000);
+```
+
+| Name               | Type                    | Default    | Description                                                                                            |
+| ------------------ | ----------------------- | ---------- | ------------------------------------------------------------------------------------------------------ |
+| `dir`              | `string`                | —          | The directory to serve: the build's `client/`.                                                         |
+| `config`           | `BuiltAppConfig`        | —          | The build entry's [`config`](./server-entry.md#config) export.                                         |
+| `options.compress` | `boolean`               | `true`     | Serve the precompressed `.br`/`.gz` copies to clients that accept them.                                |
+| `options.symlinks` | `"follow" \| "contain"` | `"follow"` | Follow symbolic links that leave `dir` (with a startup warning), or serve only links that stay inside. |
+
 ## Example
+
+A server with headers for a cross-origin isolated page.
 
 ```ts
 // server.ts: run with `node server.ts` after `lumiose build`
@@ -163,6 +215,8 @@ const app = await createServer({
 });
 console.log(`Listening on ${app.url}`);
 ```
+
+### One server for dev and production
 
 One `server.ts` for dev and production, with
 [`createDevHandler()`](vite.md#createdevhandler) from `@lumiose/vite/dev` in dev (HMR, the error
@@ -183,7 +237,9 @@ server.on("request", handler);
 server.listen(Number(process.env.PORT ?? 3000));
 ```
 
-As middleware in an existing server:
+### As middleware
+
+Mount the handler as middleware in an existing server.
 
 ```ts
 import { createHandler } from "@lumiose/adapter-node";
