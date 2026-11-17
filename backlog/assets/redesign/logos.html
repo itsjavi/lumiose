@@ -1,0 +1,52 @@
+<!doctype html>
+<!-- PROTOTYPE (throwaway). Logo options for the variant B redesign: the current mark and three alternatives,
+     each on black and on white, as a large mark, a header lockup and at favicon size. -->
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Lumiose · Logo options</title>
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #000; color: #fff; font: 15px/1.5 "Helvetica Neue", Helvetica, system-ui, sans-serif; padding: 40px 32px 80px; }
+  .mono { font: 11px/1 ui-monospace, "SF Mono", Menlo, monospace; letter-spacing: .14em; text-transform: uppercase; color: #a3a3a3; }
+  h1 { font-size: 44px; letter-spacing: -.05em; margin: 12px 0 36px; }
+  .opt { max-width: 1100px; border-top: 1px solid #fff; padding: 20px 0 44px; }
+  .opt h2 { font-size: 24px; letter-spacing: -.03em; margin: 8px 0 4px; }
+  .opt p { color: #a3a3a3; margin: 0 0 18px; max-width: 60ch; }
+  .tiles { display: grid; grid-template-columns: 1fr 1fr; border: 1px solid #262626; }
+  .tile { display: grid; grid-template-columns: 150px 1fr; align-items: center; gap: 28px; padding: 28px; }
+  .dark { background: #000; color: #fff; --accent: #ffd27a; }
+  .light { background: #fff; color: #000; --accent: #f5a300; }
+  .tile svg.big { width: 150px; height: 150px; }
+  .lock { display: flex; align-items: center; gap: 10px; font: 600 14px ui-monospace, "SF Mono", Menlo, monospace; letter-spacing: .2em; text-transform: uppercase; margin-bottom: 22px; }
+  .lock svg { width: 22px; height: 22px; }
+  .fav { display: flex; align-items: center; gap: 10px; } .fav svg { width: 16px; height: 16px; }
+  .fav span { font: 11px ui-monospace, Menlo, monospace; opacity: .6; }
+  @media (max-width: 760px) { .tiles { grid-template-columns: 1fr; } .tile { grid-template-columns: 96px 1fr; } .tile svg.big { width: 96px; height: 96px; } }
+</style>
+</head>
+<body>
+<span class="mono">Variant B · First light</span>
+<h1>Logo options</h1>
+<div id="list"></div>
+
+<script>
+  // Every mark is drawn on a 24×24 grid with the text colour and one amber accent.
+  const marks = [
+    { name: "Current · Quarter sun", note: "Fixed: the outer beams now sit flush with the sun's straight edges, the middle one at 45°.",
+      svg: `<path d="M2 22V12a10 10 0 0 1 10 10z" fill="var(--accent)"/><path stroke="currentColor" stroke-width="2" d="M3 9V2M11.2 12.8l5.3-5.3M15 21h7"/>` },
+    { name: "1 · Corner L", note: "A capital L as a wall and a floor, with light filling the corner. The only option that carries the initial.",
+      svg: `<path d="M2 2h3v17h17v3H2z" fill="currentColor"/><path d="M7.5 16.5v-10a10 10 0 0 1 10 10z" fill="var(--accent)"/>` },
+    { name: "2 · Doorway", note: "A plain frame with one beam crossing it from the corner, like light through an open door.",
+      svg: `<path d="M3 3 21 13V21H13z" fill="var(--accent)"/><rect x="3" y="3" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"/>` },
+    { name: "3 · Fan", note: "No sun at all: five beams from one corner, the middle one lit. It is the page's own background, reduced to a mark.",
+      svg: `<path stroke="currentColor" stroke-width="2" fill="none" d="M3 16V2M4.9 16.4 10.3 3.4M7.6 19.1l13-5.4M8 21h14"/><path stroke="var(--accent)" stroke-width="2" d="M6.5 17.5l9.9-9.9"/>` },
+  ];
+  const mark = (m, cls = "") => `<svg class="${cls}" viewBox="0 0 24 24" aria-hidden="true">${m.svg}</svg>`;
+  const tile = (m, theme) => `<div class="tile ${theme}">${mark(m, "big")}<div><div class="lock">${mark(m)}Lumiose</div><div class="fav">${mark(m)}<span>16px</span></div></div></div>`;
+  document.querySelector("#list").innerHTML = marks.map((m) =>
+    `<section class="opt"><span class="mono">Option</span><h2>${m.name}</h2><p>${m.note}</p><div class="tiles">${tile(m, "dark")}${tile(m, "light")}</div></section>`).join("");
+</script>
+</body>
+</html>

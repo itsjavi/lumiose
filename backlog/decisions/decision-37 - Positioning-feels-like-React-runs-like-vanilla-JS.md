@@ -145,6 +145,8 @@ Approved by the user on 2026-10-11.
 - **Eyebrow:** "Static sites · Server-side rendering · Islands · SPAs". These are the terms people search for, with no acronyms. "Server" alone means nothing to a search engine.
 - **Meta and OG description:** they lead with the same terms and stay under 160 characters. The visible descriptor is unchanged.
 
+**Amendment, 2026-11-17 (user): visual direction and landing structure.** Decision-90 replaces the "Lumen" visual direction with a black-and-white identity, and moves the stack table from the landing to `/benchmarks`. The positioning, tagline and descriptor above stay.
+
 ## Consequences
 
 - The amendment adds TASK-214 (playground move), TASK-215 (URLs and redirects), and TASK-216 to TASK-218 (prerendering).

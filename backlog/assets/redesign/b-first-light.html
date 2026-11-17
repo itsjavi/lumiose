@@ -1,0 +1,371 @@
+<!doctype html>
+<!-- PROTOTYPE (throwaway click dummy). Variant B "First light": dark-first, editorial, left-aligned,
+     mono labels and hairlines. Thin beams fan out from the logo's corner. Copy is placeholder. -->
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Lumiose · Variant B · First light</title>
+<style>
+  :root {
+    /* --mid is 8.4:1 on black and 7:1 on white (AAA); the beams fade before they reach body text. */
+    --bg: #000; --fg: #fff; --mid: #a3a3a3; --line: #262626; --soft: #0d0d0d;
+    --accent: #ffd27a; --beam: .55;
+    --sans: "Helvetica Neue", Helvetica, ui-sans-serif, system-ui, Arial, sans-serif;
+    --mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, monospace;
+    --w: 1200px;
+  }
+  [data-theme="light"] { --bg: #fff; --fg: #000; --mid: #595959; --line: #e2e2e2; --soft: #f6f6f6; --accent: #f5a300; --beam: .6; }
+  body.inner { --beam: .3; } /* docs and UI pages: text sits nearer the corner, so the beams are dimmer */
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--fg); font: 16px/1.55 var(--sans); -webkit-font-smoothing: antialiased; }
+  a { color: inherit; } button { font: inherit; color: inherit; } code, pre { font-family: var(--mono); }
+  /* Focus uses the text colour: amber on white is only 2:1, below the 3:1 a focus ring needs. */
+  :focus-visible { outline: 2px solid var(--fg); outline-offset: 3px; }
+  .label { font: 11px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--mid); }
+
+  /* ---------- beams ---------- */
+  .beams { position: fixed; top: 0; left: 0; width: min(1100px, 100vw); height: min(820px, 100vh); pointer-events: none; z-index: 0; }
+  .beams line { stroke: url(#fade); stroke-width: 1; opacity: .08; animation: beam 9s ease-in-out infinite; }
+  .beams line.wide { stroke-width: 3; }
+  .beams circle { fill: none; stroke: var(--line); }
+  @keyframes beam { 0%, 100% { opacity: .06; } 50% { opacity: var(--beam); } }
+  @media (prefers-reduced-motion: reduce) { .beams * { animation: none !important; opacity: .35; } }
+
+  /* ---------- chrome ---------- */
+  header { position: sticky; top: 0; z-index: 5; background: color-mix(in srgb, var(--bg) 70%, transparent); backdrop-filter: blur(8px); }
+  .bar { max-width: var(--w); margin: auto; padding: 0 32px; height: 64px; display: flex; align-items: center; gap: 36px; border-bottom: 1px solid var(--line); }
+  .logo { display: flex; align-items: center; gap: 10px; text-decoration: none; font: 600 14px var(--mono); letter-spacing: .2em; text-transform: uppercase; }
+  .logo svg { width: 22px; height: 22px; }
+  nav { display: flex; gap: 28px; }
+  nav a { text-decoration: none; font: 12px var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--mid); }
+  nav a:hover, nav a.on { color: var(--fg); } nav a.on::before { content: "● "; color: var(--accent); }
+  .right { margin-left: auto; display: flex; gap: 10px; align-items: center; }
+  .sq { border: 1px solid var(--line); background: none; height: 32px; padding: 0 10px; cursor: pointer; font: 12px var(--mono); }
+  .sq:hover { border-color: var(--fg); }
+  main { position: relative; z-index: 1; } .page { display: none; } .page.on { display: block; }
+  .wrap { max-width: var(--w); margin: auto; padding: 0 32px; }
+  footer { margin-top: 120px; } footer .wrap > div { border-top: 1px solid var(--line); padding: 24px 0; display: flex; justify-content: space-between; }
+
+  .btn { display: inline-flex; align-items: center; height: 46px; padding: 0 22px; background: var(--fg); color: var(--bg); border: 1px solid var(--fg); text-decoration: none; font-weight: 500; cursor: pointer; }
+  .btn.line { background: none; color: var(--fg); border-color: var(--line); } .btn.line:hover { border-color: var(--fg); }
+  .btn.sm { height: 34px; padding: 0 14px; font-size: 14px; }
+
+  .code { border: 1px solid var(--line); background: var(--soft); }
+  .code > .label { display: flex; justify-content: space-between; padding: 12px 16px; border-bottom: 1px solid var(--line); }
+  pre { margin: 0; padding: 18px 16px; font-size: 13px; line-height: 1.75; overflow: auto; }
+  pre b { font-weight: 700; } pre i { color: var(--mid); font-style: normal; } pre u { text-decoration: underline; text-decoration-color: var(--accent); text-decoration-thickness: 2px; text-underline-offset: 4px; }
+  .out { border-top: 1px solid var(--line); padding: 18px 16px; display: flex; gap: 14px; align-items: center; flex-wrap: wrap; background: var(--bg); min-height: 74px; }
+  p code, td code { font-size: .88em; border-bottom: 1px solid var(--line); }
+
+  /* ---------- home ---------- */
+  .hero { display: grid; grid-template-columns: 1.1fr 1fr; gap: 64px; align-items: end; padding: 120px 0 88px; }
+  .hero h1 { font-size: clamp(48px, 6.6vw, 96px); line-height: .95; letter-spacing: -.055em; font-weight: 700; margin: 28px 0 28px; }
+  .hero h1 span { color: var(--mid); }
+  .hero p { font-size: 19px; color: var(--mid); max-width: 40ch; margin: 0 0 32px; }
+  .cta { display: flex; gap: 12px; flex-wrap: wrap; }
+  .rows { border-top: 1px solid var(--fg); }
+  .row { display: grid; grid-template-columns: 80px 1fr 1.3fr 40px; gap: 32px; align-items: center; padding: 26px 0; border-bottom: 1px solid var(--line); text-decoration: none; }
+  .row:hover { background: var(--soft); } .row:hover .arr { color: var(--accent); transform: translateX(4px); }
+  .row h3 { font-size: 26px; letter-spacing: -.03em; margin: 0; font-weight: 600; }
+  .row p { margin: 0; color: var(--mid); } .arr { transition: .15s; font-size: 20px; }
+  .strip { margin-top: 96px; display: grid; grid-template-columns: 1fr 2fr; gap: 64px; align-items: center; }
+  .strip h2, .end h2 { font-size: 40px; letter-spacing: -.04em; line-height: 1.02; margin: 14px 0 12px; }
+  .strip p { color: var(--mid); margin: 0 0 20px; }
+  .tray { border: 1px solid var(--line); display: grid; grid-template-columns: repeat(4, 1fr); }
+  .tray > div { height: 130px; display: grid; place-items: center; border-left: 1px solid var(--line); } .tray > div:first-child { border: 0; }
+  .end { margin-top: 110px; border: 1px solid var(--line); padding: 48px; display: flex; justify-content: space-between; align-items: center; gap: 32px; flex-wrap: wrap; }
+  .end h2 { margin: 0; } .end code { font-size: 15px; border: 1px solid var(--line); padding: 12px 16px; display: inline-block; margin-right: 12px; }
+  .end code::before { content: "$ "; color: var(--accent); }
+  @media (max-width: 860px) { .hero, .strip { grid-template-columns: 1fr; } .row { grid-template-columns: 40px 1fr 24px; } .row p { display: none; } nav { display: none; } .tray { grid-template-columns: 1fr 1fr; } }
+
+  /* ---------- docs ---------- */
+  .docs { display: grid; grid-template-columns: 200px minmax(0, 1fr); gap: 64px; padding-top: 48px; }
+  .side { position: sticky; top: 96px; align-self: start; }
+  .side .label { display: block; margin: 26px 0 10px; } .side .label:first-child { margin-top: 0; }
+  .side a { display: block; text-decoration: none; color: var(--mid); font-size: 14px; padding: 3px 0; }
+  .side a:hover { color: var(--fg); } .side a.on { color: var(--fg); } .side a.on::before { content: "● "; color: var(--accent); font-size: 9px; vertical-align: 2px; }
+  .dochead { display: flex; justify-content: space-between; align-items: end; gap: 32px; border-bottom: 1px solid var(--fg); padding-bottom: 28px; }
+  .dochead h1 { font-size: 64px; letter-spacing: -.05em; line-height: .95; margin: 16px 0 0; }
+  .dochead p { color: var(--mid); margin: 0; max-width: 30ch; }
+  .stepper { display: flex; position: sticky; top: 64px; background: var(--bg); z-index: 2; border-bottom: 1px solid var(--line); }
+  .stepper button { flex: 1; text-align: left; background: none; border: 0; border-right: 1px solid var(--line); padding: 14px 16px; cursor: pointer; color: var(--mid); font: 12px var(--mono); letter-spacing: .08em; text-transform: uppercase; box-shadow: inset 0 0 var(--accent); }
+  .stepper button:last-child { border-right: 0; } .stepper button.on { color: var(--fg); box-shadow: inset 0 -2px var(--accent); }
+  .split { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 48px; padding: 44px 0; border-bottom: 1px solid var(--line); scroll-margin-top: 120px; }
+  .split > div:first-child { position: sticky; top: 140px; align-self: start; }
+  .split h2 { font-size: 28px; letter-spacing: -.03em; margin: 12px 0 10px; }
+  .split p { margin: 0 0 12px; color: var(--mid); } .split p b { color: var(--fg); font-weight: 500; }
+  .opts { display: flex; border: 1px solid var(--line); margin-top: 16px; width: fit-content; }
+  .opts button { background: none; border: 0; padding: 7px 14px; font: 12px var(--mono); cursor: pointer; color: var(--mid); } .opts button[aria-pressed="true"] { background: var(--fg); color: var(--bg); }
+  .next { display: flex; justify-content: space-between; align-items: center; padding: 32px 0; text-decoration: none; font-size: 28px; letter-spacing: -.03em; font-weight: 600; }
+  .next:hover span:last-child { color: var(--accent); }
+  @media (max-width: 860px) { .docs, .split { grid-template-columns: 1fr; } .side { display: none; } .split > div:first-child { position: static; } .dochead h1 { font-size: 44px; } }
+
+  /* ---------- ui ---------- */
+  .ui { display: grid; grid-template-columns: 200px minmax(0, 1fr); gap: 64px; padding-top: 48px; }
+  .ui .side button { display: block; background: none; border: 0; padding: 3px 0; font-size: 14px; color: var(--mid); cursor: pointer; text-align: left; }
+  .ui .side button.on { color: var(--fg); } .ui .side button.on::before { content: "● "; color: var(--accent); font-size: 9px; vertical-align: 2px; }
+  .ui .side button:first-child { margin-bottom: 22px; color: var(--fg); }
+  .gal { display: grid; grid-template-columns: repeat(4, 1fr); border-left: 1px solid var(--line); margin-top: -1px; }
+  .cell { border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); display: flex; flex-direction: column; min-height: 210px; background: var(--bg); }
+  .cell > div { flex: 1; display: grid; place-items: center; padding: 16px; }
+  .cell > button { display: flex; justify-content: space-between; background: none; border: 0; border-top: 1px solid var(--line); padding: 12px 16px; cursor: pointer; font: 12px var(--mono); letter-spacing: .08em; text-transform: uppercase; }
+  .cell > button:hover { background: var(--soft); } .cell > button:hover .arr { color: var(--accent); }
+  @media (max-width: 860px) { .gal { grid-template-columns: 1fr 1fr; } }
+  .prog { width: 200px; height: 4px; background: var(--line); } .prog i { display: block; height: 100%; width: 62%; background: var(--fg); }
+  .menu { position: relative; } .menu summary { list-style: none; } .menu summary::-webkit-details-marker { display: none; }
+  .menu > div { position: absolute; top: 40px; left: 0; z-index: 3; border: 1px solid var(--fg); background: var(--bg); min-width: 150px; }
+  .menu > div button { display: block; width: 100%; text-align: left; background: none; border: 0; padding: 8px 12px; cursor: pointer; font-size: 14px; } .menu > div button:hover { background: var(--fg); color: var(--bg); }
+  ::placeholder { color: var(--mid); opacity: 1; }
+  select.field { border: 1px solid var(--fg); padding: 0 10px; background: var(--bg); }
+  .stage { border: 1px solid var(--line); height: 300px; display: grid; place-items: center; position: relative; margin-top: 28px;
+    background-image: radial-gradient(var(--line) 1px, transparent 1px); background-size: 20px 20px; }
+  .stage .label { position: absolute; top: 14px; left: 16px; }
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; margin-top: 32px; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; } th { text-align: left; font: 11px var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--mid); font-weight: 400; }
+  th, td { padding: 10px 0; border-bottom: 1px solid var(--line); } td:last-child { color: var(--mid); }
+  @media (max-width: 860px) { .ui, .two { grid-template-columns: 1fr; } }
+
+  .sw { width: 48px; height: 26px; border: 1px solid var(--fg); background: none; position: relative; cursor: pointer; padding: 0; }
+  .sw::after { content: ""; position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; background: var(--fg); transition: .15s; }
+  .sw[aria-checked="true"] { background: var(--fg); } .sw[aria-checked="true"]::after { left: 25px; background: var(--bg); }
+  .seg { display: inline-flex; border-bottom: 1px solid var(--line); } .seg button { background: none; border: 0; padding: 8px 14px; cursor: pointer; color: var(--mid); margin-bottom: -1px; border-bottom: 1px solid transparent; } .seg button[aria-selected="true"] { color: var(--fg); border-color: var(--fg); }
+  input[type=range], input[type=checkbox] { accent-color: var(--fg); } input[type=range] { width: 220px; }
+  .field { border: 0; border-bottom: 1px solid var(--fg); background: none; color: inherit; font: inherit; height: 36px; width: 220px; outline-offset: 4px; }
+  details.acc { width: 260px; border-top: 1px solid var(--fg); border-bottom: 1px solid var(--line); } details.acc summary { padding: 10px 0; cursor: pointer; } details.acc p { margin: 0 0 12px; color: var(--mid); font-size: 14px; }
+  dialog { border: 1px solid var(--fg); padding: 28px; max-width: 380px; background: var(--bg); color: var(--fg); } dialog::backdrop { background: rgb(0 0 0 / .6); } dialog h3 { margin: 0 0 6px; font-size: 22px; letter-spacing: -.02em; } dialog p { color: var(--mid); margin: 0 0 20px; }
+</style>
+</head>
+<body>
+<svg class="beams" viewBox="0 0 1100 820" preserveAspectRatio="xMinYMin slice" aria-hidden="true">
+  <defs><radialGradient id="fade" gradientUnits="userSpaceOnUse" cx="0" cy="0" r="1000"><stop offset="0" stop-color="var(--accent)"/><stop offset=".12" stop-color="var(--accent)" stop-opacity=".6"/><stop offset=".3" stop-color="var(--accent)" stop-opacity=".3"/><stop offset=".65" stop-color="var(--accent)" stop-opacity=".12"/><stop offset="1" stop-color="var(--accent)" stop-opacity="0"/></radialGradient></defs>
+  <circle r="180"/><circle r="360"/><circle r="540"/>
+  <g id="lines"></g>
+</svg>
+
+<header><div class="bar">
+  <a class="logo" href="#/">
+    <!-- Logo "Corner L": a capital L as wall and floor, with a quarter of light in the corner. -->
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 2h3v17h17v3H2z" fill="currentColor"/><path d="M7.5 16.5v-10a10 10 0 0 1 10 10z" fill="var(--accent)"/></svg>
+    Lumiose
+  </a>
+  <nav><a href="#/docs">Docs</a><a href="#/ui">UI</a><a href="#/">Playground</a><a href="#/">Benchmarks</a></nav>
+  <div class="right"><button class="sq" id="theme">Light</button><a class="sq" style="display:grid;place-items:center;text-decoration:none" href="#/">GitHub</a></div>
+</div></header>
+
+<main>
+<!-- ================= HOME ================= -->
+<section class="page" data-page="">
+  <div class="wrap">
+    <div class="hero">
+      <div>
+        <span class="label">Web framework · v0.9</span>
+        <h1>Feels like React.<br /><span>Runs like vanilla JS.</span></h1>
+        <p>One component model, from static pages to full-stack apps.</p>
+        <div class="cta"><a class="btn" href="#/docs">Get started</a><a class="btn line" href="#/">Open playground</a></div>
+      </div>
+      <div class="code">
+        <div class="label"><span>Counter.stsx</span><span>live</span></div>
+<pre><b>import</b> { signal } <b>from</b> "lumiose";
+
+<b>export default function</b> Counter() {
+  <b>const</b> count = <u>signal(0)</u>;
+  <b>return</b> (
+    &lt;button onClick={() =&gt; count.update((n) =&gt; n + 1)}&gt;
+      Clicked {<u>count()</u>} times
+    &lt;/button&gt;
+  );
+}
+
+&lt;style&gt;
+  button { padding: 8px 16px; }
+&lt;/style&gt;</pre>
+        <div class="out"><button class="btn sm line" id="counter">Clicked 0 times</button><span class="label">← try it</span></div>
+      </div>
+    </div>
+
+    <div class="rows">
+      <a class="row" href="#/docs"><span class="label">01</span><h3>Write</h3><p>TSX and its styles in one file. Type-checked by stock <code>tsc</code>.</p><span class="arr">→</span></a>
+      <a class="row" href="#/docs"><span class="label">02</span><h3>Render</h3><p>Each route picks static, server or SPA. The component doesn't change.</p><span class="arr">→</span></a>
+      <a class="row" href="#/docs"><span class="label">03</span><h3>Hydrate</h3><p>Add <code>client:idle</code> where you use a component. It becomes an island.</p><span class="arr">→</span></a>
+      <a class="row" href="#/"><span class="label">04</span><h3>Measure</h3><p>Compared with the stacks you know, from committed benchmark runs.</p><span class="arr">→</span></a>
+    </div>
+
+    <div class="strip">
+      <div><span class="label">@lumiose/ui</span><h2>Components without opinions.</h2><p>Accessible behaviour, plain black and white. Style them your way.</p><a class="btn line sm" href="#/ui">Browse components</a></div>
+      <div class="tray">
+        <div><button class="sw" role="switch" aria-checked="true" aria-label="Demo switch"></button></div>
+        <div><span class="seg"><button aria-selected="true">One</button><button aria-selected="false">Two</button></span></div>
+        <div><input type="range" style="width:110px" aria-label="Demo slider" /></div>
+        <div><button class="btn sm">Button</button></div>
+      </div>
+    </div>
+
+    <div class="end"><h2>Enlighten your<br />next project.</h2><div><code>pnpm create lumiose</code><a class="btn" href="#/docs">Read the docs</a></div></div>
+  </div>
+</section>
+
+<!-- ================= DOCS ================= -->
+<section class="page" data-page="docs">
+  <div class="wrap docs">
+    <aside class="side">
+      <span class="label">Start</span><a class="on" href="#/docs">Getting started</a><a href="#/docs">Coming from React</a>
+      <span class="label">Concepts</span><a href="#/docs">Components</a><a href="#/docs">Signals</a><a href="#/docs">Styles</a><a href="#/docs">Routing</a><a href="#/docs">Rendering modes</a><a href="#/docs">Islands</a>
+      <span class="label">Guides</span><a href="#/docs">Auth</a><a href="#/docs">i18n</a><a href="#/docs">Realtime</a>
+      <span class="label">Reference</span><a href="#/docs">CLI</a><a href="#/docs">Router</a><a href="#/docs">Server</a>
+    </aside>
+    <article>
+      <div class="dochead"><div><span class="label">Start · 2 min</span><h1>Getting started</h1></div><p>Words on the left, the code they describe on the right.</p></div>
+      <div class="stepper" id="stepper"><button class="on" data-go="s1">1 Create</button><button data-go="s2">2 Component</button><button data-go="s3">3 Style</button><button data-go="s4">4 Check</button></div>
+
+      <section class="split" id="s1">
+        <div><span class="label">Step 1</span><h2>Create a project</h2><p>Pick a template. The rendering mode can change later.</p>
+          <div class="opts" id="tpl"><button aria-pressed="true">ssr</button><button aria-pressed="false">static</button><button aria-pressed="false">spa</button></div></div>
+        <div class="code"><div class="label"><span>Terminal</span></div><pre>pnpm create lumiose my-app --template <u id="tplname">ssr</u>
+cd my-app &amp;&amp; pnpm install &amp;&amp; pnpm dev</pre></div>
+      </section>
+
+      <section class="split" id="s2">
+        <div><span class="label">Step 2</span><h2>Write a component</h2><p>A component is a function. State is a <b>signal</b>.</p><p><b>Read</b> it by calling it. <b>Write</b> it with <code>set</code>.</p></div>
+        <div class="code"><div class="label"><span>src/routes/page.stsx</span></div>
+<pre><b>import</b> { signal } <b>from</b> "lumiose";
+
+<b>export default function</b> Home() {
+  <b>const</b> name = signal("world");
+  <b>return</b> (
+    &lt;&gt;
+      &lt;input value={<u>name()</u>} onInput={(e) =&gt; <u>name.set</u>(e.currentTarget.value)} /&gt;
+      &lt;h1&gt;Hello, {name()}!&lt;/h1&gt;
+    &lt;/&gt;
+  );
+}</pre>
+          <div class="out"><input class="field" id="hello-in" value="world" /><strong id="hello-out" style="font-size:22px;letter-spacing:-.02em">Hello, world!</strong></div></div>
+      </section>
+
+      <section class="split" id="s3">
+        <div><span class="label">Step 3</span><h2>Style it in the same file</h2><p>One <code>&lt;style&gt;</code> block at the end. Selectors match <b>only this file's markup</b>.</p></div>
+        <div class="code"><div class="label"><span>src/routes/page.stsx</span></div><pre>&lt;style&gt;
+  h1 { letter-spacing: -0.02em; }   <i>/* only this h1 */</i>
+&lt;/style&gt;</pre></div>
+      </section>
+
+      <section class="split" id="s4">
+        <div><span class="label">Step 4</span><h2>Check it</h2><p>Types, templates and styles in one command.</p><p><b>Needs</b> Node 24+, TypeScript 7, Vite 8.</p></div>
+        <div class="code"><div class="label"><span>Terminal</span></div><pre>pnpm lumiose check
+<i>✓ 12 files, 0 errors</i></pre></div>
+      </section>
+
+      <a class="next" href="#/docs"><span><span class="label" style="display:block;margin-bottom:10px">Next</span>Components</span><span>→</span></a>
+    </article>
+  </div>
+</section>
+
+<!-- ================= UI ================= -->
+<section class="page" data-page="ui">
+  <div class="wrap" id="ui-index">
+    <div class="dochead" style="margin-top:48px"><div><span class="label">@lumiose/ui</span><h1>Components</h1></div><p>Accessible behaviour, plain black and white. Every one is live: try them.</p></div>
+    <div class="gal" id="gal"></div>
+  </div>
+  <div class="wrap ui" id="ui-detail" hidden>
+    <aside class="side" id="uilist"></aside>
+    <article>
+      <div class="dochead"><div><span class="label">@lumiose/ui</span><h1 id="c-name">Switch</h1></div><p id="c-desc">A control that turns one setting on or off.</p></div>
+      <div class="stage"><span class="label">Preview · unstyled defaults</span><div id="c-demo"></div></div>
+      <div class="two">
+        <div class="code"><div class="label"><span>Usage</span></div><pre id="c-code"></pre></div>
+        <table><thead><tr><th>Prop</th><th>Type</th><th>Default</th></tr></thead><tbody id="c-props"></tbody></table>
+      </div>
+    </article>
+  </div>
+  <dialog id="dlg"><h3>Discard draft?</h3><p>This can't be undone.</p><form method="dialog" style="display:flex;gap:8px"><button class="btn sm">Discard</button><button class="btn sm line">Cancel</button></form></dialog>
+</section>
+</main>
+
+<footer><div class="wrap"><div class="label"><span>Lumiose · MIT</span><span>Prototype B · First light</span></div></div></footer>
+
+<script>
+  const $ = (s, r = document) => r.querySelector(s), $$ = (s, r = document) => [...r.querySelectorAll(s)];
+  // Beams: thin lines fanning from the top-left corner, each pulsing on its own clock.
+  $("#lines").innerHTML = [6, 11, 15, 22, 26, 33, 37, 41, 48, 55, 59, 66, 73, 78].map((deg, i) => {
+    const a = (deg * Math.PI) / 180, r = 1300;
+    return `<line class="${i % 4 === 2 ? "wide" : ""}" x1="0" y1="0" x2="${(Math.cos(a) * r).toFixed(0)}" y2="${(Math.sin(a) * r).toFixed(0)}" style="animation-delay:-${(i * 2.3) % 9}s;animation-duration:${7 + (i % 5) * 1.6}s"/>`;
+  }).join("");
+
+  // Routing is in memory (links are intercepted), so the dummy also works from file: and data: URLs.
+  function route(p) {
+    document.body.classList.toggle("inner", p !== "");
+    $$(".page").forEach((s) => s.classList.toggle("on", s.dataset.page === p));
+    $$("nav a").forEach((a) => a.classList.toggle("on", p !== "" && a.getAttribute("href") === "#/" + p));
+    scrollTo(0, 0);
+  }
+  document.addEventListener("click", (e) => {
+    const a = e.target.closest('a[href^="#/"]');
+    if (a) { e.preventDefault(); route(a.getAttribute("href").slice(2)); }
+  });
+  route(location.hash.replace(/^#\/?/, ""));
+  const html = document.documentElement, setTheme = (t) => { html.dataset.theme = t; $("#theme").textContent = t === "dark" ? "Light" : "Dark"; };
+  $("#theme").onclick = () => setTheme(html.dataset.theme === "dark" ? "light" : "dark");
+  if (new URLSearchParams(location.search).get("theme") === "light") setTheme("light");
+
+  let n = 0; $("#counter").onclick = (e) => (e.target.textContent = `Clicked ${++n} times`);
+  $$("#tpl button").forEach((b) => (b.onclick = () => { $$("#tpl button").forEach((x) => x.setAttribute("aria-pressed", x === b)); $("#tplname").textContent = b.textContent; }));
+  $("#hello-in").oninput = (e) => ($("#hello-out").textContent = `Hello, ${e.target.value}!`);
+  $$("#stepper button").forEach((b) => (b.onclick = () => { $$("#stepper button").forEach((x) => x.classList.toggle("on", x === b)); $("#" + b.dataset.go).scrollIntoView({ behavior: "smooth" }); }));
+  document.addEventListener("click", (e) => {
+    const sw = e.target.closest(".sw"); if (sw) sw.setAttribute("aria-checked", sw.getAttribute("aria-checked") !== "true");
+    const tab = e.target.closest(".seg button"); if (tab) $$("button", tab.parentNode).forEach((x) => x.setAttribute("aria-selected", x === tab));
+    if (e.target.closest("[data-open]")) $("#dlg").showModal();
+  });
+
+  const C = {
+    accordion: { name: "Accordion", desc: "Stacked headings that reveal their content.",
+      demo: `<details class="acc"><summary>Is it styled?</summary><p>Barely. Bring your own.</p></details>` },
+    button: { name: "Button", desc: "Triggers an action.",
+      demo: `<span style="display:flex;gap:8px"><button class="btn sm">Primary</button><button class="btn sm line">Secondary</button></span>` },
+    checkbox: { name: "Checkbox", desc: "Ticks one option on or off.",
+      demo: `<label style="display:flex;gap:10px;align-items:center"><input type="checkbox" checked style="width:18px;height:18px" /> Accept terms</label>` },
+    input: { name: "Input", desc: "A single line of text.", demo: `<input class="field" placeholder="you@example.com" aria-label="Email" />` },
+    menu: { name: "Menu", desc: "A list of actions behind a button.",
+      demo: `<details class="menu"><summary class="btn sm line">Options ▾</summary><div><button>Rename</button><button>Duplicate</button><button>Delete</button></div></details>` },
+    progress: { name: "Progress", desc: "How far along a task is.", demo: `<div class="prog" role="progressbar" aria-valuenow="62" aria-label="Demo"><i></i></div>` },
+    radio: { name: "Radio group", desc: "Pick one option from a few.",
+      demo: `<span style="display:flex;gap:18px"><label><input type="radio" name="r" checked /> Monthly</label><label><input type="radio" name="r" /> Yearly</label></span>` },
+    select: { name: "Select", desc: "Pick one option from a list.",
+      demo: `<select class="field" aria-label="Demo"><option>Static</option><option>Server</option><option>SPA</option></select>` },
+    switch: { name: "Switch", desc: "A control that turns one setting on or off.",
+      demo: `<button class="sw" role="switch" aria-checked="true" aria-label="Demo"></button>`,
+      code: `<b>import</b> { Switch } <b>from</b> "@lumiose/ui";\n\n&lt;Switch checked={on()} onChange={on.set} /&gt;`,
+      props: [["checked", "boolean", "false"], ["onChange", "(v: boolean) => void", "–"], ["disabled", "boolean", "false"]] },
+    tabs: { name: "Tabs", desc: "Panels of content, shown one at a time.",
+      demo: `<span class="seg"><button aria-selected="true">Account</button><button aria-selected="false">Billing</button><button aria-selected="false">Team</button></span>`,
+      code: `&lt;Tabs value={tab()} onChange={tab.set}&gt;\n  &lt;Tabs.List&gt;\n    &lt;Tabs.Tab value="account"&gt;Account&lt;/Tabs.Tab&gt;\n  &lt;/Tabs.List&gt;\n  &lt;Tabs.Panel value="account"&gt;…&lt;/Tabs.Panel&gt;\n&lt;/Tabs&gt;`,
+      props: [["value", "string", "–"], ["onChange", "(v: string) => void", "–"], ["orientation", '"horizontal" | "vertical"', '"horizontal"']] },
+    slider: { name: "Slider", desc: "Pick a number from a range.",
+      demo: `<input type="range" value="40" aria-label="Demo" />`,
+      code: `&lt;Slider value={vol()} onChange={vol.set} min={0} max={100} /&gt;`,
+      props: [["value", "number", "0"], ["min / max", "number", "0 / 100"], ["step", "number", "1"]] },
+    dialog: { name: "Dialog", desc: "A window over the page that needs an answer.",
+      demo: `<button class="btn sm line" data-open>Open dialog</button>`,
+      code: `&lt;Dialog&gt;\n  &lt;Dialog.Trigger&gt;Open dialog&lt;/Dialog.Trigger&gt;\n  &lt;Dialog.Popup&gt;\n    &lt;Dialog.Title&gt;Discard draft?&lt;/Dialog.Title&gt;\n  &lt;/Dialog.Popup&gt;\n&lt;/Dialog&gt;`,
+      props: [["open", "boolean", "false"], ["onOpenChange", "(v: boolean) => void", "–"], ["modal", "boolean", "true"]] },
+  };
+  const keys = Object.keys(C).sort();
+  // The index shows every component live; a cell's footer opens its page.
+  $("#gal").innerHTML = keys.map((k) => `<div class="cell"><div>${C[k].demo}</div><button data-c="${k}"><span>${C[k].name}</span><span class="arr">→</span></button></div>`).join("");
+  $("#uilist").innerHTML = `<button data-c="">← All components</button><span class="label">Components</span>` + keys.map((k) => `<button data-c="${k}">${C[k].name}</button>`).join("");
+  function show(k) {
+    $("#ui-index").hidden = !!k; $("#ui-detail").hidden = !k; scrollTo(0, 0);
+    if (!k) return;
+    const c = C[k], tag = c.name.replace(/ (\w)/g, (_, l) => l.toUpperCase());
+    $("#c-name").textContent = c.name; $("#c-desc").textContent = c.desc; $("#c-demo").innerHTML = c.demo;
+    $("#c-code").innerHTML = c.code ?? `<b>import</b> { ${tag} } <b>from</b> "@lumiose/ui";\n\n&lt;${tag} /&gt;`;
+    $("#c-props").innerHTML = (c.props ?? [["…", "placeholder", "–"]]).map((r) => `<tr><td><code>${r[0]}</code></td><td><code>${r[1].replace(/</g, "&lt;")}</code></td><td>${r[2]}</td></tr>`).join("");
+    $$("#uilist button").forEach((b) => b.classList.toggle("on", b.dataset.c === k));
+  }
+  document.addEventListener("click", (e) => {
+    const b = e.target.closest("#gal button[data-c], #uilist button[data-c]"); if (b) show(b.dataset.c);
+    if (e.target.closest('a[href="#/ui"]')) show("");
+  });
+</script>
+</body>
+</html>
