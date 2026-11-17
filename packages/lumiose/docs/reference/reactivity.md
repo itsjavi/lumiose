@@ -399,7 +399,7 @@ function createContext<T>(): Context<T | undefined>;
 function useContext<T>(context: Context<T>): T;
 
 interface Context<T> {
-  (props: { value: T; children?: Renderable }): Renderable;
+  (props: { value: T; children?: JSX.Element }): JSX.Element;
   readonly id: symbol;
   readonly defaultValue: T;
 }
@@ -421,11 +421,11 @@ const Count = createContext(signal(0));
 | `defaultValue` | `T`          | `undefined` | What `useContext` returns when no provider is above. |
 | `context`      | `Context<T>` | —           | The context to read.                                 |
 
-| Member         | Type         | Description                                       |
-| -------------- | ------------ | ------------------------------------------------- |
-| `(props)`      | `Renderable` | The provider component: `<Ctx value={v}>…</Ctx>`. |
-| `id`           | `symbol`     | The context's unique key.                         |
-| `defaultValue` | `T`          | The default passed to `createContext`.            |
+| Member         | Type          | Description                                       |
+| -------------- | ------------- | ------------------------------------------------- |
+| `(props)`      | `JSX.Element` | The provider component: `<Ctx value={v}>…</Ctx>`. |
+| `id`           | `symbol`      | The context's unique key.                         |
+| `defaultValue` | `T`           | The default passed to `createContext`.            |
 
 ## useId
 
