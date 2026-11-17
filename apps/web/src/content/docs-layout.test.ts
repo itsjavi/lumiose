@@ -71,24 +71,22 @@ describe("the docs pages' sections", () => {
   it("finds numbered steps, and only where the headings count from 1", () => {
     const start = findDoc("getting-started")!;
     expect(start.steps.map((step) => [step.step, step.id])).toEqual([
-      [1, "1-install"],
-      [2, "2-configure-typescript"],
-      [3, "3-configure-vite"],
-      [4, "4-write-a-component"],
-      [5, "5-mount-it"],
-      [6, "6-check-the-project"],
+      [1, "1-create-a-project"],
+      [2, "2-write-a-component"],
+      [3, "3-style-it"],
+      [4, "4-check-it"],
     ]);
     // The heading shows the number as a label; its id, and so its URL, keeps it.
     const html = start.blocks.map((block) => (block.kind === "html" ? block.html : "")).join("");
-    expect(html).toContain('<h2 id="1-install">');
-    expect(html).toContain('<span class="step">Step 1</span> Install</h2>');
+    expect(html).toContain('<h2 id="1-create-a-project">');
+    expect(html).toContain('<span class="step">Step 1</span> Create a project</h2>');
     expect(findDoc("concepts/signals")!.steps).toEqual([]);
   });
 
   it("lays a step with code out as a pair, and a section without code in one column", () => {
     const start = findDoc("getting-started")!;
     const section = (id: string) => start.sections.find((part) => part.heading?.id === id)!;
-    expect(section("3-configure-vite").rows.map((row) => row.kind)).toEqual(["pair"]);
+    expect(section("4-check-it").rows.map((row) => row.kind)).toEqual(["pair"]);
     expect(section("editor").rows.every((row) => row.kind === "full")).toBe(true);
   });
 });

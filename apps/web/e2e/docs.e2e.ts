@@ -9,7 +9,7 @@ test("a section with words and code is two columns on desktop and stacks on a ph
 }) => {
   await page.setViewportSize({ width: 1280, height: 900 });
   await page.goto("/docs/getting-started");
-  const heading = "#\\31 -install";
+  const heading = "#\\31 -create-a-project";
   const code = `.pair:has(${heading}) figure.code`;
   let [words, aside] = [await box(page, heading), await box(page, code)];
   expect(aside.x).toBeGreaterThan(words.x + words.width - 1);
@@ -35,24 +35,22 @@ test("a page of numbered steps gets the step bar, built from its headings", asyn
   await page.goto("/docs/getting-started");
   const steps = page.getByRole("navigation", { name: "Steps" });
   await expect(steps.getByRole("link")).toHaveText([
-    /^1 Install$/,
-    /^2 Configure TypeScript$/,
-    /^3 Configure Vite$/,
-    /^4 Write a component$/,
-    /^5 Mount it$/,
-    /^6 Check the project$/,
+    /^1 Create a project$/,
+    /^2 Write a component$/,
+    /^3 Style it$/,
+    /^4 Check it$/,
   ]);
   // The heading shows its number as a label; the anchor keeps the number.
-  await expect(page.locator("#\\34 -write-a-component")).toHaveText(/Step 4\s*Write a component/);
-  await steps.getByRole("link", { name: "4 Write a component" }).click();
-  await expect(page).toHaveURL(/#4-write-a-component$/);
+  await expect(page.locator("#\\32 -write-a-component")).toHaveText(/Step 2\s*Write a component/);
+  await steps.getByRole("link", { name: "2 Write a component" }).click();
+  await expect(page).toHaveURL(/#2-write-a-component$/);
   // The bar stays in view, the heading stops below it, and the bar marks the step being read.
-  const heading = page.locator("#\\34 -write-a-component");
+  const heading = page.locator("#\\32 -write-a-component");
   await expect(heading).toBeInViewport();
   await expect(steps).toBeInViewport();
   const [bar, target] = [(await steps.boundingBox())!, (await heading.boundingBox())!];
   expect(target.y).toBeGreaterThanOrEqual(bar.y + bar.height);
-  await expect(steps.getByRole("link", { name: "4 Write a component" })).toHaveAttribute(
+  await expect(steps.getByRole("link", { name: "2 Write a component" })).toHaveAttribute(
     "aria-current",
     "step",
   );

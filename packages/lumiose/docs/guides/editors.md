@@ -36,6 +36,24 @@ The extension starts in workspaces with `.stsx` files or the `lumiose` package, 
   **TypeScript and JavaScript Language Features**, **Disable (Workspace)**, then reload the window).
   With `lumiose.takeover` set to `off`, it serves `.stsx` files only.
 
+The extension adds the `stsx` language and runs the Lumiose language server, which proxies
+TypeScript for `.ts`, `.tsx` and `.stsx` files and adds:
+
+- CSS features inside `<style>` blocks;
+- class completion, definitions and rename that follow placement: the blocks enclosing the
+  cursor (never a sibling subtree's), the file's, and the project's global classes (`<style global>`
+  blocks and imported global `.css` files);
+- `var(--…)` completion of every custom property declared in the project, with its value;
+- descriptions of `<style global>` and of Lumiose attributes (`client:*`, `bind:*`, `on:*`, `attach`,
+  `ref`, `key`), and the snippets `comp`, `acomp`, `route` and `island`;
+- the compiler's diagnostics, with the project-wide ones (`LUM4003` server-only imports in the
+  client graph, `LUM3012` unread custom properties) that follow the other files' edits;
+- hovers on JSX expressions with their execution contract: tracked (re-runs when the signals it
+  reads change, which it lists), once, untracked or deferred, and the runtime helper that runs it.
+
+Install `@lumiose/language-server` as a dev dependency only to pin the server to your `lumiose`
+version. See [Compiler and diagnostics](../concepts/compiler.md).
+
 **Lumiose: Restart Language Server** restarts it, and the extension's
 [README](https://github.com/itsjavi/lumiose/tree/main/packages/vscode#readme) lists its settings
 and how to build it from source.

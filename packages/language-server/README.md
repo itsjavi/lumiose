@@ -18,7 +18,7 @@ Other editors start it over the Language Server Protocol:
 lumiose-language-server --stdio   # also --node-ipc, --socket=<port>, --pipe=<name>
 ```
 
-What it adds in the editor: [Getting started](https://lumiose.dev/docs/getting-started/).
+What it adds in the editor: [Editors](https://lumiose.dev/docs/guides/editors/#vs-code).
 
 ## License
 
