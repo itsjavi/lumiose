@@ -2,44 +2,176 @@
 
 > The Next.js App Router mapped to Lumiose: the same route file names, server components by default, `client:*` islands instead of `"use client"`, form actions instead of server actions, head components instead of metadata, and rendering modes instead of caching rules.
 
-This page maps the Next.js App Router (Next.js 16) to Lumiose's current API. For components and
-hooks, read [Coming from React](react.md) first; this page covers the framework.
-
 ## Mental model
 
-**The files look the same.** Lumiose's routes follow the App Router names: a folder under
-`src/routes` is a URL segment, and `page`, `layout`, `route`, `error` and `not-found` files give it
-behavior, with `[slug]`, `[...slug]`, `[[...slug]]`, `(group)` and `_private` folders
-([Routing](../concepts/routing.md)). The Next.js files Lumiose does not have (`loading`,
-`template`, `default`, `global-error`, `@slot` and `(.)` folders) are errors
-([LUM5002](../errors/LUM5002.md)), so they never silently do nothing.
+```tsx
+// app/components/clap.tsx
+"use client";
+import { useState } from "react";
 
-**Components are server components by default.** On `static` and `server` routes every component
-renders on the server, may be `async`, and ships no JavaScript. Instead of a `"use client"` file
-boundary, the page that uses a component decides: `<LikeButton client:visible />` makes that one
-instance an [island](../concepts/islands.md) that hydrates in the browser, and the same component
-stays static elsewhere. Children passed to an island render on the server and stay there, as
-server components passed to a client component do. An `spa` route hydrates its whole subtree and
-navigates on the client.
+export function Clap() {
+  const [claps, setClaps] = useState(0);
+  return <button onClick={() => setClaps(claps + 1)}>Clap ({claps})</button>;
+}
+```
 
-**The rendering mode is explicit, per route.** Next.js decides between static and dynamic rendering
-from what a page reads, and caching rules decide how long results live. In Lumiose a route says
+```tsx
+// app/clap/page.tsx
+import { Clap } from "../components/clap";
+
+export default function Page() {
+  return <Clap />;
+}
+```
+
+```tsx check file=components/Clap.tsx
+// src/components/Clap.tsx
+import { signal } from "lumiose";
+
+export function Clap() {
+  const claps = signal(0);
+  return <button onClick={() => claps.update((n) => n + 1)}>Clap ({claps()})</button>;
+}
+```
+
+```tsx check file=routes/clap/page.tsx
+// src/routes/clap/page.tsx
+import { Clap } from "../../components/Clap.tsx";
+
+export default function Page() {
+  return <Clap client:visible />;
+}
+```
+
+**Components are server components by default.** Instead of a `"use client"` file boundary, the
+page that uses a component decides: `client:visible` makes that one instance an
+[island](../concepts/islands.md) that hydrates in the browser, and the same component stays
+static elsewhere.
+
+> **Scope:** this page maps the Next.js App Router (Next.js 16) to Lumiose's current API. For
+> components and hooks, read [Coming from React](react.md) first; this page covers the framework.
+
+> **Details:** on `static` and `server` routes every component renders on the server, may be
+> `async`, and ships no JavaScript. Children passed to an island render on the server and stay
+> there, as server components passed to a client component do. An `spa` route hydrates its whole
+> subtree and navigates on the client.
+
+### The files look the same
+
+Lumiose's routes follow the App Router names: a folder under `src/routes` is a URL segment, and
+`page`, `layout`, `route`, `error` and `not-found` files give it behavior, with `[slug]`,
+`[...slug]`, `[[...slug]]`, `(group)` and `_private` folders ([Routing](../concepts/routing.md)).
+The Next.js files Lumiose does not have (`loading`, `template`, `default`, `global-error`, `@slot`
+and `(.)` folders) are errors ([LUM5002](../errors/LUM5002.md)), so they never silently do
+nothing.
+
+### The rendering mode is explicit, per route
+
+Next.js decides between static and dynamic rendering from what a page reads, and caching rules
+decide how long results live. In Lumiose a route says
 `export const mode = "static" | "server" | "spa"` (or inherits it from a layout or the project).
 `static` is the default: built once, served as files. A `static` page that reads the request fails
 the build ([LUM5001](../errors/LUM5001.md)) instead of turning dynamic
 ([Rendering modes](../concepts/rendering-modes.md)).
 
-**No RPC.** Server actions are functions the client calls. Lumiose has form actions: a page exports
+### No RPC
+
+Server actions are functions the client calls. Lumiose has form actions: a page exports
 `actions`, a `<form method="post" action="?/name">` posts to one and works without JavaScript, and
 `submit()` posts it from an island. Other calls from the browser go to endpoints (`route.ts`)
 ([Data and actions](../concepts/data-and-actions.md)).
 
-**Caching is per request and per page.** `fetchJSON()` and `query()` dedupe the same URL or key
-within a request on the server, and cache it for the page in the browser (stale-while-revalidate).
-There is no data cache shared across requests and no incremental regeneration: for fresh-but-cheap
-pages, render on the `server` and send `cache-control` headers to a CDN.
+### Caching is per request and per page
+
+`fetchJSON()` and `query()` dedupe the same URL or key within a request on the server, and cache
+it for the page in the browser (stale-while-revalidate). There is no data cache shared across
+requests and no incremental regeneration: for fresh-but-cheap pages, render on the `server` and
+send `cache-control` headers to a CDN.
 
 ## From Next.js to Lumiose
+
+### A server action
+
+```tsx
+// app/subscribe/page.tsx
+import { redirect } from "next/navigation";
+import { saveEmail } from "@/lib/emails";
+
+export default function Subscribe() {
+  async function subscribe(formData: FormData) {
+    "use server";
+    await saveEmail(String(formData.get("email") ?? ""));
+    redirect("/");
+  }
+  return (
+    <form action={subscribe}>
+      <input name="email" type="email" />
+      <button>Subscribe</button>
+    </form>
+  );
+}
+```
+
+```stsx check file=routes/subscribe/page.stsx
+// src/routes/subscribe/page.stsx
+import { redirect, type ActionContext } from "lumiose";
+
+const emails: string[] = []; // a database in a real app
+
+export const mode = "server";
+
+export const actions = {
+  async subscribe(ctx: ActionContext<"/subscribe">) {
+    const data = await ctx.formData();
+    emails.push(String(data.get("email") ?? ""));
+    redirect("/");
+  },
+};
+
+export default function Subscribe() {
+  return (
+    <form method="post" action="?/subscribe">
+      <input name="email" type="email" />
+      <button>Subscribe</button>
+    </form>
+  );
+}
+```
+
+The action is an export of the page, and the form names it in its `action` attribute. It works
+without JavaScript.
+
+### Metadata
+
+```tsx
+// app/team/page.tsx
+export const metadata = {
+  title: "Team",
+  description: "Who we are.",
+};
+
+export default function Team() {
+  return <h1>Team</h1>;
+}
+```
+
+```tsx check file=routes/team/page.tsx
+// src/routes/team/page.tsx
+import { Meta, Title } from "lumiose";
+
+export default function Team() {
+  return (
+    <main>
+      <Title>Team</Title>
+      <Meta name="description" content="Who we are." />
+      <h1>Team</h1>
+    </main>
+  );
+}
+```
+
+`metadata` and `generateMetadata()` become `<Title>`, `<Meta>` and `<Head>`, rendered by the page
+or a layout. The deepest wins.
 
 ### Routes and files
 
@@ -148,8 +280,9 @@ pages, render on the `server` and send `cache-control` headers to a CDN.
 
 ## Example
 
-A blog post in Next.js: a server component, a streamed part, a client component and a server
-action.
+A blog post: a server component, a streamed part, a client component and a server action. First
+the Next.js page, then the same page in Lumiose. The data module stays on the server, and the
+interactive part has no directive in its file.
 
 ```tsx
 // app/articles/[slug]/page.tsx
@@ -202,8 +335,6 @@ async function Comments({ slug }: { slug: string }) {
 }
 ```
 
-The same page in Lumiose. The data module stays on the server:
-
 ```ts check file=lib/articles.server.ts
 // src/lib/articles.server.ts: a database in a real app
 interface Comment {
@@ -229,8 +360,6 @@ export async function addComment(slug: string, text: string) {
 }
 ```
 
-The interactive part has no directive in its file:
-
 ```tsx check file=components/Reactions.tsx
 // src/components/Reactions.tsx
 import { signal } from "lumiose";
@@ -241,9 +370,7 @@ export function Reactions(props: { initial: number }) {
 }
 ```
 
-The page renders on the server per request, sends its shell (title, article, form) at once and
-streams the comments in. `client:visible` hydrates the button when it scrolls into view. The form
-posts to the `comment` action and works without JavaScript:
+### The page
 
 ```stsx check file=routes/articles/[slug]/page.stsx
 // src/routes/articles/[slug]/page.stsx
@@ -292,8 +419,14 @@ export default async function Article({ params }: PageProps<"/articles/[slug]">)
 }
 ```
 
-A static page per slug, where Next.js uses `generateStaticParams()` and `generateMetadata()`.
-`static` is the default mode, so the page needs no `mode` export:
+The page renders on the server per request, sends its shell (title, article, form) at once and
+streams the comments in. `client:visible` hydrates the button when it scrolls into view. The form
+posts to the `comment` action and works without JavaScript.
+
+### A static page per slug
+
+Where Next.js uses `generateStaticParams()` and `generateMetadata()`. `static` is the default
+mode, so the page needs no `mode` export.
 
 ```tsx check file=routes/handbook/[slug]/page.tsx
 // src/routes/handbook/[slug]/page.tsx: built once per slug, served as files
@@ -324,7 +457,9 @@ export default async function Chapter({ params }: PageProps<"/handbook/[slug]">)
 }
 ```
 
-`app/sitemap.ts` becomes an endpoint, written to `dist/client/sitemap.xml` at build time:
+### A sitemap
+
+`app/sitemap.ts` becomes an endpoint, written to `dist/client/sitemap.xml` at build time.
 
 ```ts check file=routes/sitemap.xml/route.ts
 // src/routes/sitemap.xml/route.ts
@@ -343,8 +478,10 @@ export const GET: Endpoint<"/sitemap.xml"> = () => {
 };
 ```
 
+### Middleware
+
 `middleware.ts` (`proxy.ts`) becomes `src/middleware.ts` for what runs on every request, and a
-`middleware.ts` in a route folder for what a `matcher` scoped:
+`middleware.ts` in a route folder for what a `matcher` scoped.
 
 ```ts check
 // src/middleware.ts
