@@ -2,72 +2,46 @@
 
 > Install the Lumiose VS Code extension, run the Lumiose language server in Neovim and Helix (file type, root markers, the server command), what works in Zed today, and how GitHub highlights `.stsx` files.
 
-Every editor runs the same Lumiose language server: TypeScript for `.ts`, `.tsx` and `.stsx` files,
-CSS features in `<style>` blocks, class and custom property completion, the compiler's `LUMxxxx`
-diagnostics and hovers that explain how each JSX expression runs. VS Code (and its forks) gets it
-from the Lumiose extension, which bundles the server; other editors start it over the Language
-Server Protocol.
-
 ## VS Code
-
-Install **Lumiose** (`lumiose.lumiose-vscode`) from the VS Code Marketplace: search for Lumiose in
-the Extensions view, or run
 
 ```sh
 code --install-extension lumiose.lumiose-vscode
 ```
 
-In Cursor, VSCodium and other forks, download the `.vsix` file of your platform (`darwin-arm64`,
-`darwin-x64`, `linux-x64`, `linux-arm64` or `win32-x64`) from the
-[latest GitHub release](https://github.com/itsjavi/lumiose/releases/latest) and run **Extensions:
-Install from VSIX…** from the command palette.
-
-The extension starts in workspaces with `.stsx` files or the `lumiose` package, and:
+Or search for **Lumiose** (`lumiose.lumiose-vscode`) in the Extensions view. The extension adds
+the `stsx` language and bundles the Lumiose language server, which every editor runs
+([what it adds](#what-the-server-adds)). It starts in workspaces with `.stsx` files or the
+`lumiose` package, and:
 
 - **Needs the project's TypeScript 7** (`typescript@^7`) for type features; without it, `.stsx`
   files keep highlighting and CSS features, and the **Lumiose Language Server** output channel says
   how to install it.
 - **Runs the server bundled with it**, on VS Code's own Node.js, unless the project has
-  `@lumiose/language-server` installed: then it runs that one, so the server matches your
-  `lumiose` version.
+  `@lumiose/language-server` installed: then it runs that one. Install it as a dev dependency
+  only to pin the server to your `lumiose` version.
 - **Serves `.ts` and `.tsx` files too** ("takeover", so types flow between them and `.stsx` files)
   once VS Code's built-in TypeScript extension is disabled for the workspace. It offers to do that
   in Lumiose projects; **Lumiose: Set Up Takeover Mode** shows the steps (in the Extensions view,
   **TypeScript and JavaScript Language Features**, **Disable (Workspace)**, then reload the window).
   With `lumiose.takeover` set to `off`, it serves `.stsx` files only.
 
-The extension adds the `stsx` language and runs the Lumiose language server, which proxies
-TypeScript for `.ts`, `.tsx` and `.stsx` files and adds:
-
-- CSS features inside `<style>` blocks;
-- class completion, definitions and rename that follow placement: the blocks enclosing the
-  cursor (never a sibling subtree's), the file's, and the project's global classes (`<style global>`
-  blocks and imported global `.css` files);
-- `var(--…)` completion of every custom property declared in the project, with its value;
-- descriptions of `<style global>` and of Lumiose attributes (`client:*`, `bind:*`, `on:*`, `attach`,
-  `ref`, `key`), and the snippets `comp`, `acomp`, `route` and `island`;
-- the compiler's diagnostics, with the project-wide ones (`LUM4003` server-only imports in the
-  client graph, `LUM3012` unread custom properties) that follow the other files' edits;
-- hovers on JSX expressions with their execution contract: tracked (re-runs when the signals it
-  reads change, which it lists), once, untracked or deferred, and the runtime helper that runs it.
-
-Install `@lumiose/language-server` as a dev dependency only to pin the server to your `lumiose`
-version. See [Compiler and diagnostics](../concepts/compiler.md).
-
 **Lumiose: Restart Language Server** restarts it, and the extension's
 [README](https://github.com/itsjavi/lumiose/tree/main/packages/vscode#readme) lists its settings
 and how to build it from source.
 
-## Set up the server
+> **Forks:** in Cursor, VSCodium and other forks, download the `.vsix` file of your platform
+> (`darwin-arm64`, `darwin-x64`, `linux-x64`, `linux-arm64` or `win32-x64`) from the
+> [latest GitHub release](https://github.com/itsjavi/lumiose/releases/latest) and run
+> **Extensions: Install from VSIX…** from the command palette.
 
-Other editors run the server from the project. Install it there, so it matches your `lumiose`
-version:
+## Set up the server
 
 ```sh
 pnpm add -D @lumiose/language-server
 ```
 
-Every editor needs the same four things:
+Editors other than VS Code start the server over the Language Server Protocol, from the project,
+so it matches your `lumiose` version. Each needs the same four things:
 
 | Setting      | Value                                                                                         |
 | ------------ | --------------------------------------------------------------------------------------------- |
@@ -106,8 +80,8 @@ vim.lsp.config("lumiose", {
 vim.lsp.enable("lumiose")
 ```
 
-Do not enable `ts_ls` or `vtsls` for the same projects (with nvim-lspconfig, leave them out of
-`vim.lsp.enable`). `:checkhealth vim.lsp` shows the attached client.
+> **Check:** `:checkhealth vim.lsp` shows the attached client. Do not enable `ts_ls` or `vtsls`
+> for the same projects (with nvim-lspconfig, leave them out of `vim.lsp.enable`).
 
 ## Helix
 
@@ -142,31 +116,49 @@ roots = ["vite.config.ts", "package.json"]
 language-servers = ["lumiose"]
 ```
 
-The `stsx` language reuses the TSX grammar, and its queries come from TSX: create
-`~/.config/helix/runtime/queries/stsx/highlights.scm` with the single line `; inherits: tsx`, and
-the same for `indents.scm`, `injections.scm`, `locals.scm` and `textobjects.scm`. To keep the
-TypeScript override to Lumiose projects, put the `language-server` and `typescript`/`tsx` entries
-in the project's `.helix/languages.toml` instead. `hx --health stsx` checks the setup.
+> **Queries:** the `stsx` language reuses the TSX grammar, and its queries come from TSX: create
+> `~/.config/helix/runtime/queries/stsx/highlights.scm` with the single line `; inherits: tsx`,
+> and the same for `indents.scm`, `injections.scm`, `locals.scm` and `textobjects.scm`.
 
-## Zed
-
-Zed runs language servers only through its extensions, and this version of Lumiose has no Zed
-extension, so the server's features are not available in Zed. Mapping `.stsx` to Zed's TSX
-language (`"file_types": { "TSX": ["stsx"] }`) colors the files, but Zed's TypeScript server then
-reports the CSS of every `<style>` block as TSX syntax errors. Use VS Code, Neovim or Helix for
-`.stsx` files, and run `lumiose check` for the diagnostics.
-
-## Other editors
-
-Any editor with an LSP client works with the settings in [Set up the server](#set-up-the-server).
-JetBrains IDEs have no Lumiose plugin.
+> **Check:** `hx --health stsx` checks the setup. To keep the TypeScript override to Lumiose
+> projects, put the `language-server` and `typescript`/`tsx` entries in the project's
+> `.helix/languages.toml` instead.
 
 ## GitHub
-
-GitHub highlights `.stsx` files as TSX through `.gitattributes`:
 
 ```
 *.stsx linguist-language=TSX
 ```
 
-`create-lumiose` writes this file, and `lumiose agents init` adds the line to an existing project.
+This line in `.gitattributes` makes GitHub highlight `.stsx` files as TSX. `create-lumiose` writes
+the file, and `lumiose agents init` adds the line to an existing project.
+
+## Zed and other editors
+
+- **Zed** runs language servers only through its extensions, and this version of Lumiose has no
+  Zed extension, so the server's features are not available in Zed. Mapping `.stsx` to Zed's TSX
+  language (`"file_types": { "TSX": ["stsx"] }`) colors the files, but Zed's TypeScript server then
+  reports the CSS of every `<style>` block as TSX syntax errors. Use VS Code, Neovim or Helix for
+  `.stsx` files, and run `lumiose check` for the diagnostics.
+- **Any editor with an LSP client** works with the settings in
+  [Set up the server](#set-up-the-server).
+- **JetBrains IDEs** have no Lumiose plugin.
+
+## What the server adds
+
+Every editor runs the same Lumiose language server. It proxies TypeScript for `.ts`, `.tsx` and
+`.stsx` files and adds:
+
+- CSS features inside `<style>` blocks;
+- class completion, definitions and rename that follow placement: the blocks enclosing the
+  cursor (never a sibling subtree's), the file's, and the project's global classes (`<style global>`
+  blocks and imported global `.css` files);
+- `var(--…)` completion of every custom property declared in the project, with its value;
+- descriptions of `<style global>` and of Lumiose attributes (`client:*`, `bind:*`, `on:*`, `attach`,
+  `ref`, `key`), and the snippets `comp`, `acomp`, `route` and `island`;
+- the compiler's `LUMxxxx` diagnostics, with the project-wide ones (`LUM4003` server-only imports
+  in the client graph, `LUM3012` unread custom properties) that follow the other files' edits;
+- hovers on JSX expressions with their execution contract: tracked (re-runs when the signals it
+  reads change, which it lists), once, untracked or deferred, and the runtime helper that runs it.
+
+See [Compiler and diagnostics](../concepts/compiler.md).
