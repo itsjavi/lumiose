@@ -435,13 +435,12 @@ export default function Home() {
     border-inline-start: 1px solid $color.border;
   }
   .proof strong {
-    color: #fff4e3;
+    color: $color.text;
     font-size: clamp(1.6rem, 1.2rem + 1.4vw, 2.4rem);
     font-weight: $weight.bold;
     font-variant-numeric: tabular-nums;
     line-height: 1.1;
     letter-spacing: -0.03em;
-    text-shadow: 0 0 24px rgb(255 191 107 / 0.55);
   }
   .proof span {
     color: $color.muted;

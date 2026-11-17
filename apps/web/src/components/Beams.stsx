@@ -129,6 +129,7 @@ export function BeamsPause() {
     gap: $space.xs;
     /* A pointer target of at least 24 px (WCAG 2.5.8). */
     min-block-size: 1.5rem;
+    margin-inline-start: $space.md;
     cursor: pointer;
   }
   input {
