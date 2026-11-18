@@ -3,7 +3,7 @@
 // customizable select expects, that it works without JavaScript, the sync with a signal in an
 // island, layers (a dialog), and WCAG 2.2 AA with the default theme (doc-9 sections 7 and 17).
 import { expect, test, type Locator, type Page } from "@playwright/test";
-import { axe, focusRing, lastNavLink, SCHEMES, smallTargets } from "./a11y.ts";
+import { axe, focusFill, focusRing, lastNavLink, SCHEMES, smallTargets } from "./a11y.ts";
 
 /** Puts the whole page right to left. */
 const rtl = (page: Page) => page.evaluate(() => (document.documentElement.dir = "rtl"));
@@ -247,7 +247,8 @@ test.describe("WCAG 2.2 AA with the default theme (doc-9 section 17)", () => {
     expect(await focusRing(page)).toBe("2px solid");
     await page.keyboard.press(" ");
     await expect(option("Pear")).toBeFocused();
-    expect(await focusRing(page)).toBe("2px solid");
+    // The focused option's inverted fill is its focus indicator, with no outline on top (TASK-619).
+    expect(await focusFill(option("Pear"))).toBe("fill");
     await page.keyboard.press("Escape");
     await expect(select).toBeFocused();
   });

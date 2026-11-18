@@ -309,7 +309,7 @@ It styles a few classes, which you put on the parts through their `class` prop:
 | `lu-combobox`        | `Combobox.Root`, `Autocomplete.Root`           | Lays out the field (label, chips, input, buttons) and styles the popup                      |
 | `lu-select`          | `Select.Root`                                  | Makes it a customizable select and styles the control and the picker                        |
 | `lu-field`           | `Field.Root`                                   | Stacks the label, control, description and errors; errors in a medium weight                |
-| `lu-input`           | `Input`, `Field.Control`                       | A text field with a focus ring and an edge twice as thick when invalid                      |
+| `lu-input`           | `Input`, `Field.Control`                       | A text field; focused or invalid, its edge is twice as thick                                |
 | `lu-fieldset`        | `Fieldset.Root`, `CheckboxGroup`, `RadioGroup` | The legend and the items in a column                                                        |
 | `lu-checkbox`        | `Checkbox.Root`                                | An 18px box in a 24px target, a ✓ or a dash                                                 |
 | `lu-radio`           | `Radio.Root`                                   | An 18px circle in a 24px target, a thick ring when checked                                  |
@@ -324,7 +324,7 @@ It styles a few classes, which you put on the parts through their `class` prop:
 | `lu-meter`           | `Meter.Root`                                   | The label and value above a bar                                                             |
 | `lu-slider`          | `Slider.Root`                                  | The label and value above the track, the indicator and 24px thumbs                          |
 | `lu-number-field`    | `NumberField.Root`                             | The label above one bordered group: the input between its buttons                           |
-| `lu-otp-field`       | `OTPField.Root`                                | A box per character, the caret's box ringed while focused                                   |
+| `lu-otp-field`       | `OTPField.Root`                                | A box per character, the caret's box with a 2px edge while focused                          |
 | `lu-preview-card`    | `PreviewCard.Popup`                            | A surface like a popover's, with a fade                                                     |
 | `lu-toolbar`         | `Toolbar.Root`                                 | A bordered row (or column), separators across it, links as tall as buttons                  |
 | `lu-scroll-area`     | `ScrollArea.Root`                              | A bordered box; 10px scrollbars shown on hover, scroll or focus                             |
@@ -402,11 +402,50 @@ The theme meets WCAG 2.2 AA in light and dark, in every state:
 | Secondary text on `--lu-muted` (an avatar's initials)      | 6.1:1  | 6.9:1  | 4.5:1 |
 | The scroll thumb on the page                               | 7:1    | 8.3:1  | 3:1   |
 
-Focus rings are `--lu-ring`, the text colour. On an inverted item (a highlighted menu item or
-option, the open menu of a menubar) the ring is drawn inside the item in `--lu-primary-foreground`,
-21:1 against its fill. Disabled controls are dimmed; WCAG asks no contrast of them. `--lu-border`
-is for decoration, such as a separator: it is too light to outline a control. Keep those ratios
-when you change the colours.
+Disabled controls are dimmed; WCAG asks no contrast of them. `--lu-border` is for decoration, such
+as a separator: it is too light to outline a control. Keep those ratios when you change the
+colours.
+
+### One frame per control
+
+No control or state draws a rectangle inside another. The focus indicator, always in `--lu-ring`
+(the text colour, 21:1 on the page) or as an inversion, depends on the control:
+
+| Control                                                                                                          | Focus indicator                                                                        |
+| ---------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| Text controls: `lu-input`, the combobox input, `lu-select`, the number field's group, an OTP slot                | The control's own edge, 2px thick instead of 1px: a ring drawn over the border         |
+| Highlighted items: a combobox option, a menu item, a select option, the open menu of a menubar, a content's link | The inverted fill alone (`--lu-primary`), 21:1 against the items around it: no outline |
+| Buttons, toggles, switches, tabs, summaries, slider thumbs, a toolbar's links                                    | A 2px ring, 2px outside the control                                                    |
+| Checkboxes and radios                                                                                            | A 2px ring around the 24px target                                                      |
+| Items inside a frame: a menubar's closed trigger, a disabled menu item, a scroll area's viewport                 | A 2px ring inside the item                                                             |
+
+The ring of a text control replaces its border (`outline-offset: -1px`), so nothing moves and no
+second rectangle appears around the field. An invalid field's edge is 2px too, drawn outwards;
+focused, it is 3px. Popups have one hairline edge in their text colour. The items of a menu, a
+listbox or a select's picker reach that edge, so the highlighted one is a band across the popup
+and not a box inside it. The popup of a combobox and the picker of a select share an edge with
+their control (`--lu-side-offset: -1px`, the two borders on the same pixel), which reads as one
+frame; a menu, a popover and a navigation menu's content keep a 4px gap to their trigger. In
+forced colours the inverted fill is `Highlight` with `HighlightText`, and rings are system
+colours.
+
+To get the previous look back (a ring 2px outside a field, a padded popup with a gap), outside
+layers:
+
+```css
+.lu-input:focus-visible,
+.lu-select:focus-visible,
+.lu-combobox > input:focus-visible {
+  outline-offset: 2px;
+}
+.lu-menu,
+.lu-combobox [popover] {
+  padding: 0.25rem;
+}
+.lu-combobox [popover] {
+  --lu-side-offset: 0.25rem;
+}
+```
 
 ### Changes in the black and white theme
 
@@ -2119,10 +2158,11 @@ arrive while the user types; a chosen value keeps its label after its option is 
 
 **With the default theme**, put `lu-combobox` on `Root`. It turns the root into the field's grid
 (the label, the chips, then the input with the trigger and clear buttons over its inline end, with
-a glyph when they are empty), and styles the popup, the options (highlighted, selected with a ✓,
-disabled), the group labels, the chips and the empty and status messages. Its colours come from the
-theme's `--lu-` properties ([UI components](README.md#the-default-theme)), and it sets a 4px gap
-with `--lu-side-offset`.
+a glyph when they are empty), and styles the popup, the options (the highlighted one inverted from edge to edge, with no
+outline; selected with a ✓; disabled), the group labels, the chips and the empty and status
+messages. The focused input's edge is twice as thick, and the popup shares that edge: the theme
+sets `--lu-side-offset` to `-1px`, so the two borders lie on each other. Its colours come from the
+theme's `--lu-` properties ([UI components](README.md#the-default-theme)).
 
 **With your own CSS**, style the parts through `class` and their state:
 
@@ -3531,8 +3571,9 @@ export function BookSearch() {
 
 ## Styling
 
-**With the default theme**, put `lu-input` on it: a bordered field, a muted placeholder, a focus
-ring, an edge twice as thick with `aria-invalid="true"`.
+**With the default theme**, put `lu-input` on it: a bordered field, a muted placeholder, and an
+edge twice as thick while it has focus (the focus ring, drawn over the border) or with
+`aria-invalid="true"`.
 
 **With your own CSS**, style the `input` and its state: `:focus-visible`, `:disabled`,
 `:read-only`, `:placeholder-shown`, `:user-invalid`, `[aria-invalid="true"]`.
@@ -3786,8 +3827,8 @@ export function EditorMenu() {
 ## Styling
 
 **With the default theme**, put `lu-menu` on every `Popup`, submenus included, and `lu-button` on
-the trigger. `lu-menu` styles the surface, the items (highlighted, disabled, focus ring), the
-checkbox and radio marks, the arrow of a submenu trigger, the separators and the group labels, and
+the trigger. `lu-menu` styles the surface, the items (the highlighted one inverted from edge to edge, which is
+also its focus indicator; disabled ones dimmed), the checkbox and radio marks, the arrow of a submenu trigger, the separators and the group labels, and
 fades the popup in and out. Its colours come from the theme's `--lu-` properties
 ([UI components](README.md#the-default-theme)), and it sets a 4px gap with `--lu-side-offset`.
 
@@ -4069,7 +4110,8 @@ export function DocumentMenus() {
 ## Styling
 
 **With the default theme**, put `lu-menubar` on `Menubar` and `lu-menu` on each `Menu.Popup`: a
-bordered bar of the triggers, the one whose menu is open inverted, with a focus ring.
+bordered bar of the triggers, the one whose menu is open inverted (its focus indicator too), the
+others with a focus ring inside them.
 
 **With your own CSS**, style the bar through `class` and `[data-orientation]`, the items as
 `lu-menubar > lu-menu > [role="menuitem"]` with `[aria-expanded="true"]` for the open one, and
@@ -4406,7 +4448,7 @@ export function SiteNavigation() {
 
 **With the default theme**, put `lu-navigation-menu` on `Root`: the list in a row (a column when
 vertical), the triggers and links as 36px targets, the current page underlined (with a small square in
-`--lu-accent` before it, a decoration), an open trigger filled with its icon turned, and each content a surface of links that fades and slides in.
+`--lu-accent` before it, a decoration), an open trigger filled with its icon turned, and each content a surface of links (the hovered or focused one inverted) that fades and slides in.
 
 **With your own CSS**, style the parts through `class`, the triggers' `[aria-expanded="true"]`,
 links' `[aria-current="page"]`, and the contents' `:popover-open`, `[data-side]` and
@@ -4612,8 +4654,8 @@ export function PriceField() {
 ## Styling
 
 **With the default theme**, put `lu-number-field` on `Root`: the label above one bordered group,
-the input centred between two 36px buttons that dim at the ends of the range, and a focus ring
-around the whole group.
+the input centred between two 36px buttons that dim at the ends of the range, and the whole group's
+edge twice as thick while the input has focus.
 
 **With your own CSS**, style the parts through `class`, the input's `:focus-visible`, the buttons'
 `:disabled` and `[data-action="increment"]` / `[data-action="decrement"]`, the scrub area's
@@ -4781,7 +4823,7 @@ export function VerifyCode() {
 ## Styling
 
 **With the default theme**, put `lu-otp-field` on `Root`: a 2.5rem box per character (they shrink
-on narrow screens), the caret's box ringed while the field has focus with a blinking caret in it
+on narrow screens), the caret's box with an edge twice as thick while the field has focus and a blinking caret in it
 (still where motion is reduced), and a short dash for a separator.
 
 **With your own CSS**, style the slots through `[data-slot]`, `[data-filled]` and `[data-active]`,
@@ -5788,8 +5830,9 @@ export function ThemePicker() {
 ## Styling
 
 **With the default theme**, put `lu-select` on `Root`. It makes the select a customizable select
-and styles the control, the picker, the options (hover and keyboard focus, disabled), the groups and
-the separators; in browsers without customizable select it styles the closed control. Its colours
+and styles the control, the picker, the options (inverted on hover and keyboard focus, with no outline;
+disabled), the groups and the separators; the focused control's edge is twice as thick and the
+picker shares it; in browsers without customizable select it styles the closed control. Its colours
 come from the theme's `--lu-` properties ([UI components](README.md#the-default-theme)).
 
 **With your own CSS**, opt in to customizable select and style the select's parts and states:

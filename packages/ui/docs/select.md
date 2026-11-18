@@ -145,8 +145,9 @@ export function ThemePicker() {
 ## Styling
 
 **With the default theme**, put `lu-select` on `Root`. It makes the select a customizable select
-and styles the control, the picker, the options (hover and keyboard focus, disabled), the groups and
-the separators; in browsers without customizable select it styles the closed control. Its colours
+and styles the control, the picker, the options (inverted on hover and keyboard focus, with no outline;
+disabled), the groups and the separators; the focused control's edge is twice as thick and the
+picker shares it; in browsers without customizable select it styles the closed control. Its colours
 come from the theme's `--lu-` properties ([UI components](README.md#the-default-theme)).
 
 **With your own CSS**, opt in to customizable select and style the select's parts and states:

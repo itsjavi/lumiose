@@ -6,6 +6,7 @@ import { expect, test, type Locator, type Page } from "@playwright/test";
 import {
   axe,
   clipped,
+  focusFill,
   focusRing,
   lastNavLink,
   SCHEMES,
@@ -414,7 +415,12 @@ test.describe("pointer", () => {
     await expect(share).toBeVisible();
     const [s, st] = [(await share.boundingBox())!, (await item("Share").boundingBox())!];
     expect(s.x).toBeGreaterThan(st.x + st.width - 8);
-    expect(Math.abs(s.y + 5 - st.y)).toBeLessThanOrEqual(1);
+    // Its first item lines up with its trigger: the items reach the popup's edge, inside its 1px
+    // border (TASK-619).
+    expect(Math.abs(s.y + 1 - st.y)).toBeLessThanOrEqual(1);
+    expect(
+      Math.abs((await share.getByRole("menuitem").first().boundingBox())!.y - st.y),
+    ).toBeLessThanOrEqual(1);
 
     // side="top" align="end" sideOffset={8}
     await page.keyboard.press("Escape");
@@ -644,7 +650,9 @@ test.describe("WCAG 2.2 AA with the default theme (doc-9 section 17)", () => {
     expect(await focusRing(page)).toBe("2px solid");
     await page.keyboard.press("Enter");
     await expect(item("Rename")).toBeFocused();
-    expect(await focusRing(page)).toBe("2px solid");
+    // One frame (TASK-619): the focused item's inverted fill is its focus indicator, at 3:1 or
+    // more against the items around it, with no outline on top.
+    expect(await focusFill(item("Rename"))).toBe("fill");
   });
 
   test("items are at least 24 by 24 CSS pixels (2.5.8)", async ({ page }) => {

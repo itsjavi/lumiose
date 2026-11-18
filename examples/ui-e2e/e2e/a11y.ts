@@ -169,6 +169,62 @@ export function focusRing(page: Page): Promise<string> {
 }
 
 /**
+ * WCAG 2.4.7 and 1.4.11 for an item whose focus indicator is its inverted fill, with no outline on
+ * top (the default theme's highlighted options and menu items, TASK-619): "fill" when `item` has an
+ * opaque background at 3:1 or more against what is around it and no outline. A weaker fill adds
+ * `", contrast <ratio>:1"`, an outline adds `", outlined"`, and no fill is "none".
+ */
+export function focusFill(item: Locator): Promise<string> {
+  return item.evaluate((element) => {
+    const canvas = document.createElement("canvas");
+    canvas.width = canvas.height = 1;
+    const context = canvas.getContext("2d", { willReadFrequently: true })!;
+    const rgba = (color: string): [number, number, number, number] => {
+      context.clearRect(0, 0, 1, 1);
+      context.fillStyle = "#000";
+      context.fillStyle = color;
+      context.fillRect(0, 0, 1, 1);
+      const [r, g, b, a] = context.getImageData(0, 0, 1, 1).data;
+      return [r!, g!, b!, a! / 255];
+    };
+    const style = getComputedStyle(element);
+    const fill = rgba(style.backgroundColor);
+    if (fill[3] < 1) return "none";
+    // What is around the item: the backgrounds behind it, composited.
+    const layers: [number, number, number, number][] = [];
+    for (let node = element.parentElement; node; node = node.parentElement) {
+      const layer = rgba(getComputedStyle(node).backgroundColor);
+      if (layer[3] > 0) layers.push(layer);
+      if (layer[3] >= 1) break;
+    }
+    let around: [number, number, number] = matchMedia("(prefers-color-scheme: dark)").matches
+      ? [0, 0, 0]
+      : [255, 255, 255];
+    for (const [r, g, b, a] of layers.reverse()) {
+      around = [
+        r * a + around[0] * (1 - a),
+        g * a + around[1] * (1 - a),
+        b * a + around[2] * (1 - a),
+      ];
+    }
+    const luminance = (channels: number[]) => {
+      const [x, y, z] = channels.map((value) => {
+        const c = value / 255;
+        return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+      });
+      return 0.2126 * x! + 0.7152 * y! + 0.0722 * z!;
+    };
+    const [light, dark] = [luminance(fill.slice(0, 3)), luminance(around)].sort((p, q) => q - p);
+    const contrast = (light! + 0.05) / (dark! + 0.05);
+    return (
+      "fill" +
+      (contrast >= 3 ? "" : `, contrast ${contrast.toFixed(2)}:1`) +
+      (style.outlineStyle === "none" ? "" : ", outlined")
+    );
+  });
+}
+
+/**
  * Forced colors (Windows High Contrast): the controls under `scope` whose boundary disappears,
  * as `tag "text"` (TASK-462). The browser paints every background as Canvas there, keeping its
  * alpha, and keeps borders and outlines in system colours: a control drawn by its background alone

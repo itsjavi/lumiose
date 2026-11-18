@@ -39,7 +39,7 @@ It styles a few classes, which you put on the parts through their `class` prop:
 | `lu-combobox`        | `Combobox.Root`, `Autocomplete.Root`           | Lays out the field (label, chips, input, buttons) and styles the popup                      |
 | `lu-select`          | `Select.Root`                                  | Makes it a customizable select and styles the control and the picker                        |
 | `lu-field`           | `Field.Root`                                   | Stacks the label, control, description and errors; errors in a medium weight                |
-| `lu-input`           | `Input`, `Field.Control`                       | A text field with a focus ring and an edge twice as thick when invalid                      |
+| `lu-input`           | `Input`, `Field.Control`                       | A text field; focused or invalid, its edge is twice as thick                                |
 | `lu-fieldset`        | `Fieldset.Root`, `CheckboxGroup`, `RadioGroup` | The legend and the items in a column                                                        |
 | `lu-checkbox`        | `Checkbox.Root`                                | An 18px box in a 24px target, a ✓ or a dash                                                 |
 | `lu-radio`           | `Radio.Root`                                   | An 18px circle in a 24px target, a thick ring when checked                                  |
@@ -54,7 +54,7 @@ It styles a few classes, which you put on the parts through their `class` prop:
 | `lu-meter`           | `Meter.Root`                                   | The label and value above a bar                                                             |
 | `lu-slider`          | `Slider.Root`                                  | The label and value above the track, the indicator and 24px thumbs                          |
 | `lu-number-field`    | `NumberField.Root`                             | The label above one bordered group: the input between its buttons                           |
-| `lu-otp-field`       | `OTPField.Root`                                | A box per character, the caret's box ringed while focused                                   |
+| `lu-otp-field`       | `OTPField.Root`                                | A box per character, the caret's box with a 2px edge while focused                          |
 | `lu-preview-card`    | `PreviewCard.Popup`                            | A surface like a popover's, with a fade                                                     |
 | `lu-toolbar`         | `Toolbar.Root`                                 | A bordered row (or column), separators across it, links as tall as buttons                  |
 | `lu-scroll-area`     | `ScrollArea.Root`                              | A bordered box; 10px scrollbars shown on hover, scroll or focus                             |
@@ -132,11 +132,50 @@ The theme meets WCAG 2.2 AA in light and dark, in every state:
 | Secondary text on `--lu-muted` (an avatar's initials)      | 6.1:1  | 6.9:1  | 4.5:1 |
 | The scroll thumb on the page                               | 7:1    | 8.3:1  | 3:1   |
 
-Focus rings are `--lu-ring`, the text colour. On an inverted item (a highlighted menu item or
-option, the open menu of a menubar) the ring is drawn inside the item in `--lu-primary-foreground`,
-21:1 against its fill. Disabled controls are dimmed; WCAG asks no contrast of them. `--lu-border`
-is for decoration, such as a separator: it is too light to outline a control. Keep those ratios
-when you change the colours.
+Disabled controls are dimmed; WCAG asks no contrast of them. `--lu-border` is for decoration, such
+as a separator: it is too light to outline a control. Keep those ratios when you change the
+colours.
+
+### One frame per control
+
+No control or state draws a rectangle inside another. The focus indicator, always in `--lu-ring`
+(the text colour, 21:1 on the page) or as an inversion, depends on the control:
+
+| Control                                                                                                          | Focus indicator                                                                        |
+| ---------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| Text controls: `lu-input`, the combobox input, `lu-select`, the number field's group, an OTP slot                | The control's own edge, 2px thick instead of 1px: a ring drawn over the border         |
+| Highlighted items: a combobox option, a menu item, a select option, the open menu of a menubar, a content's link | The inverted fill alone (`--lu-primary`), 21:1 against the items around it: no outline |
+| Buttons, toggles, switches, tabs, summaries, slider thumbs, a toolbar's links                                    | A 2px ring, 2px outside the control                                                    |
+| Checkboxes and radios                                                                                            | A 2px ring around the 24px target                                                      |
+| Items inside a frame: a menubar's closed trigger, a disabled menu item, a scroll area's viewport                 | A 2px ring inside the item                                                             |
+
+The ring of a text control replaces its border (`outline-offset: -1px`), so nothing moves and no
+second rectangle appears around the field. An invalid field's edge is 2px too, drawn outwards;
+focused, it is 3px. Popups have one hairline edge in their text colour. The items of a menu, a
+listbox or a select's picker reach that edge, so the highlighted one is a band across the popup
+and not a box inside it. The popup of a combobox and the picker of a select share an edge with
+their control (`--lu-side-offset: -1px`, the two borders on the same pixel), which reads as one
+frame; a menu, a popover and a navigation menu's content keep a 4px gap to their trigger. In
+forced colours the inverted fill is `Highlight` with `HighlightText`, and rings are system
+colours.
+
+To get the previous look back (a ring 2px outside a field, a padded popup with a gap), outside
+layers:
+
+```css
+.lu-input:focus-visible,
+.lu-select:focus-visible,
+.lu-combobox > input:focus-visible {
+  outline-offset: 2px;
+}
+.lu-menu,
+.lu-combobox [popover] {
+  padding: 0.25rem;
+}
+.lu-combobox [popover] {
+  --lu-side-offset: 0.25rem;
+}
+```
 
 ### Changes in the black and white theme
 

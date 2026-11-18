@@ -1,7 +1,7 @@
 // Forced colours (TASK-441 M38): a forced palette (Windows' contrast themes) drops shadows and
 // gradients and paints author backgrounds as Canvas. The default theme's state indicators stay
 // visible there: a switch's thumb and state, a pressed toggle, the selected tab, progress and
-// meter values, a slider's range, a scroll thumb and a highlighted menu item. Engines without the
+// meter values, a slider's range, a scroll thumb and the highlighted items. Engines without the
 // emulation skip.
 import { expect, test, type Locator, type Page } from "@playwright/test";
 import { focusRing, forcedColorsIssues } from "./a11y.ts";
@@ -96,6 +96,46 @@ test.describe("forced colours (TASK-441 M38)", () => {
     const rename = menu.getByRole("menuitem", { name: "Rename" });
     await expect(rename).toHaveAttribute("data-highlighted", "");
     expect(await css(rename, "background-color")).not.toBe(await css(menu, "background-color"));
+  });
+
+  // These items have no outline: their fill is the focus indicator (TASK-619), so it must survive
+  // a forced palette.
+  test("a highlighted option, a focused select option and an open menubar trigger show", async ({
+    page,
+  }) => {
+    await forced(page, "/combobox");
+    const input = page.getByRole("combobox").first();
+    await input.focus();
+    await page.keyboard.press("ArrowDown");
+    const option = page.locator(".lu-combobox [role=option][data-highlighted]").first();
+    await expect(option).toBeVisible();
+    expect(await css(option, "background-color")).not.toBe(
+      await css(
+        page.locator(".lu-combobox [role=option]:not([data-highlighted])").first(),
+        "background-color",
+      ),
+    );
+
+    await page.goto("/menubar");
+    const file = page.getByRole("menuitem", { name: "File" }).first();
+    await file.focus();
+    await page.keyboard.press("Enter");
+    await expect(file).toHaveAttribute("aria-expanded", "true");
+    expect(await css(file, "background-color")).not.toBe(
+      await css(page.getByRole("menuitem", { name: "Edit" }).first(), "background-color"),
+    );
+
+    await page.goto("/select");
+    if (await page.evaluate(() => CSS.supports("appearance", "base-select"))) {
+      const select = page.locator("select.lu-select").first();
+      await select.focus();
+      await page.keyboard.press(" ");
+      const focused = select.locator("option:focus");
+      await expect(focused).toHaveCount(1);
+      expect(await css(focused, "background-color")).not.toBe(
+        await css(select.locator("option:not(:focus):not(:disabled)").first(), "background-color"),
+      );
+    }
   });
 
   test("every themed control keeps a boundary, and focus a visible ring (TASK-462)", async ({

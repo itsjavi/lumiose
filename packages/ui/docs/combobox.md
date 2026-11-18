@@ -215,10 +215,11 @@ arrive while the user types; a chosen value keeps its label after its option is 
 
 **With the default theme**, put `lu-combobox` on `Root`. It turns the root into the field's grid
 (the label, the chips, then the input with the trigger and clear buttons over its inline end, with
-a glyph when they are empty), and styles the popup, the options (highlighted, selected with a ✓,
-disabled), the group labels, the chips and the empty and status messages. Its colours come from the
-theme's `--lu-` properties ([UI components](README.md#the-default-theme)), and it sets a 4px gap
-with `--lu-side-offset`.
+a glyph when they are empty), and styles the popup, the options (the highlighted one inverted from edge to edge, with no
+outline; selected with a ✓; disabled), the group labels, the chips and the empty and status
+messages. The focused input's edge is twice as thick, and the popup shares that edge: the theme
+sets `--lu-side-offset` to `-1px`, so the two borders lie on each other. Its colours come from the
+theme's `--lu-` properties ([UI components](README.md#the-default-theme)).
 
 **With your own CSS**, style the parts through `class` and their state:
 

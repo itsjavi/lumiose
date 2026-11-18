@@ -224,8 +224,8 @@ export function EditorMenu() {
 ## Styling
 
 **With the default theme**, put `lu-menu` on every `Popup`, submenus included, and `lu-button` on
-the trigger. `lu-menu` styles the surface, the items (highlighted, disabled, focus ring), the
-checkbox and radio marks, the arrow of a submenu trigger, the separators and the group labels, and
+the trigger. `lu-menu` styles the surface, the items (the highlighted one inverted from edge to edge, which is
+also its focus indicator; disabled ones dimmed), the checkbox and radio marks, the arrow of a submenu trigger, the separators and the group labels, and
 fades the popup in and out. Its colours come from the theme's `--lu-` properties
 ([UI components](README.md#the-default-theme)), and it sets a 4px gap with `--lu-side-offset`.
 

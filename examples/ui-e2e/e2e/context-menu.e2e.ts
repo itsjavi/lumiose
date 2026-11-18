@@ -3,7 +3,7 @@
 // and submenus inside it; dismissal and focus return; the disabled area; the sync with signals in
 // an island; and WCAG 2.2 AA with the default theme.
 import { expect, test, type Locator, type Page } from "@playwright/test";
-import { axe, focusRing, SCHEMES, smallTargets } from "./a11y.ts";
+import { axe, focusFill, SCHEMES, smallTargets } from "./a11y.ts";
 
 /** Puts the whole page right to left. */
 const rtl = (page: Page) => page.evaluate(() => (document.documentElement.dir = "rtl"));
@@ -227,7 +227,8 @@ test.describe("WCAG 2.2 AA with the default theme (doc-9 section 17)", () => {
     await area(page).focus();
     await page.keyboard.press("Shift+F10");
     await expect(item(page, "Rename")).toBeFocused();
-    expect(await focusRing(page)).not.toBe("none");
+    // The focused item's inverted fill is its focus indicator, with no outline on top (TASK-619).
+    expect(await focusFill(item(page, "Rename"))).toBe("fill");
     expect(await smallTargets(menu(page))).toEqual([]);
   });
 });

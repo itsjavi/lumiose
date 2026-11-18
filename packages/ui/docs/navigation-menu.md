@@ -180,7 +180,7 @@ export function SiteNavigation() {
 
 **With the default theme**, put `lu-navigation-menu` on `Root`: the list in a row (a column when
 vertical), the triggers and links as 36px targets, the current page underlined (with a small square in
-`--lu-accent` before it, a decoration), an open trigger filled with its icon turned, and each content a surface of links that fades and slides in.
+`--lu-accent` before it, a decoration), an open trigger filled with its icon turned, and each content a surface of links (the hovered or focused one inverted) that fades and slides in.
 
 **With your own CSS**, style the parts through `class`, the triggers' `[aria-expanded="true"]`,
 links' `[aria-current="page"]`, and the contents' `:popover-open`, `[data-side]` and

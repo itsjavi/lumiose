@@ -14,9 +14,16 @@
  * WCAG 2.2 AA (decision-62, doc-9 section 17), light / dark: text, control edges (--lu-input) and
  * the focus ring (--lu-ring) are the text colour, 21:1 on the page and 18.4 / 17.4 on --lu-muted,
  * the hover surface; muted text reaches 7.0 / 8.3 on the page and 6.1 / 6.9 on --lu-muted; a
- * filled button's text keeps 14.8:1 hovered and 8.5:1 pressed. On an inverted item the ring is
- * drawn inside it, in the colour of its text. --lu-border is for decoration only: it is not
- * enough to outline a control.
+ * filled button's text keeps 14.8:1 hovered and 8.5:1 pressed. --lu-border is for decoration only:
+ * it is not enough to outline a control.
+ *
+ * One frame per control (TASK-619), never a rectangle inside another. A text control's focus ring
+ * is its own edge drawn 2px thick (`outline-offset: -1px`, over the border: nothing moves). A
+ * highlighted item (an option, a menu item, an open menubar trigger) is the inverted fill alone,
+ * 21:1 against the items around it: that fill is its focus indicator, with no outline on top. A
+ * list of items fills its popup edge to edge, and the popup of a combobox or a select shares an
+ * edge with its control. Controls with no frame to reuse (buttons, toggles, switches, checkboxes,
+ * tabs, summaries) keep a ring 2px outside them.
  *
  *   .lu-button                          a button; data-variant="primary" | "destructive"
  *   .lu-dialog                          a Dialog.Popup: surface, backdrop, title (h2),
@@ -398,7 +405,8 @@
     min-inline-size: 8rem;
     max-block-size: min(24rem, var(--lu-available-height, 100dvh - 1rem));
     overflow-y: auto;
-    padding: 0.25rem;
+    /* No padding: the items reach the edge, so the highlighted one is not a box inside a box. */
+    padding: 0;
     border: 1px solid var(--lu-popover-foreground);
     border-radius: calc(var(--lu-radius) - 2px);
     background: var(--lu-popover);
@@ -412,13 +420,13 @@
   .lu-menu[data-side="left"],
   .lu-menu[data-side="right"] {
     --lu-side-offset: 0.125rem;
-    --lu-align-offset: calc(-0.25rem - 1px);
+    --lu-align-offset: -1px;
   }
   .lu-menu :where([role^="menuitem"]) {
     box-sizing: border-box;
     gap: 0.5rem;
     min-block-size: 2rem;
-    padding: 0.375rem 0.5rem;
+    padding: 0.375rem 0.75rem;
     border: 0;
     border-radius: calc(var(--lu-radius) - 4px);
     background: none;
@@ -440,15 +448,15 @@
     outline: 2px solid var(--lu-ring);
     outline-offset: -2px;
   }
-  /* On the inverted item the ring is drawn inside it, in the colour of its text. */
+  /* The inverted item's fill is its focus indicator (21:1 against its neighbours): no ring on it.
+     A focused disabled item, which does not invert, keeps the ring above. */
   .lu-menu
     :where(
       [role^="menuitem"]:is([data-highlighted], [aria-expanded="true"]):not(
           [aria-disabled="true"]
         ):focus-visible
     ) {
-    outline-color: var(--lu-primary-foreground);
-    outline-offset: -4px;
+    outline: none;
   }
   /* Dimmed by its text, not `opacity`, which would fade its focus ring to 2:1 (TASK-455, L34). */
   .lu-menu :where([role^="menuitem"][aria-disabled="true"]) {
@@ -485,11 +493,11 @@
   }
   .lu-menu :where([role="separator"]) {
     block-size: 1px;
-    margin: 0.25rem -0.25rem;
+    margin: 0;
     background: var(--lu-border);
   }
   .lu-menu :where([role="group"] > [role="presentation"]) {
-    padding: 0.375rem 0.5rem;
+    padding: 0.375rem 0.75rem;
     color: var(--lu-muted-foreground);
     font-size: 0.75rem;
     font-weight: 500;
@@ -558,9 +566,10 @@
   .lu-combobox > :where(input[role="combobox"])::placeholder {
     color: var(--lu-muted-foreground);
   }
+  /* The focus ring is the field's own edge, 2px thick: drawn over the border, not around it. */
   .lu-combobox > :where(input[role="combobox"]:focus-visible) {
     outline: 2px solid var(--lu-ring);
-    outline-offset: 2px;
+    outline-offset: -1px;
   }
   .lu-combobox > :where(input[role="combobox"]:disabled) {
     opacity: 0.5;
@@ -639,12 +648,16 @@
     outline: 2px solid var(--lu-ring);
     outline-offset: 1px;
   }
-  /* The popup: the List, or the Popup around it; the list scrolls. */
+  /*
+   * The popup: the List, or the Popup around it; the list scrolls. It shares an edge with the
+   * input (its border lies on the input's), so the two read as one frame, and its options reach
+   * its edge.
+   */
   .lu-combobox :where([popover]) {
-    --lu-side-offset: 0.25rem;
+    --lu-side-offset: -1px;
     box-sizing: border-box;
     min-inline-size: 12rem;
-    padding: 0.25rem;
+    padding: 0;
     border: 1px solid var(--lu-popover-foreground);
     border-radius: calc(var(--lu-radius) - 2px);
     background: var(--lu-popover);
@@ -666,19 +679,17 @@
     align-items: center;
     gap: 0.5rem;
     min-block-size: 2rem;
-    padding: 0.375rem 0.5rem;
+    padding: 0.375rem 0.75rem;
     border-radius: calc(var(--lu-radius) - 4px);
     cursor: default;
   }
   /*
-   * The highlighted option has no focus of its own: it inverts and gets the focus ring the input
-   * passes on, drawn inside it in the colour of its text.
+   * The highlighted option has no focus of its own: it inverts, and that fill (21:1 against the
+   * options around it) is the indicator of the focus the input passes on. No outline on top.
    */
   .lu-combobox :where([role="option"][data-highlighted]) {
     background: var(--lu-primary);
     color: var(--lu-primary-foreground);
-    outline: 2px solid var(--lu-primary-foreground);
-    outline-offset: -4px;
   }
   .lu-combobox :where([role="option"][aria-disabled="true"]) {
     opacity: 0.5;
@@ -694,7 +705,7 @@
     content: "\2713" / "";
   }
   .lu-combobox :where([role="group"] > [role="presentation"]) {
-    padding: 0.375rem 0.5rem;
+    padding: 0.375rem 0.75rem;
     color: var(--lu-muted-foreground);
     font-size: 0.75rem;
     font-weight: 500;
@@ -750,7 +761,7 @@
   }
   .lu-select:focus-visible {
     outline: 2px solid var(--lu-ring);
-    outline-offset: 2px;
+    outline-offset: -1px;
   }
   .lu-select:disabled {
     opacity: 0.5;
@@ -784,8 +795,9 @@
     box-sizing: border-box;
     min-inline-size: anchor-size(inline);
     max-block-size: min(20rem, 100dvh - 1rem);
-    margin-block: 0.25rem;
-    padding: 0.25rem;
+    /* The picker's border lies on the control's: one frame, and the options reach its edge. */
+    margin-block: -1px;
+    padding: 0;
     border: 1px solid var(--lu-popover-foreground);
     border-radius: calc(var(--lu-radius) - 2px);
     background: var(--lu-popover);
@@ -794,21 +806,14 @@
   .lu-select :where(option) {
     gap: 0.5rem;
     min-block-size: 2rem;
-    padding: 0.375rem 0.5rem;
+    padding: 0.375rem 0.75rem;
     border-radius: calc(var(--lu-radius) - 4px);
-  }
-  .lu-select :where(option:hover, option:focus-visible) {
-    background: var(--lu-primary);
-    color: var(--lu-primary-foreground);
-  }
-  .lu-select :where(option:focus-visible) {
-    outline: 2px solid var(--lu-primary-foreground);
-    outline-offset: -4px;
   }
   .lu-select :where(option:disabled) {
     opacity: 0.5;
   }
   .lu-select :where(optgroup) {
+    padding-inline: 0;
     color: var(--lu-muted-foreground);
     font-size: 0.75rem;
     font-weight: 500;
@@ -818,8 +823,15 @@
     font-size: 0.875rem;
     font-weight: 400;
   }
+  /* The highlighted option inverts: the fill is its focus indicator, with no outline on top. After
+     the group rule above, whose text colour would hide a grouped option's text on the fill. */
+  .lu-select :where(option:hover, option:focus-visible) {
+    background: var(--lu-primary);
+    color: var(--lu-primary-foreground);
+    outline: none;
+  }
   .lu-select :where(hr) {
-    margin: 0.25rem -0.25rem;
+    margin: 0;
     border: 0;
     border-block-start: 1px solid var(--lu-border);
   }
@@ -860,15 +872,17 @@
   .lu-input::placeholder {
     color: var(--lu-muted-foreground);
   }
+  /* The focus ring is the field's own edge, 2px thick: drawn over the border, not around it. */
   .lu-input:focus-visible {
     outline: 2px solid var(--lu-ring);
-    outline-offset: 2px;
+    outline-offset: -1px;
   }
   .lu-input:disabled {
     opacity: 0.5;
     cursor: not-allowed;
   }
-  /* Invalid: an edge twice as thick (a 1px ring around the border), a shape and not a colour. */
+  /* Invalid: an edge twice as thick (a 1px ring around the border), a shape and not a colour.
+     Focused, the ring adds a third pixel inside: still one solid frame. */
   .lu-input[aria-invalid="true"] {
     border-color: var(--lu-destructive);
     box-shadow: 0 0 0 1px var(--lu-destructive);
@@ -1575,7 +1589,7 @@
   .lu-number-field :where(label) {
     font-weight: 500;
   }
-  /* The group: one bordered control with the input between its buttons; focus rings all of it. */
+  /* The group: one bordered control with the input between its buttons; focused, its edge is 2px. */
   .lu-number-field > :where(div),
   .lu-number-field > :where(input:not([type="hidden"])) {
     display: inline-flex;
@@ -1588,7 +1602,7 @@
   .lu-number-field > div:focus-within,
   .lu-number-field > input:focus-visible {
     outline: 2px solid var(--lu-ring);
-    outline-offset: 2px;
+    outline-offset: -1px;
   }
   .lu-number-field :where(input:not([type="hidden"])) {
     box-sizing: border-box;
@@ -1683,7 +1697,7 @@
     gap: 0.5rem;
     max-inline-size: 100%;
   }
-  /* A box per character; the caret's box gets the focus ring while the input has focus. */
+  /* A box per character; the caret's box has a 2px edge, the focus ring, while the input has focus. */
   .lu-otp-field > :where([data-slot]) {
     display: grid;
     place-items: center;
@@ -1701,7 +1715,7 @@
   }
   .lu-otp-field > [data-slot][data-active] {
     outline: 2px solid var(--lu-ring);
-    outline-offset: 2px;
+    outline-offset: -1px;
   }
   /* The caret, in the caret's box while it is empty. */
   .lu-otp-field > [data-slot][data-active]:not([data-filled])::after {
@@ -1740,6 +1754,10 @@
     color: var(--lu-foreground);
     font: inherit;
     letter-spacing: 0.5em;
+  }
+  .lu-otp-field:not(:defined) > :where(input:focus-visible) {
+    outline: 2px solid var(--lu-ring);
+    outline-offset: -1px;
   }
 
   /* Preview Card (TASK-381) ------------------------------------------------------------------- */
@@ -1939,9 +1957,9 @@
     outline: 2px solid var(--lu-ring);
     outline-offset: -2px;
   }
+  /* The open trigger's fill is its focus indicator: no ring on it. */
   .lu-menubar > lu-menu > [role="menuitem"][aria-expanded="true"]:focus-visible {
-    outline-color: var(--lu-primary-foreground);
-    outline-offset: -4px;
+    outline: none;
   }
   .lu-menubar > lu-menu > [role="menuitem"]:disabled {
     opacity: 0.5;
@@ -2017,7 +2035,8 @@
     box-sizing: border-box;
     min-inline-size: 12rem;
     max-inline-size: min(28rem, 100vw - 1rem);
-    padding: 0.375rem;
+    /* No padding: the links reach the edge, so the inverted one is not a box inside a box. */
+    padding: 0;
     border: 1px solid var(--lu-popover-foreground);
     border-radius: var(--lu-radius);
     background: var(--lu-popover);
@@ -2031,9 +2050,11 @@
     font-size: 0.875rem;
     text-decoration: none;
   }
+  /* A content's focused link inverts: the fill is its focus indicator, with no ring around it. */
   .lu-navigation-menu [popover] a:is(:hover, :focus-visible) {
     background: var(--lu-primary);
     color: var(--lu-primary-foreground);
+    outline: none;
   }
   /* Fade in and out, sliding in from where the previous content was; `overlay` keeps a content in
      the top layer while it fades out, in Chromium only. */
@@ -2140,7 +2161,12 @@
     .lu-scroll-area :where([data-thumb]) {
       background: CanvasText;
     }
-    .lu-menu :where([role^="menuitem"][data-highlighted], [aria-expanded="true"]) {
+    /* The inverted items have no ring: their fill, the focus indicator, is drawn in Highlight. */
+    .lu-menu :where([role^="menuitem"][data-highlighted], [aria-expanded="true"]),
+    .lu-menubar > lu-menu > [role="menuitem"][aria-expanded="true"],
+    .lu-combobox :where([role="option"][data-highlighted]),
+    .lu-select :where(option:hover, option:focus-visible),
+    .lu-navigation-menu [popover] a:is(:hover, :focus-visible) {
       background: Highlight;
       color: HighlightText;
     }

@@ -8,6 +8,7 @@ import {
   axe,
   axProperty,
   clipped,
+  focusFill,
   focusRing,
   lastNavLink,
   SCHEMES,
@@ -559,7 +560,7 @@ test.describe("WCAG 2.2 AA with the default theme (doc-9 section 17)", () => {
     });
   }
 
-  test("focus is visible on the input, and the highlighted option shows the ring (2.4.7)", async ({
+  test("focus is visible on the input, and the highlighted option is the inverted fill (2.4.7)", async ({
     page,
   }) => {
     await page.goto("/combobox");
@@ -569,11 +570,10 @@ test.describe("WCAG 2.2 AA with the default theme (doc-9 section 17)", () => {
     await expect(input).toBeFocused();
     expect(await focusRing(page)).toBe("2px solid");
     await page.keyboard.press("ArrowDown");
-    const outline = await option("Lisbon").evaluate((el) => {
-      const style = getComputedStyle(el);
-      return `${style.outlineWidth} ${style.outlineStyle}`;
-    });
-    expect(outline).toBe("2px solid");
+    // One frame (TASK-619): the fill is the indicator of the focus the input passes on, at 3:1 or
+    // more against the options around it, with no outline on top. The input keeps its ring.
+    expect(await focusFill(option("Lisbon"))).toBe("fill");
+    expect(await focusRing(page)).toBe("2px solid");
   });
 
   test("the buttons, chips and options are at least 24 by 24 CSS pixels (2.5.8)", async ({

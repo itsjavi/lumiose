@@ -110,7 +110,7 @@ export function VerifyCode() {
 ## Styling
 
 **With the default theme**, put `lu-otp-field` on `Root`: a 2.5rem box per character (they shrink
-on narrow screens), the caret's box ringed while the field has focus with a blinking caret in it
+on narrow screens), the caret's box with an edge twice as thick while the field has focus and a blinking caret in it
 (still where motion is reduced), and a short dash for a separator.
 
 **With your own CSS**, style the slots through `[data-slot]`, `[data-filled]` and `[data-active]`,

@@ -125,8 +125,8 @@ export function PriceField() {
 ## Styling
 
 **With the default theme**, put `lu-number-field` on `Root`: the label above one bordered group,
-the input centred between two 36px buttons that dim at the ends of the range, and a focus ring
-around the whole group.
+the input centred between two 36px buttons that dim at the ends of the range, and the whole group's
+edge twice as thick while the input has focus.
 
 **With your own CSS**, style the parts through `class`, the input's `:focus-visible`, the buttons'
 `:disabled` and `[data-action="increment"]` / `[data-action="decrement"]`, the scrub area's

@@ -59,8 +59,9 @@ export function BookSearch() {
 
 ## Styling
 
-**With the default theme**, put `lu-input` on it: a bordered field, a muted placeholder, a focus
-ring, an edge twice as thick with `aria-invalid="true"`.
+**With the default theme**, put `lu-input` on it: a bordered field, a muted placeholder, and an
+edge twice as thick while it has focus (the focus ring, drawn over the border) or with
+`aria-invalid="true"`.
 
 **With your own CSS**, style the `input` and its state: `:focus-visible`, `:disabled`,
 `:read-only`, `:placeholder-shown`, `:user-invalid`, `[aria-invalid="true"]`.
